@@ -1859,10 +1859,8 @@ async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
         "{}",
         by_teacher.text()
     );
-    assert_eq!(
-        by_teacher.json()["field_errors"][0]["code"],
-        "not-in-course"
-    );
+    // UX-207: a promoted learner is named as course staff, not as a non-member.
+    assert_eq!(by_teacher.json()["field_errors"][0]["code"], "staff");
     let extended = app
         .post_as(
             &lena,
