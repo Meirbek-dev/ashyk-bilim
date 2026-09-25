@@ -667,3 +667,105 @@ async fn learner_queue_follows_membership(pool: PgPool) {
         assert_eq!(queue(&app, &session, "").await["total"], 1);
     }
 }
+
+/// BUG-309: a leaver's or a staffed learner's pending work stays in the
+/// teacher queue (pass 23) — their row is never re-projected, so the queue
+/// reads the attempts: a saved grade moves it to release, publishing (or a
+/// published file grade) takes it off.
+#[sqlx::test(migrations = "../../migrations")]
+async fn teacher_queue_drops_graded_work_of_non_members(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (quiz_id, quiz_activity, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        "Quiz",
+        serde_json::json!({ "grading_mode": "manual" }),
+    )
+    .await;
+    let (fs_id, fs_activity) = published_file_submission(&app, &teacher, &chapter_id).await;
+    let roster = format!("/api/v2/courses/{course_id}/contributors");
+    for name in ["alice", "bob"] {
+        let session = learner(&app, name).await;
+        let sub = start_draft(&app, &session, &quiz_id).await;
+        submit(&app, &session, &sub, &choice_id, &essay_id).await;
+        let attempt = submit_file_attempt(&app, &session, &fs_id).await;
+        if name == "alice" {
+            let left = app
+                .delete_as(&session, &format!("/api/v2/trail/courses/{course_id}"))
+                .await;
+            assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+        } else {
+            let added = app
+                .post_as(
+                    &teacher,
+                    &roster,
+                    &serde_json::json!({ "user_id": session.user_id, "role": "contributor" }),
+                )
+                .await;
+            assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+        }
+        let mine = |q: &serde_json::Value| {
+            items(q)
+                .iter()
+                .filter(|i| i["description"].as_str().unwrap().starts_with(name))
+                .map(|i| {
+                    (
+                        i["activity_id"].as_str().unwrap().to_owned(),
+                        i["kind"].as_str().unwrap().to_owned(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let listed = queue(&app, &teacher, "?role=teacher").await;
+        assert_eq!(mine(&listed).len(), 2, "{name}: pending work stays listed");
+        assert!(mine(&listed).iter().all(|(_, k)| k == "needs_grading"));
+
+        let saved = app
+            .send(with_if_match(
+                &teacher,
+                "PATCH",
+                format!("/api/v2/submissions/{sub}/grade"),
+                "1",
+                &serde_json::json!({ "action": "save",
+                    "item_grades": [{ "item_id": &choice_id, "score": 10 },
+                                    { "item_id": &essay_id, "score": 8 }] }),
+            ))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        let after_save = mine(&queue(&app, &teacher, "?role=teacher").await);
+        assert!(
+            after_save.contains(&(quiz_activity.clone(), "awaiting_release".to_owned())),
+            "{name}: {after_save:?}"
+        );
+        assert!(!after_save.contains(&(quiz_activity.clone(), "needs_grading".to_owned())));
+
+        let published = app
+            .send(with_if_match(
+                &teacher,
+                "PATCH",
+                format!("/api/v2/submissions/{sub}/grade"),
+                &saved.json()["version"].as_i64().unwrap().to_string(),
+                &serde_json::json!({ "action": "publish" }),
+            ))
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+        let file = app
+            .send(with_if_match(
+                &teacher,
+                "PATCH",
+                format!("/api/v2/file-submission-attempts/{attempt}/grade"),
+                "3",
+                &serde_json::json!({ "action": "publish", "final_score": 90 }),
+            ))
+            .await;
+        assert_eq!(file.status, StatusCode::OK, "{}", file.text());
+        let done = mine(&queue(&app, &teacher, "?role=teacher").await);
+        assert!(
+            done.is_empty(),
+            "{name}: graded work leaves the queue: {done:?} ({fs_activity})"
+        );
+    }
+}

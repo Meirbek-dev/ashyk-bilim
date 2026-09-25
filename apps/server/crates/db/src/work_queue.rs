@@ -87,6 +87,11 @@ pub struct TeacherWorkRow {
 /// Never the teacher's own attempts, never a staff preview as the review
 /// target (BUG-301 — a grader never grades their own, BUG-286).
 ///
+/// BUG-309: a non-member's row (leaver, or now staff) is never re-projected
+/// — grader writes on it record the grade only (BUG-260/270) — so for them
+/// the flag is read from the attempts: the latest submission `pending`, or a
+/// `submitted` file attempt. Their pending work stays gradable (pass 23).
+///
 /// Grading courses: creator, or an active non-reporter `resource_authors`
 /// entry (the authorship rule of `Course::is_author`). The review target is
 /// the latest submission, else the newest `submitted` file attempt.
@@ -116,7 +121,18 @@ pub async fn list_teacher_grading_work(
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
-           WHERE p.teacher_action_required AND p.user_id <> $1
+           WHERE p.user_id <> $1
+             AND CASE WHEN EXISTS (SELECT 1 FROM trail_runs r
+                                   WHERE r.course_id = p.course_id AND r.user_id = p.user_id
+                                     AND NOT is_course_staff(r.course_id, r.user_id))
+                 THEN p.teacher_action_required
+                 ELSE EXISTS (SELECT 1 FROM submissions s
+                              WHERE s.id = p.latest_submission_id AND s.status = 'pending')
+                   OR EXISTS (SELECT 1 FROM file_submission_attempts fa
+                              JOIN file_submissions f ON f.id = fa.file_submission_id
+                              WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
+                                AND fa.status = 'submitted' AND NOT fa.preview)
+             END
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
@@ -132,6 +148,8 @@ pub async fn list_teacher_grading_work(
 ///
 /// The review target is the latest submission when it is `graded`, else the
 /// newest `graded` file attempt. Same exclusions as the grading work (BUG-301).
+/// A non-member's frozen row (BUG-309) qualifies by that target alone: the
+/// service drops a release row without one.
 pub async fn list_teacher_release_work(
     pool: &PgPool,
     teacher_id: UserId,
@@ -159,7 +177,11 @@ pub async fn list_teacher_release_work(
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
-           WHERE p.state = 'graded' AND p.user_id <> $1
+           WHERE p.user_id <> $1
+             AND (p.state = 'graded' OR NOT EXISTS (
+                     SELECT 1 FROM trail_runs r
+                     WHERE r.course_id = p.course_id AND r.user_id = p.user_id
+                       AND NOT is_course_staff(r.course_id, r.user_id)))
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
