@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ClipboardList, LoaderCircle } from 'lucide-react'
+import { ClipboardList, LoaderCircle, LockKeyhole } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -13,6 +13,7 @@ import { useContributorStatus } from '@/hooks/useContributorStatus'
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard'
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ErrorState } from '@/components/ui/error-state'
@@ -260,43 +261,58 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // ── Routing the student to the correct surface ──────────────────────────────
 
+  // UX-213: off the access list — the learner's own attempts, read-only.
+  const accessNotice = vm.accessClosed ? (
+    <Alert className="mb-4">
+      <LockKeyhole aria-hidden="true" />
+      <AlertTitle>{t('accessClosedTitle')}</AlertTitle>
+      <AlertDescription>{t('accessClosedDescription')}</AlertDescription>
+    </Alert>
+  ) : null
+
   // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
     return (
-      <AttemptEntryCard
-        vm={vm}
-        isTeacher={isTeacher}
-        {...(awaitingRelease && canAct
-          ? {
-              onStartNewAttempt: () => {
-                void startAttempt()
-              },
-              startPending: isPending,
-            }
-          : {})}
-      />
+      <>
+        {accessNotice}
+        <AttemptEntryCard
+          vm={vm}
+          isTeacher={isTeacher}
+          {...(awaitingRelease && canAct
+            ? {
+                onStartNewAttempt: () => {
+                  void startAttempt()
+                },
+                startPending: isPending,
+              }
+            : {})}
+        />
+      </>
     )
   }
 
   // Result card (post-submit)
   if (recommendedAction === 'viewResult') {
     return (
-      <AttemptResultCard
-        vm={vm}
-        activityState={activityState}
-        onRetry={() => {
-          void startAttempt()
-        }}
-        onStartRevision={() => {
-          setMode('ACTIVE_ATTEMPT')
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(activityUuid),
-          })
-        }}
-        onNext={() => {
-          router.refresh()
-        }}
-      />
+      <>
+        {accessNotice}
+        <AttemptResultCard
+          vm={vm}
+          activityState={activityState}
+          onRetry={() => {
+            void startAttempt()
+          }}
+          onStartRevision={() => {
+            setMode('ACTIVE_ATTEMPT')
+            void queryClient.invalidateQueries({
+              queryKey: queryKeys.assessments.activity(activityUuid),
+            })
+          }}
+          onNext={() => {
+            router.refresh()
+          }}
+        />
+      </>
     )
   }
 

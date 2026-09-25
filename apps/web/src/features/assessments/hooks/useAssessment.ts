@@ -24,6 +24,7 @@ import { canArchive, canPublish, canSchedule, isAssessmentEditable } from '../do
 import { classifyValidationIssue } from '../domain/readiness'
 import { itemFromWire, lifecycleFromWire, policyFromWire } from '../domain/assessment-wire'
 import { AttemptState, Readiness } from '@/lib/api/generated/zod'
+import type { AttemptStateOutput } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import { getMyAssessmentSubmissions } from '../submission-client'
 import { assessmentTypeToKind } from '../domain/view-models'
@@ -205,7 +206,12 @@ function useAssessment(
     }
   }
 
-  if (attempt.isLoading || submissions.isLoading || !attempt.data) {
+  // UX-213: off the allowlist the take gate (attempt-state) answers 403 while
+  // the learner's own attempts stay readable — a read-only page with the
+  // «no new attempts» notice, not a page error. No course access fails
+  // `submissions/me` too and stays an error below.
+  const accessClosed = isApiError(attempt.error) && attempt.error.status === 403 && submissions.isSuccess
+  if (!accessClosed && (attempt.isLoading || submissions.isLoading || !attempt.data)) {
     return {
       vm: null,
       isLoading: attempt.isLoading || submissions.isLoading,
@@ -216,11 +222,35 @@ function useAssessment(
   // UX-153: a focus/poll refetch that the server refuses (access restricted,
   // assessment gone) replaces the stale «Start» with the refusal; transient
   // failures keep the last good state.
-  if (attempt.error && isApiError(attempt.error) && attempt.error.status < 500) {
+  if (!accessClosed && attempt.error && isApiError(attempt.error) && attempt.error.status < 500) {
     return { vm: null, isLoading: false, error: attempt.error }
   }
 
-  const state = attempt.data
+  const state: AttemptStateOutput =
+    accessClosed || !attempt.data
+      ? {
+          attempts_used: (submissions.data ?? []).filter(row => row.status !== 'DRAFT').length,
+          attempts_remaining: 0,
+          can_continue: false,
+          can_start: false,
+          disabled_reasons: [],
+          draft_id: null,
+          effective: {
+            allow_late: assessment.policy.allow_late,
+            due_at_unix: assessment.policy.due_at_unix,
+            late_policy: assessment.policy.late_policy,
+            max_attempts: assessment.policy.max_attempts,
+            override_applied: false,
+            passing_score: assessment.policy.passing_score,
+            time_limit_seconds: assessment.policy.time_limit_seconds,
+            waive_late_penalty: false,
+          },
+          is_teacher_preview: false,
+          lifecycle: assessment.lifecycle,
+          opens_at_unix: null,
+          revision_requested: false,
+        }
+      : attempt.data
   const { latest, pendingAttemptNumber } = shownSubmission(submissions.data ?? [], state.draft_id)
   const policy = policyFromWire(assessment.policy, state.effective)
   const visible = latest?.release_state === 'visible' && policy.resultReviewAllowed
@@ -236,6 +266,7 @@ function useAssessment(
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
+    accessClosed,
     assessmentUuid: assessment.id,
     activityUuid: assessment.activity_id,
     title: assessment.title,

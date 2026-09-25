@@ -10657,6 +10657,7 @@
     "allowedFileTypes": "Allowed file types",
     "selectAll": "Select all",
     "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
+    "dueChangeReprices": "A new due date re-prices lateness and the late penalty of work already handed in — grades may change.",
     "collectionRules": "Collection rules",
     "attempts": "Attempts",
     "lateWork": "Late work",

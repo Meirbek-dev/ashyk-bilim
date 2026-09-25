@@ -85,6 +85,8 @@ export interface AttemptReview {
 export interface AttemptViewModel {
   surface: 'ATTEMPT'
   kind: AssessmentKind
+  /** UX-213: off the access list — own attempts read-only, no new attempts. */
+  accessClosed?: boolean
   assessmentUuid: string
   activityUuid: string
   title: string
