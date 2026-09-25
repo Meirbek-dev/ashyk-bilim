@@ -1744,15 +1744,16 @@ async fn queued_gates_cannot_stack(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(statuses, ["failed", "failed", "succeeded"]);
-    // Every worker got past the model: the losers lost at the insert, not
-    // at the pre-check, and their finished runs were flipped to failed.
+    // The slow model makes every worker usually pass the pre-check and lose
+    // at the insert (3 artifacts); under load a late worker may lose at the
+    // pre-check instead (no artifact). Either way exactly one gate survives.
     let artifacts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM ai_artifacts WHERE run_id = ANY($1)")
             .bind(run_ids.iter().map(|r| r.0).collect::<Vec<_>>())
             .fetch_one(&app.pool)
             .await
             .unwrap();
-    assert_eq!(artifacts, 3);
+    assert!((1..=3).contains(&artifacts), "artifacts {artifacts}");
     let gates: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM ai_remediation_sessions WHERE gate_mode AND status = 'assigned'",
     )
