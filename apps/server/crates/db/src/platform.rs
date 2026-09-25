@@ -35,17 +35,32 @@ pub struct PlatformChanges<'a> {
     pub thumbnail_key: Option<&'a str>,
 }
 
-pub async fn update_platform(pool: &PgPool, changes: PlatformChanges<'_>) -> Result<bool> {
-    let updated = sqlx::query!(
-        r#"UPDATE platforms SET
-               name = COALESCE($1, name),
-               description = COALESCE($2, description),
-               about = COALESCE($3, about),
-               email = COALESCE($4, email),
-               label = CASE WHEN $8 THEN $5 ELSE label END,
-               logo_key = COALESCE($6, logo_key),
-               thumbnail_key = COALESCE($7, thumbnail_key)
-           WHERE singleton"#,
+/// The branding keys the UPDATE replaced (read under the row lock, so a
+/// concurrent update never releases the wrong key).
+pub struct ReplacedBranding {
+    pub logo_key: Option<String>,
+    pub thumbnail_key: Option<String>,
+}
+
+/// `None` when the singleton row is missing.
+pub async fn update_platform<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    changes: PlatformChanges<'_>,
+) -> Result<Option<ReplacedBranding>> {
+    let row = sqlx::query_as!(
+        ReplacedBranding,
+        r#"UPDATE platforms p SET
+               name = COALESCE($1, p.name),
+               description = COALESCE($2, p.description),
+               about = COALESCE($3, p.about),
+               email = COALESCE($4, p.email),
+               label = CASE WHEN $8 THEN $5 ELSE p.label END,
+               logo_key = COALESCE($6, p.logo_key),
+               thumbnail_key = COALESCE($7, p.thumbnail_key)
+           FROM (SELECT singleton, logo_key, thumbnail_key FROM platforms
+                 WHERE singleton FOR UPDATE) old
+           WHERE p.singleton = old.singleton
+           RETURNING old.logo_key AS "logo_key?", old.thumbnail_key AS "thumbnail_key?""#,
         changes.name,
         changes.description,
         changes.about,
@@ -55,7 +70,7 @@ pub async fn update_platform(pool: &PgPool, changes: PlatformChanges<'_>) -> Res
         changes.thumbnail_key,
         changes.label.is_some()
     )
-    .execute(pool)
+    .fetch_optional(db)
     .await?;
-    Ok(updated.rows_affected() == 1)
+    Ok(row)
 }

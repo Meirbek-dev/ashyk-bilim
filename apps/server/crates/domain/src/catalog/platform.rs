@@ -7,13 +7,13 @@
 //! one for reaping.
 
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, FieldError, Result};
+use ab_core::{Error, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub use ab_db::platform::PlatformRow as Platform;
 
-use crate::files::uploads::UNREFERENCED_GRACE;
+use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
 
 const UPDATE: Permission = Permission {
@@ -54,35 +54,6 @@ impl PlatformService {
             })
     }
 
-    /// Claim a finalized branding upload and return its storage key.
-    async fn claim_branding(
-        &self,
-        actor: &Actor,
-        upload_id: Uuid,
-        required_purpose: &str,
-    ) -> Result<String> {
-        let upload = ab_db::uploads::get_upload(&self.pool, upload_id)
-            .await?
-            .ok_or_else(|| Error::not_found("upload"))?;
-        if upload.created_by != actor.user_id {
-            return Err(Error::forbidden("not your upload"));
-        }
-        if upload.purpose != required_purpose {
-            return Err(Error::validation(vec![FieldError {
-                field: "upload_id".into(),
-                code: "wrong-purpose".into(),
-                message: format!(
-                    "expected a '{required_purpose}' upload, got '{}'",
-                    upload.purpose
-                ),
-            }]));
-        }
-        if !ab_db::uploads::add_reference(&self.pool, upload_id).await? {
-            return Err(Error::conflict("upload is not finalized"));
-        }
-        Ok(upload.key)
-    }
-
     pub async fn update(
         &self,
         actor: &Actor,
@@ -109,19 +80,30 @@ impl PlatformService {
             l.map(|l| ab_core::strip_controls(l).trim().to_owned())
                 .filter(|l| !l.is_empty())
         });
-        let previous = self.get().await?;
-
+        // Claim, swap and release in one transaction (UX-211's avatar rule):
+        // a hang-up never leaves a claimed upload that is not the branding.
+        let mut tx = self.pool.begin().await?;
         let logo_key = match logo_upload_id {
-            Some(id) => Some(self.claim_branding(actor, id, "platform-logo").await?),
+            Some(id) => {
+                Some(claim_upload(&mut tx, actor, id, "platform-logo", "logo_upload_id").await?)
+            }
             None => None,
         };
         let thumbnail_key = match thumbnail_upload_id {
-            Some(id) => Some(self.claim_branding(actor, id, "platform-thumbnail").await?),
+            Some(id) => Some(
+                claim_upload(
+                    &mut tx,
+                    actor,
+                    id,
+                    "platform-thumbnail",
+                    "thumbnail_upload_id",
+                )
+                .await?,
+            ),
             None => None,
         };
-
-        ab_db::platform::update_platform(
-            &self.pool,
+        let replaced = ab_db::platform::update_platform(
+            &mut *tx,
             ab_db::platform::PlatformChanges {
                 name: name.as_deref(),
                 description: description.as_deref(),
@@ -132,29 +114,22 @@ impl PlatformService {
                 thumbnail_key: thumbnail_key.as_deref(),
             },
         )
-        .await?;
-
-        // Release replaced branding for reaping (best-effort by key).
-        if logo_key.is_some()
-            && let Some(old) = previous.logo_key.as_deref()
-        {
+        .await?
+        .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "platform row is missing"))?;
+        // Release exactly the keys the UPDATE replaced, for reaping.
+        let released = [
+            logo_key.and(replaced.logo_key),
+            thumbnail_key.and(replaced.thumbnail_key),
+        ];
+        for old in released.iter().flatten() {
             ab_db::uploads::release_reference_by_key(
-                &self.pool,
+                &mut *tx,
                 old,
                 UNREFERENCED_GRACE.as_secs_f64(),
             )
             .await?;
         }
-        if thumbnail_key.is_some()
-            && let Some(old) = previous.thumbnail_key.as_deref()
-        {
-            ab_db::uploads::release_reference_by_key(
-                &self.pool,
-                old,
-                UNREFERENCED_GRACE.as_secs_f64(),
-            )
-            .await?;
-        }
+        tx.commit().await?;
 
         self.get().await
     }

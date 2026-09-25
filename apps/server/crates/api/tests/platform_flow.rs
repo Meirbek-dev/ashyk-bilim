@@ -2,7 +2,7 @@
 //! the upload pipeline.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -240,4 +240,49 @@ async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
         )
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+/// BUG-313 (branding sibling of UX-211): the client hangs up the moment the
+/// logo upload counts as referenced — the claim, the swap and the release
+/// land together or not at all, so no upload stays pinned without being the
+/// logo.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_branding_patch_leaks_no_reference(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let admin_user = app
+        .create_user("phangup", "phangup@example.com", &["admin"])
+        .await;
+    let admin = app
+        .mint_session_for(admin_user, &["platform:update:platform", "file:create:own"])
+        .await;
+    for _ in 0..5 {
+        let (id, _) = upload_logo(&app, &admin).await;
+        let upload = uuid::Uuid::parse_str(&id).unwrap();
+        drop_request_when(
+            app.patch_as(
+                &admin,
+                "/api/v2/platform",
+                &serde_json::json!({ "logo_upload_id": id }),
+            ),
+            async || {
+                sqlx::query_scalar::<_, i32>("SELECT referenced_count FROM uploads WHERE id = $1")
+                    .bind(upload)
+                    .fetch_one(&app.pool)
+                    .await
+                    .unwrap()
+                    > 0
+            },
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        let pinned: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM uploads
+             WHERE purpose = 'platform-logo' AND referenced_count > 0
+               AND key IS DISTINCT FROM (SELECT logo_key FROM platforms WHERE singleton)",
+        )
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(pinned, 0, "a claimed upload is not the logo");
+    }
 }
