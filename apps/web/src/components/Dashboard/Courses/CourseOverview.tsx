@@ -2,7 +2,6 @@
 
 import { CheckCircle2, Circle, ArrowRight, FileCog, FileStack, Globe, Star } from 'lucide-react'
 import { buildCourseWorkspacePath } from '@/lib/course-management'
-import type { CourseReadinessItemId } from '@/lib/course-management'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
@@ -11,7 +10,7 @@ import { cn } from '@/lib/utils'
 
 export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
   const t = useTranslations('DashPage.CourseManagement.Overview')
-  const { readiness } = useCourse()
+  const { readiness, courseStructure } = useCourse()
   const checklist = readiness.checklist
 
   const taskConfig = [
@@ -45,9 +44,12 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
     },
   ]
 
-  const completedIds = new Set(checklist.filter(c => c.complete).map(c => c.id))
+  // UX-206: «review» is the publish step — done once the course is public (it is
+  // not a readiness check: a private course can be ready to publish).
+  const completedIds = new Set<string>(checklist.filter(c => c.complete).map(c => c.id))
+  if (courseStructure.public) completedIds.add('review')
 
-  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id as CourseReadinessItemId))
+  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id))
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -57,7 +59,7 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
 
         <div className="mt-4 flex flex-col gap-2">
           {taskConfig.map(task => {
-            const complete = completedIds.has(task.id as CourseReadinessItemId)
+            const complete = completedIds.has(task.id)
             const Icon = task.icon
             return (
               <AppLink

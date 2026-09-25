@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, CheckCircle2, ExternalLink, Eye, Loader2 } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -52,11 +52,23 @@ export default function CourseReviewPublish({
   const blockers = readiness?.issues.filter(issue => issue.severity === 'blocker') ?? []
   const warnings = readiness?.issues.filter(issue => issue.severity === 'warning') ?? []
   const isPublic = course.courseStructure.public
+  // UX-206 (as UX-202/203): the visibility button is disabled while the request
+  // runs, so focus falls to <body> after publish / the make-private confirm —
+  // hand it back to the button once it is enabled again.
+  const isBusy = isPending || isRefreshing
+  const visibilityButtonRef = useRef<HTMLButtonElement>(null)
+  const refocusVisibilityButton = useRef(false)
+  useEffect(() => {
+    if (isBusy || !refocusVisibilityButton.current) return
+    refocusVisibilityButton.current = false
+    visibilityButtonRef.current?.focus()
+  }, [isBusy])
 
   const toggleVisibility = () => {
     if (!capabilities.canManageAccess) return
     const nextPublic = !isPublic
     setPrivateConfirmOpen(false)
+    refocusVisibilityButton.current = true
 
     startTransition(() => {
       void (async () => {
@@ -118,7 +130,8 @@ export default function CourseReviewPublish({
               // UX-200: going private cuts off learners outside the linked groups — confirm first.
               <Button
                 onClick={isPublic ? () => setPrivateConfirmOpen(true) : toggleVisibility}
-                disabled={isPending || isRefreshing || publishDisabled}
+                ref={visibilityButtonRef}
+                disabled={isBusy || publishDisabled}
               >
                 {isPending || isRefreshing ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
                 {isPublic ? t('movePrivate') : t('publishCourse')}
