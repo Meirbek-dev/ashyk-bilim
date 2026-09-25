@@ -64,6 +64,8 @@ const enrolledWithoutRun = {
   enrollment_state: 'in_progress',
   permissions: { can_enroll: false },
   outline: [{ id: 'ch', activities: [{ id: 'a1', complete: false }] }],
+  progress: { completed_required_count: 0, total_required_count: 1, progress_pct: 0 },
+  next_action: { id: 'start', activity_id: 'a1', enabled: true, label: '', reason: 'next_required' },
 } as unknown as LearnerCourseState
 
 const COMPONENTS = [
@@ -86,6 +88,7 @@ const completed = {
   ...enrolledWithoutRun,
   enrollment_state: 'completed',
   outline: [{ id: 'ch', activities: [{ id: 'a1', complete: true }] }],
+  progress: { completed_required_count: 1, total_required_count: 1, progress_pct: 100 },
   next_action: { id: 'review_completion', enabled: true, label: '', reason: 'course_complete' },
 } as unknown as LearnerCourseState
 

@@ -34,6 +34,8 @@ function renderCard() {
   const queryClient = new QueryClient()
   queryClient.setQueryData(['learner-course', courseId, 'state'], {
     outline: [{ id: 'c1', index: 0, title: 'x', activities: [{ id: 'a1', complete: true, activity_type: 'quiz' }] }],
+    progress: { completed_required_count: 1, total_required_count: 1, progress_pct: 100 },
+    next_action: { id: 'view_certificate', activity_id: null },
   })
   render(
     <QueryClientProvider client={queryClient}>

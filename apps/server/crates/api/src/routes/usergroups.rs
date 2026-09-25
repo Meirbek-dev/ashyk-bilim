@@ -3,6 +3,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 
+use crate::detach::detached;
 use crate::dto::usergroups::{
     CreateUsergroupRequest, UpdateUsergroupRequest, Usergroup, UsergroupCoursesRequest,
     UsergroupListQuery, UsergroupMember, UsergroupMembersRequest, UsergroupPage,
@@ -130,7 +131,9 @@ pub async fn delete_usergroup(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
 ) -> ApiResult<StatusCode> {
-    state.usergroups.delete(&actor, id).await?;
+    // BUG-318/322: the course re-aggregation after the delete must outlive
+    // the socket.
+    detached(async move { Ok(state.usergroups.delete(&actor, id).await?) }).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -162,10 +165,13 @@ pub async fn add_usergroup_members(
     Path(id): Path<UsergroupId>,
     ValidJson(request): ValidJson<UsergroupMembersRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .usergroups
-        .add_members(&actor, id, &request.user_ids)
-        .await?;
+    detached(async move {
+        Ok(state
+            .usergroups
+            .add_members(&actor, id, &request.user_ids)
+            .await?)
+    })
+    .await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -182,10 +188,13 @@ pub async fn remove_usergroup_members(
     Path(id): Path<UsergroupId>,
     ValidJson(request): ValidJson<UsergroupMembersRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .usergroups
-        .remove_members(&actor, id, &request.user_ids)
-        .await?;
+    detached(async move {
+        Ok(state
+            .usergroups
+            .remove_members(&actor, id, &request.user_ids)
+            .await?)
+    })
+    .await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

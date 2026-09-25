@@ -37,6 +37,8 @@ interface CourseActivityAgendaItem {
   href: string
   index: number
   returned: boolean
+  /** BUG-318: e.g. `restricted` — off the allowlist, never a next step. */
+  blocked: boolean
 }
 
 interface CourseProgressSnapshot {
@@ -316,6 +318,7 @@ function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseSt
         href: `${getAbsoluteUrl('')}/course/${courseUuid}/activity/${normalizeActivityUuid(activity.id)}`,
         index: activityIndex,
         returned: activity.state === 'returned',
+        blocked: Boolean(activity.blocked_reason),
       })),
     ) ?? []
   const completed = state?.progress.completed_required_count ?? 0
@@ -326,7 +329,10 @@ function buildCourseProgressSnapshot(courseUuid: string, state?: LearnerCourseSt
   return {
     completed,
     items,
-    nextItem: items.find(item => item.activityUuid === nextActivityUuid) ?? items.find(item => !item.complete) ?? null,
+    nextItem:
+      items.find(item => item.activityUuid === nextActivityUuid) ??
+      items.find(item => !item.complete && !item.blocked) ??
+      null,
     percent,
     total,
   }

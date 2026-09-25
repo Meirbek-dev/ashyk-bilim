@@ -202,6 +202,23 @@ pub async fn list_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<Cours
     Ok(ids)
 }
 
+/// BUG-318: courses whose progress depends on the group's membership —
+/// linked ones and those with an assessment allowlisting the group (the
+/// access check ignores the link).
+pub async fn affected_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<CourseId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT course_id AS "course_id!: CourseId"
+           FROM usergroup_courses WHERE usergroup_id = $1
+           UNION
+           SELECT s.course_id FROM assessment_access_usergroups g
+           JOIN assessments s ON s.id = g.assessment_id WHERE g.usergroup_id = $1"#,
+        id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids)
+}
+
 /// Groups linked to a course (legacy `/resource/{uuid}` view).
 pub async fn list_for_course(pool: &PgPool, course_id: CourseId) -> Result<Vec<UsergroupRow>> {
     let rows = sqlx::query_as!(

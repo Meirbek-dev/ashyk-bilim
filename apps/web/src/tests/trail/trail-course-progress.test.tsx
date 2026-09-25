@@ -16,7 +16,10 @@ vi.mock('@/features/certifications/hooks/useCertifications', () => ({
 }))
 vi.mock('@/lib/cache/revalidate', () => ({ revalidateTags: vi.fn() }))
 vi.mock('@services/media/media', () => ({ getCourseThumbnailMediaDirectory: () => '' }))
-vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getSiteUrl: () => 'http://localhost:3000' }))
+vi.mock('@services/config/config', () => ({
+  getAbsoluteUrl: (p: string) => p,
+  getSiteUrl: () => 'http://localhost:3000',
+}))
 
 const courseId = '01a0910d-2963-7483-a97d-40dc56e9aa20'
 const activity = (id: string, complete: boolean) => ({
@@ -35,6 +38,9 @@ const learnerState = {
     { id: 'c1', index: 0, title: 'Введение', activities: [activity('a1', true), activity('a2', false)] },
     { id: 'c2', index: 1, title: 'Уроки', activities: [activity('a3', true), activity('a4', false)] },
   ],
+  // BUG-318: the server's aggregate — a4 is off this learner's allowlist, so 2 of 3.
+  progress: { completed_required_count: 2, total_required_count: 3, progress_pct: 66.67 },
+  next_action: { id: 'start', activity_id: 'a2' },
 } as unknown as LearnerCourseState
 
 describe('TrailCourseElement progress', () => {
@@ -51,7 +57,7 @@ describe('TrailCourseElement progress', () => {
         </NextIntlClientProvider>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('50%')).toBeInTheDocument()
-    expect(screen.getByText('2 / 4 шага')).toBeInTheDocument()
+    expect(screen.getByText('67%')).toBeInTheDocument()
+    expect(screen.getByText('2 / 3 шага')).toBeInTheDocument()
   })
 })

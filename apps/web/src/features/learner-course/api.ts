@@ -32,18 +32,27 @@ export async function refreshLearnerCourseState(queryClient: QueryClient, router
 }
 
 /**
- * The one progress source for the course page: the learner-state outline
- * (published activities only, same data the activity sidebar renders).
+ * The one progress source for the course page: the server's aggregate
+ * (`progress` — only what is required of this learner, BUG-318: an
+ * assessment they are off the allowlist of does not count) plus the
+ * outline's completed ids for the per-activity checkmarks. `activityCount`
+ * is every published activity (UX-119: 0 → nothing to open).
  */
 export function learnerCourseProgress(state: LearnerCourseState | null | undefined) {
   const activities = state?.outline.flatMap(chapter => chapter.activities) ?? []
-  const completedIds = new Set(activities.filter(activity => activity.complete).map(activity => activity.id))
-  const total = activities.length
-  const completed = completedIds.size
   return {
-    completedIds,
-    completed,
-    total,
-    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
+    completedIds: new Set(activities.filter(activity => activity.complete).map(activity => activity.id)),
+    completed: state?.progress.completed_required_count ?? 0,
+    total: state?.progress.total_required_count ?? 0,
+    percent: Math.round(state?.progress.progress_pct ?? 0),
+    activityCount: activities.length,
+    /**
+     * The server's next step, else the first unfinished activity the learner
+     * may take (BUG-318: never a `blocked_reason` one, e.g. off the allowlist).
+     */
+    nextActivityId:
+      state?.next_action.activity_id ??
+      activities.find(activity => !activity.complete && !activity.blocked_reason)?.id ??
+      null,
   }
 }

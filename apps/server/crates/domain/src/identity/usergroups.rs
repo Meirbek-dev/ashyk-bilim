@@ -148,7 +148,11 @@ impl UsergroupsService {
 
     pub async fn delete(&self, actor: &Actor, id: UsergroupId) -> Result<()> {
         self.writable(actor, id).await?;
+        // BUG-318: the allowlist rows cascade away with the group — collect
+        // the courses first.
+        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
         ab_db::usergroups::delete_usergroup(&self.pool, id).await?;
+        Self::reaggregate(&self.pool, courses).await;
         Ok(())
     }
 
@@ -186,13 +190,18 @@ impl UsergroupsService {
     }
 
     /// BUG-318: a group on an assessment's allowlist decides who must take
-    /// it — re-aggregate the members of every course it is linked to.
+    /// it — re-aggregate every course it is linked to or allowlisted in.
     async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
-        let projector = crate::progress::ProgressProjector::new(self.pool.clone());
-        for course_id in ab_db::usergroups::list_course_ids(&self.pool, id).await? {
+        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
+        Self::reaggregate(&self.pool, courses).await;
+        Ok(())
+    }
+
+    async fn reaggregate(pool: &PgPool, course_ids: Vec<CourseId>) {
+        let projector = crate::progress::ProgressProjector::new(pool.clone());
+        for course_id in course_ids {
             projector.after_course_change(course_id).await;
         }
-        Ok(())
     }
 
     pub async fn linked_course_ids(&self, actor: &Actor, id: UsergroupId) -> Result<Vec<CourseId>> {

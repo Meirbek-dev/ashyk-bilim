@@ -47,7 +47,8 @@ export interface StudentActivityRuntime {
     subtype: string
     type: string
   } | null
-  course: { id: string; public: boolean; title: string; uuid: string }
+  /** `progress_pct`: the server's course aggregate (BUG-318: only what is required of this learner). */
+  course: { id: string; progress_pct?: number; public: boolean; title: string; uuid: string }
   next?: RuntimeNavItem | null
   outline?: { activities?: RuntimeNavItem[]; id: string; index: number; title: string }[]
   permissions: {
@@ -172,7 +173,13 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     title: chapter.title,
     activities: chapter.activities.map(toNavItem),
   }))
-  const course = { id: state.course_id, uuid: state.course_id, title: state.title, public: state.public }
+  const course = {
+    id: state.course_id,
+    uuid: state.course_id,
+    title: state.title,
+    public: state.public,
+    progress_pct: Math.round(state.progress.progress_pct),
+  }
   const permissions = {
     is_authenticated: true,
     can_view: state.permissions.can_access,

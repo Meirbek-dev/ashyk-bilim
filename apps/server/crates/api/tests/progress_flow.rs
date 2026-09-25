@@ -1978,6 +1978,43 @@ async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
         "{ungrouped}"
     );
     assert_eq!(ungrouped["progress"]["progress_pct"], 100.0);
+
+    // The access check ignores the course link: a group unlinked from the
+    // course but still on the allowlist re-aggregates on member removal, and
+    // deleting the group (its allowlist rows cascade) re-aggregates too.
+    let bob_in = serde_json::json!({ "user_ids": [bob.user_id] });
+    let with_body = |method: &str, uri: &str, body: &serde_json::Value| {
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &cohorts.cookie)
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    };
+    let required = |state: serde_json::Value| state["progress"]["total_required_count"].clone();
+    app.post_as(&cohorts, &members, &bob_in).await;
+    let unlinked = app
+        .send(with_body(
+            "DELETE",
+            &format!("/api/v2/usergroups/{group_id}/courses"),
+            &serde_json::json!({ "course_ids": [course_id] }),
+        ))
+        .await;
+    assert!(unlinked.status.is_success(), "{}", unlinked.text());
+    assert_eq!(required(app.get_as(&bob, &state_path).await.json()), 2);
+    let removed = app.send(with_body("DELETE", &members, &bob_in)).await;
+    assert!(removed.status.is_success(), "{}", removed.text());
+    assert_eq!(required(app.get_as(&bob, &state_path).await.json()), 1);
+    app.post_as(&cohorts, &members, &bob_in).await;
+    assert_eq!(required(app.get_as(&bob, &state_path).await.json()), 2);
+    let deleted = app
+        .delete_as(&cohorts, &format!("/api/v2/usergroups/{group_id}"))
+        .await;
+    assert!(deleted.status.is_success(), "{}", deleted.text());
+    let gone = app.get_as(&bob, &state_path).await.json();
+    assert_eq!(gone["progress"]["total_required_count"], 1, "{gone}");
+    assert_eq!(gone["progress"]["progress_pct"], 100.0);
 }
 
 /// UX-213: dropped from a quiz's allowlist, a learner can no longer take it

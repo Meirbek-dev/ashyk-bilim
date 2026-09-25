@@ -62,9 +62,13 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
   // but keeps submissions (leaving only resets lesson completions), so the
   // landing must not offer «Начать курс» to someone the server calls enrolled.
   const isStarted = learnerState?.enrolled ?? hasTrailRun
-  const { completedIds, total } = learnerCourseProgress(learnerState)
+  const { activityCount, nextActivityId } = learnerCourseProgress(learnerState)
   const activities = course.chapters?.flatMap(chapter => chapter.activities ?? []) ?? []
-  const nextUnfinished = activities.find(a => !completedIds.has(a.activity_uuid.replace('activity_', '')))
+  // BUG-318: the server's next action, not a client recount (which offered a
+  // quiz the learner is off the allowlist of).
+  const nextUnfinished = nextActivityId
+    ? activities.find(a => a.activity_uuid.replace('activity_', '') === nextActivityId)
+    : undefined
   const certificateHref =
     learnerState?.certificate?.issued && learnerState.certificate.href
       ? getAbsoluteUrl(learnerState.certificate.href)
@@ -72,7 +76,7 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
   // 100 % without a certificate: the wire's next action is a review, not «Продолжить» (UX-053).
   const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
   // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
-  const hasNoLiveActivities = learnerState !== null && learnerState !== undefined && total === 0
+  const hasNoLiveActivities = learnerState !== null && learnerState !== undefined && activityCount === 0
   // BUG-287: the course's staff preview it — the server refuses to enrol them.
   const isStaffPreview = learnerState?.permissions.denial_reason === 'staff_preview'
   const action: CourseCta = isStaffPreview
