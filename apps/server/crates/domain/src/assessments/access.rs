@@ -437,8 +437,13 @@ impl AssessmentsService {
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
-        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
-            .await?;
+        crate::grading::bulk::settle_override(
+            &self.pool,
+            &assessment,
+            user_id,
+            Some(actor.user_id),
+        )
+        .await?;
         self.audit_override(actor, id, user_id, "override-created")
             .await?;
         self.override_row(id, user_id).await
@@ -473,8 +478,13 @@ impl AssessmentsService {
         if !updated {
             return Err(Error::not_found("override"));
         }
-        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
-            .await?;
+        crate::grading::bulk::settle_override(
+            &self.pool,
+            &assessment,
+            user_id,
+            Some(actor.user_id),
+        )
+        .await?;
         self.audit_override(actor, id, user_id, "override-updated")
             .await?;
         self.override_row(id, user_id).await
@@ -492,8 +502,13 @@ impl AssessmentsService {
             return Err(Error::not_found("override"));
         }
         // BUG-297: the waiver/extension is gone — the penalty comes back.
-        crate::grading::bulk::settle_override(&self.pool, &assessment, user_id, actor.user_id)
-            .await?;
+        crate::grading::bulk::settle_override(
+            &self.pool,
+            &assessment,
+            user_id,
+            Some(actor.user_id),
+        )
+        .await?;
         self.audit_override(actor, id, user_id, "override-deleted")
             .await
     }
@@ -534,9 +549,8 @@ impl AssessmentsService {
 
     // ── Student-facing ──────────────────────────────────────────────────
 
-    /// The policy for one learner: the active (unexpired) override wins for
-    /// attempts and due date; teacher preview lifts the attempt cap and
-    /// the late penalty.
+    /// The policy for one learner right now: [`Self::policy_at`] with their
+    /// override as of this moment — a new hand-in's `submitted_at`.
     /// Pool-level so system actors (the timer sweep) can use it too.
     pub async fn effective_policy_for(
         pool: &sqlx::PgPool,
@@ -544,29 +558,45 @@ impl AssessmentsService {
         user_id: UserId,
         teacher_preview: bool,
     ) -> Result<EffectivePolicy> {
-        let now = now_unix();
         let row = if teacher_preview {
             None
         } else {
             ab_db::assessments::get_override(pool, assessment.id, user_id).await?
         };
+        Ok(Self::policy_at(
+            assessment,
+            row.as_ref(),
+            teacher_preview,
+            now_unix(),
+        ))
+    }
+
+    /// The policy under `row` as of `at`: the override applies when it is
+    /// in force at `at` (no `expires_at`, or a later one) — for a hand-in,
+    /// `at` is its `submitted_at`, so an expiry after it changes nothing
+    /// (BUG-307). It wins for attempts and due date; teacher preview lifts
+    /// the attempt cap and the late penalty.
+    pub(crate) fn policy_at(
+        assessment: &Assessment,
+        row: Option<&ab_db::assessments::OverrideRow>,
+        teacher_preview: bool,
+        at: i64,
+    ) -> EffectivePolicy {
+        let row = row.filter(|_| !teacher_preview);
         // BUG-300: an extension's due date outlives the grants' expiry.
         let extended_due = row
-            .as_ref()
             .filter(|o| o.due_extended)
             .and_then(|o| o.due_at_override);
-        let active = row.filter(|o| o.expires_at.is_none_or(|exp| exp > now));
-        Ok(EffectivePolicy {
+        let active = row.filter(|o| o.expires_at.is_none_or(|exp| exp > at));
+        EffectivePolicy {
             max_attempts: if teacher_preview {
                 None
             } else {
                 active
-                    .as_ref()
                     .and_then(|o| o.max_attempts_override)
                     .or(assessment.max_attempts)
             },
             due_at: active
-                .as_ref()
                 .and_then(|o| o.due_at_override)
                 .or(extended_due)
                 .or(assessment.due_at),
@@ -580,11 +610,10 @@ impl AssessmentsService {
                 assessment.late_cutoff_at,
             ),
             // BUG-278: a preview's verdict is its answers — no late penalty.
-            waive_late_penalty: teacher_preview
-                || active.as_ref().is_some_and(|o| o.waive_late_penalty),
+            waive_late_penalty: teacher_preview || active.is_some_and(|o| o.waive_late_penalty),
             override_applied: active.is_some() || extended_due.is_some(),
             review_visibility: assessment.review_visibility,
-        })
+        }
     }
 
     /// What the learner may do right now (legacy `_build_attempt_state`).

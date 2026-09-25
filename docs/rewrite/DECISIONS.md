@@ -1348,6 +1348,17 @@ Implements three more items of the owner answers above. Routes:
   never takes a late penalty. Why: a revoked waiver left 100 with
   `is_late true` and penalty 0, and a deleted one left 100 on time.
   Replaces "a deadline change only ever clears the penalty" (BUG-139).
+- **An override applies to a hand-in when it was in force at the hand-in's
+  `submitted_at`** (2026-09-25, BUG-307): `expires_at` unset or later than
+  `submitted_at`. Settling judges each hand-in by the override as of its
+  `submitted_at`, and submit / attempt-state / the timer sweep judge a new
+  hand-in as of now — its `submitted_at` — so live grading and re-settling
+  agree (one rule, `AssessmentsService::policy_at`). An expiry after the
+  hand-in changes nothing, so a note-only `PUT` or any unrelated write never
+  moves a score; an explicit revoke (`waive_late_penalty: false`, an
+  `expires_at` before the hand-in) or a delete still re-applies the
+  penalty. Why: after a waiver expired the learner kept 100 until any
+  override write re-settled it to 70 late.
 
 ## A deadline extension outlives the override's expiry (2026-09-25, gauntlet pass 25)
 

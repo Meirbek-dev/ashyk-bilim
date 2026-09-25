@@ -1460,6 +1460,134 @@ async fn revoked_or_deleted_waiver_reapplies_the_late_penalty(pool: PgPool) {
     assert_eq!(state().await, (Some(70.0), Some(true), Some(30.0)));
 }
 
+/// A late hand-in (30 % penalty, graded 100 → 70) with a waiver granted on
+/// it (→ 100); returns (assessment, submission).
+async fn waived_late_hand_in(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+    who: &MintedSession,
+    waiver: serde_json::Value,
+) -> (String, String) {
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        app,
+        teacher,
+        chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 30, "max_days": 3 } }),
+    )
+    .await;
+    let sub = submit_attempt(app, who, &id, &choice_id, &essay_id).await;
+    let published = app
+        .send(grade(
+            teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(
+        published.json()["final_score"],
+        70.0,
+        "{}",
+        published.text()
+    );
+    let granted = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", who.user_id),
+            &waiver,
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    assert_eq!(
+        lateness(app, teacher, &sub).await,
+        (Some(100.0), Some(false))
+    );
+    (id, sub)
+}
+
+async fn lateness(
+    app: &TestApp,
+    teacher: &MintedSession,
+    sub: &str,
+) -> (Option<f64>, Option<bool>) {
+    let review = app
+        .get_as(teacher, &format!("/api/v2/submissions/{sub}/review"))
+        .await;
+    (
+        review.json()["final_score"].as_f64(),
+        review.json()["is_late"].as_bool(),
+    )
+}
+
+/// The PUT body that re-sends a listed override as is, but for `note`.
+fn same_values(row: &serde_json::Value, note: &str) -> serde_json::Value {
+    let mut body = serde_json::json!({ "note": note });
+    for key in [
+        "max_attempts_override",
+        "due_at_override_unix",
+        "waive_late_penalty",
+        "expires_at_unix",
+    ] {
+        body[key] = row[key].clone();
+    }
+    body
+}
+
+fn put_json(cookie: &str, uri: &str, body: &serde_json::Value) -> Request<Body> {
+    Request::builder()
+        .method("PUT")
+        .uri(uri)
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::COOKIE, cookie)
+        .body(Body::from(body.to_string()))
+        .unwrap()
+}
+
+/// BUG-307: a waiver in force at the hand-in keeps applying to it after it
+/// expires — a note-only PUT after the expiry moves nothing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn waiver_expiry_after_the_hand_in_changes_nothing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let (id, sub) = waived_late_hand_in(
+        &app,
+        &teacher,
+        &chapter_id,
+        &alice,
+        serde_json::json!({ "waive_late_penalty": true, "expires_at_unix": now_unix() + 3600 }),
+    )
+    .await;
+    // Handed in 10 minutes ago (still late); the waiver expired since.
+    sqlx::query("UPDATE submissions SET submitted_at = submitted_at - interval '10 minutes'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE assessment_overrides SET expires_at = now() - interval '1 second'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
+    let listed = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+        .await;
+    let put = app
+        .send(put_json(
+            &teacher.cookie,
+            &path,
+            &same_values(&listed.json()[0], "note only"),
+        ))
+        .await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    assert_eq!(
+        lateness(&app, &teacher, &sub).await,
+        (Some(100.0), Some(false))
+    );
+}
+
 /// BUG-285: previews a maintainer made never count once they are a learner
 /// — not toward the cap, not in the attempt number, not in their own list.
 #[sqlx::test(migrations = "../../migrations")]

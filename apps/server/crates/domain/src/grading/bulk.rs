@@ -278,7 +278,7 @@ async fn settle_lateness(
     assessment: &ab_db::assessments::AssessmentRow,
     submission: &ab_db::submissions::SubmissionRow,
     effective: &EffectivePolicy,
-    granted_by: UserId,
+    granted_by: Option<UserId>,
 ) -> Result<()> {
     let Some(at) = submission.submitted_at else {
         return Ok(());
@@ -325,7 +325,7 @@ async fn settle_lateness(
             &mut *tx,
             NewGradingEntry {
                 submission_id: submission.id,
-                graded_by: Some(granted_by),
+                graded_by: granted_by,
                 raw_score: entry.raw_score,
                 penalty_pct,
                 final_score: Some(rescored),
@@ -346,25 +346,32 @@ async fn settle_lateness(
     Ok(())
 }
 
-/// BUG-284: the lateness step behind every override writer (create/update/
-/// delete and the bulk extension, each right after its override commits): the
-/// learner's hand-ins are re-judged by [`EffectivePolicy::is_late`] against
-/// the policy the write left behind — a new due date or a waiver alike.
-/// Returns the learner's submitted attempts (previews skipped: their policy
-/// never had a penalty).
+/// BUG-284: the lateness step behind every writer of override rows
+/// (create/update/delete, the bulk extension, and the leave / staff-join
+/// sweeps — BUG-306), each right after its write commits: the learner's
+/// hand-ins are re-judged by [`EffectivePolicy::is_late`] against the policy
+/// the write left behind — a new due date or a waiver alike. Each hand-in
+/// is judged by the override as it stood at its `submitted_at` (BUG-307):
+/// an expiry after the hand-in changes nothing, so an unrelated write never
+/// moves a score. Returns the learner's submitted attempts (previews
+/// skipped: their policy never had a penalty). `granted_by` signs the
+/// re-score entry (`None`: a system sweep).
 ///
 /// [`EffectivePolicy::is_late`]: crate::assessments::access::EffectivePolicy::is_late
 pub(crate) async fn settle_override(
     pool: &PgPool,
     assessment: &ab_db::assessments::AssessmentRow,
     user_id: UserId,
-    granted_by: UserId,
+    granted_by: Option<UserId>,
 ) -> Result<Vec<ab_db::submissions::SubmissionRow>> {
-    let effective =
-        AssessmentsService::effective_policy_for(pool, assessment, user_id, false).await?;
+    let row = ab_db::assessments::get_override(pool, assessment.id, user_id).await?;
     let submitted =
         ab_db::submissions::list_submitted_for_user(pool, assessment.id, user_id).await?;
     for submission in submitted.iter().filter(|s| !s.preview) {
+        let Some(at) = submission.submitted_at else {
+            continue;
+        };
+        let effective = AssessmentsService::policy_at(assessment, row.as_ref(), false, at);
         settle_lateness(pool, assessment, submission, &effective, granted_by).await?;
     }
     // BUG-251: only a target with work has lateness to re-project, and an
@@ -421,7 +428,7 @@ async fn run_deadline_extension(
         )
         .await?;
         tx.commit().await?;
-        let submitted = settle_override(pool, &assessment, user_id, granted_by).await?;
+        let submitted = settle_override(pool, &assessment, user_id, Some(granted_by)).await?;
         if let (Some(events), Some(latest)) = (events, submitted.first()) {
             events
                 .publish_best_effort(
