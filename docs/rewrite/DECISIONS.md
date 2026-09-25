@@ -1411,6 +1411,21 @@ Implements three more items of the owner answers above. Routes:
   prices a row by replaced rules. File attempts have no ledger: the final is
   the stored raw score less the new penalty, and the version bumps (412 for
   a grade save that priced the old one).
+- **Turning `allow_late` off waives the late penalty of existing late
+  hand-ins; turning it back on restores it** (BUG-322, decided pass 27):
+  `allow_late` is part of the late rules the settle re-applies, and
+  `penalties::late_penalty_pct` charges nothing while late work is not
+  allowed (the readiness warning already says a penalty "has no effect"
+  then). Kept over "keep the old penalties" because the same one rule
+  prices submit, settle and the timer sweep — keeping them needs a
+  per-hand-in snapshot of the rules (rejected above) — and the switch is
+  reversible (raw 80: 56 → 80 with late work off → 56 again). The file
+  studio (whose only late rule is the due date) warns under it,
+  once the task is published, that a change re-prices work already handed
+  in. Every writer whose settle runs after the commit is `detached()` in
+  its route (`PATCH file-submissions/{id}`, `PUT assessments/{id}/access`,
+  usergroup delete / member add / remove), so a client hang-up between the
+  commit and the durable post-commit step cannot drop the re-price.
 
 ## A timed attempt is handed in when its clock runs out (2026-09-25, gauntlet pass 27)
 
@@ -1440,6 +1455,10 @@ Implements three more items of the owner answers above. Routes:
   applied when counting. `PUT assessments/{id}/access` re-aggregates every
   member after commit through `after_course_change` (durable
   `progress:course-change` job), and so does adding or removing usergroup members
-  (every course the group is linked to). Why: a learner left off a restricted quiz stayed
+  or deleting a group (every course the group is linked to **or allowlisted
+  in** — the access check ignores the link; the delete collects them before
+  the allowlist rows cascade away). The web counts nothing itself: course
+  N/M and % are the server's `progress` aggregate and the CTA follows
+  `next_action` (never a `blocked_reason` activity). Why: a learner left off a restricted quiz stayed
   at 2/3 forever — no completion, no certificate — and «Продолжить
   обучение» sent them to a quiz that answers 403.

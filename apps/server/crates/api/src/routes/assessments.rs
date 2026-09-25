@@ -447,17 +447,21 @@ pub async fn set_access(
     ValidJson(request): ValidJson<crate::dto::assessments::SetAccessRequest>,
 ) -> ApiResult<Response> {
     let expected_version = if_match(&headers)?;
-    let view = state
-        .assessments
-        .set_access(
-            &actor,
-            id,
-            request.mode,
-            &request.user_ids,
-            &request.usergroup_ids,
-            expected_version,
-        )
-        .await?;
+    // BUG-322: the re-aggregation after the commit must outlive the socket.
+    let view = detached(async move {
+        Ok(state
+            .assessments
+            .set_access(
+                &actor,
+                id,
+                request.mode,
+                &request.user_ids,
+                &request.usergroup_ids,
+                expected_version,
+            )
+            .await?)
+    })
+    .await?;
     Ok(access_with_etag(view))
 }
 

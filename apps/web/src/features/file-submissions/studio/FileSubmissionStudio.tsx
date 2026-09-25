@@ -347,6 +347,12 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             <Field>
               <FieldLabel>{t('dueDate')}</FieldLabel>
               <CalendarDateTimePicker value={dueAt} onChange={setDueAt} placeholder={t('dueDate')} />
+              {/* BUG-322: a due change re-prices every hand-in (server settle). */}
+              {isPublished && dueAt !== (data.due_at_unix ? toDateTimeLocal(fromUnix(data.due_at_unix)) : '') ? (
+                <p role="status" className="text-xs text-amber-700 dark:text-amber-400">
+                  {t('dueChangeReprices')}
+                </p>
+              ) : null}
             </Field>
             <Field>
               <FieldLabel>{t('maxFiles')}</FieldLabel>

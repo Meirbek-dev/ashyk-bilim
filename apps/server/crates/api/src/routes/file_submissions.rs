@@ -110,13 +110,17 @@ pub async fn update_file_submission(
     Path(id): Path<FileSubmissionId>,
     ValidJson(request): ValidJson<ConfigPatch>,
 ) -> ApiResult<Json<FileSubmission>> {
-    Ok(Json(
-        state
-            .file_submissions
-            .update(&actor, id, request.into())
-            .await?
-            .into(),
-    ))
+    // BUG-322: the lateness re-price after the commit must outlive the socket.
+    detached(async move {
+        Ok(Json(
+            state
+                .file_submissions
+                .update(&actor, id, request.into())
+                .await?
+                .into(),
+        ))
+    })
+    .await
 }
 
 /// Publish (title and instructions required); the activity goes live.

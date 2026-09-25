@@ -1015,6 +1015,32 @@ async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
         assert_eq!(mine.json()["late_penalty_pct"], pct, "{}", mine.text());
         assert_eq!(mine.json()["final_score"], score, "{}", mine.text());
     }
+
+    // BUG-322: the client hangs up the moment the PATCH commits — the
+    // re-price still runs (detached, durable post-commit path): late again.
+    let fs = uuid::Uuid::parse_str(&id).unwrap();
+    drop_request_when(
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 2 * 86_400 - 60 }),
+        ),
+        async || {
+            sqlx::query_scalar::<_, bool>(
+                "SELECT due_at < now() FROM file_submissions WHERE id = $1",
+            )
+            .bind(fs)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+        },
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped settings PATCH never re-priced", async || {
+        app.get_as(&alice, &attempt_path).await.json()["final_score"] == 32.0
+    })
+    .await;
 }
 
 /// BUG-129: completion is sticky. A second attempt that is only submitted
