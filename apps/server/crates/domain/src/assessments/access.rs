@@ -367,7 +367,7 @@ impl AssessmentsService {
                     if let Some(e) = Self::unknown_user(&mut *tx, *user_id, &field).await? {
                         errors.push(e);
                     } else if let Some(e) =
-                        Self::not_member(&mut *tx, course.id, *user_id, field).await?
+                        Self::not_member(&mut tx, course.id, *user_id, field).await?
                     {
                         errors.push(e);
                     }
