@@ -170,7 +170,8 @@ impl UsergroupsService {
             .map(|u| u.id)
             .collect();
         reject_unknown("user_ids", "user", user_ids, &known)?;
-        ab_db::usergroups::add_members(&self.pool, id, user_ids).await
+        ab_db::usergroups::add_members(&self.pool, id, user_ids).await?;
+        self.after_membership_change(id).await
     }
 
     pub async fn remove_members(
@@ -180,7 +181,18 @@ impl UsergroupsService {
         user_ids: &[UserId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
-        ab_db::usergroups::remove_members(&self.pool, id, user_ids).await
+        ab_db::usergroups::remove_members(&self.pool, id, user_ids).await?;
+        self.after_membership_change(id).await
+    }
+
+    /// BUG-318: a group on an assessment's allowlist decides who must take
+    /// it — re-aggregate the members of every course it is linked to.
+    async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
+        let projector = crate::progress::ProgressProjector::new(self.pool.clone());
+        for course_id in ab_db::usergroups::list_course_ids(&self.pool, id).await? {
+            projector.after_course_change(course_id).await;
+        }
+        Ok(())
     }
 
     pub async fn linked_course_ids(&self, actor: &Actor, id: UsergroupId) -> Result<Vec<CourseId>> {

@@ -224,12 +224,13 @@ impl LearnerStateService {
         .is_ok();
         // BUG-292: a run kept from before joining the staff is no member's —
         // its ticks and counts are not shown (the outline and sidebar read these).
-        let (rows, course_progress) = if staff {
-            (Vec::new(), None)
+        let (rows, course_progress, restricted) = if staff {
+            (Vec::new(), None, Vec::new())
         } else {
             (
                 ab_db::progress::list_course_progress_rows(&self.pool, course.id, user_id).await?,
                 ab_db::progress::get_course_progress(&self.pool, course.id, user_id).await?,
+                ab_db::progress::restricted_activity_ids(&self.pool, course.id, user_id).await?,
             )
         };
         let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
@@ -243,7 +244,14 @@ impl LearnerStateService {
             .filter(|a| a.published)
             .map(|a| {
                 let progress = rows.iter().find(|r| r.activity_id == a.id);
-                (a.chapter_id, activity_state(a, progress))
+                let mut state = activity_state(a, progress);
+                // BUG-318: restricted to an allowlist the learner is not on —
+                // not required, never a next step; their own results stay readable.
+                if restricted.contains(&a.id) {
+                    state.required = false;
+                    state.blocked_reason = Some("restricted".to_owned());
+                }
+                (a.chapter_id, state)
             })
             .collect();
         let mut outline = Vec::new();
@@ -273,7 +281,12 @@ impl LearnerStateService {
             enrolled && progress.progress_pct >= 100.0,
         )
         .await?;
-        let next_action = next_action(enrolled, course.id, &flat, &certificate, &progress);
+        let open: Vec<&ActivityState> = flat
+            .iter()
+            .copied()
+            .filter(|a| a.blocked_reason.is_none())
+            .collect();
+        let next_action = next_action(enrolled, course.id, &open, &certificate, &progress);
         // UX-187: a leaver is not enrolled, whatever their old progress says.
         let enrollment_state = if !enrolled {
             EnrollmentState::NotEnrolled

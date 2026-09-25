@@ -417,6 +417,10 @@ impl AssessmentsService {
         )
         .await?;
         tx.commit().await?;
+        // BUG-318: who may take it decides who must — re-aggregate the members.
+        ProgressProjector::new(self.pool.clone())
+            .after_course_change(course.id)
+            .await;
         self.access(actor, id).await
     }
 

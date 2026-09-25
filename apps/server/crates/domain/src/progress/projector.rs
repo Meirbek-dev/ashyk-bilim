@@ -436,8 +436,15 @@ impl ProgressProjector {
         user_id: UserId,
     ) -> Result<CourseProgressRow> {
         ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
-        let rows =
+        let mut rows =
             ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
+        // BUG-318: an assessment the learner is not allowed to take is not
+        // required of them (access changes re-run this via `after_course_change`).
+        let restricted =
+            ab_db::progress::restricted_activity_ids(&mut *conn, course_id, user_id).await?;
+        for row in &mut rows {
+            row.required &= !restricted.contains(&row.activity_id);
+        }
         let weights = ab_db::progress::list_assessment_weights(&mut *conn, course_id).await?;
         let mut write = aggregate_course(course_id, user_id, &rows, &weights);
         // BUG-276: completion is a member's — a leaver keeps the counts, not

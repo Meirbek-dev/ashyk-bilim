@@ -210,6 +210,30 @@ pub async fn ensure_course_rows<'e>(
     Ok(())
 }
 
+/// BUG-318: the course's assessments restricted to an allowlist `user_id`
+/// is not on (`assessments::access_allows`, course-wide) — not theirs to
+/// take, so not in their required set.
+pub async fn restricted_activity_ids<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<Vec<ActivityId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT s.activity_id AS "id: ActivityId" FROM assessments s
+           WHERE s.course_id = $1 AND s.access_mode = 'restricted'
+             AND NOT EXISTS (SELECT 1 FROM assessment_access_users u
+                             WHERE u.assessment_id = s.id AND u.user_id = $2)
+             AND NOT EXISTS (SELECT 1 FROM assessment_access_usergroups g
+                             JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
+                             WHERE g.assessment_id = s.id AND m.user_id = $2)"#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(ids)
+}
+
 /// Assessment weights per activity (for the weighted course average).
 pub struct ActivityWeightRow {
     pub activity_id: ActivityId,

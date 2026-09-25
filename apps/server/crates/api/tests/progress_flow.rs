@@ -1833,3 +1833,149 @@ async fn a_staffed_run_is_not_listed(pool: PgPool) {
     let state = app.get_as(&alice, &learner_state).await.json();
     assert_eq!(state["progress"]["completed_required_count"], 1, "{state}");
 }
+
+/// BUG-318: a learner's required set is what they may take — a quiz
+/// restricted to an allowlist they are not on is neither required nor their
+/// next step, so the rest completes the course; adding them to the list makes
+/// it required again (the access change re-aggregates the members).
+#[sqlx::test(migrations = "../../migrations")]
+async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Allowlist 101").await;
+    let lesson_id = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let (quiz_id, quiz_activity, _) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        let added = app
+            .post_as(
+                who,
+                &format!("/api/v2/trail/courses/{course_id}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    }
+    let set_access = |user_ids: serde_json::Value| {
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(format!("/api/v2/assessments/{quiz_id}/access"))
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &teacher.cookie)
+            .body(axum::body::Body::from(
+                serde_json::json!({ "mode": "restricted", "user_ids": user_ids,
+                                    "usergroup_ids": [] })
+                .to_string(),
+            ))
+            .unwrap()
+    };
+    let restricted = app
+        .send(set_access(serde_json::json!([alice.user_id])))
+        .await;
+    assert_eq!(restricted.status, StatusCode::OK, "{}", restricted.text());
+    let marked = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/trail/activities/{lesson_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    let state_path = format!("/api/v2/courses/{course_id}/learner-state");
+    let off = app.get_as(&bob, &state_path).await.json();
+    assert_eq!(off["progress"]["total_required_count"], 1, "{off}");
+    assert_eq!(off["progress"]["progress_pct"], 100.0);
+    assert_eq!(off["enrollment_state"], "completed");
+    assert_eq!(off["next_action"]["id"], "review_completion");
+    assert_eq!(activity(&off, &quiz_activity)["required"], false);
+    assert_eq!(
+        activity(&off, &quiz_activity)["blocked_reason"],
+        "restricted"
+    );
+    // Alice is on the list: the quiz is hers to take.
+    let on = app.get_as(&alice, &state_path).await.json();
+    assert_eq!(on["progress"]["total_required_count"], 2, "{on}");
+
+    let added = app
+        .send(set_access(serde_json::json!([alice.user_id, bob.user_id])))
+        .await;
+    assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    let back = app.get_as(&bob, &state_path).await.json();
+    assert_eq!(back["progress"]["total_required_count"], 2, "{back}");
+    assert_eq!(back["progress"]["progress_pct"], 50.0);
+    assert_eq!(back["next_action"]["activity_id"], quiz_activity.as_str());
+    assert_eq!(activity(&back, &quiz_activity)["required"], true);
+
+    // Through a group: Bob off the user list but in a listed cohort (still
+    // required); leaving the cohort drops it from his required set.
+    let cohorts = app
+        .mint_session_for(
+            teacher.user_id,
+            &[
+                "usergroup:create:platform",
+                "usergroup:read:platform",
+                "course:update:own",
+            ],
+        )
+        .await;
+    let group = app
+        .post_as(
+            &cohorts,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    let members = format!("/api/v2/usergroups/{group_id}/members");
+    app.post_as(
+        &cohorts,
+        &members,
+        &serde_json::json!({ "user_ids": [bob.user_id] }),
+    )
+    .await;
+    app.post_as(
+        &cohorts,
+        &format!("/api/v2/usergroups/{group_id}/courses"),
+        &serde_json::json!({ "course_ids": [course_id] }),
+    )
+    .await;
+    let via_group = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri(format!("/api/v2/assessments/{quiz_id}/access"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "mode": "restricted", "user_ids": [alice.user_id],
+                                        "usergroup_ids": [group_id] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(via_group.status, StatusCode::OK, "{}", via_group.text());
+    let grouped = app.get_as(&bob, &state_path).await.json();
+    assert_eq!(grouped["progress"]["total_required_count"], 2, "{grouped}");
+    let left = app
+        .send(
+            axum::http::Request::builder()
+                .method("DELETE")
+                .uri(&members)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &cohorts.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "user_ids": [bob.user_id] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert!(left.status.is_success(), "{} {}", left.status, left.text());
+    let ungrouped = app.get_as(&bob, &state_path).await.json();
+    assert_eq!(
+        ungrouped["progress"]["total_required_count"], 1,
+        "{ungrouped}"
+    );
+    assert_eq!(ungrouped["progress"]["progress_pct"], 100.0);
+}

@@ -1423,3 +1423,23 @@ Implements three more items of the owner answers above. Routes:
   re-settling agree. Why: a draft whose time ran out 8 s before the due date
   was swept 12 s after it and took a 25 % late penalty; a run swept 2 s
   earlier scored 100 on time.
+
+## A learner's required set is what they may take (2026-09-25, gauntlet pass 27)
+
+- **An assessment restricted to an allowlist is required only of the
+  learners on it** (BUG-318): the course aggregate
+  (`ProgressProjector::recalculate_course_on`) and the learner state drop
+  from the required set every assessment whose `access_mode` is
+  `restricted` and whose allowlist (users + linked groups — the
+  `access_allows` predicate the attempt-state/submit gate uses) does not
+  name the learner (`ab_db::progress::restricted_activity_ids`). Such an
+  activity stays in the outline (`required: false`, `blocked_reason:
+  "restricted"`, still `available` so the learner's own earlier results
+  stay reachable) and is never the next action. The stored
+  `activity_progress.required` keeps the authored flag; the access filter is
+  applied when counting. `PUT assessments/{id}/access` re-aggregates every
+  member after commit through `after_course_change` (durable
+  `progress:course-change` job), and so does adding or removing usergroup members
+  (every course the group is linked to). Why: a learner left off a restricted quiz stayed
+  at 2/3 forever — no completion, no certificate — and «Продолжить
+  обучение» sent them to a quiz that answers 403.
