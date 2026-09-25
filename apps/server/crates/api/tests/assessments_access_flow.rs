@@ -285,10 +285,7 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     assert_eq!(
         offenders,
         [
-            (
-                format!("user_ids.{}", teacher.user_id),
-                "not-in-course".into()
-            ),
+            (format!("user_ids.{}", teacher.user_id), "staff".into()),
             (format!("user_ids.{alice}"), "not-in-course".into()),
         ]
     );
@@ -1198,4 +1195,154 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
     let queued = "SELECT count(*) FROM jobs
                   WHERE kind = 'progress:staff-change' AND payload->>'user_id' = $1::text";
     assert_eq!(count(queued, l2).await, 1);
+}
+
+/// BUG-303 doors not covered above: a reporter (no staff) keeps their rows
+/// until promoted to contributor; a custom role keeps them until its grant
+/// set gains `assessment:author`. UX-206: a stale save naming a staffer
+/// answers `staff`, not `not-in-course`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (l1, _) = learner(&app, "l1").await;
+    let (l2, _) = learner(&app, "l2").await;
+    let (carol, _) = learner(&app, "carol").await;
+    for who in [l1, l2, carol] {
+        enrol(&pool, &course_id, who).await;
+    }
+    let put = |uri: String, body: serde_json::Value, cookie: String| {
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(uri)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, cookie)
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    };
+    let access = format!("/api/v2/assessments/{id}/access");
+    let stale = serde_json::json!({ "mode": "restricted", "user_ids": [l1, l2, carol] });
+    let saved = app
+        .send(put(access.clone(), stale.clone(), teacher.cookie.clone()))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    for who in [l1, l2] {
+        let granted = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/overrides/{who}"),
+                &serde_json::json!({ "max_attempts_override": 2 }),
+            )
+            .await;
+        assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    }
+    let snapshot = async || {
+        let view = app.get_as(&teacher, &access).await;
+        let mut users: Vec<String> = view.json()["users"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|u| u["id"].as_str().unwrap().to_owned())
+            .collect();
+        users.sort();
+        let overrides = app
+            .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+            .await;
+        let mut overridden: Vec<String> = overrides
+            .json()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o["user_id"].as_str().unwrap().to_owned())
+            .collect();
+        overridden.sort();
+        (users, overridden)
+    };
+    let sorted = |ids: &[UserId]| {
+        let mut ids: Vec<String> = ids.iter().map(ToString::to_string).collect();
+        ids.sort();
+        ids
+    };
+
+    // Door 1: roster reporter (no staff) → contributor (staff).
+    let contributors = format!("/api/v2/courses/{course_id}/contributors");
+    let reporter = app
+        .post_as(
+            &teacher,
+            &contributors,
+            &serde_json::json!({ "user_id": l1, "role": "reporter" }),
+        )
+        .await;
+    assert_eq!(reporter.status, StatusCode::CREATED, "{}", reporter.text());
+    assert_eq!(
+        snapshot().await,
+        (sorted(&[l1, l2, carol]), sorted(&[l1, l2])),
+        "a reporter is no staff"
+    );
+    let promoted = app
+        .patch_as(
+            &teacher,
+            &format!("{contributors}/{l1}"),
+            &serde_json::json!({ "role": "contributor" }),
+        )
+        .await;
+    assert!(promoted.status.is_success(), "{}", promoted.text());
+    assert_eq!(snapshot().await, (sorted(&[l2, carol]), sorted(&[l2])));
+
+    // Door 2: a custom role whose grant set gains `assessment:author`.
+    let role = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "g-author", "display_name": "G", "priority": 5 }),
+        )
+        .await;
+    assert_eq!(role.status, StatusCode::NO_CONTENT, "{}", role.text());
+    let assigned = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{l2}/roles"),
+            &serde_json::json!({ "role": "g-author" }),
+        )
+        .await;
+    assert!(assigned.status.is_success(), "{}", assigned.text());
+    assert_eq!(snapshot().await, (sorted(&[l2, carol]), sorted(&[l2])));
+    let granted = app
+        .send(put(
+            "/api/v2/rbac/roles/g-author/permissions".into(),
+            serde_json::json!({ "permissions": ["assessment:author:platform"] }),
+            admin.cookie.clone(),
+        ))
+        .await;
+    assert!(granted.status.is_success(), "{}", granted.text());
+    assert_eq!(snapshot().await, (sorted(&[carol]), Vec::<String>::new()));
+
+    // UX-206: the stale tab's save names both staffers as staff.
+    let refused = app.send(put(access, stale, teacher.cookie.clone())).await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
+    let mut offenders: Vec<(String, String)> = refused.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| {
+            (
+                e["field"].as_str().unwrap().to_owned(),
+                e["code"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    offenders.sort();
+    let mut expected = vec![
+        (format!("user_ids.{l1}"), "staff".to_owned()),
+        (format!("user_ids.{l2}"), "staff".to_owned()),
+    ];
+    expected.sort();
+    assert_eq!(offenders, expected);
 }

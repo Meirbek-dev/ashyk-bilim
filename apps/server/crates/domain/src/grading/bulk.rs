@@ -124,6 +124,7 @@ impl GradingService {
         // is for a member of the course, named per id; never the caller's
         // own attempts (BUG-288).
         let mut outsiders = Vec::new();
+        let mut conn = self.pool.acquire().await?;
         for &user_id in &targets {
             if user_id == actor.user_id {
                 outsiders.push(FieldError {
@@ -134,7 +135,7 @@ impl GradingService {
                 continue;
             }
             if let Some(e) = AssessmentsService::not_member(
-                &self.pool,
+                &mut conn,
                 course.id,
                 user_id,
                 format!("user_ids.{user_id}"),
@@ -144,6 +145,7 @@ impl GradingService {
                 outsiders.push(e);
             }
         }
+        drop(conn);
         if !outsiders.is_empty() {
             return Err(Error::validation(outsiders));
         }

@@ -114,6 +114,17 @@ describe('access management feedback (UX-057)', () => {
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
+  // UX-206: a learner who joined the staff since the tab loaded is named as staff.
+  it('renders a staff 422 on the chip as course staff', async () => {
+    mocks.setAccess.mockRejectedValue(validation('user_ids.u1', 'staff'))
+    renderTab()
+    await screen.findAllByText('Mira')
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
+    await screen.findByText('Входит в команду курса.')
+    expect(screen.queryByText('Не записан на этот курс.')).toBeNull()
+    expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
   it('renders an out-of-range override 422 under the attempts input', async () => {
     mocks.createOverride.mockRejectedValue(validation('max_attempts_override', 'out-of-range'))
     renderTab()

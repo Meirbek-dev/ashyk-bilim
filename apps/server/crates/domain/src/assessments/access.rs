@@ -233,17 +233,25 @@ impl AssessmentsService {
     /// targets a course **member** — the trail run `learner-state.enrolled`
     /// reads (UX-150), not anyone with access (an author or maintainer).
     /// The run is held `FOR SHARE` so a leave cannot slip between this
-    /// check and the caller's write (BUG-281, `set_access`).
-    pub(crate) async fn not_member<'e>(
-        db: impl sqlx::PgExecutor<'e>,
+    /// check and the caller's write (BUG-281, `set_access`). A course
+    /// staffer is named as such (`staff`, UX-206), not as not enrolled.
+    pub(crate) async fn not_member(
+        db: &mut sqlx::PgConnection,
         course_id: ab_core::id::CourseId,
         user_id: UserId,
         field: String,
     ) -> Result<Option<FieldError>> {
-        Ok(
-            (!ab_db::progress::has_trail_run_locked(db, course_id, user_id).await?)
-                .then(|| Self::not_in_course(user_id, field)),
-        )
+        if ab_db::progress::has_trail_run_locked(&mut *db, course_id, user_id).await? {
+            return Ok(None);
+        }
+        if ab_db::progress::is_course_staff(&mut *db, course_id, user_id).await? {
+            return Ok(Some(FieldError {
+                field,
+                code: "staff".into(),
+                message: format!("user {user_id} is on this course's staff"),
+            }));
+        }
+        Ok(Some(Self::not_in_course(user_id, field)))
     }
 
     pub(crate) fn not_in_course(user_id: UserId, field: String) -> FieldError {

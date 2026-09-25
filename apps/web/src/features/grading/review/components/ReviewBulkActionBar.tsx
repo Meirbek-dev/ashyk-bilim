@@ -194,9 +194,13 @@ export default function ReviewBulkActionBar({
           setDeadlineError(t('preview.dueDatePast'))
           return
         }
-        // UX-167: `user_ids.{id}` / `not-in-course` — name them and leave them out of the next try.
+        // UX-167: `user_ids.{id}` / `not-in-course` (or `staff`, UX-206) — name them and leave them out of the next try.
         const refused = processed.fieldErrors
-          .filter(fieldError => fieldError.code === 'not-in-course' && fieldError.field.startsWith('user_ids.'))
+          .filter(
+            fieldError =>
+              (fieldError.code === 'not-in-course' || fieldError.code === 'staff') &&
+              fieldError.field.startsWith('user_ids.'),
+          )
           .map(fieldError => fieldError.field.slice('user_ids.'.length))
         if (refused.length > 0) {
           setRefusedIds(previous => [...previous, ...refused])
