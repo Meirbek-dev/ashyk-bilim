@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   setAccess: vi.fn(),
   createOverride: vi.fn(),
   overrides: [] as { user_id: string }[],
+  users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }))
@@ -32,7 +33,7 @@ vi.mock('@/lib/api-client', () => ({
       data: {
         mode: 'restricted',
         effective_user_count: 1,
-        users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
+        users: mocks.users,
         usergroups: [],
       },
       headers: { etag: '"3"' },
@@ -71,7 +72,9 @@ beforeEach(() => {
   mocks.setAccess.mockReset()
   mocks.createOverride.mockReset()
   mocks.toastError.mockReset()
+  mocks.toastSuccess.mockReset()
   mocks.overrides = []
+  mocks.users = [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }]
 })
 
 describe('access management feedback (UX-057)', () => {
@@ -135,6 +138,28 @@ describe('access management feedback (UX-057)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
     await screen.findByText('Значение вне допустимого диапазона.')
     expect(attempts).toHaveAttribute('aria-invalid', 'true')
+    expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
+  // UX-207: one learner joined the staff, the other is saved — each is reported.
+  it('a bulk override marks the refused learner and badges the saved one', async () => {
+    mocks.users = [
+      { id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null },
+      { id: 'u2', username: 'aru', display_name: 'Aru', avatar_key: null },
+    ]
+    mocks.createOverride.mockImplementation(async (_id: string, userId: string) => {
+      if (userId === 'u1') throw validation('user_id', 'staff')
+      return { user_id: userId, max_attempts_override: 2 }
+    })
+    renderTab()
+    await screen.findAllByText('Aru')
+    fireEvent.change(screen.getByLabelText('Лимит попыток'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
+    await screen.findByText('Входит в команду курса.')
+    await waitFor(() => expect(screen.getAllByText('Исключение').length).toBeGreaterThan(0))
+    const badged = screen.getAllByRole('button').filter(button => within(button).queryByText('Исключение'))
+    expect(badged.every(row => within(row).queryByText('Aru'))).toBe(true)
+    expect(mocks.toastSuccess).toHaveBeenCalledTimes(1)
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 

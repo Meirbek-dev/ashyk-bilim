@@ -207,42 +207,58 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
     saveMutation.mutate()
   }
 
+  // UX-207: each learner's override is its own request — the saved ones are
+  // badged and toasted, the refused ones marked on their chip; chips from an
+  // earlier save stay unless this save proves them stale.
   const overrideMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const payload: OverrideRequest = {
         max_attempts_override: overrideAttempts ? Number(overrideAttempts) : null,
         due_at_override_unix: toUnix(overrideDueAt || null),
         waive_late_penalty: overrideWaiveLate,
         note: overrideNote,
       }
-      return Promise.all(
-        [...selectedUsers].map(userId =>
+      const userIds = [...selectedUsers]
+      const results = await Promise.allSettled(
+        userIds.map(userId =>
           overrideByUserId.has(userId)
             ? updateOverride(assessmentUuid, userId, payload)
             : createOverride(assessmentUuid, userId, payload),
         ),
       )
+      return results.map((result, index) => ({ userId: userIds[index] ?? '', result }))
     },
-    onMutate: () => {
-      setLastOverrideError(null)
-      setFieldErrors(new Map())
-    },
-    onSuccess: nextOverrides => {
-      queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
-        const byUser = new Map(current.map(override => [override.user_id, override]))
-        for (const override of nextOverrides) byUser.set(override.user_id, override)
-        return [...byUser.values()]
-      })
-      toast.success(t('overrideSaved', { count: nextOverrides.length }))
-    },
-    onError: error => {
-      const byField = collectFieldErrors(error, handleApiError, t('overrideSaveFailed'))
-      if (byField.size === 0) {
-        setLastOverrideError(toastApiError(error, { fallback: t('overrideSaveFailed') }).message)
-        return
+    onMutate: () => setLastOverrideError(null),
+    onSuccess: outcomes => {
+      const saved: StudentOverride[] = []
+      const refused = new Map<string, string>()
+      let unmarked: unknown = null
+      for (const { userId, result } of outcomes) {
+        if (result.status === 'fulfilled') {
+          saved.push(result.value)
+          continue
+        }
+        const byField = collectFieldErrors(result.reason, handleApiError, t('overrideSaveFailed'))
+        if (byField.size === 0) unmarked ??= result.reason
+        for (const [field, message] of byField) refused.set(field === 'user_id' ? `user_ids.${userId}` : field, message)
       }
-      setFieldErrors(byField)
-      setLastOverrideError(t('fixHighlighted'))
+      if (saved.length > 0) {
+        queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
+          const byUser = new Map(current.map(override => [override.user_id, override]))
+          for (const override of saved) byUser.set(override.user_id, override)
+          return [...byUser.values()]
+        })
+        toast.success(t('overrideSaved', { count: saved.length }))
+      }
+      setFieldErrors(current => {
+        const next = new Map(current)
+        next.delete('max_attempts_override')
+        for (const override of saved) next.delete(`user_ids.${override.user_id}`)
+        for (const [field, message] of refused) next.set(field, message)
+        return next
+      })
+      if (unmarked) setLastOverrideError(toastApiError(unmarked, { fallback: t('overrideSaveFailed') }).message)
+      else if (refused.size > 0) setLastOverrideError(t('fixHighlighted'))
     },
   })
   const applyOverrides = () => {
