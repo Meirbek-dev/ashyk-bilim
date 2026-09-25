@@ -638,7 +638,7 @@ export const removeCourse = async (id: CourseId, options?: Parameters<typeof orv
 
 export const getRemoveCourseMutationKey = () => ['removeCourse'] as const
 
-export const getRemoveCourseMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getRemoveCourseMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof removeCourse>>,
     TError,
@@ -668,13 +668,13 @@ export const getRemoveCourseMutationOptions = <TError = ErrorType<unknown>, TCon
 
 export type RemoveCourseMutationResult = NonNullable<Awaited<ReturnType<typeof removeCourse>>>
 
-export type RemoveCourseMutationError = ErrorType<unknown>
+export type RemoveCourseMutationError = ErrorType<Problem>
 export type RemoveCourseMutationVariables = { id: CourseId }
 
 /**
  * @summary Drop the run for a course and every step in it.
  */
-export const useRemoveCourse = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useRemoveCourse = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof removeCourse>>,
