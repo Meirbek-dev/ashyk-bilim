@@ -14675,7 +14675,7 @@
               },
               {
                 "$ref": "#/components/schemas/UserSummary",
-                "description": "Present on grader views."
+                "description": "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199)."
               }
             ]
           },

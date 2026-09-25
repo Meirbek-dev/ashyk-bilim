@@ -56,7 +56,9 @@ export const Attempt = zod
             id: zod.uuid(),
             username: zod.string(),
           })
-          .describe('Present on grader views.'),
+          .describe(
+            "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
+          ),
       ])
       .optional(),
     version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),
