@@ -550,6 +550,9 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::progress::ProgressJob::lateness(
             pool.clone(),
         ))?
+        .register(ab_jobs::handlers::progress::ProgressJob::learner(
+            pool.clone(),
+        ))?
         .register(ab_jobs::handlers::grading::BulkActionRunner::new(
             pool, events,
         ))?

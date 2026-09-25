@@ -407,29 +407,36 @@ pub async fn grade_attempt(
     ValidJson(request): ValidJson<FileGradeRequest>,
 ) -> ApiResult<Json<Attempt>> {
     let expected_version = if_match(&headers)?;
-    let graded = state
-        .file_submissions
-        .grade(
-            &actor,
-            id,
-            FileGradeInput {
-                action: match request.action {
-                    FileGradeAction::Save => ab_domain::files::submissions::FileGradeAction::Save,
-                    FileGradeAction::Publish => {
-                        ab_domain::files::submissions::FileGradeAction::Publish
-                    }
-                    FileGradeAction::Return => {
-                        ab_domain::files::submissions::FileGradeAction::Return
-                    }
+    // Detached (BUG-314): the progress projection and the SSE event outlive
+    // a hang-up.
+    detached(async move {
+        let graded = state
+            .file_submissions
+            .grade(
+                &actor,
+                id,
+                FileGradeInput {
+                    action: match request.action {
+                        FileGradeAction::Save => {
+                            ab_domain::files::submissions::FileGradeAction::Save
+                        }
+                        FileGradeAction::Publish => {
+                            ab_domain::files::submissions::FileGradeAction::Publish
+                        }
+                        FileGradeAction::Return => {
+                            ab_domain::files::submissions::FileGradeAction::Return
+                        }
+                    },
+                    final_score: request.final_score,
+                    feedback: request.feedback,
+                    rubric_scores: request.rubric_scores,
+                    expected_version,
                 },
-                final_score: request.final_score,
-                feedback: request.feedback,
-                rubric_scores: request.rubric_scores,
-                expected_version,
-            },
-        )
-        .await?;
-    Ok(Json(graded.into()))
+            )
+            .await?;
+        Ok(Json(graded.into()))
+    })
+    .await
 }
 
 /// A short-lived download URL for an attached file (owner or grader).

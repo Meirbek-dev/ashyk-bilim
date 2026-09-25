@@ -1755,3 +1755,63 @@ async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
     .unwrap();
     assert_eq!(rows, [false]);
 }
+
+/// BUG-314: the client hangs up the moment a file grade's publish commits.
+/// The progress projection still runs (detached, durable post-commit
+/// path): the activity completes and the certificate is issued.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let attempt = uuid::Uuid::parse_str(&attempt_id).unwrap();
+    let version = submitted.json()["version"].to_string();
+    drop_request_when(
+        app.send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 90 }),
+        )),
+        async || {
+            sqlx::query_scalar::<_, String>(
+                "SELECT status::text FROM file_submission_attempts WHERE id = $1",
+            )
+            .bind(attempt)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+                == "published"
+        },
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    wait_until("the dropped file publish never projected", async || {
+        let state = app.get_as(&alice, &learner_state).await.json();
+        state["outline"][0]["activities"][0]["complete"] == true
+            && state["certificate"]["issued"] == true
+    })
+    .await;
+}

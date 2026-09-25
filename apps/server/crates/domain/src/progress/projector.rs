@@ -30,6 +30,12 @@ pub const COURSE_CHANGE_JOB: &str = "progress:course-change";
 /// payload `{ assessment_id, user_id | null, granted_by | null }` (BUG-312).
 pub const LATENESS_JOB: &str = "progress:lateness";
 
+/// Queue kind of a deferred grader-side re-projection of one learner
+/// ([`ProgressProjector::reproject_submission`] /
+/// [`ProgressProjector::reproject_file_attempt`]); payload
+/// `{ assessment_id | file_submission_id, user_id }` (BUG-313/314).
+pub const LEARNER_JOB: &str = "progress:learner";
+
 /// How long a post-commit re-projection holds the response (UX-209): far
 /// under the 30 s request timeout, so a busy member lock never turns a
 /// committed write into a 408 — the rest goes on in the background, with a
@@ -123,8 +129,17 @@ impl ProgressProjector {
     /// After a change the learner did not make (grade, publish, deadline
     /// extension, timer auto-submit): re-projects without enrolling —
     /// BUG-251, a grader's action never creates a trail run.
+    ///
+    /// Goes through [`Self::after_commit`] (BUG-313/314): a busy member lock
+    /// or a failed pass is retried by a [`LEARNER_JOB`], never lost.
     pub async fn reproject_submission(&self, assessment_id: AssessmentId, user_id: UserId) {
-        self.submission_changed(assessment_id, user_id, false).await;
+        let this = self.clone();
+        self.after_commit(
+            LEARNER_JOB,
+            serde_json::json!({ "assessment_id": assessment_id, "user_id": user_id }),
+            async move { this.project_submission(assessment_id, user_id, false).await },
+        )
+        .await;
     }
 
     async fn submission_changed(&self, assessment_id: AssessmentId, user_id: UserId, enrol: bool) {
@@ -147,14 +162,23 @@ impl ProgressProjector {
         }
     }
 
-    /// After a grader's file-attempt change (best-effort, never enrols).
+    /// After a grader's file-attempt change (never enrols), through
+    /// [`Self::after_commit`] like [`Self::reproject_submission`].
     pub async fn reproject_file_attempt(
         &self,
         file_submission_id: FileSubmissionId,
         user_id: UserId,
     ) {
-        self.file_attempt_changed(file_submission_id, user_id, false)
-            .await;
+        let this = self.clone();
+        self.after_commit(
+            LEARNER_JOB,
+            serde_json::json!({ "file_submission_id": file_submission_id, "user_id": user_id }),
+            async move {
+                this.project_file_attempt(file_submission_id, user_id, false)
+                    .await
+            },
+        )
+        .await;
     }
 
     async fn file_attempt_changed(
@@ -612,6 +636,16 @@ impl ProgressProjector {
                     field(payload, "granted_by")?,
                 )
                 .await
+            }
+            LEARNER_JOB => {
+                let user_id = field(payload, "user_id")?;
+                if payload["file_submission_id"].is_null() {
+                    self.project_submission(field(payload, "assessment_id")?, user_id, false)
+                        .await
+                } else {
+                    self.project_file_attempt(field(payload, "file_submission_id")?, user_id, false)
+                        .await
+                }
             }
             other => Err(Error::internal(
                 "progress job",
