@@ -51,7 +51,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   // Grades landing elsewhere arrive over the course stream; polling is the fallback.
-  const live = useCourseGradingEvents(courseUuid)
+  const { live, accessLost } = useCourseGradingEvents(courseUuid)
   const [page, setPage] = useState(() => normalizePage(searchParams.get('page')))
   const [chosenFilters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
@@ -164,7 +164,8 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   }
 
   return (
-    <div className="space-y-5">
+    // UX-216: grading access lost mid-session — nothing stays clickable while it is confirmed.
+    <div className="space-y-5" inert={accessLost}>
       <GradebookToolbar
         data={data}
         filters={filters}
@@ -461,7 +462,7 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
                     ? t('noScore')
                     : t('averageScore', { score: formatPercent(row.averageScore) })}
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
                   <RollupMetric label={t('summary.needsGrading')} value={row.needsGrading} />
                   <RollupMetric label={t('summary.overdue')} value={row.overdue} />
                   <RollupMetric label={t('summary.notStarted')} value={row.notStarted} />
@@ -479,7 +480,7 @@ function RollupMetric({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="font-semibold">{value}</div>
-      <div className="text-muted-foreground truncate">{label}</div>
+      <div className="text-muted-foreground">{label}</div>
     </div>
   )
 }

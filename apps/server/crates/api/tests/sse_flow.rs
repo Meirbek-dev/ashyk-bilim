@@ -432,3 +432,111 @@ async fn demoted_maintainer_stream_closes_before_the_next_event(pool: PgPool) {
         .unwrap();
     assert_eq!(again.status(), StatusCode::FORBIDDEN);
 }
+
+#[derive(Clone, Copy)]
+enum Revoke {
+    Role,
+    Logout,
+}
+
+/// BUG-320: a platform grader (RBAC grant, not on the roster) holding the
+/// course stream and a submission stream loses both at the next re-check
+/// once the grant is removed or the session logged out — the streams used
+/// to keep the connect-time actor and deliver the next `grade.published`.
+async fn platform_grader_streams_close(pool: PgPool, revoke: Revoke) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let admin_user = app
+        .create_user("staff", "staff@example.com", &["user"])
+        .await;
+    let staff = app
+        .mint_session_for(
+            admin_user,
+            &[
+                "course:read:all",
+                "assessment:read:platform",
+                "assessment:grade:platform",
+            ],
+        )
+        .await;
+    let (sub_id, essay_id) = pending_submission(&app, &teacher, &alice).await;
+    let course_id: String =
+        sqlx::query_scalar("SELECT course_id::text FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    let base = app.serve().await;
+    let client = reqwest::Client::new();
+    let mut course_stream = client
+        .get(format!("{base}/api/v2/courses/{course_id}/grading/events"))
+        .header("cookie", &staff.cookie)
+        .header("accept", "text/event-stream")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(course_stream.status(), StatusCode::OK);
+    let mut sub_stream = open(&client, &base, &staff, &sub_id, None)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(sub_stream.status(), StatusCode::OK);
+    let (mut course_buf, mut sub_buf) = (String::new(), String::new());
+    read_until(&mut course_stream, &mut course_buf, "event: connected").await;
+    read_until(&mut sub_stream, &mut sub_buf, "event: connected").await;
+
+    match revoke {
+        Revoke::Role => {
+            app.sessions
+                .rewrite_user_sessions(staff.user_id, &["user".into()], &[], 2)
+                .await
+                .unwrap();
+        }
+        Revoke::Logout => {
+            let out = app
+                .post_as(&staff, "/api/v2/auth/logout", &serde_json::json!({}))
+                .await;
+            assert!(out.status.is_success(), "{}", out.text());
+        }
+    }
+    let published = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/grade"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::IF_MATCH, "1")
+                .body(Body::from(
+                    serde_json::json!({ "action": "publish",
+                        "item_grades": [{ "item_id": &essay_id, "score": 9 }] })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+
+    for (stream, buffer) in [
+        (&mut course_stream, &mut course_buf),
+        (&mut sub_stream, &mut sub_buf),
+    ] {
+        read_until(stream, buffer, "event: closed").await;
+        while let Some(chunk) = stream.chunk().await.unwrap() {
+            buffer.push_str(&String::from_utf8_lossy(&chunk));
+        }
+        assert!(!buffer.contains("grade.published"), "leaked: {buffer}");
+        assert!(!buffer.contains("grade.saved"), "leaked: {buffer}");
+    }
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn platform_grader_streams_close_when_the_role_is_removed(pool: PgPool) {
+    platform_grader_streams_close(pool, Revoke::Role).await;
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn platform_grader_streams_close_on_logout(pool: PgPool) {
+    platform_grader_streams_close(pool, Revoke::Logout).await;
+}

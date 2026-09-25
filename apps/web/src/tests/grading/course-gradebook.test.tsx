@@ -37,7 +37,7 @@ vi.mock('@/features/grading/queries/grading.query', () => ({
 }))
 
 vi.mock('@/features/grading/queries/use-grading-events', () => ({
-  useCourseGradingEvents: () => gradingQueryMocks.live,
+  useCourseGradingEvents: () => ({ live: gradingQueryMocks.live, accessLost: false }),
 }))
 
 vi.mock('@/hooks/useApiError', () => ({

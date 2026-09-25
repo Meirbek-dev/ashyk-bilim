@@ -36,20 +36,26 @@ impl FromRequestParts<AppState> for CurrentActor {
         let Some(cookie) = jar.get(SESSION_COOKIE) else {
             return Err(ApiError(Error::unauthenticated()));
         };
-        let record = state
-            .sessions
-            .get_and_touch(cookie.value())
-            .await
-            .map_err(ApiError)?;
-        let Some(record) = record else {
-            return Err(ApiError(Error::app(
-                ErrorCode::SessionExpired,
-                "session is expired or revoked",
-            )));
-        };
-        let actor = Actor::from_session(cookie.value().to_owned(), &record).map_err(ApiError)?;
-        Ok(Self(actor))
+        Ok(Self(
+            resolve_actor(state, cookie.value())
+                .await
+                .map_err(ApiError)?,
+        ))
     }
+}
+
+/// The session behind `token` as an [`Actor`] with its current grants
+/// (touching it). `session-expired` once it is logged out, revoked or past
+/// its cap. Open SSE streams re-run this on every access re-check, so a
+/// logout or a role change reaches them too (BUG-320).
+pub async fn resolve_actor(state: &AppState, token: &str) -> ab_core::Result<Actor> {
+    let Some(record) = state.sessions.get_and_touch(token).await? else {
+        return Err(Error::app(
+            ErrorCode::SessionExpired,
+            "session is expired or revoked",
+        ));
+    };
+    Actor::from_session(token.to_owned(), &record)
 }
 
 /// Like [`CurrentActor`] but never rejects: no cookie, an expired session,

@@ -963,6 +963,91 @@ async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
     assert_eq!(overridden.json()["final_score"], 40.0);
 }
 
+/// UX-215: re-pricing lateness never lifts an annulled attempt off 0 —
+/// a waiver and its removal re-score it from the ledger, where the
+/// annulment wrote 0 (`settle_lateness`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn settling_lateness_keeps_an_annulled_attempt_at_zero(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "tab_switch_detection": true, "violation_threshold": 1,
+                             "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub = draft.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &alice,
+        &format!("/api/v2/submissions/{sub}/violations"),
+        &serde_json::json!({ "kind": "tab_switch" }),
+    )
+    .await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub}/submit"),
+            &serde_json::json!({ "answers": {
+                &choice_id: { "kind": "choice", "selected": ["a"] },
+                &essay_id: { "kind": "open_text", "text": "Because." },
+            } }),
+        )
+        .await;
+    assert_eq!(
+        submitted.json()["auto_submit_reason"],
+        "integrity_violation"
+    );
+    let published = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "item_grades": [
+                { "item_id": choice_id, "score": 10 },
+                { "item_id": essay_id, "score": 10 },
+            ] }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 0.0, "{}", published.text());
+    let score = || async {
+        sqlx::query_scalar::<_, Option<f64>>("SELECT final_score FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+    };
+    let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
+    let waived = app
+        .post_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "waive_late_penalty": true }),
+        )
+        .await;
+    assert_eq!(waived.status, StatusCode::CREATED, "{}", waived.text());
+    assert_eq!(score().await, Some(0.0), "the waiver lifted the annulment");
+    let dropped = app.delete_as(&teacher, &path).await;
+    assert!(dropped.status.is_success(), "{}", dropped.text());
+    assert_eq!(
+        score().await,
+        Some(0.0),
+        "re-pricing late lifted the annulment"
+    );
+}
+
 /// BUG-175: the cell keeps the grade of record (published attempt 1) and
 /// flags the newer attempt awaiting grading.
 #[sqlx::test(migrations = "../../migrations")]
@@ -2099,6 +2184,78 @@ async fn deadline_extension_over_an_expired_override_applies(pool: PgPool) {
     assert_eq!(effective["override_applied"], true, "{effective}");
     assert_eq!(effective["due_at_unix"], new_due);
     assert_eq!(effective["max_attempts"], 2, "the expired grant came back");
+}
+
+/// BUG-321: a worker that died mid extension leaves the row `running`
+/// with the first learner's override committed but not settled; the
+/// reaped job's retry resumes — it settles that learner, extends the rest
+/// and finishes the row — instead of returning with the row stuck.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_extension_retry_resumes_a_crashed_run(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let subs = [
+        submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await,
+        submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await,
+    ];
+    let new_due = now_unix() + 86_400;
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/deadline-extensions"),
+            &serde_json::json!({ "user_ids": [alice.user_id, bob.user_id],
+                                  "new_due_at_unix": new_due }),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action = ab_core::id::BulkActionId(
+        uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
+    );
+    // The crash: running, alice's override committed, nothing settled.
+    sqlx::query("UPDATE bulk_actions SET status = 'running' WHERE id = $1")
+        .bind(action.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    ab_db::assessments::upsert_override_due(
+        &app.pool,
+        ab_core::id::AssessmentId(uuid::Uuid::parse_str(&id).unwrap()),
+        alice.user_id,
+        new_due,
+        "",
+        teacher.user_id,
+    )
+    .await
+    .unwrap();
+
+    ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action)
+        .await
+        .unwrap();
+    let (status, affected): (String, i32) =
+        sqlx::query_as("SELECT status, affected_count FROM bulk_actions WHERE id = $1")
+            .bind(action.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!((status.as_str(), affected), ("completed", 2));
+    for sub in subs {
+        let late: bool = sqlx::query_scalar("SELECT is_late FROM submissions WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&sub).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+        assert!(!late, "{sub} still priced late");
+    }
 }
 
 /// BUG-300: an extension over a live override keeps the grants' expiry —

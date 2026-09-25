@@ -193,7 +193,12 @@ impl GradingService {
     /// Run a queued action (job handler + tests). A failure is recorded on
     /// the row and not retried — the grader sees it and re-requests. The
     /// performer's grading access is checked again here (UX-136: a
-    /// maintainer demoted between the enqueue and the worker run).
+    /// maintainer demoted between the enqueue and the worker run). A row
+    /// still `running` is a worker that died mid-run (the reaper requeued
+    /// its job): the run resumes from the top — every step is idempotent
+    /// (the override upsert rewrites the same values, `settle_override`
+    /// re-prices from the ledger) — so the targets it had done are settled
+    /// and the rest extended, then the row finishes (BUG-321).
     pub async fn execute_bulk_action(
         pool: &PgPool,
         events: Option<&GradingEvents>,
@@ -203,7 +208,10 @@ impl GradingService {
             tracing::warn!(%id, "bulk action vanished before execution");
             return Ok(());
         };
-        if row.status != BulkActionStatus::Pending {
+        if !matches!(
+            row.status,
+            BulkActionStatus::Pending | BulkActionStatus::Running
+        ) {
             return Ok(());
         }
         ab_db::submissions::set_bulk_action_status(pool, id, BulkActionStatus::Running, 0, "")

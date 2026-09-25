@@ -77,7 +77,7 @@ export default function AssessmentReviewWorkspace({
   )
 
   // Grades and hand-ins from elsewhere refresh the queue and the open submission.
-  useCourseGradingEvents(assessment?.course_id)
+  const { accessLost } = useCourseGradingEvents(assessment?.course_id)
 
   useEffect(() => {
     const reviewProjection = assessment?.review_projection
@@ -122,16 +122,19 @@ export default function AssessmentReviewWorkspace({
   const reviewProjection = assessment.review_projection
 
   return (
-    <GradingReviewWorkspace
-      // v2 activity ids are UUID strings; `activityId` is a legacy numeric prop only
-      // used as a non-null "stats are ready" gate downstream (useSubmissionStats).
-      activityId={0}
-      assessmentUuid={reviewProjection.assessment_uuid}
-      activityUuid={reviewProjection.activity_uuid}
-      title={reviewProjection.title}
-      initialSubmissionUuid={initialSubmissionUuid ?? null}
-      initialFilter={initialSubmissionUuid ? 'ALL' : (reviewProjection.default_filter ?? 'ALL')}
-      {...(kindModule ? { kindModule } : {})}
-    />
+    // UX-216: grading access lost mid-session — the grading controls go inert while it is confirmed.
+    <div className="contents" inert={accessLost}>
+      <GradingReviewWorkspace
+        // v2 activity ids are UUID strings; `activityId` is a legacy numeric prop only
+        // used as a non-null "stats are ready" gate downstream (useSubmissionStats).
+        activityId={0}
+        assessmentUuid={reviewProjection.assessment_uuid}
+        activityUuid={reviewProjection.activity_uuid}
+        title={reviewProjection.title}
+        initialSubmissionUuid={initialSubmissionUuid ?? null}
+        initialFilter={initialSubmissionUuid ? 'ALL' : (reviewProjection.default_filter ?? 'ALL')}
+        {...(kindModule ? { kindModule } : {})}
+      />
+    </div>
   )
 }

@@ -77,4 +77,40 @@ describe('gradebook rollup taxonomy', () => {
 
     expect(buildGradebookRollups(data, kind)[0]?.label).toBe('QUIZ')
   })
+
+  it('counts «На проверке» like the toolbar tile: a row awaiting release is not owed a grade (UX-215)', () => {
+    const cell = (user_id: string, awaiting_release: boolean) => ({
+      activity_id: 'activity_1',
+      user_id,
+      state: 'NEEDS_GRADING' as const,
+      attempt_count: 1,
+      is_late: false,
+      teacher_action_required: true,
+      latest_submission_uuid: `sub_${user_id}`,
+      awaiting_release,
+    })
+    const data = {
+      course_uuid: 'course_1',
+      course_id: 'course_1',
+      course_name: 'Course',
+      students: [],
+      activities: [
+        { id: 'activity_1', activity_uuid: 'activity_1', name: 'Quiz', activity_type: 'quiz', assessment_type: 'QUIZ' },
+      ],
+      cells: [cell('u1', false), cell('u2', true)],
+      teacher_actions: [],
+      summary: {
+        student_count: 2,
+        activity_count: 1,
+        needs_grading_count: 2,
+        awaiting_release_count: 1,
+        overdue_count: 0,
+        not_started_count: 0,
+        completed_count: 0,
+      },
+    } satisfies CourseGradebookResponse
+
+    const tile = data.summary.needs_grading_count - data.summary.awaiting_release_count
+    expect(buildGradebookRollups(data, 'activity')[0]?.needsGrading).toBe(tile)
+  })
 })

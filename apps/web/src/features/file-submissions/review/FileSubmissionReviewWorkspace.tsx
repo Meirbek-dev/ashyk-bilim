@@ -180,7 +180,7 @@ export default function FileSubmissionReviewWorkspace({
     }),
   )
   // Grades and hand-ins from elsewhere refresh the queue and the open attempt.
-  useCourseGradingEvents(config?.course_id)
+  const { accessLost } = useCourseGradingEvents(config?.course_id)
 
   useEffect(() => {
     const next = new URLSearchParams(urlSearchParams.toString())
@@ -372,7 +372,8 @@ export default function FileSubmissionReviewWorkspace({
   }
 
   return (
-    <div className="bg-background grid min-h-screen lg:grid-cols-[360px_minmax(0,1fr)]">
+    // UX-216: grading access lost mid-session — the grading controls go inert while it is confirmed.
+    <div className="bg-background grid min-h-screen lg:grid-cols-[360px_minmax(0,1fr)]" inert={accessLost}>
       <aside className="border-border bg-card/40 border-b lg:border-r lg:border-b-0">
         <div className="border-border sticky top-0 z-10 flex flex-col gap-3 border-b bg-inherit p-4 backdrop-blur">
           <div>

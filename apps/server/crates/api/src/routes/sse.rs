@@ -7,8 +7,9 @@
 //! events; axum's keep-alive comments every 25s hold proxies open. Each
 //! user may hold five streams at once (429 beyond that). Access is
 //! re-checked before every batch of live events (and on every idle
-//! read timeout): once lost, a terminal `closed` event ends the stream
-//! (BUG-188).
+//! read timeout) against the session as it is now — logged out, revoked
+//! or regranted (BUG-320) — and the course roster: once lost, a terminal
+//! `closed` event ends the stream (BUG-188).
 
 use std::convert::Infallible;
 use std::time::Duration;
@@ -24,7 +25,7 @@ use axum::response::sse::{Event, KeepAlive, KeepAliveStream};
 use futures::StreamExt;
 
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path};
+use crate::extract::{CurrentActor, Path, resolve_actor};
 use crate::state::AppState;
 
 /// Blocking-read window; also how quickly a dropped client frees its slot.
@@ -65,8 +66,9 @@ async fn access(
 
 /// Take a connection slot, replay after `Last-Event-ID`, announce
 /// `connected` (with `connected_with` merged in), then relay live events
-/// while `actor` keeps access (checked before each batch, so a revoked
-/// grant never leaks a later event); a `closed` event ends the stream.
+/// while the session keeps access (re-resolved and checked before each
+/// batch, so a logout or revoked grant never leaks a later event); a
+/// `closed` event ends the stream.
 async fn open_stream(
     state: &AppState,
     actor: Actor,
@@ -91,7 +93,7 @@ async fn open_stream(
         base.extend(extra.clone());
     }
 
-    let grading = state.grading.clone();
+    let state = state.clone();
     let out = async_stream::stream! {
         // Moved in so the slot is released when the client goes away.
         let _slot: ConnectionSlot = slot;
@@ -111,7 +113,11 @@ async fn open_stream(
         loop {
             match subscriber.read(stream, &cursor, READ_TIMEOUT, BATCH_LIMIT).await {
                 Ok(batch) => {
-                    if let Err(err) = access(&grading, &actor, stream).await {
+                    let current = match resolve_actor(&state, &actor.session_id).await {
+                        Ok(current) => access(&state.grading, &current, stream).await,
+                        Err(err) => Err(err),
+                    };
+                    if let Err(err) = current {
                         tracing::info!(?stream, user = %actor.user_id, %err, "sse access lost; closing stream");
                         yield Ok(Event::default().event("closed").data(
                             serde_json::json!({ "event": "closed", "code": err.code() }).to_string(),

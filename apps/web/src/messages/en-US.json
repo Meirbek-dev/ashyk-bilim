@@ -8199,6 +8199,9 @@
       "copiedCode": "Copied code"
     },
     "Grading": {
+      "Stream": {
+        "accessLost": "Your grading access to this course was revoked. Checking access…"
+      },
       "Gradebook": {
         "title": "Course progress",
         "loading": "Loading gradebook...",
