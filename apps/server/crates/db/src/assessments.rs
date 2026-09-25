@@ -1117,13 +1117,17 @@ pub async fn upsert_override_due<'e>(
     Ok(())
 }
 
-pub async fn delete_override(pool: &PgPool, id: AssessmentId, user_id: UserId) -> Result<bool> {
+pub async fn delete_override<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+    user_id: UserId,
+) -> Result<bool> {
     let deleted = sqlx::query!(
         "DELETE FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
         id.0,
         user_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(deleted.rows_affected() == 1)
 }

@@ -19,6 +19,7 @@ use axum::response::Sse;
 use axum::response::sse::{Event, KeepAlive};
 use futures::Stream;
 
+use crate::detach::detached;
 use crate::dto::ai::{
     AdminRun, AdminRunDetail, AdminRunPage, AdminRunsQuery, AdminSettings, CapabilitiesQuery,
     EvalDashboard, RunArtifact, RunEvent, RunStatus, RunStreamRequest, ScopeCapabilities,
@@ -96,7 +97,9 @@ pub async fn cancel_run(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AiRunId>,
 ) -> ApiResult<Json<RunStatus>> {
-    Ok(Json(state.ai.cancel_run(&actor, id).await?.into()))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move { Ok(Json(state.ai.cancel_run(&actor, id).await?.into())) }).await
 }
 
 /// Legacy `_stream_payload` + `_ag_ui_event`.

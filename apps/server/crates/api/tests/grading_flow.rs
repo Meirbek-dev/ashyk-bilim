@@ -4189,3 +4189,86 @@ async fn review_rows_carry_membership(pool: PgPool) {
     assert_eq!(enrolled(&alice), true);
     assert_eq!(enrolled(&bob), false);
 }
+
+/// BUG-313: the client hangs up the moment an override write commits. The
+/// audit lands with the write, and the lateness settle still runs (detached,
+/// durable post-commit path): a dropped waiver POST clears the penalty, a
+/// dropped DELETE puts it back.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_override_writes_still_settle_and_audit(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 30, "max_days": 3 } }),
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let published = app
+        .send(grade(
+            &teacher,
+            &sub,
+            Some("1"),
+            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+        ))
+        .await;
+    assert_eq!(
+        published.json()["final_score"],
+        70.0,
+        "{}",
+        published.text()
+    );
+    let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
+    let overridden = async || -> bool {
+        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM assessment_overrides WHERE user_id = $1)")
+            .bind(alice.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+    };
+    let audited = async |event: &str| -> bool {
+        sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM assessment_audit_events
+                            WHERE event = $1 AND payload->>'user_id' = $2::text)",
+        )
+        .bind(event)
+        .bind(alice.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+
+    drop_request_when(
+        app.post_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "waive_late_penalty": true }),
+        ),
+        async || overridden().await,
+        |response| assert_eq!(response.status, StatusCode::CREATED, "{}", response.text()),
+    )
+    .await;
+    assert!(audited("override-created").await, "audit with the write");
+    wait_until("the dropped waiver never settled", async || {
+        lateness(&app, &teacher, &sub).await == (Some(100.0), Some(false))
+    })
+    .await;
+
+    drop_request_when(
+        app.delete_as(&teacher, &path),
+        async || !overridden().await,
+        |response| assert!(response.status.is_success(), "{}", response.text()),
+    )
+    .await;
+    assert!(audited("override-deleted").await, "audit with the write");
+    wait_until(
+        "the dropped delete never re-applied the penalty",
+        async || lateness(&app, &teacher, &sub).await == (Some(70.0), Some(true)),
+    )
+    .await;
+}

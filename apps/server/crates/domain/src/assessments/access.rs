@@ -21,6 +21,7 @@ pub use ab_db::assessments::{
 use crate::assessments::service::{Assessment, AssessmentsService, LatePolicy, perm};
 use crate::catalog::courses::Course;
 use crate::identity::Actor;
+use crate::progress::ProgressProjector;
 
 /// The attempt cap — one rule for `attempt-state`, `start` and the submit
 /// pipeline (BUG-256): it bars *opening* a new attempt once `completed`
@@ -455,19 +456,16 @@ impl AssessmentsService {
             },
         )
         .await?;
-        tx.commit().await?;
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
-        crate::grading::bulk::settle_override(
-            &self.pool,
-            &assessment,
-            user_id,
-            Some(actor.user_id),
-        )
-        .await?;
-        self.audit_override(actor, id, user_id, "override-created")
-            .await?;
+        Self::audit_override(&mut *tx, actor, id, user_id, "override-created").await?;
+        tx.commit().await?;
+        // BUG-313: settled after commit on the durable path (a retried
+        // job when it fails), never on the request future.
+        ProgressProjector::new(self.pool.clone())
+            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
+            .await;
         self.override_row(assessment.course_id, id, user_id).await
     }
 
@@ -496,19 +494,16 @@ impl AssessmentsService {
             },
         )
         .await?;
-        tx.commit().await?;
         if !updated {
             return Err(Error::not_found("override"));
         }
-        crate::grading::bulk::settle_override(
-            &self.pool,
-            &assessment,
-            user_id,
-            Some(actor.user_id),
-        )
-        .await?;
-        self.audit_override(actor, id, user_id, "override-updated")
-            .await?;
+        Self::audit_override(&mut *tx, actor, id, user_id, "override-updated").await?;
+        tx.commit().await?;
+        // BUG-313: settled after commit on the durable path (a retried
+        // job when it fails), never on the request future.
+        ProgressProjector::new(self.pool.clone())
+            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
+            .await;
         self.override_row(assessment.course_id, id, user_id).await
     }
 
@@ -518,21 +513,21 @@ impl AssessmentsService {
         id: AssessmentId,
         user_id: UserId,
     ) -> Result<()> {
-        let assessment = self.load_for_author(actor, id).await?;
+        self.load_for_author(actor, id).await?;
         Self::not_own(actor, user_id)?;
-        if !ab_db::assessments::delete_override(&self.pool, id, user_id).await? {
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::assessments::delete_override(&mut *tx, id, user_id).await? {
             return Err(Error::not_found("override"));
         }
+        Self::audit_override(&mut *tx, actor, id, user_id, "override-deleted").await?;
+        tx.commit().await?;
         // BUG-297: the waiver/extension is gone — the penalty comes back.
-        crate::grading::bulk::settle_override(
-            &self.pool,
-            &assessment,
-            user_id,
-            Some(actor.user_id),
-        )
-        .await?;
-        self.audit_override(actor, id, user_id, "override-deleted")
-            .await
+        // BUG-313: settled after commit on the durable path (a retried
+        // job when it fails), never on the request future.
+        ProgressProjector::new(self.pool.clone())
+            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
+            .await;
+        Ok(())
     }
 
     /// BUG-288: an override never targets the caller's own attempts.
@@ -561,15 +556,16 @@ impl AssessmentsService {
         }
     }
 
+    /// On the write's own transaction: the audit lands with the change.
     async fn audit_override(
-        &self,
+        conn: &mut sqlx::PgConnection,
         actor: &Actor,
         id: AssessmentId,
         user_id: UserId,
         event: &str,
     ) -> Result<()> {
         ab_db::assessments::insert_audit_event(
-            &self.pool,
+            conn,
             id,
             Some(actor.user_id),
             event,

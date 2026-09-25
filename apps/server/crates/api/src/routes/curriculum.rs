@@ -360,11 +360,16 @@ pub async fn move_activity(
     Path(id): Path<ActivityId>,
     ValidJson(request): ValidJson<MoveActivityRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .curriculum
-        .move_activity(&actor, id, request.position, request.chapter_id)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        state
+            .curriculum
+            .move_activity(&actor, id, request.position, request.chapter_id)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Attach a file block to an activity by claiming a finalized upload whose

@@ -8,6 +8,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 
+use crate::detach::detached;
 use crate::dto::code::{CodeRun, LanguageInfo, ReferenceCheckResponse, RunRequest};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key};
@@ -49,35 +50,40 @@ pub async fn run_item(
     headers: HeaderMap,
     ValidJson(request): ValidJson<RunRequest>,
 ) -> ApiResult<(StatusCode, Json<CodeRun>)> {
-    let key = idempotency_key(&headers)?;
-    let run = state
-        .code_runs
-        .run_item(
-            &actor,
-            id,
-            RunInput {
-                language_id: request.language_id,
-                source: &request.source,
-                custom_input: request.custom_input.as_deref(),
-                idempotency_key: key.as_deref(),
-            },
-        )
-        .await?;
-    if run.is_retryable() {
-        return Err(Error::app_with_details(
-            ErrorCode::CodeRunnerDegraded,
-            run.error_message
-                .unwrap_or_else(|| "code runner unavailable".into()),
-            serde_json::json!({ "run_id": run.id, "is_retryable": true }),
-        )
-        .into());
-    }
-    let status = if run.replayed {
-        StatusCode::OK
-    } else {
-        StatusCode::CREATED
-    };
-    Ok((status, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let key = idempotency_key(&headers)?;
+        let run = state
+            .code_runs
+            .run_item(
+                &actor,
+                id,
+                RunInput {
+                    language_id: request.language_id,
+                    source: &request.source,
+                    custom_input: request.custom_input.as_deref(),
+                    idempotency_key: key.as_deref(),
+                },
+            )
+            .await?;
+        if run.is_retryable() {
+            return Err(Error::app_with_details(
+                ErrorCode::CodeRunnerDegraded,
+                run.error_message
+                    .unwrap_or_else(|| "code runner unavailable".into()),
+                serde_json::json!({ "run_id": run.id, "is_retryable": true }),
+            )
+            .into());
+        }
+        let status = if run.replayed {
+            StatusCode::OK
+        } else {
+            StatusCode::CREATED
+        };
+        Ok((status, Json(run.into())))
+    })
+    .await
 }
 
 /// A run by id: its owner (hidden tests masked) or an assessment author.
@@ -118,8 +124,13 @@ pub async fn reference_check(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
 ) -> ApiResult<Json<ReferenceCheckResponse>> {
-    let results = state.code_runs.reference_check(&actor, id).await?;
-    Ok(Json(ReferenceCheckResponse { results }))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let results = state.code_runs.reference_check(&actor, id).await?;
+        Ok(Json(ReferenceCheckResponse { results }))
+    })
+    .await
 }
 
 /// Languages the platform allows for code items (from Judge0, cached).

@@ -113,17 +113,22 @@ pub async fn create_role(
     CurrentActor(actor): CurrentActor,
     ValidJson(request): ValidJson<CreateRoleRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .rbac
-        .create_role(
-            &actor,
-            &request.slug,
-            &request.display_name,
-            request.description.as_deref(),
-            request.priority,
-        )
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        state
+            .rbac
+            .create_role(
+                &actor,
+                &request.slug,
+                &request.display_name,
+                request.description.as_deref(),
+                request.priority,
+            )
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Update a custom role's metadata (system roles are seed-managed).

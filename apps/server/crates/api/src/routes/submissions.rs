@@ -14,6 +14,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
+use crate::detach::detached;
 use crate::dto::submissions::{
     SaveDraftRequest, StudentSubmission, SubmitRequest, ViolationRequest,
 };
@@ -82,13 +83,18 @@ pub async fn start_submission(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
 ) -> ApiResult<Response> {
-    let started = state.submissions.start(&actor, id).await?;
-    let status = if started.created {
-        StatusCode::CREATED
-    } else {
-        StatusCode::OK
-    };
-    Ok(with_etag(status, started.submission.into()))
+    // Detached (BUG-313 sweep): the enrol + projection after the commit
+    // outlive a hang-up.
+    detached(async move {
+        let started = state.submissions.start(&actor, id).await?;
+        let status = if started.created {
+            StatusCode::CREATED
+        } else {
+            StatusCode::OK
+        };
+        Ok(with_etag(status, started.submission.into()))
+    })
+    .await
 }
 
 /// The caller's open draft for this assessment (404 when none).
@@ -185,11 +191,16 @@ pub async fn save_draft(
     ValidJson(request): ValidJson<SaveDraftRequest>,
 ) -> ApiResult<Response> {
     let expected = require_if_match(&headers)?;
-    let saved = state
-        .submissions
-        .save_draft(&actor, id, request.answers, expected)
-        .await?;
-    Ok(with_etag(StatusCode::OK, saved.into()))
+    // Detached (BUG-313 sweep): the projection after the save outlives a
+    // hang-up.
+    detached(async move {
+        let saved = state
+            .submissions
+            .save_draft(&actor, id, request.answers, expected)
+            .await?;
+        Ok(with_etag(StatusCode::OK, saved.into()))
+    })
+    .await
 }
 
 /// Report one anti-cheat event on the open draft.

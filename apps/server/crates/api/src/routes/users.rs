@@ -56,19 +56,24 @@ pub async fn update_my_profile(
     CurrentActor(actor): CurrentActor,
     ValidJson(request): ValidJson<UpdateProfileRequest>,
 ) -> ApiResult<Json<UserProfile>> {
-    let profile = state
-        .users
-        .update_my_profile(
-            &actor,
-            ProfileChanges {
-                display_name: request.display_name,
-                bio: request.bio,
-                locale: request.locale,
-                avatar_upload_id: request.avatar_upload_id,
-            },
-        )
-        .await?;
-    Ok(Json(UserProfile::for_actor(profile, &actor)))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let profile = state
+            .users
+            .update_my_profile(
+                &actor,
+                ProfileChanges {
+                    display_name: request.display_name,
+                    bio: request.bio,
+                    locale: request.locale,
+                    avatar_upload_id: request.avatar_upload_id,
+                },
+            )
+            .await?;
+        Ok(Json(UserProfile::for_actor(profile, &actor)))
+    })
+    .await
 }
 
 /// Admin account creation (requires `platform:manage:platform`): Zitadel

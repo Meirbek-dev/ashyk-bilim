@@ -174,11 +174,15 @@ pub async fn set_policy(
     Path(id): Path<AssessmentId>,
     ValidJson(request): ValidJson<Policy>,
 ) -> ApiResult<Json<AssessmentDetail>> {
-    let detail = state
-        .assessments
-        .set_policy(&actor, id, request.into())
-        .await?;
-    Ok(Json(detail.into()))
+    // Detached (BUG-313): the post-commit lateness settle outlives a hang-up.
+    detached(async move {
+        let detail = state
+            .assessments
+            .set_policy(&actor, id, request.into())
+            .await?;
+        Ok(Json(detail.into()))
+    })
+    .await
 }
 
 /// Lifecycle transition.
@@ -496,11 +500,15 @@ pub async fn create_override(
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
     ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
 ) -> ApiResult<(StatusCode, Json<crate::dto::assessments::StudentOverride>)> {
-    let row = state
-        .assessments
-        .create_override(&actor, id, user_id, request.into())
-        .await?;
-    Ok((StatusCode::CREATED, Json(row.into())))
+    // Detached (BUG-313): the settle outlives a hang-up.
+    detached(async move {
+        let row = state
+            .assessments
+            .create_override(&actor, id, user_id, request.into())
+            .await?;
+        Ok((StatusCode::CREATED, Json(row.into())))
+    })
+    .await
 }
 
 /// Replace a student's override.
@@ -519,11 +527,15 @@ pub async fn update_override(
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
     ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
 ) -> ApiResult<Json<crate::dto::assessments::StudentOverride>> {
-    let row = state
-        .assessments
-        .update_override(&actor, id, user_id, request.into())
-        .await?;
-    Ok(Json(row.into()))
+    // Detached (BUG-313): the settle outlives a hang-up.
+    detached(async move {
+        let row = state
+            .assessments
+            .update_override(&actor, id, user_id, request.into())
+            .await?;
+        Ok(Json(row.into()))
+    })
+    .await
 }
 
 /// Remove a student's override.
@@ -540,11 +552,15 @@ pub async fn delete_override(
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
 ) -> ApiResult<StatusCode> {
-    state
-        .assessments
-        .delete_override(&actor, id, user_id)
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Detached (BUG-313): the settle outlives a hang-up.
+    detached(async move {
+        state
+            .assessments
+            .delete_override(&actor, id, user_id)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 // ── Student-facing ──────────────────────────────────────────────────────────

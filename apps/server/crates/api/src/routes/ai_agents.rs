@@ -20,6 +20,7 @@ use axum::response::Sse;
 use axum::response::sse::{Event, KeepAlive};
 use futures::{Stream, StreamExt};
 
+use crate::detach::detached;
 use crate::dto::ai::{
     CourseAnalysis, DismissSuggestionRequest, FindingReviewRequest, LanguageRequest, LectureReview,
     LectureReviewRequest, QaChatRequest, QaMessage, QaThreadSummary, RemediationCompletionRequest,
@@ -248,18 +249,23 @@ pub async fn study_ask(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<StudyRequest>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    Ok(Json(
-        state
-            .ai
-            .ask_study_companion(
-                &actor,
-                course_id,
-                &request.question,
-                request.mode,
-                &request.language,
-            )
-            .await?,
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        Ok(Json(
+            state
+                .ai
+                .ask_study_companion(
+                    &actor,
+                    course_id,
+                    &request.question,
+                    request.mode,
+                    &request.language,
+                )
+                .await?,
+        ))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -274,17 +280,22 @@ pub async fn study_ask_queue(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<StudyRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
-    let run = state
-        .ai
-        .queue_study_companion(
-            &actor,
-            course_id,
-            &request.question,
-            request.mode,
-            &request.language,
-        )
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let run = state
+            .ai
+            .queue_study_companion(
+                &actor,
+                course_id,
+                &request.question,
+                request.mode,
+                &request.language,
+            )
+            .await?;
+        Ok((StatusCode::ACCEPTED, Json(run.into())))
+    })
+    .await
 }
 
 // ── Submission analysis ─────────────────────────────────────────────────────
@@ -308,13 +319,18 @@ pub async fn analyze_submission(
     Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<Json<SubmissionAnalysis>> {
-    Ok(Json(
-        state
-            .ai
-            .analyze_submission(&actor, submission_id, &request.language)
-            .await?
-            .into(),
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        Ok(Json(
+            state
+                .ai
+                .analyze_submission(&actor, submission_id, &request.language)
+                .await?
+                .into(),
+        ))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -330,11 +346,16 @@ pub async fn queue_submission_analysis(
     Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
-    let run = state
-        .ai
-        .queue_submission_analysis(&actor, submission_id, &request.language)
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let run = state
+            .ai
+            .queue_submission_analysis(&actor, submission_id, &request.language)
+            .await?;
+        Ok((StatusCode::ACCEPTED, Json(run.into())))
+    })
+    .await
 }
 
 /// The newest analysis of a submission; `null` when none exists.
@@ -374,13 +395,18 @@ pub async fn analyze_course(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<Json<CourseAnalysis>> {
-    Ok(Json(
-        state
-            .ai
-            .analyze_course(&actor, course_id, &request.language)
-            .await?
-            .into(),
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        Ok(Json(
+            state
+                .ai
+                .analyze_course(&actor, course_id, &request.language)
+                .await?
+                .into(),
+        ))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -395,11 +421,16 @@ pub async fn queue_course_analysis(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<LanguageRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
-    let run = state
-        .ai
-        .queue_course_analysis(&actor, course_id, &request.language)
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let run = state
+            .ai
+            .queue_course_analysis(&actor, course_id, &request.language)
+            .await?;
+        Ok((StatusCode::ACCEPTED, Json(run.into())))
+    })
+    .await
 }
 
 /// Teachers see the latest draft; learners only a published report.
@@ -483,13 +514,18 @@ pub async fn critique_lecture(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<LectureReviewRequest>,
 ) -> ApiResult<Json<LectureReview>> {
-    Ok(Json(
-        state
-            .ai
-            .critique_lecture(&actor, course_id, request.activity_id, &request.language)
-            .await?
-            .into(),
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        Ok(Json(
+            state
+                .ai
+                .critique_lecture(&actor, course_id, request.activity_id, &request.language)
+                .await?
+                .into(),
+        ))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -504,11 +540,16 @@ pub async fn queue_lecture_review(
     Path(course_id): Path<CourseId>,
     ValidJson(request): ValidJson<LectureReviewRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
-    let run = state
-        .ai
-        .queue_lecture_review(&actor, course_id, request.activity_id, &request.language)
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let run = state
+            .ai
+            .queue_lecture_review(&actor, course_id, request.activity_id, &request.language)
+            .await?;
+        Ok((StatusCode::ACCEPTED, Json(run.into())))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -565,13 +606,18 @@ pub async fn generate_remediation(
     Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<RemediationRequest>,
 ) -> ApiResult<Json<RemediationSession>> {
-    Ok(Json(
-        state
-            .ai
-            .generate_remediation(&actor, submission_id, request.gate_mode, &request.language)
-            .await?
-            .into(),
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        Ok(Json(
+            state
+                .ai
+                .generate_remediation(&actor, submission_id, request.gate_mode, &request.language)
+                .await?
+                .into(),
+        ))
+    })
+    .await
 }
 
 #[utoipa::path(
@@ -587,11 +633,16 @@ pub async fn queue_remediation(
     Path(submission_id): Path<AiSubjectId>,
     ValidJson(request): ValidJson<RemediationRequest>,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
-    let run = state
-        .ai
-        .queue_remediation(&actor, submission_id, request.gate_mode, &request.language)
-        .await?;
-    Ok((StatusCode::ACCEPTED, Json(run.into())))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let run = state
+            .ai
+            .queue_remediation(&actor, submission_id, request.gate_mode, &request.language)
+            .await?;
+        Ok((StatusCode::ACCEPTED, Json(run.into())))
+    })
+    .await
 }
 
 #[utoipa::path(

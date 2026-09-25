@@ -68,26 +68,31 @@ pub async fn login(
     ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<LoginRequest>,
 ) -> ApiResult<(CookieJar, Json<SessionInfo>)> {
-    let ok = state
-        .identity
-        .login(LoginInput {
-            login: request.login,
-            password: SecretString::from(request.password),
-            totp_code: request.totp_code,
-            ip,
-            user_agent: user_agent(&headers),
-        })
-        .await?;
-    let jar = jar.add(session_cookie(&state, ok.session_id));
-    Ok((
-        jar,
-        Json(SessionInfo {
-            user_id: ok.user_id,
-            roles: ok.roles,
-            permissions: ok.permissions,
-            mfa_enabled: ok.mfa_enabled,
-        }),
-    ))
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        let ok = state
+            .identity
+            .login(LoginInput {
+                login: request.login,
+                password: SecretString::from(request.password),
+                totp_code: request.totp_code,
+                ip,
+                user_agent: user_agent(&headers),
+            })
+            .await?;
+        let jar = jar.add(session_cookie(&state, ok.session_id));
+        Ok((
+            jar,
+            Json(SessionInfo {
+                user_id: ok.user_id,
+                roles: ok.roles,
+                permissions: ok.permissions,
+                mfa_enabled: ok.mfa_enabled,
+            }),
+        ))
+    })
+    .await
 }
 
 /// Self-registration: creates the account (default `user` role) and emails

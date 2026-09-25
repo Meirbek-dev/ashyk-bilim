@@ -860,8 +860,9 @@ async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
 }
 
 /// UX-196: the leave lands after the create's write commits but before its
-/// read-back (the audit insert in between is held) — still 422
-/// `not-in-course`, never 404 «override not found».
+/// read-back (the post-commit lateness settle in between is held on the
+/// submissions table; the audit commits with the write since BUG-313) —
+/// still 422 `not-in-course`, never 404 «override not found».
 #[sqlx::test(migrations = "../../migrations")]
 async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -870,9 +871,9 @@ async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
     let (alice, _) = learner(&app, "alice").await;
     enrol(&pool, &course_id, alice).await;
 
-    let mut audit = pool.begin().await.unwrap();
-    sqlx::query("LOCK TABLE assessment_audit_events IN EXCLUSIVE MODE")
-        .execute(&mut *audit)
+    let mut settle = pool.begin().await.unwrap();
+    sqlx::query("LOCK TABLE submissions IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *settle)
         .await
         .unwrap();
     let leave_after_write = async {
@@ -900,7 +901,7 @@ async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
         .await
         .unwrap();
         leave.commit().await.unwrap();
-        audit.rollback().await.unwrap();
+        settle.rollback().await.unwrap();
     };
     let path = format!("/api/v2/assessments/{id}/overrides/{alice}");
     let body = serde_json::json!({ "max_attempts_override": 3 });
