@@ -1382,3 +1382,21 @@ Implements three more items of the owner answers above. Routes:
   clearing `expires_at` on every extension made a 20-second grant of 9
   attempts and a waiver permanent. Replaces "an extension clears
   `expires_at`" (BUG-283, 0716bc9).
+
+## A late-policy change re-prices every hand-in (2026-09-25, gauntlet pass 27)
+
+- **One lateness rule for every learner: a hand-in pays what the
+  assessment's current policy and its override in force at `submitted_at`
+  charge** (BUG-312): `PUT assessments/{id}/policy` (due date, `allow_late`,
+  rate, cutoff) settles every learner's hand-ins after commit through the
+  durable post-commit path (`ProgressProjector::after_lateness_change`, a
+  `progress:lateness` job when it does not finish inline) with the same row
+  lock / version / ledger rules as an override write (BUG-216/297). A pass
+  that sees a newer `policy_version` when it ends runs again. So a learner
+  with an override and one without always agree, and a later note-only
+  override `PUT` is a no-op. Why: the policy change left every hand-in at
+  the old price until an unrelated override write re-priced one learner
+  (70 → 0 while the other stayed 70). Rejected: freezing the policy per
+  hand-in — it needs a policy history (hand-ins only carry
+  `policy_version`), and a teacher moving the due date expects existing
+  work to follow it, as an extension does.

@@ -904,6 +904,18 @@ pub async fn list_submitted_for_user(
     Ok(rows)
 }
 
+/// Every learner with a hand-in (not a preview) on the assessment.
+pub async fn list_submitters(pool: &PgPool, assessment_id: AssessmentId) -> Result<Vec<UserId>> {
+    let rows = sqlx::query_scalar!(
+        r#"SELECT DISTINCT user_id AS "user_id!: UserId" FROM submissions
+           WHERE assessment_id = $1 AND status <> 'draft' AND NOT preview"#,
+        assessment_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 // ── Timer sweep ─────────────────────────────────────────────────────────────
 
 /// Open timed drafts past their deadline and not backing off.

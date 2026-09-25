@@ -386,6 +386,43 @@ pub(crate) async fn settle_override(
     Ok(submitted)
 }
 
+/// BUG-312: one learner's (`Some`) or every learner's (`None`) hand-ins
+/// settled under the assessment's policy as it stands when this runs — the
+/// worker side of [`ProgressProjector::after_lateness_change`]. A policy
+/// write that lands meanwhile (a newer `policy_version`) runs the pass again,
+/// so an older pass racing a newer one never leaves a row priced by the old
+/// policy. A failing learner never drops the ones after it (the last error
+/// is returned; settling is idempotent, so the retry redoes everyone).
+pub(crate) async fn settle_assessment(
+    pool: &PgPool,
+    assessment_id: AssessmentId,
+    user_id: Option<UserId>,
+    granted_by: Option<UserId>,
+) -> Result<()> {
+    loop {
+        let Some(assessment) = ab_db::assessments::get_assessment(pool, assessment_id).await?
+        else {
+            return Ok(());
+        };
+        let users = match user_id {
+            Some(user_id) => vec![user_id],
+            None => ab_db::submissions::list_submitters(pool, assessment_id).await?,
+        };
+        let mut outcome = Ok(());
+        for user_id in users {
+            if let Err(err) = settle_override(pool, &assessment, user_id, granted_by).await {
+                tracing::warn!(%assessment_id, %user_id, %err, "lateness settle failed");
+                outcome = Err(err);
+            }
+        }
+        outcome?;
+        let now = ab_db::assessments::get_assessment(pool, assessment_id).await?;
+        if now.is_none_or(|a| a.policy_version == assessment.policy_version) {
+            return Ok(());
+        }
+    }
+}
+
 /// BUG-306: a sweep that dropped a learner's override rows (a leave, a
 /// staff join) settles those assessments after commit, as a delete does.
 pub(crate) async fn settle_dropped(

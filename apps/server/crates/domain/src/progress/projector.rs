@@ -26,6 +26,9 @@ pub const STAFF_CHANGE_JOB: &str = "progress:staff-change";
 /// Queue kind of a deferred [`ProgressProjector::recalculate_course_for_all`];
 /// payload `{ course_id }` (BUG-310).
 pub const COURSE_CHANGE_JOB: &str = "progress:course-change";
+/// Queue kind of a deferred lateness settle ([`ProgressProjector::after_lateness_change`]);
+/// payload `{ assessment_id, user_id | null, granted_by | null }` (BUG-312).
+pub const LATENESS_JOB: &str = "progress:lateness";
 
 /// How long a post-commit re-projection holds the response (UX-209): far
 /// under the 30 s request timeout, so a busy member lock never turns a
@@ -508,6 +511,30 @@ impl ProgressProjector {
         .await;
     }
 
+    /// Every writer that changes what a hand-in pays for lateness, after
+    /// commit (BUG-312): the assessment policy (`user_id: None` — every
+    /// learner's hand-ins) or one learner's override. See
+    /// [`Self::after_commit`]; `granted_by` signs the re-score entries.
+    pub async fn after_lateness_change(
+        &self,
+        assessment_id: AssessmentId,
+        user_id: Option<UserId>,
+        granted_by: Option<UserId>,
+    ) {
+        let pool = self.pool.clone();
+        self.after_commit(
+            LATENESS_JOB,
+            serde_json::json!({
+                "assessment_id": assessment_id, "user_id": user_id, "granted_by": granted_by,
+            }),
+            async move {
+                crate::grading::bulk::settle_assessment(&pool, assessment_id, user_id, granted_by)
+                    .await
+            },
+        )
+        .await;
+    }
+
     /// The one durable post-commit path for course-wide progress work: the
     /// write already landed, so it never fails the caller. `work` runs on
     /// its own task (a hang-up or timeout of the request cannot drop it);
@@ -556,6 +583,15 @@ impl ProgressProjector {
             COURSE_CHANGE_JOB => {
                 self.recalculate_course_for_all(field(payload, "course_id")?)
                     .await
+            }
+            LATENESS_JOB => {
+                crate::grading::bulk::settle_assessment(
+                    &self.pool,
+                    field(payload, "assessment_id")?,
+                    field(payload, "user_id")?,
+                    field(payload, "granted_by")?,
+                )
+                .await
             }
             other => Err(Error::internal(
                 "progress job",

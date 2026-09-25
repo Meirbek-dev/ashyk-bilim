@@ -824,6 +824,12 @@ impl AssessmentsService {
         Self::ensure_stays_ready(&would_be, &items)?;
         ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
         tx.commit().await?;
+        // BUG-312: one lateness rule for every learner — the new policy
+        // re-prices every existing hand-in, as an override write does its
+        // learner's, so a later unrelated write never moves a score.
+        ProgressProjector::new(self.pool.clone())
+            .after_lateness_change(id, None, Some(actor.user_id))
+            .await;
 
         self.detail(id).await
     }

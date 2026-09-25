@@ -1635,6 +1635,106 @@ async fn waiver_expiry_after_the_hand_in_changes_nothing(pool: PgPool) {
     );
 }
 
+/// BUG-312: a late-policy change re-prices every hand-in — a learner with
+/// an unrelated override and one without always agree, and a note-only PUT
+/// afterwards moves nothing. Both the penalty rate and the due date.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 3600, "allow_late": true,
+                             "late_policy": { "kind": "penalty", "percent_per_day": 30, "max_days": 3 } }),
+    )
+    .await;
+    let (alice, bob) = (learner(&app, "alice").await, learner(&app, "bob").await);
+    let mut subs = Vec::new();
+    for who in [&alice, &bob] {
+        let sub = submit_attempt(&app, who, &id, &choice_id, &essay_id).await;
+        let published = app
+            .send(grade(
+                &teacher,
+                &sub,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            ))
+            .await;
+        assert_eq!(
+            published.json()["final_score"],
+            70.0,
+            "{}",
+            published.text()
+        );
+        subs.push(sub);
+    }
+    let override_path = format!("/api/v2/assessments/{id}/overrides/{}", bob.user_id);
+    let granted = app
+        .post_as(
+            &teacher,
+            &override_path,
+            &serde_json::json!({ "max_attempts_override": 5, "note": "extra tries" }),
+        )
+        .await;
+    assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    let unpublished = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "draft" }),
+        )
+        .await;
+    assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
+    let mut policy = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json()["policy"]
+        .clone();
+    let policy_path = format!("/api/v2/assessments/{id}/policy");
+
+    policy["late_policy"]["percent_per_day"] = serde_json::json!(40);
+    let put = app
+        .send(put_json(&teacher.cookie, &policy_path, &policy))
+        .await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    for sub in &subs {
+        assert_eq!(
+            lateness(&app, &teacher, sub).await,
+            (Some(60.0), Some(true))
+        );
+    }
+    let listed = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/overrides"))
+        .await;
+    let note_only = app
+        .send(put_json(
+            &teacher.cookie,
+            &override_path,
+            &same_values(&listed.json()[0], "note only"),
+        ))
+        .await;
+    assert_eq!(note_only.status, StatusCode::OK, "{}", note_only.text());
+    assert_eq!(
+        lateness(&app, &teacher, &subs[1]).await,
+        (Some(60.0), Some(true))
+    );
+
+    policy["due_at_unix"] = serde_json::json!(now_unix() + 86_400);
+    let put = app
+        .send(put_json(&teacher.cookie, &policy_path, &policy))
+        .await;
+    assert_eq!(put.status, StatusCode::OK, "{}", put.text());
+    for sub in &subs {
+        assert_eq!(
+            lateness(&app, &teacher, sub).await,
+            (Some(100.0), Some(false))
+        );
+    }
+}
+
 /// BUG-285: previews a maintainer made never count once they are a learner
 /// — not toward the cap, not in the attempt number, not in their own list.
 #[sqlx::test(migrations = "../../migrations")]
