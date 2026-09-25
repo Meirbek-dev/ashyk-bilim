@@ -4,7 +4,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::id::UserId;
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -1112,4 +1112,90 @@ async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
     let deleted = app.delete_as(&l1_session, &own).await;
     assert_eq!(deleted.status, StatusCode::FORBIDDEN, "{}", deleted.text());
     assert_eq!(deleted.json()["code"], "grade-own-attempt");
+}
+
+/// BUG-305: a roster add outlives a client that hangs up while the member
+/// lock is busy — the access sweep still runs once it frees — and a failing
+/// sweep never turns the committed add into an error: it is queued instead.
+#[sqlx::test(migrations = "../../migrations")]
+async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    let (l1, _) = learner(&app, "l1").await;
+    let (l2, _) = learner(&app, "l2").await;
+    for who in [l1, l2] {
+        enrol(&pool, &course_id, who).await;
+        let granted = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/overrides/{who}"),
+                &serde_json::json!({ "max_attempts_override": 2 }),
+            )
+            .await;
+        assert_eq!(granted.status, StatusCode::CREATED, "{}", granted.text());
+    }
+    let count = async |sql: &'static str, who: UserId| -> i64 {
+        sqlx::query_scalar(sql)
+            .bind(who.0)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+    };
+    let overrides = "SELECT count(*) FROM assessment_overrides WHERE user_id = $1";
+    let rostered = "SELECT count(*) FROM resource_authors WHERE user_id = $1";
+    let path = format!("/api/v2/courses/{course_id}/contributors");
+
+    // Hang up between the roster insert and the sweep (member lock held).
+    let mut held = pool.begin().await.unwrap();
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
+    )
+    .bind(l1.0)
+    .bind(&course_id)
+    .execute(&mut *held)
+    .await
+    .unwrap();
+    drop_request_when(
+        app.post_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "user_id": l1, "role": "contributor" }),
+        ),
+        async || count(rostered, l1).await == 1,
+        |response| panic!("finished under the lock: {}", response.text()),
+    )
+    .await;
+    held.commit().await.unwrap();
+    wait_until("the dropped add never swept the override", async || {
+        count(overrides, l1).await == 0
+    })
+    .await;
+
+    // The sweep fails: the add still answers 201 and the sweep is queued.
+    sqlx::query(
+        "CREATE FUNCTION refuse() RETURNS trigger LANGUAGE plpgsql
+         AS $$ BEGIN RAISE EXCEPTION 'refused'; END $$",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "CREATE TRIGGER refuse BEFORE DELETE ON assessment_overrides
+         FOR EACH ROW EXECUTE FUNCTION refuse()",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let added = app
+        .post_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "user_id": l2, "role": "contributor" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let queued = "SELECT count(*) FROM jobs
+                  WHERE kind = 'progress:staff-change' AND payload->>'user_id' = $1::text";
+    assert_eq!(count(queued, l2).await, 1);
 }

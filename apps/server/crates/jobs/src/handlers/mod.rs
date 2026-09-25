@@ -5,5 +5,6 @@ pub mod ai;
 pub mod analytics;
 pub mod assessments;
 pub mod grading;
+pub mod progress;
 pub mod submissions;
 pub mod uploads;

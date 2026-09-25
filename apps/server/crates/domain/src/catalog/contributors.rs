@@ -98,8 +98,8 @@ impl CoursesService {
         }
         // BUG-303: a member joining the staff leaves the allowlists/overrides.
         ProgressProjector::new(self.pool.clone())
-            .reproject_staff_change(user_id, Some(course_id))
-            .await?;
+            .after_staff_change(user_id, Some(course_id))
+            .await;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("user"))
@@ -122,8 +122,8 @@ impl CoursesService {
         }
         // BUG-291: a deactivated / demoted author with a run is a member again.
         ProgressProjector::new(self.pool.clone())
-            .reproject_staff_change(user_id, Some(course_id))
-            .await?;
+            .after_staff_change(user_id, Some(course_id))
+            .await;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("contributor"))
@@ -161,8 +161,9 @@ impl CoursesService {
         }
         // BUG-291: a removed author with a run is a member again.
         ProgressProjector::new(self.pool.clone())
-            .reproject_staff_change(user_id, Some(course_id))
-            .await
+            .after_staff_change(user_id, Some(course_id))
+            .await;
+        Ok(())
     }
 
     /// Legacy `apply-contributor`: any signed-in user on an

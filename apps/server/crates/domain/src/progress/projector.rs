@@ -20,6 +20,10 @@ use ab_db::progress::{
 use ab_db::submissions::SubmissionRow;
 use sqlx::{PgConnection, PgPool};
 
+/// Queue kind of a deferred [`ProgressProjector::reproject_staff_change`];
+/// payload `{ user_id, course_id | null }` (BUG-305).
+pub const STAFF_CHANGE_JOB: &str = "progress:staff-change";
+
 /// Default passing score for file submissions (legacy hard-coded 60).
 const FILE_SUBMISSION_PASSING_SCORE: f64 = 60.0;
 
@@ -467,6 +471,31 @@ impl ProgressProjector {
             }
         }
         outcome.map(|()| report)
+    }
+
+    /// Every roster / RBAC writer's post-commit step (BUG-305): the write
+    /// already landed, so it never fails the caller — a failing
+    /// [`Self::reproject_staff_change`] (member lock busy past the wait)
+    /// becomes a [`STAFF_CHANGE_JOB`] the worker retries with backoff.
+    // ponytail: a crash between the roster commit and this call loses the
+    // sweep (the next staff change or a backfill repairs it); enqueue in the
+    // roster transaction if that window ever matters.
+    pub async fn after_staff_change(&self, user_id: UserId, course_id: Option<CourseId>) {
+        if self
+            .reproject_staff_change(user_id, course_id)
+            .await
+            .is_ok()
+        {
+            return;
+        }
+        let job = ab_db::queue::NewJob::new(
+            STAFF_CHANGE_JOB,
+            serde_json::json!({ "user_id": user_id, "course_id": course_id }),
+        )
+        .max_attempts(10);
+        if let Err(err) = ab_db::queue::enqueue(&self.pool, &job).await {
+            tracing::error!(%user_id, error = %err, "staff-change reprojection not enqueued");
+        }
     }
 
     /// Re-project a user whose course-staff standing may have changed

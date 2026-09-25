@@ -176,16 +176,20 @@ pub async fn add_contributor(
             .into());
         }
     };
-    let row = state
-        .courses
-        .add_contributor(
-            &actor,
-            id,
-            target,
-            request.role.as_deref().unwrap_or("contributor"),
-        )
-        .await?;
-    Ok((StatusCode::CREATED, Json(row.into())))
+    // Roster insert → BUG-303 access sweep outlive the connection (BUG-305).
+    detached(async move {
+        let row = state
+            .courses
+            .add_contributor(
+                &actor,
+                id,
+                target,
+                request.role.as_deref().unwrap_or("contributor"),
+            )
+            .await?;
+        Ok((StatusCode::CREATED, Json(row.into())))
+    })
+    .await
 }
 
 /// Change a contributor's role and/or status (`status: active` approves a

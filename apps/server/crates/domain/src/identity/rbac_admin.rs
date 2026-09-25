@@ -371,8 +371,9 @@ impl RbacAdminService {
             .await?;
         tracing::info!(%user_id, rbac_version, sessions = updated, "rbac change propagated");
         ProgressProjector::new(self.pool.clone())
-            .reproject_staff_change(user_id, None)
-            .await
+            .after_staff_change(user_id, None)
+            .await;
+        Ok(())
     }
 }
 
