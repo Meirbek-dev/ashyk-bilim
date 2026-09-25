@@ -78,7 +78,6 @@ pub async fn qa_chat(
         .into());
     };
     let props = &request.forwarded_props;
-    let language = props.language.as_deref().unwrap_or("auto");
     let (thread_id, run_id) = (request.thread_id.clone(), request.run_id.clone());
 
     if let Some(turn) = props.client_turn_id.as_deref()
@@ -102,20 +101,20 @@ pub async fn qa_chat(
         return Ok(Sse::new(stream.boxed()).keep_alive(KeepAlive::new().interval(KEEPALIVE)));
     }
 
-    let session = state
-        .ai
-        .prepare_qa(
-            &actor,
-            course_id,
-            QaRequest {
-                question: &question,
-                thread_id: props.thread_id,
-                language,
-                activity_id: props.activity_id,
-                client_turn_id: props.client_turn_id.as_deref(),
-            },
-        )
-        .await?;
+    // Detached (BUG-319): the run is created mid-preparation; a hang-up
+    // there drops the finished session, whose guard aborts the run.
+    let (ai, props) = (state.ai.clone(), request.forwarded_props);
+    let session = detached(async move {
+        let request = QaRequest {
+            question: &question,
+            thread_id: props.thread_id,
+            language: props.language.as_deref().unwrap_or("auto"),
+            activity_id: props.activity_id,
+            client_turn_id: props.client_turn_id.as_deref(),
+        };
+        Ok(ai.prepare_qa(&actor, course_id, request).await?)
+    })
+    .await?;
     let mut turns = state.ai.stream_qa(session);
     let stream = async_stream::stream! {
         let message_id = new_message_id();

@@ -2203,3 +2203,44 @@ async fn queued_analysis_fails_for_a_demoted_maintainer(pool: PgPool) {
         StatusCode::NOT_FOUND
     );
 }
+
+/// BUG-319: a Q&A chat dropped the moment its run exists (mid-preparation,
+/// or before the answer stream is read) must not leave the run `running`
+/// — a stuck run 409s every retry of the turn. The model is slow, so only
+/// the drop can settle it: `aborted`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_qa_chat_aborts_its_run(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Dropped").await;
+    wiremock::Mock::given(wiremock::matchers::path(ab_testkit::llm::COMPLETIONS_PATH))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_delay(Duration::from_secs(60)))
+        .mount(&app.llm)
+        .await;
+    let status = async || {
+        sqlx::query_scalar::<_, String>("SELECT status FROM ai_runs")
+            .fetch_optional(&app.pool)
+            .await
+            .unwrap()
+    };
+    ab_testkit::drop_request_when(
+        app.post_as(
+            &alice,
+            &format!("/api/v2/ai/qa/{course_id}/chat"),
+            &serde_json::json!({
+                "threadId": "t", "runId": "r",
+                "messages": [{ "id": "m1", "role": "user", "content": "What is a monad?" }],
+                "forwardedProps": { "client_turn_id": "turn-drop", "language": "en" },
+                "tools": [], "context": [], "state": {}
+            }),
+        ),
+        async || status().await.is_some(),
+        |response| panic!("the chat finished before the drop: {}", response.text()),
+    )
+    .await;
+    ab_testkit::wait_until("the dropped chat's run never settled", async || {
+        status().await.as_deref() == Some("aborted")
+    })
+    .await;
+}

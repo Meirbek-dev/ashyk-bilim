@@ -124,6 +124,9 @@ pub struct QaSession {
     input_tokens: i32,
     history: Vec<ChatMessage>,
     started: Instant,
+    /// Armed as soon as the run exists (BUG-319): a session or stream
+    /// dropped at any point before it settles, even unpolled, aborts the run.
+    guard: IncompleteGuard,
 }
 
 /// One item of a streamed turn, in order: deltas, then optionally the
@@ -173,7 +176,7 @@ fn turn_reused() -> Error {
     Error::conflict("client_turn_id was already used for a different question")
 }
 
-/// Aborts the run and keeps the partial answer when the stream is dropped
+/// Aborts the run and keeps the partial answer when the session is dropped
 /// before it settled (client went away — legacy `asyncio.CancelledError`).
 struct IncompleteGuard {
     service: AiService,
@@ -184,6 +187,21 @@ struct IncompleteGuard {
 }
 
 impl IncompleteGuard {
+    fn arm(
+        service: &AiService,
+        question: &QaMessageRow,
+        user_id: UserId,
+        run_id: ab_core::id::AiRunId,
+    ) -> Self {
+        Self {
+            service: service.clone(),
+            session_ids: (question.thread_id, question.course_id, user_id, question.id),
+            run_id,
+            text: String::new(),
+            settled: false,
+        }
+    }
+
     fn record(&mut self, text: &str) {
         self.text.clear();
         self.text.push_str(text);
@@ -388,6 +406,7 @@ impl AiService {
                 },
             )
             .await?;
+        let guard = IncompleteGuard::arm(self, &user_message, actor.user_id, run.id);
         let thread = ab_db::ai::get_thread(&self.pool, thread_id)
             .await?
             .ok_or_else(|| Error::not_found("ai thread"))?;
@@ -405,6 +424,7 @@ impl AiService {
             input_tokens,
             history,
             started: Instant::now(),
+            guard,
         })
     }
 
@@ -681,33 +701,21 @@ impl AiService {
     }
 
     /// Stream one prepared turn. Dropping the stream before it settles
-    /// aborts the run and keeps the partial answer (client disconnect).
+    /// (polled or not) aborts the run and keeps the partial answer.
     #[must_use]
-    pub fn stream_qa(&self, session: QaSession) -> QaStream {
+    pub fn stream_qa(&self, mut session: QaSession) -> QaStream {
         let service = self.clone();
         Box::pin(async_stream::stream! {
             let run_id = session.run.id;
             let thread_id = session.thread.id;
             let watch = service.cancel_watch(run_id);
-            let mut guard = IncompleteGuard {
-                service: service.clone(),
-                session_ids: (
-                    thread_id,
-                    session.user_message.course_id,
-                    session.user_id,
-                    session.user_message.id,
-                ),
-                run_id,
-                text: String::new(),
-                settled: false,
-            };
             if let Err(err) = service
                 .emit_execution_events(run_id, session.sources.len(), session.input_tokens)
                 .await
             {
                 tracing::warn!(%run_id, %err, "qa execution events not journaled");
                 service.fail_run(run_id, FAIL_CODE).await;
-                guard.settle();
+                session.guard.settle();
                 yield QaTurn::Error { code: FAIL_CODE, message: FAIL_CODE };
                 return;
             }
@@ -730,7 +738,7 @@ impl AiService {
                             }
                         }
                         text.push_str(&delta);
-                        guard.record(&text);
+                        session.guard.record(&text);
                         yield QaTurn::Delta(delta);
                     }
                     Ok(Step::Final { answer, model_name, usage }) => {
@@ -754,7 +762,15 @@ impl AiService {
                     "the answer stream ended without a final answer",
                 )),
             };
-            guard.settle();
+            // Settle only once the run is terminal: a drop mid-`fail_run`
+            // still aborts it.
+            if let Err(err) = &result
+                && !is_cancelled(err)
+            {
+                tracing::warn!(%run_id, %err, "course qa turn failed");
+                service.fail_run(run_id, FAIL_CODE).await;
+            }
+            session.guard.settle();
             match result {
                 Ok(finished) => {
                     if !finished.citations.is_empty() {
@@ -770,9 +786,7 @@ impl AiService {
                 Err(err) if is_cancelled(&err) => {
                     yield QaTurn::Error { code: "CANCELLED", message: "AI_RUN_CANCELLED" };
                 }
-                Err(err) => {
-                    tracing::warn!(%run_id, %err, "course qa turn failed");
-                    service.fail_run(run_id, FAIL_CODE).await;
+                Err(_) => {
                     yield QaTurn::Error { code: FAIL_CODE, message: FAIL_CODE };
                 }
             }
