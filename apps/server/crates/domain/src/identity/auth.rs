@@ -953,11 +953,16 @@ impl IdentityService {
         .await
     }
 
-    /// Terminate the actor's current session (idempotent). The Zitadel-side
-    /// session delete is best-effort — our session is the credential.
+    /// Terminate the actor's current session (idempotent). Our session is
+    /// the credential, so it goes first (BUG-311); the Zitadel-side delete
+    /// is best-effort bookkeeping after it.
     pub async fn logout(&self, actor: &Actor) -> Result<()> {
-        if let Some(record) = self.sessions.peek(&actor.session_id).await? {
-            let token = SecretString::from(record.zitadel_session_token.clone());
+        let record = self.sessions.peek(&actor.session_id).await?;
+        self.sessions
+            .revoke(actor.user_id, &actor.session_id)
+            .await?;
+        if let Some(record) = record {
+            let token = SecretString::from(record.zitadel_session_token);
             if let Err(err) = self
                 .zitadel
                 .delete_session(&record.zitadel_session_id, &token)
@@ -966,9 +971,6 @@ impl IdentityService {
                 tracing::warn!(%err, "zitadel session delete failed (continuing logout)");
             }
         }
-        self.sessions
-            .revoke(actor.user_id, &actor.session_id)
-            .await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(actor.user_id),

@@ -2315,3 +2315,63 @@ async fn ip_limit_holds_under_a_concurrent_burst(pool: PgPool) {
         StatusCode::TOO_MANY_REQUESTS
     );
 }
+
+/// BUG-311: the client hangs up mid-logout — once our session is gone and
+/// once Zitadel is still answering its delete. The session is revoked and
+/// the logout audited either way (the web drops its cookie regardless).
+#[sqlx::test(migrations = "../../migrations")]
+async fn logout_dropped_mid_flight_still_revokes_the_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("leaver", "leaver@example.com", &["user"])
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path("/v2/sessions/zs-test"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(150))
+                .set_body_json(serde_json::json!({})),
+        )
+        .mount(&app.zitadel)
+        .await;
+    for (round, at_zitadel) in [false, true].into_iter().enumerate() {
+        let session = app.mint_session_for(user, &[]).await;
+        let zitadel_deletes = || async {
+            app.zitadel
+                .received_requests()
+                .await
+                .unwrap()
+                .iter()
+                .filter(|r| r.method.as_str() == "DELETE")
+                .count()
+        };
+        drop_request_when(
+            app.post_as(&session, "/api/v2/auth/logout", &serde_json::json!({})),
+            async || {
+                if at_zitadel {
+                    zitadel_deletes().await > round
+                } else {
+                    app.sessions.list(user).await.unwrap().is_empty()
+                }
+            },
+            |response| {
+                assert_eq!(
+                    response.status,
+                    StatusCode::NO_CONTENT,
+                    "{}",
+                    response.text()
+                )
+            },
+        )
+        .await;
+        assert_eq!(
+            app.get_as(&session, "/api/v2/auth/session").await.status,
+            StatusCode::UNAUTHORIZED,
+            "session outlived a dropped logout (at_zitadel = {at_zitadel})"
+        );
+        wait_until("logout never audited", async || {
+            audited(&app, "logout").await == i64::try_from(round).unwrap() + 1
+        })
+        .await;
+    }
+}

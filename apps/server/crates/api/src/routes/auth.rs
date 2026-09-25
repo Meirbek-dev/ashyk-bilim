@@ -243,8 +243,11 @@ pub async fn logout(
     jar: CookieJar,
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<(CookieJar, StatusCode)> {
-    state.identity.logout(&actor).await?;
-    Ok((jar.add(removal_cookie(&state)), StatusCode::NO_CONTENT))
+    let cookie = removal_cookie(&state);
+    // A hang-up must not leave the session live while the client drops its
+    // cookie believing it logged out (BUG-311).
+    detached(async move { Ok(state.identity.logout(&actor).await?) }).await?;
+    Ok((jar.add(cookie), StatusCode::NO_CONTENT))
 }
 
 /// The caller's current session (also the cheapest "am I logged in?" probe).
