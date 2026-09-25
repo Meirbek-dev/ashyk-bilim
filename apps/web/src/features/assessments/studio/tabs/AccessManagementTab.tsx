@@ -29,7 +29,7 @@ import { assessmentAccessQueryOptions, setVersionedAccess } from '@/features/ass
 import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
 import type { OverrideRequest, StudentOverride } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { collectGradebookPages } from '@/features/grading/queries/grading.query'
 import { useApiError } from '@/hooks/useApiError'
@@ -232,6 +232,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
     onSuccess: outcomes => {
       const saved: StudentOverride[] = []
       const refused = new Map<string, string>()
+      const notMembers = new Set<string>()
       let unmarked: unknown = null
       for (const { userId, result } of outcomes) {
         if (result.status === 'fulfilled') {
@@ -240,16 +241,22 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         }
         const byField = collectFieldErrors(result.reason, handleApiError, t('overrideSaveFailed'))
         if (byField.size === 0) unmarked ??= result.reason
-        for (const [field, message] of byField) refused.set(field === 'user_id' ? `user_ids.${userId}` : field, message)
+        for (const [field, message] of byField) {
+          if (field === 'user_id') notMembers.add(userId)
+          refused.set(field === 'user_id' ? `user_ids.${userId}` : field, message)
+        }
       }
-      if (saved.length > 0) {
+      // UX-208: a learner refused as staff / not in the course holds no override any more
+      // (joining the staff or leaving drops it) — drop the stale cached row with the save.
+      if (saved.length > 0 || notMembers.size > 0) {
         queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
           const byUser = new Map(current.map(override => [override.user_id, override]))
+          for (const userId of notMembers) byUser.delete(userId)
           for (const override of saved) byUser.set(override.user_id, override)
           return [...byUser.values()]
         })
-        toast.success(t('overrideSaved', { count: saved.length }))
       }
+      if (saved.length > 0) toast.success(t('overrideSaved', { count: saved.length }))
       setFieldErrors(current => {
         const next = new Map(current)
         next.delete('max_attempts_override')
@@ -278,7 +285,18 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       )
       toast.success(t('overrideDeleted'))
     },
-    onError: error => setLastOverrideError(toastApiError(error, { fallback: t('overrideDeleteFailed') }).message),
+    onError: (error, userId) => {
+      // UX-208: 404 — the override is already gone (the learner left or joined the staff);
+      // clearing it succeeded in effect, so drop the stale row instead of an error toast.
+      if (isApiError(error) && error.status === 404) {
+        queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) =>
+          current.filter(override => override.user_id !== userId),
+        )
+        toast.success(t('overrideDeleted'))
+        return
+      }
+      setLastOverrideError(toastApiError(error, { fallback: t('overrideDeleteFailed') }).message)
+    },
   })
   const isOverridePending = overrideMutation.isPending || deleteOverrideMutation.isPending
 

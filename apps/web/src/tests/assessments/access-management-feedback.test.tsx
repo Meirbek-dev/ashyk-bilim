@@ -15,6 +15,8 @@ import ruMessages from '@/messages/ru-RU.json'
 const mocks = vi.hoisted(() => ({
   setAccess: vi.fn(),
   createOverride: vi.fn(),
+  updateOverride: vi.fn(),
+  deleteOverride: vi.fn(),
   overrides: [] as { user_id: string }[],
   users: [{ id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null }],
   toastError: vi.fn(),
@@ -43,8 +45,8 @@ vi.mock('@/lib/api-client', () => ({
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   listOverrides: async () => mocks.overrides,
   createOverride: mocks.createOverride,
-  updateOverride: vi.fn(),
-  deleteOverride: vi.fn(),
+  updateOverride: mocks.updateOverride,
+  deleteOverride: mocks.deleteOverride,
 }))
 vi.mock('@/lib/api/generated/usergroups/usergroups', () => ({ usergroupsForCourse: vi.fn() }))
 vi.mock('@/features/grading/queries/grading.query', () => ({ collectGradebookPages: vi.fn() }))
@@ -71,6 +73,8 @@ const validation = (field: string, code: string) =>
 beforeEach(() => {
   mocks.setAccess.mockReset()
   mocks.createOverride.mockReset()
+  mocks.updateOverride.mockReset()
+  mocks.deleteOverride.mockReset()
   mocks.toastError.mockReset()
   mocks.toastSuccess.mockReset()
   mocks.overrides = []
@@ -161,6 +165,31 @@ describe('access management feedback (UX-057)', () => {
     expect(badged.every(row => within(row).queryByText('Aru'))).toBe(true)
     expect(mocks.toastSuccess).toHaveBeenCalledTimes(1)
     expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
+  // UX-208: the refused staffer's override is gone server-side — the stale row goes too.
+  it('drops the cached override of a learner refused as staff', async () => {
+    mocks.overrides = [{ user_id: 'u1' }]
+    mocks.updateOverride.mockRejectedValue(validation('user_id', 'staff'))
+    renderTab()
+    await waitFor(() => expect(screen.getAllByText('Исключение').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByRole('button', { name: /Применить/ }))
+    await screen.findByText('Входит в команду курса.')
+    await waitFor(() => expect(screen.queryByText('Исключение')).toBeNull())
+  })
+
+  // UX-208: clearing an override that is already gone (404) is a success, not an error.
+  it('treats a 404 on clearing an override as already cleared', async () => {
+    mocks.overrides = [{ user_id: 'u1' }]
+    mocks.deleteOverride.mockRejectedValue(
+      new APIError({ status: 404, code: 'not-found', message: 'override not found' }),
+    )
+    renderTab()
+    await waitFor(() => expect(screen.getAllByText('Исключение').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByRole('button', { name: 'Очистить' }))
+    await waitFor(() => expect(screen.queryByText('Исключение')).toBeNull())
+    expect(mocks.toastError).not.toHaveBeenCalled()
+    expect(mocks.toastSuccess).toHaveBeenCalled()
   })
 
   it('puts the override badge under the learner name, not beside it (UX-195)', async () => {
