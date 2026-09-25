@@ -40,6 +40,7 @@ import { useSession } from '@/hooks/useSession'
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { Card, CardContent, CardFooter } from '@components/ui/card'
 import { Actions, Resources, Scopes } from '@/types/permissions'
+import { CTA_LABEL } from '@components/Objects/Courses/CourseActions/useCourseActions'
 import NextImage from '@components/ui/NextImage'
 import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
@@ -400,10 +401,11 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   priority = false,
 }) => {
   const t = useTranslations('Components.CourseThumbnail')
+  const tCta = useTranslations('Courses.CoursesActions')
   const locale = useLocale()
   const router = useRouter()
   const { toastApiError } = useApiError()
-  const { user: currentUser, isAuthenticated } = useSession()
+  const { user: currentUser, isAuthenticated, can } = useSession()
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -446,6 +448,13 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
   // The owner badge marks the creator only; co-authors get the menu, not the crown.
   const isOwner = isCourseCreator(course, currentUser?.id)
+  // UX-204: the course's staff (`is_course_staff`: the roster in the list
+  // payload, or a platform authoring grant) get the landing's «Открыть курс»
+  // — the server refuses to enrol them (BUG-287).
+  const isStaff =
+    isCourseAuthor(course, currentUser?.id) ||
+    can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.APP) ||
+    can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.ALL)
 
   const handleDelete = async () => {
     const toastId = toast.loading(t('deleting'))
@@ -508,7 +517,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           progressPercentage={progressPercentage}
           courseUrl={actionUrl}
           courseName={course.name || ''}
-          actionLabel={actionLink && !isEnrolled ? actionLabel : undefined}
+          actionLabel={actionLink && !isEnrolled ? actionLabel : isStaff ? tCta(CTA_LABEL.preview) : undefined}
           nextAction={learnerProgress.nextAction}
           certificateHref={learnerProgress.certificateHref}
           t={t}

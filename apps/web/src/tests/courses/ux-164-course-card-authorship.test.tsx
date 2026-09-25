@@ -68,3 +68,22 @@ describe('UX-164 course card authorship', () => {
     expect(screen.queryByRole('button', { name: 'Опции курса' })).toBeNull()
   })
 })
+
+// UX-204: the course's staff get the landing's «Открыть курс», never «Начать обучение».
+describe('UX-204 course card CTA for staff', () => {
+  it('creator: open course', () => {
+    card({ creator_id: 'me', contributor_ids: [] })
+    expect(screen.getByText('Открыть курс')).toBeInTheDocument()
+    expect(screen.queryByText('Начать обучение')).toBeNull()
+  })
+
+  it('co-author: open course', () => {
+    card({ creator_id: 'other', contributor_ids: ['me'] })
+    expect(screen.getByText('Открыть курс')).toBeInTheDocument()
+  })
+
+  it('learner: start learning', () => {
+    card({ creator_id: 'other', contributor_ids: [] })
+    expect(screen.getByText('Начать обучение')).toBeInTheDocument()
+  })
+})
