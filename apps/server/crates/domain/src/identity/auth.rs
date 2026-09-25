@@ -452,11 +452,16 @@ impl IdentityService {
         for key in first.unwrap_or_default() {
             self.limiter.release(key).await?;
         }
-        // Status is re-read after the epoch, not taken from the row looked up
-        // before it — the fence only covers state read after the epoch.
-        let status = ab_db::identity::user_status(&self.pool, user.id)
+        // Status and `rbac_version` are re-read after the epoch, not taken
+        // from the row looked up before it — the fence only covers state read
+        // after the epoch, and the version must be no older than the grants
+        // read below (UX-211, as Google login does).
+        let (status, rbac_version) = ab_db::identity::find_auth_user(&self.pool, user.id)
             .await?
-            .unwrap_or_else(|| "deleted".to_owned());
+            .map_or_else(
+                || ("deleted".to_owned(), 0),
+                |row| (row.status, row.rbac_version),
+            );
         if status != "active" {
             self.discard_zitadel_session(&zsession, "blocked").await;
             self.audit(
@@ -505,7 +510,7 @@ impl IdentityService {
                 .to_owned(),
                 roles: roles.clone(),
                 permissions: permissions.clone(),
-                rbac_version: user.rbac_version,
+                rbac_version,
                 mfa_enabled,
                 // Zitadel just checked it.
                 has_password: true,
@@ -792,13 +797,18 @@ impl IdentityService {
                 message: "verification code is invalid or expired".into(),
             }])
         };
+        // Zitadel's email codes are uppercase letters + digits; a code typed
+        // in lowercase is the same code (UX-205). A blank one is simply wrong
+        // — Zitadel never sees it (UX-211).
+        let code = code.trim().to_uppercase();
+        if code.is_empty() {
+            return Err(invalid());
+        }
         let Some(user) = ab_db::identity::find_user_for_login(&self.pool, email).await? else {
             return Err(invalid());
         };
-        // Zitadel's email codes are uppercase letters + digits; a code typed
-        // in lowercase is the same code (UX-205).
         self.zitadel
-            .verify_email(&user.zitadel_user_id, &code.trim().to_uppercase())
+            .verify_email(&user.zitadel_user_id, &code)
             .await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,

@@ -521,6 +521,31 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
         .await;
     assert_eq!(wrong.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(wrong.json()["field_errors"][0]["field"], "code");
+    // A blank code is simply wrong — Zitadel never sees it (UX-211).
+    let verify_calls = || async {
+        app.zitadel
+            .received_requests()
+            .await
+            .unwrap()
+            .iter()
+            .filter(|r| r.url.path().ends_with("/email/verify"))
+            .count()
+    };
+    let before = verify_calls().await;
+    let blank = app
+        .post_json(
+            "/api/v2/auth/verify-email",
+            &serde_json::json!({ "email": "aigerim@example.com", "code": "   " }),
+        )
+        .await;
+    assert_eq!(
+        blank.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        blank.text()
+    );
+    assert_eq!(blank.json()["field_errors"][0]["field"], "code");
+    assert_eq!(verify_calls().await, before, "blank code reached Zitadel");
     // Unknown email: same answer, no enumeration.
     let ghost = app
         .post_json(

@@ -185,11 +185,15 @@ pub async fn verify_email(
     ClientIp(ip): ClientIp,
     ValidJson(request): ValidJson<VerifyEmailRequest>,
 ) -> ApiResult<StatusCode> {
-    state
-        .identity
-        .verify_email(&request.email, &request.code, ip.as_deref())
-        .await?;
-    Ok(StatusCode::NO_CONTENT)
+    // Zitadel verify → audit outlive the connection (UX-211).
+    detached(async move {
+        state
+            .identity
+            .verify_email(&request.email, &request.code, ip.as_deref())
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }
 
 /// Change the caller's password (current password checked by Zitadel).
@@ -474,9 +478,13 @@ pub async fn revoke_session(
     CurrentActor(actor): CurrentActor,
     Path(handle): Path<String>,
 ) -> ApiResult<StatusCode> {
-    if state.identity.revoke_session(&actor, &handle).await? {
-        Ok(StatusCode::NO_CONTENT)
-    } else {
-        Err(Error::app(ErrorCode::NotFound, "no session with that handle").into())
-    }
+    // Revoke → audit outlive the connection (UX-211).
+    detached(async move {
+        if state.identity.revoke_session(&actor, &handle).await? {
+            Ok(StatusCode::NO_CONTENT)
+        } else {
+            Err(Error::app(ErrorCode::NotFound, "no session with that handle").into())
+        }
+    })
+    .await
 }

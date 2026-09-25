@@ -1,11 +1,11 @@
 //! User self-service: profile read/update, avatar via the upload pipeline.
 
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, FieldError, Result};
+use ab_core::{Error, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::files::uploads::UNREFERENCED_GRACE;
+use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
 
 pub use ab_db::identity::ProfileRow as Profile;
@@ -57,10 +57,8 @@ impl UsersService {
             .bio
             .as_deref()
             .map(ab_core::strip_controls_multiline);
-        match changes.avatar_upload_id {
-            Some(Some(upload_id)) => self.claim_avatar(actor, upload_id).await?,
-            Some(None) => self.replace_avatar(actor, None).await?,
-            None => {}
+        if let Some(upload_id) = changes.avatar_upload_id {
+            self.replace_avatar(actor, upload_id).await?;
         }
         ab_db::identity::update_profile(
             &self.pool,
@@ -73,34 +71,19 @@ impl UsersService {
         .ok_or_else(|| Error::not_found("user"))
     }
 
-    /// Claim a finalized `avatar` upload, releasing any replaced object for
-    /// reaping (same mechanics as block media and platform branding).
-    async fn claim_avatar(&self, actor: &Actor, upload_id: Uuid) -> Result<()> {
-        let upload = ab_db::uploads::get_upload(&self.pool, upload_id)
-            .await?
-            .ok_or_else(|| Error::not_found("upload"))?;
-        if upload.created_by != actor.user_id {
-            return Err(Error::forbidden("not your upload"));
-        }
-        if upload.purpose != "avatar" {
-            return Err(Error::validation(vec![FieldError {
-                field: "avatar_upload_id".into(),
-                code: "wrong-purpose".into(),
-                message: format!("expected an 'avatar' upload, got '{}'", upload.purpose),
-            }]));
-        }
-        if !ab_db::uploads::add_reference(&self.pool, upload_id).await? {
-            return Err(Error::conflict("upload is not finalized"));
-        }
-        self.replace_avatar(actor, Some(&upload.key)).await
-    }
-
-    /// Swap the avatar key and release exactly the key the UPDATE replaced
-    /// (equal to `key` only after a re-claim, which counted it once more),
-    /// in one transaction (BUG-255).
-    async fn replace_avatar(&self, actor: &Actor, key: Option<&str>) -> Result<()> {
+    /// Claim the new avatar upload (if any), swap the key and release
+    /// exactly the key the UPDATE replaced (equal to the new one only after a
+    /// re-claim, which counted it once more) — one transaction, so a hang-up
+    /// never leaves a claimed reference without the swap (BUG-255, UX-211).
+    async fn replace_avatar(&self, actor: &Actor, upload_id: Option<Uuid>) -> Result<()> {
         let mut tx = self.pool.begin().await?;
-        if let Some(old) = ab_db::identity::set_avatar_key(&mut *tx, actor.user_id, key).await? {
+        let key = match upload_id {
+            Some(id) => Some(claim_upload(&mut tx, actor, id, "avatar", "avatar_upload_id").await?),
+            None => None,
+        };
+        if let Some(old) =
+            ab_db::identity::set_avatar_key(&mut *tx, actor.user_id, key.as_deref()).await?
+        {
             ab_db::uploads::release_reference_by_key(
                 &mut *tx,
                 &old,

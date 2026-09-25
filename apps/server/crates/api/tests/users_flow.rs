@@ -1,7 +1,7 @@
 //! User profile self-service flows.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::TestApp;
+use ab_testkit::{TestApp, drop_request_when};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -758,4 +758,47 @@ async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(pinned, 0, "a replaced avatar stayed referenced");
+}
+
+/// UX-211: the client hangs up the moment the avatar upload counts as
+/// referenced — the claim and the swap land together or not at all, so no
+/// upload stays pinned without being the avatar.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("hangup", "hangup@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &["user:update:own"]).await;
+    for _ in 0..5 {
+        let id = finalized_row(&app, user, "avatar").await;
+        let upload: uuid::Uuid = id.parse().unwrap();
+        drop_request_when(
+            app.patch_as(
+                &session,
+                "/api/v2/users/me",
+                &serde_json::json!({ "avatar_upload_id": id }),
+            ),
+            async || {
+                sqlx::query_scalar::<_, i32>("SELECT referenced_count FROM uploads WHERE id = $1")
+                    .bind(upload)
+                    .fetch_one(&app.pool)
+                    .await
+                    .unwrap()
+                    > 0
+            },
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        let pinned: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM uploads
+             WHERE referenced_count > 0
+               AND key IS DISTINCT FROM (SELECT avatar_key FROM users WHERE id = $1)",
+        )
+        .bind(user.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!(pinned, 0, "a claimed upload is not the avatar");
+    }
 }
