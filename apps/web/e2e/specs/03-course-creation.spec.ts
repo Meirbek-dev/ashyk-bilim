@@ -90,6 +90,9 @@ test.describe.serial('Teacher – Course Creation', () => {
   })
 
   test('teacher can populate the lecture with a heading block', async ({ page, curriculumEditorPage }) => {
+    // The first visit compiles the studio route under `next dev` (> 30 s on a cold
+    // server — the whole suite then cascades); a later visit is fast.
+    test.setTimeout(90_000)
     // v2: the activity row's "Open edit page" link carries the activity id;
     // the studio route renders the page editor for dynamic activities.
     await curriculumEditorPage.goto(courseUuid)
