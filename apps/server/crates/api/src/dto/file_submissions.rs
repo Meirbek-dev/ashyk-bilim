@@ -198,7 +198,8 @@ pub struct Attempt {
     pub graded_at_unix: Option<i64>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
-    /// Present on grader views.
+    /// Present on grader views and on `GET file-submission-attempts/{id}`
+    /// (the owner's own summary there, UX-199).
     pub user: Option<UserSummary>,
 }
 

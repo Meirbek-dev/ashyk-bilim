@@ -606,6 +606,8 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         )
         .await;
     assert_eq!(hidden.json()["status"], "graded");
+    // UX-199: the owner's view names its owner (the review workspace's «own» check).
+    assert_eq!(hidden.json()["user"]["username"], "alice");
     assert!(hidden.json()["final_score"].is_null());
     assert!(hidden.json()["feedback"].is_null());
     let stale_grade = app

@@ -1174,7 +1174,10 @@ impl FileSubmissionsService {
         let row = self.load(attempt.file_submission_id).await?;
         if attempt.user_id == actor.user_id {
             self.require_submit_access(actor, &row).await?;
-            return self.attempt_view(attempt, false, true).await;
+            // UX-199: the owner's view names its owner too, so a grader
+            // opening their own attempt in the review workspace sees it as
+            // theirs (grade fields stay redacted until released).
+            return self.attempt_view(attempt, true, true).await;
         }
         self.scoped(actor, &row, Action::Grade, "grading")
             .await
