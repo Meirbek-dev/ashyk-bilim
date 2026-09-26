@@ -5024,7 +5024,7 @@
           "assessments"
         ],
         "summary": "What the caller may do with this assessment right now.",
-        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access, the allowlist when restricted, and\n`assessment:submit:assigned` (authors preview freely).",
+        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.",
         "operationId": "attempt_state",
         "parameters": [
           {
@@ -17148,7 +17148,8 @@
           "PAST_DUE",
           "MAX_ATTEMPTS_REACHED",
           "TIME_LIMIT_EXPIRED",
-          "REMEDIATION_REQUIRED"
+          "REMEDIATION_REQUIRED",
+          "ACCESS_RESTRICTED"
         ]
       },
       "Discussion": {
@@ -20743,6 +20744,23 @@
               "null"
             ]
           },
+          "protocolVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "AG-UI 1.0 (`\"1.0\"`); absent from pre-1.0 clients."
+          },
+          "resume": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored."
+          },
           "runId": {
             "type": "string"
           },
@@ -20924,11 +20942,30 @@
               "null"
             ]
           },
+          "encryptedValue": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "AG-UI 1.0 message members; accepted and ignored."
           },
           "parts": {
             "type": [
@@ -20942,6 +20979,12 @@
           },
           "role": {
             "type": "string"
+          },
+          "subagentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "additionalProperties": false
@@ -21877,6 +21920,21 @@
               "string",
               "null"
             ]
+          },
+          "protocolVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resume": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
           },
           "runId": {
             "type": "string"

@@ -13,6 +13,8 @@ export const StreamRunBody = zod
     forwardedProps: zod.looseObject({}).nullish(),
     messages: zod.array(zod.looseObject({})).nullish(),
     parentRunId: zod.string().nullish(),
+    protocolVersion: zod.string().nullish(),
+    resume: zod.array(zod.looseObject({})).nullish(),
     runId: zod.string(),
     state: zod.looseObject({}).nullish(),
     threadId: zod.string(),

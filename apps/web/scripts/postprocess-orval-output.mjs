@@ -12,6 +12,19 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
+// Windows: a watcher or antivirus briefly holds files orval just wrote.
+const writeWithRetry = (filePath, source) => {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      writeFileSync(filePath, source)
+      return
+    } catch (error) {
+      if (attempt >= 40 || !['EBUSY', 'EPERM', 'UNKNOWN'].includes(error.code)) throw error
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250)
+    }
+  }
+}
+
 const generatedDir = path.resolve(import.meta.dirname, '..', 'src/lib/api/generated')
 
 const mutatorHelpers = new Set([
@@ -211,5 +224,5 @@ for (const filePath of generatedOperationFiles(generatedDir)) {
     )
   }
 
-  writeFileSync(filePath, source)
+  writeWithRetry(filePath, source)
 }

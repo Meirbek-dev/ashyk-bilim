@@ -150,6 +150,7 @@ export const FileSubmission = zod.object({
           'MAX_ATTEMPTS_REACHED',
           'TIME_LIMIT_EXPIRED',
           'REMEDIATION_REQUIRED',
+          'ACCESS_RESTRICTED',
         ])
         .describe(
           'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',

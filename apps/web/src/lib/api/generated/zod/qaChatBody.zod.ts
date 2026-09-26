@@ -31,17 +31,26 @@ export const QaChatBody = zod
         zod
           .object({
             content: zod.string().nullish(),
+            encryptedValue: zod.string().nullish(),
             id: zod.string().nullish(),
+            metadata: zod.looseObject({}).nullish(),
+            name: zod.string().nullish().describe('AG-UI 1.0 message members; accepted and ignored.'),
             parts: zod
               .array(zod.looseObject({}))
               .nullish()
               .describe('`[{type: "text", content: "…"}, …]` — an alternative to `content`.'),
             role: zod.string(),
+            subagentRunId: zod.string().nullish(),
           })
           .describe('One message of the AG-UI conversation the client sends back.'),
       )
       .optional(),
     parentRunId: zod.string().nullish(),
+    protocolVersion: zod.string().nullish().describe('AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.'),
+    resume: zod
+      .array(zod.looseObject({}))
+      .nullish()
+      .describe('AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.'),
     runId: zod.string(),
     state: zod.looseObject({}).nullish(),
     threadId: zod.string(),
