@@ -1026,6 +1026,7 @@
         "title": "Проверить сертификат {certificationName} - {courseName}"
       },
       "title": "Проверка сертификата - {certificationName} ({courseName})",
+      "titleSingle": "Проверка сертификата - {name}",
       "twitter": {
         "description": "Проверьте подлинность сертификата {certificationName} для курса {courseName}.",
         "title": "Проверить сертификат {certificationName} - {courseName}"

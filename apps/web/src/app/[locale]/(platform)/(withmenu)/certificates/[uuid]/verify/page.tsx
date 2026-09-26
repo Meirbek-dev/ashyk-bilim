@@ -20,11 +20,14 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
     if (result.data) {
       const certificateData = result.data
       const rawName = certificateData.certification.config.certification_name
-      const certificationName = typeof rawName === 'string' ? rawName : ''
       const courseName = certificateData.course.name ?? ''
+      // The PDF's rule: no certification name → the course name (UX-225).
+      const certificationName = (typeof rawName === 'string' && rawName.trim()) || courseName
+      // UX-225: a migrated certification is often named like its course — name it once.
+      const single = certificationName.trim() === courseName.trim() ? t('titleSingle', { name: courseName }) : null
 
       return {
-        title: t('title', { certificationName, courseName }),
+        title: single ?? t('title', { certificationName, courseName }),
         description: t('description', { certificationName, courseName }),
         keywords: t('keywords', { certificationName, courseName }),
         robots: {
@@ -38,7 +41,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
           },
         },
         openGraph: {
-          title: t('openGraph.title', { certificationName, courseName }),
+          title: single ?? t('openGraph.title', { certificationName, courseName }),
           description: t('openGraph.description', {
             certificationName,
             courseName,

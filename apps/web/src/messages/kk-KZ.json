@@ -1025,6 +1025,7 @@
         "title": "{courseName} үшін {certificationName} сертификатын тексеру"
       },
       "title": "Сертификатты тексеру - {certificationName} ({courseName})",
+      "titleSingle": "Сертификатты тексеру - {name}",
       "twitter": {
         "description": "{courseName} курсы үшін {certificationName} сертификатының шынайылығын тексеріңіз.",
         "title": "{courseName} үшін {certificationName} сертификатын тексеру"

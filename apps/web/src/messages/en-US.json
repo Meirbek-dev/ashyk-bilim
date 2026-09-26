@@ -1026,6 +1026,7 @@
         "title": "Verify {certificationName} Certificate - {courseName}"
       },
       "title": "Certificate Verification - {certificationName} ({courseName})",
+      "titleSingle": "Certificate Verification - {name}",
       "twitter": {
         "description": "Check and verify the authenticity of the {certificationName} certificate for {courseName}.",
         "title": "Verify {certificationName} Certificate - {courseName}"
