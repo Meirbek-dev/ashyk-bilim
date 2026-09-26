@@ -3445,7 +3445,7 @@
       "coursesCompleted": "Завершенные курсы",
       "coursesStarted": "Начатые курсы",
       "dailyActiveUsers": "Ежедневные активные пользователи",
-      "enrollments": "{count, plural, one {# регистрация} other {# регистраций}}",
+      "enrollments": "{count, plural, one {# регистрация} few {# регистрации} many {# регистраций} other {# регистрации}}",
       "errorLoadingAlertsData": "Ошибка загрузки оповещений",
       "errorLoadingAnalyticsData": "Ошибка загрузки аналитики",
       "errorLoadingGamificationData": "Ошибка загрузки данных геймификации",
@@ -7742,7 +7742,7 @@
     "riskDistribution": {
       "title": "Распределение рисков",
       "description": "Риск учащихся по уровню срочности для текущего охвата.",
-      "preview": "Показаны топ-{shown} из {total} учащихся в зоне риска.",
+      "preview": "Показаны топ-{shown} из {total, plural, one {# регистрации} other {# регистраций}} в зоне риска.",
       "learners": "Учащиеся",
       "emptyState": "Нет учащихся в зоне риска для текущего охвата."
     },
@@ -7864,7 +7864,7 @@
       "atRiskUnavailableDesc": "Для просмотра учащихся в зоне риска требуется аутентифицированный сеанс.",
       "atRiskLoadError": "Не удалось загрузить представление рисков учащихся.",
       "atRiskPageTitle": "Полный список учащихся в зоне риска",
-      "atRiskPageDescription": "{total, plural, one {# учащийся в охвате, ранжированный по уровню риска.} few {# учащегося в охвате, ранжированных по уровню риска.} other {# учащихся в охвате, ранжированных по уровню риска.}}",
+      "atRiskPageDescription": "{total, plural, one {# регистрация в охвате, по убыванию риска.} few {# регистрации в охвате, по убыванию риска.} many {# регистраций в охвате, по убыванию риска.} other {# регистрации в охвате, по убыванию риска.}}",
       "courseDetailBadge": "Детали курса",
       "courseStatCompletion": "Завершение",
       "courseStatAvgProgress": "Средний прогресс",
@@ -8364,13 +8364,6 @@
           "noAnswerPayload": "Данные об ответе не зафиксированы.",
           "itemLabel": "Элемент {index}",
           "rubricGuidance": "Критерии оценивания",
-          "plagiarism": {
-            "failed": "Плагиат: Ошибка проверки",
-            "checking": "Плагиат: Проверяется",
-            "pending": "Плагиат: В ожидании",
-            "match": "Плагиат: {score}% совпадений",
-            "clear": "Плагиат: Чисто"
-          },
           "unknownSubmissionParam": "Работа из ссылки не найдена — показана первая в списке."
         },
         "bulkActions": {
@@ -11281,7 +11274,6 @@
       "submissions": "{count, plural, one {# работа} few {# работы} many {# работ} other {# работы}}",
       "awaitingReview": "{count, plural, one {# ожидает проверки} other {# ожидают проверки}}",
       "forecast": "прогноз: {count}",
-      "learners": "{count, plural, one {# учащийся} few {# учащихся} many {# учащихся} other {# учащегося}}",
       "percentUsed": "{count} % использовано"
     },
     "tools": {

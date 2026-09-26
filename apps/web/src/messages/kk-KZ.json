@@ -3447,7 +3447,7 @@
       "coursesCompleted": "Аяқталған курстар",
       "coursesStarted": "Басталған курстар",
       "dailyActiveUsers": "Күнделікті белсенді пайдаланушылар",
-      "enrollments": "{count, plural, one {# тіркелу} other {# тіркелулер}}",
+      "enrollments": "{count, plural, other {# тіркелу}}",
       "errorLoadingAlertsData": "Хабарламаларды жүктеу қатесі",
       "errorLoadingAnalyticsData": "Аналитика деректерін жүктеу қатесі",
       "errorLoadingGamificationData": "Геймификация деректерін жүктеу қатесі",
@@ -7757,7 +7757,7 @@
     "riskDistribution": {
       "title": "Тәуекел таралымы",
       "description": "Ағымдағы аумақтағы оқушылар тәуекелі кезек деңгейіне қарай.",
-      "preview": "Тәуекелдегі {total} оқушының ең жоғары {shown}-і көрсетілуде.",
+      "preview": "Тәуекелдегі {total} тіркелудің ең жоғары {shown}-і көрсетілуде.",
       "learners": "Оқушылар",
       "emptyState": "Таңдалған аумақ үшін тәуекелдегі оқушылар жоқ."
     },
@@ -7879,7 +7879,7 @@
       "atRiskUnavailableDesc": "Тәуекелдегі оқушыларды тексеру үшін аутентификацияланған сеанс қажет.",
       "atRiskLoadError": "Оқушы тәуекелі көрінісін жүктеу мүмкін болмады.",
       "atRiskPageTitle": "Тәуекелдегі оқушылардың толық тізімі",
-      "atRiskPageDescription": "Тәуекел деңгейі бойынша рейтингтелген {total} аумақтағы оқушылар.",
+      "atRiskPageDescription": "Тәуекел деңгейі бойынша рейтингтелген аумақтағы {total} тіркелу.",
       "courseDetailBadge": "Курс мәліметтері",
       "courseStatCompletion": "Аяқтау",
       "courseStatAvgProgress": "Орташа прогресс",
@@ -8548,13 +8548,6 @@
           "noAnswerPayload": "Жауаптар тіркелмеген.",
           "itemLabel": "{index}-элемент",
           "rubricGuidance": "Рубрика нұсқаулығы",
-          "plagiarism": {
-            "failed": "Плагиат: Тексеру қатесі",
-            "checking": "Плагиат: Тексерілуде",
-            "pending": "Плагиат: Күтуде",
-            "match": "Плагиат: {score}% сәйкестік",
-            "clear": "Плагиат: Таза"
-          },
           "unknownSubmissionParam": "Сілтемедегі жұмыс табылмады — тізімдегі біріншісі көрсетілді."
         },
         "Annotation": {
@@ -11451,7 +11444,6 @@
       "submissions": "{count} жұмыс",
       "awaitingReview": "{count} тексеруді күтуде",
       "forecast": "болжам: {count}",
-      "learners": "{count} білім алушы",
       "percentUsed": "{count} % пайдаланылды"
     },
     "tools": {

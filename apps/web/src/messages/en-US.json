@@ -7727,7 +7727,7 @@
     "riskDistribution": {
       "title": "Risk distribution",
       "description": "Learner risk by urgency level for the current scope.",
-      "preview": "Showing top {shown} of {total} at-risk learners.",
+      "preview": "Showing top {shown} of {total, plural, one {# at-risk enrollment} other {# at-risk enrollments}}.",
       "learners": "Learners",
       "emptyState": "No at-risk learners are currently in view for the selected scope."
     },
@@ -7849,7 +7849,7 @@
       "atRiskUnavailableDesc": "An authenticated session is required to inspect at-risk learners.",
       "atRiskLoadError": "The learner risk view could not be loaded.",
       "atRiskPageTitle": "Full at-risk learner list",
-      "atRiskPageDescription": "Showing {total, plural, one {# scoped learner} other {# scoped learners}} ranked by risk score.",
+      "atRiskPageDescription": "Showing {total, plural, one {# scoped enrollment} other {# scoped enrollments}} ranked by risk score.",
       "courseDetailBadge": "Course detail",
       "courseStatCompletion": "Completion",
       "courseStatAvgProgress": "Average progress",
@@ -8349,13 +8349,6 @@
           "noAnswerPayload": "No answer payload recorded.",
           "itemLabel": "Item {index}",
           "rubricGuidance": "Rubric guidance",
-          "plagiarism": {
-            "failed": "Plagiarism: Failed",
-            "checking": "Plagiarism: Checking",
-            "pending": "Plagiarism: Pending",
-            "match": "Plagiarism: {score}% Match",
-            "clear": "Plagiarism: Clear"
-          },
           "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown."
         },
         "bulkActions": {
@@ -11267,7 +11260,6 @@
       "submissions": "{count, plural, one {# submission} other {# submissions}}",
       "awaitingReview": "{count} awaiting review",
       "forecast": "forecast: {count}",
-      "learners": "{count, plural, one {# learner} other {# learners}}",
       "percentUsed": "{count}% used"
     },
     "tools": {
