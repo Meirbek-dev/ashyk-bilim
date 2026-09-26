@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const NextAction = zod.object({
-  activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
   enabled: zod.boolean(),
   href: zod.string().nullish(),
   id: zod.enum([

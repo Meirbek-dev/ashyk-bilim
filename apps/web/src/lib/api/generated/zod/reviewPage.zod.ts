@@ -37,7 +37,7 @@ export const ReviewPage = zod.object({
       version: zod.int().describe('Teacher optimistic lock (`If-Match` on grade saves).'),
     }),
   ),
-  next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type ReviewPage = zod.input<typeof ReviewPage>

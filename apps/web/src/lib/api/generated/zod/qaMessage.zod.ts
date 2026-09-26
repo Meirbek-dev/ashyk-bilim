@@ -18,7 +18,7 @@ export const QaMessage = zod.object({
   metadata: zod.looseObject({}),
   role: zod.enum(['user', 'assistant']).describe('Q&A message author.'),
   thread_id: zod.uuid(),
-  user_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  user_id: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type QaMessage = zod.input<typeof QaMessage>

@@ -56,7 +56,7 @@ export const CodeRun = zod
       'internal_error',
       'degraded',
     ]),
-    submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
     total: zod.int(),
   })
   .describe(

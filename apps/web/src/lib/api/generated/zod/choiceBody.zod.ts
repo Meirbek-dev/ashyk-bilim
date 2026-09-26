@@ -20,7 +20,7 @@ export const ChoiceBody = zod.object({
     )
     .optional(),
   prompt: zod.string().optional(),
-  variant: zod.union([zod.null(), zod.enum(['single_choice', 'multiple_choice', 'true_false'])]).optional(),
+  variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
 })
 
 export type ChoiceBody = zod.input<typeof ChoiceBody>

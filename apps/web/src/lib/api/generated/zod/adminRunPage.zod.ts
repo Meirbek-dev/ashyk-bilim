@@ -42,7 +42,7 @@ export const AdminRunPage = zod.object({
       })
       .describe('One run in the operations view (legacy `AIOperationRunRead`).'),
   ),
-  next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type AdminRunPage = zod.input<typeof AdminRunPage>

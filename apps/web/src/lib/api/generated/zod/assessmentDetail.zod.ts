@@ -15,7 +15,7 @@ export const AssessmentDetail = zod
     content_version: zod.int(),
     course_id: zod.uuid(),
     created_at_unix: zod.int(),
-    creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
     description: zod.string(),
     grading_type: zod.enum(['numeric', 'percentage']),
     id: zod.uuid(),
@@ -95,7 +95,7 @@ export const AssessmentDetail = zod
                     .optional(),
                   prompt: zod.string().optional(),
                   variant: zod
-                    .union([zod.null(), zod.enum(['single_choice', 'multiple_choice', 'true_false'])])
+                    .union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()])
                     .optional(),
                 })
                 .and(
@@ -232,7 +232,7 @@ export const AssessmentDetail = zod
           kind: zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
           max_score: zod.number(),
           metadata: zod.object({
-            difficulty: zod.union([zod.null(), zod.enum(['easy', 'medium', 'hard'])]).optional(),
+            difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
             estimated_minutes: zod.int().nullish(),
             outcome_ids: zod.array(zod.string()).optional(),
             section_label: zod.string().nullish(),

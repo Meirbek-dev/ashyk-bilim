@@ -12,11 +12,10 @@ export const CreateFileSubmissionBody = zod
     allow_late: zod.boolean().nullish(),
     allowed_mime_types: zod.array(zod.string()).nullish(),
     due_at_unix: zod.int().nullish(),
-    grade_release_mode: zod.union([zod.null(), zod.enum(['immediate', 'batch'])]).optional(),
+    grade_release_mode: zod.union([zod.enum(['immediate', 'batch']), zod.null()]).optional(),
     instructions: zod.string().nullish(),
     late_policy: zod
       .union([
-        zod.null(),
         zod
           .union([
             zod.object({
@@ -33,6 +32,7 @@ export const CreateFileSubmissionBody = zod
             }),
           ])
           .describe('Late-submission handling.'),
+        zod.null(),
       ])
       .optional(),
     max_attempts: zod.int().nullish(),

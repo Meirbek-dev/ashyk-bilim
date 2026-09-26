@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const MoveActivityRequest = zod
   .object({
-    chapter_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    chapter_id: zod.union([zod.uuid(), zod.null()]).optional(),
     position: zod.int().describe('1-based target position (in the destination chapter).'),
   })
   .describe(

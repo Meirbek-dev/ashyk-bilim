@@ -11,30 +11,30 @@ export const PreferencesPatch = zod
   .object({
     display: zod
       .union([
-        zod.null(),
         zod.object({
           animatedEffects: zod.boolean().nullish(),
           compactMode: zod.boolean().nullish(),
         }),
+        zod.null(),
       ])
       .optional(),
     notifications: zod
       .union([
-        zod.null(),
         zod.object({
           xpGain: zod.boolean().nullish(),
         }),
+        zod.null(),
       ])
       .optional(),
     privacy: zod
       .union([
-        zod.null(),
         zod.object({
           showOnLeaderboard: zod
             .boolean()
             .nullish()
             .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
         }),
+        zod.null(),
       ])
       .optional(),
   })

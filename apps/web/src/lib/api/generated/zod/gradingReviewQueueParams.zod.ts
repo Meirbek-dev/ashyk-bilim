@@ -10,15 +10,15 @@ import * as zod from 'zod'
 export const GradingReviewQueueParams = zod.object({
   status: zod
     .union([
-      zod.null(),
       zod
         .enum(['needs_grading', 'pending', 'graded', 'published', 'returned'])
         .describe('Queue filter; `needs_grading` is `pending`.'),
+      zod.null(),
     ])
     .optional(),
   late_only: zod.boolean().optional(),
   search: zod.string().nullish(),
-  cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   limit: zod.int().nullish(),
 })
 

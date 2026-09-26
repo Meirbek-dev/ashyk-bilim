@@ -28,7 +28,7 @@ export const AttemptState = zod
           'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
         ),
     ),
-    draft_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    draft_id: zod.union([zod.uuid(), zod.null()]).optional(),
     effective: zod.object({
       allow_late: zod.boolean(),
       due_at_unix: zod.int().nullish(),

@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const Trail = zod
   .object({
     created_at_unix: zod.int().nullish(),
-    id: zod.union([zod.null(), zod.uuid()]).optional(),
+    id: zod.union([zod.uuid(), zod.null()]).optional(),
     runs: zod.array(
       zod.object({
         course: zod.object({
@@ -21,7 +21,7 @@ export const Trail = zod
               'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
             ),
           created_at_unix: zod.int(),
-          creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
           description: zod.string(),
           id: zod.uuid(),
           learnings: zod

@@ -18,7 +18,7 @@ export const Readiness = zod.object({
       .object({
         area: zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
         code: zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
-        item_id: zod.union([zod.null(), zod.uuid()]).optional(),
+        item_id: zod.union([zod.uuid(), zod.null()]).optional(),
         message: zod.string(),
         severity: zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.'),
       })

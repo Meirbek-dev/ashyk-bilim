@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getTranslations } from 'next-intl/server'
 
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
@@ -53,7 +54,17 @@ const analyticsQueueQuery = {
   timezone: 'UTC',
 } as const
 
-export default async function PlatformDashHomePage() {
+// The layout's Suspense is already revealed on client navigations, so the
+// per-user queue needs its own boundary for the route to show instantly.
+export default function PlatformDashHomePage() {
+  return (
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
+      <DashHome />
+    </Suspense>
+  )
+}
+
+async function DashHome() {
   const [tGeneral, tQueue, tAdmin, session] = await Promise.all([
     getTranslations('General'),
     getTranslations('DashboardWorkQueue'),

@@ -23,7 +23,7 @@ export const TeacherAssessmentListResponse = zod.object({
   generated_at_unix: zod.int(),
   items: zod.array(
     zod.object({
-      activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+      activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
       assessment_id: zod.uuid(),
       assessment_type: zod
         .enum(['quiz', 'exam', 'code_challenge'])

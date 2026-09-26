@@ -58,12 +58,12 @@ export const StudentSubmission = zod
     auto_score: zod.number().nullish(),
     auto_submit_reason: zod
       .union([
-        zod.null(),
         zod
           .enum(['time_expired', 'integrity_violation'])
           .describe(
             'Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted.',
           ),
+        zod.null(),
       ])
       .optional(),
     draft_version: zod.int().describe('Send back as `If-Match` on draft saves and submits.'),
@@ -71,7 +71,6 @@ export const StudentSubmission = zod
     graded_at_unix: zod.int().nullish(),
     grading: zod
       .union([
-        zod.null(),
         zod.object({
           auto_graded: zod.boolean().optional(),
           feedback: zod.string().optional().describe("Teacher's overall comment."),
@@ -111,6 +110,7 @@ export const StudentSubmission = zod
               "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
             ),
         }),
+        zod.null(),
       ])
       .optional(),
     id: zod.uuid(),

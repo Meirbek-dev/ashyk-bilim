@@ -19,7 +19,7 @@ const repoDir = path.resolve(webDir, '../..')
 
 const waitForWindowsFileHandles = async () => {
   if (process.platform === 'win32') {
-    await delay(500)
+    await delay(2_000)
   }
 }
 

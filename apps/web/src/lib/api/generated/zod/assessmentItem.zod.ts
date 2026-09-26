@@ -24,7 +24,7 @@ export const AssessmentItem = zod.object({
             )
             .optional(),
           prompt: zod.string().optional(),
-          variant: zod.union([zod.null(), zod.enum(['single_choice', 'multiple_choice', 'true_false'])]).optional(),
+          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
         })
         .and(
           zod.object({
@@ -160,7 +160,7 @@ export const AssessmentItem = zod.object({
   kind: zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
   max_score: zod.number(),
   metadata: zod.object({
-    difficulty: zod.union([zod.null(), zod.enum(['easy', 'medium', 'hard'])]).optional(),
+    difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
     estimated_minutes: zod.int().nullish(),
     outcome_ids: zod.array(zod.string()).optional(),
     section_label: zod.string().nullish(),

@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const DuplicateRequest = zod.object({
   chapter_id: zod
-    .union([zod.null(), zod.uuid().describe("Target chapter in the same course; defaults to the source's chapter.")])
+    .union([zod.uuid().describe("Target chapter in the same course; defaults to the source's chapter."), zod.null()])
     .optional(),
   title: zod.string().nullish().describe('Defaults to `"<title> (copy)"`.'),
 })

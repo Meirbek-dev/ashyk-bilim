@@ -5,7 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -199,11 +199,13 @@ export const getUsergroupsForCourseSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof usergroupsForCourse>>> = ({ signal }) =>
     usergroupsForCourse(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof usergroupsForCourse>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type UsergroupsForCourseSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof usergroupsForCourse>>>
@@ -406,11 +408,13 @@ export const getListUsergroupsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroups>>> = ({ signal }) =>
     listUsergroups(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listUsergroups>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroups>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListUsergroupsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroups>>>
@@ -702,11 +706,13 @@ export const getGetUsergroupSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getUsergroup>>> = ({ signal }) =>
     getUsergroup(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getUsergroup>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetUsergroupSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getUsergroup>>>
@@ -1079,11 +1085,13 @@ export const getListUsergroupCoursesSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupCourses>>> = ({ signal }) =>
     listUsergroupCourses(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listUsergroupCourses>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListUsergroupCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupCourses>>>
@@ -1488,11 +1496,13 @@ export const getListUsergroupMembersSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembers>>> = ({ signal }) =>
     listUsergroupMembers(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listUsergroupMembers>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListUsergroupMembersSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembers>>>

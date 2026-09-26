@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const CreateDiscussionRequest = zod.object({
   content: zod.string().describe('HTML or text; must contain visible text.'),
-  parent_id: zod.union([zod.null(), zod.uuid().describe('Reply to this post (one level).')]).optional(),
+  parent_id: zod.union([zod.uuid().describe('Reply to this post (one level).'), zod.null()]).optional(),
 })
 
 export type CreateDiscussionRequest = zod.input<typeof CreateDiscussionRequest>

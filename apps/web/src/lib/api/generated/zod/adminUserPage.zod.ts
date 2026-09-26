@@ -22,7 +22,7 @@ export const AdminUserPage = zod
         })
         .describe('Admin listing row (includes email + status — platform:read gated).'),
     ),
-    next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   })
   .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 

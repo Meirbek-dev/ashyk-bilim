@@ -48,7 +48,6 @@ export const Attempt = zod
     updated_at_unix: zod.int(),
     user: zod
       .union([
-        zod.null(),
         zod
           .object({
             display_name: zod.string(),
@@ -59,6 +58,7 @@ export const Attempt = zod
           .describe(
             "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
           ),
+        zod.null(),
       ])
       .optional(),
     version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),

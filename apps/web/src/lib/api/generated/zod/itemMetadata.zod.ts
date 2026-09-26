@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const ItemMetadata = zod.object({
-  difficulty: zod.union([zod.null(), zod.enum(['easy', 'medium', 'hard'])]).optional(),
+  difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
   estimated_minutes: zod.int().nullish(),
   outcome_ids: zod.array(zod.string()).optional(),
   section_label: zod.string().nullish(),

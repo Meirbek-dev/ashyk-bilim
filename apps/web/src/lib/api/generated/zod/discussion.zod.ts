@@ -10,7 +10,6 @@ import * as zod from 'zod'
 export const Discussion = zod.object({
   author: zod
     .union([
-      zod.null(),
       zod
         .object({
           avatar_key: zod.string().nullish(),
@@ -19,6 +18,7 @@ export const Discussion = zod.object({
           username: zod.string(),
         })
         .describe("The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone."),
+      zod.null(),
     ])
     .optional(),
   can_delete: zod.boolean(),
@@ -33,13 +33,12 @@ export const Discussion = zod.object({
   is_liked: zod.boolean(),
   is_owner: zod.boolean(),
   likes_count: zod.int(),
-  parent_id: zod.union([zod.null(), zod.uuid().describe('`null` for a top-level post.')]).optional(),
+  parent_id: zod.union([zod.uuid().describe('`null` for a top-level post.'), zod.null()]).optional(),
   replies: zod
     .array(
       zod.object({
         author: zod
           .union([
-            zod.null(),
             zod
               .object({
                 avatar_key: zod.string().nullish(),
@@ -50,6 +49,7 @@ export const Discussion = zod.object({
               .describe(
                 "The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
               ),
+            zod.null(),
           ])
           .optional(),
         can_delete: zod.boolean(),
@@ -64,7 +64,7 @@ export const Discussion = zod.object({
         is_liked: zod.boolean(),
         is_owner: zod.boolean(),
         likes_count: zod.int(),
-        parent_id: zod.union([zod.null(), zod.uuid().describe('`null` for a top-level post.')]).optional(),
+        parent_id: zod.union([zod.uuid().describe('`null` for a top-level post.'), zod.null()]).optional(),
         replies: zod
           .array(zod.unknown())
           .describe(

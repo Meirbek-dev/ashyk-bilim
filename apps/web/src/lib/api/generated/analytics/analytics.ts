@@ -5,7 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -225,11 +225,13 @@ export const getAdminOverviewSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof adminOverview>>> = ({ signal }) =>
     adminOverview(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof adminOverview>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AdminOverviewSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof adminOverview>>>
@@ -428,11 +430,13 @@ export const getAssessmentListSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof assessmentList>>> = ({ signal }) =>
     assessmentList(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof assessmentList>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentList>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AssessmentListSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof assessmentList>>>
@@ -663,11 +667,13 @@ export const getAssessmentDetailSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof assessmentDetail>>> = ({ signal }) =>
     assessmentDetail(assessmentType, assessmentId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof assessmentDetail>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentDetail>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AssessmentDetailSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof assessmentDetail>>>
@@ -871,11 +877,13 @@ export const getCourseListSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseList>>> = ({ signal }) =>
     courseList(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof courseList>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseList>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CourseListSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseList>>>
@@ -1072,11 +1080,13 @@ export const getCourseDetailSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseDetail>>> = ({ signal }) =>
     courseDetail(id, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof courseDetail>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CourseDetailSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseDetail>>>
@@ -1282,11 +1292,13 @@ export const getDrillThroughSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof drillThrough>>> = ({ signal }) =>
     drillThrough(metric, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof drillThrough>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof drillThrough>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type DrillThroughSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof drillThrough>>>
@@ -1490,11 +1502,13 @@ export const getExportAssessmentOutcomesSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAssessmentOutcomes>>> = ({ signal }) =>
     exportAssessmentOutcomes(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof exportAssessmentOutcomes>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentOutcomes>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ExportAssessmentOutcomesSuspenseQueryResult = NonNullable<
@@ -1692,11 +1706,13 @@ export const getExportAtRiskSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAtRisk>>> = ({ signal }) =>
     exportAtRisk(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof exportAtRisk>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAtRisk>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ExportAtRiskSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof exportAtRisk>>>
@@ -1892,11 +1908,13 @@ export const getExportCourseProgressSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportCourseProgress>>> = ({ signal }) =>
     exportCourseProgress(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof exportCourseProgress>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportCourseProgress>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ExportCourseProgressSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof exportCourseProgress>>>
@@ -2104,11 +2122,13 @@ export const getExportGradingBacklogSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportGradingBacklog>>> = ({ signal }) =>
     exportGradingBacklog(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof exportGradingBacklog>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradingBacklog>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ExportGradingBacklogSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof exportGradingBacklog>>>
@@ -2322,11 +2342,13 @@ export const getListInterventionsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listInterventions>>> = ({ signal }) =>
     listInterventions(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listInterventions>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listInterventions>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListInterventionsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listInterventions>>>
@@ -2654,11 +2676,13 @@ export const getAtRiskLearnersSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof atRiskLearners>>> = ({ signal }) =>
     atRiskLearners(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof atRiskLearners>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof atRiskLearners>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AtRiskLearnersSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof atRiskLearners>>>
@@ -2865,11 +2889,13 @@ export const getTeacherOverviewSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof teacherOverview>>> = ({ signal }) =>
     teacherOverview(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof teacherOverview>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof teacherOverview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type TeacherOverviewSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof teacherOverview>>>
@@ -3069,11 +3095,13 @@ export const getListSavedViewsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listSavedViews>>> = ({ signal }) =>
     listSavedViews(params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listSavedViews>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSavedViews>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListSavedViewsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedViews>>>

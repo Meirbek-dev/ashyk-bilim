@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const ListDiscussionsParams = zod.object({
   include_replies: zod.boolean().nullish(),
-  cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   limit: zod.int().nullish(),
 })
 

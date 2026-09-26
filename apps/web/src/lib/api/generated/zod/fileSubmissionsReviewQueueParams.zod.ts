@@ -10,14 +10,14 @@ import * as zod from 'zod'
 export const FileSubmissionsReviewQueueParams = zod.object({
   status: zod
     .union([
-      zod.null(),
       zod
         .enum(['draft', 'submitted', 'graded', 'published', 'returned'])
         .describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).'),
+      zod.null(),
     ])
     .optional(),
   search: zod.string().nullish(),
-  cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   limit: zod.int().nullish(),
 })
 

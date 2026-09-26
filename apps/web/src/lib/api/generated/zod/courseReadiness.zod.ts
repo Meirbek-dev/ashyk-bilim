@@ -12,7 +12,7 @@ export const CourseReadiness = zod
     blockers: zod.array(
       zod
         .object({
-          activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
           code: zod.string(),
           title: zod.string().nullish(),
         })
@@ -24,7 +24,7 @@ export const CourseReadiness = zod
     warnings: zod.array(
       zod
         .object({
-          activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
           code: zod.string(),
           title: zod.string().nullish(),
         })

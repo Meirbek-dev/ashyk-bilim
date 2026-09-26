@@ -21,7 +21,7 @@ export const LearnerCourseState = zod.object({
   enrolled: zod.boolean(),
   enrollment_state: zod.enum(['not_enrolled', 'in_progress', 'completed']),
   next_action: zod.object({
-    activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+    activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
     enabled: zod.boolean(),
     href: zod.string().nullish(),
     id: zod.enum([

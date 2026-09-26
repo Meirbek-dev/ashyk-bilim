@@ -14,7 +14,7 @@ export const Assessment = zod.object({
   content_version: zod.int(),
   course_id: zod.uuid(),
   created_at_unix: zod.int(),
-  creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
   description: zod.string(),
   grading_type: zod.enum(['numeric', 'percentage']),
   id: zod.uuid(),

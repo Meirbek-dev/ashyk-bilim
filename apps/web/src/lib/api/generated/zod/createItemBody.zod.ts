@@ -24,7 +24,7 @@ export const CreateItemBody = zod.object({
             )
             .optional(),
           prompt: zod.string().optional(),
-          variant: zod.union([zod.null(), zod.enum(['single_choice', 'multiple_choice', 'true_false'])]).optional(),
+          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
         })
         .and(
           zod.object({
@@ -160,14 +160,14 @@ export const CreateItemBody = zod.object({
     .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
   metadata: zod
     .union([
-      zod.null(),
       zod.object({
-        difficulty: zod.union([zod.null(), zod.enum(['easy', 'medium', 'hard'])]).optional(),
+        difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
         estimated_minutes: zod.int().nullish(),
         outcome_ids: zod.array(zod.string()).optional(),
         section_label: zod.string().nullish(),
         tags: zod.array(zod.string()).optional(),
       }),
+      zod.null(),
     ])
     .optional(),
   title: zod.string().nullish(),

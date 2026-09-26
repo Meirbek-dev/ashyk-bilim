@@ -11,17 +11,16 @@ export const AdminRunsParams = zod.object({
   days: zod.int().nullish(),
   status: zod
     .union([
-      zod.null(),
       zod
         .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
         .describe(
           'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
         ),
+      zod.null(),
     ])
     .optional(),
   kind: zod
     .union([
-      zod.null(),
       zod
         .enum([
           'course_analysis',
@@ -32,11 +31,12 @@ export const AdminRunsParams = zod.object({
           'course_qa',
         ])
         .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
+      zod.null(),
     ])
     .optional(),
   provider: zod.string().nullish(),
-  course_id: zod.union([zod.null(), zod.uuid()]).optional(),
-  cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  course_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   limit: zod.int().nullish(),
 })
 

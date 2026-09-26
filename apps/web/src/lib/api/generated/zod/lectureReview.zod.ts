@@ -8,17 +8,17 @@
 import * as zod from 'zod'
 
 export const LectureReview = zod.object({
-  activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
   course_id: zod.uuid(),
   created_at_unix: zod.int(),
   dismissed_suggestion_ids: zod.array(zod.string()),
   id: zod.uuid(),
   language: zod.string(),
-  run_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
   status: zod.enum(['active', 'superseded']).describe('Lecture review lifecycle.'),
   suggestions: zod.looseObject({}),
   superseded_at_unix: zod.int().nullish(),
-  triggered_by: zod.union([zod.null(), zod.uuid()]).optional(),
+  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type LectureReview = zod.input<typeof LectureReview>

@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const RunEvidence = zod.object({
-  artifact_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  artifact_id: zod.union([zod.uuid(), zod.null()]).optional(),
   citation_id: zod.string(),
   created_at_unix: zod.int(),
   excerpt: zod.string(),

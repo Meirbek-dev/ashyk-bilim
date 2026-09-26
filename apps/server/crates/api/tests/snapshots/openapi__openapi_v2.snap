@@ -301,10 +301,10 @@ expression: json
           "user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -502,11 +502,11 @@ expression: json
           "program_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserId",
                 "description": "The creating teacher; `None` groups courses without a creator."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -658,10 +658,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           }
@@ -818,10 +818,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -918,20 +918,20 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
@@ -941,10 +941,10 @@ expression: json
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -1077,30 +1077,30 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -1117,10 +1117,10 @@ expression: json
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -1189,10 +1189,10 @@ expression: json
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -1277,10 +1277,10 @@ expression: json
           "actor_user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -1294,10 +1294,10 @@ expression: json
           "bulk_action_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BulkActionId"
               },
               {
-                "$ref": "#/components/schemas/BulkActionId"
+                "type": "null"
               }
             ]
           },
@@ -1312,10 +1312,10 @@ expression: json
           "grading_entry_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingEntryId"
               },
               {
-                "$ref": "#/components/schemas/GradingEntryId"
+                "type": "null"
               }
             ]
           },
@@ -1339,10 +1339,10 @@ expression: json
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           }
@@ -1689,10 +1689,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -2256,11 +2256,11 @@ expression: json
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserSummary",
                 "description": "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -2315,10 +2315,10 @@ expression: json
           "draft_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -2360,10 +2360,10 @@ expression: json
           "actor_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -2491,10 +2491,10 @@ expression: json
           "performed_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -2853,10 +2853,10 @@ expression: json
           "variant": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ChoiceVariant"
               },
               {
-                "$ref": "#/components/schemas/ChoiceVariant"
+                "type": "null"
               }
             ]
           }
@@ -3035,10 +3035,10 @@ expression: json
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -3142,10 +3142,10 @@ expression: json
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -3218,10 +3218,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CollectionId"
               },
               {
-                "$ref": "#/components/schemas/CollectionId"
+                "type": "null"
               }
             ]
           }
@@ -3305,10 +3305,10 @@ expression: json
           "grade_release_mode": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradeReleaseMode"
               },
               {
-                "$ref": "#/components/schemas/GradeReleaseMode"
+                "type": "null"
               }
             ]
           },
@@ -3321,10 +3321,10 @@ expression: json
           "late_policy": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/LatePolicy"
               },
               {
-                "$ref": "#/components/schemas/LatePolicy"
+                "type": "null"
               }
             ]
           },
@@ -3489,10 +3489,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -3574,10 +3574,10 @@ expression: json
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -3697,10 +3697,10 @@ expression: json
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -3714,10 +3714,10 @@ expression: json
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -3819,21 +3819,21 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
           "summary": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CourseSummary",
                 "description": "Present only when the request had `mine=true`."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -4016,10 +4016,10 @@ expression: json
           "grading_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingType"
               },
               {
-                "$ref": "#/components/schemas/GradingType"
+                "type": "null"
               }
             ]
           },
@@ -4029,11 +4029,11 @@ expression: json
           "policy": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Policy",
                 "description": "Omit to start from the kind's preset."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -4209,11 +4209,11 @@ expression: json
           "parent_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/DiscussionId",
                 "description": "Reply to this post (one level)."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -4305,10 +4305,10 @@ expression: json
           "metadata": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ItemMetadata"
               },
               {
-                "$ref": "#/components/schemas/ItemMetadata"
+                "type": "null"
               }
             ]
           },
@@ -4531,10 +4531,10 @@ expression: json
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -4620,10 +4620,10 @@ expression: json
           "author": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionAuthor"
               },
               {
-                "$ref": "#/components/schemas/DiscussionAuthor"
+                "type": "null"
               }
             ]
           },
@@ -4669,11 +4669,11 @@ expression: json
           "parent_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/DiscussionId",
                 "description": "`null` for a top-level post."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -4757,10 +4757,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionId"
               },
               {
-                "$ref": "#/components/schemas/DiscussionId"
+                "type": "null"
               }
             ]
           }
@@ -4865,11 +4865,11 @@ expression: json
           "chapter_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChapterId",
                 "description": "Target chapter in the same course; defaults to the source's chapter."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5053,10 +5053,10 @@ expression: json
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -5323,10 +5323,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileAttemptId"
               },
               {
-                "$ref": "#/components/schemas/FileAttemptId"
+                "type": "null"
               }
             ]
           }
@@ -5370,11 +5370,11 @@ expression: json
           "current_attempt": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Attempt",
                 "description": "The caller's newest attempt (learners)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5558,20 +5558,20 @@ expression: json
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -5584,10 +5584,10 @@ expression: json
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -5861,20 +5861,20 @@ expression: json
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "attempt_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileAttemptId"
               },
               {
-                "$ref": "#/components/schemas/FileAttemptId"
+                "type": "null"
               }
             ]
           },
@@ -5897,10 +5897,10 @@ expression: json
           "file_submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileSubmissionId"
               },
               {
-                "$ref": "#/components/schemas/FileSubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -5940,11 +5940,11 @@ expression: json
           "pending_attempt_status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionStatus",
                 "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -5954,10 +5954,10 @@ expression: json
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -6198,11 +6198,11 @@ expression: json
           "graded_by": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserId",
                 "description": "`null` = the auto-grader."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -6294,30 +6294,30 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -6331,10 +6331,10 @@ expression: json
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -6854,10 +6854,10 @@ expression: json
           "item_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentItemId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentItemId"
+                "type": "null"
               }
             ]
           },
@@ -6921,10 +6921,10 @@ expression: json
           "difficulty": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Difficulty"
               },
               {
-                "$ref": "#/components/schemas/Difficulty"
+                "type": "null"
               }
             ]
           },
@@ -7198,10 +7198,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -7227,10 +7227,10 @@ expression: json
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -7250,10 +7250,10 @@ expression: json
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -7275,10 +7275,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -7564,10 +7564,10 @@ expression: json
           "chapter_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ChapterId"
               },
               {
-                "$ref": "#/components/schemas/ChapterId"
+                "type": "null"
               }
             ]
           },
@@ -7602,10 +7602,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -7872,30 +7872,30 @@ expression: json
           "display": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DisplayPreferences"
               },
               {
-                "$ref": "#/components/schemas/DisplayPreferences"
+                "type": "null"
               }
             ]
           },
           "notifications": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NotificationPreferences"
               },
               {
-                "$ref": "#/components/schemas/NotificationPreferences"
+                "type": "null"
               }
             ]
           },
           "privacy": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/PrivacyPreferences"
               },
               {
-                "$ref": "#/components/schemas/PrivacyPreferences"
+                "type": "null"
               }
             ]
           }
@@ -8239,11 +8239,11 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ActivityId",
                 "description": "Narrow the context to one activity of the course."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -8263,11 +8263,11 @@ expression: json
           "thread_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AiThreadId",
                 "description": "Continue an existing thread of the caller in this course."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -8316,10 +8316,10 @@ expression: json
           "user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -8532,10 +8532,10 @@ expression: json
           "item_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentItemId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentItemId"
+                "type": "null"
               }
             ]
           },
@@ -8561,10 +8561,10 @@ expression: json
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -8729,10 +8729,10 @@ expression: json
           "analysis_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiSubmissionAnalysisId"
               },
               {
-                "$ref": "#/components/schemas/AiSubmissionAnalysisId"
+                "type": "null"
               }
             ]
           },
@@ -8743,11 +8743,11 @@ expression: json
           "file_submission_attempt_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/FileAttemptId",
                 "description": "The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -8773,10 +8773,10 @@ expression: json
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -8796,11 +8796,11 @@ expression: json
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionId",
                 "description": "The remediated assessment submission — `null` for a file attempt."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -8935,10 +8935,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           }
@@ -9155,10 +9155,10 @@ expression: json
           "artifact_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiArtifactId"
               },
               {
-                "$ref": "#/components/schemas/AiArtifactId"
+                "type": "null"
               }
             ]
           },
@@ -9492,10 +9492,10 @@ expression: json
           "context": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ContextSummary"
               },
               {
-                "$ref": "#/components/schemas/ContextSummary"
+                "type": "null"
               }
             ]
           },
@@ -9881,10 +9881,10 @@ expression: json
           "granted_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -9958,11 +9958,11 @@ expression: json
           "auto_submit_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AutoSubmitReason",
                 "description": "Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -9988,10 +9988,10 @@ expression: json
           "grading": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingBreakdown"
               },
               {
-                "$ref": "#/components/schemas/GradingBreakdown"
+                "type": "null"
               }
             ]
           },
@@ -10104,11 +10104,11 @@ expression: json
           "file_submission_attempt_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/FileAttemptId",
                 "description": "The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -10131,10 +10131,10 @@ expression: json
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -10144,21 +10144,21 @@ expression: json
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionId",
                 "description": "The analysed assessment submission — `null` for a file attempt."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -10676,10 +10676,10 @@ expression: json
           "top_alert": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AlertItem"
               },
               {
-                "$ref": "#/components/schemas/AlertItem"
+                "type": "null"
               }
             ]
           },
@@ -10958,10 +10958,10 @@ expression: json
           "auto_submit_reason": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AutoSubmitReason"
               },
               {
-                "$ref": "#/components/schemas/AutoSubmitReason"
+                "type": "null"
               }
             ]
           },
@@ -11180,10 +11180,10 @@ expression: json
           "id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TrailId"
               },
               {
-                "$ref": "#/components/schemas/TrailId"
+                "type": "null"
               }
             ]
           },
@@ -11420,10 +11420,10 @@ expression: json
           "grading_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingType"
               },
               {
-                "$ref": "#/components/schemas/GradingType"
+                "type": "null"
               }
             ]
           },
@@ -11598,10 +11598,10 @@ expression: json
           "status": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionStatus"
               },
               {
-                "$ref": "#/components/schemas/DiscussionStatus"
+                "type": "null"
               }
             ]
           }
@@ -11630,10 +11630,10 @@ expression: json
           "body": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ItemBody"
               },
               {
-                "$ref": "#/components/schemas/ItemBody"
+                "type": "null"
               }
             ]
           },
@@ -11648,11 +11648,11 @@ expression: json
           "metadata": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ItemMetadata",
                 "description": "Replaces the whole metadata block when present."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -12004,10 +12004,10 @@ expression: json
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -12111,10 +12111,10 @@ expression: json
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UsergroupId"
               },
               {
-                "$ref": "#/components/schemas/UsergroupId"
+                "type": "null"
               }
             ]
           }
@@ -12874,10 +12874,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -12890,10 +12890,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunKind"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunKind"
+                  "type": "null"
                 }
               ]
             }
@@ -12917,10 +12917,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/CourseId"
                 },
                 {
-                  "$ref": "#/components/schemas/CourseId"
+                  "type": "null"
                 }
               ]
             }
@@ -12933,10 +12933,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunId"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunId"
+                  "type": "null"
                 }
               ]
             }
@@ -13075,10 +13075,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/Surface"
                 },
                 {
-                  "$ref": "#/components/schemas/Surface"
+                  "type": "null"
                 }
               ]
             }
@@ -13090,10 +13090,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/ActivityId"
                 },
                 {
-                  "$ref": "#/components/schemas/ActivityId"
+                  "type": "null"
                 }
               ]
             }
@@ -13303,10 +13303,10 @@ expression: json
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/CourseAnalysis"
                     },
                     {
-                      "$ref": "#/components/schemas/CourseAnalysis"
+                      "type": "null"
                     }
                   ]
                 }
@@ -13963,10 +13963,10 @@ expression: json
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/RemediationSession"
                     },
                     {
-                      "$ref": "#/components/schemas/RemediationSession"
+                      "type": "null"
                     }
                   ]
                 }
@@ -14423,10 +14423,10 @@ expression: json
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/SubmissionAnalysis"
                     },
                     {
-                      "$ref": "#/components/schemas/SubmissionAnalysis"
+                      "type": "null"
                     }
                   ]
                 }
@@ -18206,10 +18206,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/ReviewStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/ReviewStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -18242,10 +18242,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/SubmissionId"
                 },
                 {
-                  "$ref": "#/components/schemas/SubmissionId"
+                  "type": "null"
                 }
               ]
             }
@@ -20746,10 +20746,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/DiscussionId"
                 },
                 {
-                  "$ref": "#/components/schemas/DiscussionId"
+                  "type": "null"
                 }
               ]
             }
@@ -21501,10 +21501,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/DiscussionId"
                 },
                 {
-                  "$ref": "#/components/schemas/DiscussionId"
+                  "type": "null"
                 }
               ]
             }
@@ -22063,10 +22063,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/FileAttemptStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/FileAttemptStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -22090,10 +22090,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/FileAttemptId"
                 },
                 {
-                  "$ref": "#/components/schemas/FileAttemptId"
+                  "type": "null"
                 }
               ]
             }
@@ -24878,10 +24878,10 @@ expression: json
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/WorkRole"
                 },
                 {
-                  "$ref": "#/components/schemas/WorkRole"
+                  "type": "null"
                 }
               ]
             }

@@ -10,13 +10,13 @@ import * as zod from 'zod'
 export const ScopeCapabilitiesParams = zod.object({
   surface: zod
     .union([
-      zod.null(),
       zod
         .enum(['student-activity', 'teacher-studio', 'teacher-review', 'course-page', 'admin'])
         .describe('Which client screen is asking (legacy `AISurface`).'),
+      zod.null(),
     ])
     .optional(),
-  activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type ScopeCapabilitiesParams = zod.input<typeof ScopeCapabilitiesParams>

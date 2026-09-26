@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const GradingEntry = zod.object({
   created_at_unix: zod.int(),
   final_score: zod.number().nullish().describe('Absent for a draft save that left the attempt pending.'),
-  graded_by: zod.union([zod.null(), zod.uuid().describe('`null` = the auto-grader.')]).optional(),
+  graded_by: zod.union([zod.uuid().describe('`null` = the auto-grader.'), zod.null()]).optional(),
   id: zod.uuid(),
   overall_feedback: zod.string(),
   penalty_pct: zod.number(),

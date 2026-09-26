@@ -11,10 +11,10 @@ export const UpdateDiscussionBody = zod.object({
   content: zod.string().nullish(),
   status: zod
     .union([
-      zod.null(),
       zod
         .enum(['active', 'hidden', 'deleted'])
         .describe('Course discussion visibility (legacy `DiscussionStatusEnum`).'),
+      zod.null(),
     ])
     .optional(),
 })

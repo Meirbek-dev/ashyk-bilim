@@ -5,7 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -203,11 +203,13 @@ export const getGetActivityFileSubmissionSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityFileSubmission>>> = ({ signal }) =>
     getActivityFileSubmission(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getActivityFileSubmission>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityFileSubmission>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetActivityFileSubmissionSuspenseQueryResult = NonNullable<
@@ -396,11 +398,13 @@ export const getGetAttemptSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttempt>>> = ({ signal }) =>
     getAttempt(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getAttempt>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAttempt>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetAttemptSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getAttempt>>>
@@ -660,11 +664,13 @@ export const getFileUrlSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof fileUrl>>> = ({ signal }) =>
     fileUrl(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof fileUrl>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof fileUrl>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type FileUrlSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof fileUrl>>>
@@ -958,11 +964,13 @@ export const getGetFileSubmissionSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getFileSubmission>>> = ({ signal }) =>
     getFileSubmission(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getFileSubmission>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getFileSubmission>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetFileSubmissionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getFileSubmission>>>
@@ -1245,11 +1253,13 @@ export const getGetDraftSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getDraft>>> = ({ signal }) =>
     getDraft(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getDraft>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDraft>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetDraftSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getDraft>>>
@@ -1589,11 +1599,13 @@ export const getMyAttemptsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myAttempts>>> = ({ signal }) =>
     myAttempts(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof myAttempts>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myAttempts>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MyAttemptsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myAttempts>>>
@@ -1891,11 +1903,13 @@ export const getFileSubmissionsReviewQueueSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof fileSubmissionsReviewQueue>>> = ({ signal }) =>
     fileSubmissionsReviewQueue(id, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof fileSubmissionsReviewQueue>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof fileSubmissionsReviewQueue>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type FileSubmissionsReviewQueueSuspenseQueryResult = NonNullable<
@@ -2108,11 +2122,13 @@ export const getFileSubmissionsExportCsvSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof fileSubmissionsExportCsv>>> = ({ signal }) =>
     fileSubmissionsExportCsv(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof fileSubmissionsExportCsv>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof fileSubmissionsExportCsv>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type FileSubmissionsExportCsvSuspenseQueryResult = NonNullable<

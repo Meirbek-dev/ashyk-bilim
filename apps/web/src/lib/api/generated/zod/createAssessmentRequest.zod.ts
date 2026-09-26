@@ -10,13 +10,12 @@ import * as zod from 'zod'
 export const CreateAssessmentRequest = zod.object({
   chapter_id: zod.uuid().describe('The activity is appended to this chapter.'),
   description: zod.string().nullish(),
-  grading_type: zod.union([zod.null(), zod.enum(['numeric', 'percentage'])]).optional(),
+  grading_type: zod.union([zod.enum(['numeric', 'percentage']), zod.null()]).optional(),
   kind: zod
     .enum(['quiz', 'exam', 'code_challenge'])
     .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
   policy: zod
     .union([
-      zod.null(),
       zod
         .object({
           allow_late: zod.boolean(),
@@ -59,6 +58,7 @@ export const CreateAssessmentRequest = zod.object({
           violation_threshold: zod.int(),
         })
         .describe("Omit to start from the kind's preset."),
+      zod.null(),
     ])
     .optional(),
   title: zod.string(),

@@ -25,8 +25,8 @@ export const GradebookPage = zod
       zod
         .object({
           activity_id: zod.uuid(),
-          assessment_id: zod.union([zod.null(), zod.uuid()]).optional(),
-          attempt_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          assessment_id: zod.union([zod.uuid(), zod.null()]).optional(),
+          attempt_id: zod.union([zod.uuid(), zod.null()]).optional(),
           attempt_number: zod.int(),
           attempts: zod.int(),
           due_at_override_unix: zod
@@ -35,7 +35,7 @@ export const GradebookPage = zod
             .describe(
               "The learner's active due-date override for this assessment (UX-113):\n«overdue» is judged against it, not the assessment `due_at_unix`.",
             ),
-          file_submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          file_submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
           final_score: zod.number().nullish(),
           graded_at_unix: zod.int().nullish(),
           is_late: zod.boolean(),
@@ -53,16 +53,16 @@ export const GradebookPage = zod
             ),
           pending_attempt_status: zod
             .union([
-              zod.null(),
               zod
                 .enum(['draft', 'pending', 'graded', 'published', 'returned'])
                 .describe(
                   'UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart.',
                 ),
+              zod.null(),
             ])
             .optional(),
           status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-          submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+          submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
           submitted_at_unix: zod.int().nullish(),
           user_id: zod.uuid(),
         })

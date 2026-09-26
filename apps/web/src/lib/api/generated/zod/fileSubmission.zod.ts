@@ -54,7 +54,6 @@ export const FileSubmission = zod.object({
           updated_at_unix: zod.int(),
           user: zod
             .union([
-              zod.null(),
               zod
                 .object({
                   display_name: zod.string(),
@@ -65,6 +64,7 @@ export const FileSubmission = zod.object({
                 .describe(
                   "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
                 ),
+              zod.null(),
             ])
             .optional(),
           version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),
@@ -79,7 +79,6 @@ export const FileSubmission = zod.object({
   created_at_unix: zod.int(),
   current_attempt: zod
     .union([
-      zod.null(),
       zod
         .object({
           attempt_number: zod.int(),
@@ -121,7 +120,6 @@ export const FileSubmission = zod.object({
           updated_at_unix: zod.int(),
           user: zod
             .union([
-              zod.null(),
               zod
                 .object({
                   display_name: zod.string(),
@@ -132,11 +130,13 @@ export const FileSubmission = zod.object({
                 .describe(
                   "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
                 ),
+              zod.null(),
             ])
             .optional(),
           version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),
         })
         .describe("The caller's newest attempt (learners)."),
+      zod.null(),
     ])
     .optional(),
   disabled_reasons: zod

@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const contextSummarySourceCountMin = 0
 
 export const ContextSummary = zod.object({
-  activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
   activity_label: zod.string().nullish(),
   course_label: zod.string(),
   source_count: zod.int().min(contextSummarySourceCountMin),

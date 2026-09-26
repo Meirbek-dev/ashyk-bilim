@@ -19,10 +19,10 @@ export const CourseAnalysis = zod.object({
   public_score: zod.int(),
   published_at_unix: zod.int().nullish(),
   report: zod.looseObject({}),
-  run_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
   stale: zod.boolean().describe('The course content changed since this analysis (latest view only).'),
   status: zod.enum(['draft', 'needs_human_review', 'published']).describe('Course analysis publication state.'),
-  triggered_by: zod.union([zod.null(), zod.uuid()]).optional(),
+  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type CourseAnalysis = zod.input<typeof CourseAnalysis>

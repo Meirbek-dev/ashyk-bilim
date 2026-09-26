@@ -47,7 +47,7 @@ export const AdminAnalyticsResponse = zod.object({
       health_score: zod.number().nullish(),
       learner_count: zod.int(),
       program_id: zod
-        .union([zod.null(), zod.uuid().describe('The creating teacher; `None` groups courses without a creator.')])
+        .union([zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'), zod.null()])
         .optional(),
       program_name: zod.string(),
     }),

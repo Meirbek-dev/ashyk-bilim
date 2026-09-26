@@ -14,7 +14,7 @@ export const EvalResult = zod.object({
   evaluator: zod.string(),
   id: zod.uuid(),
   passed: zod.boolean().nullish(),
-  run_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
   score: zod.number().nullish(),
 })
 

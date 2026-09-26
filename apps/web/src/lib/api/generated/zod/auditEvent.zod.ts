@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const AuditEvent = zod.object({
-  actor_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  actor_id: zod.union([zod.uuid(), zod.null()]).optional(),
   created_at_unix: zod.int(),
   event: zod.string(),
   id: zod.uuid(),

@@ -10,7 +10,6 @@ import * as zod from 'zod'
 export const UpdateItemRequest = zod.object({
   body: zod
     .union([
-      zod.null(),
       zod
         .union([
           zod
@@ -27,7 +26,7 @@ export const UpdateItemRequest = zod.object({
                 )
                 .optional(),
               prompt: zod.string().optional(),
-              variant: zod.union([zod.null(), zod.enum(['single_choice', 'multiple_choice', 'true_false'])]).optional(),
+              variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
             })
             .and(
               zod.object({
@@ -159,6 +158,7 @@ export const UpdateItemRequest = zod.object({
         .describe(
           'Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
         ),
+      zod.null(),
     ])
     .optional(),
   max_score: zod
@@ -167,16 +167,16 @@ export const UpdateItemRequest = zod.object({
     .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
   metadata: zod
     .union([
-      zod.null(),
       zod
         .object({
-          difficulty: zod.union([zod.null(), zod.enum(['easy', 'medium', 'hard'])]).optional(),
+          difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
           estimated_minutes: zod.int().nullish(),
           outcome_ids: zod.array(zod.string()).optional(),
           section_label: zod.string().nullish(),
           tags: zod.array(zod.string()).optional(),
         })
         .describe('Replaces the whole metadata block when present.'),
+      zod.null(),
     ])
     .optional(),
   title: zod.string().nullish(),

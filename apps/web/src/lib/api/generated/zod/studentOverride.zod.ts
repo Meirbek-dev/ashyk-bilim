@@ -11,7 +11,7 @@ export const StudentOverride = zod.object({
   created_at_unix: zod.int(),
   due_at_override_unix: zod.int().nullish(),
   expires_at_unix: zod.int().nullish(),
-  granted_by: zod.union([zod.null(), zod.uuid()]).optional(),
+  granted_by: zod.union([zod.uuid(), zod.null()]).optional(),
   id: zod.uuid(),
   max_attempts_override: zod.int().nullish(),
   note: zod.string(),

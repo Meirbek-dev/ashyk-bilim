@@ -5,7 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -270,11 +270,13 @@ export const getCurrentDraftSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof currentDraft>>> = ({ signal }) =>
     currentDraft(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof currentDraft>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CurrentDraftSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof currentDraft>>>
@@ -455,11 +457,13 @@ export const getMySubmissionsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof mySubmissions>>> = ({ signal }) =>
     mySubmissions(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof mySubmissions>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MySubmissionsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof mySubmissions>>>
@@ -652,11 +656,13 @@ export const getGetSubmissionSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubmission>>> = ({ signal }) =>
     getSubmission(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getSubmission>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetSubmissionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getSubmission>>>
@@ -956,11 +962,13 @@ export const getSubmissionEventsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof submissionEvents>>> = ({ signal }) =>
     submissionEvents(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof submissionEvents>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type SubmissionEventsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof submissionEvents>>>
@@ -1150,11 +1158,13 @@ export const getMyFeedbackSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myFeedback>>> = ({ signal }) =>
     myFeedback(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof myFeedback>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MyFeedbackSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myFeedback>>>

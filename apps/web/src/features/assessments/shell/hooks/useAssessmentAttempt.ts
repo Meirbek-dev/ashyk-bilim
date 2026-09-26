@@ -95,10 +95,10 @@ export function useAssessmentAttempt<T = unknown>({
     if (typeof globalThis.window === 'undefined') return
     try {
       const toRemove: string[] = []
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i)
+      for (let i = 0; i < globalThis.window.localStorage.length; i += 1) {
+        const key = globalThis.window.localStorage.key(i)
         if (!key?.startsWith(storageKeyPrefix)) continue
-        const raw = localStorage.getItem(key)
+        const raw = globalThis.window.localStorage.getItem(key)
         if (!raw) continue
         try {
           const entry = JSON.parse(raw) as PersistedAttemptData<T>
@@ -107,7 +107,7 @@ export function useAssessmentAttempt<T = unknown>({
           toRemove.push(key) // corrupt entry
         }
       }
-      for (const k of toRemove) localStorage.removeItem(k)
+      for (const k of toRemove) globalThis.window.localStorage.removeItem(k)
     } catch {
       // localStorage unavailable (SSR, private browsing quota)
     }
@@ -118,7 +118,7 @@ export function useAssessmentAttempt<T = unknown>({
   const getRecoverableData = useCallback((): PersistedAttemptData<T> | null => {
     if (typeof globalThis.window === 'undefined') return null
     try {
-      const raw = localStorage.getItem(storageKey)
+      const raw = globalThis.window.localStorage.getItem(storageKey)
       if (!raw) return null
       const entry = JSON.parse(raw) as PersistedAttemptData<T>
       if (
@@ -132,7 +132,7 @@ export function useAssessmentAttempt<T = unknown>({
       }
       if (validate && !validate(entry.answers)) {
         try {
-          localStorage.removeItem(storageKey)
+          globalThis.window.localStorage.removeItem(storageKey)
         } catch {
           // Ignore storage access errors
         }
@@ -156,12 +156,12 @@ export function useAssessmentAttempt<T = unknown>({
           lastSaved: Date.now(),
           version: SCHEMA_VERSION,
         }
-        localStorage.setItem(storageKey, JSON.stringify(entry))
+        globalThis.window.localStorage.setItem(storageKey, JSON.stringify(entry))
       } catch (error) {
         if (error instanceof Error && error.name === 'QuotaExceededError') {
           purgeExpired()
           try {
-            localStorage.setItem(
+            globalThis.window.localStorage.setItem(
               storageKey,
               JSON.stringify({
                 attemptUuid,
@@ -196,7 +196,7 @@ export function useAssessmentAttempt<T = unknown>({
   const clearSavedAnswers = useCallback(() => {
     if (typeof globalThis.window === 'undefined') return
     try {
-      localStorage.removeItem(storageKey)
+      globalThis.window.localStorage.removeItem(storageKey)
       pendingAnswersRef.current = null
     } catch {
       // ignore

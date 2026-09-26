@@ -466,10 +466,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -482,10 +482,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunKind"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunKind"
+                  "type": "null"
                 }
               ]
             }
@@ -509,10 +509,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/CourseId"
                 },
                 {
-                  "$ref": "#/components/schemas/CourseId"
+                  "type": "null"
                 }
               ]
             }
@@ -525,10 +525,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/AiRunId"
                 },
                 {
-                  "$ref": "#/components/schemas/AiRunId"
+                  "type": "null"
                 }
               ]
             }
@@ -667,10 +667,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/Surface"
                 },
                 {
-                  "$ref": "#/components/schemas/Surface"
+                  "type": "null"
                 }
               ]
             }
@@ -682,10 +682,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/ActivityId"
                 },
                 {
-                  "$ref": "#/components/schemas/ActivityId"
+                  "type": "null"
                 }
               ]
             }
@@ -896,10 +896,10 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/CourseAnalysis"
                     },
                     {
-                      "$ref": "#/components/schemas/CourseAnalysis"
+                      "type": "null"
                     }
                   ]
                 }
@@ -1556,10 +1556,10 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/RemediationSession"
                     },
                     {
-                      "$ref": "#/components/schemas/RemediationSession"
+                      "type": "null"
                     }
                   ]
                 }
@@ -2016,10 +2016,10 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/SubmissionAnalysis"
                     },
                     {
-                      "$ref": "#/components/schemas/SubmissionAnalysis"
+                      "type": "null"
                     }
                   ]
                 }
@@ -5798,10 +5798,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/ReviewStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/ReviewStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -5834,10 +5834,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/SubmissionId"
                 },
                 {
-                  "$ref": "#/components/schemas/SubmissionId"
+                  "type": "null"
                 }
               ]
             }
@@ -8338,10 +8338,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/DiscussionId"
                 },
                 {
-                  "$ref": "#/components/schemas/DiscussionId"
+                  "type": "null"
                 }
               ]
             }
@@ -9093,10 +9093,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/DiscussionId"
                 },
                 {
-                  "$ref": "#/components/schemas/DiscussionId"
+                  "type": "null"
                 }
               ]
             }
@@ -9655,10 +9655,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/FileAttemptStatus"
                 },
                 {
-                  "$ref": "#/components/schemas/FileAttemptStatus"
+                  "type": "null"
                 }
               ]
             }
@@ -9682,10 +9682,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/FileAttemptId"
                 },
                 {
-                  "$ref": "#/components/schemas/FileAttemptId"
+                  "type": "null"
                 }
               ]
             }
@@ -12470,10 +12470,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/WorkRole"
                 },
                 {
-                  "$ref": "#/components/schemas/WorkRole"
+                  "type": "null"
                 }
               ]
             }
@@ -12837,10 +12837,10 @@
           "user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -13044,11 +13044,11 @@
           "program_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserId",
                 "description": "The creating teacher; `None` groups courses without a creator."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -13198,10 +13198,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           }
@@ -13358,10 +13358,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -13462,20 +13462,20 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
@@ -13485,10 +13485,10 @@
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -13621,30 +13621,30 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -13661,10 +13661,10 @@
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -13743,10 +13743,10 @@
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -13820,10 +13820,10 @@
           "actor_user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -13837,10 +13837,10 @@
           "bulk_action_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BulkActionId"
               },
               {
-                "$ref": "#/components/schemas/BulkActionId"
+                "type": "null"
               }
             ]
           },
@@ -13855,10 +13855,10 @@
           "grading_entry_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingEntryId"
               },
               {
-                "$ref": "#/components/schemas/GradingEntryId"
+                "type": "null"
               }
             ]
           },
@@ -13882,10 +13882,10 @@
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           }
@@ -14234,10 +14234,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -14804,11 +14804,11 @@
           "user": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserSummary",
                 "description": "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -14862,10 +14862,10 @@
           "draft_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -14903,10 +14903,10 @@
           "actor_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -15039,10 +15039,10 @@
           "performed_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -15390,10 +15390,10 @@
           "variant": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ChoiceVariant"
               },
               {
-                "$ref": "#/components/schemas/ChoiceVariant"
+                "type": "null"
               }
             ]
           }
@@ -15585,10 +15585,10 @@
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -15689,10 +15689,10 @@
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -15758,10 +15758,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CollectionId"
               },
               {
-                "$ref": "#/components/schemas/CollectionId"
+                "type": "null"
               }
             ]
           }
@@ -15841,10 +15841,10 @@
           "grade_release_mode": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradeReleaseMode"
               },
               {
-                "$ref": "#/components/schemas/GradeReleaseMode"
+                "type": "null"
               }
             ]
           },
@@ -15857,10 +15857,10 @@
           "late_policy": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/LatePolicy"
               },
               {
-                "$ref": "#/components/schemas/LatePolicy"
+                "type": "null"
               }
             ]
           },
@@ -16030,10 +16030,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -16124,10 +16124,10 @@
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -16245,10 +16245,10 @@
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -16262,10 +16262,10 @@
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -16359,21 +16359,21 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
           "summary": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CourseSummary",
                 "description": "Present only when the request had `mine=true`."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -16557,10 +16557,10 @@
           "grading_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingType"
               },
               {
-                "$ref": "#/components/schemas/GradingType"
+                "type": "null"
               }
             ]
           },
@@ -16570,11 +16570,11 @@
           "policy": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Policy",
                 "description": "Omit to start from the kind's preset."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -16748,11 +16748,11 @@
           "parent_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/DiscussionId",
                 "description": "Reply to this post (one level)."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -16844,10 +16844,10 @@
           "metadata": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ItemMetadata"
               },
               {
-                "$ref": "#/components/schemas/ItemMetadata"
+                "type": "null"
               }
             ]
           },
@@ -17074,10 +17074,10 @@
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -17175,10 +17175,10 @@
           "author": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionAuthor"
               },
               {
-                "$ref": "#/components/schemas/DiscussionAuthor"
+                "type": "null"
               }
             ]
           },
@@ -17224,11 +17224,11 @@
           "parent_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/DiscussionId",
                 "description": "`null` for a top-level post."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -17297,10 +17297,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionId"
               },
               {
-                "$ref": "#/components/schemas/DiscussionId"
+                "type": "null"
               }
             ]
           }
@@ -17401,11 +17401,11 @@
           "chapter_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChapterId",
                 "description": "Target chapter in the same course; defaults to the source's chapter."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -17597,10 +17597,10 @@
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -17863,10 +17863,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileAttemptId"
               },
               {
-                "$ref": "#/components/schemas/FileAttemptId"
+                "type": "null"
               }
             ]
           }
@@ -17928,11 +17928,11 @@
           "current_attempt": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Attempt",
                 "description": "The caller's newest attempt (learners)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -18103,20 +18103,20 @@
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -18129,10 +18129,10 @@
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -18406,20 +18406,20 @@
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "attempt_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileAttemptId"
               },
               {
-                "$ref": "#/components/schemas/FileAttemptId"
+                "type": "null"
               }
             ]
           },
@@ -18442,10 +18442,10 @@
           "file_submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/FileSubmissionId"
               },
               {
-                "$ref": "#/components/schemas/FileSubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -18485,11 +18485,11 @@
           "pending_attempt_status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionStatus",
                 "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -18499,10 +18499,10 @@
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           },
@@ -18742,11 +18742,11 @@
           "graded_by": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/UserId",
                 "description": "`null` = the auto-grader."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -18839,30 +18839,30 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
           "assessment_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentId"
+                "type": "null"
               }
             ]
           },
           "assessment_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentKind"
               },
               {
-                "$ref": "#/components/schemas/AssessmentKind"
+                "type": "null"
               }
             ]
           },
@@ -18876,10 +18876,10 @@
           "course_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CourseId"
               },
               {
-                "$ref": "#/components/schemas/CourseId"
+                "type": "null"
               }
             ]
           },
@@ -19395,10 +19395,10 @@
           "item_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentItemId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentItemId"
+                "type": "null"
               }
             ]
           },
@@ -19457,10 +19457,10 @@
           "difficulty": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Difficulty"
               },
               {
-                "$ref": "#/components/schemas/Difficulty"
+                "type": "null"
               }
             ]
           },
@@ -19744,10 +19744,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -19773,10 +19773,10 @@
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -19796,10 +19796,10 @@
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -19811,10 +19811,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -20103,10 +20103,10 @@
           "chapter_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ChapterId"
               },
               {
-                "$ref": "#/components/schemas/ChapterId"
+                "type": "null"
               }
             ]
           },
@@ -20145,10 +20145,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -20408,30 +20408,30 @@
           "display": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DisplayPreferences"
               },
               {
-                "$ref": "#/components/schemas/DisplayPreferences"
+                "type": "null"
               }
             ]
           },
           "notifications": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NotificationPreferences"
               },
               {
-                "$ref": "#/components/schemas/NotificationPreferences"
+                "type": "null"
               }
             ]
           },
           "privacy": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/PrivacyPreferences"
               },
               {
-                "$ref": "#/components/schemas/PrivacyPreferences"
+                "type": "null"
               }
             ]
           }
@@ -20775,11 +20775,11 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ActivityId",
                 "description": "Narrow the context to one activity of the course."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -20799,11 +20799,11 @@
           "thread_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AiThreadId",
                 "description": "Continue an existing thread of the caller in this course."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -20863,10 +20863,10 @@
           "user_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -21075,10 +21075,10 @@
           "item_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AssessmentItemId"
               },
               {
-                "$ref": "#/components/schemas/AssessmentItemId"
+                "type": "null"
               }
             ]
           },
@@ -21101,10 +21101,10 @@
           "activity_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActivityId"
               },
               {
-                "$ref": "#/components/schemas/ActivityId"
+                "type": "null"
               }
             ]
           },
@@ -21278,10 +21278,10 @@
           "analysis_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiSubmissionAnalysisId"
               },
               {
-                "$ref": "#/components/schemas/AiSubmissionAnalysisId"
+                "type": "null"
               }
             ]
           },
@@ -21292,11 +21292,11 @@
           "file_submission_attempt_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/FileAttemptId",
                 "description": "The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -21322,10 +21322,10 @@
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -21345,11 +21345,11 @@
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionId",
                 "description": "The remediated assessment submission — `null` for a file attempt."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -21475,10 +21475,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SubmissionId"
               },
               {
-                "$ref": "#/components/schemas/SubmissionId"
+                "type": "null"
               }
             ]
           }
@@ -21700,10 +21700,10 @@
           "artifact_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiArtifactId"
               },
               {
-                "$ref": "#/components/schemas/AiArtifactId"
+                "type": "null"
               }
             ]
           },
@@ -22038,10 +22038,10 @@
           "context": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ContextSummary"
               },
               {
-                "$ref": "#/components/schemas/ContextSummary"
+                "type": "null"
               }
             ]
           },
@@ -22426,10 +22426,10 @@
           "granted_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -22508,11 +22508,11 @@
           "auto_submit_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AutoSubmitReason",
                 "description": "Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -22538,10 +22538,10 @@
           "grading": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingBreakdown"
               },
               {
-                "$ref": "#/components/schemas/GradingBreakdown"
+                "type": "null"
               }
             ]
           },
@@ -22650,11 +22650,11 @@
           "file_submission_attempt_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/FileAttemptId",
                 "description": "The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -22677,10 +22677,10 @@
           "run_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AiRunId"
               },
               {
-                "$ref": "#/components/schemas/AiRunId"
+                "type": "null"
               }
             ]
           },
@@ -22690,21 +22690,21 @@
           "submission_id": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SubmissionId",
                 "description": "The analysed assessment submission — `null` for a file attempt."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "triggered_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           }
@@ -23222,10 +23222,10 @@
           "top_alert": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AlertItem"
               },
               {
-                "$ref": "#/components/schemas/AlertItem"
+                "type": "null"
               }
             ]
           },
@@ -23513,10 +23513,10 @@
           "auto_submit_reason": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AutoSubmitReason"
               },
               {
-                "$ref": "#/components/schemas/AutoSubmitReason"
+                "type": "null"
               }
             ]
           },
@@ -23721,10 +23721,10 @@
           "id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TrailId"
               },
               {
-                "$ref": "#/components/schemas/TrailId"
+                "type": "null"
               }
             ]
           },
@@ -23956,10 +23956,10 @@
           "grading_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/GradingType"
               },
               {
-                "$ref": "#/components/schemas/GradingType"
+                "type": "null"
               }
             ]
           },
@@ -24134,10 +24134,10 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DiscussionStatus"
               },
               {
-                "$ref": "#/components/schemas/DiscussionStatus"
+                "type": "null"
               }
             ]
           }
@@ -24166,10 +24166,10 @@
           "body": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ItemBody"
               },
               {
-                "$ref": "#/components/schemas/ItemBody"
+                "type": "null"
               }
             ]
           },
@@ -24184,11 +24184,11 @@
           "metadata": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ItemMetadata",
                 "description": "Replaces the whole metadata block when present."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -24550,10 +24550,10 @@
           "creator_id": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserId"
               },
               {
-                "$ref": "#/components/schemas/UserId"
+                "type": "null"
               }
             ]
           },
@@ -24651,10 +24651,10 @@
           "next_cursor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UsergroupId"
               },
               {
-                "$ref": "#/components/schemas/UsergroupId"
+                "type": "null"
               }
             ]
           }

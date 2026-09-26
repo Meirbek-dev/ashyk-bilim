@@ -328,17 +328,22 @@ function ExamTakingContent({
 
   // View mode: CARD (one at a time) or SCROLL (all visible)
   const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
-    if (typeof globalThis.window !== 'undefined') {
-      return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD'
+    try {
+      return (globalThis.window?.localStorage?.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD'
+    } catch {
+      return 'CARD'
     }
-    return 'CARD'
   })
   const questionRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const toggleViewMode = useCallback(() => {
     setViewMode(prev => {
       const next = prev === 'CARD' ? 'SCROLL' : 'CARD'
-      localStorage.setItem('exam-view-mode', next)
+      try {
+        globalThis.window.localStorage?.setItem('exam-view-mode', next)
+      } catch {
+        // Storage may be disabled; the in-memory preference still works.
+      }
       return next
     })
   }, [])

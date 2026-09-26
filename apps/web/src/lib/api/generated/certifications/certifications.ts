@@ -5,7 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -196,11 +196,13 @@ export const getVerifyCertificateSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof verifyCertificate>>> = ({ signal }) =>
     verifyCertificate(code, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof verifyCertificate>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof verifyCertificate>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type VerifyCertificateSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof verifyCertificate>>>
@@ -394,11 +396,13 @@ export const getCertificatePdfSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof certificatePdf>>> = ({ signal }) =>
     certificatePdf(code, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof certificatePdf>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CertificatePdfSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof certificatePdf>>>
@@ -690,11 +694,13 @@ export const getGetCertificationSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getCertification>>> = ({ signal }) =>
     getCertification(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof getCertification>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetCertificationSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCertification>>>
@@ -1084,11 +1090,13 @@ export const getMyCourseCertificatesSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myCourseCertificates>>> = ({ signal }) =>
     myCourseCertificates(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof myCourseCertificates>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MyCourseCertificatesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myCourseCertificates>>>
@@ -1294,11 +1302,13 @@ export const getListCourseCertificationsSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseCertifications>>> = ({ signal }) =>
     listCourseCertifications(id, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof listCourseCertifications>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListCourseCertificationsSuspenseQueryResult = NonNullable<
@@ -1480,11 +1490,13 @@ export const getMyCertificatesSuspenseQueryOptions = <
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myCertificates>>> = ({ signal }) =>
     myCertificates({ signal, ...requestOptions })
 
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof myCertificates>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificates>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MyCertificatesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myCertificates>>>

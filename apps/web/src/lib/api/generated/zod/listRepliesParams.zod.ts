@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const ListRepliesParams = zod.object({
-  cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   limit: zod.int().nullish(),
 })
 

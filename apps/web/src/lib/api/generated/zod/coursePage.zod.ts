@@ -18,7 +18,7 @@ export const CoursePage = zod
             'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
           ),
         created_at_unix: zod.int(),
-        creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
+        creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
         description: zod.string(),
         id: zod.uuid(),
         learnings: zod
@@ -49,10 +49,9 @@ export const CoursePage = zod
         updated_at_unix: zod.int(),
       }),
     ),
-    next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
     summary: zod
       .union([
-        zod.null(),
         zod
           .object({
             attention: zod.int().describe('Courses matching the `attention` preset.'),
@@ -61,6 +60,7 @@ export const CoursePage = zod
             total: zod.int(),
           })
           .describe('Present only when the request had `mine=true`.'),
+        zod.null(),
       ])
       .optional(),
   })

@@ -40,9 +40,22 @@ function runResultThreadId(value: unknown): string | null {
   return typeof value.thread_id === 'string' ? value.thread_id : null
 }
 
-function citationResult(value: string): AICitation[] {
+function citationResult(value: unknown): AICitation[] {
+  const text =
+    typeof value === 'string'
+      ? value
+      : Array.isArray(value)
+        ? value
+            .filter(
+              (part): part is { text: string; type: 'text' } =>
+                !!part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string',
+            )
+            .map(part => part.text)
+            .join('')
+        : ''
+
   try {
-    const parsed: unknown = JSON.parse(value)
+    const parsed: unknown = JSON.parse(text)
     if (!parsed || typeof parsed !== 'object' || !('citations' in parsed) || !Array.isArray(parsed.citations)) return []
     return parsed.citations as AICitation[]
   } catch {

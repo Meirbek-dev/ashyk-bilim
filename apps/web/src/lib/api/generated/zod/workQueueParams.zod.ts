@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const WorkQueueParams = zod.object({
-  role: zod.union([zod.null(), zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.')]).optional(),
+  role: zod.union([zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'), zod.null()]).optional(),
   limit: zod.int().nullish(),
   cursor: zod.string().nullish(),
 })

@@ -16,7 +16,7 @@ export const BulkAction = zod.object({
   error_log: zod.string(),
   id: zod.uuid(),
   params: zod.looseObject({}),
-  performed_by: zod.union([zod.null(), zod.uuid()]).optional(),
+  performed_by: zod.union([zod.uuid(), zod.null()]).optional(),
   status: zod.enum(['pending', 'running', 'completed', 'failed']),
   target_user_ids: zod.array(zod.uuid()),
 })

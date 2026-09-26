@@ -29,7 +29,7 @@ export const FileReviewPage = zod.object({
       version: zod.int(),
     }),
   ),
-  next_cursor: zod.union([zod.null(), zod.uuid()]).optional(),
+  next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type FileReviewPage = zod.input<typeof FileReviewPage>

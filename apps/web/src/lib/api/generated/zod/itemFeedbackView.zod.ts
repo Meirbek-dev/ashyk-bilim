@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const ItemFeedbackView = zod.object({
   comment: zod.string(),
   created_at_unix: zod.int(),
-  item_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  item_id: zod.union([zod.uuid(), zod.null()]).optional(),
   max_score: zod.number().nullish(),
   score: zod.number().nullish(),
 })

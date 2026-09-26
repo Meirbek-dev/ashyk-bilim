@@ -75,6 +75,38 @@ describe('course Q&A on the v2 wire', () => {
     expect(onThread).toHaveBeenCalledWith(THREAD_ID)
   })
 
+  it('reads citations from AG-UI 1.0 text content parts', async () => {
+    let resolveRun!: (value: { result: { thread_id: string } }) => void
+    mocks.runAgent.mockImplementation(
+      async (_input: unknown, callbacks: Record<string, (...args: never[]) => void>) => {
+        callbacks.onToolCallResultEvent?.({
+          event: {
+            content: [{ type: 'text', text: JSON.stringify({ citations: [{ id: 'citation-1' }] }) }],
+          },
+        } as never)
+        return new Promise(resolve => {
+          resolveRun = resolve
+        })
+      },
+    )
+
+    const { result } = renderHook(
+      () => useCourseQAChat({ activityUuid: null, courseUuid: COURSE_ID, onThread: vi.fn(), threadUuid: null }),
+      { wrapper },
+    )
+
+    let submission!: Promise<void>
+    act(() => {
+      submission = result.current.submit('Show sources')
+    })
+    await waitFor(() => expect(result.current.citations).toEqual([{ id: 'citation-1' }]))
+
+    await act(async () => {
+      resolveRun({ result: { thread_id: THREAD_ID } })
+      await submission
+    })
+  })
+
   it('reads a transcript whose user turns carry `citations: []`', async () => {
     mocks.apiJson.mockImplementation((_path: string, _init: unknown, parse: (value: unknown) => unknown) =>
       Promise.resolve(parse([wireMessage('user', []), wireMessage('assistant', { citations: [{ id: 'c1' }] })])),

@@ -10,19 +10,19 @@ import * as zod from 'zod'
 export const AssessmentAuditEventRow = zod.object({
   action: zod.string(),
   actor_display_name: zod.string().nullish(),
-  actor_user_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  actor_user_id: zod.union([zod.uuid(), zod.null()]).optional(),
   affected_count: zod.int().nullish(),
-  bulk_action_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  bulk_action_id: zod.union([zod.uuid(), zod.null()]).optional(),
   final_score: zod
     .number()
     .nullish()
     .describe('The saved/published score of a grading entry; `None` for bulk actions.'),
-  grading_entry_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  grading_entry_id: zod.union([zod.uuid(), zod.null()]).optional(),
   id: zod.string(),
   occurred_at_unix: zod.int(),
   source: zod.string().describe('`grading_entry` | `bulk_action`.'),
   status: zod.string().nullish(),
-  submission_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
 export type AssessmentAuditEventRow = zod.input<typeof AssessmentAuditEventRow>

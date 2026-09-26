@@ -8,14 +8,14 @@
 import * as zod from 'zod'
 
 export const InsightFeedItem = zod.object({
-  activity_id: zod.union([zod.null(), zod.uuid()]).optional(),
-  assessment_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  assessment_id: zod.union([zod.uuid(), zod.null()]).optional(),
   assessment_type: zod
     .union([
-      zod.null(),
       zod
         .enum(['quiz', 'exam', 'code_challenge'])
         .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+      zod.null(),
     ])
     .optional(),
   category: zod.string().describe('`risk` | `assessment` | `content` | `workload` | `completion` | `intervention`.'),
@@ -48,7 +48,7 @@ export const InsightFeedItem = zod.object({
     .describe(
       'Every server-composed analytics message. The client localises the code\nwith the item\'s `params` (DECISIONS "Pass-6 contract gaps": codes +\nparams on the wire, no prose). Param names per code:\n\n- alerts: `grading_backlog {count}`, `engagement_dropped {delta_pct}`,\n  `content_stale {days}`, `risk_spike {count}`, `grading_slo_breached`\n  / `grading_slo_watch {assessment_title, course_name, breaches,\n  awaiting, oldest_hours?, target_hours}`;\n- forecasts: `completion_target_miss {course_name, count}`,\n  `course_completion_deadline {course_name, expected_pct}`,\n  `grading_backlog_7d {count}`, `assessment_failure_risk\n  {assessment_title, expected_pct}`;\n- anomalies: `sharp_engagement_drop` / `submission_spike {course_name}`,\n  `fast_quiz_completion` / `score_distribution_shift {assessment_title}`;\n- insights: `new_at_risk_learners {course_name, count}`, `low_pass_rate`\n  / `low_pass_rate_with_diagnostics {assessment_title, pass_rate}`,\n  `content_bottleneck {activity_name, signal}`, `workload_backlog {count,\n  breaches, forecast_7d, target_hours}`, `completion_improved\n  {course_name, delta_pts}`;\n- data quality: `missing_event_sources {sources[]}`, `thin_course_data\n  {count}`, `stale_rollup {}`.',
     ),
-  course_id: zod.union([zod.null(), zod.uuid()]).optional(),
+  course_id: zod.union([zod.uuid(), zod.null()]).optional(),
   href: zod.string().nullish(),
   id: zod.string(),
   learner_count: zod.int().nullish(),
