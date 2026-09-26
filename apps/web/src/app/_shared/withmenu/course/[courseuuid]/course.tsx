@@ -124,6 +124,7 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
 
 function CourseClient(props: CourseClientProps) {
   const t = useTranslations('CoursePage')
+  const tActivityType = useTranslations('ActivityPage.activityTypes')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
@@ -195,6 +196,9 @@ function CourseClient(props: CourseClientProps) {
       }
       case 'TYPE_CUSTOM': {
         return t('quiz')
+      }
+      case 'TYPE_CODE_CHALLENGE': {
+        return tActivityType('codeChallenge')
       }
       default: {
         return t('learningMaterial')
