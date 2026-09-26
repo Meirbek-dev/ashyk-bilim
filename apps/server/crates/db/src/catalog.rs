@@ -93,7 +93,9 @@ pub async fn course_visible(
     see_all: bool,
 ) -> Result<bool> {
     let visible = sqlx::query_scalar!(
-        r#"SELECT course_visible(courses, $2, $3) AS "visible!"
+        // The SQL function yields NULL (not false) for a creator-less
+        // migrated course and an anonymous viewer.
+        r#"SELECT COALESCE(course_visible(courses, $2, $3), false) AS "visible!"
            FROM courses WHERE id = $1"#,
         id.0,
         viewer.map(|v| v.0),

@@ -209,6 +209,15 @@ async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
         .unwrap();
     let object = app.get_as(&teacher, &url).await;
     assert_eq!(object.json()["learnings"], serde_json::json!([]));
+
+    // A migrated draft whose creator was lost is a 404 to anonymous
+    // visitors, not a 500 (`course_visible` yields NULL there).
+    sqlx::query("UPDATE courses SET creator_id = NULL WHERE id = $1::uuid")
+        .bind(&id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(app.get(&url).await.status, StatusCode::NOT_FOUND);
 }
 
 #[sqlx::test(migrations = "../../migrations")]
