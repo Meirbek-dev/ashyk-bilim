@@ -10,6 +10,18 @@ import * as zod from 'zod'
 export const UpdateCourseRequest = zod.object({
   about: zod.string().nullish(),
   description: zod.string().nullish(),
+  learnings: zod
+    .array(
+      zod
+        .object({
+          emoji: zod.string().nullish(),
+          id: zod.string().nullish(),
+          text: zod.string().describe('1..=300 characters after trimming.'),
+        })
+        .describe('One "What you\'ll learn" entry on write; omit `id` for a new one.'),
+    )
+    .nullish()
+    .describe('Replaces the whole "What you\'ll learn" list (≤ 30 entries).'),
   name: zod.string().nullish(),
   open_to_contributors: zod.boolean().nullish(),
   tags: zod.array(zod.string()).nullish(),

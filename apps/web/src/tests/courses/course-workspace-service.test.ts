@@ -69,14 +69,27 @@ describe('getCourseMetadata learner shape', () => {
     ],
   }
   beforeEach(() => {
-    vi.mocked(apiJson).mockImplementation(async (path: unknown, _init: unknown, parse?: (value: unknown) => unknown) => {
-      const value =
-        path === `courses/${courseId}`
-          ? { id: courseId, name: 'C', description: '', about: '', tags: [], public: true, contributor_ids: [],
-              open_to_contributors: false, created_at_unix: 1, updated_at_unix: 1 }
-          : curriculum
-      return parse ? parse(value) : value
-    })
+    vi.mocked(apiJson).mockImplementation(
+      async (path: unknown, _init: unknown, parse?: (value: unknown) => unknown) => {
+        const value =
+          path === `courses/${courseId}`
+            ? {
+                id: courseId,
+                name: 'C',
+                description: '',
+                about: '',
+                tags: [],
+                public: true,
+                contributor_ids: [],
+                learnings: [],
+                open_to_contributors: false,
+                created_at_unix: 1,
+                updated_at_unix: 1,
+              }
+            : curriculum
+        return parse ? parse(value) : value
+      },
+    )
   })
 
   it('hides chapters without a published lesson for learners', async () => {

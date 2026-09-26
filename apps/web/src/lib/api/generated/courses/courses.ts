@@ -2268,7 +2268,9 @@ export const getListContributorsUrl = (id: CourseId) => {
 }
 
 /**
- * @summary Roster, creator first (course visibility; 404 otherwise).
+ * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
+public course — the course page names its authors to every visitor;
+anonymous visitors see active authors only.
  */
 export const listContributors = async (
   id: CourseId,
@@ -2356,7 +2358,9 @@ export function useListContributors<TData = Awaited<ReturnType<typeof listContri
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Roster, creator first (course visibility; 404 otherwise).
+ * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
+public course — the course page names its authors to every visitor;
+anonymous visitors see active authors only.
  */
 
 export function useListContributors<TData = Awaited<ReturnType<typeof listContributors>>, TError = ErrorType<Problem>>(
@@ -2437,7 +2441,9 @@ export function useListContributorsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Roster, creator first (course visibility; 404 otherwise).
+ * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
+public course — the course page names its authors to every visitor;
+anonymous visitors see active authors only.
  */
 
 export function useListContributorsSuspense<

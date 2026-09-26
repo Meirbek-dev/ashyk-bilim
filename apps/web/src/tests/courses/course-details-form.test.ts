@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn(), apiResult: mocks.apiResult }))
 
-import { updateCourseThumbnail } from '@/services/courses/courses'
+import { updateCourseMetadata, updateCourseThumbnail } from '@/services/courses/courses'
 
 function wireCourse(extra: Record<string, unknown> = {}) {
   return {
@@ -26,6 +26,8 @@ function wireCourse(extra: Record<string, unknown> = {}) {
     public: false,
     open_to_contributors: false,
     thumbnail_key: null,
+    thumbnail_video_key: null,
+    learnings: [],
     creator_id: null,
     contributor_ids: [],
     created_at_unix: 1,
@@ -92,5 +94,48 @@ describe('course thumbnail (F19/F22)', () => {
       expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ thumbnail_upload_id: null }) }),
       expect.anything(),
     )
+  })
+})
+
+// Restore regression: learnings were never read nor written by the v2 client.
+describe('course learnings (What you will learn)', () => {
+  const row = (text: string, emoji = '') => ({ id: 'l1', text, emoji })
+  const base = { name: 'Fresh', description: '', about: '', tags: [] }
+
+  it('validates rows like the server: trimmed text 1..=300, at most 30', () => {
+    const ok = v.safeParse(courseGeneralSchema, { ...base, learnings: [row('  Ownership  ', '🦀')] })
+    expect(ok.success && ok.output.learnings).toEqual([{ id: 'l1', text: 'Ownership', emoji: '🦀' }])
+    const messages = (learnings: unknown) =>
+      v.safeParse(courseGeneralSchema, { ...base, learnings }).issues?.map(issue => issue.message)
+    expect(messages([row('   ')])).toEqual(['learning_required'])
+    expect(messages([row('x'.repeat(301))])).toEqual(['learning_too_long'])
+    expect(messages(Array.from({ length: 31 }, (_, i) => ({ ...row('t'), id: String(i) })))).toEqual([
+      'too_many_learnings',
+    ])
+  })
+
+  it('sends learnings on the course PATCH, blank emoji as null', async () => {
+    await updateCourseMetadata('01a08bfb-2c9b-71b3-8985-d541d2b1716b', {
+      learnings: [row('Ownership', '🦀'), row('Borrowing')],
+    })
+    expect(mocks.apiResult).toHaveBeenLastCalledWith(
+      'courses/01a08bfb-2c9b-71b3-8985-d541d2b1716b',
+      expect.objectContaining({
+        body: JSON.stringify({
+          learnings: [
+            { id: 'l1', text: 'Ownership', emoji: '🦀' },
+            { id: 'l1', text: 'Borrowing', emoji: null },
+          ],
+        }),
+      }),
+      expect.anything(),
+    )
+  })
+
+  it('maps the legacy video thumbnail onto the course page fields', () => {
+    const both = toAppCourse(wireCourse({ thumbnail_key: 'i.png', thumbnail_video_key: 'v.mp4' }))
+    expect([both.thumbnail_video, both.thumbnail_type]).toEqual(['v.mp4', 'both'])
+    expect(toAppCourse(wireCourse({ thumbnail_video_key: 'v.mp4' })).thumbnail_type).toBe('video')
+    expect(toAppCourse(wireCourse()).thumbnail_type).toBe('image')
   })
 })

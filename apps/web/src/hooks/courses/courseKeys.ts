@@ -26,6 +26,9 @@ export function toAppCourse<T extends Course>(course: T) {
     ...course,
     course_uuid: course.id,
     thumbnail_image: course.thumbnail_key ?? null,
+    // Legacy video thumbnails (migrated courses only); `both` shows the switcher.
+    thumbnail_video: course.thumbnail_video_key ?? null,
+    thumbnail_type: course.thumbnail_video_key ? (course.thumbnail_key ? 'both' : 'video') : 'image',
     created_at: created,
     creation_date: created,
     update_date: updated,

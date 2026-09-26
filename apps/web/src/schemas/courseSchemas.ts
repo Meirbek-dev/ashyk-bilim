@@ -14,6 +14,25 @@ export const courseGeneralSchema = v.object({
     v.array(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(64, 'tag_too_long'))),
     v.maxLength(20, 'too_many_tags'),
   ),
+  // `learnings` ≤ 30 of {id ≤ 64, text 1..=300 trimmed, emoji ≤ 16}.
+  learnings: v.optional(
+    v.pipe(
+      v.array(
+        v.object({
+          id: v.pipe(v.string(), v.maxLength(64)),
+          text: v.pipe(
+            v.string(),
+            v.trim(),
+            v.minLength(1, 'learning_required'),
+            v.maxLength(300, 'learning_too_long'),
+          ),
+          emoji: v.pipe(v.string(), v.trim(), v.maxLength(16)),
+        }),
+      ),
+      v.maxLength(30, 'too_many_learnings'),
+    ),
+    [],
+  ),
 })
 
 export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>

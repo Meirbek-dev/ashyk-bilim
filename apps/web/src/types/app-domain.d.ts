@@ -38,7 +38,7 @@ declare global {
     update_date?: string | undefined
     url?: string | undefined
     // Commonly accessed payload properties
-    learnings?: string | string[] | null | undefined
+    learnings?: unknown
     tags?: string | string[] | null | undefined
     visibility?: boolean | string | null | undefined
     template?: string | null | undefined
@@ -145,7 +145,8 @@ declare global {
     description?: string
     about?: string
     mini_description?: string
-    learnings?: string | string[] | AppPayload | null
+    /** v2 `Course.learnings` (`CourseLearning[]`); legacy shapes are normalized by readers. */
+    learnings?: unknown
     tags?: string[] | string | null
     public?: boolean
     thumbnail_image?: string | null

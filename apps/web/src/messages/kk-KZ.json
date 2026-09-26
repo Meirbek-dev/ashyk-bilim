@@ -2633,7 +2633,9 @@
         "placeholder": "Не білетініңізді енгізіңіз...",
         "removeItemAriaLabel": "Оқу элементін жою",
         "removeItemTooltip": "Элементті жою",
-        "searchEmojis": "Эмодзи іздеу..."
+        "searchEmojis": "Эмодзи іздеу...",
+        "moveUpAriaLabel": "Жоғары жылжыту",
+        "moveDownAriaLabel": "Төмен жылжыту"
       },
       "Thumbnail": {
         "ariaLabelImage": "Жүктеу үшін курстың мұқаба кескінін таңдаңыз",
@@ -10558,7 +10560,10 @@
     "tooManyTags": "20 тегтен артық болмауы керек",
     "sourceCourseRequired": "Бастапқы курсты таңдаңыз",
     "learningsInvalid": "Оқу нәтижелерінің пішімі қате",
-    "instructionsRequired": "Нұсқаулар қажет"
+    "instructionsRequired": "Нұсқаулар қажет",
+    "learningRequired": "Тармақ мәтінін енгізіңіз немесе оны жойыңыз",
+    "learningTooLong": "Тармақ 300 таңбадан аспауы керек",
+    "tooManyLearnings": "30 тармақтан артық болмауы керек"
   },
   "activity": "Белсенділік",
   "additionalSettings": "Қосымша параметрлер",

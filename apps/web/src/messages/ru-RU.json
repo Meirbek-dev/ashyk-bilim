@@ -2634,7 +2634,9 @@
         "placeholder": "Что изучат студенты...",
         "removeItemAriaLabel": "Удалить элемент обучения",
         "removeItemTooltip": "Удалить элемент",
-        "searchEmojis": "Искать эмодзи..."
+        "searchEmojis": "Искать эмодзи...",
+        "moveUpAriaLabel": "Переместить выше",
+        "moveDownAriaLabel": "Переместить ниже"
       },
       "Thumbnail": {
         "ariaLabelImage": "Выберите миниатюру курса для загрузки",
@@ -8619,7 +8621,7 @@
             "question": "Вопрос",
             "task": "Учебная задача"
           },
-          "outlineTitle": "Структура {itemNoun}",
+          "outlineTitle": "{itemNoun, select, Вопрос {Структура вопросов} other {Структура: {itemNoun}}}",
           "outlinePoints": "Всего баллов: {points}",
           "outlineDescription": "Добавьте {itemNoun}, чтобы начать.",
           "kindLabels": {
@@ -8643,16 +8645,16 @@
           "createFailed": "Не удалось создать {itemNoun}",
           "deleteFailed": "Не удалось удалить {itemNoun}",
           "duplicateFailed": "Не удалось дублировать {itemNoun}",
-          "copyOfItem": "Копия {itemNoun}",
+          "copyOfItem": "{itemNoun, select, Вопрос {Копия вопроса} other {Копия: {itemNoun}}}",
           "assessmentDetailsTitle": "Детали активности",
           "assessmentDetailsExamDescription": "Название, инструкции, расписание и политика экзамена.",
-          "itemMetadataTitle": "Метаданные {itemNoun}",
+          "itemMetadataTitle": "{itemNoun, select, Вопрос {Метаданные вопроса} other {Метаданные: {itemNoun}}}",
           "itemMetadataDescription": "Общее название, инструкция и количество баллов.",
           "titleLabel": "Название",
           "pointsLabel": "Баллы",
           "pointsCompact": "{points} б.",
           "moreIssues": "...и еще {count}",
-          "itemContentTitle": "Содержимое {itemNoun}",
+          "itemContentTitle": "{itemNoun, select, Вопрос {Содержимое вопроса} other {Содержимое: {itemNoun}}}",
           "itemContentDescription": "Редактирование содержимого.",
           "pointsAbbreviation": "б.",
           "weightLabel": "вес",
@@ -8673,7 +8675,7 @@
           "allowResultReviewLabel": "Разрешить просмотр результатов",
           "showCorrectAnswersLabel": "Показывать правильные ответы",
           "readOnlyBadge": "Только чтение",
-          "workflowTitle": "Рабочий процесс {itemNoun}",
+          "workflowTitle": "{itemNoun, select, Вопрос {Рабочий процесс вопроса} other {Рабочий процесс: {itemNoun}}}",
           "workflowDescription": "Настройте детали, содержание и проверки публикации в одной студии до того, как это увидят студенты.",
           "readyToPublish": "Готово к публикации",
           "needsWork": "Нужно доработать",
@@ -10388,7 +10390,10 @@
     "tooManyTags": "Не больше 20 тегов",
     "sourceCourseRequired": "Выберите исходный курс",
     "learningsInvalid": "Неверный формат результатов обучения",
-    "instructionsRequired": "Требуются инструкции"
+    "instructionsRequired": "Требуются инструкции",
+    "learningRequired": "Введите текст пункта или удалите его",
+    "learningTooLong": "Пункт не должен превышать 300 символов",
+    "tooManyLearnings": "Не больше 30 пунктов"
   },
   "activity": "Активность",
   "additionalSettings": "Дополнительные настройки",

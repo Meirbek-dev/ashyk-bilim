@@ -2635,7 +2635,9 @@
         "placeholder": "Enter what you will learn...",
         "removeItemAriaLabel": "Remove learning item",
         "removeItemTooltip": "Remove item",
-        "searchEmojis": "Search emojis..."
+        "searchEmojis": "Search emojis...",
+        "moveUpAriaLabel": "Move up",
+        "moveDownAriaLabel": "Move down"
       },
       "Thumbnail": {
         "ariaLabelImage": "Choose course thumbnail image to upload",
@@ -10374,7 +10376,10 @@
     "tooManyTags": "No more than 20 tags",
     "sourceCourseRequired": "Please select a source course",
     "learningsInvalid": "Invalid format for learning outcomes",
-    "instructionsRequired": "Instructions are required"
+    "instructionsRequired": "Instructions are required",
+    "learningRequired": "Enter the item text or remove it",
+    "learningTooLong": "An item must not exceed 300 characters",
+    "tooManyLearnings": "No more than 30 items"
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",

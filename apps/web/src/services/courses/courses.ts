@@ -107,6 +107,13 @@ const toUpdateCourseRequest = (data: AppPayload) => ({
   ...(typeof data.thumbnail_upload_id === 'string' || data.thumbnail_upload_id === null
     ? { thumbnail_upload_id: data.thumbnail_upload_id }
     : {}),
+  ...(Array.isArray(data.learnings)
+    ? {
+        learnings: (data.learnings as unknown as { id?: string; text: string; emoji?: string | null }[]).map(
+          ({ id, text, emoji }) => ({ id, text, emoji: emoji || null }),
+        ),
+      }
+    : {}),
 })
 
 async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>) {
@@ -120,7 +127,7 @@ async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdate
   return { ...result, data: toAppCourse(result.data) }
 }
 
-/** `learnings` / `thumbnail_type` are not in the v2 `UpdateCourseRequest` and are dropped. */
+/** `thumbnail_type` is not in the v2 `UpdateCourseRequest` and is dropped. */
 export async function updateCourseMetadata(course_uuid: string, data: AppPayload, _options?: CourseWriteOptions) {
   return patchCourse(course_uuid, toUpdateCourseRequest(data))
 }

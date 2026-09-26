@@ -34,11 +34,28 @@ export const IssuedCertificate = zod
       creator_id: zod.union([zod.null(), zod.uuid()]).optional(),
       description: zod.string(),
       id: zod.uuid(),
+      learnings: zod
+        .array(
+          zod
+            .object({
+              emoji: zod.string().nullish(),
+              id: zod.string(),
+              text: zod.string(),
+            })
+            .describe('One "What you\'ll learn" entry.'),
+        )
+        .describe('"What you\'ll learn", in display order.'),
       name: zod.string(),
       open_to_contributors: zod.boolean(),
       public: zod.boolean(),
       tags: zod.array(zod.string()),
       thumbnail_key: zod.string().nullish().describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+      thumbnail_video_key: zod
+        .string()
+        .nullish()
+        .describe(
+          'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
+        ),
       updated_at_unix: zod.int(),
     }),
     instructor_name: zod

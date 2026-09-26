@@ -64,7 +64,7 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
   // Already an array
   if (Array.isArray(input)) {
     return input
-      .map(item => {
+      .map((item): LearningItem | null => {
         if (typeof item === 'string') {
           const s = item.trim()
           if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null
@@ -77,7 +77,11 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
           const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
           if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
             return null
-          return { text: learningText }
+          return {
+            text: learningText,
+            ...(typeof record.id === 'string' ? { id: record.id } : {}),
+            ...(typeof record.emoji === 'string' && record.emoji ? { emoji: record.emoji } : {}),
+          }
         }
         return null
       })
