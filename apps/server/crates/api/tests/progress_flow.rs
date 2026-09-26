@@ -2108,6 +2108,15 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     let (course_id, chapter_id) = public_course(&app, &teacher, "Migrated 101").await;
     let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
     let a2 = lesson(&app, &teacher, &chapter_id, "Outro").await;
+    // A certification makes completion eligible — what pays the hook.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     let alice = learner(&app, "alice").await;
     app.post_as(
         &alice,
@@ -2153,9 +2162,23 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     assert_eq!(activity(&state.json(), &a1)["state"], "complete");
     assert_eq!(activity(&state.json(), &a2)["state"], "complete");
     assert_eq!(state.json()["progress"]["progress_pct"], 100.0);
+    // Reading an old completion (this route recalculates) is no transition:
+    // it pays nothing either.
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
     let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM xp_transactions")
         .fetch_one(&pool)
         .await
         .unwrap();
     assert_eq!(xp, 0, "a repair pays no XP");
+    let certs: i64 = sqlx::query_scalar("SELECT count(*) FROM certificate_users")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(certs, 1, "the certificate itself is kept");
 }

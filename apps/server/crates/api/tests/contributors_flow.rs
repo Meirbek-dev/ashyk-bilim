@@ -95,6 +95,14 @@ async fn apply_approve_author_and_deactivate(pool: PgPool) {
         .await;
     assert_eq!(again.status, StatusCode::CONFLICT);
     assert_eq!(again.json()["code"], "conflict");
+    // The public course page names its authors to anonymous visitors —
+    // active ones only, never the pending applicant.
+    let public = app
+        .get(&format!("/api/v2/courses/{course}/contributors"))
+        .await;
+    assert_eq!(public.status, StatusCode::OK, "{}", public.text());
+    assert_eq!(public.json().as_array().unwrap().len(), 1);
+    assert_eq!(public.json()[0]["role"], "creator");
 
     // Pending grants nothing.
     assert_eq!(

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  c.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id\n           WHERE cu.verify_code = $1",
+  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  c.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id\n           -- Dash-insensitive: ETL-migrated legacy codes keep their own\n           -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq\n           -- scan is fine until it is not — then an expression index).\n           WHERE upper(regexp_replace(cu.verify_code, '[^A-Za-z0-9]', '', 'g'))\n               = upper(regexp_replace($1, '[^A-Za-z0-9]', '', 'g'))",
   "describe": {
     "columns": [
       {
@@ -86,5 +86,5 @@
       null
     ]
   },
-  "hash": "7a10e338d874defd8bd796fe94fdd4c8479e8448d96b8ee51636f1a65b2cea5d"
+  "hash": "b7b9cb49bbcfe4ab99a61d280fea0163024cbae6a1a9e38ce7d302df342cf66a"
 }

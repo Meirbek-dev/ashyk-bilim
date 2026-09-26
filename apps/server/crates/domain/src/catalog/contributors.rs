@@ -65,6 +65,9 @@ impl CoursesService {
     ) -> Result<Vec<Contributor>> {
         let course = self.get(actor, course_id).await?;
         let mut rows = ab_db::catalog::list_contributors(&self.pool, course_id).await?;
+        if actor.is_anonymous() {
+            rows.retain(|row| row.status == "active");
+        }
         if let Some(creator) = ab_db::catalog::creator_row(&self.pool, course.id).await? {
             rows.insert(0, creator);
         }

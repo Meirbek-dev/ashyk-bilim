@@ -124,6 +124,7 @@ impl WorkQueueService {
             WorkRole::Learner => ab_db::work_queue::list_learner_work(&self.pool, actor.user_id)
                 .await?
                 .iter()
+                .filter(|row| !is_stale_feedback(row, now))
                 .map(|row| learner_item(row, now))
                 .collect(),
             WorkRole::Teacher => {
@@ -230,6 +231,17 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
             }
         }
     }
+}
+
+/// How long a released grade stays in the learner's queue. Without it every
+/// grade ever received (every migrated one on cutover day) sits there as new.
+const FEEDBACK_WINDOW_SECS: i64 = 14 * 86_400;
+
+fn is_stale_feedback(row: &LearnerWorkRow, now: i64) -> bool {
+    matches!(
+        row.state,
+        ActivityProgressState::Passed | ActivityProgressState::Failed
+    ) && row.graded_at.unwrap_or(row.updated_at) < now - FEEDBACK_WINDOW_SECS
 }
 
 fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
@@ -528,6 +540,12 @@ mod tests {
         assert_eq!(failed.created_at, Some(300), "graded_at");
         let passed = learner_item(&learner_row(ActivityProgressState::Passed, None), now);
         assert_eq!(passed.priority, WorkPriority::Normal);
+        // Released grades leave the queue after the window; open work never does.
+        let old = learner_row(ActivityProgressState::Failed, None);
+        assert!(!is_stale_feedback(&old, now));
+        assert!(is_stale_feedback(&old, now + FEEDBACK_WINDOW_SECS + 301));
+        let open = learner_row(ActivityProgressState::InProgress, None);
+        assert!(!is_stale_feedback(&open, now + FEEDBACK_WINDOW_SECS * 10));
     }
 
     fn teacher_row(submitted_at: Option<i64>, review_ref: Option<uuid::Uuid>) -> TeacherWorkRow {

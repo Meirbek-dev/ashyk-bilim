@@ -1,5 +1,6 @@
 use ab_core::{Error, Result};
 use serde_json::{Map, Value};
+use uuid::Uuid;
 
 use crate::ctx::Ctx;
 use crate::{legacy, transform};
@@ -262,5 +263,57 @@ pub async fn trail(ctx: &mut Ctx) -> Result<()> {
         steps_written += 1;
     }
     ctx.wrote("trailstep", steps_written);
+    progress_only_completions(ctx).await
+}
+
+/// Legacy lesson completions that live only in `activity_progress` become
+/// complete steps on the learner's run (the backfill projects steps).
+async fn progress_only_completions(ctx: &mut Ctx) -> Result<()> {
+    let rows = legacy::progress_only_completions(&ctx.source, ctx.limit).await?;
+    let mut written = 0;
+    for row in &rows {
+        let (Some(activity_id), Some(course_id), Some(user_id)) = (
+            ctx.idmap.get("activity", row.activity_id),
+            ctx.idmap.get("course", row.course_id),
+            ctx.idmap.get("user", row.user_id),
+        ) else {
+            ctx.drop_row(
+                "activity_progress",
+                row.id,
+                "completion of an orphan activity or user",
+            );
+            continue;
+        };
+        let run: Option<(Uuid, Uuid)> = sqlx::query_as(
+            "SELECT id, trail_id FROM trail_runs WHERE user_id=$1 AND course_id=$2 ORDER BY created_at LIMIT 1",
+        )
+        .bind(user_id)
+        .bind(course_id)
+        .fetch_optional(&mut *ctx.tx)
+        .await?;
+        let Some((run_id, trail_id)) = run else {
+            ctx.drop_row(
+                "activity_progress",
+                row.id,
+                "completion without an enrolment (no trail run)",
+            );
+            continue;
+        };
+        let id = ctx.idmap.mint(
+            "activity_progress_step",
+            row.id,
+            None,
+            legacy::micros(row.completed_at),
+        );
+        sqlx::query("INSERT INTO trail_steps (id,trail_run_id,trail_id,activity_id,course_id,user_id,complete,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,true,COALESCE(to_timestamp($7),now()),COALESCE(to_timestamp($7),now())) ON CONFLICT DO NOTHING")
+            .bind(id).bind(run_id).bind(trail_id).bind(activity_id).bind(course_id).bind(user_id)
+            .bind(row.completed_at).execute(&mut *ctx.tx).await?;
+        written += 1;
+    }
+    if written > 0 {
+        ctx.note(format!(
+            "{written} lesson completion(s) recorded only in legacy activity_progress became trail steps"
+        ));
+    }
     Ok(())
 }

@@ -153,7 +153,11 @@ async fn referenced_keys(ctx: &mut Ctx) -> Result<HashSet<String>> {
     ))
     .fetch_all(&mut *ctx.tx)
     .await?;
-    Ok(keys.into_iter().collect())
+    // Remote avatar URLs (Google pictures) are not objects.
+    Ok(keys
+        .into_iter()
+        .filter(|key| !key.starts_with("http://") && !key.starts_with("https://"))
+        .collect())
 }
 
 async fn record_deliberate_drops(ctx: &mut Ctx) -> Result<()> {

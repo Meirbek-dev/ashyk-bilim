@@ -37,7 +37,14 @@ pub struct DroppedUserData {
 
 #[must_use]
 pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
-    let full = tidy(&format!("{} {}", u.first_name, u.last_name));
+    // First, patronymic, last: v2 has one display name, and the legacy
+    // patronymic (certificates, grading exports) must not be lost.
+    let full = tidy(&format!(
+        "{} {} {}",
+        u.first_name,
+        u.middle_name.as_deref().unwrap_or_default(),
+        u.last_name
+    ));
     let display_name = if full.is_empty() {
         u.username.trim().to_owned()
     } else {
@@ -70,7 +77,7 @@ pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
         google_avatar_url: u
             .avatar_image
             .as_deref()
-            .is_some_and(|a| a.starts_with("http://") || a.starts_with("https://")),
+            .is_some_and(|a| a.trim().starts_with("http://")),
     };
     (row, dropped)
 }
@@ -152,9 +159,16 @@ mod tests {
                 theme: true,
                 details: false,
                 profile: true,
-                google_avatar_url: true
+                google_avatar_url: false
             }
         );
+    }
+
+    #[test]
+    fn display_name_keeps_the_patronymic() {
+        let mut u = legacy_user();
+        u.middle_name = Some("Сергеевич".into());
+        assert_eq!(user(&u).0.display_name, "Иван Сергеевич Петров");
     }
 
     #[test]

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO certificate_users (certification_id, user_id, verify_code, created_at, updated_at)\n           VALUES ($1, $2, $3, COALESCE(to_timestamp($4::bigint), now()), COALESCE(to_timestamp($4::bigint), now()))\n           ON CONFLICT (certification_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7fc7affc983ef5ae098a729fa85f1ae49bc541d3c5375a47b4a6c569ca77c129"
+}

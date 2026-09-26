@@ -102,20 +102,23 @@ pub struct CertificateRow {
     pub updated_at: i64,
 }
 
-/// Issue once per (certification, user); `false` when it already existed.
+/// Issue once per (certification, user), dated `issued_at` (unix seconds;
+/// now when `None`); `false` when it already existed.
 pub async fn issue_certificate<'e>(
     db: impl sqlx::PgExecutor<'e>,
     certification_id: CertificationId,
     user_id: UserId,
     verify_code: &str,
+    issued_at: Option<i64>,
 ) -> Result<bool> {
     let inserted = sqlx::query!(
-        r#"INSERT INTO certificate_users (certification_id, user_id, verify_code)
-           VALUES ($1, $2, $3)
+        r#"INSERT INTO certificate_users (certification_id, user_id, verify_code, created_at, updated_at)
+           VALUES ($1, $2, $3, COALESCE(to_timestamp($4::bigint), now()), COALESCE(to_timestamp($4::bigint), now()))
            ON CONFLICT (certification_id, user_id) DO NOTHING"#,
         certification_id.0,
         user_id.0,
-        verify_code
+        verify_code,
+        issued_at
     )
     .execute(db)
     .await?;
@@ -178,7 +181,11 @@ pub async fn get_certificate_by_code(
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
-           WHERE cu.verify_code = $1"#,
+           -- Dash-insensitive: ETL-migrated legacy codes keep their own
+           -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq
+           -- scan is fine until it is not — then an expression index).
+           WHERE upper(regexp_replace(cu.verify_code, '[^A-Za-z0-9]', '', 'g'))
+               = upper(regexp_replace($1, '[^A-Za-z0-9]', '', 'g'))"#,
         verify_code
     )
     .fetch_optional(pool)

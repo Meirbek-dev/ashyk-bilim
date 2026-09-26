@@ -29,9 +29,19 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
             );
             emails.insert(row.email.to_ascii_lowercase());
         }
-        let avatar_key = user.avatar_image.as_deref().and_then(|name| {
-            transform::files::under(&format!("users/{}/avatars", user.user_uuid), name)
-        });
+        // Google profile pictures stay remote URLs (the web renders an
+        // `https://` avatar value as is); local files become object keys.
+        let avatar_key = user
+            .avatar_image
+            .as_deref()
+            .map(str::trim)
+            .and_then(|name| {
+                if name.starts_with("https://") {
+                    Some(name.to_owned())
+                } else {
+                    transform::files::under(&format!("users/{}/avatars", user.user_uuid), name)
+                }
+            });
         sqlx::query(
             "INSERT INTO users (id, zitadel_user_id, username, email, display_name, bio, avatar_key, locale, status, created_at, updated_at) \
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE(to_timestamp($10),now()),COALESCE(to_timestamp($11),now())) \
@@ -66,7 +76,7 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
             ("theme", dropped.theme),
             ("details", dropped.details),
             ("profile", dropped.profile),
-            ("remote avatar URL", dropped.google_avatar_url),
+            ("insecure http avatar URL", dropped.google_avatar_url),
         ] {
             if present {
                 ctx.drop_row(

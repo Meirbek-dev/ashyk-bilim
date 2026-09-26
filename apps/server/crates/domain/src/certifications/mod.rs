@@ -92,12 +92,12 @@ pub(crate) async fn issue_for_completion(
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<usize> {
-    let eligible = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
+    let Some(progress) = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
         .await?
-        .is_some_and(|p| p.certificate_eligible);
-    if !eligible {
+        .filter(|p| p.certificate_eligible)
+    else {
         return Ok(0);
-    }
+    };
     let mut issued = 0;
     for certification in
         ab_db::certifications::list_course_certifications(&mut *conn, course_id).await?
@@ -107,6 +107,8 @@ pub(crate) async fn issue_for_completion(
             certification.id,
             user_id,
             &new_verify_code(),
+            // The completion date, not the (backfill) run that noticed it.
+            progress.completed_at,
         )
         .await?
         {

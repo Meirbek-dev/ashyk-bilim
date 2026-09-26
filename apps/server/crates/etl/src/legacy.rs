@@ -1675,3 +1675,36 @@ pub fn micros(ts: Option<f64>) -> Option<i64> {
     #[allow(clippy::cast_possible_truncation)]
     ts.map(|t| (t * 1_000_000.0) as i64)
 }
+
+/// Legacy completions of lessons/videos/documents recorded only in the
+/// `activity_progress` projection (no `trailstep`): the legacy course page
+/// counted them, so they become trail steps.
+#[derive(Debug, Clone, FromRow)]
+pub struct ProgressOnlyCompletion {
+    pub id: i32,
+    pub activity_id: i32,
+    pub course_id: i32,
+    pub user_id: i32,
+    pub completed_at: Option<f64>,
+}
+
+pub async fn progress_only_completions(
+    pool: &PgPool,
+    limit: Option<i64>,
+) -> Result<Vec<ProgressOnlyCompletion>> {
+    fetch(
+        pool,
+        "activity_progress",
+        concat!(
+            "SELECT ap.id, ap.activity_id, ap.course_id, ap.user_id, ",
+            "extract(epoch FROM coalesce(ap.completed_at, ap.updated_at))::float8 AS completed_at ",
+            "FROM activity_progress ap JOIN activity a ON a.id = ap.activity_id ",
+            "WHERE ap.state = 'COMPLETED' ",
+            "AND a.activity_type::text IN ('TYPE_DYNAMIC', 'TYPE_VIDEO', 'TYPE_DOCUMENT') ",
+            "AND NOT EXISTS (SELECT 1 FROM trailstep ts WHERE ts.activity_id = ap.activity_id ",
+            "AND ts.user_id = ap.user_id AND ts.complete) ORDER BY ap.id"
+        ),
+        limit,
+    )
+    .await
+}

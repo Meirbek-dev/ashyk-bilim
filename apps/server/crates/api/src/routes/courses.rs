@@ -118,7 +118,9 @@ pub async fn course_readiness(
 
 // ── Contributors ────────────────────────────────────────────────────────────
 
-/// Roster, creator first (course visibility; 404 otherwise).
+/// Roster, creator first (course visibility; 404 otherwise). Public for a
+/// public course — the course page names its authors to every visitor;
+/// anonymous visitors see active authors only.
 #[utoipa::path(
     get,
     path = "/courses/{id}/contributors",
@@ -132,7 +134,7 @@ pub async fn course_readiness(
 )]
 pub async fn list_contributors(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<Contributor>>> {
     let rows = state.courses.list_contributors(&actor, id).await?;

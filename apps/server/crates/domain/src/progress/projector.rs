@@ -281,12 +281,12 @@ impl ProgressProjector {
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
         let write = completed_write(activity, user_id, existing.as_ref(), now_unix());
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
-        let course = self
+        let (course, newly_completed) = self
             .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
         Ok(AfterCommit {
             activity_completed: Some((activity.course_id, activity.id, user_id)),
-            course_completed: course_completed(&course),
+            course_completed: course_completed(&course, newly_completed),
         })
     }
 
@@ -327,12 +327,12 @@ impl ProgressProjector {
             status_reason: None,
         };
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
-        let course = self
+        let (course, newly_completed) = self
             .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
         Ok(AfterCommit {
             activity_completed: None,
-            course_completed: course_completed(&course),
+            course_completed: course_completed(&course, newly_completed),
         })
     }
 
@@ -387,10 +387,10 @@ impl ProgressProjector {
                 .await?;
             hooks = hooks.and(rejoin);
         } else {
-            let course = self
+            let (course, newly_completed) = self
                 .recalculate_course_on(&mut tx, course_id, user_id)
                 .await?;
-            hooks.course_completed = course_completed(&course);
+            hooks.course_completed = course_completed(&course, newly_completed);
         }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
@@ -406,7 +406,10 @@ impl ProgressProjector {
     }
 
     /// [`Self::recalculate_course`] on the caller's connection, so a trail
-    /// mark / leave commits the aggregate with its step (BUG-221). Touches
+    /// mark / leave commits the aggregate with its step (BUG-221). The flag
+    /// says this recalculation completed the course: only that transition
+    /// pays the `course_completed` hook, never a re-read of an old
+    /// completion (a GET, a repair, an ETL-migrated learner). Touches
     /// nothing but `conn`: the `course_completed` hook is the caller's, after
     /// commit (BUG-235).
     pub async fn recalculate_course_on(
@@ -414,7 +417,10 @@ impl ProgressProjector {
         conn: &mut PgConnection,
         course_id: CourseId,
         user_id: UserId,
-    ) -> Result<CourseProgressRow> {
+    ) -> Result<(CourseProgressRow, bool)> {
+        let was_completed = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
+            .await?
+            .is_some_and(|p| p.certificate_eligible);
         ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
         let mut rows =
             ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
@@ -437,9 +443,11 @@ impl ProgressProjector {
         if write.certificate_eligible {
             crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;
         }
-        ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
+        let row = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
             .await?
-            .ok_or_else(|| Error::not_found("course progress"))
+            .ok_or_else(|| Error::not_found("course progress"))?;
+        let newly_completed = row.certificate_eligible && !was_completed;
+        Ok((row, newly_completed))
     }
 
     /// Re-aggregate every member of a course (trail run; BUG-268) — after an activity is
@@ -728,12 +736,13 @@ impl ProgressProjector {
                 rows += 1;
             }
         }
-        let aggregate = self.recalculate_course_on(conn, course_id, user_id).await?;
+        let (aggregate, newly_completed) =
+            self.recalculate_course_on(conn, course_id, user_id).await?;
         Ok((
             rows,
             AfterCommit {
                 activity_completed: None,
-                course_completed: course_completed(&aggregate),
+                course_completed: course_completed(&aggregate, newly_completed),
             },
         ))
     }
@@ -786,8 +795,11 @@ async fn projection_for(
     )))
 }
 
-const fn course_completed(course: &CourseProgressRow) -> Option<(UserId, CourseId)> {
-    if course.certificate_eligible {
+const fn course_completed(
+    course: &CourseProgressRow,
+    newly_completed: bool,
+) -> Option<(UserId, CourseId)> {
+    if newly_completed {
         Some((course.user_id, course.course_id))
     } else {
         None

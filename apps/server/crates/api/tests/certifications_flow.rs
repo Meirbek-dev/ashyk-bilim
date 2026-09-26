@@ -238,6 +238,22 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     let relaxed = app.get(&format!("/api/v2/certificates/{sloppy}")).await;
     assert_eq!(relaxed.status, StatusCode::OK, "{}", relaxed.text());
     assert_eq!(relaxed.json()["certificate"]["verify_code"], code.as_str());
+    // ETL-migrated legacy codes keep their own dash layout and still verify,
+    // typed as printed or compacted.
+    sqlx::query("UPDATE certificate_users SET verify_code = 'F2-20260110-D4HG-027532' WHERE verify_code = $1")
+        .bind(&code)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    for typed in ["F2-20260110-D4HG-027532", "f220260110d4hg027532"] {
+        let legacy = app.get(&format!("/api/v2/certificates/{typed}")).await;
+        assert_eq!(legacy.status, StatusCode::OK, "{typed}: {}", legacy.text());
+    }
+    sqlx::query("UPDATE certificate_users SET verify_code = $1 WHERE verify_code = 'F2-20260110-D4HG-027532'")
+        .bind(&code)
+        .execute(&app.pool)
+        .await
+        .unwrap();
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE")
             .await

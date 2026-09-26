@@ -318,7 +318,24 @@ pub fn fold(
         ),
         passing_score: p.map_or(60.0, |p| p.passing_score.clamp(0.0, 100.0)),
         max_attempts: p.and_then(|p| p.max_attempts).filter(|n| *n >= 1),
-        time_limit_seconds: p.and_then(|p| p.time_limit_seconds).filter(|n| *n >= 1),
+        // A code challenge's seconds-scale limit is the Judge0 per-run limit
+        // the legacy editor wrote into the policy; as an attempt timer it
+        // expires every attempt within seconds.
+        time_limit_seconds: p
+            .and_then(|p| {
+                let per_run = p.assessment_type.eq_ignore_ascii_case("CODE_CHALLENGE")
+                    && p.time_limit_seconds.is_some_and(|n| n < 60);
+                if per_run {
+                    notes.push(format!(
+                        "code challenge per-run limit {:?}s not used as the attempt timer",
+                        p.time_limit_seconds
+                    ));
+                    None
+                } else {
+                    p.time_limit_seconds
+                }
+            })
+            .filter(|n| *n >= 1),
         due_at: p.and_then(|p| p.due_at),
         allow_late: p.is_none_or(|p| p.allow_late),
         late,
