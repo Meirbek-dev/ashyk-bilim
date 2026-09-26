@@ -29,7 +29,7 @@ import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
 import { useApiError } from '@/hooks/useApiError'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
-import { gradeOfRecord } from '@/features/assessments/domain/grade-of-record'
+import { gradeOfRecord, submitVerdict } from '@/features/assessments/domain/grade-of-record'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
@@ -91,6 +91,18 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       }),
     ])
   }, [assessmentUuid, courseUuid, queryClient])
+
+  // UX-224: the counted result (projection) — the submit refreshes it before
+  // resolving, so the toast reads what the result card will show.
+  const activityUuid = vm?.activityUuid
+  const countedActivity = useCallback(
+    () =>
+      queryClient
+        .getQueryData(learnerCourseStateQueryOptions(courseUuid).queryKey)
+        ?.outline.flatMap(chapter => chapter.activities)
+        .find(activity => activity.id === activityUuid),
+    [activityUuid, courseUuid, queryClient],
+  )
 
   if (!vm || submissionState.isLoading) {
     return <PageLoading />
@@ -272,6 +284,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       attempt={submissionState.draft}
       policy={policy}
       onComplete={handleComplete}
+      countedActivity={countedActivity}
       canSaveDraft={vm.canSaveDraft}
       canSubmit={vm.canSubmit}
       timerExpiresAt={vm.timerExpiresAt}
@@ -290,6 +303,7 @@ function ExamTakingContent({
   attempt,
   policy,
   onComplete,
+  countedActivity,
   canSaveDraft,
   canSubmit,
   timerExpiresAt,
@@ -304,6 +318,7 @@ function ExamTakingContent({
   attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>
   policy: typeof DEFAULT_POLICY_VIEW
   onComplete: () => void | Promise<void>
+  countedActivity: () => Parameters<typeof submitVerdict>[1]
   canSaveDraft: boolean
   canSubmit: boolean
   timerExpiresAt: string | null
@@ -313,6 +328,7 @@ function ExamTakingContent({
   historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
+  const tWorkspace = useTranslations('Features.ActivityWorkspace')
   const formatPercent = usePercentFormat()
   const locale = useLocale()
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -453,13 +469,25 @@ function ExamTakingContent({
           autoSubmit: isAutoSubmit,
         })
         persistence.clearSavedAnswers()
-        // The toast states the verdict, never «успешно завершен» over «Не пройдено» (UX-035).
-        const score = submitted.release_state === 'visible' ? submitted.final_score : null
+        // The toast states the verdict, never «успешно завершен» over «Не пройдено» (UX-035),
+        // and the counted result the card shows, not this attempt's (UX-224).
+        const verdict = submitVerdict(
+          submitted.release_state === 'visible' ? submitted.final_score : null,
+          countedActivity(),
+          passingScore,
+        )
         toast.success(
-          typeof score === 'number'
-            ? t(score >= (passingScore ?? 60) ? 'examSubmittedPassed' : 'examSubmittedFailed', {
-                score: formatPercent(score),
-              })
+          verdict
+            ? [
+                t(verdict.passed ? 'examSubmittedPassed' : 'examSubmittedFailed', {
+                  score: formatPercent(verdict.score),
+                }),
+                verdict.latest === null
+                  ? null
+                  : tWorkspace('latestAttemptScore', { score: formatPercent(verdict.latest) }),
+              ]
+                .filter(Boolean)
+                .join(' · ')
             : submitted.status === 'PENDING'
               ? t('examSubmittedPending')
               : t('examSubmittedSuccessfully'),
@@ -469,7 +497,7 @@ function ExamTakingContent({
         // The submission hook has already toasted the localized reason.
       }
     },
-    [formatPercent, onComplete, passingScore, persistence, submissionState, t],
+    [countedActivity, formatPercent, onComplete, passingScore, persistence, submissionState, t, tWorkspace],
   )
 
   const handleViolation = useCallback(

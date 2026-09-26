@@ -9,12 +9,27 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 import ExamAttemptContent from '@/features/assessments/registry/exam/ExamAttemptContent'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
+import { submitVerdict } from '@/features/assessments/domain/grade-of-record'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import ruMessages from '@/messages/ru-RU.json'
 
 const submissions = [
-  { submission_uuid: 's2', id: 's2', attempt_number: 2, status: 'PUBLISHED', final_score: 0, submitted_at: '2026-09-12T10:00:00Z' },
-  { submission_uuid: 's1', id: 's1', attempt_number: 1, status: 'PUBLISHED', final_score: 100, submitted_at: '2026-09-12T09:00:00Z' },
+  {
+    submission_uuid: 's2',
+    id: 's2',
+    attempt_number: 2,
+    status: 'PUBLISHED',
+    final_score: 0,
+    submitted_at: '2026-09-12T10:00:00Z',
+  },
+  {
+    submission_uuid: 's1',
+    id: 's1',
+    attempt_number: 1,
+    status: 'PUBLISHED',
+    final_score: 100,
+    submitted_at: '2026-09-12T09:00:00Z',
+  },
 ]
 
 vi.mock('@/hooks/useContributorStatus', () => ({ useContributorStatus: () => ({ contributorStatus: null }) }))
@@ -43,7 +58,9 @@ const vm = {
   title: 'Тест',
   description: null,
   policy: DEFAULT_POLICY_VIEW,
-  items: [{ id: 'i1', item_uuid: 'i1', max_score: 1, body: { kind: 'CHOICE', prompt: 'Q', options: [], multiple: false } }],
+  items: [
+    { id: 'i1', item_uuid: 'i1', max_score: 1, body: { kind: 'CHOICE', prompt: 'Q', options: [], multiple: false } },
+  ],
   canEdit: true,
   canSaveDraft: true,
   canSubmit: true,
@@ -73,5 +90,16 @@ describe('exam entry panel grade of record', () => {
     expect(screen.getByText('Результат доступен')).toBeInTheDocument()
     expect(screen.getByText('Балл').parentElement).toHaveTextContent(/^Балл100%$/)
     expect(screen.getByText('Отлично')).toBeInTheDocument()
+  })
+})
+
+// UX-224: a 50 % retake after a counted 100 % toasted «Тест не пройден: 50%»
+// while the card said «Пройден · 100%» — the toast states the counted result.
+describe('submit toast verdict', () => {
+  it('is the counted result, with this attempt as a side note', () => {
+    expect(submitVerdict(50, { score: 100, passed: true }, 60)).toEqual({ score: 100, passed: true, latest: 50 })
+    expect(submitVerdict(80, { score: 80, passed: true }, 60)).toEqual({ score: 80, passed: true, latest: null })
+    expect(submitVerdict(40, undefined, 60)).toEqual({ score: 40, passed: false, latest: null })
+    expect(submitVerdict(null, { score: 100, passed: true }, 60)).toBeNull()
   })
 })
