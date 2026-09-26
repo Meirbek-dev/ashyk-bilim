@@ -438,10 +438,9 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
 
 function CourseAuthors({ courseUuid }: CourseAuthorsProps) {
   const isMobile = useIsMobile()
-  const { isAuthenticated } = useSession()
-  // The roster is a signed-in read (anonymous → 401): active rows only,
-  // creator first, then maintainers, contributors, reporters.
-  const { data: roster } = useContributors(courseUuid, { enabled: isAuthenticated })
+  // The roster is public for a visible course (anonymous visitors get active authors only);
+  // shown creator first, then maintainers, contributors, reporters.
+  const { data: roster } = useContributors(courseUuid)
   const sortedAuthors = (roster ?? [])
     .filter(row => row.status === 'active')
     .toSorted((a, b) => (ROLE_PRIORITY[a.role] ?? 999) - (ROLE_PRIORITY[b.role] ?? 999))
