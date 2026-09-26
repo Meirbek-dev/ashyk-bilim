@@ -289,3 +289,45 @@ async fn anonymous_browsing_sees_public_catalog_only(pool: PgPool) {
         .await;
     assert_eq!(denied.status, StatusCode::UNAUTHORIZED);
 }
+
+/// UX-222: `/search` and `courses?q=` share one matching rule — symbols
+/// count (`C#`, `C++`), a one-letter word matches whole (and unfolded), and a
+/// Cyrillic look-alike «С#» is found by the Latin `C#`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    for name in [
+        "C# Basics",
+        "Среда программирования С# в Unity 3D",
+        "C++ Primer",
+        "Cooking",
+        "Arduino",
+    ] {
+        course(&app, &teacher, name, true).await;
+    }
+    let names = |body: &serde_json::Value| {
+        let mut names: Vec<String> = body
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["name"].as_str().unwrap().to_owned())
+            .collect();
+        names.sort();
+        names
+    };
+    for (q, expected) in [
+        (
+            "C%23",
+            vec!["C# Basics", "Среда программирования С# в Unity 3D"],
+        ),
+        ("c%2B%2B", vec!["C++ Primer"]),
+        ("c", vec!["C# Basics", "C++ Primer"]),
+        ("ar", vec!["Arduino"]),
+    ] {
+        let search = app.get(&format!("/api/v2/search?q={q}")).await;
+        assert_eq!(names(&search.json()["courses"]), expected, "search {q}");
+        let listed = app.get(&format!("/api/v2/courses?q={q}")).await;
+        assert_eq!(names(&listed.json()["items"]), expected, "courses {q}");
+    }
+}

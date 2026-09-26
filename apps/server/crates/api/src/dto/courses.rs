@@ -204,7 +204,8 @@ pub struct CourseListQuery {
     /// holder of `course:update|manage:platform` (who edits every course).
     /// Adds the `summary` block to the page.
     pub mine: Option<bool>,
-    /// Case-insensitive substring over name and description.
+    /// Words matched like `/search` (word-start prefix, one letter whole,
+    /// `-word` excludes) over name, description and about.
     pub q: Option<String>,
     /// `updated` (default, newest update first) or `name` (A→Z).
     pub sort: Option<String>,

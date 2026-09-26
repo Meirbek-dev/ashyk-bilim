@@ -1,10 +1,12 @@
 //! Platform search (search-lite).
 //!
-//! FTS over the generated `search` tsvector columns ('simple' config —
-//! matches the migration; no language stemming, which is the right call for
-//! mixed ru/kk/en content), ranked by `ts_rank_cd` then recency. Every word
-//! matches by prefix (UX-152) so a partial word finds courses the way the
-//! people search does; `-word` excludes.
+//! Matching is `search_matches` (UX-222, shared with `courses?q=`): every
+//! word matches at a word start (UX-152 prefix), a one-character word only
+//! whole and unfolded, symbols count (`C#`, `C++` — the 'simple' tsvector
+//! drops them), and Cyrillic look-alikes fold to Latin; `-word` excludes. Hits are ranked by
+//! `ts_rank_cd` over the `search` tsvector, then recency.
+//! ponytail: a regex scan per row, not the GIN index — fine for hundreds of
+//! courses; a trigram index on the folded text if the catalogue grows.
 
 use ab_core::Result;
 use ab_core::id::{CollectionId, CourseId, UserId};
@@ -36,6 +38,53 @@ pub fn prefix_tsquery(query: &str) -> String {
         .join(" & ")
 }
 
+/// `search_matches` word regexes for a query.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct WordPatterns {
+    /// Must match the folded text.
+    pub words: Vec<String>,
+    /// One-character words: must match the unfolded text, so `c` is not
+    /// the Russian preposition «с».
+    pub letters: Vec<String>,
+    /// `-word`: must not match the folded text.
+    pub excluded: Vec<String>,
+}
+
+/// A word must start where a word starts (or the text does) unless it
+/// starts with a symbol; a one-character word must also end there, so `c`
+/// finds «C» and «C#» but not every word starting with «c». Regex
+/// metacharacters are literal.
+#[must_use]
+pub fn word_patterns(query: &str) -> WordPatterns {
+    let mut out = WordPatterns::default();
+    for word in query.split_whitespace() {
+        let (negate, word) = match word.strip_prefix('-') {
+            Some(rest) if !rest.is_empty() => (true, rest),
+            _ => (false, word),
+        };
+        let mut pattern = String::new();
+        if word.starts_with(char::is_alphanumeric) {
+            pattern.push_str("(^|[^[:alnum:]])");
+        }
+        for c in word.chars() {
+            if r"\^$.|?*+()[]{}".contains(c) {
+                pattern.push('\\');
+            }
+            pattern.push(c);
+        }
+        let letter = word.chars().count() == 1;
+        if letter {
+            pattern.push_str("($|[^[:alnum:]])");
+        }
+        match (negate, letter) {
+            (true, _) => out.excluded.push(pattern),
+            (false, true) => out.letters.push(pattern),
+            (false, false) => out.words.push(pattern),
+        }
+    }
+    out
+}
+
 /// Visibility = SQL `course_visible` (BUG-190), the predicate shared with
 /// [`crate::catalog::list_courses`] and `collection_listable`.
 pub async fn search_courses(
@@ -45,6 +94,7 @@ pub async fn search_courses(
     see_all: bool,
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
+    let patterns = word_patterns(query);
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
@@ -57,14 +107,17 @@ pub async fn search_courses(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
-           WHERE search @@ to_tsquery('simple', $1)
+           WHERE search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $5, $6, $7)
              AND course_visible(courses, $3, $2)
            ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
            LIMIT $4"#,
         prefix_tsquery(query),
         see_all,
         viewer.map(|v| v.0),
-        limit
+        limit,
+        &patterns.words,
+        &patterns.letters,
+        &patterns.excluded
     )
     .fetch_all(pool)
     .await?;
@@ -81,6 +134,7 @@ pub async fn search_collections(
     see_all_courses: bool,
     limit: i64,
 ) -> Result<Vec<CollectionRow>> {
+    let patterns = word_patterns(query);
     let rows = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
@@ -88,7 +142,7 @@ pub async fn search_collections(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections
-           WHERE search @@ to_tsquery('simple', $1)
+           WHERE search_matches(name || ' ' || description, $6, $7, $8)
              AND (public OR $2 OR creator_id = $3)
              AND collection_listable(id, $3, $5)
            ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
@@ -97,7 +151,10 @@ pub async fn search_collections(
         see_all,
         viewer.map(|v| v.0),
         limit,
-        see_all_courses
+        see_all_courses,
+        &patterns.words,
+        &patterns.letters,
+        &patterns.excluded
     )
     .fetch_all(pool)
     .await?;
@@ -168,7 +225,23 @@ pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<
 
 #[cfg(test)]
 mod tests {
-    use super::prefix_tsquery;
+    use super::{WordPatterns, prefix_tsquery, word_patterns};
+
+    #[test]
+    fn word_patterns_anchor_words_and_keep_symbols() {
+        assert_eq!(
+            word_patterns(" C# c++ x -.net "),
+            WordPatterns {
+                words: vec![
+                    r"(^|[^[:alnum:]])C#".into(),
+                    r"(^|[^[:alnum:]])c\+\+".into()
+                ],
+                letters: vec![r"(^|[^[:alnum:]])x($|[^[:alnum:]])".into()],
+                excluded: vec![r"\.net".into()],
+            }
+        );
+        assert_eq!(word_patterns("  "), WordPatterns::default());
+    }
 
     #[test]
     fn words_are_quoted_prefixes_and_dashes_negate() {

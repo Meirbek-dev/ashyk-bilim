@@ -137,8 +137,8 @@ pub async fn list_courses(
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
     let by_name = filter.sort == "name";
-    // UX-143: `q` is a literal substring — escape the LIKE metacharacters.
-    let pattern = filter.q.map(|q| format!("%{}%", crate::like_escape(q)));
+    // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
+    let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
@@ -156,7 +156,7 @@ pub async fn list_courses(
                   OR EXISTS (SELECT 1 FROM resource_authors ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND ($6::text IS NULL OR name ILIKE $6 ESCAPE '\' OR description ILIKE $6 ESCAPE '\')
+             AND search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $6, $9, $10)
              AND CASE $7::text
                    WHEN 'drafts' THEN NOT public
                    WHEN 'published' THEN public
@@ -181,9 +181,11 @@ pub async fn list_courses(
         cursor.map(|c| c.0),
         limit,
         filter.mine,
-        pattern,
+        &patterns.words,
         filter.preset,
-        by_name
+        by_name,
+        &patterns.letters,
+        &patterns.excluded
     )
     .fetch_all(pool)
     .await?;
