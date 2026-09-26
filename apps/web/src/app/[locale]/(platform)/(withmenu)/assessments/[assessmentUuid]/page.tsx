@@ -1,5 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { getLocale, getTranslations } from 'next-intl/server'
+
+import { redirect as redirectWithLocale } from '@/i18n/navigation'
+import { APP_NAME } from '@/lib/constants'
 
 import { getSession } from '@/lib/auth/session'
 import { getSearchParam } from '@/lib/search-params'
@@ -14,7 +18,10 @@ interface Props {
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const { assessmentUuid } = await props.params
   const assessment = await getAssessmentByUuid(assessmentUuid)
-  if (!assessment) return { title: 'Assessment not found' }
+  if (!assessment) {
+    const t = await getTranslations('NotFoundPage')
+    return { title: `${t('title')} - ${APP_NAME}`, robots: { index: false } }
+  }
   return { title: assessment.title, robots: { index: false } }
 }
 
@@ -31,20 +38,24 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
  * Fallback (no course): notFound()
  */
 export default async function AssessmentAttemptPage(props: Props) {
-  const { assessmentUuid } = await props.params
-  const searchParams = await props.searchParams
+  const [{ assessmentUuid }, searchParams, initialSession] = await Promise.all([
+    props.params,
+    props.searchParams,
+    getSession(),
+  ])
   const reviewSubmissionUuid = getSearchParam(searchParams, 'review') ?? null
 
-  const [assessment, initialSession] = await Promise.all([getAssessmentByUuid(assessmentUuid), getSession()])
-
-  if (!assessment) notFound()
-
+  // Session first: anonymously the assessment is a 401 (→ null), which must
+  // not turn a login deep link into «not found» (UX-229).
   if (!initialSession) {
-    const callbackUrl = reviewSubmissionUuid
-      ? `/assessments/${assessmentUuid}?review=${reviewSubmissionUuid}`
+    const returnTo = reviewSubmissionUuid
+      ? `/assessments/${assessmentUuid}?review=${encodeURIComponent(reviewSubmissionUuid)}`
       : `/assessments/${assessmentUuid}`
-    redirect(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+    return redirectWithLocale({ href: `/login?returnTo=${encodeURIComponent(returnTo)}`, locale: await getLocale() })
   }
+
+  const assessment = await getAssessmentByUuid(assessmentUuid)
+  if (!assessment) notFound()
 
   // Redirect to canonical URL when course context is available
   if (assessment.course_uuid && assessment.activity_uuid) {
