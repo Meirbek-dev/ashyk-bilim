@@ -351,13 +351,14 @@ impl CertificationsService {
     /// The certificate as a PDF (public by code, like `verify`). The page
     /// language is `language` when given, else the holder's locale;
     /// `verify_url` turns the page language and the canonical code into the
-    /// public verify link.
+    /// public verify link. Returns the stored code with the bytes — the
+    /// download is named by it, never by the typed code (BUG-327).
     pub async fn pdf(
         &self,
         verify_code: &str,
         language: Option<Language>,
         verify_url: impl FnOnce(Language, &str) -> String,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<(String, Vec<u8>)> {
         let verified = self.verify(verify_code).await?;
         let holder =
             ab_db::identity::get_profile(&self.pool, verified.issued.certificate.user_id).await?;
@@ -372,7 +373,7 @@ impl CertificationsService {
         let text = |key: &str| config_text(config, key);
         let teacher_name = verified.issued.instructor_name;
         let code = verified.issued.certificate.verify_code.clone();
-        pdf::render(&pdf::CertificatePdf {
+        let bytes = pdf::render(&pdf::CertificatePdf {
             language,
             holder_name: verified.holder_display_name,
             certificate_name: text("certification_name")
@@ -381,9 +382,10 @@ impl CertificationsService {
             course_name: verified.issued.course.name,
             issued_at_unix: verified.issued.certificate.created_at,
             verify_url: verify_url(language, &code),
-            verify_code: code,
+            verify_code: code.clone(),
             teacher_name,
-        })
+        })?;
+        Ok((code, bytes))
     }
 }
 

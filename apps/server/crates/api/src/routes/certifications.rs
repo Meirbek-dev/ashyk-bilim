@@ -178,7 +178,7 @@ pub async fn certificate_pdf(
             .get(header::ACCEPT_LANGUAGE)
             .and_then(|v| v.to_str().ok()),
     );
-    let bytes = state
+    let (code, bytes) = state
         .certifications
         .pdf(&code, language, |language, code| {
             state.config.server.web_href(&format!(
@@ -194,11 +194,8 @@ pub async fn certificate_pdf(
     );
     response.headers_mut().insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!(
-            "attachment; filename=\"certificate-{}.pdf\"",
-            code.trim()
-        ))
-        .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
+        HeaderValue::from_str(&format!("attachment; filename=\"certificate-{code}.pdf\""))
+            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
     );
     Ok(response)
 }

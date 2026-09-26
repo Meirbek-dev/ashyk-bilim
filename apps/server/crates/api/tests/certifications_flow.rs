@@ -288,6 +288,15 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         text.contains(&format!("/kz/certificates/{code}/verify")),
         "verify link is locale-prefixed"
     );
+    // BUG-327: the download is named by the stored code, never the typed
+    // one (a junk-suffixed, quoted or lowercase code must not reach the header).
+    let typed = format!("{}%22%D1%91", code.to_lowercase());
+    let junk = app.get(&format!("/api/v2/certificates/{typed}/pdf")).await;
+    assert_eq!(junk.status, StatusCode::OK, "{}", junk.text());
+    assert_eq!(
+        junk.headers[axum::http::header::CONTENT_DISPOSITION],
+        format!("attachment; filename=\"certificate-{code}.pdf\"")
+    );
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE/pdf")
             .await
