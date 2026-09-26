@@ -1478,3 +1478,21 @@ Implements three more items of the owner answers above. Routes:
   this follows the studio tooltip («extra minutes after the time limit before
   auto-submission fires»). Why: the studio offered a setting that did
   nothing — a 45 s submit on a 20 s quiz with a 5-min grace answered 409.
+
+## The AI request cap measures the prompt that is sent (2026-09-26, gauntlet pass 28)
+
+- **Course Q&A fits the course context to `max_tokens_per_request`**
+  (BUG-325): the context keeps whole sources in course order while it stays
+  within `CONTEXT_CLIP_LIMIT` characters and the system prompt + history +
+  question + context fit the cap (`ContextBundle::fitted`); only sources the
+  model saw are citable. A turn is refused with `ai-budget-exhausted` only
+  when its own text cannot fit. The other agents estimate the clipped
+  context they actually send. Legacy (`apps/api`) estimated the whole
+  unclipped bundle while sending 12 000 characters of it, so every question
+  on a large course answered 503.
+- **AG-UI 1.0 input members are modelled** (BUG-323/324): `protocolVersion`
+  and `resume` on `QaChatRequest` / `RunStreamRequest`, and the base message
+  members (`name`, `encryptedValue`, `metadata`, `subagentRunId`) on
+  `QaWireMessage`; the DTOs keep `deny_unknown_fields`. A vitest pins the
+  members `@ag-ui/client` sends, so a client upgrade that adds one fails
+  before it reaches the browser.

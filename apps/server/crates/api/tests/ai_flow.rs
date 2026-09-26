@@ -258,12 +258,16 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     .await;
     let base = app.serve().await;
     let client = reqwest::Client::new();
-    // The full AG-UI `RunAgentInput` shape `@ag-ui/client` sends.
+    // BUG-323: the exact `RunAgentInput` `@ag-ui/client` 1.0 sends (captured
+    // from `HttpAgent.runAgent`), `protocolVersion` included.
     let body = serde_json::json!({
-        "threadId": "client-thread-1", "runId": "client-run-1",
+        "threadId": "client-thread-1", "runId": "client-run-1", "protocolVersion": "1.0",
+        "state": {},
         "messages": [{ "id": "m1", "role": "user", "content": "What is a monad?" }],
-        "forwardedProps": { "client_turn_id": "turn-1", "language": "en" },
-        "tools": [], "context": [], "state": {}
+        "tools": [], "context": [],
+        "forwardedProps": {
+            "activity_id": null, "client_turn_id": "turn-1", "language": "en", "thread_id": null
+        }
     });
 
     let mut stream = client
@@ -387,13 +391,14 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     assert_eq!(kinds.first().map(String::as_str), Some("running"));
     assert_eq!(kinds.last().map(String::as_str), Some("finished"));
     assert!(kinds.iter().any(|k| k == "model_started"));
-    // The run stream accepts the same AG-UI input and settles from the journal.
+    // The run stream accepts the same AG-UI input and settles from the journal
+    // (BUG-324: the 1.0 body, `protocolVersion` included).
     let mut followed = client
         .post(format!("{base}/api/v2/ai/runs/{run_id}/stream"))
         .header("cookie", &alice.cookie)
         .json(&serde_json::json!({
-            "threadId": "client-thread-1", "runId": "client-run-2",
-            "messages": [], "forwardedProps": {}, "tools": [], "context": [], "state": {}
+            "threadId": "client-thread-1", "runId": "client-run-2", "protocolVersion": "1.0",
+            "state": {}, "messages": [], "tools": [], "context": [], "forwardedProps": {}
         }))
         .send()
         .await

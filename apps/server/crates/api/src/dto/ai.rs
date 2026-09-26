@@ -193,13 +193,18 @@ pub struct RunStreamRequest {
     #[garde(skip)]
     #[schema(value_type = Option<Object>)]
     pub forwarded_props: Option<serde_json::Value>,
+    #[garde(length(max = 32))]
+    pub protocol_version: Option<String>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub resume: Option<Vec<serde_json::Value>>,
 }
 
 // ── Course Q&A ──────────────────────────────────────────────────────────────
 
 /// One message of the AG-UI conversation the client sends back.
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct QaWireMessage {
     #[garde(length(max = 200))]
     pub id: Option<String>,
@@ -211,6 +216,16 @@ pub struct QaWireMessage {
     #[garde(skip)]
     #[schema(value_type = Option<Vec<Object>>)]
     pub parts: Option<Vec<serde_json::Value>>,
+    /// AG-UI 1.0 message members; accepted and ignored.
+    #[garde(skip)]
+    pub name: Option<String>,
+    #[garde(skip)]
+    pub encrypted_value: Option<String>,
+    #[garde(skip)]
+    #[schema(value_type = Option<Object>)]
+    pub metadata: Option<serde_json::Value>,
+    #[garde(skip)]
+    pub subagent_run_id: Option<String>,
 }
 
 /// What this API reads from AG-UI `forwardedProps`.
@@ -256,6 +271,13 @@ pub struct QaChatRequest {
     pub state: Option<serde_json::Value>,
     #[garde(length(max = 200))]
     pub parent_run_id: Option<String>,
+    /// AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.
+    #[garde(length(max = 32))]
+    pub protocol_version: Option<String>,
+    /// AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.
+    #[garde(skip)]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub resume: Option<Vec<serde_json::Value>>,
 }
 
 impl QaChatRequest {

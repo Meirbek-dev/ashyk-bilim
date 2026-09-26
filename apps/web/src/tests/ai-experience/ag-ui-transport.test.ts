@@ -51,6 +51,24 @@ describe('AG-UI transport', () => {
     expect(isApiError(error) && error.code).toBe('ai-disabled')
   })
 
+  // BUG-323/324: the server DTOs (`QaChatRequest`, `RunStreamRequest`) deny unknown
+  // fields. A client upgrade that sends a new `RunAgentInput` member must model it there first.
+  it('sends only the RunAgentInput members the server models', async () => {
+    mocks.fetch.mockRejectedValue(new Error('stop'))
+    const agent = createAGUIAgent('ai/qa/course-1/chat')
+    agent.setMessages([{ id: 'turn-1', role: 'user', content: 'Q?' }])
+
+    await agent.runAgent({ forwardedProps: { client_turn_id: 'turn-1' } }).catch(() => null)
+
+    const body = JSON.parse(mocks.fetch.mock.lastCall?.[1].body as string) as { messages: [object] }
+    const input = ['context', 'forwardedProps', 'messages', 'parentRunId', 'protocolVersion', 'resume']
+    const message = ['content', 'encryptedValue', 'id', 'metadata', 'name', 'parts', 'role', 'subagentRunId']
+    const unmodelled = (value: object, known: string[]) => Object.keys(value).filter(key => !known.includes(key))
+
+    expect(unmodelled(body, [...input, 'runId', 'state', 'threadId', 'tools'])).toEqual([])
+    expect(unmodelled(body.messages[0], message)).toEqual([])
+  })
+
   it('sends the resume header the caller asked for', async () => {
     mocks.fetch.mockResolvedValue(
       new Response(chunks(['id: 1-0\nevent: run\ndata: {"type":"RUN_STARTED","threadId":"t","runId":"r"}\n\n']), {
