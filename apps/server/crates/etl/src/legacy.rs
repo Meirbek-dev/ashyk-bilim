@@ -250,7 +250,10 @@ pub struct Course {
 pub async fn courses(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Course>> {
     fetch(pool, "course", concat!(
         "SELECT id, course_uuid, name, description, about, learnings, tags, thumbnail_type::text AS thumbnail_type, ",
-        "thumbnail_image, thumbnail_video, public, open_to_contributors, creator_id, ",
+        "thumbnail_image, thumbnail_video, public, open_to_contributors, ",
+        // 28 legacy courses name their creator only in `resourceauthor` (CREATOR).
+        "COALESCE(creator_id, (SELECT r.user_id FROM resourceauthor r WHERE r.resource_uuid = course.course_uuid ",
+        "AND r.authorship::text = 'CREATOR' AND r.user_id IS NOT NULL ORDER BY r.creation_date, r.id LIMIT 1)) AS creator_id, ",
         ts!("creation_date"), ", ", ts!("update_date"), " FROM course ORDER BY id"), limit).await
 }
 

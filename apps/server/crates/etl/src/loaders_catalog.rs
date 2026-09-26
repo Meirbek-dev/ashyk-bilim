@@ -348,19 +348,6 @@ async fn load_resource_authors(ctx: &mut Ctx) -> Result<()> {
         written += 1;
     }
     ctx.wrote("resourceauthor", written);
-    // Legacy courses whose `creator_id` is NULL name their creator only in
-    // `resourceauthor` (CREATOR); v2 reads the creator from the column.
-    let filled = sqlx::query(
-        "UPDATE courses c SET creator_id = ra.user_id FROM (            SELECT DISTINCT ON (course_id) course_id, user_id FROM resource_authors            WHERE authorship = 'creator' AND course_id IS NOT NULL ORDER BY course_id, created_at, user_id          ) ra WHERE ra.course_id = c.id AND c.creator_id IS NULL",
-    )
-    .execute(&mut *ctx.tx)
-    .await?
-    .rows_affected();
-    if filled > 0 {
-        ctx.note(format!(
-            "{filled} course creator(s) taken from resourceauthor CREATOR rows"
-        ));
-    }
     Ok(())
 }
 
