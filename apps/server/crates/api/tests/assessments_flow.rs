@@ -1780,6 +1780,99 @@ async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
     assert_eq!(items.json()["items"].as_array().unwrap().len(), 1);
 }
 
+/// BUG-333: a published assessment already unready (a legacy blocker the
+/// migration carried in) still takes edits that add no blocker — a due-date
+/// change lands — while an edit adding a new blocker is still a 409.
+#[sqlx::test(migrations = "../../migrations")]
+async fn unready_live_assessment_refuses_only_new_blockers(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Legacy" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let mut item_ids = Vec::new();
+    for prompt in ["1+1?", "2+2?"] {
+        let item = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &choice_item(prompt),
+            )
+            .await;
+        item_ids.push(item.json()["id"].as_str().unwrap().to_owned());
+    }
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    // The legacy blocker: the first item lost its correct option.
+    sqlx::query(
+        "UPDATE assessment_items
+         SET body = jsonb_set(body, '{options,0,is_correct}', 'false')
+         WHERE id = $1::uuid",
+    )
+    .bind(&item_ids[0])
+    .execute(&pool)
+    .await
+    .unwrap();
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ok"], false, "{}", readiness.text());
+
+    let put_policy = |policy: serde_json::Value| {
+        axum::http::Request::builder()
+            .method("PUT")
+            .uri(format!("/api/v2/assessments/{id}/policy"))
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &teacher.cookie)
+            .body(axum::body::Body::from(policy.to_string()))
+            .unwrap()
+    };
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    let mut policy = detail.json()["policy"].clone();
+    policy["due_at_unix"] = serde_json::json!(far_future());
+    let due = app.send(put_policy(policy)).await;
+    assert_eq!(due.status, StatusCode::OK, "{}", due.text());
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{}", item_ids[1]),
+            &serde_json::json!({ "title": "3+3?" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+
+    // Breaking the second item adds a blocker: refused, naming only it.
+    let mut no_correct = choice_item("2+2?")["body"].clone();
+    no_correct["options"][0]["is_correct"] = serde_json::json!(false);
+    let broken = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessment-items/{}", item_ids[1]),
+            &serde_json::json!({ "body": no_correct }),
+        )
+        .await;
+    assert_eq!(broken.status, StatusCode::CONFLICT, "{}", broken.text());
+    assert_eq!(
+        broken.json()["details"]["readiness"],
+        serde_json::json!(["choice.correct_missing"])
+    );
+}
+
 /// BUG-208: `max_score` is capped at 10 000 and `weight` at 100 (422), so
 /// the grade shares and the course average stay finite; a perfect attempt
 /// on capped scores is still 100. UX-143: item body size caps.

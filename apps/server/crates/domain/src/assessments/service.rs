@@ -559,21 +559,34 @@ impl AssessmentsService {
     /// BUG-207: a live assessment passed the readiness gate at publish time;
     /// an edit that would undo it (blank prompt, no options, no correct
     /// option, …) is refused with the would-be readiness codes — 409, like
-    /// the delete-last-item guard. `items` is the post-edit item list.
-    fn ensure_stays_ready(assessment: &Assessment, items: &[Item]) -> Result<()> {
-        if assessment.lifecycle != Lifecycle::Published {
+    /// the delete-last-item guard. BUG-333: only a blocker the edit adds
+    /// refuses it — a published assessment already unready (a migrated
+    /// legacy rule) still takes edits that leave its blockers as they are.
+    fn ensure_stays_ready(
+        (assessment, items): (&Assessment, &[Item]),
+        (would_be, would_be_items): (&Assessment, &[Item]),
+    ) -> Result<()> {
+        if would_be.lifecycle != Lifecycle::Published {
             return Ok(());
         }
-        let readiness = Self::build_readiness(assessment, items, None);
-        if readiness.ok {
-            return Ok(());
-        }
-        let codes: Vec<&str> = readiness
-            .issues
-            .iter()
-            .filter(|i| i.severity == "blocker")
-            .map(|i| i.code.as_str())
+        let blockers =
+            |a: &Assessment, items: &[Item]| -> Vec<(String, Option<AssessmentItemId>)> {
+                Self::build_readiness(a, items, None)
+                    .issues
+                    .into_iter()
+                    .filter(|i| i.severity == "blocker")
+                    .map(|i| (i.code, i.item_id))
+                    .collect()
+            };
+        let had = blockers(assessment, items);
+        let codes: Vec<String> = blockers(would_be, would_be_items)
+            .into_iter()
+            .filter(|b| !had.contains(b))
+            .map(|(code, _)| code)
             .collect();
+        if codes.is_empty() {
+            return Ok(());
+        }
         Err(Error::app_with_details(
             ab_core::ErrorCode::Conflict,
             "the change would make a published assessment unready; unpublish first",
@@ -819,9 +832,9 @@ impl AssessmentsService {
             allow_late: policy.allow_late,
             late_policy_kind: late_kind,
             late_cutoff_at,
-            ..assessment
+            ..assessment.clone()
         };
-        Self::ensure_stays_ready(&would_be, &items)?;
+        Self::ensure_stays_ready((&assessment, &items), (&would_be, &items))?;
         ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
         tx.commit().await?;
         // BUG-312: one lateness rule for every learner — the new policy
@@ -1284,7 +1297,8 @@ impl AssessmentsService {
                 outcome_ids: Vec::new(),
                 estimated_minutes: None,
             });
-            Self::ensure_stays_ready(&assessment, &items)?;
+            let (before, _) = items.split_at(items.len() - 1);
+            Self::ensure_stays_ready((&assessment, before), (&assessment, &items))?;
         }
         let item_id = ab_db::assessments::insert_item(
             &mut *tx,
@@ -1368,6 +1382,7 @@ impl AssessmentsService {
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
         if assessment.lifecycle == Lifecycle::Published {
+            let before = items.clone();
             if let Some(item) = items.iter_mut().find(|i| i.id == item_id) {
                 if let Some(title) = title {
                     title.clone_into(&mut item.title);
@@ -1380,7 +1395,7 @@ impl AssessmentsService {
                     item.max_score = max_score;
                 }
             }
-            Self::ensure_stays_ready(&assessment, &items)?;
+            Self::ensure_stays_ready((&assessment, &before), (&assessment, &items))?;
         }
         let stored = changes.body.as_ref().map(|b| (b.kind(), b.to_stored()));
         let metadata = changes.metadata.map(ItemMetadataInput::normalized);
