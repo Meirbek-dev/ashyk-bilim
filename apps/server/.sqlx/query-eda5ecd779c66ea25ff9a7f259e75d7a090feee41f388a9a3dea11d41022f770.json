@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE (creator_id = $1\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $1\n                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))\n             AND course_visible(courses, $2, $5)\n             AND ($3::uuid IS NULL OR id < $3)\n           ORDER BY id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -93,6 +93,28 @@
       },
       {
         "ordinal": 8,
+        "name": "learnings",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "learnings"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "thumbnail_video_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_video_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -103,19 +125,19 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "contributor_ids!: Vec<UserId>",
         "type_info": "UuidArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -123,7 +145,11 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Bool"
       ]
     },
     "nullable": [
@@ -135,11 +161,13 @@
       false,
       false,
       true,
+      false,
+      true,
       true,
       null,
       null,
       null
     ]
   },
-  "hash": "ecfad082d7aff42c90cf7b5a43d3dd4a05f7e733317258793d718275ea5e6438"
+  "hash": "eda5ecd779c66ea25ff9a7f259e75d7a090feee41f388a9a3dea11d41022f770"
 }

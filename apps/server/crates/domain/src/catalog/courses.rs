@@ -44,6 +44,53 @@ pub struct CourseChanges {
     /// `Some(None)`: remove the thumbnail. The replaced object is released
     /// for reaping either way.
     pub thumbnail_upload_id: Option<Option<Uuid>>,
+    /// Replaces the whole "What you'll learn" list; blank ids are generated.
+    pub learnings: Option<Vec<Learning>>,
+}
+
+/// One "What you'll learn" entry (`courses.learnings` jsonb element).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Learning {
+    #[serde(default)]
+    pub id: String,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emoji: Option<String>,
+}
+
+/// The stored list as typed entries. Legacy / hand-edited jsonb is tolerated:
+/// a non-array is `[]`, a non-conforming or blank entry is skipped.
+#[must_use]
+pub fn learnings(value: &serde_json::Value) -> Vec<Learning> {
+    let Some(items) = value.as_array() else {
+        return Vec::new();
+    };
+    items
+        .iter()
+        .filter_map(|item| serde_json::from_value::<Learning>(item.clone()).ok())
+        .filter(|l| !l.text.trim().is_empty())
+        .collect()
+}
+
+/// Trim text/emoji, reject blank text, fill blank ids.
+fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
+    items
+        .into_iter()
+        .map(|l| {
+            let text = ab_core::required_str("learnings", &l.text)?.to_owned();
+            let id = l.id.trim();
+            let id = if id.is_empty() {
+                Uuid::now_v7().simple().to_string()
+            } else {
+                id.to_owned()
+            };
+            let emoji = l
+                .emoji
+                .map(|e| e.trim().to_owned())
+                .filter(|e| !e.is_empty());
+            Ok(Learning { id, text, emoji })
+        })
+        .collect()
 }
 
 /// `GET /courses` filters (see `ab_db::catalog::CourseFilter`).
@@ -212,6 +259,12 @@ impl CoursesService {
             .transpose()?;
         let mut tx = self.pool.begin().await?;
         let tags = changes.tags.as_deref().map(normalize_tags);
+        let learnings = changes
+            .learnings
+            .map(normalize_learnings)
+            .transpose()?
+            .map(|l| serde_json::to_value(l).map_err(|e| Error::internal("course learnings", e)))
+            .transpose()?;
         ab_db::catalog::update_course(
             &mut *tx,
             id,
@@ -221,6 +274,7 @@ impl CoursesService {
                 about: changes.about.as_deref().map(str::trim),
                 tags: tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
+                learnings: learnings.as_ref(),
             },
         )
         .await?

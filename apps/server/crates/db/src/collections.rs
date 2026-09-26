@@ -193,7 +193,7 @@ pub async fn list_collection_courses(
         CourseRow,
         r#"SELECT c.id AS "id: CourseId", c.name, c.description, c.about, c.tags,
                   c.public, c.open_to_contributors,
-                  c.thumbnail_image_key AS thumbnail_key,
+                  c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,
                   c.creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = c.id AND ra.status = 'active'

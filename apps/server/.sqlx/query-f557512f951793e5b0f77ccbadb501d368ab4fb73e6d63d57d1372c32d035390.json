@@ -1,0 +1,176 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE course_visible(courses, $2, $1)\n             AND (NOT $5 OR $1 OR creator_id = $2\n                  OR EXISTS (SELECT 1 FROM resource_authors ra\n                             WHERE ra.course_id = courses.id AND ra.user_id = $2\n                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))\n             AND ($6::text IS NULL OR name ILIKE $6 ESCAPE '\\' OR description ILIKE $6 ESCAPE '\\')\n             AND CASE $7::text\n                   WHEN 'drafts' THEN NOT public\n                   WHEN 'published' THEN public\n                   WHEN 'recent' THEN updated_at > now() - interval '7 days'\n                   WHEN 'attention' THEN\n                     (public AND NOT EXISTS (SELECT 1 FROM activities a\n                                             WHERE a.course_id = courses.id AND a.published))\n                     OR (NOT public AND created_at < now() - interval '30 days')\n                   ELSE true\n                 END\n             AND ($3::uuid IS NULL OR CASE WHEN $8::bool\n                   THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)\n                   ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)\n                 END)\n           ORDER BY CASE WHEN $8 THEN name END ASC,\n                    CASE WHEN $8 THEN id END ASC,\n                    CASE WHEN NOT $8 THEN updated_at END DESC,\n                    id DESC\n           LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "tags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "public",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "public"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "open_to_contributors",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "open_to_contributors"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_image_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "learnings",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "learnings"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "thumbnail_video_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_video_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "creator_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "creator_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "contributor_ids!: Vec<UserId>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Bool",
+        "Text",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "f557512f951793e5b0f77ccbadb501d368ab4fb73e6d63d57d1372c32d035390"
+}

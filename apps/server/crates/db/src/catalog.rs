@@ -17,6 +17,10 @@ pub struct CourseRow {
     pub open_to_contributors: bool,
     /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
     pub thumbnail_key: Option<String>,
+    /// `[{id, text, emoji?}]` as stored (legacy rows may not conform).
+    pub learnings: serde_json::Value,
+    /// Legacy video thumbnail (read-only; only migrated courses have one).
+    pub thumbnail_video_key: Option<String>,
     pub creator_id: Option<UserId>,
     /// Active `resource_authors` rows that write (maintainer / contributor);
     /// reporters are read-only and not listed.
@@ -62,7 +66,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     let row = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -136,7 +140,7 @@ pub async fn list_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -234,7 +238,7 @@ pub async fn list_user_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -268,6 +272,7 @@ pub struct CourseChanges<'a> {
     pub about: Option<&'a str>,
     pub tags: Option<&'a [String]>,
     pub open_to_contributors: Option<bool>,
+    pub learnings: Option<&'a serde_json::Value>,
 }
 
 pub async fn update_course<'e>(
@@ -282,10 +287,11 @@ pub async fn update_course<'e>(
                description = COALESCE($3, description),
                about = COALESCE($4, about),
                tags = COALESCE($5, tags),
-               open_to_contributors = COALESCE($6, open_to_contributors)
+               open_to_contributors = COALESCE($6, open_to_contributors),
+               learnings = COALESCE($7, learnings)
            WHERE id = $1
            RETURNING id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -298,7 +304,8 @@ pub async fn update_course<'e>(
         changes.description,
         changes.about,
         changes.tags,
-        changes.open_to_contributors
+        changes.open_to_contributors,
+        changes.learnings
     )
     .fetch_optional(db)
     .await?;

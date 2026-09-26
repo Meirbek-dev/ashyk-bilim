@@ -136,6 +136,81 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
     assert_eq!(gone.status, StatusCode::NOT_FOUND);
 }
 
+/// Restore regression: `learnings` round-trip, legacy garbage reads as
+/// typed entries (or nothing), and the video thumbnail key is exposed.
+#[sqlx::test(migrations = "../../migrations")]
+async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let id = create_course(&app, &teacher, "Rust 101").await;
+    let url = format!("/api/v2/courses/{id}");
+
+    let fresh = app.get_as(&teacher, &url).await;
+    assert_eq!(fresh.json()["learnings"], serde_json::json!([]));
+    assert_eq!(fresh.json()["thumbnail_video_key"], serde_json::Value::Null);
+
+    let patched = app
+        .patch_as(
+            &teacher,
+            &url,
+            &serde_json::json!({ "learnings": [
+                { "id": "keep-me", "text": "  Ownership  ", "emoji": "🦀" },
+                { "text": "Borrowing", "emoji": "  " }
+            ] }),
+        )
+        .await;
+    assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+    let got = app.get_as(&teacher, &url).await.json()["learnings"].clone();
+    let got = got.as_array().unwrap();
+    assert_eq!(got.len(), 2);
+    assert_eq!(
+        got[0],
+        serde_json::json!({ "id": "keep-me", "text": "Ownership", "emoji": "🦀" })
+    );
+    assert_eq!(got[1]["text"], "Borrowing");
+    assert_eq!(got[1]["emoji"], serde_json::Value::Null);
+    assert!(!got[1]["id"].as_str().unwrap().is_empty());
+
+    // An unrelated PATCH leaves them alone.
+    let renamed = app
+        .patch_as(&teacher, &url, &serde_json::json!({ "name": "Rust 102" }))
+        .await;
+    assert_eq!(renamed.json()["learnings"].as_array().unwrap().len(), 2);
+
+    for bad in [
+        serde_json::json!({ "learnings": [{ "text": "x".repeat(301) }] }),
+        serde_json::json!({ "learnings": [{ "text": "   " }] }),
+        serde_json::json!({ "learnings": vec![serde_json::json!({ "text": "t" }); 31] }),
+    ] {
+        let res = app.patch_as(&teacher, &url, &bad).await;
+        assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY, "{bad}");
+    }
+
+    // Legacy jsonb: non-conforming entries are skipped, never a 500.
+    sqlx::query(
+        r#"UPDATE courses SET learnings = '[{"id":"a","text":"ok"},{"text":5},"bare",{"id":"b","text":"  "}]',
+                              thumbnail_video_key = 'k/v.mp4' WHERE id = $1::uuid"#,
+    )
+    .bind(&id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let legacy = app.get_as(&teacher, &url).await;
+    assert_eq!(legacy.status, StatusCode::OK);
+    assert_eq!(
+        legacy.json()["learnings"],
+        serde_json::json!([{ "id": "a", "text": "ok", "emoji": null }])
+    );
+    assert_eq!(legacy.json()["thumbnail_video_key"], "k/v.mp4");
+    sqlx::query("UPDATE courses SET learnings = '{\"x\":1}' WHERE id = $1::uuid")
+        .bind(&id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let object = app.get_as(&teacher, &url).await;
+    assert_eq!(object.json()["learnings"], serde_json::json!([]));
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn listing_paginates_and_respects_visibility(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

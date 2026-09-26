@@ -7975,7 +7975,7 @@
         "tags": [
           "courses"
         ],
-        "summary": "Roster, creator first (course visibility; 404 otherwise).",
+        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course — the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
         "operationId": "list_contributors",
         "parameters": [
           {
@@ -16058,6 +16058,7 @@
           "tags",
           "public",
           "open_to_contributors",
+          "learnings",
           "contributor_ids",
           "created_at_unix",
           "updated_at_unix"
@@ -16093,6 +16094,13 @@
           "id": {
             "$ref": "#/components/schemas/CourseId"
           },
+          "learnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseLearning"
+            },
+            "description": "\"What you'll learn\", in display order."
+          },
           "name": {
             "type": "string"
           },
@@ -16114,6 +16122,13 @@
               "null"
             ],
             "description": "Storage key of the thumbnail image, served at `/content/<key>`."
+          },
+          "thumbnail_video_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`."
           },
           "updated_at_unix": {
             "type": "integer",
@@ -16249,6 +16264,28 @@
       "CourseId": {
         "type": "string",
         "format": "uuid"
+      },
+      "CourseLearning": {
+        "type": "object",
+        "description": "One \"What you'll learn\" entry.",
+        "required": [
+          "id",
+          "text"
+        ],
+        "properties": {
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
       },
       "CourseLifecycleRequest": {
         "type": "object",
@@ -19622,6 +19659,32 @@
             "type": "string"
           }
         }
+      },
+      "LearningInput": {
+        "type": "object",
+        "description": "One \"What you'll learn\" entry on write; omit `id` for a new one.",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "1..=300 characters after trimming."
+          }
+        },
+        "additionalProperties": false
       },
       "LectureReview": {
         "type": "object",
@@ -23973,6 +24036,16 @@
               "string",
               "null"
             ]
+          },
+          "learnings": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LearningInput"
+            },
+            "description": "Replaces the whole \"What you'll learn\" list (≤ 30 entries)."
           },
           "name": {
             "type": [

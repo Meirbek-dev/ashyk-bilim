@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -93,6 +93,28 @@
       },
       {
         "ordinal": 8,
+        "name": "learnings",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "learnings"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "thumbnail_video_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "thumbnail_video_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -103,19 +125,19 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "contributor_ids!: Vec<UserId>",
         "type_info": "UuidArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -123,12 +145,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text",
-        "Text",
-        "Text",
-        "TextArray",
-        "Bool"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -140,11 +157,13 @@
       false,
       false,
       true,
+      false,
+      true,
       true,
       null,
       null,
       null
     ]
   },
-  "hash": "93d2d3d11af914f0685ffde5516267ab117736028441e375768b053ca5f0fbfb"
+  "hash": "8fc7f8e462100b4bfa1cdf4c19670f8c50880b0ccf7a3f759f6a5ccdcffb40f9"
 }

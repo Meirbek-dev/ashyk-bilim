@@ -3587,6 +3587,13 @@ expression: json
           "id": {
             "$ref": "#/components/schemas/CourseId"
           },
+          "learnings": {
+            "description": "\"What you'll learn\", in display order.",
+            "items": {
+              "$ref": "#/components/schemas/CourseLearning"
+            },
+            "type": "array"
+          },
           "name": {
             "type": "string"
           },
@@ -3609,6 +3616,13 @@ expression: json
               "null"
             ]
           },
+          "thumbnail_video_key": {
+            "description": "Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "updated_at_unix": {
             "format": "int64",
             "type": "integer"
@@ -3622,6 +3636,7 @@ expression: json
           "tags",
           "public",
           "open_to_contributors",
+          "learnings",
           "contributor_ids",
           "created_at_unix",
           "updated_at_unix"
@@ -3756,6 +3771,28 @@ expression: json
       "CourseId": {
         "format": "uuid",
         "type": "string"
+      },
+      "CourseLearning": {
+        "description": "One \"What you'll learn\" entry.",
+        "properties": {
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "type": "object"
       },
       "CourseLifecycleRequest": {
         "additionalProperties": false,
@@ -7127,6 +7164,32 @@ expression: json
           "certificate",
           "next_action",
           "outline"
+        ],
+        "type": "object"
+      },
+      "LearningInput": {
+        "additionalProperties": false,
+        "description": "One \"What you'll learn\" entry on write; omit `id` for a new one.",
+        "properties": {
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "description": "1..=300 characters after trimming.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
         ],
         "type": "object"
       },
@@ -11478,6 +11541,16 @@ expression: json
           "description": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "learnings": {
+            "description": "Replaces the whole \"What you'll learn\" list (≤ 30 entries).",
+            "items": {
+              "$ref": "#/components/schemas/LearningInput"
+            },
+            "type": [
+              "array",
               "null"
             ]
           },
@@ -20348,7 +20421,7 @@ expression: json
             "description": "Unknown or inaccessible"
           }
         },
-        "summary": "Roster, creator first (course visibility; 404 otherwise).",
+        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course — the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
         "tags": [
           "courses"
         ]

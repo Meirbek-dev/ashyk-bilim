@@ -347,6 +347,9 @@ pub async fn update_course(
                 tags: request.tags,
                 open_to_contributors: request.open_to_contributors,
                 thumbnail_upload_id: request.thumbnail_upload_id,
+                learnings: request
+                    .learnings
+                    .map(|items| items.into_iter().map(Into::into).collect()),
             },
         )
         .await?;

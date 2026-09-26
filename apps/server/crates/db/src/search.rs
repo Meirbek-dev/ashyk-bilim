@@ -48,7 +48,7 @@ pub async fn search_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key,
+                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'

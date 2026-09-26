@@ -13,6 +13,11 @@ pub struct Course {
     pub open_to_contributors: bool,
     /// Storage key of the thumbnail image, served at `/content/<key>`.
     pub thumbnail_key: Option<String>,
+    /// Storage key of the legacy video thumbnail (migrated courses only;
+    /// read-only), served at `/content/<key>`.
+    pub thumbnail_video_key: Option<String>,
+    /// "What you'll learn", in display order.
+    pub learnings: Vec<CourseLearning>,
     pub creator_id: Option<UserId>,
     /// Active maintainers / contributors (`GET /courses/{id}/contributors`,
     /// status `active`, role not `reporter`); they edit the course like the
@@ -33,12 +38,68 @@ impl From<ab_domain::catalog::courses::Course> for Course {
             tags: c.tags,
             public: c.public,
             open_to_contributors: c.open_to_contributors,
+            learnings: ab_domain::catalog::courses::learnings(&c.learnings)
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             thumbnail_key: c.thumbnail_key,
+            thumbnail_video_key: c.thumbnail_video_key,
             creator_id: c.creator_id,
             contributor_ids: c.contributor_ids,
             created_at_unix: c.created_at,
             updated_at_unix: c.updated_at,
         }
+    }
+}
+
+/// One "What you'll learn" entry.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseLearning {
+    pub id: String,
+    pub text: String,
+    pub emoji: Option<String>,
+}
+
+impl From<ab_domain::catalog::courses::Learning> for CourseLearning {
+    fn from(l: ab_domain::catalog::courses::Learning) -> Self {
+        Self {
+            id: l.id,
+            text: l.text,
+            emoji: l.emoji,
+        }
+    }
+}
+
+/// One "What you'll learn" entry on write; omit `id` for a new one.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct LearningInput {
+    #[garde(inner(length(chars, max = 64)))]
+    pub id: Option<String>,
+    /// 1..=300 characters after trimming.
+    #[garde(custom(valid_learning_text))]
+    pub text: String,
+    #[garde(inner(length(chars, max = 16)))]
+    pub emoji: Option<String>,
+}
+
+impl From<LearningInput> for ab_domain::catalog::courses::Learning {
+    fn from(l: LearningInput) -> Self {
+        Self {
+            id: l.id.unwrap_or_default(),
+            text: l.text,
+            emoji: l.emoji,
+        }
+    }
+}
+
+// garde's custom-validator contract fixes this signature (&field, &context).
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn valid_learning_text(value: &str, _ctx: &()) -> garde::Result {
+    if (1..=300).contains(&value.trim().chars().count()) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("text must be 1..=300 characters"))
     }
 }
 
@@ -108,6 +169,9 @@ pub struct UpdateCourseRequest {
     #[serde(default, deserialize_with = "super::double_option")]
     #[schema(value_type = Option<uuid::Uuid>)]
     pub thumbnail_upload_id: Option<Option<uuid::Uuid>>,
+    /// Replaces the whole "What you'll learn" list (≤ 30 entries).
+    #[garde(dive, length(max = 30))]
+    pub learnings: Option<Vec<LearningInput>>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
