@@ -224,22 +224,20 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             {searchResults.users.map(user => (
               <Link
                 key={user.id}
-                href={getAbsoluteUrl(`/user/${user.username}`)}
+                href={getAbsoluteUrl(`/user/${encodeURIComponent(user.username)}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
                 <UserAvatar
                   size="md"
                   avatar_url={user.avatar_key ? getContentUrl(user.avatar_key) : ''}
                   user={user}
-                          use_with_session={false}
+                  use_with_session={false}
                   showProfilePopup={false}
                   {...(!user.avatar_key ? { predefined_avatar: 'empty' } : {})}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-foreground truncate text-sm font-medium">
-                      {user.display_name}
-                    </h3>
+                    <h3 className="text-foreground truncate text-sm font-medium">{user.display_name}</h3>
                     <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('userType')}
                     </span>

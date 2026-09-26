@@ -121,7 +121,9 @@ function UserProfilePopup({ children, userId }: UserProfilePopupProps) {
                         variant="ghost"
                         size="icon"
                         className="text-muted-foreground hover:text-foreground h-6 w-6 shrink-0"
-                        onClick={() => userData.username && router.push(`/user/${userData.username}`)}
+                        onClick={() =>
+                          userData.username && router.push(`/user/${encodeURIComponent(userData.username)}`)
+                        }
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>

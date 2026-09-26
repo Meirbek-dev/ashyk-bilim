@@ -226,9 +226,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                   <UserAvatar
                     size="xl"
                     avatar_url={
-                      userData.avatar_image
-                        ? getUserAvatarMediaDirectory(userData.id, userData.avatar_image)
-                        : ''
+                      userData.avatar_image ? getUserAvatarMediaDirectory(userData.id, userData.avatar_image) : ''
                     }
                     {...(!userData.avatar_image ? { predefined_avatar: 'empty' } : {})}
                     userId={userData.id}
@@ -253,7 +251,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-gray-600 hover:text-gray-900"
-                    onClick={() => userData.username && router.push(`/user/${userData.username}`)}
+                    onClick={() => userData.username && router.push(`/user/${encodeURIComponent(userData.username)}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>

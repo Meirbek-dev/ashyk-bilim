@@ -42,13 +42,24 @@ export async function getUser(user_id: string): Promise<AppUserProfileData> {
   return toProfile(user)
 }
 
-/** `null` when no user has that username (a page state, not a load failure). */
+/** Next hands `[username]` over still percent-encoded when it is non-ASCII (`%D0%91…`). */
+function decodeRouteParam(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+/**
+ * `username` is the `/user/[username]` route param: decoded once here, encoded once
+ * for the API path. `null` when no user has that username (a page state, not a load failure).
+ */
 export async function getUserByUsername(username: string): Promise<AppUserProfileData | null> {
   try {
-    return toProfile(await apiJson<UserHit>(`users/${encodeURIComponent(username)}`))
+    return toProfile(await apiJson<UserHit>(`users/${encodeURIComponent(decodeRouteParam(username))}`))
   } catch (error) {
     if (isApiError(error) && error.status === 404) return null
     throw error
   }
 }
-

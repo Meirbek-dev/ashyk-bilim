@@ -35,10 +35,31 @@ beforeEach(() => vi.resetAllMocks())
 
 describe('users (v2)', () => {
   it('resolves a public profile through GET /users/{username} (anonymous-readable card)', async () => {
-    vi.mocked(apiJson).mockResolvedValue({ id: user, username: 'teacher', display_name: 'Daniyar Teacher', avatar_key: 'a/b.png' })
+    vi.mocked(apiJson).mockResolvedValue({
+      id: user,
+      username: 'teacher',
+      display_name: 'Daniyar Teacher',
+      avatar_key: 'a/b.png',
+    })
     const profile = await getUserByUsername('Teacher')
     expect(apiJson).toHaveBeenCalledWith('users/Teacher')
-    expect(profile).toMatchObject({ id: user, username: 'teacher', first_name: 'Daniyar Teacher', avatar_key: 'a/b.png' })
+    expect(profile).toMatchObject({
+      id: user,
+      username: 'teacher',
+      first_name: 'Daniyar Teacher',
+      avatar_key: 'a/b.png',
+    })
+  })
+
+  it('encodes a non-ASCII username once, whether the route param arrives encoded or not', async () => {
+    vi.mocked(apiJson).mockResolvedValue({ id: user, username: 'Бекет Шыңғыс', display_name: 'Б' })
+    const once = `users/${encodeURIComponent('Бекет Шыңғыс')}`
+    await getUserByUsername(encodeURIComponent('Бекет Шыңғыс'))
+    expect(apiJson).toHaveBeenLastCalledWith(once)
+    await getUserByUsername('Бекет Шыңғыс')
+    expect(apiJson).toHaveBeenLastCalledWith(once)
+    await getUserByUsername('100%')
+    expect(apiJson).toHaveBeenLastCalledWith('users/100%25')
   })
 
   it('maps an unknown username (404) to null, not a load failure', async () => {
@@ -49,18 +70,33 @@ describe('users (v2)', () => {
 
 describe('usergroups (v2)', () => {
   it('adds and removes members through /usergroups/{id}/members with a JSON body', async () => {
-    vi.mocked(apiResult).mockResolvedValue({ data: undefined, headers: {}, requestId: null, status: 204, statusText: '' })
+    vi.mocked(apiResult).mockResolvedValue({
+      data: undefined,
+      headers: {},
+      requestId: null,
+      status: 204,
+      statusText: '',
+    })
     await linkUserToUserGroup(group, user)
     expect(apiResult).toHaveBeenLastCalledWith(
       `usergroups/${group}/members`,
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ user_ids: [user] }) }),
     )
     await unLinkUserToUserGroup(group, user)
-    expect(apiResult).toHaveBeenLastCalledWith(`usergroups/${group}/members`, expect.objectContaining({ method: 'DELETE' }))
+    expect(apiResult).toHaveBeenLastCalledWith(
+      `usergroups/${group}/members`,
+      expect.objectContaining({ method: 'DELETE' }),
+    )
   })
 
   it('links courses through /usergroups/{id}/courses', async () => {
-    vi.mocked(apiResult).mockResolvedValue({ data: undefined, headers: {}, requestId: null, status: 204, statusText: '' })
+    vi.mocked(apiResult).mockResolvedValue({
+      data: undefined,
+      headers: {},
+      requestId: null,
+      status: 204,
+      statusText: '',
+    })
     await linkResourcesToUserGroup(group, [course])
     expect(apiResult).toHaveBeenLastCalledWith(
       `usergroups/${group}/courses`,

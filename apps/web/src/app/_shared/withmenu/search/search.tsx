@@ -320,7 +320,7 @@ function SearchPage() {
                     {searchResults.users.map(user => (
                       <Link
                         key={user.id}
-                        href={getAbsoluteUrl(`/user/${user.username}`)}
+                        href={getAbsoluteUrl(`/user/${encodeURIComponent(user.username)}`)}
                         className="bg-card text-card-foreground flex items-center gap-4 rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
                         <UserAvatar
