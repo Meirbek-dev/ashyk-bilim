@@ -54,9 +54,10 @@ const analyticsQueueQuery = {
 } as const
 
 export default async function PlatformDashHomePage() {
-  const [tGeneral, tQueue, session] = await Promise.all([
+  const [tGeneral, tQueue, tAdmin, session] = await Promise.all([
     getTranslations('General'),
     getTranslations('DashboardWorkQueue'),
+    getTranslations('DashPage.Admin'),
     requireSession(),
   ])
   const permsSet = new Set<string>(session.permissions)
@@ -182,6 +183,7 @@ export default async function PlatformDashHomePage() {
     teacherSignal: teacherOverview
       ? {
           atRiskTotal: teacherOverview.at_risk_total ?? 0,
+          atRiskMetric: tAdmin('enrollments', { count: teacherOverview.at_risk_total ?? 0 }),
           gradingBacklogTotal: teacherOverview.workload.backlog_total ?? 0,
           slaBreaches: teacherOverview.workload.sla_breaches ?? 0,
           forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d ?? 0,

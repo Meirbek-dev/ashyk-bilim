@@ -19,7 +19,10 @@ interface EditableCourseSummary {
 }
 
 interface TeacherDashboardSignal {
+  /** `at_risk_total` counts learner×course pairs, not distinct learners. */
   atRiskTotal: number
+  /** Rendered pair count (`DashPage.Admin.enrollments`); falls back to a bare number. */
+  atRiskMetric?: string
   gradingBacklogTotal: number
   slaBreaches: number
   forecastBacklog7d: number
@@ -351,7 +354,7 @@ function buildTeacherSection({
         sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'high',
-        metric: t('metrics.learners', { count: teacherSignal.atRiskTotal }),
+        metric: teacherSignal.atRiskMetric ?? String(teacherSignal.atRiskTotal),
       })
     }
   }
