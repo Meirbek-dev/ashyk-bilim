@@ -10,11 +10,6 @@ export function isScoreInputInvalid(value: string, maxScore = 100): boolean {
 }
 
 /**
- * Sum scores on integer hundredths (the grading precision) so binary-float
- * drift (`0.1 + 0.2`) never pushes an item total past its maximum; display the
- * result as-is — rounding it to one decimal is how `99.99` became `100.0`.
- */
-/**
  * The grade save takes item scores on the item's own `max_score` scale, while
  * the breakdown the grader edits keeps them as a share of 100 — convert on the
  * way out (the server converts back). Unknown scale → send as typed.
@@ -23,8 +18,14 @@ export function toItemScale(score: number, breakdownMax: number, itemMax: number
   return itemMax !== undefined && itemMax > 0 && breakdownMax > 0 ? (score / breakdownMax) * itemMax : score
 }
 
+/**
+ * Sum the raw scores, then round once to hundredths (the display precision) so
+ * binary-float drift (`0.1 + 0.2`) never shows. Rounding each item first
+ * inflates many small items: 150 × 0.6667 summed as 150 × 0.67 = 100.5.
+ * Display the result as-is — rounding it to one decimal is how `99.99` became `100.0`.
+ */
 export function sumScores(values: number[]): number {
-  return values.reduce((sum, value) => sum + Math.round(value * 100), 0) / 100
+  return Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100
 }
 
 export function formatScoreFraction(score: number | null | undefined, maxScore = 100): string {

@@ -13,7 +13,13 @@ describe('sumScores', () => {
     expect((99.99).toFixed(1)).toBe('100.0')
   })
 
-  it('sums on integer hundredths so binary-float drift cannot push a total past its maximum', () => {
+  it('sums raw item scores and rounds once — per-item cents rounding inflated 150 × 0.6667 to 100.5', () => {
+    const items = Array.from({ length: 150 }, () => 0.6667)
+    expect(sumScores(items)).toBe(100.01)
+    expect(sumScores(Array.from({ length: 150 }, () => 100 / 150))).toBe(100)
+  })
+
+  it('rounds to hundredths so binary-float drift cannot show in a total', () => {
     expect(0.1 + 0.2).not.toBe(0.3)
     expect(sumScores([0.1, 0.2])).toBe(0.3)
     expect(sumScores([10, 20.5, 69.5])).toBe(100)
