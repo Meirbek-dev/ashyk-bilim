@@ -947,6 +947,8 @@ Implements three more items of the owner answers above. Routes:
   the platform name.
 - **Public profile**: `GET /users/{username}` (card) and
   `GET /users/{username}/courses` answer anonymous callers with public data.
+  `GET /users/by-id/{user_id}` (2026-09-26) returns the same card by id —
+  editor user blocks store `user_id` and every reader of the page resolves it.
 - **Emails are case-insensitive identities** (BUG-093). Registration, the
   admin path and the Google link store `lower(email)`; login, uniqueness and
   the verification lookup compare `lower()` on both sides; migration
