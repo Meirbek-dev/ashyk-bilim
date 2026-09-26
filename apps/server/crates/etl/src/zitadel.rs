@@ -86,7 +86,11 @@ pub async fn run_import(
         match &request.password {
             PasswordSpec::None => {
                 report.passwordless += 1;
-                if user.hashed_password.is_some() {
+                if user
+                    .hashed_password
+                    .as_deref()
+                    .is_some_and(|h| !h.is_empty())
+                {
                     report.unsupported_hashes += 1;
                 }
             }

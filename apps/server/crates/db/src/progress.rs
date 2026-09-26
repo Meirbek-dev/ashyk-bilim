@@ -654,6 +654,24 @@ pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tr
     Ok(rows)
 }
 
+/// When `user_id` completed `activity_id` explicitly (a complete trail step),
+/// if they did — the backfill source for non-submission activities.
+pub async fn completed_step_at(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<Option<i64>> {
+    let at = sqlx::query_scalar!(
+        r#"SELECT (extract(epoch FROM min(created_at)))::bigint
+           FROM trail_steps WHERE activity_id = $1 AND user_id = $2 AND complete"#,
+        activity_id.0,
+        user_id.0
+    )
+    .fetch_one(conn)
+    .await?;
+    Ok(at)
+}
+
 /// Insert a completed step; `false` when it already existed.
 pub async fn insert_trail_step<'e>(
     db: impl sqlx::PgExecutor<'e>,

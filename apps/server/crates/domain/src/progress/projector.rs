@@ -277,30 +277,9 @@ impl ProgressProjector {
         if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(AfterCommit::default());
         }
-        let now = now_unix();
         let existing =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
-        let write = ActivityProgressWrite {
-            course_id: activity.course_id,
-            activity_id: activity.id,
-            user_id,
-            state: ActivityProgressState::Completed,
-            required: existing.as_ref().is_none_or(|e| e.required),
-            score: None,
-            passed: None,
-            best_submission_id: None,
-            latest_submission_id: None,
-            attempt_count: 0,
-            started_at: existing.as_ref().and_then(|e| e.started_at).or(Some(now)),
-            last_activity_at: Some(now),
-            submitted_at: None,
-            graded_at: None,
-            completed_at: Some(now),
-            due_at: existing.as_ref().and_then(|e| e.due_at),
-            is_late: false,
-            teacher_action_required: false,
-            status_reason: None,
-        };
+        let write = completed_write(activity, user_id, existing.as_ref(), now_unix());
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
         let course = self
             .recalculate_course_on(conn, activity.course_id, user_id)
@@ -502,7 +481,7 @@ impl ProgressProjector {
         let mut outcome = Ok(());
         for course in courses {
             for user_id in ab_db::progress::course_members(&self.pool, course).await? {
-                match self.reproject_member(course, user_id, false).await {
+                match self.repair_member(course, user_id).await {
                     Ok(Some(rows)) => {
                         report.learners += 1;
                         report.activity_rows += rows;
@@ -715,6 +694,22 @@ impl ProgressProjector {
         Ok(Some(rows))
     }
 
+    /// [`Self::reproject_member`] for the backfill: a repair writes the
+    /// projection (and certificates, inside it) but fires no XP/analytics
+    /// hooks — the completions it finds happened long ago, often before the
+    /// cutover that zeroed gamification (DECISIONS Q-2026-09-06-1 c).
+    async fn repair_member(&self, course_id: CourseId, user_id: UserId) -> Result<Option<usize>> {
+        let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, false).await?
+        else {
+            return Ok(None);
+        };
+        let (rows, _hooks) = self
+            .reproject_member_on(&mut tx, course_id, user_id)
+            .await?;
+        tx.commit().await?;
+        Ok(Some(rows))
+    }
+
     /// [`Self::reproject_member`] on the caller's lock transaction (a trail
     /// mark that re-creates the run, BUG-275). Fire the hooks after commit.
     pub async fn reproject_member_on(
@@ -765,7 +760,20 @@ async fn projection_for(
     let Some(assessment) =
         ab_db::assessments::get_assessment_by_activity(&mut *conn, activity.id).await?
     else {
-        return Ok(None);
+        // Lessons, videos, documents: an explicit completion is a complete
+        // trail step (ETL-migrated steps have no projection row yet).
+        let Some(at) = ab_db::progress::completed_step_at(&mut *conn, activity.id, user_id).await?
+        else {
+            return Ok(None);
+        };
+        let existing =
+            ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
+        return Ok(Some(completed_write(
+            activity,
+            user_id,
+            existing.as_ref(),
+            at,
+        )));
     };
     let submissions =
         ab_db::submissions::list_user_submissions(&mut *conn, assessment.id, user_id, false)
@@ -783,6 +791,42 @@ const fn course_completed(course: &CourseProgressRow) -> Option<(UserId, CourseI
         Some((course.user_id, course.course_id))
     } else {
         None
+    }
+}
+
+/// The explicit-completion row of a non-submission activity, completed at `at`.
+fn completed_write(
+    activity: &ActivityRow,
+    user_id: UserId,
+    existing: Option<&ActivityProgressRow>,
+    at: i64,
+) -> ActivityProgressWrite {
+    let completed_at = existing.and_then(|e| e.completed_at).unwrap_or(at);
+    ActivityProgressWrite {
+        course_id: activity.course_id,
+        activity_id: activity.id,
+        user_id,
+        state: ActivityProgressState::Completed,
+        required: existing.is_none_or(|e| e.required),
+        score: None,
+        passed: None,
+        best_submission_id: None,
+        latest_submission_id: None,
+        attempt_count: 0,
+        started_at: existing.and_then(|e| e.started_at).or(Some(completed_at)),
+        last_activity_at: Some(
+            existing
+                .and_then(|e| e.last_activity_at)
+                .unwrap_or(completed_at)
+                .max(completed_at),
+        ),
+        submitted_at: None,
+        graded_at: None,
+        completed_at: Some(completed_at),
+        due_at: existing.and_then(|e| e.due_at),
+        is_late: false,
+        teacher_action_required: false,
+        status_reason: None,
     }
 }
 

@@ -2097,3 +2097,65 @@ async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
     assert_eq!(one.status, StatusCode::OK, "{}", one.text());
     assert_eq!(one.json()["final_score"], 100.0, "{}", one.text());
 }
+
+/// ETL-loaded learners arrive with trail steps but no projection rows: the
+/// backfill turns each complete step into a `completed` lesson row and the
+/// course aggregate, and pays no XP for those old completions.
+#[sqlx::test(migrations = "../../migrations")]
+async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Migrated 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let a2 = lesson(&app, &teacher, &chapter_id, "Outro").await;
+    let alice = learner(&app, "alice").await;
+    app.post_as(
+        &alice,
+        &format!("/api/v2/trail/courses/{course_id}"),
+        &serde_json::json!({}),
+    )
+    .await;
+    for a in [&a1, &a2] {
+        let step = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/trail/activities/{a}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(step.status, StatusCode::OK, "{}", step.text());
+    }
+    // What the ETL leaves behind: steps only.
+    sqlx::query("DELETE FROM activity_progress")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM course_progress")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM xp_transactions")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let report = ab_domain::progress::ProgressProjector::new(pool.clone())
+        .backfill(None)
+        .await
+        .unwrap();
+    assert_eq!(report.activity_rows, 2);
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await;
+    assert_eq!(activity(&state.json(), &a1)["state"], "complete");
+    assert_eq!(activity(&state.json(), &a2)["state"], "complete");
+    assert_eq!(state.json()["progress"]["progress_pct"], 100.0);
+    let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM xp_transactions")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(xp, 0, "a repair pays no XP");
+}

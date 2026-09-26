@@ -125,6 +125,26 @@ compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
   drop log. (The 40 unverifiable XP rows noted at the time are moot: since
   2026-09-12 no XP row is migrated at all — every learner starts at zero.)
 
+### 2026-09-26 rehearsal (backup 2026-09-25T02-00-00)
+
+Source: 169 users, 47 courses, 452 assessment items, 1,777 trail steps, 370 files.
+Three defects the 2026-09-07 rehearsal could not see were fixed:
+- `ai_thread`/`ai_qa_message` were asserted empty; production now has 16 threads
+  and 23 questions. Threads and messages migrate; the 23 `ai_run`/`ai_event` rows
+  (every run stuck in `running`, no answer ever written) are reported, not loaded.
+- Legacy file columns hold bare file names (`course.thumbnail_image`, avatars,
+  PDF/video `content.filename`, block `file_id`); the ETL copied them verbatim as
+  object keys and computed "referenced" from the same bare names, so **every**
+  file was quarantined and no thumbnail, avatar, PDF, video or image block would
+  have rendered. Keys are now rebuilt from the legacy directory conventions and
+  the orphan check reads the keys the loaded v2 rows hold: 220 live objects,
+  150 quarantined (87 files of the dropped legacy assignments feature, superseded
+  thumbnails, files of deleted activities), 4 references missing on disk (broken
+  in legacy too, listed in `etl_drop_log`).
+- `progress-backfill` ignored completed trail steps for lessons/videos/documents
+  (1,548 completions → 0) and paid course-completion XP on a repair. Both fixed.
+Wall clock for migrate + ETL + Zitadel import + backfill: 64 s.
+
 The data/identity/object migration exit gate is green. The browser smoke list and
 Playwright remain part of P9/P11 deployment verification because the frontend
 adaptation is not yet complete; they are not evidence for the ETL transaction
@@ -138,7 +158,9 @@ T-1d   Final rehearsal on fresh backup. Freeze legacy deploys entirely.
 T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, db, redis stay up)
        2. Final backup (offen manual run) — verified restorable.
        3. Run `ashyq admin etl --files-root <content> --quarantine-orphans`, then
-          `ashyq admin zitadel-import` against the read-only legacy DB.
+          `ashyq admin zitadel-import` against the read-only legacy DB, then
+          `ashyq admin progress-backfill` (the ETL drops the legacy progress
+          projection; without the backfill every learner shows 0% progress).
        4. Verification phase green (hard gate — abort on red).
        5. Bring up: zitadel, rustfs, server, worker; run `ashyq migrate` no-op check;
           swap nginx template (v2 routes, /content → rustfs); reload nginx.

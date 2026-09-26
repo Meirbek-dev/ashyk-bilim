@@ -26,6 +26,7 @@ async fn copy_objects(ctx: &mut Ctx) -> Result<()> {
         .ok_or_else(|| Error::config("ETL files root requires object-storage configuration"))?;
     let mut pending = vec![root.clone()];
     let referenced = referenced_keys(ctx).await?;
+    let mut copied = HashSet::new();
     let mut found = 0usize;
     let mut written = 0usize;
     let mut quarantined = 0usize;
@@ -59,6 +60,7 @@ async fn copy_objects(ctx: &mut Ctx) -> Result<()> {
                 ctx.drop_row("file", relative, "unsafe object path");
                 continue;
             };
+            copied.insert(target.key.clone());
             if ctx.quarantine_orphans && !referenced.contains(&target.key) {
                 target.bucket = ab_clients::storage::Bucket::Private;
                 target.key = format!("quarantine/{}", target.key);
@@ -111,6 +113,21 @@ async fn copy_objects(ctx: &mut Ctx) -> Result<()> {
     }
     ctx.source("files", found);
     ctx.wrote("files", written);
+    let mut missing: Vec<&String> = referenced.difference(&copied).collect();
+    missing.sort();
+    if !missing.is_empty() {
+        ctx.note(format!(
+            "{} referenced object(s) absent from the files root (broken in legacy too)",
+            missing.len()
+        ));
+    }
+    for key in missing {
+        ctx.drop_row(
+            "file_reference",
+            key,
+            "referenced object missing from backup",
+        );
+    }
     if ctx.quarantine_orphans {
         ctx.note(format!(
             "{quarantined} unreferenced file(s) preserved under private/quarantine/"
@@ -119,24 +136,24 @@ async fn copy_objects(ctx: &mut Ctx) -> Result<()> {
     Ok(())
 }
 
-async fn referenced_keys(ctx: &Ctx) -> Result<HashSet<String>> {
-    let paths = sqlx::query_scalar::<_, String>(concat!(
-        "SELECT avatar_image FROM \"user\" WHERE avatar_image IS NOT NULL ",
-        "UNION ALL SELECT logo_image FROM platform WHERE logo_image IS NOT NULL ",
-        "UNION ALL SELECT thumbnail_image FROM platform WHERE thumbnail_image IS NOT NULL ",
-        "UNION ALL SELECT thumbnail_image FROM course WHERE thumbnail_image IS NOT NULL ",
-        "UNION ALL SELECT thumbnail_video FROM course WHERE thumbnail_video IS NOT NULL ",
-        "UNION ALL SELECT thumbnail_image FROM chapter WHERE thumbnail_image IS NOT NULL ",
-        "UNION ALL SELECT storage_key FROM upload WHERE storage_key IS NOT NULL ",
-        "UNION ALL SELECT storage_key FROM file_submission_attempt_file WHERE storage_key IS NOT NULL"
+/// Every object key the already-loaded v2 rows point at (the catalog and
+/// users domains rewrite legacy file names into full keys).
+async fn referenced_keys(ctx: &mut Ctx) -> Result<HashSet<String>> {
+    let keys = sqlx::query_scalar::<_, String>(concat!(
+        "SELECT avatar_key FROM users WHERE avatar_key IS NOT NULL ",
+        "UNION SELECT logo_key FROM platforms WHERE logo_key IS NOT NULL ",
+        "UNION SELECT thumbnail_key FROM platforms WHERE thumbnail_key IS NOT NULL ",
+        "UNION SELECT thumbnail_image_key FROM courses WHERE thumbnail_image_key IS NOT NULL ",
+        "UNION SELECT thumbnail_video_key FROM courses WHERE thumbnail_video_key IS NOT NULL ",
+        "UNION SELECT thumbnail_key FROM chapters WHERE thumbnail_key IS NOT NULL ",
+        "UNION SELECT content->>'filename' FROM activities WHERE content ? 'filename' ",
+        "UNION SELECT s->>'filename' FROM activities, jsonb_array_elements(CASE WHEN jsonb_typeof(details->'subtitles')='array' THEN details->'subtitles' ELSE '[]' END) s ",
+        "UNION SELECT content->>'file_key' FROM blocks WHERE content ? 'file_key' ",
+        "UNION SELECT k #>> '{}' FROM activities, jsonb_path_query(content, 'strict $.**.blockObject.content.file_key') k"
     ))
-    .fetch_all(&ctx.source)
+    .fetch_all(&mut *ctx.tx)
     .await?;
-    Ok(paths
-        .into_iter()
-        .filter(|path| !path.starts_with("http://") && !path.starts_with("https://"))
-        .filter_map(|path| crate::transform::files::normalize(&path))
-        .collect())
+    Ok(keys.into_iter().collect())
 }
 
 async fn record_deliberate_drops(ctx: &mut Ctx) -> Result<()> {

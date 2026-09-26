@@ -86,7 +86,7 @@ pub const JSON_FATES: &[JsonColumnFate] = &[
         "ai_event",
         "payload_json",
         Drop,
-        "legacy AI tables are empty; v2 runs rebuild state"
+        "legacy runs are telemetry and are not migrated (all stuck in running)"
     ),
     fate!(
         "ai_evidence",
@@ -110,13 +110,13 @@ pub const JSON_FATES: &[JsonColumnFate] = &[
         "ai_qa_message",
         "citations_json",
         Drop,
-        "legacy AI tables are empty; v2 runs rebuild state"
+        "only unanswered user questions exist; citations are always {}"
     ),
     fate!(
         "ai_qa_message",
         "message_metadata",
         Drop,
-        "legacy AI tables are empty; v2 runs rebuild state"
+        "only unanswered user questions exist; metadata is always {}"
     ),
     fate!(
         "ai_remediation_session",
@@ -134,7 +134,7 @@ pub const JSON_FATES: &[JsonColumnFate] = &[
         "ai_run",
         "run_metadata",
         Drop,
-        "legacy AI tables are empty; v2 runs rebuild state"
+        "legacy runs are telemetry and are not migrated (all stuck in running)"
     ),
     fate!(
         "ai_student_memory",

@@ -42,8 +42,8 @@ async fn load_platform(ctx: &mut Ctx) -> Result<()> {
     .bind(platform.about.unwrap_or_default())
     .bind(platform.email)
     .bind(platform.label)
-    .bind(platform.logo_image.as_deref().and_then(transform::files::normalize))
-    .bind(platform.thumbnail_image.as_deref().and_then(transform::files::normalize))
+    .bind(platform.logo_image.as_deref().and_then(|name| transform::files::under("platform/logos", name)))
+    .bind(platform.thumbnail_image.as_deref().and_then(|name| transform::files::under("platform/thumbnails", name)))
     .execute(&mut *ctx.tx)
     .await?;
     ctx.wrote("platform", 1);
@@ -71,8 +71,8 @@ async fn load_courses(ctx: &mut Ctx) -> Result<()> {
         .bind(Value::Array(transform::catalog::learnings(row.learnings.as_deref())))
         .bind(transform::catalog::tags(row.tags.as_deref()))
         .bind(transform::catalog::thumbnail_type(row.thumbnail_type.as_deref()))
-        .bind(row.thumbnail_image.as_deref().and_then(transform::files::normalize))
-        .bind(row.thumbnail_video.as_deref().and_then(transform::files::normalize))
+        .bind(row.thumbnail_image.as_deref().and_then(|name| transform::files::under(&format!("platform/courses/{}/thumbnails", row.course_uuid), name)))
+        .bind(row.thumbnail_video.as_deref().and_then(|name| transform::files::under(&format!("platform/courses/{}/thumbnails", row.course_uuid), name)))
         .bind(row.public).bind(row.open_to_contributors)
         .bind(row.creator_id.and_then(|value| ctx.idmap.get("user", value)))
         .bind(row.creation_date).bind(row.update_date)
@@ -159,6 +159,25 @@ async fn load_activities(ctx: &mut Ctx) -> Result<()> {
             Some(&row.activity_uuid),
             legacy::micros(row.creation_date),
         );
+        let course_uuid: String = sqlx::query_scalar("SELECT legacy_uuid FROM courses WHERE id=$1")
+            .bind(course_id)
+            .fetch_one(&mut *ctx.tx)
+            .await?;
+        let mut content = row
+            .content
+            .clone()
+            .unwrap_or_else(|| Value::Object(Map::new()));
+        let mut details = row
+            .details
+            .clone()
+            .unwrap_or_else(|| Value::Object(Map::new()));
+        transform::files::rewrite_activity_files(
+            &mut content,
+            &mut details,
+            &row.activity_sub_type,
+            &course_uuid,
+            &row.activity_uuid,
+        );
         sqlx::query(
             "INSERT INTO activities (id,legacy_uuid,chapter_id,course_id,name,activity_type,activity_sub_type,content,details,settings,published,position,creator_id,created_at,updated_at) \
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE(to_timestamp($14),now()),COALESCE(to_timestamp($15),now())) \
@@ -166,8 +185,8 @@ async fn load_activities(ctx: &mut Ctx) -> Result<()> {
         )
         .bind(id).bind(&row.activity_uuid).bind(chapter_id).bind(course_id).bind(&row.name)
         .bind(activity_type).bind(activity_sub_type)
-        .bind(row.content.clone().unwrap_or_else(|| Value::Object(Map::new())))
-        .bind(row.details.clone().unwrap_or_else(|| Value::Object(Map::new())))
+        .bind(content)
+        .bind(details)
         .bind(Value::Object(settings)).bind(row.published).bind(row.order.max(1))
         .bind(row.creator_id.and_then(|value| ctx.idmap.get("user", value)))
         .bind(row.creation_date).bind(row.update_date)
@@ -197,12 +216,28 @@ async fn load_blocks(ctx: &mut Ctx) -> Result<()> {
             Some(&row.block_uuid),
             legacy::micros(row.creation_date),
         );
+        let (activity_uuid, course_uuid): (String, String) = sqlx::query_as(
+            "SELECT a.legacy_uuid, c.legacy_uuid FROM activities a JOIN courses c ON c.id=a.course_id WHERE a.id=$1",
+        )
+        .bind(activity_id)
+        .fetch_one(&mut *ctx.tx)
+        .await?;
+        let mut content = row.content.unwrap_or_else(|| Value::Object(Map::new()));
+        if let Some(dir) = transform::files::block_dir(&row.block_type) {
+            transform::files::set_block_file_key(
+                &mut content,
+                &course_uuid,
+                &activity_uuid,
+                dir,
+                &row.block_uuid,
+            );
+        }
         sqlx::query(
             "INSERT INTO blocks (id,legacy_uuid,activity_id,block_type,content,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,COALESCE(to_timestamp($6),now()),COALESCE(to_timestamp($7),now())) \
              ON CONFLICT (id) DO UPDATE SET activity_id=EXCLUDED.activity_id,block_type=EXCLUDED.block_type,content=EXCLUDED.content,updated_at=EXCLUDED.updated_at",
         )
         .bind(id).bind(&row.block_uuid).bind(activity_id).bind(block_type)
-        .bind(row.content.unwrap_or_else(|| Value::Object(Map::new())))
+        .bind(content)
         .bind(row.creation_date).bind(row.update_date)
         .execute(&mut *ctx.tx).await?;
         written += 1;
