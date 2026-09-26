@@ -101,7 +101,17 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
   const cellsByActivity = new Map<string, ActivityProgressCell[]>()
   const cellsByStudent = new Map<string, ActivityProgressCell[]>()
 
-  for (const cell of data.cells) {
+  // The API only returns cells a learner touched; a missing student×activity cell is «not started».
+  const returned = new Set(data.cells.map(cell => gradebookCellKey(cell.user_id, cell.activity_id)))
+  const cells = [...data.cells]
+  for (const student of data.students) {
+    for (const activity of data.activities) {
+      if (!returned.has(gradebookCellKey(student.id, activity.id)))
+        cells.push(emptyGradebookCell(student.id, activity.id))
+    }
+  }
+
+  for (const cell of cells) {
     cellsByActivity.set(cell.activity_id, [...(cellsByActivity.get(cell.activity_id) ?? []), cell])
     cellsByStudent.set(cell.user_id, [...(cellsByStudent.get(cell.user_id) ?? []), cell])
   }

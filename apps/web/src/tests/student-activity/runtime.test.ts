@@ -113,4 +113,48 @@ describe('gradebook rollup taxonomy', () => {
     const tile = data.summary.needs_grading_count - data.summary.awaiting_release_count
     expect(buildGradebookRollups(data, 'activity')[0]?.needsGrading).toBe(tile)
   })
+
+  it('counts a student×activity pair with no returned cell as «not started»', () => {
+    const activity = { id: 'a1', activity_uuid: 'a1', name: 'Quiz', activity_type: 'quiz', assessment_type: 'QUIZ' }
+    const student = (id: string) => ({
+      id,
+      display_name: id,
+      username: id,
+      email: `${id}@x`,
+      first_name: id,
+      last_name: '',
+    })
+    const data = {
+      course_uuid: 'course_1',
+      course_id: 'course_1',
+      course_name: 'Course',
+      students: [student('u1'), student('u2'), student('u3')],
+      activities: [activity],
+      cells: [
+        {
+          activity_id: 'a1',
+          user_id: 'u1',
+          state: 'PASSED' as const,
+          attempt_count: 1,
+          is_late: false,
+          teacher_action_required: false,
+          score: 80,
+        },
+      ],
+      teacher_actions: [],
+      summary: {
+        student_count: 3,
+        activity_count: 1,
+        needs_grading_count: 0,
+        awaiting_release_count: 0,
+        overdue_count: 0,
+        not_started_count: 2,
+        completed_count: 1,
+      },
+    } satisfies CourseGradebookResponse
+
+    const [row] = buildGradebookRollups(data, 'activity')
+    expect(row).toMatchObject({ notStarted: 2, total: 3, averageScore: 80 })
+    expect(buildGradebookRollups(data, 'learner').map(r => r.notStarted)).toEqual([0, 1, 1])
+  })
 })
