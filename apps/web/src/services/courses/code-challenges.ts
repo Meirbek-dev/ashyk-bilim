@@ -386,7 +386,8 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
   const codeItem = getCodeAssessmentItem(assessment)
   const body = toCodeItemBody(assessment, codeItem, settings)
   const payload = {
-    title: codeItem?.title ?? assessment.title,
+    // The server creates a new challenge's code item with title ""; PATCH rejects a blank title.
+    title: codeItem?.title?.trim() || assessment.title,
     body: itemBodyToWire(body as ItemBody),
     max_score: typeof settings.points === 'number' ? settings.points : (codeItem?.max_score ?? 100),
   }

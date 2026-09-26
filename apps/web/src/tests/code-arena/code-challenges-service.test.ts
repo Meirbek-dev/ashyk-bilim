@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   mySubmissions: vi.fn(),
   runItem: vi.fn(),
   getActivityAssessment: vi.fn(),
+  apiJson: vi.fn(),
 }))
 
 vi.mock('@/lib/api/generated/code/code', () => ({
@@ -18,12 +19,19 @@ vi.mock('@/lib/api/generated/submissions/submissions', () => ({
   mySubmissions: mocks.mySubmissions,
 }))
 
+vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
+
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   getActivityAssessment: mocks.getActivityAssessment,
 }))
 
 import { isApiError } from '@/lib/api/assertSuccess'
-import { getJudge0Languages, getSubmissions, runTests } from '@/services/courses/code-challenges'
+import {
+  getJudge0Languages,
+  getSubmissions,
+  runTests,
+  saveCodeChallengeSettings,
+} from '@/services/courses/code-challenges'
 
 const ITEM_ID = '55555555-5555-4555-8555-555555555555'
 const ASM_ID = '22222222-2222-4222-8222-222222222222'
@@ -210,5 +218,23 @@ describe('getSubmissions', () => {
     expect(result.map(submission => submission.id)).toEqual(['s2', 's1'])
     expect(result[0]).toMatchObject({ status: 'pending', score: null, language_id: 63, submitted_at_unix: 40 })
     expect(result[1]).toMatchObject({ status: 'published', score: 50, language_id: 71, max_score: 100 })
+  })
+})
+
+describe('saveCodeChallengeSettings', () => {
+  it('falls back to the assessment title when the new code item title is blank', async () => {
+    const fresh = wireAssessment()
+    fresh.items[0]!.title = ''
+    mocks.getActivityAssessment.mockResolvedValue(fresh)
+    mocks.apiJson.mockResolvedValue({})
+
+    await saveCodeChallengeSettings('activity_two-sum', { points: 10 })
+
+    expect(mocks.apiJson).toHaveBeenCalledWith(
+      `assessment-items/${ITEM_ID}`,
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+    const body = JSON.parse(String(mocks.apiJson.mock.calls[0]?.[1]?.body))
+    expect(body).toMatchObject({ title: 'Two Sum', max_score: 10 })
   })
 })
