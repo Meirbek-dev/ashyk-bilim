@@ -115,10 +115,10 @@ pub fn rewrite_activity_files(
 }
 
 fn rewrite_name(value: Option<&mut Value>, dir: &str) {
-    if let Some(value) = value {
-        if let Some(key) = value.as_str().and_then(|name| under(dir, name)) {
-            *value = Value::String(key);
-        }
+    if let Some(value) = value
+        && let Some(key) = value.as_str().and_then(|name| under(dir, name))
+    {
+        *value = Value::String(key);
     }
 }
 
