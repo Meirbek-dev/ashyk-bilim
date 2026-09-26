@@ -330,8 +330,11 @@ function useAssessment(
     primaryButtonLabelKey: recommendedAction,
     startedAt: unixToIso(startedAt),
     timerStartedAt: unixToIso(startedAt),
+    // BUG-326: auto-submit fires after the grace period, as on the server.
     timerExpiresAt:
-      typeof startedAt === 'number' && typeof timeLimit === 'number' ? unixToIso(startedAt + timeLimit) : null,
+      typeof startedAt === 'number' && typeof timeLimit === 'number'
+        ? unixToIso(startedAt + timeLimit + assessment.policy.grace_period_minutes * 60)
+        : null,
   }
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
 }

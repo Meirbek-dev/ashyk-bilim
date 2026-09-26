@@ -692,6 +692,72 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     );
 }
 
+/// BUG-326: the grace period extends the timer — the sweep waits for it
+/// and a submit past the limit but inside the grace is accepted.
+#[sqlx::test(migrations = "../../migrations")]
+async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60, "grace_period_minutes": 1 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    async fn start_aged(app: &TestApp, who: &MintedSession, id: &str, secs: f64) -> String {
+        let draft = app
+            .post_as(
+                who,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        let sub = draft.json()["id"].as_str().unwrap().to_owned();
+        sqlx::query(
+            "UPDATE submissions SET started_at = now() - make_interval(secs => $2) WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(&sub).unwrap())
+        .bind(secs)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+        sub
+    }
+    let runner = app.code_runner();
+    let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
+
+    // 90 s in: past limit + network slack, inside the 1-min grace.
+    let first = start_aged(&app, &alice, &id, 90.0).await;
+    assert_eq!(
+        sweep().await.unwrap(),
+        0,
+        "the sweep waits for the grace period"
+    );
+    let state = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.json()["can_continue"], true, "{}", state.text());
+    let done = app.send(submit(&alice, &first, None, &answer)).await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    assert!(done.json()["auto_submit_reason"].is_null());
+
+    // Past limit + grace: the sweep hands it in.
+    let second = start_aged(&app, &alice, &id, 125.0).await;
+    assert_eq!(sweep().await.unwrap(), 1);
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{second}"))
+        .await;
+    assert_eq!(mine.json()["auto_submit_reason"], "time_expired");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn violations_past_the_threshold_zero_the_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

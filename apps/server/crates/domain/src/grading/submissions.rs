@@ -409,7 +409,6 @@ impl SubmissionsService {
         effective: &EffectivePolicy,
         total_items: usize,
     ) -> Result<StudentSubmission> {
-        let time_limit_seconds = effective.time_limit_seconds;
         let release_state = release_state(&self.pool, &submission).await?;
         let visible = matches!(
             release_state,
@@ -417,13 +416,12 @@ impl SubmissionsService {
         );
         let answers = parse_answers(&submission.answers)?;
         let answered_count = answers.values().filter(|a| !a.is_blank()).count();
-        let time_remaining_seconds =
-            match (submission.status, submission.started_at, time_limit_seconds) {
-                (SubmissionStatus::Draft, Some(started), Some(limit)) => {
-                    Some((started + i64::from(limit) - now_unix()).max(0))
-                }
-                _ => None,
-            };
+        let time_remaining_seconds = match (submission.status, submission.started_at) {
+            (SubmissionStatus::Draft, Some(started)) => effective
+                .timer_deadline(started)
+                .map(|deadline| (deadline - now_unix()).max(0)),
+            _ => None,
+        };
         Ok(StudentSubmission {
             id: submission.id,
             assessment_id: submission.assessment_id,
@@ -1136,8 +1134,12 @@ impl SubmissionsService {
         // BUG-315: the hand-in is the moment the clock ran out, not when the
         // sweep got to it — lateness, the override in force (BUG-307) and
         // `submitted_at` (what settling re-judges) all use it.
+        // BUG-326: the clock runs out after the grace period.
         let submitted_at = match (submission.started_at, assessment.time_limit_seconds) {
-            (Some(started), Some(limit)) => (started + i64::from(limit)).min(now_unix()),
+            (Some(started), Some(limit)) => {
+                (started + i64::from(limit) + i64::from(assessment.grace_period_minutes) * 60)
+                    .min(now_unix())
+            }
             _ => now_unix(),
         };
         // BUG-279: the attempt's own preview flag — the same policy rule as

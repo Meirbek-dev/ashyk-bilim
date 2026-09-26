@@ -39,8 +39,8 @@ pub(crate) fn cap_bars_new_attempt(
 /// The gates on an attempt, in the `attempt-state` vocabulary — one rule
 /// for `attempt-state` and the submit pipeline (BUG-278). A staff preview
 /// (UX-182) has none: whatever attempt-state offers a preview, submit
-/// finishes. `started_at` is the open draft's; `grace` the submit
-/// allowance past the time limit.
+/// finishes. `started_at` is the open draft's; `grace` the network
+/// slack past the timer deadline (limit + grace period, BUG-326).
 pub(crate) async fn attempt_gates(
     pool: &sqlx::PgPool,
     preview: bool,
@@ -58,8 +58,8 @@ pub(crate) async fn attempt_gates(
     if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
         reasons.push(DisabledReason::PastDue);
     }
-    if let (Some(limit), Some(started)) = (effective.time_limit_seconds, started_at)
-        && now > started + i64::from(limit) + grace
+    if let Some(deadline) = started_at.and_then(|s| effective.timer_deadline(s))
+        && now > deadline + grace
     {
         reasons.push(DisabledReason::TimeLimitExpired);
     }
@@ -123,6 +123,9 @@ pub struct EffectivePolicy {
     pub max_attempts: Option<i32>,
     pub due_at: Option<i64>,
     pub time_limit_seconds: Option<i32>,
+    /// BUG-326: the studio's grace period, in seconds — the timer runs out
+    /// at `started + time_limit + grace` (DECISIONS 2026-09-26).
+    pub grace_seconds: i64,
     pub allow_late: bool,
     pub passing_score: f64,
     pub late_policy: LatePolicy,
@@ -138,6 +141,14 @@ impl EffectivePolicy {
     #[must_use]
     pub fn is_late(&self, submitted_at: i64) -> bool {
         !self.waive_late_penalty && self.due_at.is_some_and(|due| submitted_at > due)
+    }
+
+    /// When a timed attempt started at `started` runs out: the time limit
+    /// plus the grace period (BUG-326). `None` = untimed.
+    #[must_use]
+    pub fn timer_deadline(&self, started: i64) -> Option<i64> {
+        self.time_limit_seconds
+            .map(|limit| started + i64::from(limit) + self.grace_seconds)
     }
 }
 
@@ -646,6 +657,7 @@ impl AssessmentsService {
                 .or(extended_due)
                 .or(assessment.due_at),
             time_limit_seconds: assessment.time_limit_seconds,
+            grace_seconds: i64::from(assessment.grace_period_minutes) * 60,
             allow_late: assessment.allow_late,
             passing_score: assessment.passing_score,
             late_policy: LatePolicy::from_columns(

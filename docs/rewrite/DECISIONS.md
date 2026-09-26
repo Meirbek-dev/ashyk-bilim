@@ -1464,3 +1464,17 @@ Implements three more items of the owner answers above. Routes:
   `next_action` (never a `blocked_reason` activity). Why: a learner left off a restricted quiz stayed
   at 2/3 forever — no completion, no certificate — and «Продолжить
   обучение» sent them to a quiz that answers 403.
+
+## The grace period extends the timer (2026-09-26, gauntlet pass 28)
+
+- **`grace_period_minutes` moves a timed attempt's deadline to
+  `started_at + time_limit + grace`** (BUG-326): the attempt-state /
+  draft-save / submit gates (`EffectivePolicy::timer_deadline`), the timer
+  sweep (`list_expired_drafts`), the sweep's hand-in time (BUG-315) and the
+  web auto-submit (`timerExpiresAt`) all use it. The fixed 30 s network
+  slack (`SUBMIT_GRACE_SECONDS`) still applies on top for a submit.
+  Lateness is unchanged (due date only). Legacy (`apps/api`) stored the field
+  in `settings` and read it nowhere, so there is no legacy meaning to keep;
+  this follows the studio tooltip («extra minutes after the time limit before
+  auto-submission fires»). Why: the studio offered a setting that did
+  nothing — a 45 s submit on a 20 s quiz with a 5-min grace answered 409.
