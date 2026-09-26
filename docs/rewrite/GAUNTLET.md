@@ -5,6 +5,15 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 ## Setup facts
 
 - Branch `rewrite`, direct commits. `apps/api` is read-only reference.
+- **Pass 28+ (2026-09-26): the stack runs on the restored production backup**, not `ashyq_dev`:
+  containers `ashyq-restore-pg` :5433 (DB `ashyq_restore_v2`, user `openu`), `ashyq-restore-redis-v2`
+  :6380 (db /2), `ashyq-restore-zitadel` :8081, `ashyq-restore-rustfs` :9002 (keys `ashyq-dev`).
+  A fresh RustFS needs `extra/storage-cors.json` applied (`put-bucket-cors` on both buckets) or
+  browser uploads fail with "Network unavailable". Shared accounts are «Learner/Teacher/Admin
+  Gauntlet» (e2e `.env.test.local` names must match). Migrated users are reachable by registering a
+  proxy account and moving its `zitadel_user_id` onto the migrated row (park the proxy first —
+  unique key), then logging in with the MIGRATED login: `ast.dinara1987.4301` (learner),
+  `aizhan0212@mail.ru` (teacher), password `GauntletDev!2026`.
 - Build: `$env:CARGO_TARGET_DIR='C:\cargo-target\ashyq-server'` in every shell.
 - Podman stack (network `ashyq-dev`): `ashyq-test-pg` :5433, `ashyq-test-redis` :6380,
   `ashyq-zitadel` :8081, `ashyq-rustfs` :9002 (buckets `ab-public`, `ab-private`).
