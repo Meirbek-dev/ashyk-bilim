@@ -2,7 +2,7 @@ import CertificateVerificationPage from '@components/Pages/Certificate/Certifica
 import { getCertificateByCode } from '@services/courses/certifications'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
-import type React from 'react'
+import { Suspense } from 'react'
 
 interface CertificateVerifyPageProps {
   params: Promise<{
@@ -62,9 +62,19 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
   }
 }
 
-const PlatformCertificateVerifyPage: React.FC<CertificateVerifyPageProps> = async ({ params }) => {
+async function CertificateVerify({ params }: CertificateVerifyPageProps) {
   const { uuid } = await params
   return <CertificateVerificationPage certificateUuid={uuid} />
 }
 
-export default PlatformCertificateVerifyPage
+// The code comes from the URL and the metadata reads a live verification, so
+// the page renders per request; the boundary keeps Cache Components' dev
+// notices (uncached data in generateMetadata, URL data outside <Suspense>) off
+// the console.
+export default function PlatformCertificateVerifyPage(props: CertificateVerifyPageProps) {
+  return (
+    <Suspense fallback={null}>
+      <CertificateVerify {...props} />
+    </Suspense>
+  )
+}
