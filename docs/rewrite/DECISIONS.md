@@ -1496,3 +1496,27 @@ Implements three more items of the owner answers above. Routes:
   `QaWireMessage`; the DTOs keep `deny_unknown_fields`. A vitest pins the
   members `@ag-ui/client` sends, so a client upgrade that adds one fails
   before it reaches the browser.
+
+## The legacy stored score is the grade of record (2026-09-26, gauntlet pass 28)
+
+- **A migrated attempt keeps its stored legacy score** (BUG-329). Legacy
+  (`apps/api` `quiz_grader`) rounded each item's score to the cent and summed
+  the rounded scores (`round(total, 2)`), so 149 of 150 items at 0.67 over
+  0.6667 points stored 99.83, not 99.333; the ETL caps each item at its max,
+  so the migrated items derive less than the grade the learner was shown,
+  exported and certified with. The ETL (`with_score_of_record`) writes that
+  raw (latest ledger raw, else `auto_score`; scored rows only) as the
+  breakdown's explicit `score_override` when it differs from the item-derived
+  percent by 0.01 or more — the review shows a stated adjustment, not a
+  mismatch. Item scores are not rewritten: an item above its max fails every
+  grading form.
+- **A gap under a hundredth is storage drift, never an override**
+  (`GradingBreakdown::differs_from_items`): the teacher view's
+  ledger-vs-items inference (rows written before BUG-205's flag) compares the
+  stored raw with the unrounded item percent, so 33.34 over 33.333 no longer
+  switches the override toggle on. It replaces the `< 0.005` comparison
+  against the item percent rounded to the cent.
+- **Legacy attempts by course staff migrate as previews** (BUG-328): the ETL
+  applies `is_course_staff` (the `is_teacher_preview` set) to migrated
+  submissions, as migration 20260924000004 did once for rows present then —
+  the restore loads after that migration ran.

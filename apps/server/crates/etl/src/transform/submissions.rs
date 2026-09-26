@@ -4,6 +4,7 @@
 //! in the v2 shape, and code runs leave the metadata blob for `code_runs`.
 
 use ab_domain::grading::answers::ItemAnswer;
+use ab_domain::grading::breakdown::GradingBreakdown;
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
@@ -138,6 +139,29 @@ pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) ->
         "feedback": str_setting(&src, "feedback").unwrap_or(""),
     });
     Rekeyed { value, unresolved }
+}
+
+/// BUG-329: the stored legacy raw is the grade of record. Legacy summed item
+/// scores rounded to the cent (150 × 0.67 over 150 × 0.6667 points), and
+/// `breakdown` caps each at its max, so the migrated items can derive less
+/// than the grade the learner was given (99.83 vs 99.333). Where they differ
+/// beyond storage drift the raw is kept as the explicit `score_override` —
+/// the review shows a stated adjustment, not a mismatch. Scored rows only
+/// (`raw` is `None` for an attempt still owed a grade); an item-less
+/// breakdown has nothing to disagree with.
+#[must_use]
+pub fn with_score_of_record(mut grading: Value, raw: Option<f64>) -> Value {
+    let Some(raw) = raw.map(|r| r.clamp(0.0, 100.0)) else {
+        return grading;
+    };
+    let parsed = GradingBreakdown::from_value(&grading);
+    if parsed.items.is_empty() || !parsed.differs_from_items(raw) {
+        return grading;
+    }
+    if let Value::Object(m) = &mut grading {
+        m.insert("score_override".into(), Value::from(raw));
+    }
+    grading
 }
 
 /// The v2 verdict code (and `{correct, total}`) of a legacy English grader
@@ -449,6 +473,40 @@ mod tests {
         assert_eq!(
             feedback_code("No answer provided").map(|c| c.0),
             Some("no-answer")
+        );
+    }
+
+    #[test]
+    fn stored_raw_beyond_rounding_drift_is_the_explicit_override() {
+        // BUG-329: 149 of 150 legacy items at 0.67 (capped to 0.6667) — the
+        // learner's 99.83 stays the grade, stated as an adjustment.
+        let known: Vec<(String, Uuid)> = (0..150)
+            .map(|i| (format!("q{i}"), Uuid::now_v7()))
+            .collect();
+        let items: Vec<Value> = (0..150)
+            .map(|i| {
+                serde_json::json!({"item_id": format!("q{i}"), "item_text": "",
+                "score": if i == 0 { 0.0 } else { 0.67 }, "max_score": 0.6667})
+            })
+            .collect();
+        let raw = serde_json::json!({"items": items});
+        let r = breakdown(Some(&raw), |k| {
+            known.iter().find(|(l, _)| l == k).map(|(_, u)| *u)
+        });
+        let exam = with_score_of_record(r.value.clone(), Some(99.83));
+        assert_eq!(exam["score_override"], 99.83);
+        let parsed = ab_domain::grading::breakdown::GradingBreakdown::from_value(&exam);
+        assert_eq!(parsed.score_override, Some(99.83));
+        // Storage drift (< 0.01) and an attempt without a grade: untouched.
+        assert!(
+            with_score_of_record(r.value.clone(), Some(99.33))
+                .get("score_override")
+                .is_none()
+        );
+        assert!(
+            with_score_of_record(r.value, None)
+                .get("score_override")
+                .is_none()
         );
     }
 

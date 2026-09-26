@@ -37,7 +37,7 @@ mod loaders;
 mod loaders_assessments;
 mod loaders_auxiliary;
 mod loaders_catalog;
-mod loaders_submissions;
+pub mod loaders_submissions;
 mod loaders_users;
 pub mod pipeline;
 pub mod report;

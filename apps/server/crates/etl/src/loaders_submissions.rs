@@ -5,8 +5,15 @@ use crate::ctx::Ctx;
 use crate::{legacy, transform};
 
 pub async fn run(ctx: &mut Ctx) -> Result<()> {
-    load_submissions(ctx).await?;
-    load_grading(ctx).await?;
+    let entries = legacy::grading_entries(&ctx.source, ctx.limit).await?;
+    load_submissions(ctx, &entries).await?;
+    let previews = mark_staff_previews(&mut ctx.tx).await?;
+    if previews > 0 {
+        ctx.note(format!(
+            "{previews} attempt(s) by course staff migrated as previews"
+        ));
+    }
+    load_grading(ctx, entries).await?;
     load_code_runs(ctx).await?;
     load_code_run_cases(ctx).await?;
     crate::loaders_auxiliary::require_empty(
@@ -22,6 +29,20 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
     )
     .await?;
     default_file_submission_configs(ctx).await
+}
+
+/// BUG-328: a legacy attempt by the course's staff (creator, active
+/// non-reporter author, platform author — `is_course_staff`, the
+/// `is_teacher_preview` set) is a preview, as a v2 staff attempt is: never
+/// queued, counted or graded. Migrated rows only (a v2 attempt keeps the
+/// flag it was made with). Idempotent.
+pub async fn mark_staff_previews(conn: &mut sqlx::PgConnection) -> Result<u64> {
+    Ok(sqlx::query(
+        "UPDATE submissions SET preview = true          WHERE NOT preview AND legacy_uuid IS NOT NULL AND is_course_staff(course_id, user_id)",
+    )
+    .execute(conn)
+    .await?
+    .rows_affected())
 }
 
 /// Legacy `ASSIGNMENT` activities were retyped to file submissions without a
@@ -43,7 +64,12 @@ async fn default_file_submission_configs(ctx: &mut Ctx) -> Result<()> {
     Ok(())
 }
 
-async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
+async fn load_submissions(ctx: &mut Ctx, entries: &[legacy::GradingEntry]) -> Result<()> {
+    // The latest ledger raw per submission (entries come in id order).
+    let ledger_raw: std::collections::HashMap<i32, f64> = entries
+        .iter()
+        .map(|e| (e.submission_id, e.raw_score))
+        .collect();
     let rows = legacy::submissions(&ctx.source, ctx.limit).await?;
     ctx.source("submission", rows.len());
     let mut written = 0;
@@ -76,6 +102,11 @@ async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
         let grading = transform::submissions::breakdown(row.grading_json.as_ref(), |legacy_uuid| {
             ctx.idmap.get_by_uuid("assessment_item", legacy_uuid)
         });
+        let grading_value = transform::submissions::with_score_of_record(
+            grading.value,
+            row.final_score
+                .and_then(|_| ledger_raw.get(&row.id).copied().or(row.auto_score)),
+        );
         for unresolved in answers.unresolved.iter().chain(grading.unresolved.iter()) {
             ctx.drop_row(
                 "submission_item_value",
@@ -108,7 +139,7 @@ async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
              ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,answers=EXCLUDED.answers,grading=EXCLUDED.grading,auto_score=EXCLUDED.auto_score,final_score=EXCLUDED.final_score,graded_at=EXCLUDED.graded_at,version=EXCLUDED.version,draft_version=EXCLUDED.draft_version,updated_at=EXCLUDED.updated_at",
         )
         .bind(id).bind(&row.submission_uuid).bind(assessment_id).bind(course_id).bind(user_id)
-        .bind(status).bind(row.attempt_number.max(1)).bind(answers.value).bind(grading.value)
+        .bind(status).bind(row.attempt_number.max(1)).bind(answers.value).bind(grading_value)
         .bind(row.auto_score.map(|s| s.clamp(0.0, 100.0))).bind(row.final_score.map(|s| s.clamp(0.0, 100.0))).bind(row.is_late).bind(row.late_penalty_pct.clamp(0.0, 100.0))
         .bind(metadata.violation_count).bind(metadata.violations).bind(metadata.auto_submit_reason)
         .bind(metadata.auto_submitted_at).bind(metadata.duration_seconds).bind(row.started_at).bind(row.submitted_at)
@@ -122,8 +153,7 @@ async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
     Ok(())
 }
 
-async fn load_grading(ctx: &mut Ctx) -> Result<()> {
-    let rows = legacy::grading_entries(&ctx.source, ctx.limit).await?;
+async fn load_grading(ctx: &mut Ctx, rows: Vec<legacy::GradingEntry>) -> Result<()> {
     ctx.source("grading_entry", rows.len());
     let mut written = 0;
     for row in rows {

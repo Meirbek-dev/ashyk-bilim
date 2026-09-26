@@ -1189,7 +1189,7 @@ impl GradingService {
         let answers = parse_answers(&row.answers)?;
         let previous = row.grading.clone();
         let mut breakdown = GradingBreakdown::from_value(&row.grading);
-        let derived_before = derived_raw(&breakdown);
+        let before = breakdown.clone();
         merge_item_grades(&mut breakdown, &input.item_grades, &items, &answers);
         breakdown.needs_manual_review = breakdown.items.iter().any(|i| i.needs_manual_review);
         if let Some(feedback) = &input.feedback {
@@ -1235,7 +1235,7 @@ impl GradingService {
                 breakdown.score_override = None;
                 (derived_raw(&breakdown), false)
             }
-            None => match override_of_before(&breakdown, stored_raw, derived_before) {
+            None => match override_of_before(&breakdown, stored_raw, &before) {
                 Some(stored) => {
                     breakdown.score_override = Some(stored);
                     (stored, true)
@@ -1722,13 +1722,7 @@ fn parse_gradebook_cursor(cursor: &str) -> Result<UserId> {
 /// with their real max score (`save_grade` refuses ids outside the assessment).
 /// Earned / possible × 100 over the breakdown items (0 without items).
 fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
-    let possible: f64 = breakdown.items.iter().map(|i| i.max_score).sum();
-    let earned: f64 = breakdown.items.iter().map(|i| i.score).sum();
-    if possible > 0.0 {
-        round2(earned / possible * 100.0)
-    } else {
-        0.0
-    }
+    round2(breakdown.item_percent())
 }
 
 /// BUG-197: no score of record yet — an item still awaits its manual score
@@ -1743,31 +1737,27 @@ fn is_annulled(row: &SubmissionRow) -> bool {
 }
 
 /// The stored override (BUG-205), or — for rows written before the flag
-/// existed — a latest ledger raw that differs from the item-derived one;
-/// an integrity-annulled attempt's 0 counts as one (BUG-215).
+/// existed — a latest ledger raw that differs from the item-derived one
+/// (`differs_from_items`, BUG-329); an integrity-annulled attempt's 0
+/// counts as one (BUG-215).
 fn override_of(
     breakdown: &GradingBreakdown,
     ledger_raw: Option<f64>,
     annulled: bool,
 ) -> Option<f64> {
-    override_of_before(breakdown, ledger_raw, derived_raw(breakdown))
+    override_of_before(breakdown, ledger_raw, breakdown)
         .or_else(|| annulled.then(|| ledger_raw.unwrap_or(0.0)))
 }
 
-/// `override_of` against a derived score computed before an item merge.
+/// `override_of` against the items as they were before an item merge.
 fn override_of_before(
     breakdown: &GradingBreakdown,
     ledger_raw: Option<f64>,
-    derived: f64,
+    before: &GradingBreakdown,
 ) -> Option<f64> {
     breakdown
         .score_override
-        .or_else(|| ledger_raw.filter(|raw| !same_score(*raw, derived)))
-}
-
-/// Equal to the 2-decimal precision raw scores are stored at.
-fn same_score(a: f64, b: f64) -> bool {
-    (a - b).abs() < 0.005
+        .or_else(|| ledger_raw.filter(|raw| before.differs_from_items(*raw)))
 }
 
 fn merge_item_grades(
