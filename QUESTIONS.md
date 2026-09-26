@@ -34,3 +34,12 @@ The ETL now gives each a **draft** file-submission config so teachers can open t
 studio, write instructions and publish. Decide before cutover: (a) teachers configure
 them (nothing else to do), (b) the ETL unpublishes them, or (c) the ETL marks them
 not required. Not blocking.
+
+**Related (gauntlet pass 28, restored data):** 32 of the 38 migrated certificates belong to
+learners whose v2 `course_progress` is not certificate-eligible (8 under 50 %): courses grew
+after the legacy certificate was issued, and these content-less tasks count as required.
+Analytics counts a certificate holder as completed (legacy rule, `analytics/context.rs`), while
+the trail, gradebook and course page show real step progress — e.g. «VR разработка» analytics
+41.2 % completion vs 0 eligible. Both screens match legacy. Choose: (a) keep as is, (b) analytics
+drops the certificate override (one rule: step progress), or (c) the ETL marks legacy
+certificate holders' `course_progress` completed.
