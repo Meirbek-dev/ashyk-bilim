@@ -199,29 +199,10 @@ export interface AntiCheatViolation {
   count?: number
 }
 
-export interface PlagiarismScore {
-  score: number
-  checked_at: string
-  flagged?: boolean
-  details?: Record<string, unknown>
-}
-
-export type PlagiarismCheckStatus = 'pending' | 'checking' | 'complete' | 'failed'
-
-export interface PlagiarismState {
-  status: PlagiarismCheckStatus
-  score: number | null
-  flagged: boolean
-  error: string | null
-}
-
 export interface SubmissionMetadata {
   latest_run?: CodeRunRecord | null
   runs?: CodeRunRecord[]
   violations?: AntiCheatViolation[]
-  plagiarism?: PlagiarismScore | null
-  plagiarism_status?: PlagiarismCheckStatus | string | null
-  plagiarism_error?: string | null
   [key: string]: unknown
 }
 
@@ -233,46 +214,6 @@ export function getSubmissionMetadata(submission: { metadata_json?: unknown }): 
 export function getSubmissionViolations(submission: { metadata_json?: unknown }): AntiCheatViolation[] {
   const { violations } = getSubmissionMetadata(submission)
   return Array.isArray(violations) ? violations : []
-}
-
-export function getSubmissionPlagiarismState(submission: { metadata_json?: unknown }): PlagiarismState {
-  const metadata = getSubmissionMetadata(submission)
-  const status = metadata.plagiarism_status
-  const plagiarism = metadata.plagiarism ?? null
-
-  if (status === 'failed') {
-    return {
-      status: 'failed',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: metadata.plagiarism_error ?? 'Plagiarism check failed',
-    }
-  }
-
-  if (status === 'checking') {
-    return {
-      status: 'checking',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: null,
-    }
-  }
-
-  if (plagiarism) {
-    return {
-      status: 'complete',
-      score: plagiarism.score,
-      flagged: Boolean(plagiarism.flagged),
-      error: null,
-    }
-  }
-
-  return {
-    status: 'pending',
-    score: null,
-    flagged: false,
-    error: null,
-  }
 }
 
 export interface SubmissionReviewViewModel {

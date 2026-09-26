@@ -7,7 +7,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { buildSubmissionReviewViewModel, getSubmissionDisplayName } from '@/features/grading/domain'
 import type { Submission } from '@/features/grading/domain'
-import { getSubmissionPlagiarismState, getSubmissionViolations } from '@/features/grading/domain/types'
+import { getSubmissionViolations } from '@/features/grading/domain/types'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import type { KindReviewDetailProps } from '@/features/assessments/registry'
 import { useQuery } from '@tanstack/react-query'
@@ -79,7 +79,6 @@ export default function SubmissionInspector({
   }
 
   const reviewVm = buildSubmissionReviewViewModel(current)
-  const plagiarismState = getSubmissionPlagiarismState(current)
 
   return (
     <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
@@ -107,22 +106,6 @@ export default function SubmissionInspector({
                       : t('releaseStateReturned')}
               </Badge>
               {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
-              <Badge
-                variant={plagiarismState.status === 'failed' || plagiarismState.flagged ? 'destructive' : 'secondary'}
-                className="font-mono text-[10px]"
-              >
-                {plagiarismState.status === 'failed'
-                  ? t('submissionInspector.plagiarism.failed')
-                  : plagiarismState.status === 'checking'
-                    ? t('submissionInspector.plagiarism.checking')
-                    : plagiarismState.status === 'pending'
-                      ? t('submissionInspector.plagiarism.pending')
-                      : plagiarismState.flagged
-                        ? t('submissionInspector.plagiarism.match', {
-                            score: Math.round((plagiarismState.score ?? 0) * 100),
-                          })
-                        : t('submissionInspector.plagiarism.clear')}
-              </Badge>
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
