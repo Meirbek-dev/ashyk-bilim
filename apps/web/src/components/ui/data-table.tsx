@@ -475,9 +475,11 @@ export default function DataTable<TData extends RowData>({
           {toolbarContent}
         </div>
         <div className="text-muted-foreground text-sm">
-          {totalFiltered > 0
+          {/* A server page without `totalRows` only knows its own rows; "1–25 of 25"
+              would contradict the caller's server-side count. */}
+          {totalFiltered > 0 && (!isServerPaginated || totalRows !== undefined)
             ? resolvedLabels.showingRows({ from, to, total: totalFiltered })
-            : resolvedLabels.visibleRows(0)}
+            : resolvedLabels.visibleRows(rows.length)}
         </div>
       </div>
 
