@@ -24411,6 +24411,49 @@ expression: json
         ]
       }
     },
+    "/api/v2/users/by-id/{user_id}": {
+      "get": {
+        "description": "Editor user blocks store the user id; every reader of the page (learners,\nanonymous visitors of a public course) resolves the card here.",
+        "operationId": "public_profile_by_id",
+        "parameters": [
+          {
+            "description": "User id",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHit"
+                }
+              }
+            },
+            "description": "Public profile"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inactive user"
+          }
+        },
+        "summary": "Public profile card by id — same card as `GET /users/{username}`.",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "operationId": "my_profile",

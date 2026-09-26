@@ -11999,6 +11999,49 @@
         }
       }
     },
+    "/api/v2/users/by-id/{user_id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Public profile card by id — same card as `GET /users/{username}`.",
+        "description": "Editor user blocks store the user id; every reader of the page (learners,\nanonymous visitors of a public course) resolves the card here.",
+        "operationId": "public_profile_by_id",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHit"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or inactive user",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "tags": [

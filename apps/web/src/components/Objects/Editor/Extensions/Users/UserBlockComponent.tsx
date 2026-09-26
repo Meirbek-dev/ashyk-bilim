@@ -108,14 +108,14 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
       return
     }
 
+    // A failed lookup never clears `user_id`: only picking another user changes
+    // the stored link, so a save cannot drop it (migrated blocks, a disabled
+    // account, a network blip).
     if (userByIdQuery.error) {
       console.error('Error fetching user by ID:', userByIdQuery.error)
-      queueMicrotask(() => {
-        setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
-        updateAttributes({ user_id: null })
-      })
+      queueMicrotask(() => setError(t('errorNotFound')))
     }
-  }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId])
+  }, [t, userByIdQuery.data, userByIdQuery.error, userId])
 
   useEffect(() => {
     if (!submittedUsername) return

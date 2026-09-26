@@ -264,6 +264,7 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(routes::users::set_user_status))
         .routes(routes!(routes::users::public_profile))
+        .routes(routes!(routes::users::public_profile_by_id))
         .routes(routes!(routes::users::user_courses))
         .routes(routes!(routes::rbac::list_roles))
         .routes(routes!(routes::rbac::assign_role))

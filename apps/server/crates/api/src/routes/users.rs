@@ -221,6 +221,32 @@ pub async fn public_profile(
     Ok(Json(user.into()))
 }
 
+/// Public profile card by id — same card as `GET /users/{username}`.
+///
+/// Editor user blocks store the user id; every reader of the page (learners,
+/// anonymous visitors of a public course) resolves the card here.
+#[utoipa::path(
+    get,
+    path = "/users/by-id/{user_id}",
+    tag = "users",
+    params(("user_id" = UserId, Path, description = "User id")),
+    responses(
+        (status = 200, description = "Public profile", body = UserHit),
+        (status = 404, description = "Unknown or inactive user", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn public_profile_by_id(
+    State(state): State<AppState>,
+    MaybeActor(_actor): MaybeActor,
+    Path(user_id): Path<UserId>,
+) -> ApiResult<Json<UserHit>> {
+    let user = ab_db::search::find_user_hit_by_id(&state.pool, user_id)
+        .await?
+        .ok_or_else(|| ab_core::Error::not_found("user"))?;
+    Ok(Json(user.into()))
+}
+
 /// Courses a user created or actively co-authors, newest first (public
 /// profile, readable anonymously). Private ones are included only for the
 /// user themself and platform course managers.

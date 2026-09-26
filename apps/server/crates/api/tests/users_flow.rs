@@ -535,6 +535,18 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert!(card.json().get("email").is_none());
     let no_card = app.get("/api/v2/users/nobody").await;
     assert_eq!(no_card.status, StatusCode::NOT_FOUND);
+    // Editor user blocks resolve the same card by id — anonymously too.
+    let by_id = app.get(&format!("/api/v2/users/by-id/{author}")).await;
+    assert_eq!(by_id.status, StatusCode::OK, "{}", by_id.text());
+    assert_eq!(by_id.json(), card.json());
+    let by_id_learner = app
+        .get_as(&stranger, &format!("/api/v2/users/by-id/{author}"))
+        .await;
+    assert_eq!(by_id_learner.json(), card.json());
+    let unknown_id = app
+        .get(&format!("/api/v2/users/by-id/{}", uuid::Uuid::now_v7()))
+        .await;
+    assert_eq!(unknown_id.status, StatusCode::NOT_FOUND);
 
     // Active contributors are listed on their own profile too.
     let helper = app

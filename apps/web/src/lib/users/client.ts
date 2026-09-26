@@ -6,7 +6,6 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import { UserProfile } from '@/lib/api/generated/zod'
 import type {
   AdminUser,
-  AdminUserPage,
   CoursePage,
   UpdateProfileRequest,
   UserHit,
@@ -17,9 +16,9 @@ import { collectPages } from '@/lib/api/contract'
 import { toAppCourse } from '@/hooks/courses/courseKeys'
 
 /**
- * Self-service profile calls (`/users/me`, v2). Other users are only
- * reachable through admin listings (`GET /users`) and public summaries
- * embedded in course/discussion payloads — there is no `GET /users/{id}`.
+ * Self-service profile calls (`/users/me`, v2). Other users are reachable
+ * through their public card (`GET /users/{username}`, `GET /users/by-id/{id}`),
+ * admin listings (`GET /users`) and summaries embedded in course payloads.
  */
 
 export const userKeys = {
@@ -65,11 +64,9 @@ export async function getUserByUsername(username: string): Promise<PublicUser> {
   return toPublicUser(await apiJson<UserHit>(`users/${encodeURIComponent(username)}`))
 }
 
+/** `GET /users/by-id/{id}`: the same public card, by id (editor user blocks store the id). */
 export async function getUserById(userId: string): Promise<PublicUser> {
-  const page = await apiJson<AdminUserPage>(`users?q=${encodeURIComponent(userId)}&limit=20`)
-  const user = page.items.find(candidate => candidate.id === userId)
-  if (!user) throw new Error(`User ${userId} was not found`)
-  return toPublicUser(user)
+  return toPublicUser(await apiJson<UserHit>(`users/by-id/${encodeURIComponent(userId)}`))
 }
 
 /** `GET /users/{username}/courses`: authored + actively co-authored courses (public ones for strangers). */

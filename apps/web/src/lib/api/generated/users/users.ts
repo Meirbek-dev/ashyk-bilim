@@ -326,6 +326,217 @@ export const useCreateUser = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof createUser>>, TError, CreateUserMutationVariables, TContext> => {
   return useMutation(getCreateUserMutationOptions(options), queryClient)
 }
+export const getPublicProfileByIdUrl = (userId: UserId) => {
+  return `/api/v2/users/by-id/${userId}`
+}
+
+/**
+ * Editor user blocks store the user id; every reader of the page (learners,
+ * anonymous visitors of a public course) resolves the card here.
+ * @summary Public profile card by id — same card as `GET /users/{username}`.
+ */
+export const publicProfileById = async (
+  userId: UserId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UserHit> => {
+  return orvalMutator<UserHit>(
+    getPublicProfileByIdUrl(userId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserHit,
+  )
+}
+
+export const getPublicProfileByIdQueryKey = (userId: UserId) => {
+  return [`/api/v2/users/by-id/${userId}`] as const
+}
+
+export const getPublicProfileByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getPublicProfileByIdQueryKey(userId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof publicProfileById>>> = ({ signal }) =>
+    publicProfileById(userId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof publicProfileById>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicProfileByIdQueryResult = NonNullable<Awaited<ReturnType<typeof publicProfileById>>>
+export type PublicProfileByIdQueryError = ErrorType<Problem>
+
+export function usePublicProfileById<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicProfileById>>,
+          TError,
+          Awaited<ReturnType<typeof publicProfileById>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicProfileById<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicProfileById>>,
+          TError,
+          Awaited<ReturnType<typeof publicProfileById>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicProfileById<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Public profile card by id — same card as `GET /users/{username}`.
+ */
+
+export function usePublicProfileById<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getPublicProfileByIdQueryOptions(userId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getPublicProfileByIdSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getPublicProfileByIdQueryKey(userId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof publicProfileById>>> = ({ signal }) =>
+    publicProfileById(userId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof publicProfileById>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicProfileByIdSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof publicProfileById>>>
+export type PublicProfileByIdSuspenseQueryError = ErrorType<Problem>
+
+export function usePublicProfileByIdSuspense<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicProfileByIdSuspense<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicProfileByIdSuspense<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Public profile card by id — same card as `GET /users/{username}`.
+ */
+
+export function usePublicProfileByIdSuspense<
+  TData = Awaited<ReturnType<typeof publicProfileById>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof publicProfileById>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getPublicProfileByIdSuspenseQueryOptions(userId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getMyProfileUrl = () => {
   return `/api/v2/users/me`
 }

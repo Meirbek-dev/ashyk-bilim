@@ -129,6 +129,20 @@ pub async fn find_user_hit_by_username(
     Ok(row)
 }
 
+/// The public card by id (editor user blocks store the id); active users only.
+pub async fn find_user_hit_by_id(pool: &PgPool, id: UserId) -> Result<Option<UserHitRow>> {
+    let row = sqlx::query_as!(
+        UserHitRow,
+        r#"SELECT id AS "id: UserId", username, display_name, avatar_key
+           FROM users
+           WHERE status = 'active' AND id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 /// Prefix matches rank above substring matches; active users only.
 /// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
 pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {
