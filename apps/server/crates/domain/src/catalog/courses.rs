@@ -72,8 +72,10 @@ pub fn learnings(value: &serde_json::Value) -> Vec<Learning> {
         .collect()
 }
 
-/// Trim text/emoji, reject blank text, fill blank ids.
+/// Trim text/emoji, reject blank text and duplicate ids (422 `learnings`/
+/// `duplicate`: the landing keys its list by id — BUG-334), fill blank ids.
 fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
+    let mut seen = std::collections::HashSet::new();
     items
         .into_iter()
         .map(|l| {
@@ -84,6 +86,13 @@ fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
             } else {
                 id.to_owned()
             };
+            if !seen.insert(id.clone()) {
+                return Err(Error::validation(vec![ab_core::FieldError {
+                    field: "learnings".into(),
+                    code: "duplicate".into(),
+                    message: format!("duplicate learning id {id:?}"),
+                }]));
+            }
             let emoji = l
                 .emoji
                 .map(|e| e.trim().to_owned())

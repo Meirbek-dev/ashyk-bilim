@@ -6945,6 +6945,7 @@
       "choice": {
         "option_id_duplicate": "Choice option ids must be unique."
       },
+      "duplicate": "This entry is already in the list.",
       "own-attempt": "You cannot grade your own attempt."
     },
     "requestFailed": "Request failed"

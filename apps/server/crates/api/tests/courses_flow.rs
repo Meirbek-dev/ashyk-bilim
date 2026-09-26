@@ -185,6 +185,22 @@ async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
         let res = app.patch_as(&teacher, &url, &bad).await;
         assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY, "{bad}");
     }
+    // BUG-334: duplicate ids (after trimming) are refused, nothing stored.
+    let dup = app
+        .patch_as(
+            &teacher,
+            &url,
+            &serde_json::json!({ "learnings": [
+                { "id": "a", "text": "One" }, { "id": " a ", "text": "Two" }
+            ] }),
+        )
+        .await;
+    assert_eq!(dup.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(dup.json()["field_errors"][0]["field"], "learnings");
+    assert_eq!(dup.json()["field_errors"][0]["code"], "duplicate");
+    let kept = app.get_as(&teacher, &url).await.json()["learnings"].clone();
+    assert_eq!(kept.as_array().unwrap().len(), 2);
+    assert_eq!(kept[0]["id"], "keep-me");
 
     // Legacy jsonb: non-conforming entries are skipped, never a 500.
     sqlx::query(
