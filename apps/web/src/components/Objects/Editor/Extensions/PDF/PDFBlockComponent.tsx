@@ -5,6 +5,7 @@ import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
 import { getBlockFileUrl } from '@services/blocks/upload'
+import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavailable'
 import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
 import { NodeViewWrapper } from '@tiptap/react'
@@ -251,11 +252,13 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
                       groupResizeBehavior="preserve-pixel-size"
                       onResize={handleHeightResize}
                     >
-                      <iframe
-                        className="h-full w-full rounded-lg bg-black shadow-sm"
-                        src={pdfUrl || ''}
-                        title={t('pdfViewer')}
-                      />
+                      <CheckedMedia url={pdfUrl} kind="pdf">
+                        <iframe
+                          className="h-full w-full rounded-lg bg-black shadow-sm"
+                          src={pdfUrl || ''}
+                          title={t('pdfViewer')}
+                        />
+                      </CheckedMedia>
                     </ResizablePanel>
                     {isEditable && <ResizableHandle withHandle className="bg-white/70 hover:bg-white/90" />}
                     <ResizablePanel minSize={0} />

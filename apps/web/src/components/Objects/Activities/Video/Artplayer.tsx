@@ -2,6 +2,7 @@ import type ArtplayerType from 'artplayer'
 import { useEffect, useRef } from 'react'
 import Artplayer from 'artplayer'
 import { useTranslations } from 'next-intl'
+import { MediaUnavailable, useMediaMissing } from '@components/Objects/Activities/Media/MediaUnavailable'
 
 interface SubtitleEntry {
   html: string
@@ -33,7 +34,13 @@ export default function ArtPlayer({
   ...rest
 }: PlayerProps) {
   const artRef = useRef<HTMLDivElement>(null)
+  const instanceRef = useRef<ArtplayerType | null>(null)
   const t = useTranslations('Components.VideoPlayer')
+  // UX-221: a missing object would only ever show «Reconnect: N».
+  const missing = useMediaMissing(option.url as string | undefined)
+  useEffect(() => {
+    if (missing && instanceRef.current && !instanceRef.current.isDestroy) instanceRef.current.destroy(false)
+  }, [missing])
 
   useEffect(() => {
     if (!artRef.current) return
@@ -91,6 +98,7 @@ export default function ArtPlayer({
       ...(subtitle ? { subtitle } : {}),
     })
 
+    instanceRef.current = art
     if (getInstance && typeof getInstance === 'function') {
       getInstance(art)
     }
@@ -121,11 +129,12 @@ export default function ArtPlayer({
       if (handleTimeUpdate) {
         art.off('timeupdate', handleTimeUpdate)
       }
-      if (art?.destroy) {
+      if (!art.isDestroy) {
         art.destroy(false)
       }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (missing) return <MediaUnavailable kind="video" />
   return <div ref={artRef} {...rest} />
 }

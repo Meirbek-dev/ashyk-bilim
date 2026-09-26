@@ -2349,6 +2349,11 @@
       "whitelistDescription": "Select which students can access this exam",
       "whitelistUpdated": "Whitelist updated successfully"
     },
+    "MediaUnavailable": {
+      "video": "Video unavailable",
+      "pdf": "Document unavailable",
+      "hint": "The file is missing from storage. Let the course teacher know."
+    },
     "VideoPlayer": {
       "subtitles": "Subtitles",
       "enableSubtitles": "Enable"
