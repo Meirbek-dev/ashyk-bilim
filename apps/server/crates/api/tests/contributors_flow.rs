@@ -103,6 +103,37 @@ async fn apply_approve_author_and_deactivate(pool: PgPool) {
     assert_eq!(public.status, StatusCode::OK, "{}", public.text());
     assert_eq!(public.json().as_array().unwrap().len(), 1);
     assert_eq!(public.json()[0]["role"], "creator");
+    // BUG-331: a signed-in non-manager sees the same; the applicant also
+    // sees their own row; roster managers see the pending applicant.
+    let outsider = instructor(&app, "outsider").await;
+    let learner = app
+        .create_user("learner", "learner@example.com", &["user"])
+        .await;
+    let learner = app.mint_session_for(learner, &["course:read:all"]).await;
+    let platform = app
+        .create_user("platform", "platform@example.com", &["admin"])
+        .await;
+    let platform = app
+        .mint_session_for(platform, &["course:read:all", "course:manage:platform"])
+        .await;
+    for (who, rows) in [
+        (&learner, 1),
+        (&outsider, 1),
+        (&helper, 2),
+        (&teacher, 2),
+        (&platform, 2),
+    ] {
+        let roster = app
+            .get_as(who, &format!("/api/v2/courses/{course}/contributors"))
+            .await;
+        assert_eq!(roster.status, StatusCode::OK, "{}", roster.text());
+        assert_eq!(
+            roster.json().as_array().unwrap().len(),
+            rows,
+            "{}",
+            roster.text()
+        );
+    }
 
     // Pending grants nothing.
     assert_eq!(

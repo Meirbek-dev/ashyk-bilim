@@ -32,20 +32,26 @@ impl CoursesService {
     /// Visible course (404) + roster-management rights (403).
     async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.get(actor, course_id).await?;
-        if actor.has(perm(Action::Manage, Scope::Platform))
-            || course.creator_id == Some(actor.user_id)
-        {
-            return Ok(course);
-        }
-        let maintainer = ab_db::catalog::get_contributor(&self.pool, course_id, actor.user_id)
-            .await?
-            .is_some_and(|row| row.role == "maintainer" && row.status == "active");
-        if maintainer {
+        if self.manages_roster(actor, &course).await? {
             return Ok(course);
         }
         Err(Error::forbidden(
             "no contributor management access to this course",
         ))
+    }
+
+    /// The creator, an active maintainer, or `course:manage:platform`.
+    async fn manages_roster(&self, actor: &Actor, course: &Course) -> Result<bool> {
+        if actor.has(perm(Action::Manage, Scope::Platform))
+            || course.creator_id == Some(actor.user_id)
+        {
+            return Ok(true);
+        }
+        Ok(
+            ab_db::catalog::get_contributor(&self.pool, course.id, actor.user_id)
+                .await?
+                .is_some_and(|row| row.role == "maintainer" && row.status == "active"),
+        )
     }
 
     fn not_creator(course: &Course, user_id: UserId) -> Result<()> {
@@ -57,7 +63,10 @@ impl CoursesService {
         Ok(())
     }
 
-    /// Roster, creator first (course visibility).
+    /// Roster, creator first (course visibility). Pending applicants and
+    /// inactive rows are for roster managers; anyone else sees the active
+    /// authors plus their own row (BUG-331 — the apply/withdraw button reads
+    /// it). An anonymous actor's nil id matches no row.
     pub async fn list_contributors(
         &self,
         actor: &Actor,
@@ -65,8 +74,8 @@ impl CoursesService {
     ) -> Result<Vec<Contributor>> {
         let course = self.get(actor, course_id).await?;
         let mut rows = ab_db::catalog::list_contributors(&self.pool, course_id).await?;
-        if actor.is_anonymous() {
-            rows.retain(|row| row.status == "active");
+        if !self.manages_roster(actor, &course).await? {
+            rows.retain(|row| row.status == "active" || row.user_id == actor.user_id);
         }
         if let Some(creator) = ab_db::catalog::creator_row(&self.pool, course.id).await? {
             rows.insert(0, creator);
