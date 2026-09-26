@@ -124,7 +124,7 @@ services:
           cpus: '1.0'
 
   rustfs:
-    image: docker.io/rustfs/rustfs:1.0.0-rc.1
+    image: docker.io/rustfs/rustfs:1.0.0
     restart: unless-stopped
     profiles: [rewrite]
     environment:

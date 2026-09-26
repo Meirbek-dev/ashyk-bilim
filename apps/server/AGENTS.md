@@ -91,7 +91,7 @@ RustFS (storage tests; buckets created once via aws-cli):
 ```
 podman run -d --rm --name ashyq-rustfs --network ashyq-dev -p 9002:9000 `
   -e RUSTFS_ACCESS_KEY=ashyq-dev -e RUSTFS_SECRET_KEY=ashyq-dev-secret `
-  -e RUSTFS_VOLUMES=/data docker.io/rustfs/rustfs:1.0.0-rc.1
+  -e RUSTFS_VOLUMES=/data docker.io/rustfs/rustfs:1.0.0
 podman run --rm --network ashyq-dev -e AWS_ACCESS_KEY_ID=ashyq-dev -e AWS_SECRET_ACCESS_KEY=ashyq-dev-secret `
   docker.io/amazon/aws-cli:2.36.19 --endpoint-url http://ashyq-rustfs:9000 s3api create-bucket --bucket ab-public
 # …and --bucket ab-private. Tests read TEST_S3_ENDPOINT (default http://localhost:9002).
@@ -104,6 +104,7 @@ podman run -d --rm --name ashyq-test-redis --network ashyq-dev -p 6380:6379 dock
 ```
 
 Gotchas (2026-09-05):
+
 - **Git Bash mangles container paths.** MSYS rewrites `/data` in
   `-e RUSTFS_VOLUMES=/data` and `-v vol:/data` into `C:/Program Files/Git/data`
   before podman sees it — RustFS then dies with `Volume not found`. Run
@@ -112,7 +113,7 @@ Gotchas (2026-09-05):
   command above (rc.1 no longer creates the directory itself).
 - The `ashyq_dev` database (sqlx compile-time checks) lives in the same
   Postgres container: after recreating it, `psql -c "CREATE DATABASE
-  ashyq_dev"` then `cargo sqlx migrate run` with `DATABASE_URL` pointing at it.
+ashyq_dev"` then `cargo sqlx migrate run` with `DATABASE_URL` pointing at it.
 - Build with `--workspace`. A `-p <crate>` subset changes feature
   unification and pulls in `aws-lc-sys`, whose C build fails on this
   machine; the workspace build never needs it.
@@ -216,13 +217,13 @@ async fn teacher_publishes_grades() {
 
 ## Legacy → new quick map (where to look when porting)
 
-| Legacy (apps/api) | New home |
-|---|---|
-| `src/routers/X.py` | `crates/api/src/routes/x.rs` (+ `dto/x.rs`) |
-| `src/services/X/` | `crates/domain/src/x/` |
-| `src/db/X.py` (SQLModel) | `migrations/*.sql` + `crates/db/src/x.rs` |
-| `src/worker/tasks/*.py` | `crates/jobs/src/handlers/*.rs` |
-| `src/security/rbac.py` | `crates/core/src/permission.rs` + `crates/domain/src/identity/rbac.rs` |
-| `src/app/errors.py` envelope | `crates/core/src/error/` + `crates/api/src/error.rs` (problem+json) |
-| `src/services/ai/agents/*.py` prompts | `crates/domain/src/ai/agents/*` (prompts verbatim first) |
-| `config/config.py` `PLATFORM_*` | `crates/core/src/config.rs` `AB__*` |
+| Legacy (apps/api)                     | New home                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `src/routers/X.py`                    | `crates/api/src/routes/x.rs` (+ `dto/x.rs`)                            |
+| `src/services/X/`                     | `crates/domain/src/x/`                                                 |
+| `src/db/X.py` (SQLModel)              | `migrations/*.sql` + `crates/db/src/x.rs`                              |
+| `src/worker/tasks/*.py`               | `crates/jobs/src/handlers/*.rs`                                        |
+| `src/security/rbac.py`                | `crates/core/src/permission.rs` + `crates/domain/src/identity/rbac.rs` |
+| `src/app/errors.py` envelope          | `crates/core/src/error/` + `crates/api/src/error.rs` (problem+json)    |
+| `src/services/ai/agents/*.py` prompts | `crates/domain/src/ai/agents/*` (prompts verbatim first)               |
+| `config/config.py` `PLATFORM_*`       | `crates/core/src/config.rs` `AB__*`                                    |

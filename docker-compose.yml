@@ -13,7 +13,7 @@ services:
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: nginx:mainline-alpine
+    image: 1.31.6
     restart: unless-stopped
     ports:
       - '80:80'
@@ -217,7 +217,7 @@ services:
   # Cache
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:8.8-alpine
+    image: redis:8.10-alpine
     restart: unless-stopped
     ports:
       - '6379:6379'
@@ -295,7 +295,7 @@ services:
   # Backup
   # ---------------------------------------------------------------------------
   backup:
-    image: offen/docker-volume-backup:v2.48.0
+    image: offen/docker-volume-backup:v2.49.1
     restart: unless-stopped
     environment:
       BACKUP_CRON_EXPRESSION: '0 2 * * *'

@@ -45,14 +45,14 @@ sqlx = { version = "0.9.0", features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1.26.0", features = ["v4", "v7", "serde"] }
-redis = { version = "1.7.0", features = ["tokio-comp", "connection-manager"] }
+uuid = { version = "1.26.1", features = ["v4", "v7", "serde"] }
+redis = { version = "1.7.1", features = ["tokio-comp", "connection-manager"] }
 sha2 = "0.11.0"
 hmac = "0.13.0"
 time = "0.3.55"
 base64 = "0.23.1"
-object_store = { version = "0.14.1", features = ["aws"] }
-jiff = { version = "0.2.35", features = ["serde"] }
+object_store = { version = "0.14.2", features = ["aws"] }
+jiff = { version = "0.2.37", features = ["serde"] }
 
 # Serde & validation
 serde = { version = "1.0.229", features = ["derive"] }
@@ -62,30 +62,30 @@ garde = { version = "0.23.0", features = ["derive", "email", "url"] }
 # Config, secrets, errors
 figment = { version = "0.10.19", features = ["env"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
-thiserror = "2.0.20"
+thiserror = "2.0.21"
 unicode-properties = "0.1.4"
 anyhow = "1.0.104"
 
 # Telemetry
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
-opentelemetry = "0.32.0"
-opentelemetry_sdk = { version = "0.32.1", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.32.0", features = ["http-proto", "reqwest-client", "trace"] }
-tracing-opentelemetry = "0.33.0"
+opentelemetry = "0.33.0"
+opentelemetry_sdk = { version = "0.33.0", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.33.0", features = ["http-proto", "reqwest-client", "trace"] }
+tracing-opentelemetry = "0.34.0"
 
 # OpenAPI
-utoipa = { version = "5.5.0", features = ["axum_extras", "uuid"] }
-utoipa-axum = "0.2.0"
-utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+utoipa = { version = "6.0.0", features = ["axum_extras", "uuid"] }
+utoipa-axum = "0.3.0"
+utoipa-scalar = { version = "0.4.0", features = ["axum"] }
 
 # Bin
-clap = { version = "4.6.6", features = ["derive", "env"] }
+clap = { version = "4.6.7", features = ["derive", "env"] }
 dotenvy = "0.15.7"
 mimalloc = "0.1.52"
 
 # HTTP client
-reqwest = { version = "0.13.4", default-features = false, features = ["json", "form", "rustls", "stream"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "form", "rustls", "stream"] }
 
 # AI (P8): token estimates for the budget ledger; regex for secret redaction
 # of model output. The chat-completions client itself is hand-rolled on
@@ -96,7 +96,7 @@ regex = "=1.13.1"
 # Certificate PDF (no headless browser): typst's low-level writer and
 # subsetter, plus Google's skrifa for glyph lookup and advance widths.
 pdf-writer = "0.15.0"
-skrifa = { version = "0.42.1", default-features = false, features = ["std"] }
+skrifa = { version = "0.47.0", default-features = false, features = ["std"] }
 subsetter = { version = "0.2.6", default-features = false }
 
 # Misc

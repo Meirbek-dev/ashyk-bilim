@@ -54,7 +54,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
       rustfs:
-        image: rustfs/rustfs:1.0.0-rc.1
+        image: rustfs/rustfs:1.0.0
         env:
           RUSTFS_ACCESS_KEY: ashyq-dev
           RUSTFS_SECRET_KEY: ashyq-dev-secret
