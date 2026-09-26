@@ -88,7 +88,10 @@ impl AiService {
             .await?;
         let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
         let rendered = bundle.render();
-        let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
+        let input_tokens = self
+            .budget
+            .assert_request(&self.pool, &clipped(&rendered))
+            .await?;
         let run = self
             .create_run(
                 actor.user_id,
@@ -167,7 +170,7 @@ impl AiService {
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget.assert_request(&self.pool, &rendered),
+                self.budget.assert_request(&self.pool, &clipped(&rendered)),
             )
             .await?;
         self.mark_running(run.id).await?;

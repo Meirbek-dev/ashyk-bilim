@@ -28,7 +28,7 @@ use crate::ai::budget::BudgetLane;
 use crate::ai::context::{self, ContextSource};
 use crate::ai::partial::partial_string_field;
 use crate::ai::policy;
-use crate::ai::prompts::{Locale, Prompt, clipped, load_prompt, resolve_locale};
+use crate::ai::prompts::{Locale, Prompt, load_prompt, resolve_locale};
 use crate::ai::redact;
 use crate::ai::runs::{FinishSpec, RunSpec, cancelled_error, is_cancelled};
 use crate::ai::schemas::{CourseQaAnswer, Level};
@@ -170,6 +170,13 @@ fn validate_question(question: &str) -> Result<&str> {
         }]));
     }
     Ok(trimmed)
+}
+
+/// The user turn sent to the model; `context` is already fitted.
+fn qa_prompt(role: AiThreadRole, language: &str, question: &str, context: &str) -> String {
+    format!(
+        "Role: {role}\nLanguage: {language}\nQuestion: {question}\n\nCourse context:\n{context}"
+    )
 }
 
 fn turn_reused() -> Error {
@@ -344,38 +351,38 @@ impl AiService {
         let activity_id = activity.as_ref().map(|a| a.id);
         let bundle =
             context::course_bundle(&self.pool, course_id, include_unpublished, activity_id).await?;
-        let rendered = bundle.render();
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &format!("{question}\n{rendered}"))
+        let existing = self
+            .retried_turn(course_id, actor.user_id, request.client_turn_id, question)
             .await?;
-
-        let existing = match request.client_turn_id {
-            Some(turn) => {
-                ab_db::ai::find_user_message_by_turn(&self.pool, course_id, actor.user_id, turn)
-                    .await?
-            }
-            None => None,
-        };
-        if existing.as_ref().is_some_and(|m| m.content != question) {
-            return Err(turn_reused());
-        }
-        let thread_id = self
-            .resolve_qa_thread(
-                actor,
-                course_id,
-                &request,
-                existing.as_ref(),
-                role,
-                activity_id,
-            )
+        let continued = self
+            .continued_qa_thread(actor, course_id, &request, existing.as_ref())
             .await?;
         let history = self
-            .qa_history(thread_id, existing.as_ref().map(|m| m.id))
+            .qa_history(continued, existing.as_ref().map(|m| m.id))
             .await?;
+        let locale = self.user_locale(actor.user_id).await?;
+        let (rendered, sources, input_tokens) = self
+            .fit_qa_context(bundle, locale.as_deref(), &history, |context| {
+                qa_prompt(role, request.language, question, context)
+            })
+            .await?;
+        let thread_id = if let Some(thread_id) = continued {
+            thread_id
+        } else {
+            let title: String = question.chars().take(TITLE_CHARS).collect();
+            ab_db::ai::insert_thread(
+                &self.pool,
+                actor.user_id,
+                role,
+                Some(course_id),
+                activity_id,
+                Some(&title),
+            )
+            .await?
+        };
         let retry_count = i32::from(existing.is_some());
         let user_message = if let Some(message) = existing {
             message
@@ -396,7 +403,7 @@ impl AiService {
                         "course_id": course_id,
                         "question": question,
                         "language": request.language,
-                        "context_source_count": bundle.sources.len(),
+                        "context_source_count": sources.len(),
                         "activity_id": activity_id,
                         "client_turn_id": request.client_turn_id,
                         "retry_count": retry_count,
@@ -410,14 +417,13 @@ impl AiService {
         let thread = ab_db::ai::get_thread(&self.pool, thread_id)
             .await?
             .ok_or_else(|| Error::not_found("ai thread"))?;
-        let locale = self.user_locale(actor.user_id).await?;
         Ok(QaSession {
             thread,
             user_message,
             run,
             role,
             rendered,
-            sources: bundle.sources,
+            sources,
             language: request.language.to_owned(),
             locale,
             user_id: actor.user_id,
@@ -428,41 +434,74 @@ impl AiService {
         })
     }
 
+    /// The earlier user message of a retried client turn; the same turn id
+    /// with another question is a conflict.
+    async fn retried_turn(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+        client_turn_id: Option<&str>,
+        question: &str,
+    ) -> Result<Option<QaMessageRow>> {
+        let Some(turn) = client_turn_id else {
+            return Ok(None);
+        };
+        let existing =
+            ab_db::ai::find_user_message_by_turn(&self.pool, course_id, user_id, turn).await?;
+        if existing.as_ref().is_some_and(|m| m.content != question) {
+            return Err(turn_reused());
+        }
+        Ok(existing)
+    }
+
+    /// BUG-325: the course context cut to what fits the per-request cap next
+    /// to the system prompt, the history and the question; only a turn
+    /// whose own text is too large is refused. Returns the context, the
+    /// sources it lists and the prompt estimate.
+    async fn fit_qa_context(
+        &self,
+        bundle: context::ContextBundle,
+        locale: Option<&str>,
+        history: &[ChatMessage],
+        prompt: impl Fn(&str) -> String,
+    ) -> Result<(String, Vec<ContextSource>, i32)> {
+        let head = std::iter::once(load_prompt(Prompt::CourseQa, locale))
+            .chain(history.iter().map(|m| m.content.as_str()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let (rendered, sources) =
+            bundle.fitted(|context| self.budget.fits(&format!("{head}\n{}", prompt(context))));
+        let input_tokens = self
+            .budget
+            .assert_request(&self.pool, &format!("{head}\n{}", prompt(&rendered)))
+            .await?;
+        Ok((rendered, sources, input_tokens))
+    }
+
     /// The thread a turn continues: the retried message's thread, else the
-    /// requested thread (the caller's, in this course), else a new one
-    /// titled with the question.
-    async fn resolve_qa_thread(
+    /// requested thread (the caller's, in this course); `None` starts a new
+    /// one, created once the turn passed the budget.
+    async fn continued_qa_thread(
         &self,
         actor: &Actor,
         course_id: CourseId,
         request: &QaRequest<'_>,
         existing: Option<&QaMessageRow>,
-        role: AiThreadRole,
-        activity_id: Option<ActivityId>,
-    ) -> Result<AiThreadId> {
+    ) -> Result<Option<AiThreadId>> {
         if let Some(message) = existing {
             return ab_db::ai::get_thread(&self.pool, message.thread_id)
                 .await?
                 .filter(|t| t.course_id == Some(course_id) && t.user_id == Some(actor.user_id))
-                .map(|t| t.id)
+                .map(|t| Some(t.id))
                 .ok_or_else(|| Error::not_found("ai thread"));
         }
-        if let Some(id) = request.thread_id {
-            return ab_db::ai::find_owned_course_thread(&self.pool, id, actor.user_id, course_id)
-                .await?
-                .map(|t| t.id)
-                .ok_or_else(|| Error::not_found("ai thread"));
-        }
-        let title: String = request.question.trim().chars().take(TITLE_CHARS).collect();
-        ab_db::ai::insert_thread(
-            &self.pool,
-            actor.user_id,
-            role,
-            Some(course_id),
-            activity_id,
-            Some(&title),
-        )
-        .await
+        let Some(id) = request.thread_id else {
+            return Ok(None);
+        };
+        ab_db::ai::find_owned_course_thread(&self.pool, id, actor.user_id, course_id)
+            .await?
+            .map(|t| Some(t.id))
+            .ok_or_else(|| Error::not_found("ai thread"))
     }
 
     async fn insert_qa_question(
@@ -493,12 +532,15 @@ impl AiService {
     }
 
     /// Legacy `_qa_message_history`: the newest messages of the thread,
-    /// oldest first, capped by count and characters.
+    /// oldest first, capped by count and characters. A new thread has none.
     async fn qa_history(
         &self,
-        thread_id: AiThreadId,
+        thread_id: Option<AiThreadId>,
         exclude: Option<AiMessageId>,
     ) -> Result<Vec<ChatMessage>> {
+        let Some(thread_id) = thread_id else {
+            return Ok(Vec::new());
+        };
         let stored = ab_db::ai::recent_thread_messages(
             &self.pool,
             thread_id,
@@ -535,12 +577,11 @@ impl AiService {
         let llm = self.provider().cloned();
         let draft_mode = self.config.ai_draft_mode_enabled;
         let draft = draft_course_answer(&session.language, session.locale.as_deref());
-        let prompt = format!(
-            "Role: {}\nLanguage: {}\nQuestion: {}\n\nCourse context:\n{}",
+        let prompt = qa_prompt(
             session.role,
-            session.language,
-            session.user_message.content,
-            clipped(&session.rendered)
+            &session.language,
+            &session.user_message.content,
+            &session.rendered,
         );
         let mut messages = Vec::with_capacity(session.history.len() + 2);
         messages.push(ChatMessage::system(load_prompt(

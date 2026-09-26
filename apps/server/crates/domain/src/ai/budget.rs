@@ -63,14 +63,23 @@ impl TokenBudget {
         i32::try_from(ab_clients::llm::tokens::estimate(text, model_name)).unwrap_or(i32::MAX)
     }
 
+    /// Whether `text` fits the per-request cap (context fitting, BUG-325).
+    #[must_use]
+    pub fn fits(&self, text: &str) -> bool {
+        self.within_request_cap(self.estimate(text))
+    }
+
+    fn within_request_cap(&self, estimated: i32) -> bool {
+        u64::try_from(estimated).unwrap_or(u64::MAX)
+            <= u64::from(self.config.max_tokens_per_request)
+    }
+
     /// Legacy `assert_request_budget` minus the hourly count (see
     /// [`Self::assert_hourly`]): the prompt must fit the per-request cap and
     /// the month must have room for it. Returns the prompt estimate.
     pub async fn assert_request(&self, pool: &PgPool, prompt: &str) -> Result<i32> {
         let estimated = self.estimate(prompt);
-        if u64::try_from(estimated).unwrap_or(u64::MAX)
-            > u64::from(self.config.max_tokens_per_request)
-        {
+        if !self.within_request_cap(estimated) {
             return Err(Error::app_with_details(
                 ErrorCode::AiBudgetExhausted,
                 "AI request is too large for the configured token budget",

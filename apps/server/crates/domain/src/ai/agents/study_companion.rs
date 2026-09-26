@@ -76,7 +76,7 @@ impl AiService {
         let rendered = bundle.render();
         let input_tokens = self
             .budget
-            .assert_request(&self.pool, &format!("{question}\n{rendered}"))
+            .assert_request(&self.pool, &format!("{question}\n{}", clipped(&rendered)))
             .await?;
         let run = self
             .create_run(
@@ -180,7 +180,7 @@ impl AiService {
                 run.id,
                 FAIL_CODE,
                 self.budget
-                    .assert_request(&self.pool, &format!("{question}\n{rendered}")),
+                    .assert_request(&self.pool, &format!("{question}\n{}", clipped(&rendered))),
             )
             .await?;
         self.mark_running(run.id).await?;

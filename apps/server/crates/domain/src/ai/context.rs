@@ -14,6 +14,7 @@ use ab_db::file_submissions::{AttemptRow, FileRow};
 use ab_db::submissions::SubmissionRow;
 use sqlx::PgPool;
 
+use crate::ai::prompts::{CONTEXT_CLIP_LIMIT, clipped_at};
 use crate::assessments::items::ItemBody;
 use crate::grading::breakdown::GradingBreakdown;
 use crate::grading::submissions::{ReleaseState, redact_grading, release_state};
@@ -39,26 +40,67 @@ impl ContextBundle {
     /// Legacy `render_context_bundle`.
     #[must_use]
     pub fn render(&self) -> String {
-        if self.sources.is_empty() {
-            return self.text.clone();
-        }
-        let mut lines = vec![
-            String::new(),
-            "Citation sources:".to_owned(),
-            "Use only these authoritative sources for the selected scope.".to_owned(),
-        ];
-        for source in &self.sources {
-            lines.push(format!(
-                "[{}] {} | {} | {}",
-                source.citation_id,
-                source.source_type,
-                source.source_ref.as_deref().unwrap_or("untracked"),
-                source.label
-            ));
-            lines.push(format!("Excerpt: {}", source.excerpt));
-        }
-        format!("{}\n{}", self.text, lines.join("\n"))
+        render_parts(&self.text, &self.sources)
     }
+
+    /// The rendering cut to fit the prompt (BUG-325): whole sources, in
+    /// order, while it stays within a character limit — `CONTEXT_CLIP_LIMIT`
+    /// first, shrinking until `fits` accepts it. Returns the rendering and
+    /// the sources it lists; the dropped ones are not citable, the model
+    /// never saw them.
+    #[must_use]
+    pub fn fitted(self, fits: impl Fn(&str) -> bool) -> (String, Vec<ContextSource>) {
+        const MIN_CHARS: usize = 1000;
+        let Self { text, mut sources } = self;
+        let entries: Vec<usize> = sources
+            .iter()
+            .map(|s| source_entry(s).chars().count())
+            .collect();
+        let fixed = text.chars().count() + CITATION_HEADER.chars().count();
+        let mut limit = CONTEXT_CLIP_LIMIT;
+        loop {
+            let mut used = fixed;
+            let kept = entries
+                .iter()
+                .take_while(|&&len| {
+                    used += 1 + len;
+                    used <= limit
+                })
+                .count();
+            let rendered = clipped_at(&render_parts(&text, &sources[..kept]), limit);
+            if limit <= MIN_CHARS || fits(&rendered) {
+                sources.truncate(kept);
+                return (rendered, sources);
+            }
+            limit = limit * 3 / 4;
+        }
+    }
+}
+
+const CITATION_HEADER: &str =
+    "\n\nCitation sources:\nUse only these authoritative sources for the selected scope.";
+
+fn source_entry(source: &ContextSource) -> String {
+    format!(
+        "[{}] {} | {} | {}\nExcerpt: {}",
+        source.citation_id,
+        source.source_type,
+        source.source_ref.as_deref().unwrap_or("untracked"),
+        source.label,
+        source.excerpt
+    )
+}
+
+fn render_parts(text: &str, sources: &[ContextSource]) -> String {
+    if sources.is_empty() {
+        return text.to_owned();
+    }
+    let mut rendered = format!("{text}{CITATION_HEADER}");
+    for source in sources {
+        rendered.push('\n');
+        rendered.push_str(&source_entry(source));
+    }
+    rendered
 }
 
 /// Legacy `_json_snippet`: compact JSON cut at `limit` characters.
@@ -583,6 +625,30 @@ mod tests {
         assert!(rendered.contains("[activity:1] activity | untracked | L"));
         assert!(rendered.ends_with("Excerpt: e"));
         assert_eq!(ContextBundle::default().render(), "");
+    }
+
+    #[test]
+    fn fitted_keeps_whole_leading_sources_that_fit() {
+        let bundle = ContextBundle {
+            text: "Course: X".into(),
+            sources: (0..40)
+                .map(|i| ContextSource {
+                    excerpt: "x".repeat(1000),
+                    ..src(&format!("activity:{i}"), None)
+                })
+                .collect(),
+        };
+        assert!(bundle.render().chars().count() > CONTEXT_CLIP_LIMIT);
+        let (rendered, kept) = bundle.clone().fitted(|_| true);
+        assert!(
+            rendered.chars().count() <= CONTEXT_CLIP_LIMIT,
+            "{}",
+            rendered.len()
+        );
+        assert!(!kept.is_empty() && kept.len() < 40);
+        assert_eq!(rendered, render_parts("Course: X", &kept));
+        let (small, fewer) = bundle.fitted(|text| text.chars().count() <= 3000);
+        assert!(small.chars().count() <= 3000 && fewer.len() < kept.len());
     }
 
     #[test]

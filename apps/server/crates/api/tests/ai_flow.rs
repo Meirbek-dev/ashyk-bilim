@@ -830,6 +830,82 @@ async fn draft_mode_answers_in_the_requested_language(pool: PgPool) {
     );
 }
 
+/// BUG-325: a course whose context is far over the per-request cap is
+/// answered from the leading sources that fit, not refused with 503.
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_qa_fits_a_large_course_into_the_request_cap(pool: PgPool) {
+    const CAP: u32 = 32_000;
+    const MODEL: &str = "gpt-4o-mini";
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.max_tokens_per_request = CAP;
+        config.ai.openai_model = MODEL.into();
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Big").await;
+    sqlx::query(
+        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, published, position)
+         SELECT chapter_id, course_id, 'Lesson ' || n, activity_type, activity_sub_type, true, n
+         FROM activities, generate_series(2, 200) n WHERE course_id = $1::uuid",
+    )
+    .bind(&course_id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "UPDATE activities SET content = jsonb_build_object('text', repeat('Monads compose effects. ', 100))
+         WHERE course_id = $1::uuid",
+    )
+    .bind(&course_id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    mount_stream_reply(
+        &app.llm,
+        &serde_json::json!({
+            "answer_markdown": "Monads compose.", "citations": [], "confidence": "medium",
+            "out_of_scope": false, "follow_up_suggestions": []
+        }),
+    )
+    .await;
+    let base = app.serve().await;
+    let mut stream = reqwest::Client::new()
+        .post(format!("{base}/api/v2/ai/qa/{course_id}/chat"))
+        .header("cookie", &alice.cookie)
+        .json(&serde_json::json!({
+            "threadId": "t", "runId": "r", "protocolVersion": "1.0", "state": {},
+            "messages": [{ "id": "m1", "role": "user", "content": "What do monads do?" }],
+            "tools": [], "context": [],
+            "forwardedProps": { "client_turn_id": "big-1", "language": "en" }
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let mut buffer = String::new();
+    read_until(&mut stream, &mut buffer, "RUN_FINISHED").await;
+    let request = app.llm.received_requests().await.unwrap();
+    let sent: serde_json::Value = serde_json::from_slice(&request.last().unwrap().body).unwrap();
+    let prompt: String = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|m| m["content"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(prompt.contains("Lesson 1"), "the leading sources are kept");
+    let tokens = ab_clients::llm::tokens::estimate(&prompt, MODEL);
+    assert!(tokens <= CAP as usize, "{tokens} tokens sent");
+    let kept: i64 = sqlx::query_scalar(
+        "SELECT (metadata->>'context_source_count')::bigint FROM ai_runs ORDER BY created_at DESC LIMIT 1",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!((2..201).contains(&kept), "{kept} sources kept of 201");
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn capabilities_follow_role_and_surface(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

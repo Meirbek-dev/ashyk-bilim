@@ -85,7 +85,10 @@ impl AiService {
         }
         let (bundle, metadata) = self.subject_bundle(subject, user_id).await?;
         let rendered = bundle.render();
-        let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
+        let input_tokens = self
+            .budget
+            .assert_request(&self.pool, &clipped(&rendered))
+            .await?;
         let analysis_run = self
             .create_run(
                 user_id,
@@ -137,7 +140,10 @@ impl AiService {
             .await?;
         let (bundle, metadata) = self.subject_bundle(&subject, actor.user_id).await?;
         let rendered = bundle.render();
-        let input_tokens = self.budget.assert_request(&self.pool, &rendered).await?;
+        let input_tokens = self
+            .budget
+            .assert_request(&self.pool, &clipped(&rendered))
+            .await?;
         let activity_id = self.subject_activity(&subject).await?;
         let run = self
             .create_run(
@@ -275,7 +281,7 @@ impl AiService {
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget.assert_request(&self.pool, &rendered),
+                self.budget.assert_request(&self.pool, &clipped(&rendered)),
             )
             .await?;
         self.mark_running(run.id).await?;
