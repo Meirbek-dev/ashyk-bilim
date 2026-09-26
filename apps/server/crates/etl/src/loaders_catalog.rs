@@ -178,6 +178,9 @@ async fn load_activities(ctx: &mut Ctx) -> Result<()> {
             &course_uuid,
             &row.activity_uuid,
         );
+        transform::catalog::rewrite_user_blocks(&mut content, &|legacy| {
+            ctx.idmap.get("user", legacy)
+        });
         sqlx::query(
             "INSERT INTO activities (id,legacy_uuid,chapter_id,course_id,name,activity_type,activity_sub_type,content,details,settings,published,position,creator_id,created_at,updated_at) \
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE(to_timestamp($14),now()),COALESCE(to_timestamp($15),now())) \

@@ -270,7 +270,7 @@ pub struct Chapter {
 
 pub async fn chapters(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Chapter>> {
     fetch(pool, "chapter", concat!(
-        "SELECT id, chapter_uuid, name, description, thumbnail_image, course_id, creator_id, \"order\" AS \"order\", ",
+        "SELECT id, chapter_uuid, name, description, thumbnail_image, course_id, creator_id, (row_number() OVER (PARTITION BY course_id ORDER BY \"order\", id))::int AS \"order\", ",
         ts!("creation_date"), ", ", ts!("update_date"), " FROM chapter ORDER BY id"), limit).await
 }
 
@@ -296,7 +296,7 @@ pub struct Activity {
 pub async fn activities(pool: &PgPool, limit: Option<i64>) -> Result<Vec<Activity>> {
     fetch(pool, "activity", concat!(
         "SELECT id, activity_uuid, name, activity_type::text AS activity_type, activity_sub_type::text AS activity_sub_type, ",
-        "content, details, settings, published, creator_id, chapter_id, course_id, \"order\" AS \"order\", ",
+        "content, details, settings, published, creator_id, chapter_id, course_id, (row_number() OVER (PARTITION BY chapter_id ORDER BY \"order\", id))::int AS \"order\", ",
         ts_text!("creation_date"), ", ", ts_text!("update_date"), " FROM activity ORDER BY id"), limit).await
 }
 
@@ -702,7 +702,7 @@ pub struct AssessmentItem {
 
 pub async fn assessment_items(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AssessmentItem>> {
     fetch(pool, "assessment_item", concat!(
-        "SELECT id, item_uuid, assessment_id, \"order\" AS \"order\", kind, title, body_json, metadata_json, max_score, ",
+        "SELECT id, item_uuid, assessment_id, (row_number() OVER (PARTITION BY assessment_id ORDER BY \"order\", id))::int AS \"order\", kind, title, body_json, metadata_json, max_score, ",
         ts!("created_at"), ", ", ts!("updated_at"), " FROM assessment_item ORDER BY id"), limit).await
 }
 

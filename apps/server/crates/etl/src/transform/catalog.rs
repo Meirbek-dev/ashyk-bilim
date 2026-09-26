@@ -243,6 +243,29 @@ pub fn discussion_kind(raw: &str) -> &'static str {
     }
 }
 
+/// tiptap `blockUser` nodes name the user by legacy integer id; v2 by uuid.
+/// An unknown id leaves the node empty (the editor shows its picker).
+pub fn rewrite_user_blocks(node: &mut Value, resolve: &impl Fn(i64) -> Option<uuid::Uuid>) {
+    match node {
+        Value::Array(items) => items
+            .iter_mut()
+            .for_each(|item| rewrite_user_blocks(item, resolve)),
+        Value::Object(obj) => {
+            if obj.get("type").and_then(Value::as_str) == Some("blockUser")
+                && let Some(attrs) = obj.get_mut("attrs").and_then(Value::as_object_mut)
+                && let Some(legacy) = attrs.get("user_id").and_then(Value::as_i64)
+            {
+                let mapped =
+                    resolve(legacy).map_or(Value::Null, |id| Value::String(id.to_string()));
+                attrs.insert("user_id".into(), mapped);
+            }
+            obj.values_mut()
+                .for_each(|value| rewrite_user_blocks(value, resolve));
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -328,5 +351,17 @@ mod tests {
         assert_eq!(f.file_id, "01A_block_01B");
         assert_eq!(f.file_size, 219_698);
         assert!(block_file(&Map::new()).is_none());
+    }
+
+    #[test]
+    fn user_blocks_are_remapped() {
+        let id = uuid::Uuid::now_v7();
+        let mut doc = serde_json::json!({"content": [
+            {"type": "blockUser", "attrs": {"user_id": 1}},
+            {"type": "blockUser", "attrs": {"user_id": 99}}
+        ]});
+        rewrite_user_blocks(&mut doc, &|n| (n == 1).then_some(id));
+        assert_eq!(doc["content"][0]["attrs"]["user_id"], id.to_string());
+        assert!(doc["content"][1]["attrs"]["user_id"].is_null());
     }
 }

@@ -22,3 +22,15 @@ tick everything. If the gate should be a real check, the server needs to
 grade: store answers without the key, accept `{answers}` on complete, score
 server-side (choice questions exact, open ones LLM/teacher). Decide whether
 that is wanted; not blocking.
+
+## Q-2026-09-26-1 — 23 legacy assignment activities with no content
+
+Production has 23 file-submission activities (21 published, 10 courses) that were
+retyped from the legacy `ASSIGNMENT` feature; its tables were dropped before the
+backups, so they have no instructions, and the 87 task/submission files of that
+feature sit in `private/quarantine/`. Legacy showed them as broken pages and counted
+them as required, so learners of those courses can never reach 100% (same as legacy).
+The ETL now gives each a **draft** file-submission config so teachers can open the
+studio, write instructions and publish. Decide before cutover: (a) teachers configure
+them (nothing else to do), (b) the ETL unpublishes them, or (c) the ETL marks them
+not required. Not blocking.

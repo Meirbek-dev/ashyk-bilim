@@ -112,6 +112,23 @@ pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) ->
                 m.insert(key.into(), Value::from(if v == 0.0 { 0.0 } else { v }));
             }
         }
+        // Legacy rounded the score (0.67) but not the max (0.6667): an item
+        // above its max fails every v2 grading form.
+        if let (Some(score), Some(max)) = (
+            m.get("score").and_then(Value::as_f64),
+            m.get("max_score").and_then(Value::as_f64),
+        ) && score > max
+        {
+            m.insert("score".into(), Value::from(max));
+        }
+        if !m.contains_key("feedback_code")
+            && let Some((code, params)) = str_setting(&m, "feedback").and_then(feedback_code)
+        {
+            m.insert("feedback_code".into(), Value::String(code.into()));
+            if let Some(params) = params {
+                m.insert("feedback_params".into(), params);
+            }
+        }
         items.push(Value::Object(m));
     }
     let value = serde_json::json!({
@@ -121,6 +138,37 @@ pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) ->
         "feedback": str_setting(&src, "feedback").unwrap_or(""),
     });
     Rekeyed { value, unresolved }
+}
+
+/// The v2 verdict code (and `{correct, total}`) of a legacy English grader
+/// text, so migrated reviews localize like new ones (`grading::grader`).
+fn feedback_code(text: &str) -> Option<(&'static str, Option<Value>)> {
+    let ratio = |s: &str| {
+        let (hits, total) = s.split_once('/')?;
+        Some(serde_json::json!({
+            "correct": hits.trim().parse::<u32>().ok()?,
+            "total": total.trim().parse::<u32>().ok()?,
+        }))
+    };
+    match text.trim() {
+        "No answer provided" => Some(("no-answer", None)),
+        "Correct" => Some(("correct", None)),
+        "Incorrect" => Some(("incorrect", None)),
+        "Partially correct (no partial credit)" => Some(("partially-correct-no-credit", None)),
+        t => {
+            if let Some(inner) = t
+                .strip_prefix("Partially correct (")
+                .and_then(|r| r.strip_suffix(')'))
+            {
+                return Some(("partially-correct", Some(ratio(inner)?)));
+            }
+            let inner = t
+                .strip_prefix("Matched ")
+                .and_then(|r| r.strip_suffix(" pairs"))
+                .or_else(|| t.strip_suffix(" pairs matched"))?;
+            Some(("pairs-matched", Some(ratio(inner)?)))
+        }
+    }
 }
 
 /// `metadata_json` scalars that became columns (DECISIONS P4.1).
@@ -373,6 +421,35 @@ mod tests {
         assert_eq!(r.unresolved, vec!["gone"]);
         let parsed = ab_domain::grading::breakdown::GradingBreakdown::from_value(&r.value);
         assert_eq!(parsed.items.len(), 1);
+    }
+
+    #[test]
+    fn breakdown_clamps_rounded_scores_and_codes_legacy_feedback() {
+        let a = Uuid::now_v7();
+        let known = [("q1", a), ("q2", a), ("q3", a)];
+        let raw = serde_json::json!({"items": [
+            {"item_id": "q1", "score": 0.67, "max_score": 0.6667, "feedback": "Correct"},
+            {"item_id": "q2", "score": 0.5, "max_score": 1.0, "feedback": "Matched 2/4 pairs"},
+            {"item_id": "q3", "score": 0.0, "max_score": 1.0, "feedback": "Something else"}
+        ]});
+        let r = breakdown(Some(&raw), resolver(&known));
+        let items = &r.value["items"];
+        assert_eq!(items[0]["score"], 0.6667);
+        assert_eq!(items[0]["feedback_code"], "correct");
+        assert_eq!(items[1]["feedback_code"], "pairs-matched");
+        assert_eq!(
+            items[1]["feedback_params"],
+            serde_json::json!({"correct": 2, "total": 4})
+        );
+        assert!(items[2].get("feedback_code").is_none());
+        assert_eq!(
+            feedback_code("Partially correct (1/2)").map(|c| c.0),
+            Some("partially-correct")
+        );
+        assert_eq!(
+            feedback_code("No answer provided").map(|c| c.0),
+            Some("no-answer")
+        );
     }
 
     #[test]

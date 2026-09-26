@@ -20,7 +20,27 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
             "upload",
         ],
     )
-    .await
+    .await?;
+    default_file_submission_configs(ctx).await
+}
+
+/// Legacy `ASSIGNMENT` activities were retyped to file submissions without a
+/// `file_submission_activity` row (their assignment tables were dropped
+/// before the backup): give each the draft config a new v2 activity gets, so
+/// the studio can open, configure and publish it.
+async fn default_file_submission_configs(ctx: &mut Ctx) -> Result<()> {
+    let created = sqlx::query(
+        "INSERT INTO file_submissions (activity_id, course_id, creator_id)          SELECT a.id, a.course_id, COALESCE(a.creator_id, c.creator_id)          FROM activities a JOIN courses c ON c.id = a.course_id          WHERE a.activity_type = 'file_submission'            AND NOT EXISTS (SELECT 1 FROM file_submissions f WHERE f.activity_id = a.id)",
+    )
+    .execute(&mut *ctx.tx)
+    .await?
+    .rows_affected();
+    if created > 0 {
+        ctx.note(format!(
+            "{created} file-submission activit(y/ies) without legacy config got a draft config"
+        ));
+    }
+    Ok(())
 }
 
 async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
@@ -89,7 +109,7 @@ async fn load_submissions(ctx: &mut Ctx) -> Result<()> {
         )
         .bind(id).bind(&row.submission_uuid).bind(assessment_id).bind(course_id).bind(user_id)
         .bind(status).bind(row.attempt_number.max(1)).bind(answers.value).bind(grading.value)
-        .bind(row.auto_score).bind(row.final_score).bind(row.is_late).bind(row.late_penalty_pct.clamp(0.0, 100.0))
+        .bind(row.auto_score.map(|s| s.clamp(0.0, 100.0))).bind(row.final_score.map(|s| s.clamp(0.0, 100.0))).bind(row.is_late).bind(row.late_penalty_pct.clamp(0.0, 100.0))
         .bind(metadata.violation_count).bind(metadata.violations).bind(metadata.auto_submit_reason)
         .bind(metadata.auto_submitted_at).bind(metadata.duration_seconds).bind(row.started_at).bind(row.submitted_at)
         .bind(row.graded_at).bind(i64::from(row.version.max(1))).bind(i64::from(row.draft_version.max(1)))
@@ -127,7 +147,7 @@ async fn load_grading(ctx: &mut Ctx) -> Result<()> {
         sqlx::query("INSERT INTO grading_entries (id,legacy_uuid,submission_id,graded_by,raw_score,penalty_pct,final_score,raw_breakdown,effective_breakdown,overall_feedback,grading_version,published_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,to_timestamp($12),COALESCE(to_timestamp($13),now())) ON CONFLICT (id) DO NOTHING")
             .bind(id).bind(&row.entry_uuid).bind(submission_id)
             .bind(row.graded_by.and_then(|value| ctx.idmap.get("user", value)))
-            .bind(row.raw_score).bind(row.penalty_pct.clamp(0.0,100.0)).bind(row.final_score)
+            .bind(row.raw_score.clamp(0.0, 100.0)).bind(row.penalty_pct.clamp(0.0,100.0)).bind(row.final_score.clamp(0.0, 100.0))
             .bind(raw.value).bind(effective.value).bind(&row.overall_feedback).bind(row.grading_version.max(1))
             .bind(row.published_at).bind(row.created_at).execute(&mut *ctx.tx).await?;
         written += 1;

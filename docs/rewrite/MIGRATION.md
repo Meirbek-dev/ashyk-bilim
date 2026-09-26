@@ -24,7 +24,7 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   persistent ID mappings plus primary-key upserts make a repeated run converge
   without minting new IDs. `--dry-run` executes the complete target transaction
   and rolls it back.
-- **ID mapping**: `legacy_id_map (table_name, legacy_key text, new_id uuid)` in the
+- **ID mapping**: `etl_id_map (entity, legacy_id, legacy_uuid, new_id)` in the
   new DB. UUIDv7 ids are minted in legacy `created_at` order so id sort ≈ time sort
   (preserves the index-locality property). Legacy public identifiers that appear in
   URLs the frontend still uses (usernames, course slugs if any) are preserved as
@@ -120,7 +120,7 @@ compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
   a real Session API login probe after the verifier setting above was enabled.
 - Explained production-data exceptions: two duplicate email addresses receive
   deterministic `+legacy-{id}` aliases; 63 orphan resource-author rows and one
-  orphan usergroup-resource row are dropped; 77 unknown assessment-setting keys
+  orphan usergroup-resource row are dropped; 77 (79 on 2026-09-26) unknown assessment-setting keys
   and two unresolved answer item references are retained in the detailed ETL
   drop log. (The 40 unverifiable XP rows noted at the time are moot: since
   2026-09-12 no XP row is migrated at all — every learner starts at zero.)
@@ -144,6 +144,22 @@ Three defects the 2026-09-07 rehearsal could not see were fixed:
 - `progress-backfill` ignored completed trail steps for lessons/videos/documents
   (1,548 completions → 0) and paid course-completion XP on a repair. Both fixed.
 Wall clock for migrate + ETL + Zitadel import + backfill: 64 s.
+
+Browser/API critics on the restored stack then found, and the ETL now handles:
+legacy certificate codes (`XX-YYYYMMDD-XXXX-NNNNNN`) verify dash-insensitively;
+6 lesson completions stored only in legacy `activity_progress` become trail steps;
+28 courses with `creator_id` NULL take their creator from `resourceauthor`
+CREATOR; the patronymic stays in `display_name`; 85 Google avatar URLs are kept
+(the web renders `https://` avatars as is); the 5 s Judge0 per-run limit of two
+code challenges is no longer used as the attempt timer; item scores above their
+max (legacy rounding, 0.67 of 0.6667) and totals above 100 are clamped; legacy
+English grader texts get their v2 `feedback_code`; tiptap `blockUser` ids are
+remapped; chapter/activity/item positions are renumbered densely (legacy mixed
+0- and 1-based `order`); the 23 retyped legacy `ASSIGNMENT` activities get the
+draft file-submission config a new activity gets (see QUESTIONS Q-2026-09-26-1).
+Documented losses: `user.profile`/`user.details` JSON (7 users; v2 profiles
+have no such sections) and the per-test breakdown of two legacy code-challenge
+grades (keyed by Judge0 test ids, not items; their final scores are kept).
 
 The data/identity/object migration exit gate is green. The browser smoke list and
 Playwright remain part of P9/P11 deployment verification because the frontend
