@@ -6,6 +6,7 @@ import { useCreateExamWithActivity } from '@/features/assessments/hooks/exam'
 import { useTranslations } from 'next-intl'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
 import { useRouter } from '@/i18n/navigation'
+import { useApiError } from '@/hooks/useApiError'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -22,8 +23,8 @@ const DEFAULT_TIME_LIMIT = 50
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
-    exam_description: v.pipe(v.string(), v.minLength(1, t('examDescriptionRequired'))),
+    activity_name: v.pipe(v.string(), v.trim(), v.minLength(1, t('activityNameRequired'))),
+    exam_description: v.pipe(v.string(), v.trim(), v.minLength(1, t('examDescriptionRequired'))),
     time_limit: v.optional(v.pipe(v.number(), v.minValue(TIME_LIMIT_MIN), v.maxValue(TIME_LIMIT_MAX))),
     has_time_limit: v.boolean(),
     shuffle_questions: v.boolean(),
@@ -62,6 +63,7 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const withUnpublishedActivities =
     typeof course?.withUnpublishedActivities === 'boolean' ? course.withUnpublishedActivities : false
   const courseUuid = getCourseUuid(course)
+  const { handleApiError } = useApiError<{ title: string; description: string }>()
   const createExamMutation = useCreateExamWithActivity(courseUuid, {
     withUnpublishedActivities,
   })
@@ -87,7 +89,6 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const onSubmit = async (values: SubmitValues) => {
     const toastLoading = toast.loading(tk('creatingExam'))
     try {
-
       const settings = {
         time_limit: values.has_time_limit ? values.time_limit : null,
         shuffle_questions: values.shuffle_questions,
@@ -145,8 +146,18 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
       closeModal()
     } catch (error: unknown) {
       toast.dismiss(toastLoading)
-      toast.error(tk('errorCreatingExam'))
-      console.error('Error creating exam:', error)
+      // UX-228: the server's field errors (problem+json) land on the inputs they name.
+      let inline = false
+      const processed = handleApiError(error, {
+        fallback: tk('errorCreatingExam'),
+        setError: (field, fieldError) => {
+          const name = field === 'title' ? 'activity_name' : field === 'description' ? 'exam_description' : null
+          if (!name) return
+          inline = true
+          form.setError(name, fieldError)
+        },
+      })
+      if (!inline) toast.error(processed.message)
     }
   }
 

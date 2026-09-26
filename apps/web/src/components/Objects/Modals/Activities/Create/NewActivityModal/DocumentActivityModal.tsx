@@ -18,7 +18,7 @@ const MAX_PDF_MB = uploadMaxMb('block-pdf')
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    name: v.pipe(v.string(), v.minLength(1, t('documentNameRequired'))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1, t('documentNameRequired'))),
     file: v.instance(File, t('pdfFileRequired')),
   })
 

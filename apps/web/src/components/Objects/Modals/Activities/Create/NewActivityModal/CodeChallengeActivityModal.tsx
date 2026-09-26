@@ -15,8 +15,8 @@ import { Input } from '@/components/ui/input'
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    name: v.pipe(v.string(), v.minLength(1, t('challengeNameRequired'))),
-    description: v.pipe(v.string(), v.minLength(1, t('challengeDescriptionRequired'))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1, t('challengeNameRequired'))),
+    description: v.pipe(v.string(), v.trim(), v.minLength(1, t('challengeDescriptionRequired'))),
     difficulty: v.picklist(['easy', 'medium', 'hard']),
     subtype: v.picklist(['general', 'competitive']),
   })
