@@ -2074,7 +2074,13 @@ async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
             &format!("/api/v2/assessments/{quiz_id}/attempt-state"),
         )
         .await;
-    assert_eq!(state.status, StatusCode::FORBIDDEN, "{}", state.text());
+    // UX-227: the probe answers a state, not a 403.
+    assert_eq!(state.status, StatusCode::OK, "{}", state.text());
+    assert_eq!(
+        state.json()["disabled_reasons"],
+        serde_json::json!(["ACCESS_RESTRICTED"])
+    );
+    assert_eq!(state.json()["attempts_used"], 1);
     let again = app
         .post_as(
             &alice,

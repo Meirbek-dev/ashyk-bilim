@@ -572,8 +572,9 @@ pub async fn delete_override(
 /// What the caller may do with this assessment right now.
 ///
 /// The effective policy (overrides applied) and any reasons an attempt is
-/// blocked. Requires course access, the allowlist when restricted, and
-/// `assessment:submit:assigned` (authors preview freely).
+/// blocked. Requires course access and `assessment:submit:assigned`
+/// (authors preview freely); off a restricted access list it answers with
+/// `ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.
 #[utoipa::path(
     get, path = "/assessments/{id}/attempt-state", tag = "assessments",
     params(("id" = AssessmentId, Path, description = "Assessment id")),
@@ -589,6 +590,6 @@ pub async fn attempt_state(
     Path(id): Path<AssessmentId>,
 ) -> ApiResult<Json<crate::dto::assessments::AttemptState>> {
     Ok(Json(
-        state.assessments.attempt_state(&actor, id).await?.into(),
+        state.assessments.reading_state(&actor, id).await?.into(),
     ))
 }

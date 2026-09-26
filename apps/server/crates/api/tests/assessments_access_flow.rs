@@ -251,7 +251,21 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
             &format!("/api/v2/assessments/{id}/attempt-state"),
         )
         .await;
-    assert_eq!(blocked.status, StatusCode::FORBIDDEN);
+    // UX-227: off the list the probe is a state, not a 403; starting is refused.
+    assert_eq!(blocked.status, StatusCode::OK, "{}", blocked.text());
+    assert_eq!(blocked.json()["can_start"], false);
+    assert_eq!(
+        blocked.json()["disabled_reasons"],
+        serde_json::json!(["ACCESS_RESTRICTED"])
+    );
+    let start = app
+        .post_as(
+            &alice_session,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(start.status, StatusCode::FORBIDDEN, "{}", start.text());
 
     // UX-180: an allowlist names course members (enrolled learners), never
     // the course's own teacher, who merely has access.

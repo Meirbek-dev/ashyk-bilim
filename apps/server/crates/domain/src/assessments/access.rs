@@ -165,6 +165,9 @@ pub enum DisabledReason {
     TimeLimitExpired,
     /// An unpassed gate-mode AI remediation session blocks new attempts.
     RemediationRequired,
+    /// Off a restricted assessment's access list: the learner reads their
+    /// own attempts but starts none (UX-227).
+    AccessRestricted,
 }
 
 impl DisabledReason {
@@ -179,6 +182,7 @@ impl DisabledReason {
             Self::MaxAttemptsReached => "MAX_ATTEMPTS_REACHED",
             Self::TimeLimitExpired => "TIME_LIMIT_EXPIRED",
             Self::RemediationRequired => "REMEDIATION_REQUIRED",
+            Self::AccessRestricted => "ACCESS_RESTRICTED",
         }
     }
 }
@@ -679,12 +683,9 @@ impl AssessmentsService {
     }
 
     /// [`Self::attempt_state`] for reading one's own attempts: a learner
-    /// dropped from the allowlist still reads them (UX-213).
-    pub(crate) async fn reading_state(
-        &self,
-        actor: &Actor,
-        id: AssessmentId,
-    ) -> Result<AttemptState> {
+    /// dropped from the allowlist still reads them (UX-213) and gets
+    /// `AccessRestricted` instead of a 403 (UX-227).
+    pub async fn reading_state(&self, actor: &Actor, id: AssessmentId) -> Result<AttemptState> {
         self.attempt_state_as(actor, id, false).await
     }
 
@@ -705,6 +706,10 @@ impl AssessmentsService {
         let staff = self
             .require_access(actor, &assessment, &course, take)
             .await?;
+        let off_list = !take
+            && !staff
+            && assessment.access_mode == AccessMode::Restricted
+            && !ab_db::assessments::access_allows(&self.pool, id, actor.user_id).await?;
         // BUG-295: a learner never resumes a preview draft opened while
         // staff — `start` discards it and opens a counted attempt.
         let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id)
@@ -748,6 +753,9 @@ impl AssessmentsService {
             && cap_bars_new_attempt(attempts_used, revision_requested, effective.max_attempts)
         {
             reasons.push(DisabledReason::MaxAttemptsReached);
+        }
+        if off_list {
+            reasons.push(DisabledReason::AccessRestricted);
         }
         let attempts_remaining = effective
             .max_attempts
