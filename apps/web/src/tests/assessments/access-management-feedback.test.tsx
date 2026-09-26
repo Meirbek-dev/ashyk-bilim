@@ -108,6 +108,24 @@ describe('access management feedback (UX-057)', () => {
     )
   })
 
+  // BUG-332: the confirm button is disabled while the PUT runs and the dialog closes once it lands.
+  it('closes the lockout dialog after the save and cannot send it twice', async () => {
+    let resolve: (value: unknown) => void = () => {}
+    mocks.setAccess.mockReturnValue(new Promise(r => (resolve = r)))
+    renderTab()
+    await screen.findAllByText('Mira')
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить из выбранной аудитории' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
+    const dialog = await screen.findByRole('alertdialog')
+    const confirm = within(dialog).getByRole('button', { name: 'Сохранить всё равно' })
+    fireEvent.click(confirm)
+    await waitFor(() => expect(confirm).toBeDisabled())
+    fireEvent.click(confirm)
+    resolve({ mode: 'restricted', effective_user_count: 0, users: [], usergroups: [] })
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+    expect(mocks.setAccess).toHaveBeenCalledTimes(1)
+  })
+
   it('a stale save (412) reloads the policy and says why instead of overwriting (UX-154)', async () => {
     mocks.setAccess.mockRejectedValue(
       new APIError({ status: 412, code: 'precondition-failed', message: 'access changed since you loaded it' }),

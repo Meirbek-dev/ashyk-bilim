@@ -187,6 +187,11 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       setLastSaveError(null)
       setFieldErrors(new Map())
     },
+    // BUG-332: the confirm dialogs close once the save settles; the result shows under «Save».
+    onSettled: () => {
+      setConfirmLockout(false)
+      setConfirmDropped(0)
+    },
     onSuccess: next => {
       queryClient.setQueryData(accessKey, next)
       toast.success(t('saved'))
@@ -421,7 +426,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           <AlertDialogDescription>{t('lockoutDesc')}</AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => saveMutation.mutate()}>{t('lockoutConfirm')}</AlertDialogAction>
+            <AlertDialogAction disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {t('lockoutConfirm')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -432,7 +439,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           <AlertDialogDescription>{t('dropAttemptsDesc', { count: confirmDropped })}</AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => saveMutation.mutate()}>{t('lockoutConfirm')}</AlertDialogAction>
+            <AlertDialogAction disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {t('lockoutConfirm')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
