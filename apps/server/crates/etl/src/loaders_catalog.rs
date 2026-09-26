@@ -65,7 +65,7 @@ async fn load_courses(ctx: &mut Ctx) -> Result<()> {
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE(to_timestamp($14),now()),COALESCE(to_timestamp($15),now())) \
              ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,about=EXCLUDED.about,learnings=EXCLUDED.learnings,tags=EXCLUDED.tags,thumbnail_type=EXCLUDED.thumbnail_type,thumbnail_image_key=EXCLUDED.thumbnail_image_key,thumbnail_video_key=EXCLUDED.thumbnail_video_key,public=EXCLUDED.public,open_to_contributors=EXCLUDED.open_to_contributors,creator_id=EXCLUDED.creator_id,updated_at=EXCLUDED.updated_at",
         )
-        .bind(id).bind(&row.course_uuid).bind(&row.name)
+        .bind(id).bind(&row.course_uuid).bind(transform::common::title(&row.name))
         .bind(row.description.as_deref().unwrap_or_default())
         .bind(row.about.as_deref().unwrap_or_default())
         .bind(Value::Array(transform::catalog::learnings(row.learnings.as_deref())))
@@ -105,7 +105,7 @@ async fn load_chapters(ctx: &mut Ctx) -> Result<()> {
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,COALESCE(to_timestamp($9),now()),COALESCE(to_timestamp($10),now())) \
              ON CONFLICT (id) DO UPDATE SET course_id=EXCLUDED.course_id,name=EXCLUDED.name,description=EXCLUDED.description,thumbnail_key=EXCLUDED.thumbnail_key,position=EXCLUDED.position,creator_id=EXCLUDED.creator_id,updated_at=EXCLUDED.updated_at",
         )
-        .bind(id).bind(&row.chapter_uuid).bind(course_id).bind(&row.name)
+        .bind(id).bind(&row.chapter_uuid).bind(course_id).bind(transform::common::title(&row.name))
         .bind(row.description.as_deref().unwrap_or_default())
         .bind(row.thumbnail_image.as_deref().and_then(transform::files::normalize))
         .bind(row.order.max(1))
@@ -186,7 +186,7 @@ async fn load_activities(ctx: &mut Ctx) -> Result<()> {
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE(to_timestamp($14),now()),COALESCE(to_timestamp($15),now())) \
              ON CONFLICT (id) DO UPDATE SET chapter_id=EXCLUDED.chapter_id,course_id=EXCLUDED.course_id,name=EXCLUDED.name,activity_type=EXCLUDED.activity_type,activity_sub_type=EXCLUDED.activity_sub_type,content=EXCLUDED.content,details=EXCLUDED.details,settings=EXCLUDED.settings,published=EXCLUDED.published,position=EXCLUDED.position,creator_id=EXCLUDED.creator_id,updated_at=EXCLUDED.updated_at",
         )
-        .bind(id).bind(&row.activity_uuid).bind(chapter_id).bind(course_id).bind(&row.name)
+        .bind(id).bind(&row.activity_uuid).bind(chapter_id).bind(course_id).bind(transform::common::title(&row.name))
         .bind(activity_type).bind(activity_sub_type)
         .bind(content)
         .bind(details)

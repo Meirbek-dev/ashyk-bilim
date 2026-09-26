@@ -67,7 +67,7 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
              ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,lifecycle=EXCLUDED.lifecycle,policy_version=EXCLUDED.policy_version,updated_at=EXCLUDED.updated_at",
         )
         .bind(id).bind(&row.assessment_uuid).bind(activity_id).bind(course_id)
-        .bind(&folded.kind).bind(&row.title).bind(&row.description).bind(&folded.lifecycle)
+        .bind(&folded.kind).bind(transform::common::title(&row.title)).bind(&row.description).bind(&folded.lifecycle)
         .bind(row.scheduled_at).bind(row.published_at).bind(row.archived_at).bind(row.weight.max(0.0))
         .bind(&folded.grading_type).bind(row.content_version.max(1)).bind(folded.policy_version)
         .bind(&folded.grading_mode).bind(&folded.grade_release_mode).bind(&folded.completion_rule)

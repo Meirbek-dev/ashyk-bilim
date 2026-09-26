@@ -95,6 +95,13 @@ pub fn non_empty(value: Option<&str>) -> Option<String> {
         .map(str::to_owned)
 }
 
+/// UX-223: a course / chapter / activity / assessment title without the
+/// stray edge whitespace (tabs, trailing spaces) legacy stored.
+#[must_use]
+pub fn title(value: &str) -> &str {
+    value.trim()
+}
+
 /// Collapse whitespace runs, trim.
 #[must_use]
 pub fn tidy(value: &str) -> String {
@@ -150,5 +157,7 @@ mod tests {
         assert_eq!(tidy("  Иван   Петров "), "Иван Петров");
         assert_eq!(non_empty(Some("  ")), None);
         assert_eq!(non_empty(Some(" x ")), Some("x".into()));
+        assert_eq!(title("	Вал"), "Вал");
+        assert_eq!(title(" Практика.  VR. "), "Практика.  VR.");
     }
 }
