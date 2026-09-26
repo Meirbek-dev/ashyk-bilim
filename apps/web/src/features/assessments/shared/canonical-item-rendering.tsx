@@ -13,6 +13,11 @@ import { matchingColumns } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items'
 import { MarkdownContent } from '@/features/content-markdown'
 
+function choiceItemKind(body: Extract<AssessmentItem['body'], { kind: 'CHOICE' }>) {
+  if (body.multiple) return 'CHOICE_MULTIPLE' as const
+  return body.variant === 'TRUE_FALSE' ? ('TRUE_FALSE' as const) : ('CHOICE_SINGLE' as const)
+}
+
 export function CanonicalAttemptItem({
   item,
   answer,
@@ -28,11 +33,12 @@ export function CanonicalAttemptItem({
   const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const choiceKind = choiceItemKind(body)
+    const choiceModule = getItemKindModule(choiceKind)
     const ChoiceAttempt = choiceModule.Attempt
     const choiceItem = {
       id: item.item_uuid,
-      kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
+      kind: choiceKind,
       prompt: body.prompt,
       points: item.max_score,
       options: body.options.map(option => ({
@@ -260,11 +266,12 @@ export function CanonicalReviewAnswer({
   const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const choiceKind = choiceItemKind(body)
+    const choiceModule = getItemKindModule(choiceKind)
     const { ReviewDetail } = choiceModule
     const reviewItem: ChoiceAttemptItem = {
       id: item.item_uuid,
-      kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
+      kind: choiceKind,
       prompt: body.prompt,
       points: item.max_score,
       options: body.options.map(option => ({
