@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateItemPercent, sumScores, toItemScale } from '@/features/grading/domain'
+import { calculateItemPercent, roundScoreInput, sumScores, toItemScale } from '@/features/grading/domain'
 import type { GradedItem } from '@/features/grading/domain'
 
 describe('sumScores', () => {
@@ -47,5 +47,14 @@ describe('toItemScale', () => {
   it('sends the typed value when the item scale is unknown (server stores it verbatim)', () => {
     expect(toItemScale(7, 33.33, undefined)).toBe(7)
     expect(toItemScale(7, 0, 1)).toBe(7)
+  })
+})
+
+// UX-226: a migrated 150-item breakdown seeded `0.6666666666666667` into the inputs.
+describe('roundScoreInput', () => {
+  it('shows a seed at hundredths and leaves blanks alone', () => {
+    expect(roundScoreInput('0.6666666666666667')).toBe('0.67')
+    expect(roundScoreInput('50')).toBe('50')
+    expect(roundScoreInput('')).toBe('')
   })
 })

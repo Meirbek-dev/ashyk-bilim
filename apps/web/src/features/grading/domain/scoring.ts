@@ -28,6 +28,12 @@ export function sumScores(values: number[]): number {
   return Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100
 }
 
+/** A seeded score input at the grading precision (hundredths); a blank or non-number stays as is. */
+export function roundScoreInput(value: string): string {
+  const n = Number(value)
+  return value.trim() === '' || !Number.isFinite(n) ? value : String(Math.round(n * 100) / 100)
+}
+
 export function formatScoreFraction(score: number | null | undefined, maxScore = 100): string {
   return score === null || score === undefined ? '--' : `${Math.round(score * 100) / 100}/${maxScore}`
 }

@@ -556,9 +556,10 @@ describe('teacher review controls', () => {
     )
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument()
-    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
+    // UX-226: no items — the hint asks for the final score, not «every item».
+    expect(screen.getByText('publishPrerequisiteScore')).toBeInTheDocument()
+    expect(screen.queryByText('publishPrerequisite')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
-    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
   })
 
   // BUG-123: a colleague's save (SSE refetch) must not overwrite what the

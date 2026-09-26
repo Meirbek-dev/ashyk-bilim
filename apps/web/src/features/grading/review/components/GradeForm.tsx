@@ -24,6 +24,7 @@ import {
   getReleaseState,
   isScoreInputInvalid,
   localizeItemFeedback,
+  roundScoreInput,
   sumScores,
   toItemScale,
 } from '@/features/grading/domain'
@@ -440,7 +441,8 @@ export default function GradeForm({
       ? t('republishHint')
       : canPublishNow
         ? null
-        : t('publishPrerequisite')
+        : // UX-226: with no items only the final score is asked for.
+          t(hasItemGrading ? 'publishPrerequisite' : 'publishPrerequisiteScore')
   const releaseState =
     'release_state' in submission && submission.release_state
       ? submission.release_state
@@ -553,7 +555,13 @@ export default function GradeForm({
                       min={0}
                       max={item.max_score}
                       step={0.5}
-                      value={entry?.score ?? String(item.score)}
+                      // UX-226: an untouched seed shows at the grading precision (hundredths),
+                      // never `0.6666666666666667`; the total still sums the raw seeds.
+                      value={
+                        dirtyItems.has(item.item_id)
+                          ? (entry?.score ?? '')
+                          : roundScoreInput(entry?.score ?? String(item.score))
+                      }
                       disabled={!editable || isSaving}
                       aria-label={`${idx + 1}. ${item.item_text || item.item_id}`}
                       aria-invalid={invalidItemIds.has(item.item_id) || undefined}
