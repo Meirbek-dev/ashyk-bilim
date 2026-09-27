@@ -322,7 +322,8 @@ function ActivityIndicators(props: Props) {
         </button>
       ) : null}
 
-      <div className="flex flex-1 items-center gap-1 overflow-hidden">
+      {/* Wraps instead of clipping the last chapter at phone widths (UX-234). */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
         {(course.chapters ?? []).map((chapter: AppChapter, chapterIndex: number) => {
           // Get activities for this chapter from the index
           const chapterActivities = allActivities.filter(a => a.chapterIndex === chapterIndex)

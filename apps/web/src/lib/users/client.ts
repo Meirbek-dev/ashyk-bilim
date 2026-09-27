@@ -72,12 +72,14 @@ export async function getUserById(userId: string): Promise<PublicUser> {
   return toPublicUser(await apiJson<PublicProfile>(`users/by-id/${encodeURIComponent(userId)}`))
 }
 
-/** `GET /users/{username}/courses`: authored + actively co-authored courses (public ones for strangers). */
+/** `GET /users/{username}/courses`: authored + actively co-authored courses (public ones for strangers), last updated first. */
 export async function getCoursesByUser(username: string): Promise<AppCourse[]> {
   const courses = await collectPages(cursor =>
     apiJson<CoursePage>(`users/${encodeURIComponent(username)}/courses?limit=100${cursor ? `&cursor=${cursor}` : ''}`),
   )
-  return courses.map(toAppCourse)
+  // UX-234: the cards show the update date, so list by it — as /courses does
+  // (the API pages this list by id, i.e. creation).
+  return courses.toSorted((a, b) => b.updated_at_unix - a.updated_at_unix).map(toAppCourse)
 }
 
 export async function getCurrentUserProfile(): Promise<UserProfileType> {
