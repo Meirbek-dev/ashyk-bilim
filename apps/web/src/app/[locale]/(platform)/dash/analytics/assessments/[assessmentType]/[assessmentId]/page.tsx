@@ -12,24 +12,38 @@ import type { AssessmentType } from '@/types/analytics'
 import { fromUnix } from '@/lib/api/contract'
 import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
-import { getAssessment } from '@/lib/api/generated/assessments/assessments'
-import { analyticsPageMetadata } from '../../../_components/metadata'
+import { analyticsDetailMetadata, notFoundMetadata } from '../../../_components/metadata'
+import { AnalyticsBoundary } from '../../../_components/AnalyticsPage'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { AssessmentId, AssessmentKind } from '@/lib/api/generated/zod'
 
-export async function generateMetadata({ params }: { params: Promise<{ assessmentId: string }> }): Promise<Metadata> {
-  const { assessmentId } = await params
-  const assessment = await getAssessment(assessmentId).catch(() => null)
-  return assessment?.title ? { title: assessment.title } : analyticsPageMetadata('pages.assessmentsTitle')
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
+}): Promise<Metadata> {
+  const { assessmentType, assessmentId } = await params
+  if (!AssessmentKind.safeParse(assessmentType).success || !AssessmentId.safeParse(assessmentId).success) {
+    return notFoundMetadata()
+  }
+  return analyticsDetailMetadata(
+    async () =>
+      (await getTeacherAssessmentDetail({ assessmentType, assessmentId, query: normalizeAnalyticsQuery({}) })).title,
+    'pages.assessmentsTitle',
+  )
 }
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsAssessmentDetailPageInner params={props.params} searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsAssessmentDetailPageInner params={props.params} searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsAssessmentDetailPageInner(props: {

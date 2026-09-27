@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { COURSE_SORT_KEYS } from '@/lib/analytics/labels'
 import { analyticsPageMetadata } from '../_components/metadata'
+import { AnalyticsBoundary } from '../_components/AnalyticsPage'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { ChevronRight, LayoutDashboard } from 'lucide-react'
@@ -16,7 +17,11 @@ export const generateMetadata = () => analyticsPageMetadata('pages.courseRanking
 export default function PlatformAnalyticsCoursesPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsCoursesPageInner(props: {

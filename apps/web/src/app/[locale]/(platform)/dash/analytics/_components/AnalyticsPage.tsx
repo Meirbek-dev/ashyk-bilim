@@ -31,7 +31,12 @@ interface SharedAnalyticsPageProps extends AnalyticsPageProps {
   sortKeys?: readonly string[]
 }
 
-export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
+/**
+ * The page's own boundary around its data work: the layout's `<Suspense>`
+ * is already revealed on client navigations, so without one Next reports
+ * uncached data outside `<Suspense>` (UX-241, the /dash e1b8539 pattern).
+ */
+export function AnalyticsBoundary({ children }: { children: ReactNode }) {
   return (
     <Suspense
       fallback={
@@ -40,8 +45,16 @@ export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
         </div>
       }
     >
-      <AnalyticsPageContent {...props} />
+      {children}
     </Suspense>
+  )
+}
+
+export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
+  return (
+    <AnalyticsBoundary>
+      <AnalyticsPageContent {...props} />
+    </AnalyticsBoundary>
   )
 }
 

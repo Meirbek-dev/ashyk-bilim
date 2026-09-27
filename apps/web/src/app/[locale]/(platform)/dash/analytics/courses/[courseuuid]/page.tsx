@@ -10,25 +10,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getFormatter, getTranslations } from 'next-intl/server'
 import { formatPercent } from '@/features/assessments/shared/usePercentFormat'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
-import { getCourseMetadata } from '@services/courses/courses'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { CourseId } from '@/lib/api/generated/zod'
 import { Badge } from '@/components/ui/badge'
-import { analyticsPageMetadata } from '../../_components/metadata'
+import { analyticsDetailMetadata, notFoundMetadata } from '../../_components/metadata'
+import { AnalyticsBoundary } from '../../_components/AnalyticsPage'
 
 export async function generateMetadata({ params }: { params: Promise<{ courseuuid: string }> }): Promise<Metadata> {
   const { courseuuid } = await params
-  const course = await getCourseMetadata(courseuuid).catch(() => null)
-  return course?.name ? { title: course.name } : analyticsPageMetadata('tabs.courses')
+  if (!CourseId.safeParse(courseuuid).success) return notFoundMetadata()
+  return analyticsDetailMetadata(
+    async () => (await getTeacherCourseDetailByUuid(courseuuid, normalizeAnalyticsQuery({}))).course.name,
+    'tabs.courses',
+  )
 }
 
 export default function PlatformAnalyticsCourseDetailPage(props: {
   params: Promise<{ courseuuid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsCourseDetailPageInner params={props.params} searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsCourseDetailPageInner params={props.params} searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsCourseDetailPageInner(props: {

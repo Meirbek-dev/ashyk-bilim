@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { ASSESSMENT_SORT_KEYS } from '@/lib/analytics/labels'
 import { analyticsPageMetadata } from '../_components/metadata'
+import { AnalyticsBoundary } from '../_components/AnalyticsPage'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { ChevronRight, LayoutDashboard } from 'lucide-react'
@@ -16,7 +17,11 @@ export const generateMetadata = () => analyticsPageMetadata('pages.assessmentsTi
 export default function PlatformAnalyticsAssessmentsPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsAssessmentsPageInner searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsAssessmentsPageInner searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsAssessmentsPageInner(props: {
