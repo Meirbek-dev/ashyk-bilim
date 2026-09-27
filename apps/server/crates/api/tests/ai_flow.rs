@@ -2548,7 +2548,8 @@ async fn repair_round_usage_is_recorded(pool: PgPool) {
 
 /// BUG-349: the repair request (prompt + the invalid reply + the repair
 /// instruction) is admitted like the first — one over the per-request cap
-/// is never sent; the run fails cleanly and releases its reservations.
+/// is never sent; the run fails cleanly, releases its reservations and
+/// still charges the first call it paid for (42 in / 7 out).
 #[sqlx::test(migrations = "../../migrations")]
 async fn repair_round_stays_under_the_request_cap(pool: PgPool) {
     const CAP: u32 = 700;
@@ -2572,12 +2573,67 @@ async fn repair_round_stays_under_the_request_cap(pool: PgPool) {
         response.text()
     );
     assert_eq!(response.json()["code"], "ai-budget-exhausted");
-    let (status, reserved, ledger): (String, i64, i64) = sqlx::query_as(
+    assert_eq!(failed_run_charges(&app).await, ("failed".into(), 0, 42, 7));
+}
+
+/// `(run status, live reservations, ledger input, ledger output)`.
+async fn failed_run_charges(app: &TestApp) -> (String, i64, i64, i64) {
+    sqlx::query_as(
         "SELECT status, (SELECT count(*) FROM ai_token_reservations),
-                (SELECT count(*) FROM ai_token_ledger) FROM ai_runs",
+                (SELECT coalesce(sum(input_tokens), 0)::bigint FROM ai_token_ledger),
+                (SELECT coalesce(sum(output_tokens), 0)::bigint FROM ai_token_ledger)
+         FROM ai_runs",
     )
     .fetch_one(&app.pool)
     .await
-    .unwrap();
-    assert_eq!((status.as_str(), reserved, ledger), ("failed", 0, 0));
+    .unwrap()
+}
+
+/// BUG-349: a run that fails after paying for both rounds (two unparsable
+/// replies) charges both calls to the ledger.
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_run_charges_its_paid_calls(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Unparsable").await;
+    wiremock::Mock::given(wiremock::matchers::path(ab_testkit::llm::COMPLETIONS_PATH))
+        .respond_with(
+            wiremock::ResponseTemplate::new(200)
+                .set_body_json(ab_testkit::llm::completion_body("not json at all")),
+        )
+        .mount(&app.llm)
+        .await;
+    let response = ask_study(&app, &alice, &course_id).await;
+    assert_ne!(response.status, StatusCode::OK, "{}", response.text());
+    assert_eq!(app.llm.received_requests().await.unwrap().len(), 2);
+    assert_eq!(failed_run_charges(&app).await, ("failed".into(), 0, 84, 14));
+}
+
+/// BUG-349: a streamed Q&A answer that proves unusable was still paid for —
+/// the failed run charges it (the fake stream reports 42 in / 9 out).
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_qa_turn_charges_its_paid_call(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Unusable").await;
+    mount_stream_reply(&app.llm, &serde_json::json!("no JSON object here")).await;
+    let base = app.serve().await;
+    let mut stream = reqwest::Client::new()
+        .post(format!("{base}/api/v2/ai/qa/{course_id}/chat"))
+        .header("cookie", &alice.cookie)
+        .json(&serde_json::json!({
+            "threadId": "t", "runId": "r", "protocolVersion": "1.0", "state": {},
+            "messages": [{ "id": "m1", "role": "user", "content": "What do monads do?" }],
+            "tools": [], "context": [],
+            "forwardedProps": { "client_turn_id": "unusable-1", "language": "en" }
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let mut buffer = String::new();
+    read_until(&mut stream, &mut buffer, "RUN_ERROR").await;
+    assert_eq!(failed_run_charges(&app).await, ("failed".into(), 0, 42, 9));
 }

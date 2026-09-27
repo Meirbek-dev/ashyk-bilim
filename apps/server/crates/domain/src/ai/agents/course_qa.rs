@@ -559,8 +559,15 @@ impl AiService {
 
     /// The model side of one turn: answer-text deltas, then the parsed
     /// answer. Draft mode stands in for a missing or failing provider.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one streamed call in order: open, relay deltas, charge, parse"
+    )]
     fn answer_steps(&self, session: &QaSession, token: CancellationToken) -> StepStream {
         let llm = self.provider().cloned();
+        let service = self.clone();
+        let run_id = session.run.id;
+        let estimated_input_tokens = session.reservation.input_tokens;
         let draft_mode = self.config.ai_draft_mode_enabled;
         let draft = draft_course_answer(&session.language, session.locale.as_deref());
         let prompt = qa_prompt(
@@ -641,6 +648,14 @@ impl AiService {
                 yield Err(Error::app(ErrorCode::AiProviderUnavailable, "stream ended before completion"));
                 return;
             };
+            // BUG-349: the call is paid even if its reply proves unusable.
+            if let Err(err) = service
+                .record_call(run_id, usage, estimated_input_tokens, &buffer, &model_name)
+                .await
+            {
+                yield Err(err);
+                return;
+            }
             let parsed = extract_json(&buffer)
                 .and_then(|value| serde_json::from_value::<CourseQaAnswer>(value).map_err(|e| e.to_string()));
             let answer = match parsed {

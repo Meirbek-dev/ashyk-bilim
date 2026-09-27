@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_runs SET input_tokens = coalesce(input_tokens, 0) + $2,\n               output_tokens = coalesce(output_tokens, 0) + $3\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "862f538f04e3e8e92d5bfc7041404ecc01aeed85befa2710e65cb2c17d8b33ec"
+}

@@ -298,32 +298,66 @@ pub async fn finish_run<'e>(
 /// (BUG-348), so a refused feature row (BUG-189) rolls the success back and
 /// the run is still `running` here.
 pub async fn fail_run(pool: &PgPool, id: AiRunId, error_code: &str) -> Result<bool> {
-    let result = sqlx::query!(
-        r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
-           UPDATE ai_runs SET status = 'failed', error_code = $2, completed_at = now(),
-               duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
-           WHERE id = $1 AND status IN ('queued', 'running')"#,
-        id.0,
-        error_code
-    )
-    .execute(pool)
-    .await?;
-    Ok(result.rows_affected() > 0)
+    end_run(pool, id, "failed", error_code).await
 }
 
-/// `{queued, running} → aborted`. `false` = already terminal. Both this and
-/// [`fail_run`] release the run's budget reservation (BUG-349).
+/// `{queued, running} → aborted`. `false` = already terminal.
 pub async fn abort_run(pool: &PgPool, id: AiRunId) -> Result<bool> {
-    let result = sqlx::query!(
-        r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
-           UPDATE ai_runs SET status = 'aborted', error_code = 'CANCELLED', completed_at = now(),
-               duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
-           WHERE id = $1 AND status IN ('queued', 'running')"#,
-        id.0
+    end_run(pool, id, "aborted", "CANCELLED").await
+}
+
+/// End a live run unsuccessfully (BUG-349), in one statement: release its
+/// budget reservation and charge the provider calls it already paid for
+/// ([`add_run_usage`]) to the ledger.
+async fn end_run(pool: &PgPool, id: AiRunId, status: &str, error_code: &str) -> Result<bool> {
+    let moved = sqlx::query_scalar!(
+        r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1),
+           moved AS (
+               UPDATE ai_runs SET status = $2, error_code = $3, completed_at = now(),
+                   duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
+               WHERE id = $1 AND status IN ('queued', 'running')
+               RETURNING triggered_by, coalesce(input_tokens, 0)::bigint AS input_tokens,
+                         coalesce(output_tokens, 0)::bigint AS output_tokens),
+           charged AS (
+               INSERT INTO ai_token_ledger (month, user_id, input_tokens, output_tokens, run_count)
+               SELECT date_trunc('month', now())::date, triggered_by, input_tokens, output_tokens, 1
+               FROM moved WHERE triggered_by IS NOT NULL AND input_tokens + output_tokens > 0
+               ON CONFLICT (month, user_id) DO UPDATE SET
+                   input_tokens = ai_token_ledger.input_tokens + EXCLUDED.input_tokens,
+                   output_tokens = ai_token_ledger.output_tokens + EXCLUDED.output_tokens,
+                   run_count = ai_token_ledger.run_count + 1,
+                   updated_at = now())
+           SELECT count(*) AS "moved!" FROM moved"#,
+        id.0,
+        status,
+        error_code
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(moved > 0)
+}
+
+/// BUG-349: one paid provider call's tokens, added to the run.
+///
+/// Called as soon as the call returns — a run that then fails or aborts still charges them
+/// ([`end_run`]); a success records its totals ([`finish_run`]).
+pub async fn add_run_usage(
+    pool: &PgPool,
+    id: AiRunId,
+    input_tokens: i32,
+    output_tokens: i32,
+) -> Result<()> {
+    sqlx::query!(
+        r#"UPDATE ai_runs SET input_tokens = coalesce(input_tokens, 0) + $2,
+               output_tokens = coalesce(output_tokens, 0) + $3
+           WHERE id = $1"#,
+        id.0,
+        input_tokens,
+        output_tokens
     )
     .execute(pool)
     .await?;
-    Ok(result.rows_affected() > 0)
+    Ok(())
 }
 
 /// Shallow-merge `patch` into the run metadata.

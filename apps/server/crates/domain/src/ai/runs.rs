@@ -445,6 +445,24 @@ impl AiService {
         Ok(completion.trusted)
     }
 
+    /// BUG-349: charge one returned provider call to the run — the reported
+    /// usage, estimates only for a missing count — so a run that then fails
+    /// or aborts still puts it on the ledger.
+    pub(crate) async fn record_call(
+        &self,
+        run_id: AiRunId,
+        usage: ab_clients::llm::Usage,
+        estimated_input_tokens: i32,
+        reply: &str,
+        model_name: &str,
+    ) -> Result<()> {
+        let reported = |n: Option<u32>| n.map(|n| i32::try_from(n).unwrap_or(i32::MAX));
+        let input = reported(usage.input_tokens).unwrap_or(estimated_input_tokens);
+        let output = reported(usage.output_tokens)
+            .unwrap_or_else(|| self.budget.estimate_for(reply, model_name));
+        ab_db::ai::add_run_usage(&self.pool, run_id, input, output).await
+    }
+
     /// Legacy `_fail_run`: best-effort — an aborted run stays aborted, and
     /// a failure to record the failure is logged, not raised.
     pub(crate) async fn fail_run(&self, run_id: AiRunId, error_code: &str) {

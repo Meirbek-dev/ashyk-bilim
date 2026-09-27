@@ -146,7 +146,9 @@ impl AiService {
     /// An unparsable reply gets one repair round (the invalid reply and the
     /// parse error go back to the model). It is a request of its own
     /// (BUG-349): admitted against the per-request cap and reserved against
-    /// the month like the first, and both calls are accounted.
+    /// the month like the first, and both calls are accounted — each is
+    /// charged to the run as it returns, so a run that fails afterwards
+    /// still pays for it.
     pub(crate) async fn structured_or_draft<T>(
         &self,
         exec: &Execution<'_>,
@@ -185,6 +187,14 @@ impl AiService {
             })
         };
         let first = complete(request.clone()).await?;
+        self.record_call(
+            exec.run.id,
+            first.usage,
+            exec.admitted.reservation.input_tokens,
+            &first.text,
+            &first.model_name,
+        )
+        .await?;
         let parse_err = match parse_structured::<T>(&first.text) {
             Ok((value, _)) => {
                 return Ok(ModelOutcome {
@@ -209,6 +219,14 @@ impl AiService {
             .reserve(&self.pool, &sent, Some(exec.run.id))
             .await?;
         let second = complete(repair).await?;
+        self.record_call(
+            exec.run.id,
+            second.usage,
+            reservation.input_tokens,
+            &second.text,
+            &second.model_name,
+        )
+        .await?;
         let (value, _) = parse_structured::<T>(&second.text)
             .map_err(|err| Error::from(LlmError::InvalidOutput(err)))?;
         Ok(ModelOutcome {
