@@ -97,7 +97,7 @@ export default function WatchlistTab({ query, data, atRisk }: WatchlistTabProps)
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_2.2fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
         <Suspense fallback={<SectionFallback height="h-[360px]" />}>
           <AnalyticsRiskDistributionChart
             counts={data.risk_distribution}

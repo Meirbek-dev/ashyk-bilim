@@ -179,11 +179,11 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <KpiSubmissionAreaChart data={areaData} />
         <KpiActiveLearnerLineChart data={lineData} />
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <KpiPeriodCompBarChart data={barData} />
         <KpiCompletionGauge
           completionPct={m.completion_rate.value}
@@ -191,7 +191,7 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
           direction={m.completion_rate.direction}
         />
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <KpiHealthRadarChart data={radarData} />
         <KpiHealthRingsChart data={radialData} />
       </div>

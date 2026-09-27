@@ -143,7 +143,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
         <TeacherKpiCharts metrics={data.summary} trends={data.trends} />
       </Suspense>
 
-      <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         <Suspense fallback={<SectionFallback height="h-[360px]" />}>
           <AnalyticsMultiSeriesTrendChart
             title={t('overview.trendTitle')}

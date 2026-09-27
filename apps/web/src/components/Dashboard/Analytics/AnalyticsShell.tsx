@@ -97,7 +97,7 @@ export default function AnalyticsShell({
         breadcrumbType="analytics"
         title={t('pages.shellTitle')}
         actions={
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />
             <AnalyticsExportButton
               href={getAnalyticsExportUrl('grading-backlog', query)}
