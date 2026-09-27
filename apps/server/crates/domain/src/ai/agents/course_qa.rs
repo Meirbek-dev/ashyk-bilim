@@ -671,8 +671,9 @@ impl AiService {
         })
     }
 
-    /// Legacy tail of `stream_course_question_events`: validation, the
-    /// run's artifact + evidence + ledger, the assistant message.
+    /// Legacy tail of `stream_course_question_events`: validation, then the
+    /// run's artifact + evidence + ledger and the assistant message in one
+    /// commit (BUG-348).
     async fn qa_finish(
         &self,
         session: &QaSession,
@@ -692,7 +693,7 @@ impl AiService {
             .iter()
             .map(|c| serde_json::to_value(c).unwrap_or(serde_json::Value::Null))
             .collect();
-        let trusted = self
+        let mut completion = self
             .finish_run(FinishSpec {
                 run_id,
                 user_id: session.user_id,
@@ -711,7 +712,7 @@ impl AiService {
             .and_then(serde_json::Value::as_str)
             .unwrap_or_default();
         let message_id = ab_db::ai::insert_qa_message(
-            &self.pool,
+            &mut *completion.tx,
             NewQaMessage {
                 thread_id: session.thread.id,
                 course_id: session
@@ -723,7 +724,7 @@ impl AiService {
                 client_turn_id: None,
                 content,
                 confidence: Some(answer.confidence.as_str()),
-                citations: &serde_json::json!({ "citations": trusted }),
+                citations: &serde_json::json!({ "citations": completion.trusted }),
                 metadata: &serde_json::json!({
                     "model_name": model_name,
                     "out_of_scope": answer.out_of_scope,
@@ -732,7 +733,8 @@ impl AiService {
             },
         )
         .await?;
-        ab_db::ai::touch_thread(&self.pool, session.thread.id).await?;
+        ab_db::ai::touch_thread(&mut *completion.tx, session.thread.id).await?;
+        let trusted = self.commit_finish(completion).await?;
         Ok(QaFinished {
             message_id,
             citations: trusted,

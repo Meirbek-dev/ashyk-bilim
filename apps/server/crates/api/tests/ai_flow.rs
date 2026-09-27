@@ -2326,3 +2326,70 @@ async fn dropped_qa_chat_aborts_its_run(pool: PgPool) {
     })
     .await;
 }
+
+fn study_reply() -> serde_json::Value {
+    serde_json::json!({
+        "mode": "explain", "answer_markdown": "Monads compose effects.",
+        "practice_items": [], "flashcards": [], "follow_up_suggestions": [],
+        "citations": [], "confidence": "medium"
+    })
+}
+
+async fn ask_study(
+    app: &TestApp,
+    who: &MintedSession,
+    course_id: &str,
+) -> ab_testkit::TestResponse {
+    app.post_as(
+        who,
+        &format!("/api/v2/ai/study/{course_id}/ask"),
+        &serde_json::json!({ "question": "Explain this course", "mode": "explain", "language": "en" }),
+    )
+    .await
+}
+
+/// BUG-348: a run's success commits together with its artifact, evidence,
+/// ledger and `finished` event — a reader never sees `succeeded` without
+/// the result. The artifact INSERT is held on a table lock.
+#[sqlx::test(migrations = "../../migrations")]
+async fn ai_success_commits_with_its_artifact(pool: PgPool) {
+    let app = std::sync::Arc::new(TestApp::spawn(pool).await);
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Atomic").await;
+    mount_json_reply(&app.llm, &study_reply()).await;
+    let mut blocker = app.pool.begin().await.unwrap();
+    sqlx::query("LOCK TABLE ai_artifacts IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await
+        .unwrap();
+    let runner = app.clone();
+    let request = tokio::spawn(async move { ask_study(&runner, &alice, &course_id).await });
+    ab_testkit::wait_until("the artifact INSERT never reached the lock", async || {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE datname = current_database()
+                AND wait_event_type = 'Lock' AND query LIKE '%INSERT INTO ai_artifacts%')",
+        )
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    })
+    .await;
+    let (status, ledger, finished): (String, i64, i64) = sqlx::query_as(
+        "SELECT status, (SELECT count(*) FROM ai_token_ledger),
+                (SELECT count(*) FROM ai_events WHERE event_type = 'finished') FROM ai_runs",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    blocker.commit().await.unwrap();
+    let response = request.await.unwrap();
+    assert_eq!(response.status, StatusCode::OK, "{}", response.text());
+    assert_eq!((status.as_str(), ledger, finished), ("running", 0, 0));
+    let (status, artifacts): (String, i64) =
+        sqlx::query_as("SELECT status, (SELECT count(*) FROM ai_artifacts) FROM ai_runs")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!((status.as_str(), artifacts), ("succeeded", 1));
+}

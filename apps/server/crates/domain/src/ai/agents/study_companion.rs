@@ -242,6 +242,7 @@ impl AiService {
                     || draft_study_answer(mode),
                 )
                 .await?;
+            self.commit_finish(finished.completion).await?;
             Ok(finished.artifact)
         })
         .await

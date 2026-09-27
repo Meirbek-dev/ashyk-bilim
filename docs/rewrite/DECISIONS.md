@@ -1553,3 +1553,10 @@ Implements three more items of the owner answers above. Routes:
   ledger row's key always names the bytes finalize verified — no copy to a
   second key, no checksum column. A retried PUT whose first attempt did land
   gets a 412; the client starts a new upload rather than overwrite.
+- **An AI run's success is one commit** (BUG-348). `running → succeeded`,
+  the artifact, evidence, token ledger row, `finished` event and the agent's
+  feature record (analysis, review, remediation session, Q&A answer) commit
+  together; Redis stream events are published after the commit. A success
+  is therefore final: `fail_run` moves only `queued`/`running` runs, and a
+  refused feature row rolls the whole success back instead of flipping a
+  committed `succeeded` run to `failed`.

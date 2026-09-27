@@ -222,7 +222,7 @@ impl AiService {
                 input_tokens,
                 user_id,
             };
-            let finished = self
+            let mut finished = self
                 .run_structured::<LectureReviewReport>(
                     &exec,
                     ARTIFACT_KIND,
@@ -238,7 +238,7 @@ impl AiService {
                 .await?;
             let course_id: CourseId = metadata_id(run, "course_id")?;
             let id = ab_db::ai::insert_lecture_review(
-                &self.pool,
+                &mut *finished.completion.tx,
                 NewLectureReview {
                     course_id,
                     activity_id: metadata_optional_id(run, "activity_id"),
@@ -249,6 +249,7 @@ impl AiService {
                 },
             )
             .await?;
+            self.commit_finish(finished.completion).await?;
             ab_db::ai::get_lecture_review(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("lecture review"))

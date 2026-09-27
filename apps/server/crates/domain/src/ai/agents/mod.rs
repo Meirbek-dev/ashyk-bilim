@@ -7,7 +7,8 @@
 //!
 //! [`AiService::run_structured`] is the shared non-streaming pipeline:
 //! execution events → structured completion → validation event →
-//! redaction → [`AiService::finish_run`].
+//! redaction → [`AiService::finish_run`]; the agent adds its feature record
+//! to the open completion and commits it ([`AiService::commit_finish`]).
 
 pub mod course_analyst;
 pub mod course_qa;
@@ -26,7 +27,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::AiService;
 use super::context::ContextBundle;
-use super::runs::{FinishSpec, with_cancel};
+use super::runs::{Completion, FinishSpec, with_cancel};
 use super::schemas::Citation;
 
 /// Legacy `model_name` for the deterministic fallbacks.
@@ -48,14 +49,14 @@ pub(crate) struct ModelOutcome<T> {
     pub usage: Usage,
 }
 
-/// The result of one finished structured step.
+/// The result of one finished structured step, not yet committed.
 pub(crate) struct Finished<T> {
     pub value: T,
     /// The redacted artifact as stored.
     pub artifact: serde_json::Value,
-    /// Citations that survived validation against the context sources.
-    pub citations: Vec<serde_json::Value>,
     pub model_name: String,
+    /// The run's success; the feature record joins it before the commit.
+    pub completion: Completion,
 }
 
 fn metadata_str<'a>(run: &'a RunRow, key: &str) -> Option<&'a str> {
@@ -174,7 +175,7 @@ impl AiService {
                 serde_json::to_value(c).unwrap_or(serde_json::Value::Null)
             })
             .collect();
-        let trusted = self
+        let completion = self
             .finish_run(FinishSpec {
                 run_id,
                 user_id: exec.user_id,
@@ -190,8 +191,8 @@ impl AiService {
         Ok(Finished {
             value: outcome.value,
             artifact: super::redact::redacted(artifact),
-            citations: trusted,
             model_name: outcome.model_name,
+            completion,
         })
     }
 }

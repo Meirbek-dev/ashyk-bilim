@@ -61,6 +61,18 @@ pub(crate) struct FinishSpec<'a> {
     pub context_sources: Option<&'a [ContextSource]>,
 }
 
+/// A run's success written inside one transaction with its artifact,
+/// evidence, token ledger and `finished` event, not yet committed
+/// (BUG-348): the agent adds its feature record on `tx`, then
+/// [`AiService::commit_finish`] commits and publishes the events. Dropped
+/// uncommitted, all of it rolls back and the run is still `running`.
+pub(crate) struct Completion {
+    pub tx: sqlx::Transaction<'static, sqlx::Postgres>,
+    /// Citations that survived validation against the context sources.
+    pub trusted: Vec<serde_json::Value>,
+    events: Vec<EventRow>,
+}
+
 /// Cancels its token when the run is aborted underneath the executor.
 pub(crate) struct CancelWatch {
     pub token: CancellationToken,
@@ -236,12 +248,17 @@ impl AiService {
         payload: serde_json::Value,
     ) -> Result<EventRow> {
         let row = ab_db::ai::append_event(&self.pool, run_id, event_type, &payload).await?;
+        self.publish(&row).await;
+        Ok(row)
+    }
+
+    /// Mirror a committed event to the run's stream.
+    async fn publish(&self, row: &EventRow) {
         if let Some(events) = &self.events {
             events
-                .publish_best_effort(run_id, row.sequence, event_type, &payload)
+                .publish_best_effort(row.run_id, row.sequence, &row.event_type, &row.payload)
                 .await;
         }
-        Ok(row)
     }
 
     /// Legacy `_ensure_run_not_cancelled`.
@@ -310,10 +327,11 @@ impl AiService {
         Ok(())
     }
 
-    /// Legacy `_finish_run`: validate citations, `running → succeeded`,
-    /// store the artifact + evidence, account tokens. Returns the trusted
-    /// citations.
-    pub(crate) async fn finish_run(&self, spec: FinishSpec<'_>) -> Result<Vec<serde_json::Value>> {
+    /// Legacy `_finish_run`: validate citations, then — in one transaction
+    /// the caller commits with [`Self::commit_finish`] (BUG-348) —
+    /// `running → succeeded`, the artifact + evidence, the token ledger and
+    /// the `finished` event.
+    pub(crate) async fn finish_run(&self, spec: FinishSpec<'_>) -> Result<Completion> {
         let artifact = redact::redacted(spec.artifact);
         let citations: Vec<serde_json::Value> =
             spec.citations.into_iter().map(redact::redacted).collect();
@@ -344,8 +362,9 @@ impl AiService {
             },
             |n| i32::try_from(n).unwrap_or(i32::MAX),
         );
+        let mut tx = self.pool.begin().await?;
         let moved = ab_db::ai::finish_run(
-            &self.pool,
+            &mut *tx,
             spec.run_id,
             spec.model_name,
             spec.input_tokens,
@@ -357,19 +376,14 @@ impl AiService {
             // Cancelled between the check above and the update.
             return Err(cancelled_error());
         }
-        let artifact_id = ab_db::ai::insert_artifact(
-            &self.pool,
-            spec.run_id,
-            spec.artifact_kind,
-            &artifact,
-            true,
-        )
-        .await?;
+        let artifact_id =
+            ab_db::ai::insert_artifact(&mut *tx, spec.run_id, spec.artifact_kind, &artifact, true)
+                .await?;
         for (index, citation) in trusted.iter().enumerate() {
             let get = |k: &str| citation.get(k).and_then(serde_json::Value::as_str);
             let fallback_id = format!("citation-{}", index + 1);
             ab_db::ai::insert_evidence(
-                &self.pool,
+                &mut *tx,
                 spec.run_id,
                 artifact_id,
                 ab_db::ai::NewEvidence {
@@ -390,16 +404,17 @@ impl AiService {
             .await?;
         }
         ab_db::ai::ledger_record(
-            &self.pool,
+            &mut *tx,
             spec.user_id,
             i64::from(spec.input_tokens),
             i64::from(output_tokens),
         )
         .await?;
-        self.emit(
+        let finished = ab_db::ai::append_event_in(
+            &mut tx,
             spec.run_id,
             "finished",
-            serde_json::json!({
+            &serde_json::json!({
                 "state": "complete",
                 "model_name": spec.model_name,
                 "input_tokens": spec.input_tokens,
@@ -409,7 +424,24 @@ impl AiService {
             }),
         )
         .await?;
-        Ok(trusted)
+        Ok(Completion {
+            tx,
+            trusted,
+            events: vec![finished],
+        })
+    }
+
+    /// Commit a [`Completion`], then publish its events (never before the
+    /// result is readable). Returns the trusted citations.
+    pub(crate) async fn commit_finish(
+        &self,
+        completion: Completion,
+    ) -> Result<Vec<serde_json::Value>> {
+        completion.tx.commit().await?;
+        for event in &completion.events {
+            self.publish(event).await;
+        }
+        Ok(completion.trusted)
     }
 
     /// Legacy `_fail_run`: best-effort — an aborted run stays aborted, and

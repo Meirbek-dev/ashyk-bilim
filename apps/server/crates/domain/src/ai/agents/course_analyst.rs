@@ -214,7 +214,7 @@ impl AiService {
                 input_tokens,
                 user_id,
             };
-            let finished = self
+            let mut finished = self
                 .run_structured::<CourseQualityReport>(
                     &exec,
                     ARTIFACT_KIND,
@@ -230,7 +230,7 @@ impl AiService {
                 .await?;
             let course_id: CourseId = metadata_id(run, "course_id")?;
             let id = ab_db::ai::insert_course_analysis(
-                &self.pool,
+                &mut *finished.completion.tx,
                 NewCourseAnalysis {
                     course_id,
                     run_id: run.id,
@@ -239,12 +239,13 @@ impl AiService {
                     language: &finished.value.language,
                     public_score: finished.value.public_score.clamp(0, 100),
                     report: &finished.artifact,
-                    evidence: &evidence_json(&finished.citations),
+                    evidence: &evidence_json(&finished.completion.trusted),
                     model_name: &finished.model_name,
                     content_hash: &content_hash(rendered),
                 },
             )
             .await?;
+            self.commit_finish(finished.completion).await?;
             ab_db::ai::get_course_analysis(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("course analysis"))

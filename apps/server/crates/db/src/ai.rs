@@ -117,12 +117,12 @@ pub async fn rescope_thread(
     Ok(())
 }
 
-pub async fn touch_thread(pool: &PgPool, id: AiThreadId) -> Result<()> {
+pub async fn touch_thread<'e>(db: impl sqlx::PgExecutor<'e>, id: AiThreadId) -> Result<()> {
     sqlx::query!(
         "UPDATE ai_threads SET updated_at = now() WHERE id = $1",
         id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -263,9 +263,10 @@ pub async fn mark_running(pool: &PgPool, id: AiRunId) -> Result<bool> {
 }
 
 /// `running → succeeded` with the accounting columns. `false` = not running
-/// any more (cancelled underneath us).
-pub async fn finish_run(
-    pool: &PgPool,
+/// any more (cancelled underneath us). Runs inside the completion
+/// transaction (BUG-348).
+pub async fn finish_run<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: AiRunId,
     model_name: &str,
     input_tokens: i32,
@@ -283,21 +284,21 @@ pub async fn finish_run(
         output_tokens,
         metadata_patch
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(result.rows_affected() > 0)
 }
 
-/// `{queued, running, succeeded} → failed`; `false` = aborted or already failed.
+/// `{queued, running} → failed`; `false` = already terminal.
 ///
-/// A succeeded run flips too: the artifact is saved before the feature row,
-/// and a run whose feature row was refused (BUG-189: the gate race loser)
-/// must not read as a success.
+/// A success is final: it commits together with its artifact and feature record
+/// (BUG-348), so a refused feature row (BUG-189) rolls the success back and
+/// the run is still `running` here.
 pub async fn fail_run(pool: &PgPool, id: AiRunId, error_code: &str) -> Result<bool> {
     let result = sqlx::query!(
         r#"UPDATE ai_runs SET status = 'failed', error_code = $2, completed_at = now(),
                duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
-           WHERE id = $1 AND status IN ('queued', 'running', 'succeeded')"#,
+           WHERE id = $1 AND status IN ('queued', 'running')"#,
         id.0,
         error_code
     )
@@ -466,8 +467,21 @@ pub async fn append_event(
     payload: &serde_json::Value,
 ) -> Result<EventRow> {
     let mut tx = pool.begin().await?;
+    let row = append_event_in(&mut tx, run_id, event_type, payload).await?;
+    tx.commit().await?;
+    Ok(row)
+}
+
+/// [`append_event`] inside the caller's transaction (BUG-348: the
+/// `finished` event commits with the run's result).
+pub async fn append_event_in(
+    conn: &mut sqlx::PgConnection,
+    run_id: AiRunId,
+    event_type: &str,
+    payload: &serde_json::Value,
+) -> Result<EventRow> {
     sqlx::query_scalar!("SELECT id FROM ai_runs WHERE id = $1 FOR UPDATE", run_id.0)
-        .fetch_optional(&mut *tx)
+        .fetch_optional(&mut *conn)
         .await?
         .ok_or_else(|| Error::not_found("ai run"))?;
     let row = sqlx::query_as!(
@@ -481,9 +495,8 @@ pub async fn append_event(
         event_type,
         payload
     )
-    .fetch_one(&mut *tx)
+    .fetch_one(&mut *conn)
     .await?;
-    tx.commit().await?;
     Ok(row)
 }
 
@@ -512,8 +525,8 @@ pub struct ArtifactRow {
     pub created_at: i64,
 }
 
-pub async fn insert_artifact(
-    pool: &PgPool,
+pub async fn insert_artifact<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     run_id: AiRunId,
     kind: &str,
     content: &serde_json::Value,
@@ -527,7 +540,7 @@ pub async fn insert_artifact(
         content,
         final_
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiArtifactId(id))
 }
@@ -569,8 +582,8 @@ pub struct NewEvidence<'a> {
     pub score: Option<f64>,
 }
 
-pub async fn insert_evidence(
-    pool: &PgPool,
+pub async fn insert_evidence<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     run_id: AiRunId,
     artifact_id: AiArtifactId,
     e: NewEvidence<'_>,
@@ -588,7 +601,7 @@ pub async fn insert_evidence(
         e.excerpt,
         e.score
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiEvidenceId(id))
 }
@@ -698,8 +711,8 @@ pub struct LedgerRow {
 }
 
 /// Add one finished run's tokens to the caller's row for this month.
-pub async fn ledger_record(
-    pool: &PgPool,
+pub async fn ledger_record<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     user_id: UserId,
     input_tokens: i64,
     output_tokens: i64,
@@ -716,7 +729,7 @@ pub async fn ledger_record(
         input_tokens,
         output_tokens
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -801,7 +814,10 @@ pub struct NewQaMessage<'a> {
     pub metadata: &'a serde_json::Value,
 }
 
-pub async fn insert_qa_message(pool: &PgPool, m: NewQaMessage<'_>) -> Result<AiMessageId> {
+pub async fn insert_qa_message<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    m: NewQaMessage<'_>,
+) -> Result<AiMessageId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_qa_messages (thread_id, course_id, user_id, role, client_turn_id,
                                        content, confidence, citations, metadata)
@@ -816,7 +832,7 @@ pub async fn insert_qa_message(pool: &PgPool, m: NewQaMessage<'_>) -> Result<AiM
         m.citations,
         m.metadata
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiMessageId(id))
 }
@@ -992,8 +1008,8 @@ pub struct NewSubmissionAnalysis<'a> {
     pub model_name: &'a str,
 }
 
-pub async fn insert_submission_analysis(
-    pool: &PgPool,
+pub async fn insert_submission_analysis<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     a: NewSubmissionAnalysis<'_>,
 ) -> Result<AiSubmissionAnalysisId> {
     let (submission_id, attempt_id) = a.subject.columns();
@@ -1012,7 +1028,7 @@ pub async fn insert_submission_analysis(
         a.evidence,
         a.model_name
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiSubmissionAnalysisId(id))
 }
@@ -1133,8 +1149,8 @@ pub struct NewCourseAnalysis<'a> {
     pub content_hash: &'a str,
 }
 
-pub async fn insert_course_analysis(
-    pool: &PgPool,
+pub async fn insert_course_analysis<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     a: NewCourseAnalysis<'_>,
 ) -> Result<AiCourseAnalysisId> {
     let id = sqlx::query_scalar!(
@@ -1152,7 +1168,7 @@ pub async fn insert_course_analysis(
         a.model_name,
         a.content_hash
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiCourseAnalysisId(id))
 }
@@ -1255,8 +1271,8 @@ pub struct NewLectureReview<'a> {
     pub suggestions: &'a serde_json::Value,
 }
 
-pub async fn insert_lecture_review(
-    pool: &PgPool,
+pub async fn insert_lecture_review<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     r: NewLectureReview<'_>,
 ) -> Result<AiLectureReviewId> {
     let id = sqlx::query_scalar!(
@@ -1270,7 +1286,7 @@ pub async fn insert_lecture_review(
         r.language,
         r.suggestions
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(AiLectureReviewId(id))
 }
@@ -1371,8 +1387,8 @@ pub struct NewRemediationSession<'a> {
 
 /// `None` = a gate already blocks this learner on the activity (BUG-185:
 /// the partial unique index on active gates is the last word).
-pub async fn insert_remediation_session(
-    pool: &PgPool,
+pub async fn insert_remediation_session<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     s: NewRemediationSession<'_>,
 ) -> Result<Option<AiRemediationSessionId>> {
     let (submission_id, attempt_id) = s.subject.columns();
@@ -1393,7 +1409,7 @@ pub async fn insert_remediation_session(
         s.lecture,
         s.test
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(id.map(AiRemediationSessionId))
 }

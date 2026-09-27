@@ -349,7 +349,7 @@ impl AiService {
                 input_tokens,
                 user_id,
             };
-            let finished = self
+            let mut finished = self
                 .run_structured::<RemediationBundle>(
                     &exec,
                     ARTIFACT_KIND,
@@ -368,7 +368,7 @@ impl AiService {
                     .map_err(|e| Error::internal("serialising practice questions", e))?,
             );
             let inserted = ab_db::ai::insert_remediation_session(
-                &self.pool,
+                &mut *finished.completion.tx,
                 NewRemediationSession {
                     subject: subject.id(),
                     activity_id,
@@ -382,15 +382,17 @@ impl AiService {
                 },
             )
             .await?;
-            // The race loser's run is already `succeeded` by `run_structured`
-            // (artifact saved, no session): `settle` → `fail_run` flips it to
-            // `failed` (BUG-189).
+            // The race loser (BUG-189) rolls its uncommitted success back
+            // (BUG-348): `settle` → `fail_run` marks the still-running run
+            // `failed`.
             let Some(id) = inserted else {
+                drop(finished);
                 self.refuse_stacked_gate(subject, activity_id).await?;
                 return Err(Error::conflict(
                     "a remediation gate was assigned concurrently",
                 ));
             };
+            self.commit_finish(finished.completion).await?;
             ab_db::ai::get_remediation_session(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("remediation session"))

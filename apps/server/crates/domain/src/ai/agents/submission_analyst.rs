@@ -210,7 +210,7 @@ impl AiService {
                 input_tokens,
                 user_id,
             };
-            let finished = self
+            let mut finished = self
                 .run_structured::<SubmissionAnalysisReport>(
                     &exec,
                     ARTIFACT_KIND,
@@ -225,7 +225,7 @@ impl AiService {
                 )
                 .await?;
             let id = ab_db::ai::insert_submission_analysis(
-                &self.pool,
+                &mut *finished.completion.tx,
                 NewSubmissionAnalysis {
                     subject: run_subject(run)?,
                     run_id: run.id,
@@ -234,11 +234,12 @@ impl AiService {
                     gap_count: i32::try_from(finished.value.knowledge_gaps.len())
                         .unwrap_or(i32::MAX),
                     analysis: &finished.artifact,
-                    evidence: &evidence_json(&finished.citations),
+                    evidence: &evidence_json(&finished.completion.trusted),
                     model_name: &finished.model_name,
                 },
             )
             .await?;
+            self.commit_finish(finished.completion).await?;
             ab_db::ai::get_submission_analysis(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("submission analysis"))
