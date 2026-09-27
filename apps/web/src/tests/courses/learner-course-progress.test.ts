@@ -79,3 +79,14 @@ describe('learnerCourseProgress', () => {
     })
   })
 })
+
+// BUG-336 (not a bug): `outline` is a required non-null array on the wire
+// (`Vec<ChapterState>`), and every learner-state read parses it — a null never
+// reaches `buildCourseProgressSnapshot`.
+describe('LearnerCourseState.outline', () => {
+  it('rejects a null outline at the parse boundary', async () => {
+    const { LearnerCourseState } = await import('@/lib/api/generated/zod')
+    expect(LearnerCourseState.shape.outline.safeParse(null).success).toBe(false)
+    expect(LearnerCourseState.shape.outline.safeParse([]).success).toBe(true)
+  })
+})
