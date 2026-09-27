@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const RemediationCompletionRequest = zod.object({
-  "score": zod.int()
+  score: zod.int(),
 })
 
-export type RemediationCompletionRequest = zod.input<typeof RemediationCompletionRequest>;
-export type RemediationCompletionRequestOutput = zod.output<typeof RemediationCompletionRequest>;
+export type RemediationCompletionRequest = zod.input<typeof RemediationCompletionRequest>
+export type RemediationCompletionRequestOutput = zod.output<typeof RemediationCompletionRequest>

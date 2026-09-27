@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UpdateRoleRequest = zod.object({
-  "description": zod.string().nullish(),
-  "display_name": zod.string().nullish(),
-  "priority": zod.int().nullish()
+  description: zod.string().nullish(),
+  display_name: zod.string().nullish(),
+  priority: zod.int().nullish(),
 })
 
-export type UpdateRoleRequest = zod.input<typeof UpdateRoleRequest>;
-export type UpdateRoleRequestOutput = zod.output<typeof UpdateRoleRequest>;
+export type UpdateRoleRequest = zod.input<typeof UpdateRoleRequest>
+export type UpdateRoleRequestOutput = zod.output<typeof UpdateRoleRequest>

@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CertificatePdfHeaders = zod.object({
-  "Accept-Language": zod.string().nullish()
+  'Accept-Language': zod.string().nullish(),
 })
 
-export type CertificatePdfHeaders = zod.input<typeof CertificatePdfHeaders>;
-export type CertificatePdfHeadersOutput = zod.output<typeof CertificatePdfHeaders>;
+export type CertificatePdfHeaders = zod.input<typeof CertificatePdfHeaders>
+export type CertificatePdfHeadersOutput = zod.output<typeof CertificatePdfHeaders>

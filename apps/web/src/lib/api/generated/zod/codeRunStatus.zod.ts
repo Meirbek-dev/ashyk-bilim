@@ -5,9 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CodeRunStatus = zod.enum(['queued', 'running', 'accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit', 'internal_error', 'degraded'])
+export const CodeRunStatus = zod.enum([
+  'queued',
+  'running',
+  'accepted',
+  'wrong_answer',
+  'compile_error',
+  'runtime_error',
+  'time_limit',
+  'internal_error',
+  'degraded',
+])
 
-export type CodeRunStatus = zod.input<typeof CodeRunStatus>;
-export type CodeRunStatusOutput = zod.output<typeof CodeRunStatus>;
+export type CodeRunStatus = zod.input<typeof CodeRunStatus>
+export type CodeRunStatusOutput = zod.output<typeof CodeRunStatus>

@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const GoogleCallbackParams = zod.object({
-  "code": zod.string().optional(),
-  "state": zod.string().optional(),
-  "error": zod.string().optional()
+  code: zod.string().optional(),
+  state: zod.string().optional(),
+  error: zod.string().optional(),
 })
 
-export type GoogleCallbackParams = zod.input<typeof GoogleCallbackParams>;
-export type GoogleCallbackParamsOutput = zod.output<typeof GoogleCallbackParams>;
+export type GoogleCallbackParams = zod.input<typeof GoogleCallbackParams>
+export type GoogleCallbackParamsOutput = zod.output<typeof GoogleCallbackParams>

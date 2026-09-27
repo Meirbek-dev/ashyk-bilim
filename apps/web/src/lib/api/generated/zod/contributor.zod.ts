@@ -5,17 +5,21 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const Contributor = zod.object({
-  "avatar_key": zod.string().nullish(),
-  "created_at_unix": zod.int(),
-  "display_name": zod.string(),
-  "role": zod.string(),
-  "status": zod.string(),
-  "user_id": zod.uuid(),
-  "username": zod.string()
-}).describe('One roster entry.\n\nThe creator is always listed first as `creator/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.')
+export const Contributor = zod
+  .object({
+    avatar_key: zod.string().nullish(),
+    created_at_unix: zod.int(),
+    display_name: zod.string(),
+    role: zod.string(),
+    status: zod.string(),
+    user_id: zod.uuid(),
+    username: zod.string(),
+  })
+  .describe(
+    'One roster entry.\n\nThe creator is always listed first as `creator/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.',
+  )
 
-export type Contributor = zod.input<typeof Contributor>;
-export type ContributorOutput = zod.output<typeof Contributor>;
+export type Contributor = zod.input<typeof Contributor>
+export type ContributorOutput = zod.output<typeof Contributor>

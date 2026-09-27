@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ItemSignal = zod.enum(['healthy', 'watch', 'critical'])
 
-export type ItemSignal = zod.input<typeof ItemSignal>;
-export type ItemSignalOutput = zod.output<typeof ItemSignal>;
+export type ItemSignal = zod.input<typeof ItemSignal>
+export type ItemSignalOutput = zod.output<typeof ItemSignal>

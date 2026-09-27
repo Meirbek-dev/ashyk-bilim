@@ -5,19 +5,26 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CreateInterventionRequest = zod.object({
-  "course_id": zod.uuid(),
-  "intervention_type": zod.string().describe('`message_sent`, `submission_graded`, `extension_granted`,\n`meeting_scheduled` or `learner_recovered`.'),
-  "notes": zod.string().nullish(),
-  "outcome": zod.string().nullish(),
-  "payload": zod.looseObject({
+export const CreateInterventionRequest = zod
+  .object({
+    course_id: zod.uuid(),
+    intervention_type: zod
+      .string()
+      .describe(
+        '`message_sent`, `submission_graded`, `extension_granted`,\n`meeting_scheduled` or `learner_recovered`.',
+      ),
+    notes: zod.string().nullish(),
+    outcome: zod.string().nullish(),
+    payload: zod
+      .looseObject({})
+      .optional()
+      .describe('Free-form details (an object of at most 16 KiB serialized, UX-148).'),
+    status: zod.string().optional().describe('`planned`, `completed` or `resolved`.'),
+    user_id: zod.uuid(),
+  })
+  .describe('Log a teacher action for an at-risk learner. `status` defaults to\n`completed` (legacy).')
 
-}).optional().describe('Free-form details (an object of at most 16 KiB serialized, UX-148).'),
-  "status": zod.string().optional().describe('`planned`, `completed` or `resolved`.'),
-  "user_id": zod.uuid()
-}).describe('Log a teacher action for an at-risk learner. `status` defaults to\n`completed` (legacy).')
-
-export type CreateInterventionRequest = zod.input<typeof CreateInterventionRequest>;
-export type CreateInterventionRequestOutput = zod.output<typeof CreateInterventionRequest>;
+export type CreateInterventionRequest = zod.input<typeof CreateInterventionRequest>
+export type CreateInterventionRequestOutput = zod.output<typeof CreateInterventionRequest>

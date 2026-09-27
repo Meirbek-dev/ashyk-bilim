@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const QaThreadsParams = zod.object({
-  "limit": zod.int().nullish()
+  limit: zod.int().nullish(),
 })
 
-export type QaThreadsParams = zod.input<typeof QaThreadsParams>;
-export type QaThreadsParamsOutput = zod.output<typeof QaThreadsParams>;
+export type QaThreadsParams = zod.input<typeof QaThreadsParams>
+export type QaThreadsParamsOutput = zod.output<typeof QaThreadsParams>

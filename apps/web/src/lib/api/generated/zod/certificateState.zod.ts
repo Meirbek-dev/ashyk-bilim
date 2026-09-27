@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CertificateState = zod.object({
-  "configured": zod.boolean(),
-  "eligible": zod.boolean(),
-  "href": zod.string().nullish(),
-  "issued": zod.boolean(),
-  "verify_code": zod.string().nullish().describe('Public verification code of the issued certificate.')
+  configured: zod.boolean(),
+  eligible: zod.boolean(),
+  href: zod.string().nullish(),
+  issued: zod.boolean(),
+  verify_code: zod.string().nullish().describe('Public verification code of the issued certificate.'),
 })
 
-export type CertificateState = zod.input<typeof CertificateState>;
-export type CertificateStateOutput = zod.output<typeof CertificateState>;
+export type CertificateState = zod.input<typeof CertificateState>
+export type CertificateStateOutput = zod.output<typeof CertificateState>

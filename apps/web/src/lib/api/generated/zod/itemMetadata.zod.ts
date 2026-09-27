@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ItemMetadata = zod.object({
-  "difficulty": zod.union([zod.enum(['easy', 'medium', 'hard']),zod.null()]).optional(),
-  "estimated_minutes": zod.int().nullish(),
-  "outcome_ids": zod.array(zod.string()).optional(),
-  "section_label": zod.string().nullish(),
-  "tags": zod.array(zod.string()).optional()
+  difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
+  estimated_minutes: zod.int().nullish(),
+  outcome_ids: zod.array(zod.string()).optional(),
+  section_label: zod.string().nullish(),
+  tags: zod.array(zod.string()).optional(),
 })
 
-export type ItemMetadata = zod.input<typeof ItemMetadata>;
-export type ItemMetadataOutput = zod.output<typeof ItemMetadata>;
+export type ItemMetadata = zod.input<typeof ItemMetadata>
+export type ItemMetadataOutput = zod.output<typeof ItemMetadata>

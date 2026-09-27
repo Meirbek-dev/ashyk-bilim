@@ -5,14 +5,21 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const FileSubmissionsReviewQueueParams = zod.object({
-  "status": zod.union([zod.enum(['draft', 'submitted', 'graded', 'published', 'returned']).describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).'),zod.null()]).optional(),
-  "search": zod.string().nullish(),
-  "cursor": zod.union([zod.uuid(),zod.null()]).optional(),
-  "limit": zod.int().nullish()
+  status: zod
+    .union([
+      zod
+        .enum(['draft', 'submitted', 'graded', 'published', 'returned'])
+        .describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).'),
+      zod.null(),
+    ])
+    .optional(),
+  search: zod.string().nullish(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+  limit: zod.int().nullish(),
 })
 
-export type FileSubmissionsReviewQueueParams = zod.input<typeof FileSubmissionsReviewQueueParams>;
-export type FileSubmissionsReviewQueueParamsOutput = zod.output<typeof FileSubmissionsReviewQueueParams>;
+export type FileSubmissionsReviewQueueParams = zod.input<typeof FileSubmissionsReviewQueueParams>
+export type FileSubmissionsReviewQueueParamsOutput = zod.output<typeof FileSubmissionsReviewQueueParams>

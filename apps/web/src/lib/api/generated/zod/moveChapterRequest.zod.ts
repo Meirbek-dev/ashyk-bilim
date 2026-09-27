@@ -5,11 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const MoveChapterRequest = zod.object({
-  "position": zod.int().describe('1-based target position.')
-}).describe('Target slot for a chapter move; out-of-range positions clamp.')
+export const MoveChapterRequest = zod
+  .object({
+    position: zod.int().describe('1-based target position.'),
+  })
+  .describe('Target slot for a chapter move; out-of-range positions clamp.')
 
-export type MoveChapterRequest = zod.input<typeof MoveChapterRequest>;
-export type MoveChapterRequestOutput = zod.output<typeof MoveChapterRequest>;
+export type MoveChapterRequest = zod.input<typeof MoveChapterRequest>
+export type MoveChapterRequestOutput = zod.output<typeof MoveChapterRequest>

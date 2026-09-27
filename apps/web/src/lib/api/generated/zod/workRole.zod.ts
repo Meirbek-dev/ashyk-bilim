@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const WorkRole = zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.')
 
-export type WorkRole = zod.input<typeof WorkRole>;
-export type WorkRoleOutput = zod.output<typeof WorkRole>;
+export type WorkRole = zod.input<typeof WorkRole>
+export type WorkRoleOutput = zod.output<typeof WorkRole>

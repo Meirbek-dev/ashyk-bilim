@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ExportCourseProgressHeaders = zod.object({
-  "Accept-Language": zod.string().nullish()
+  'Accept-Language': zod.string().nullish(),
 })
 
-export type ExportCourseProgressHeaders = zod.input<typeof ExportCourseProgressHeaders>;
-export type ExportCourseProgressHeadersOutput = zod.output<typeof ExportCourseProgressHeaders>;
+export type ExportCourseProgressHeaders = zod.input<typeof ExportCourseProgressHeaders>
+export type ExportCourseProgressHeadersOutput = zod.output<typeof ExportCourseProgressHeaders>

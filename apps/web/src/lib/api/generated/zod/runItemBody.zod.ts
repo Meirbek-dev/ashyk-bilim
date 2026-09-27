@@ -5,13 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const RunItemBody = zod.object({
-  "custom_input": zod.string().nullish().describe('When present the run is unscored: one case named `custom`.'),
-  "language_id": zod.int().describe('Judge0 language id.'),
-  "source": zod.string()
-}).describe('Run source against an item\'s visible tests, or against one custom input.')
+export const RunItemBody = zod
+  .object({
+    custom_input: zod.string().nullish().describe('When present the run is unscored: one case named `custom`.'),
+    language_id: zod.int().describe('Judge0 language id.'),
+    source: zod.string(),
+  })
+  .describe("Run source against an item's visible tests, or against one custom input.")
 
-export type RunItemBody = zod.input<typeof RunItemBody>;
-export type RunItemBodyOutput = zod.output<typeof RunItemBody>;
+export type RunItemBody = zod.input<typeof RunItemBody>
+export type RunItemBodyOutput = zod.output<typeof RunItemBody>

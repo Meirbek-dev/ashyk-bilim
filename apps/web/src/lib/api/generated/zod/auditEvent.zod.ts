@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AuditEvent = zod.object({
-  "actor_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "created_at_unix": zod.int(),
-  "event": zod.string(),
-  "id": zod.uuid(),
-  "payload": zod.unknown()
+  actor_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  created_at_unix: zod.int(),
+  event: zod.string(),
+  id: zod.uuid(),
+  payload: zod.unknown(),
 })
 
-export type AuditEvent = zod.input<typeof AuditEvent>;
-export type AuditEventOutput = zod.output<typeof AuditEvent>;
+export type AuditEvent = zod.input<typeof AuditEvent>
+export type AuditEventOutput = zod.output<typeof AuditEvent>

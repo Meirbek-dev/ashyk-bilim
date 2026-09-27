@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UpdateContributorRequest = zod.object({
-  "role": zod.string().nullish().describe('`maintainer | contributor | reporter`.'),
-  "status": zod.string().nullish().describe('`pending | active | inactive` (`active` approves an application).')
+  role: zod.string().nullish().describe('`maintainer | contributor | reporter`.'),
+  status: zod.string().nullish().describe('`pending | active | inactive` (`active` approves an application).'),
 })
 
-export type UpdateContributorRequest = zod.input<typeof UpdateContributorRequest>;
-export type UpdateContributorRequestOutput = zod.output<typeof UpdateContributorRequest>;
+export type UpdateContributorRequest = zod.input<typeof UpdateContributorRequest>
+export type UpdateContributorRequestOutput = zod.output<typeof UpdateContributorRequest>

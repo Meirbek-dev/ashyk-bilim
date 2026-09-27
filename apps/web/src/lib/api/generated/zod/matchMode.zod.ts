@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const MatchMode = zod.enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
 
-export type MatchMode = zod.input<typeof MatchMode>;
-export type MatchModeOutput = zod.output<typeof MatchMode>;
+export type MatchMode = zod.input<typeof MatchMode>
+export type MatchModeOutput = zod.output<typeof MatchMode>

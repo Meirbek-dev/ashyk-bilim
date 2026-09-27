@@ -5,63 +5,89 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const Trail = zod.object({
-  "created_at_unix": zod.int().nullish(),
-  "id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "runs": zod.array(zod.object({
-  "course": zod.object({
-  "about": zod.string(),
-  "contributor_ids": zod.array(zod.uuid()).describe('Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.'),
-  "created_at_unix": zod.int(),
-  "creator_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "description": zod.string(),
-  "id": zod.uuid(),
-  "learnings": zod.array(zod.object({
-  "emoji": zod.string().nullish(),
-  "id": zod.string(),
-  "text": zod.string()
-}).describe('One "What you\'ll learn" entry.')).describe('"What you\'ll learn", in display order.'),
-  "name": zod.string(),
-  "open_to_contributors": zod.boolean(),
-  "public": zod.boolean(),
-  "tags": zod.array(zod.string()),
-  "thumbnail_key": zod.string().nullish().describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
-  "thumbnail_video_key": zod.string().nullish().describe('Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.'),
-  "updated_at_unix": zod.int()
-}),
-  "course_id": zod.uuid(),
-  "course_total_steps": zod.int().describe('Published activities in the course.'),
-  "created_at_unix": zod.int(),
-  "id": zod.uuid(),
-  "status": zod.enum(['in_progress', 'completed', 'paused', 'cancelled']).describe('Trail run status (legacy `StatusEnum`; only `in_progress` is written today).'),
-  "steps": zod.array(zod.object({
-  "activity": zod.object({
-  "activity_sub_type": zod.string(),
-  "activity_type": zod.string(),
-  "chapter_id": zod.uuid(),
-  "course_id": zod.uuid(),
-  "id": zod.uuid(),
-  "name": zod.string(),
-  "position": zod.int().describe('1-based, contiguous within the chapter.'),
-  "published": zod.boolean(),
-  "version": zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.')
-}),
-  "activity_id": zod.uuid(),
-  "complete": zod.boolean(),
-  "course_id": zod.uuid(),
-  "created_at_unix": zod.int(),
-  "grade": zod.int(),
-  "id": zod.uuid(),
-  "teacher_verified": zod.boolean(),
-  "updated_at_unix": zod.int()
-})),
-  "updated_at_unix": zod.int()
-})),
-  "updated_at_unix": zod.int().nullish(),
-  "user_id": zod.uuid()
-}).describe('The caller\'s trail. `id` is `null` until something was added.')
+export const Trail = zod
+  .object({
+    created_at_unix: zod.int().nullish(),
+    id: zod.union([zod.uuid(), zod.null()]).optional(),
+    runs: zod.array(
+      zod.object({
+        course: zod.object({
+          about: zod.string(),
+          contributor_ids: zod
+            .array(zod.uuid())
+            .describe(
+              'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
+            ),
+          created_at_unix: zod.int(),
+          creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+          description: zod.string(),
+          id: zod.uuid(),
+          learnings: zod
+            .array(
+              zod
+                .object({
+                  emoji: zod.string().nullish(),
+                  id: zod.string(),
+                  text: zod.string(),
+                })
+                .describe('One "What you\'ll learn" entry.'),
+            )
+            .describe('"What you\'ll learn", in display order.'),
+          name: zod.string(),
+          open_to_contributors: zod.boolean(),
+          public: zod.boolean(),
+          tags: zod.array(zod.string()),
+          thumbnail_key: zod
+            .string()
+            .nullish()
+            .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+          thumbnail_video_key: zod
+            .string()
+            .nullish()
+            .describe(
+              'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
+            ),
+          updated_at_unix: zod.int(),
+        }),
+        course_id: zod.uuid(),
+        course_total_steps: zod.int().describe('Published activities in the course.'),
+        created_at_unix: zod.int(),
+        id: zod.uuid(),
+        status: zod
+          .enum(['in_progress', 'completed', 'paused', 'cancelled'])
+          .describe('Trail run status (legacy `StatusEnum`; only `in_progress` is written today).'),
+        steps: zod.array(
+          zod.object({
+            activity: zod.object({
+              activity_sub_type: zod.string(),
+              activity_type: zod.string(),
+              chapter_id: zod.uuid(),
+              course_id: zod.uuid(),
+              id: zod.uuid(),
+              name: zod.string(),
+              position: zod.int().describe('1-based, contiguous within the chapter.'),
+              published: zod.boolean(),
+              version: zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.'),
+            }),
+            activity_id: zod.uuid(),
+            complete: zod.boolean(),
+            course_id: zod.uuid(),
+            created_at_unix: zod.int(),
+            grade: zod.int(),
+            id: zod.uuid(),
+            teacher_verified: zod.boolean(),
+            updated_at_unix: zod.int(),
+          }),
+        ),
+        updated_at_unix: zod.int(),
+      }),
+    ),
+    updated_at_unix: zod.int().nullish(),
+    user_id: zod.uuid(),
+  })
+  .describe("The caller's trail. `id` is `null` until something was added.")
 
-export type Trail = zod.input<typeof Trail>;
-export type TrailOutput = zod.output<typeof Trail>;
+export type Trail = zod.input<typeof Trail>
+export type TrailOutput = zod.output<typeof Trail>

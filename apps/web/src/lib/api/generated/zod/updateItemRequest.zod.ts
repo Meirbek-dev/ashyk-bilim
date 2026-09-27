@@ -5,92 +5,182 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UpdateItemRequest = zod.object({
-  "body": zod.union([zod.union([zod.object({
-  "explanation": zod.string().nullish(),
-  "multiple": zod.boolean().optional(),
-  "options": zod.array(zod.object({
-  "id": zod.string(),
-  "is_correct": zod.boolean().optional(),
-  "text": zod.string().optional()
-})).optional(),
-  "prompt": zod.string().optional(),
-  "variant": zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']),zod.null()]).optional()
-}).and(zod.object({
-  "kind": zod.enum(['choice'])
-})),zod.object({
-  "min_words": zod.int().nullish(),
-  "prompt": zod.string().optional(),
-  "rubric": zod.string().nullish()
-}).and(zod.object({
-  "kind": zod.enum(['open_text'])
-})),zod.object({
-  "fields": zod.array(zod.object({
-  "field_type": zod.enum(['text', 'textarea', 'number', 'date']).optional(),
-  "id": zod.string(),
-  "label": zod.string().optional(),
-  "required": zod.boolean().optional()
-})).optional(),
-  "prompt": zod.string().optional()
-}).and(zod.object({
-  "kind": zod.enum(['form'])
-})),zod.object({
-  "constraints": zod.array(zod.string()).optional(),
-  "input_spec": zod.string().optional(),
-  "languages": zod.array(zod.int()).optional().describe('Judge0 language ids.'),
-  "max_output_kb": zod.int().nullish(),
-  "memory_limit_mb": zod.int().nullish(),
-  "output_spec": zod.string().optional(),
-  "prompt": zod.string().optional(),
-  "reference_solutions": zod.record(zod.string(), zod.string()).optional(),
-  "scoring_strategy": zod.enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission']).optional(),
-  "starter_code": zod.record(zod.string(), zod.string()).optional().describe('Keyed by language id as a string (legacy shape).'),
-  "tests": zod.array(zod.object({
-  "description": zod.string().nullish(),
-  "expected_output": zod.string().optional(),
-  "id": zod.string(),
-  "input": zod.string().optional(),
-  "is_visible": zod.boolean().optional(),
-  "match_mode": zod.enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker']).optional(),
-  "weight": zod.int().optional()
-})).optional(),
-  "time_limit_seconds": zod.int().nullish()
-}).and(zod.object({
-  "kind": zod.enum(['code'])
-})),zod.object({
-  "explanation": zod.string().nullish(),
-  "pairs": zod.array(zod.object({
-  "left": zod.string(),
-  "right": zod.string()
-})).describe('Required on the wire so a client\'s untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).'),
-  "prompt": zod.string().optional()
-}).and(zod.object({
-  "kind": zod.enum(['matching'])
-})),zod.object({
-  "left": zod.array(zod.object({
-  "id": zod.string().describe('What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).'),
-  "text": zod.string()
-})),
-  "prompt": zod.string().optional(),
-  "right": zod.array(zod.object({
-  "id": zod.string().describe('What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).'),
-  "text": zod.string()
-}))
-}).describe('The learner read of a matching item: the two columns with the right\none shuffled (stable per viewer and item), never the pairing. Authors\nkeep [`MatchingBody::pairs`].').and(zod.object({
-  "kind": zod.enum(['matching'])
-}))]).describe('Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].'),zod.null()]).optional(),
-  "max_score": zod.number().nullish().describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
-  "metadata": zod.union([zod.object({
-  "difficulty": zod.union([zod.enum(['easy', 'medium', 'hard']),zod.null()]).optional(),
-  "estimated_minutes": zod.int().nullish(),
-  "outcome_ids": zod.array(zod.string()).optional(),
-  "section_label": zod.string().nullish(),
-  "tags": zod.array(zod.string()).optional()
-}).describe('Replaces the whole metadata block when present.'),zod.null()]).optional(),
-  "title": zod.string().nullish()
+  body: zod
+    .union([
+      zod
+        .union([
+          zod
+            .object({
+              explanation: zod.string().nullish(),
+              multiple: zod.boolean().optional(),
+              options: zod
+                .array(
+                  zod.object({
+                    id: zod.string(),
+                    is_correct: zod.boolean().optional(),
+                    text: zod.string().optional(),
+                  }),
+                )
+                .optional(),
+              prompt: zod.string().optional(),
+              variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
+            })
+            .and(
+              zod.object({
+                kind: zod.enum(['choice']),
+              }),
+            ),
+          zod
+            .object({
+              min_words: zod.int().nullish(),
+              prompt: zod.string().optional(),
+              rubric: zod.string().nullish(),
+            })
+            .and(
+              zod.object({
+                kind: zod.enum(['open_text']),
+              }),
+            ),
+          zod
+            .object({
+              fields: zod
+                .array(
+                  zod.object({
+                    field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
+                    id: zod.string(),
+                    label: zod.string().optional(),
+                    required: zod.boolean().optional(),
+                  }),
+                )
+                .optional(),
+              prompt: zod.string().optional(),
+            })
+            .and(
+              zod.object({
+                kind: zod.enum(['form']),
+              }),
+            ),
+          zod
+            .object({
+              constraints: zod.array(zod.string()).optional(),
+              input_spec: zod.string().optional(),
+              languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
+              max_output_kb: zod.int().nullish(),
+              memory_limit_mb: zod.int().nullish(),
+              output_spec: zod.string().optional(),
+              prompt: zod.string().optional(),
+              reference_solutions: zod.record(zod.string(), zod.string()).optional(),
+              scoring_strategy: zod
+                .enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission'])
+                .optional(),
+              starter_code: zod
+                .record(zod.string(), zod.string())
+                .optional()
+                .describe('Keyed by language id as a string (legacy shape).'),
+              tests: zod
+                .array(
+                  zod.object({
+                    description: zod.string().nullish(),
+                    expected_output: zod.string().optional(),
+                    id: zod.string(),
+                    input: zod.string().optional(),
+                    is_visible: zod.boolean().optional(),
+                    match_mode: zod
+                      .enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
+                      .optional(),
+                    weight: zod.int().optional(),
+                  }),
+                )
+                .optional(),
+              time_limit_seconds: zod.int().nullish(),
+            })
+            .and(
+              zod.object({
+                kind: zod.enum(['code']),
+              }),
+            ),
+          zod
+            .object({
+              explanation: zod.string().nullish(),
+              pairs: zod
+                .array(
+                  zod.object({
+                    left: zod.string(),
+                    right: zod.string(),
+                  }),
+                )
+                .describe(
+                  "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
+                ),
+              prompt: zod.string().optional(),
+            })
+            .and(
+              zod.object({
+                kind: zod.enum(['matching']),
+              }),
+            ),
+          zod
+            .object({
+              left: zod.array(
+                zod.object({
+                  id: zod
+                    .string()
+                    .describe(
+                      'What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).',
+                    ),
+                  text: zod.string(),
+                }),
+              ),
+              prompt: zod.string().optional(),
+              right: zod.array(
+                zod.object({
+                  id: zod
+                    .string()
+                    .describe(
+                      'What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).',
+                    ),
+                  text: zod.string(),
+                }),
+              ),
+            })
+            .describe(
+              'The learner read of a matching item: the two columns with the right\none shuffled (stable per viewer and item), never the pairing. Authors\nkeep [`MatchingBody::pairs`].',
+            )
+            .and(
+              zod.object({
+                kind: zod.enum(['matching']),
+              }),
+            ),
+        ])
+        .describe(
+          'Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
+        ),
+      zod.null(),
+    ])
+    .optional(),
+  max_score: zod
+    .number()
+    .nullish()
+    .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
+  metadata: zod
+    .union([
+      zod
+        .object({
+          difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
+          estimated_minutes: zod.int().nullish(),
+          outcome_ids: zod.array(zod.string()).optional(),
+          section_label: zod.string().nullish(),
+          tags: zod.array(zod.string()).optional(),
+        })
+        .describe('Replaces the whole metadata block when present.'),
+      zod.null(),
+    ])
+    .optional(),
+  title: zod.string().nullish(),
 })
 
-export type UpdateItemRequest = zod.input<typeof UpdateItemRequest>;
-export type UpdateItemRequestOutput = zod.output<typeof UpdateItemRequest>;
+export type UpdateItemRequest = zod.input<typeof UpdateItemRequest>
+export type UpdateItemRequestOutput = zod.output<typeof UpdateItemRequest>

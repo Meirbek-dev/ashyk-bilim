@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CodeRunPurpose = zod.enum(['custom', 'visible', 'final', 'reference_check'])
 
-export type CodeRunPurpose = zod.input<typeof CodeRunPurpose>;
-export type CodeRunPurposeOutput = zod.output<typeof CodeRunPurpose>;
+export type CodeRunPurpose = zod.input<typeof CodeRunPurpose>
+export type CodeRunPurposeOutput = zod.output<typeof CodeRunPurpose>

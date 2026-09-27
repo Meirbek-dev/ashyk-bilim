@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const WorkQueueParams = zod.object({
-  "role": zod.union([zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'),zod.null()]).optional(),
-  "limit": zod.int().nullish(),
-  "cursor": zod.string().nullish()
+  role: zod.union([zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'), zod.null()]).optional(),
+  limit: zod.int().nullish(),
+  cursor: zod.string().nullish(),
 })
 
-export type WorkQueueParams = zod.input<typeof WorkQueueParams>;
-export type WorkQueueParamsOutput = zod.output<typeof WorkQueueParams>;
+export type WorkQueueParams = zod.input<typeof WorkQueueParams>
+export type WorkQueueParamsOutput = zod.output<typeof WorkQueueParams>

@@ -5,30 +5,49 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const SubmissionsSaveDraftBody = zod.object({
-  "answers": zod.record(zod.string(), zod.union([zod.object({
-  "kind": zod.enum(['choice']),
-  "selected": zod.array(zod.string()).optional()
-}),zod.object({
-  "kind": zod.enum(['open_text']),
-  "text": zod.string().optional()
-}),zod.object({
-  "kind": zod.enum(['form']),
-  "values": zod.record(zod.string(), zod.string()).optional()
-}),zod.object({
-  "kind": zod.enum(['code']),
-  "language": zod.int().describe('Judge0 language id.'),
-  "source": zod.string().optional()
-}),zod.object({
-  "kind": zod.enum(['matching']),
-  "matches": zod.array(zod.object({
-  "left": zod.string(),
-  "right": zod.string()
-})).optional()
-})]).describe('Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).'))
-}).describe('Partial answers; items not mentioned keep their current answer.')
+export const SubmissionsSaveDraftBody = zod
+  .object({
+    answers: zod.record(
+      zod.string(),
+      zod
+        .union([
+          zod.object({
+            kind: zod.enum(['choice']),
+            selected: zod.array(zod.string()).optional(),
+          }),
+          zod.object({
+            kind: zod.enum(['open_text']),
+            text: zod.string().optional(),
+          }),
+          zod.object({
+            kind: zod.enum(['form']),
+            values: zod.record(zod.string(), zod.string()).optional(),
+          }),
+          zod.object({
+            kind: zod.enum(['code']),
+            language: zod.int().describe('Judge0 language id.'),
+            source: zod.string().optional(),
+          }),
+          zod.object({
+            kind: zod.enum(['matching']),
+            matches: zod
+              .array(
+                zod.object({
+                  left: zod.string(),
+                  right: zod.string(),
+                }),
+              )
+              .optional(),
+          }),
+        ])
+        .describe(
+          'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
+        ),
+    ),
+  })
+  .describe('Partial answers; items not mentioned keep their current answer.')
 
-export type SubmissionsSaveDraftBody = zod.input<typeof SubmissionsSaveDraftBody>;
-export type SubmissionsSaveDraftBodyOutput = zod.output<typeof SubmissionsSaveDraftBody>;
+export type SubmissionsSaveDraftBody = zod.input<typeof SubmissionsSaveDraftBody>
+export type SubmissionsSaveDraftBodyOutput = zod.output<typeof SubmissionsSaveDraftBody>

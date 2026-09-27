@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ScoreBucket = zod.object({
-  "count": zod.int(),
-  "range": zod.string().describe('`"0-10"`, …, `"90-100"`.')
+  count: zod.int(),
+  range: zod.string().describe('`"0-10"`, …, `"90-100"`.'),
 })
 
-export type ScoreBucket = zod.input<typeof ScoreBucket>;
-export type ScoreBucketOutput = zod.output<typeof ScoreBucket>;
+export type ScoreBucket = zod.input<typeof ScoreBucket>
+export type ScoreBucketOutput = zod.output<typeof ScoreBucket>

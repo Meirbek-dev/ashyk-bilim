@@ -5,9 +5,22 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const DisabledReason = zod.enum(['NOT_PUBLISHED', 'SCHEDULED_NOT_OPEN', 'ARCHIVED', 'PAST_DUE', 'MAX_ATTEMPTS_REACHED', 'TIME_LIMIT_EXPIRED', 'REMEDIATION_REQUIRED', 'ACCESS_RESTRICTED']).describe('Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).')
+export const DisabledReason = zod
+  .enum([
+    'NOT_PUBLISHED',
+    'SCHEDULED_NOT_OPEN',
+    'ARCHIVED',
+    'PAST_DUE',
+    'MAX_ATTEMPTS_REACHED',
+    'TIME_LIMIT_EXPIRED',
+    'REMEDIATION_REQUIRED',
+    'ACCESS_RESTRICTED',
+  ])
+  .describe(
+    'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
+  )
 
-export type DisabledReason = zod.input<typeof DisabledReason>;
-export type DisabledReasonOutput = zod.output<typeof DisabledReason>;
+export type DisabledReason = zod.input<typeof DisabledReason>
+export type DisabledReasonOutput = zod.output<typeof DisabledReason>

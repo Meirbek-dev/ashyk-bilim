@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const TrailStepId = zod.uuid()
 
-export type TrailStepId = zod.input<typeof TrailStepId>;
-export type TrailStepIdOutput = zod.output<typeof TrailStepId>;
+export type TrailStepId = zod.input<typeof TrailStepId>
+export type TrailStepIdOutput = zod.output<typeof TrailStepId>

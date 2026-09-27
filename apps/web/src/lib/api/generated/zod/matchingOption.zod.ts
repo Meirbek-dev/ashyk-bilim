@@ -5,12 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const MatchingOption = zod.object({
-  "id": zod.string().describe('What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).'),
-  "text": zod.string()
+  id: zod
+    .string()
+    .describe(
+      'What the answer carries: the option text (unique per column, since\nthe readiness rules forbid duplicates).',
+    ),
+  text: zod.string(),
 })
 
-export type MatchingOption = zod.input<typeof MatchingOption>;
-export type MatchingOptionOutput = zod.output<typeof MatchingOption>;
+export type MatchingOption = zod.input<typeof MatchingOption>
+export type MatchingOptionOutput = zod.output<typeof MatchingOption>

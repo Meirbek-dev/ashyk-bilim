@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UpdatePlatformBody = zod.object({
-  "about": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "label": zod.string().nullish().describe('`null` clears the label; blank is stored as cleared too (UX-135).'),
-  "logo_upload_id": zod.uuid().nullish().describe('Finalized `platform-logo` upload to claim as the new logo.'),
-  "name": zod.string().nullish().describe('Blank → 422 `required` (trimmed in the service).'),
-  "thumbnail_upload_id": zod.uuid().nullish().describe('Finalized `platform-thumbnail` upload to claim.')
+  about: zod.string().nullish(),
+  description: zod.string().nullish(),
+  email: zod.string().nullish(),
+  label: zod.string().nullish().describe('`null` clears the label; blank is stored as cleared too (UX-135).'),
+  logo_upload_id: zod.uuid().nullish().describe('Finalized `platform-logo` upload to claim as the new logo.'),
+  name: zod.string().nullish().describe('Blank → 422 `required` (trimmed in the service).'),
+  thumbnail_upload_id: zod.uuid().nullish().describe('Finalized `platform-thumbnail` upload to claim.'),
 })
 
-export type UpdatePlatformBody = zod.input<typeof UpdatePlatformBody>;
-export type UpdatePlatformBodyOutput = zod.output<typeof UpdatePlatformBody>;
+export type UpdatePlatformBody = zod.input<typeof UpdatePlatformBody>
+export type UpdatePlatformBodyOutput = zod.output<typeof UpdatePlatformBody>

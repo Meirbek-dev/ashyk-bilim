@@ -5,18 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const TeacherAssessmentDetailSummary = zod.object({
-  "avg_attempts": zod.number().nullish(),
-  "eligible_learners": zod.int(),
-  "grading_latency_hours_p50": zod.number().nullish(),
-  "grading_latency_hours_p90": zod.number().nullish(),
-  "median_score": zod.number().nullish(),
-  "pass_rate": zod.number().nullish(),
-  "submission_rate": zod.number().nullish(),
-  "submitted_learners": zod.int()
+  avg_attempts: zod.number().nullish(),
+  eligible_learners: zod.int(),
+  grading_latency_hours_p50: zod.number().nullish(),
+  grading_latency_hours_p90: zod.number().nullish(),
+  median_score: zod.number().nullish(),
+  pass_rate: zod.number().nullish(),
+  submission_rate: zod.number().nullish(),
+  submitted_learners: zod.int(),
 })
 
-export type TeacherAssessmentDetailSummary = zod.input<typeof TeacherAssessmentDetailSummary>;
-export type TeacherAssessmentDetailSummaryOutput = zod.output<typeof TeacherAssessmentDetailSummary>;
+export type TeacherAssessmentDetailSummary = zod.input<typeof TeacherAssessmentDetailSummary>
+export type TeacherAssessmentDetailSummaryOutput = zod.output<typeof TeacherAssessmentDetailSummary>

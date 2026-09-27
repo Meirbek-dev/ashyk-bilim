@@ -5,14 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CreateCertificationBody = zod.object({
-  "config": zod.looseObject({
-
-}).optional().describe('The designer document: an object of at most 16 KiB serialized.'),
-  "course_id": zod.uuid()
+  config: zod.looseObject({}).optional().describe('The designer document: an object of at most 16 KiB serialized.'),
+  course_id: zod.uuid(),
 })
 
-export type CreateCertificationBody = zod.input<typeof CreateCertificationBody>;
-export type CreateCertificationBodyOutput = zod.output<typeof CreateCertificationBody>;
+export type CreateCertificationBody = zod.input<typeof CreateCertificationBody>
+export type CreateCertificationBodyOutput = zod.output<typeof CreateCertificationBody>

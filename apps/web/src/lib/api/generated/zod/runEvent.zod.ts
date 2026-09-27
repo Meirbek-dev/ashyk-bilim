@@ -5,17 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const RunEvent = zod.object({
-  "created_at_unix": zod.int(),
-  "event_type": zod.string(),
-  "id": zod.uuid(),
-  "payload": zod.looseObject({
-
-}),
-  "sequence": zod.int()
+  created_at_unix: zod.int(),
+  event_type: zod.string(),
+  id: zod.uuid(),
+  payload: zod.looseObject({}),
+  sequence: zod.int(),
 })
 
-export type RunEvent = zod.input<typeof RunEvent>;
-export type RunEventOutput = zod.output<typeof RunEvent>;
+export type RunEvent = zod.input<typeof RunEvent>
+export type RunEventOutput = zod.output<typeof RunEvent>

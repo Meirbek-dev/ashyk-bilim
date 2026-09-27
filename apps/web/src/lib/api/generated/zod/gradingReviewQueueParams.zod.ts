@@ -5,17 +5,33 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const GradingReviewQueueParams = zod.object({
-  "status": zod.union([zod.enum(['needs_grading', 'pending', 'graded', 'published', 'returned']).describe('Queue filter; `needs_grading` is `pending`.'),zod.null()]).optional(),
-  "late_only": zod.boolean().optional(),
-  "search": zod.string().nullish(),
-  "cursor": zod.union([zod.uuid(),zod.null()]).optional(),
-  "sort": zod.union([zod.enum(['submitted_at', 'final_score', 'attempt_number']).describe('Queue order (BUG-351): newest submission, score (ungraded lowest) or\nattempt number; ties newest first.'),zod.null()]).optional(),
-  "order": zod.union([zod.enum(['asc', 'desc']),zod.null()]).optional(),
-  "limit": zod.int().nullish()
+  status: zod
+    .union([
+      zod
+        .enum(['needs_grading', 'pending', 'graded', 'published', 'returned'])
+        .describe('Queue filter; `needs_grading` is `pending`.'),
+      zod.null(),
+    ])
+    .optional(),
+  late_only: zod.boolean().optional(),
+  search: zod.string().nullish(),
+  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+  sort: zod
+    .union([
+      zod
+        .enum(['submitted_at', 'final_score', 'attempt_number'])
+        .describe(
+          'Queue order (BUG-351): newest submission, score (ungraded lowest) or\nattempt number; ties newest first.',
+        ),
+      zod.null(),
+    ])
+    .optional(),
+  order: zod.union([zod.enum(['asc', 'desc']), zod.null()]).optional(),
+  limit: zod.int().nullish(),
 })
 
-export type GradingReviewQueueParams = zod.input<typeof GradingReviewQueueParams>;
-export type GradingReviewQueueParamsOutput = zod.output<typeof GradingReviewQueueParams>;
+export type GradingReviewQueueParams = zod.input<typeof GradingReviewQueueParams>
+export type GradingReviewQueueParamsOutput = zod.output<typeof GradingReviewQueueParams>

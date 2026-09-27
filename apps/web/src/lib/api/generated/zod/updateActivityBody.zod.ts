@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UpdateActivityBody = zod.object({
-  "activity_sub_type": zod.string().nullish(),
-  "activity_type": zod.string().nullish().describe('Change together with `activity_sub_type` (both or neither).'),
-  "content": zod.unknown().optional(),
-  "details": zod.unknown().optional(),
-  "name": zod.string().nullish(),
-  "published": zod.boolean().nullish(),
-  "settings": zod.unknown().optional()
+  activity_sub_type: zod.string().nullish(),
+  activity_type: zod.string().nullish().describe('Change together with `activity_sub_type` (both or neither).'),
+  content: zod.unknown().optional(),
+  details: zod.unknown().optional(),
+  name: zod.string().nullish(),
+  published: zod.boolean().nullish(),
+  settings: zod.unknown().optional(),
 })
 
-export type UpdateActivityBody = zod.input<typeof UpdateActivityBody>;
-export type UpdateActivityBodyOutput = zod.output<typeof UpdateActivityBody>;
+export type UpdateActivityBody = zod.input<typeof UpdateActivityBody>
+export type UpdateActivityBodyOutput = zod.output<typeof UpdateActivityBody>

@@ -5,68 +5,97 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const learnerCourseStateOutlineItemIndexMin = 0;
-
+export const learnerCourseStateOutlineItemIndexMin = 0
 
 export const LearnerCourseState = zod.object({
-  "certificate": zod.object({
-  "configured": zod.boolean(),
-  "eligible": zod.boolean(),
-  "href": zod.string().nullish(),
-  "issued": zod.boolean(),
-  "verify_code": zod.string().nullish().describe('Public verification code of the issued certificate.')
-}),
-  "course_id": zod.uuid(),
-  "enrolled": zod.boolean(),
-  "enrollment_state": zod.enum(['not_enrolled', 'in_progress', 'completed']),
-  "next_action": zod.object({
-  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "enabled": zod.boolean(),
-  "href": zod.string().nullish(),
-  "id": zod.enum(['enroll', 'start', 'continue', 'revise', 'view_feedback', 'wait_for_grade', 'view_certificate', 'review_completion', 'none']),
-  "label": zod.string(),
-  "reason": zod.string()
-}),
-  "outline": zod.array(zod.object({
-  "activities": zod.array(zod.object({
-  "activity_type": zod.string(),
-  "allowed_actions": zod.array(zod.string()),
-  "available": zod.boolean(),
-  "blocked_reason": zod.string().nullish(),
-  "complete": zod.boolean(),
-  "due_at_unix": zod.int().nullish(),
-  "id": zod.uuid(),
-  "is_late": zod.boolean(),
-  "passed": zod.boolean().nullish(),
-  "required": zod.boolean(),
-  "score": zod.number().nullish(),
-  "state": zod.enum(['not_started', 'in_progress', 'submitted', 'needs_grading', 'graded_hidden', 'returned', 'passed', 'failed', 'complete', 'locked']).describe('Product-level work state shown to the learner.'),
-  "title": zod.string()
-})),
-  "id": zod.uuid(),
-  "index": zod.int().min(learnerCourseStateOutlineItemIndexMin).describe('0-based position among chapters that have published activities.'),
-  "title": zod.string()
-})),
-  "permissions": zod.object({
-  "can_access": zod.boolean(),
-  "can_discover": zod.boolean(),
-  "can_enroll": zod.boolean(),
-  "denial_reason": zod.string().nullish()
-}),
-  "progress": zod.object({
-  "completed_at_unix": zod.int().nullish(),
-  "completed_required_count": zod.int(),
-  "grade_average": zod.number().nullish(),
-  "missing_required_count": zod.int(),
-  "needs_grading_count": zod.int(),
-  "progress_pct": zod.number(),
-  "total_required_count": zod.int()
-}),
-  "public": zod.boolean(),
-  "title": zod.string()
+  certificate: zod.object({
+    configured: zod.boolean(),
+    eligible: zod.boolean(),
+    href: zod.string().nullish(),
+    issued: zod.boolean(),
+    verify_code: zod.string().nullish().describe('Public verification code of the issued certificate.'),
+  }),
+  course_id: zod.uuid(),
+  enrolled: zod.boolean(),
+  enrollment_state: zod.enum(['not_enrolled', 'in_progress', 'completed']),
+  next_action: zod.object({
+    activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+    enabled: zod.boolean(),
+    href: zod.string().nullish(),
+    id: zod.enum([
+      'enroll',
+      'start',
+      'continue',
+      'revise',
+      'view_feedback',
+      'wait_for_grade',
+      'view_certificate',
+      'review_completion',
+      'none',
+    ]),
+    label: zod.string(),
+    reason: zod.string(),
+  }),
+  outline: zod.array(
+    zod.object({
+      activities: zod.array(
+        zod.object({
+          activity_type: zod.string(),
+          allowed_actions: zod.array(zod.string()),
+          available: zod.boolean(),
+          blocked_reason: zod.string().nullish(),
+          complete: zod.boolean(),
+          due_at_unix: zod.int().nullish(),
+          id: zod.uuid(),
+          is_late: zod.boolean(),
+          passed: zod.boolean().nullish(),
+          required: zod.boolean(),
+          score: zod.number().nullish(),
+          state: zod
+            .enum([
+              'not_started',
+              'in_progress',
+              'submitted',
+              'needs_grading',
+              'graded_hidden',
+              'returned',
+              'passed',
+              'failed',
+              'complete',
+              'locked',
+            ])
+            .describe('Product-level work state shown to the learner.'),
+          title: zod.string(),
+        }),
+      ),
+      id: zod.uuid(),
+      index: zod
+        .int()
+        .min(learnerCourseStateOutlineItemIndexMin)
+        .describe('0-based position among chapters that have published activities.'),
+      title: zod.string(),
+    }),
+  ),
+  permissions: zod.object({
+    can_access: zod.boolean(),
+    can_discover: zod.boolean(),
+    can_enroll: zod.boolean(),
+    denial_reason: zod.string().nullish(),
+  }),
+  progress: zod.object({
+    completed_at_unix: zod.int().nullish(),
+    completed_required_count: zod.int(),
+    grade_average: zod.number().nullish(),
+    missing_required_count: zod.int(),
+    needs_grading_count: zod.int(),
+    progress_pct: zod.number(),
+    total_required_count: zod.int(),
+  }),
+  public: zod.boolean(),
+  title: zod.string(),
 })
 
-export type LearnerCourseState = zod.input<typeof LearnerCourseState>;
-export type LearnerCourseStateOutput = zod.output<typeof LearnerCourseState>;
+export type LearnerCourseState = zod.input<typeof LearnerCourseState>
+export type LearnerCourseStateOutput = zod.output<typeof LearnerCourseState>

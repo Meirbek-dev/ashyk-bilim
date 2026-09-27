@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ReactionState = zod.object({
-  "dislikes_count": zod.int(),
-  "is_disliked": zod.boolean(),
-  "is_liked": zod.boolean(),
-  "likes_count": zod.int()
+  dislikes_count: zod.int(),
+  is_disliked: zod.boolean(),
+  is_liked: zod.boolean(),
+  likes_count: zod.int(),
 })
 
-export type ReactionState = zod.input<typeof ReactionState>;
-export type ReactionStateOutput = zod.output<typeof ReactionState>;
+export type ReactionState = zod.input<typeof ReactionState>
+export type ReactionStateOutput = zod.output<typeof ReactionState>

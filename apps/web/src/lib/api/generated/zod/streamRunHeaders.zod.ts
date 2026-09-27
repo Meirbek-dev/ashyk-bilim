@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const StreamRunHeaders = zod.object({
-  "Last-Event-ID": zod.string().nullish()
+  'Last-Event-ID': zod.string().nullish(),
 })
 
-export type StreamRunHeaders = zod.input<typeof StreamRunHeaders>;
-export type StreamRunHeadersOutput = zod.output<typeof StreamRunHeaders>;
+export type StreamRunHeaders = zod.input<typeof StreamRunHeaders>
+export type StreamRunHeadersOutput = zod.output<typeof StreamRunHeaders>

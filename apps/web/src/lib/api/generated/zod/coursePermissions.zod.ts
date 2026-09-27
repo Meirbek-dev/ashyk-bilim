@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CoursePermissions = zod.object({
-  "can_access": zod.boolean(),
-  "can_discover": zod.boolean(),
-  "can_enroll": zod.boolean(),
-  "denial_reason": zod.string().nullish()
+  can_access: zod.boolean(),
+  can_discover: zod.boolean(),
+  can_enroll: zod.boolean(),
+  denial_reason: zod.string().nullish(),
 })
 
-export type CoursePermissions = zod.input<typeof CoursePermissions>;
-export type CoursePermissionsOutput = zod.output<typeof CoursePermissions>;
+export type CoursePermissions = zod.input<typeof CoursePermissions>
+export type CoursePermissionsOutput = zod.output<typeof CoursePermissions>

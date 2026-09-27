@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const Severity = zod.enum(['info', 'warning', 'critical'])
 
-export type Severity = zod.input<typeof Severity>;
-export type SeverityOutput = zod.output<typeof Severity>;
+export type Severity = zod.input<typeof Severity>
+export type SeverityOutput = zod.output<typeof Severity>

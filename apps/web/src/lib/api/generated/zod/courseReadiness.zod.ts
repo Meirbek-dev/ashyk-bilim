@@ -5,21 +5,37 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CourseReadiness = zod.object({
-  "blockers": zod.array(zod.object({
-  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "code": zod.string(),
-  "title": zod.string().nullish()
-}).describe('One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.')),
-  "ready": zod.boolean(),
-  "warnings": zod.array(zod.object({
-  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "code": zod.string(),
-  "title": zod.string().nullish()
-}).describe('One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.'))
-}).describe('Course publish readiness. `ready` is `blockers.is_empty()`; the codes are\nlisted on `ab_domain::catalog::readiness` and localized by the web.')
+export const CourseReadiness = zod
+  .object({
+    blockers: zod.array(
+      zod
+        .object({
+          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+          code: zod.string(),
+          title: zod.string().nullish(),
+        })
+        .describe(
+          'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',
+        ),
+    ),
+    ready: zod.boolean(),
+    warnings: zod.array(
+      zod
+        .object({
+          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+          code: zod.string(),
+          title: zod.string().nullish(),
+        })
+        .describe(
+          'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',
+        ),
+    ),
+  })
+  .describe(
+    'Course publish readiness. `ready` is `blockers.is_empty()`; the codes are\nlisted on `ab_domain::catalog::readiness` and localized by the web.',
+  )
 
-export type CourseReadiness = zod.input<typeof CourseReadiness>;
-export type CourseReadinessOutput = zod.output<typeof CourseReadiness>;
+export type CourseReadiness = zod.input<typeof CourseReadiness>
+export type CourseReadinessOutput = zod.output<typeof CourseReadiness>

@@ -5,13 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CreatedUpload = zod.object({
-  "id": zod.uuid(),
-  "key": zod.string(),
-  "put_url": zod.string().describe('PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412.')
+  id: zod.uuid(),
+  key: zod.string(),
+  put_url: zod
+    .string()
+    .describe(
+      'PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412.',
+    ),
 })
 
-export type CreatedUpload = zod.input<typeof CreatedUpload>;
-export type CreatedUploadOutput = zod.output<typeof CreatedUpload>;
+export type CreatedUpload = zod.input<typeof CreatedUpload>
+export type CreatedUploadOutput = zod.output<typeof CreatedUpload>

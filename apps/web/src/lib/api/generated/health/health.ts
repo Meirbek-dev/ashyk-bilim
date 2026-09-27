@@ -5,11 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -21,198 +17,187 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
-  Health,
-  Problem
-} from '../zod';
+import { Health, Problem } from '../zod'
 
-import { orvalMutator } from '../../orval-mutator';
-import type { ErrorType } from '../../orval-mutator';
+import { orvalMutator } from '../../orval-mutator'
+import type { ErrorType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
 export const getLiveUrl = () => {
-
-
-
-
   return `/api/v2/health`
 }
 
 /**
  * @summary Liveness: the process is up.
  */
-export const live = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<Health> => {
-
-  return orvalMutator<Health>(getLiveUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  Health,
-);}
-
-
-
-
+export const live = async (options?: Parameters<typeof orvalMutator>[1]): Promise<Health> => {
+  return orvalMutator<Health>(
+    getLiveUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Health,
+  )
+}
 
 export const getLiveQueryKey = () => {
-    return [
-    `/api/v2/health`
-    ] as const;
-    }
+  return [`/api/v2/health`] as const
+}
 
+export const getLiveQueryOptions = <TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getLiveQueryOptions = <TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getLiveQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof live>>> = ({ signal }) => live({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getLiveQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof live>>> = ({ signal }) => live({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type LiveQueryResult = NonNullable<Awaited<ReturnType<typeof live>>>
 export type LiveQueryError = ErrorType<unknown>
 
-
 export function useLive<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof live>>,
-          TError,
-          Awaited<ReturnType<typeof live>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof live>>, TError, Awaited<ReturnType<typeof live>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLive<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof live>>,
-          TError,
-          Awaited<ReturnType<typeof live>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof live>>, TError, Awaited<ReturnType<typeof live>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLive<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Liveness: the process is up.
  */
 
 export function useLive<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getLiveQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getLiveSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof live>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getLiveQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof live>>> = ({ signal }) => live({ signal, ...requestOptions })
 
-
-
-export const getLiveSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getLiveQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof live>>> = ({ signal }) => live({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type LiveSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof live>>>
 export type LiveSuspenseQueryError = ErrorType<unknown>
 
-
 export function useLiveSuspense<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLiveSuspense<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLiveSuspense<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Liveness: the process is up.
  */
 
 export function useLiveSuspense<TData = Awaited<ReturnType<typeof live>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof live>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getLiveSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getReadyUrl = () => {
-
-
-
-
   return `/api/v2/health/ready`
 }
 
@@ -220,150 +205,152 @@ export const getReadyUrl = () => {
  * @summary Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes
 join as their clients land).
  */
-export const ready = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<Health> => {
-
-  return orvalMutator<Health>(getReadyUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  Health,
-);}
-
-
-
-
+export const ready = async (options?: Parameters<typeof orvalMutator>[1]): Promise<Health> => {
+  return orvalMutator<Health>(
+    getReadyUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Health,
+  )
+}
 
 export const getReadyQueryKey = () => {
-    return [
-    `/api/v2/health/ready`
-    ] as const;
-    }
+  return [`/api/v2/health/ready`] as const
+}
 
+export const getReadyQueryOptions = <TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getReadyQueryOptions = <TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getReadyQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof ready>>> = ({ signal }) => ready({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getReadyQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof ready>>> = ({ signal }) => ready({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ReadyQueryResult = NonNullable<Awaited<ReturnType<typeof ready>>>
 export type ReadyQueryError = ErrorType<Problem>
 
-
 export function useReady<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof ready>>,
-          TError,
-          Awaited<ReturnType<typeof ready>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof ready>>, TError, Awaited<ReturnType<typeof ready>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReady<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof ready>>,
-          TError,
-          Awaited<ReturnType<typeof ready>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof ready>>, TError, Awaited<ReturnType<typeof ready>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReady<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes
 join as their clients land).
  */
 
 export function useReady<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getReadyQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getReadySuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof ready>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getReadyQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof ready>>> = ({ signal }) => ready({ signal, ...requestOptions })
 
-
-
-export const getReadySuspenseQueryOptions = <TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getReadyQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof ready>>> = ({ signal }) => ready({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ReadySuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof ready>>>
 export type ReadySuspenseQueryError = ErrorType<Problem>
 
-
 export function useReadySuspense<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadySuspense<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadySuspense<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes
 join as their clients land).
  */
 
 export function useReadySuspense<TData = Awaited<ReturnType<typeof ready>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof ready>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getReadySuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
-
-
-
-
-
-

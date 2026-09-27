@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ChapterId = zod.uuid()
 
-export type ChapterId = zod.input<typeof ChapterId>;
-export type ChapterIdOutput = zod.output<typeof ChapterId>;
+export type ChapterId = zod.input<typeof ChapterId>
+export type ChapterIdOutput = zod.output<typeof ChapterId>

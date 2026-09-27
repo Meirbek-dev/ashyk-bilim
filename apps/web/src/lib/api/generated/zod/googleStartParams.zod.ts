@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const GoogleStartParams = zod.object({
-  "callback": zod.string().optional()
+  callback: zod.string().optional(),
 })
 
-export type GoogleStartParams = zod.input<typeof GoogleStartParams>;
-export type GoogleStartParamsOutput = zod.output<typeof GoogleStartParams>;
+export type GoogleStartParams = zod.input<typeof GoogleStartParams>
+export type GoogleStartParamsOutput = zod.output<typeof GoogleStartParams>

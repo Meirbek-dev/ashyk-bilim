@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const Platform = zod.object({
-  "about": zod.string(),
-  "description": zod.string(),
-  "email": zod.string(),
-  "label": zod.string().nullish(),
-  "logo_key": zod.string().nullish().describe('Public-bucket storage keys (served via the CDN /content route).'),
-  "name": zod.string(),
-  "thumbnail_key": zod.string().nullish()
+  about: zod.string(),
+  description: zod.string(),
+  email: zod.string(),
+  label: zod.string().nullish(),
+  logo_key: zod.string().nullish().describe('Public-bucket storage keys (served via the CDN /content route).'),
+  name: zod.string(),
+  thumbnail_key: zod.string().nullish(),
 })
 
-export type Platform = zod.input<typeof Platform>;
-export type PlatformOutput = zod.output<typeof Platform>;
+export type Platform = zod.input<typeof Platform>
+export type PlatformOutput = zod.output<typeof Platform>

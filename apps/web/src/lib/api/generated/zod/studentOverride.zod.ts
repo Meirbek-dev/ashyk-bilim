@@ -5,20 +5,20 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const StudentOverride = zod.object({
-  "created_at_unix": zod.int(),
-  "due_at_override_unix": zod.int().nullish(),
-  "expires_at_unix": zod.int().nullish(),
-  "granted_by": zod.union([zod.uuid(),zod.null()]).optional(),
-  "id": zod.uuid(),
-  "max_attempts_override": zod.int().nullish(),
-  "note": zod.string(),
-  "updated_at_unix": zod.int(),
-  "user_id": zod.uuid(),
-  "waive_late_penalty": zod.boolean()
+  created_at_unix: zod.int(),
+  due_at_override_unix: zod.int().nullish(),
+  expires_at_unix: zod.int().nullish(),
+  granted_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  id: zod.uuid(),
+  max_attempts_override: zod.int().nullish(),
+  note: zod.string(),
+  updated_at_unix: zod.int(),
+  user_id: zod.uuid(),
+  waive_late_penalty: zod.boolean(),
 })
 
-export type StudentOverride = zod.input<typeof StudentOverride>;
-export type StudentOverrideOutput = zod.output<typeof StudentOverride>;
+export type StudentOverride = zod.input<typeof StudentOverride>
+export type StudentOverrideOutput = zod.output<typeof StudentOverride>

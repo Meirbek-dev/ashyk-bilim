@@ -5,32 +5,25 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const RunStreamRequest = zod.object({
-  "context": zod.array(zod.looseObject({
+export const RunStreamRequest = zod
+  .object({
+    context: zod.array(zod.looseObject({})).nullish(),
+    forwardedProps: zod.looseObject({}).nullish(),
+    messages: zod.array(zod.looseObject({})).nullish(),
+    parentRunId: zod.string().nullish(),
+    protocolVersion: zod.string().nullish(),
+    resume: zod.array(zod.looseObject({})).nullish(),
+    runId: zod.string(),
+    state: zod.looseObject({}).nullish(),
+    threadId: zod.string(),
+    tools: zod
+      .array(zod.looseObject({}))
+      .nullish()
+      .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
+  })
+  .describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.')
 
-})).nullish(),
-  "forwardedProps": zod.looseObject({
-
-}).nullish(),
-  "messages": zod.array(zod.looseObject({
-
-})).nullish(),
-  "parentRunId": zod.string().nullish(),
-  "protocolVersion": zod.string().nullish(),
-  "resume": zod.array(zod.looseObject({
-
-})).nullish(),
-  "runId": zod.string(),
-  "state": zod.looseObject({
-
-}).nullish(),
-  "threadId": zod.string(),
-  "tools": zod.array(zod.looseObject({
-
-})).nullish().describe('AG-UI protocol fields the client always sends; accepted and ignored.')
-}).describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.')
-
-export type RunStreamRequest = zod.input<typeof RunStreamRequest>;
-export type RunStreamRequestOutput = zod.output<typeof RunStreamRequest>;
+export type RunStreamRequest = zod.input<typeof RunStreamRequest>
+export type RunStreamRequestOutput = zod.output<typeof RunStreamRequest>

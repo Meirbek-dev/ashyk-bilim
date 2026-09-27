@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UserRank = zod.object({
-  "rank": zod.int().nullish().describe('`null` when the profile opted out of the leaderboard.'),
-  "user_id": zod.uuid()
+  rank: zod.int().nullish().describe('`null` when the profile opted out of the leaderboard.'),
+  user_id: zod.uuid(),
 })
 
-export type UserRank = zod.input<typeof UserRank>;
-export type UserRankOutput = zod.output<typeof UserRank>;
+export type UserRank = zod.input<typeof UserRank>
+export type UserRankOutput = zod.output<typeof UserRank>

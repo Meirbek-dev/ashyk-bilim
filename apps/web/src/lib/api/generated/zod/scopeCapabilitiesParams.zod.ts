@@ -5,12 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ScopeCapabilitiesParams = zod.object({
-  "surface": zod.union([zod.enum(['student-activity', 'teacher-studio', 'teacher-review', 'course-page', 'admin']).describe('Which client screen is asking (legacy `AISurface`).'),zod.null()]).optional(),
-  "activity_id": zod.union([zod.uuid(),zod.null()]).optional()
+  surface: zod
+    .union([
+      zod
+        .enum(['student-activity', 'teacher-studio', 'teacher-review', 'course-page', 'admin'])
+        .describe('Which client screen is asking (legacy `AISurface`).'),
+      zod.null(),
+    ])
+    .optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
-export type ScopeCapabilitiesParams = zod.input<typeof ScopeCapabilitiesParams>;
-export type ScopeCapabilitiesParamsOutput = zod.output<typeof ScopeCapabilitiesParams>;
+export type ScopeCapabilitiesParams = zod.input<typeof ScopeCapabilitiesParams>
+export type ScopeCapabilitiesParamsOutput = zod.output<typeof ScopeCapabilitiesParams>

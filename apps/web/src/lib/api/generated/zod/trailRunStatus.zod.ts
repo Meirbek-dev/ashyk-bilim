@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const TrailRunStatus = zod.enum(['in_progress', 'completed', 'paused', 'cancelled']).describe('Trail run status (legacy `StatusEnum`; only `in_progress` is written today).')
+export const TrailRunStatus = zod
+  .enum(['in_progress', 'completed', 'paused', 'cancelled'])
+  .describe('Trail run status (legacy `StatusEnum`; only `in_progress` is written today).')
 
-export type TrailRunStatus = zod.input<typeof TrailRunStatus>;
-export type TrailRunStatusOutput = zod.output<typeof TrailRunStatus>;
+export type TrailRunStatus = zod.input<typeof TrailRunStatus>
+export type TrailRunStatusOutput = zod.output<typeof TrailRunStatus>

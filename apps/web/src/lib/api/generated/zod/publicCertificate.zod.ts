@@ -5,14 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const PublicCertificate = zod.object({
-  "certification_id": zod.uuid(),
-  "id": zod.uuid(),
-  "issued_at_unix": zod.int(),
-  "verify_code": zod.string()
-}).describe('A certificate as the public sees it (no holder id).')
+export const PublicCertificate = zod
+  .object({
+    certification_id: zod.uuid(),
+    id: zod.uuid(),
+    issued_at_unix: zod.int(),
+    verify_code: zod.string(),
+  })
+  .describe('A certificate as the public sees it (no holder id).')
 
-export type PublicCertificate = zod.input<typeof PublicCertificate>;
-export type PublicCertificateOutput = zod.output<typeof PublicCertificate>;
+export type PublicCertificate = zod.input<typeof PublicCertificate>
+export type PublicCertificateOutput = zod.output<typeof PublicCertificate>

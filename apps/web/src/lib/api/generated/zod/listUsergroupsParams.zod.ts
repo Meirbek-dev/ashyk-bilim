@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ListUsergroupsParams = zod.object({
-  "cursor": zod.uuid().optional(),
-  "limit": zod.int().optional()
+  cursor: zod.uuid().optional(),
+  limit: zod.int().optional(),
 })
 
-export type ListUsergroupsParams = zod.input<typeof ListUsergroupsParams>;
-export type ListUsergroupsParamsOutput = zod.output<typeof ListUsergroupsParams>;
+export type ListUsergroupsParams = zod.input<typeof ListUsergroupsParams>
+export type ListUsergroupsParamsOutput = zod.output<typeof ListUsergroupsParams>

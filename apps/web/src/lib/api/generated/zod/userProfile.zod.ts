@@ -5,20 +5,26 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const UserProfile = zod.object({
-  "avatar_key": zod.string().nullish(),
-  "bio": zod.string(),
-  "display_name": zod.string(),
-  "email": zod.string(),
-  "google_linked": zod.boolean().describe('A Google identity is linked; Google sign-in never asks for the TOTP\ncode.'),
-  "has_password": zod.boolean().describe('The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188.'),
-  "id": zod.uuid(),
-  "locale": zod.string(),
-  "mfa_enabled": zod.boolean().describe('TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).'),
-  "username": zod.string()
+  avatar_key: zod.string().nullish(),
+  bio: zod.string(),
+  display_name: zod.string(),
+  email: zod.string(),
+  google_linked: zod.boolean().describe('A Google identity is linked; Google sign-in never asks for the TOTP\ncode.'),
+  has_password: zod
+    .boolean()
+    .describe(
+      'The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188.',
+    ),
+  id: zod.uuid(),
+  locale: zod.string(),
+  mfa_enabled: zod
+    .boolean()
+    .describe('TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).'),
+  username: zod.string(),
 })
 
-export type UserProfile = zod.input<typeof UserProfile>;
-export type UserProfileOutput = zod.output<typeof UserProfile>;
+export type UserProfile = zod.input<typeof UserProfile>
+export type UserProfileOutput = zod.output<typeof UserProfile>

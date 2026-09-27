@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AccessUser = zod.object({
-  "avatar_key": zod.string().nullish(),
-  "display_name": zod.string(),
-  "id": zod.uuid(),
-  "username": zod.string()
+  avatar_key: zod.string().nullish(),
+  display_name: zod.string(),
+  id: zod.uuid(),
+  username: zod.string(),
 })
 
-export type AccessUser = zod.input<typeof AccessUser>;
-export type AccessUserOutput = zod.output<typeof AccessUser>;
+export type AccessUser = zod.input<typeof AccessUser>
+export type AccessUserOutput = zod.output<typeof AccessUser>

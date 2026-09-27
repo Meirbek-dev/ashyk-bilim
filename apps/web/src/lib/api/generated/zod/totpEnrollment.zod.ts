@@ -5,12 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const TotpEnrollment = zod.object({
-  "secret": zod.string().describe('Base32 secret for manual entry.'),
-  "uri": zod.string().describe('`otpauth://` URI for QR rendering.')
-}).describe('TOTP enrollment secrets — shown to the user exactly once.')
+export const TotpEnrollment = zod
+  .object({
+    secret: zod.string().describe('Base32 secret for manual entry.'),
+    uri: zod.string().describe('`otpauth://` URI for QR rendering.'),
+  })
+  .describe('TOTP enrollment secrets — shown to the user exactly once.')
 
-export type TotpEnrollment = zod.input<typeof TotpEnrollment>;
-export type TotpEnrollmentOutput = zod.output<typeof TotpEnrollment>;
+export type TotpEnrollment = zod.input<typeof TotpEnrollment>
+export type TotpEnrollmentOutput = zod.output<typeof TotpEnrollment>

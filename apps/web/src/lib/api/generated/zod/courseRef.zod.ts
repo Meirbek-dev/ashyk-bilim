@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CourseRef = zod.object({
-  "id": zod.uuid(),
-  "name": zod.string()
+  id: zod.uuid(),
+  name: zod.string(),
 })
 
-export type CourseRef = zod.input<typeof CourseRef>;
-export type CourseRefOutput = zod.output<typeof CourseRef>;
+export type CourseRef = zod.input<typeof CourseRef>
+export type CourseRefOutput = zod.output<typeof CourseRef>

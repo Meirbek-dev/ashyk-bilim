@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ItemKind = zod.enum(['choice', 'open_text', 'form', 'code', 'matching'])
 
-export type ItemKind = zod.input<typeof ItemKind>;
-export type ItemKindOutput = zod.output<typeof ItemKind>;
+export type ItemKind = zod.input<typeof ItemKind>
+export type ItemKindOutput = zod.output<typeof ItemKind>

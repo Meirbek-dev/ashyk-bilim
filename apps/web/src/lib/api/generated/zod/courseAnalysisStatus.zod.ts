@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CourseAnalysisStatus = zod.enum(['draft', 'needs_human_review', 'published']).describe('Course analysis publication state.')
+export const CourseAnalysisStatus = zod
+  .enum(['draft', 'needs_human_review', 'published'])
+  .describe('Course analysis publication state.')
 
-export type CourseAnalysisStatus = zod.input<typeof CourseAnalysisStatus>;
-export type CourseAnalysisStatusOutput = zod.output<typeof CourseAnalysisStatus>;
+export type CourseAnalysisStatus = zod.input<typeof CourseAnalysisStatus>
+export type CourseAnalysisStatusOutput = zod.output<typeof CourseAnalysisStatus>

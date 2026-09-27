@@ -5,20 +5,26 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const AdminUserPage = zod.object({
-  "items": zod.array(zod.object({
-  "created_at_unix": zod.int(),
-  "display_name": zod.string(),
-  "email": zod.string(),
-  "id": zod.uuid(),
-  "roles": zod.array(zod.string()),
-  "status": zod.string().describe('`active` or `disabled`.'),
-  "username": zod.string()
-}).describe('Admin listing row (includes email + status — platform:read gated).')),
-  "next_cursor": zod.union([zod.uuid(),zod.null()]).optional()
-}).describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
+export const AdminUserPage = zod
+  .object({
+    items: zod.array(
+      zod
+        .object({
+          created_at_unix: zod.int(),
+          display_name: zod.string(),
+          email: zod.string(),
+          id: zod.uuid(),
+          roles: zod.array(zod.string()),
+          status: zod.string().describe('`active` or `disabled`.'),
+          username: zod.string(),
+        })
+        .describe('Admin listing row (includes email + status — platform:read gated).'),
+    ),
+    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+  })
+  .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 
-export type AdminUserPage = zod.input<typeof AdminUserPage>;
-export type AdminUserPageOutput = zod.output<typeof AdminUserPage>;
+export type AdminUserPage = zod.input<typeof AdminUserPage>
+export type AdminUserPageOutput = zod.output<typeof AdminUserPage>

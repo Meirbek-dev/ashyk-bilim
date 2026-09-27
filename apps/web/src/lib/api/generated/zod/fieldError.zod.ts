@@ -5,13 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const FieldError = zod.object({
-  "code": zod.string(),
-  "field": zod.string(),
-  "message": zod.string()
-}).describe('A single field-level validation failure. `code` is a stable machine key the\nfrontend translates (e.g. `required`, `too-long`); `message` is English.')
+export const FieldError = zod
+  .object({
+    code: zod.string(),
+    field: zod.string(),
+    message: zod.string(),
+  })
+  .describe(
+    'A single field-level validation failure. `code` is a stable machine key the\nfrontend translates (e.g. `required`, `too-long`); `message` is English.',
+  )
 
-export type FieldError = zod.input<typeof FieldError>;
-export type FieldErrorOutput = zod.output<typeof FieldError>;
+export type FieldError = zod.input<typeof FieldError>
+export type FieldErrorOutput = zod.output<typeof FieldError>

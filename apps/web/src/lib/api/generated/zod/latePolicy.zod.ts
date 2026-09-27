@@ -5,18 +5,24 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const LatePolicy = zod.union([zod.object({
-  "kind": zod.enum(['none'])
-}),zod.object({
-  "kind": zod.enum(['penalty']),
-  "max_days": zod.int(),
-  "percent_per_day": zod.number()
-}),zod.object({
-  "cutoff_at_unix": zod.int(),
-  "kind": zod.enum(['cutoff'])
-})]).describe('Late-submission handling.')
+export const LatePolicy = zod
+  .union([
+    zod.object({
+      kind: zod.enum(['none']),
+    }),
+    zod.object({
+      kind: zod.enum(['penalty']),
+      max_days: zod.int(),
+      percent_per_day: zod.number(),
+    }),
+    zod.object({
+      cutoff_at_unix: zod.int(),
+      kind: zod.enum(['cutoff']),
+    }),
+  ])
+  .describe('Late-submission handling.')
 
-export type LatePolicy = zod.input<typeof LatePolicy>;
-export type LatePolicyOutput = zod.output<typeof LatePolicy>;
+export type LatePolicy = zod.input<typeof LatePolicy>
+export type LatePolicyOutput = zod.output<typeof LatePolicy>

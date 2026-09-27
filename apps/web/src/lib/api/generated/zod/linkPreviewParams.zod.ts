@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const LinkPreviewParams = zod.object({
-  "url": zod.string()
+  url: zod.string(),
 })
 
-export type LinkPreviewParams = zod.input<typeof LinkPreviewParams>;
-export type LinkPreviewParamsOutput = zod.output<typeof LinkPreviewParams>;
+export type LinkPreviewParams = zod.input<typeof LinkPreviewParams>
+export type LinkPreviewParamsOutput = zod.output<typeof LinkPreviewParams>

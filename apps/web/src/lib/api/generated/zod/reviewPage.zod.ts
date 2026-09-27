@@ -5,30 +5,40 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ReviewPage = zod.object({
-  "items": zod.array(zod.object({
-  "attempt_number": zod.int(),
-  "auto_score": zod.number().nullish(),
-  "enrolled": zod.boolean().describe('The learner is a course member (trail run); a leaver\'s row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).'),
-  "final_score": zod.number().nullish(),
-  "graded_at_unix": zod.int().nullish(),
-  "id": zod.uuid(),
-  "is_late": zod.boolean(),
-  "staff": zod.boolean().describe('The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).'),
-  "status": zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-  "submitted_at_unix": zod.int().nullish(),
-  "user": zod.object({
-  "display_name": zod.string(),
-  "email": zod.string(),
-  "id": zod.uuid(),
-  "username": zod.string()
-}),
-  "version": zod.int().describe('Teacher optimistic lock (`If-Match` on grade saves).')
-})),
-  "next_cursor": zod.union([zod.uuid(),zod.null()]).optional()
+  items: zod.array(
+    zod.object({
+      attempt_number: zod.int(),
+      auto_score: zod.number().nullish(),
+      enrolled: zod
+        .boolean()
+        .describe(
+          "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).",
+        ),
+      final_score: zod.number().nullish(),
+      graded_at_unix: zod.int().nullish(),
+      id: zod.uuid(),
+      is_late: zod.boolean(),
+      staff: zod
+        .boolean()
+        .describe(
+          'The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).',
+        ),
+      status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
+      submitted_at_unix: zod.int().nullish(),
+      user: zod.object({
+        display_name: zod.string(),
+        email: zod.string(),
+        id: zod.uuid(),
+        username: zod.string(),
+      }),
+      version: zod.int().describe('Teacher optimistic lock (`If-Match` on grade saves).'),
+    }),
+  ),
+  next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
-export type ReviewPage = zod.input<typeof ReviewPage>;
-export type ReviewPageOutput = zod.output<typeof ReviewPage>;
+export type ReviewPage = zod.input<typeof ReviewPage>
+export type ReviewPageOutput = zod.output<typeof ReviewPage>

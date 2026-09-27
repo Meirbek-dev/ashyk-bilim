@@ -5,11 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -21,49 +17,41 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
-  LinkPreview,
-  LinkPreviewParams,
-  Problem
-} from '../zod';
+import { LinkPreview, LinkPreviewParams, Problem } from '../zod'
 
-import { orvalMutator, stringifyQueryParam } from '../../orval-mutator';
-import type { ErrorType } from '../../orval-mutator';
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
+import type { ErrorType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
-export const getLinkPreviewUrl = (params: LinkPreviewParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getLinkPreviewUrl = (params: LinkPreviewParams) => {
+  const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
-  });
+  })
 
-  const stringifiedParams = normalizedParams.toString();
+  const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0 ? `/api/v2/utils/link-preview?${stringifiedParams}` : `/api/v2/utils/link-preview`
 }
@@ -75,148 +63,182 @@ export const getLinkPreviewUrl = (params: LinkPreviewParams,) => {
  * read answers 502 `link-preview-failed`; a rejected URL 422 (`url`).
  * @summary OpenGraph preview of a public web page, for the editor's link block.
  */
-export const linkPreview = async (params: LinkPreviewParams, options?: Parameters<typeof orvalMutator>[1]): Promise<LinkPreview> => {
+export const linkPreview = async (
+  params: LinkPreviewParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<LinkPreview> => {
+  return orvalMutator<LinkPreview>(
+    getLinkPreviewUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    LinkPreview,
+  )
+}
 
-  return orvalMutator<LinkPreview>(getLinkPreviewUrl(params),
-  {
-    ...options,
-    method: 'GET'
+export const getLinkPreviewQueryKey = (params?: LinkPreviewParams) => {
+  return [`/api/v2/utils/link-preview`, ...(params ? [params] : [])] as const
+}
 
-
+export const getLinkPreviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof linkPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  LinkPreview,
-);}
-
-
-
-
-
-export const getLinkPreviewQueryKey = (params?: LinkPreviewParams,) => {
-    return [
-    `/api/v2/utils/link-preview`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getLinkPreviewQueryOptions = <TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(params: LinkPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getLinkPreviewQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getLinkPreviewQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof linkPreview>>> = ({ signal }) =>
+    linkPreview(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof linkPreview>>> = ({ signal }) => linkPreview(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof linkPreview>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type LinkPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof linkPreview>>>
 export type LinkPreviewQueryError = ErrorType<Problem>
 
-
 export function useLinkPreview<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>> & Pick<
+  params: LinkPreviewParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof linkPreview>>,
           TError,
           Awaited<ReturnType<typeof linkPreview>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLinkPreview<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>> & Pick<
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof linkPreview>>,
           TError,
           Awaited<ReturnType<typeof linkPreview>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLinkPreview<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary OpenGraph preview of a public web page, for the editor's link block.
  */
 
 export function useLinkPreview<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLinkPreviewQueryOptions(params, options)
 
-  const queryOptions = getLinkPreviewQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getLinkPreviewSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(params: LinkPreviewParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getLinkPreviewSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof linkPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getLinkPreviewQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getLinkPreviewQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof linkPreview>>> = ({ signal }) =>
+    linkPreview(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof linkPreview>>> = ({ signal }) => linkPreview(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type LinkPreviewSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof linkPreview>>>
 export type LinkPreviewSuspenseQueryError = ErrorType<Problem>
 
-
 export function useLinkPreviewSuspense<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: LinkPreviewParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLinkPreviewSuspense<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLinkPreviewSuspense<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary OpenGraph preview of a public web page, for the editor's link block.
  */
 
 export function useLinkPreviewSuspense<TData = Awaited<ReturnType<typeof linkPreview>>, TError = ErrorType<Problem>>(
- params: LinkPreviewParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params: LinkPreviewParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof linkPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLinkPreviewSuspenseQueryOptions(params, options)
 
-  const queryOptions = getLinkPreviewSuspenseQueryOptions(params,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
-
-
-
-
-
-

@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CommonFailureRow = zod.object({
-  "count": zod.int(),
-  "key": zod.string(),
-  "label": zod.string()
+  count: zod.int(),
+  key: zod.string(),
+  label: zod.string(),
 })
 
-export type CommonFailureRow = zod.input<typeof CommonFailureRow>;
-export type CommonFailureRowOutput = zod.output<typeof CommonFailureRow>;
+export type CommonFailureRow = zod.input<typeof CommonFailureRow>
+export type CommonFailureRowOutput = zod.output<typeof CommonFailureRow>

@@ -5,19 +5,23 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ChoiceBody = zod.object({
-  "explanation": zod.string().nullish(),
-  "multiple": zod.boolean().optional(),
-  "options": zod.array(zod.object({
-  "id": zod.string(),
-  "is_correct": zod.boolean().optional(),
-  "text": zod.string().optional()
-})).optional(),
-  "prompt": zod.string().optional(),
-  "variant": zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']),zod.null()]).optional()
+  explanation: zod.string().nullish(),
+  multiple: zod.boolean().optional(),
+  options: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        is_correct: zod.boolean().optional(),
+        text: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  prompt: zod.string().optional(),
+  variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
 })
 
-export type ChoiceBody = zod.input<typeof ChoiceBody>;
-export type ChoiceBodyOutput = zod.output<typeof ChoiceBody>;
+export type ChoiceBody = zod.input<typeof ChoiceBody>
+export type ChoiceBodyOutput = zod.output<typeof ChoiceBody>

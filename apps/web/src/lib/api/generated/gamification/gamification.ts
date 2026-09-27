@@ -5,12 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -25,10 +20,10 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
+import {
   AdminAwardRequest,
   AwardResponse,
   Dashboard,
@@ -41,582 +36,632 @@ import type {
   StreakKind,
   StreakUpdate,
   UpdateGamificationConfigRequest,
-  UserRank
-} from '../zod';
+  UserRank,
+} from '../zod'
 
-import { orvalMutator, stringifyQueryParam } from '../../orval-mutator';
-import type { ErrorType , BodyType } from '../../orval-mutator';
+import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
+import type { ErrorType, BodyType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
 export const getDashboardUrl = () => {
-
-
-
-
   return `/api/v2/gamification`
 }
 
 /**
  * @summary Profile, recent XP, rank and the top-10 leaderboard in one call.
  */
-export const dashboard = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<Dashboard> => {
-
-  return orvalMutator<Dashboard>(getDashboardUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  Dashboard,
-);}
-
-
-
-
+export const dashboard = async (options?: Parameters<typeof orvalMutator>[1]): Promise<Dashboard> => {
+  return orvalMutator<Dashboard>(
+    getDashboardUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Dashboard,
+  )
+}
 
 export const getDashboardQueryKey = () => {
-    return [
-    `/api/v2/gamification`
-    ] as const;
-    }
+  return [`/api/v2/gamification`] as const
+}
 
+export const getDashboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof dashboard>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getDashboardQueryOptions = <TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getDashboardQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboard>>> = ({ signal }) =>
+    dashboard({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getDashboardQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboard>>> = ({ signal }) => dashboard({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof dashboard>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type DashboardQueryResult = NonNullable<Awaited<ReturnType<typeof dashboard>>>
 export type DashboardQueryError = ErrorType<unknown>
 
-
 export function useDashboard<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof dashboard>>,
-          TError,
-          Awaited<ReturnType<typeof dashboard>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof dashboard>>, TError, Awaited<ReturnType<typeof dashboard>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboard<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>> & Pick<
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof dashboard>>,
           TError,
           Awaited<ReturnType<typeof dashboard>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboard<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Profile, recent XP, rank and the top-10 leaderboard in one call.
  */
 
 export function useDashboard<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getDashboardQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getDashboardSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof dashboard>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getDashboardQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboard>>> = ({ signal }) =>
+    dashboard({ signal, ...requestOptions })
 
-
-
-export const getDashboardSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getDashboardQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboard>>> = ({ signal }) => dashboard({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type DashboardSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof dashboard>>>
 export type DashboardSuspenseQueryError = ErrorType<unknown>
 
-
 export function useDashboardSuspense<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboardSuspense<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboardSuspense<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Profile, recent XP, rank and the top-10 leaderboard in one call.
  */
 
 export function useDashboardSuspense<TData = Awaited<ReturnType<typeof dashboard>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof dashboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getDashboardSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getGetConfigUrl = () => {
-
-
-
-
   return `/api/v2/gamification/config`
 }
 
-export const getConfig = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<GamificationConfig> => {
-
-  return orvalMutator<GamificationConfig>(getGetConfigUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  GamificationConfig,
-);}
-
-
-
-
+export const getConfig = async (options?: Parameters<typeof orvalMutator>[1]): Promise<GamificationConfig> => {
+  return orvalMutator<GamificationConfig>(
+    getGetConfigUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    GamificationConfig,
+  )
+}
 
 export const getGetConfigQueryKey = () => {
-    return [
-    `/api/v2/gamification/config`
-    ] as const;
-    }
+  return [`/api/v2/gamification/config`] as const
+}
 
+export const getGetConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof getConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getGetConfigQueryOptions = <TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetConfigQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getConfig>>> = ({ signal }) =>
+    getConfig({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getGetConfigQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConfig>>> = ({ signal }) => getConfig({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getConfig>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getConfig>>>
 export type GetConfigQueryError = ErrorType<unknown>
 
-
 export function useGetConfig<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getConfig>>,
-          TError,
-          Awaited<ReturnType<typeof getConfig>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof getConfig>>, TError, Awaited<ReturnType<typeof getConfig>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetConfig<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>> & Pick<
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getConfig>>,
           TError,
           Awaited<ReturnType<typeof getConfig>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetConfig<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useGetConfig<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetConfigQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getGetConfigSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getGetConfigQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getConfig>>> = ({ signal }) =>
+    getConfig({ signal, ...requestOptions })
 
-
-
-export const getGetConfigSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetConfigQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConfig>>> = ({ signal }) => getConfig({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetConfigSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getConfig>>>
 export type GetConfigSuspenseQueryError = ErrorType<unknown>
 
+export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useGetConfigSuspense<TData = Awaited<ReturnType<typeof getConfig>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getConfig>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetConfigSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getUpdateConfigUrl = () => {
-
-
-
-
   return `/api/v2/gamification/config`
 }
 
 /**
  * @summary Replace the policy overrides (`platform:manage`).
  */
-export const updateConfig = async (updateGamificationConfigRequest: UpdateGamificationConfigRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<GamificationConfig> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updateConfig = async (
+  updateGamificationConfigRequest: UpdateGamificationConfigRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<GamificationConfig> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<GamificationConfig>(getUpdateConfigUrl(),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(updateGamificationConfigRequest)
-  },
-  GamificationConfig,
-);}
+    return headers
+  }
+  return orvalMutator<GamificationConfig>(
+    getUpdateConfigUrl(),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateGamificationConfigRequest),
+    },
+    GamificationConfig,
+  )
+}
 
+export const getUpdateConfigMutationKey = () => ['updateConfig'] as const
 
+export const getUpdateConfigMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateConfig>>,
+    TError,
+    UpdateConfigMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof updateConfig>>, TError, UpdateConfigMutationVariables, TContext> => {
+  const mutationKey = getUpdateConfigMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateConfig>>,
+    UpdateConfigMutationVariables
+  > = props => {
+    const { data } = props ?? {}
 
+    return updateConfig(data, requestOptions)
+  }
 
-export const getUpdateConfigMutationKey = () => ['updateConfig'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdateConfigMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConfig>>, TError,UpdateConfigMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateConfig>>, TError,UpdateConfigMutationVariables, TContext> => {
+export type UpdateConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateConfig>>>
+export type UpdateConfigMutationBody = BodyType<UpdateGamificationConfigRequest>
+export type UpdateConfigMutationError = ErrorType<unknown>
+export type UpdateConfigMutationVariables = { data: BodyType<UpdateGamificationConfigRequest> }
 
-const mutationKey = getUpdateConfigMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateConfig>>, UpdateConfigMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  updateConfig(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateConfig>>>
-    export type UpdateConfigMutationBody = BodyType<UpdateGamificationConfigRequest>
-    export type UpdateConfigMutationError = ErrorType<unknown>
-    export type UpdateConfigMutationVariables = {data: BodyType<UpdateGamificationConfigRequest>}
-
-    /**
+/**
  * @summary Replace the policy overrides (`platform:manage`).
  */
-export const useUpdateConfig = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateConfig>>, TError,UpdateConfigMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateConfig>>,
-        TError,
-        UpdateConfigMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateConfigMutationOptions(options), queryClient);
-    }
-    export const getLeaderboardUrl = (params?: LeaderboardParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const useUpdateConfig = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateConfig>>,
+      TError,
+      UpdateConfigMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof updateConfig>>, TError, UpdateConfigMutationVariables, TContext> => {
+  return useMutation(getUpdateConfigMutationOptions(options), queryClient)
+}
+export const getLeaderboardUrl = (params?: LeaderboardParams) => {
+  const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
-  });
+  })
 
-  const stringifiedParams = normalizedParams.toString();
+  const stringifiedParams = normalizedParams.toString()
 
-  return stringifiedParams.length > 0 ? `/api/v2/gamification/leaderboard?${stringifiedParams}` : `/api/v2/gamification/leaderboard`
+  return stringifiedParams.length > 0
+    ? `/api/v2/gamification/leaderboard?${stringifiedParams}`
+    : `/api/v2/gamification/leaderboard`
 }
 
-export const leaderboard = async (params?: LeaderboardParams, options?: Parameters<typeof orvalMutator>[1]): Promise<Leaderboard> => {
+export const leaderboard = async (
+  params?: LeaderboardParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Leaderboard> => {
+  return orvalMutator<Leaderboard>(
+    getLeaderboardUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Leaderboard,
+  )
+}
 
-  return orvalMutator<Leaderboard>(getLeaderboardUrl(params),
-  {
-    ...options,
-    method: 'GET'
+export const getLeaderboardQueryKey = (params?: LeaderboardParams) => {
+  return [`/api/v2/gamification/leaderboard`, ...(params ? [params] : [])] as const
+}
 
-
+export const getLeaderboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof leaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  Leaderboard,
-);}
-
-
-
-
-
-export const getLeaderboardQueryKey = (params?: LeaderboardParams,) => {
-    return [
-    `/api/v2/gamification/leaderboard`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(params?: LeaderboardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getLeaderboardQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getLeaderboardQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof leaderboard>>> = ({ signal }) =>
+    leaderboard(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof leaderboard>>> = ({ signal }) => leaderboard(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof leaderboard>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type LeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof leaderboard>>>
 export type LeaderboardQueryError = ErrorType<unknown>
 
-
 export function useLeaderboard<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params: undefined |  LeaderboardParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>> & Pick<
+  params: undefined | LeaderboardParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof leaderboard>>,
           TError,
           Awaited<ReturnType<typeof leaderboard>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLeaderboard<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>> & Pick<
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof leaderboard>>,
           TError,
           Awaited<ReturnType<typeof leaderboard>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useLeaderboard<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useLeaderboard<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLeaderboardQueryOptions(params, options)
 
-  const queryOptions = getLeaderboardQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getLeaderboardSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(params?: LeaderboardParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getLeaderboardSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof leaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getLeaderboardQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getLeaderboardQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof leaderboard>>> = ({ signal }) =>
+    leaderboard(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof leaderboard>>> = ({ signal }) => leaderboard(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type LeaderboardSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof leaderboard>>>
 export type LeaderboardSuspenseQueryError = ErrorType<unknown>
 
+export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
+  params: undefined | LeaderboardParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params: undefined |  LeaderboardParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: LeaderboardParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getLeaderboardSuspenseQueryOptions(params, options)
 
-export function useLeaderboardSuspense<TData = Awaited<ReturnType<typeof leaderboard>>, TError = ErrorType<unknown>>(
- params?: LeaderboardParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof leaderboard>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const queryOptions = getLeaderboardSuspenseQueryOptions(params,options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getUpdatePreferencesUrl = () => {
-
-
-
-
   return `/api/v2/gamification/preferences`
 }
 
@@ -624,236 +669,246 @@ export const getUpdatePreferencesUrl = () => {
  * @summary Merge preferences: a section absent from the patch is kept, `null`
 removes it, an object replaces it. Unknown sections or keys are 422.
  */
-export const updatePreferences = async (preferencesPatch: PreferencesPatch, options?: Parameters<typeof orvalMutator>[1]): Promise<Profile> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updatePreferences = async (
+  preferencesPatch: PreferencesPatch,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Profile> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<Profile>(getUpdatePreferencesUrl(),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(preferencesPatch)
-  },
-  Profile,
-);}
+    return headers
+  }
+  return orvalMutator<Profile>(
+    getUpdatePreferencesUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(preferencesPatch),
+    },
+    Profile,
+  )
+}
 
+export const getUpdatePreferencesMutationKey = () => ['updatePreferences'] as const
 
+export const getUpdatePreferencesMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePreferences>>,
+    TError,
+    UpdatePreferencesMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePreferences>>,
+  TError,
+  UpdatePreferencesMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdatePreferencesMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePreferences>>,
+    UpdatePreferencesMutationVariables
+  > = props => {
+    const { data } = props ?? {}
 
+    return updatePreferences(data, requestOptions)
+  }
 
-export const getUpdatePreferencesMutationKey = () => ['updatePreferences'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdatePreferencesMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePreferences>>, TError,UpdatePreferencesMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updatePreferences>>, TError,UpdatePreferencesMutationVariables, TContext> => {
+export type UpdatePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updatePreferences>>>
+export type UpdatePreferencesMutationBody = BodyType<PreferencesPatch>
+export type UpdatePreferencesMutationError = ErrorType<Problem>
+export type UpdatePreferencesMutationVariables = { data: BodyType<PreferencesPatch> }
 
-const mutationKey = getUpdatePreferencesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePreferences>>, UpdatePreferencesMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  updatePreferences(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdatePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updatePreferences>>>
-    export type UpdatePreferencesMutationBody = BodyType<PreferencesPatch>
-    export type UpdatePreferencesMutationError = ErrorType<Problem>
-    export type UpdatePreferencesMutationVariables = {data: BodyType<PreferencesPatch>}
-
-    /**
+/**
  * @summary Merge preferences: a section absent from the patch is kept, `null`
 removes it, an object replaces it. Unknown sections or keys are 422.
  */
-export const useUpdatePreferences = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePreferences>>, TError,UpdatePreferencesMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePreferences>>,
-        TError,
-        UpdatePreferencesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdatePreferencesMutationOptions(options), queryClient);
-    }
-    export const getRankUrl = () => {
-
-
-
-
+export const useUpdatePreferences = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updatePreferences>>,
+      TError,
+      UpdatePreferencesMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updatePreferences>>,
+  TError,
+  UpdatePreferencesMutationVariables,
+  TContext
+> => {
+  return useMutation(getUpdatePreferencesMutationOptions(options), queryClient)
+}
+export const getRankUrl = () => {
   return `/api/v2/gamification/rank`
 }
 
-export const rank = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<UserRank> => {
-
-  return orvalMutator<UserRank>(getRankUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  UserRank,
-);}
-
-
-
-
+export const rank = async (options?: Parameters<typeof orvalMutator>[1]): Promise<UserRank> => {
+  return orvalMutator<UserRank>(
+    getRankUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UserRank,
+  )
+}
 
 export const getRankQueryKey = () => {
-    return [
-    `/api/v2/gamification/rank`
-    ] as const;
-    }
+  return [`/api/v2/gamification/rank`] as const
+}
 
+export const getRankQueryOptions = <TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getRankQueryOptions = <TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getRankQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof rank>>> = ({ signal }) => rank({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getRankQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof rank>>> = ({ signal }) => rank({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type RankQueryResult = NonNullable<Awaited<ReturnType<typeof rank>>>
 export type RankQueryError = ErrorType<unknown>
 
+export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof rank>>, TError, Awaited<ReturnType<typeof rank>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof rank>>, TError, Awaited<ReturnType<typeof rank>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof rank>>,
-          TError,
-          Awaited<ReturnType<typeof rank>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof rank>>,
-          TError,
-          Awaited<ReturnType<typeof rank>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useRank<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getRankQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getRankSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof rank>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getRankQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof rank>>> = ({ signal }) => rank({ signal, ...requestOptions })
 
-
-
-export const getRankSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getRankQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof rank>>> = ({ signal }) => rank({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type RankSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof rank>>>
 export type RankSuspenseQueryError = ErrorType<unknown>
 
+export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useRankSuspense<TData = Awaited<ReturnType<typeof rank>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof rank>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getRankSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getRecordStreakUrl = (kind: StreakKind,) => {
-
-
-
-
+export const getRecordStreakUrl = (kind: StreakKind) => {
   return `/api/v2/gamification/streaks/${kind}`
 }
 
@@ -862,76 +917,75 @@ export const getRecordStreakUrl = (kind: StreakKind,) => {
 gap resets). `learning` is 422: that streak is recorded by completing
 an activity.
  */
-export const recordStreak = async (kind: StreakKind, options?: Parameters<typeof orvalMutator>[1]): Promise<StreakUpdate> => {
+export const recordStreak = async (
+  kind: StreakKind,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<StreakUpdate> => {
+  return orvalMutator<StreakUpdate>(
+    getRecordStreakUrl(kind),
+    {
+      ...options,
+      method: 'POST',
+    },
+    StreakUpdate,
+  )
+}
 
-  return orvalMutator<StreakUpdate>(getRecordStreakUrl(kind),
-  {
-    ...options,
-    method: 'POST'
+export const getRecordStreakMutationKey = () => ['recordStreak'] as const
 
+export const getRecordStreakMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordStreak>>,
+    TError,
+    RecordStreakMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof recordStreak>>, TError, RecordStreakMutationVariables, TContext> => {
+  const mutationKey = getRecordStreakMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  StreakUpdate,
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recordStreak>>,
+    RecordStreakMutationVariables
+  > = props => {
+    const { kind } = props ?? {}
 
+    return recordStreak(kind, requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type RecordStreakMutationResult = NonNullable<Awaited<ReturnType<typeof recordStreak>>>
 
+export type RecordStreakMutationError = ErrorType<Problem>
+export type RecordStreakMutationVariables = { kind: StreakKind }
 
-export const getRecordStreakMutationKey = () => ['recordStreak'] as const;
-
-export const getRecordStreakMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordStreak>>, TError,RecordStreakMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof recordStreak>>, TError,RecordStreakMutationVariables, TContext> => {
-
-const mutationKey = getRecordStreakMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordStreak>>, RecordStreakMutationVariables> = (props) => {
-          const {kind} = props ?? {};
-
-          return  recordStreak(kind,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RecordStreakMutationResult = NonNullable<Awaited<ReturnType<typeof recordStreak>>>
-
-    export type RecordStreakMutationError = ErrorType<Problem>
-    export type RecordStreakMutationVariables = {kind: StreakKind}
-
-    /**
+/**
  * @summary Touch the login streak for today (same day keeps, next day extends, a
 gap resets). `learning` is 422: that streak is recorded by completing
 an activity.
  */
-export const useRecordStreak = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordStreak>>, TError,RecordStreakMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof recordStreak>>,
-        TError,
-        RecordStreakMutationVariables,
-        TContext
-      > => {
-      return useMutation(getRecordStreakMutationOptions(options), queryClient);
-    }
-    export const getAdminAwardUrl = () => {
-
-
-
-
+export const useRecordStreak = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof recordStreak>>,
+      TError,
+      RecordStreakMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof recordStreak>>, TError, RecordStreakMutationVariables, TContext> => {
+  return useMutation(getRecordStreakMutationOptions(options), queryClient)
+}
+export const getAdminAwardUrl = () => {
   return `/api/v2/gamification/xp`
 }
 
@@ -939,81 +993,73 @@ export const useRecordStreak = <TError = ErrorType<Problem>,
  * @summary Grant XP to a user (`platform:manage`). Learners never award themselves
 in v2; XP is a side effect of completing things.
  */
-export const adminAward = async (adminAwardRequest: AdminAwardRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AwardResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const adminAward = async (
+  adminAwardRequest: AdminAwardRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AwardResponse> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AwardResponse>(getAdminAwardUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(adminAwardRequest)
-  },
-  AwardResponse,
-);}
+    return headers
+  }
+  return orvalMutator<AwardResponse>(
+    getAdminAwardUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(adminAwardRequest),
+    },
+    AwardResponse,
+  )
+}
 
+export const getAdminAwardMutationKey = () => ['adminAward'] as const
 
+export const getAdminAwardMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError, AdminAwardMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError, AdminAwardMutationVariables, TContext> => {
+  const mutationKey = getAdminAwardMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAward>>, AdminAwardMutationVariables> = props => {
+    const { data } = props ?? {}
 
+    return adminAward(data, requestOptions)
+  }
 
-export const getAdminAwardMutationKey = () => ['adminAward'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getAdminAwardMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError,AdminAwardMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError,AdminAwardMutationVariables, TContext> => {
+export type AdminAwardMutationResult = NonNullable<Awaited<ReturnType<typeof adminAward>>>
+export type AdminAwardMutationBody = BodyType<AdminAwardRequest>
+export type AdminAwardMutationError = ErrorType<Problem>
+export type AdminAwardMutationVariables = { data: BodyType<AdminAwardRequest> }
 
-const mutationKey = getAdminAwardMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAward>>, AdminAwardMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  adminAward(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AdminAwardMutationResult = NonNullable<Awaited<ReturnType<typeof adminAward>>>
-    export type AdminAwardMutationBody = BodyType<AdminAwardRequest>
-    export type AdminAwardMutationError = ErrorType<Problem>
-    export type AdminAwardMutationVariables = {data: BodyType<AdminAwardRequest>}
-
-    /**
+/**
  * @summary Grant XP to a user (`platform:manage`). Learners never award themselves
 in v2; XP is a side effect of completing things.
  */
-export const useAdminAward = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError,AdminAwardMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof adminAward>>,
-        TError,
-        AdminAwardMutationVariables,
-        TContext
-      > => {
-      return useMutation(getAdminAwardMutationOptions(options), queryClient);
-    }
+export const useAdminAward = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof adminAward>>, TError, AdminAwardMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof adminAward>>, TError, AdminAwardMutationVariables, TContext> => {
+  return useMutation(getAdminAwardMutationOptions(options), queryClient)
+}

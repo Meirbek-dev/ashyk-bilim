@@ -5,15 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const SaveViewRequest = zod.object({
-  "name": zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
-  "query": zod.looseObject({
+export const SaveViewRequest = zod
+  .object({
+    name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
+    query: zod
+      .looseObject({})
+      .optional()
+      .describe('The saved filter state (an object of at most 16 KiB serialized, UX-148).'),
+    view_type: zod.string().optional().describe('Defaults to `overview`.'),
+  })
+  .describe('Save (or overwrite by name + type) a dashboard view.')
 
-}).optional().describe('The saved filter state (an object of at most 16 KiB serialized, UX-148).'),
-  "view_type": zod.string().optional().describe('Defaults to `overview`.')
-}).describe('Save (or overwrite by name + type) a dashboard view.')
-
-export type SaveViewRequest = zod.input<typeof SaveViewRequest>;
-export type SaveViewRequestOutput = zod.output<typeof SaveViewRequest>;
+export type SaveViewRequest = zod.input<typeof SaveViewRequest>
+export type SaveViewRequestOutput = zod.output<typeof SaveViewRequest>

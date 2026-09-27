@@ -5,13 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CreateUploadBody = zod.object({
-  "mime": zod.string(),
-  "purpose": zod.string().describe('One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission.'),
-  "size_bytes": zod.int()
+  mime: zod.string(),
+  purpose: zod
+    .string()
+    .describe('One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission.'),
+  size_bytes: zod.int(),
 })
 
-export type CreateUploadBody = zod.input<typeof CreateUploadBody>;
-export type CreateUploadBodyOutput = zod.output<typeof CreateUploadBody>;
+export type CreateUploadBody = zod.input<typeof CreateUploadBody>
+export type CreateUploadBodyOutput = zod.output<typeof CreateUploadBody>

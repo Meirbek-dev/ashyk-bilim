@@ -5,16 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AdminCohortRow = zod.object({
-  "avg_progress_pct": zod.number().nullish(),
-  "cohort_id": zod.uuid(),
-  "cohort_name": zod.string(),
-  "learners": zod.int(),
-  "retained_learners": zod.int(),
-  "retention_rate": zod.number().nullish()
+  avg_progress_pct: zod.number().nullish(),
+  cohort_id: zod.uuid(),
+  cohort_name: zod.string(),
+  learners: zod.int(),
+  retained_learners: zod.int(),
+  retention_rate: zod.number().nullish(),
 })
 
-export type AdminCohortRow = zod.input<typeof AdminCohortRow>;
-export type AdminCohortRowOutput = zod.output<typeof AdminCohortRow>;
+export type AdminCohortRow = zod.input<typeof AdminCohortRow>
+export type AdminCohortRowOutput = zod.output<typeof AdminCohortRow>

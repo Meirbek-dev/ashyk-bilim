@@ -5,35 +5,35 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AtRiskLearnerRow = zod.object({
-  "cohort_name": zod.string().nullish(),
-  "confidence_level": zod.enum(['low', 'medium', 'high']),
-  "course_id": zod.uuid(),
-  "course_name": zod.string(),
-  "days_since_last_activity": zod.int().nullish(),
-  "failed_assessments": zod.int(),
-  "intervention_count": zod.int(),
-  "last_intervention_at_unix": zod.int().nullish(),
-  "last_intervention_outcome": zod.string().nullish(),
-  "last_intervention_type": zod.string().nullish(),
-  "missing_required_assessments": zod.int(),
-  "open_grading_blocks": zod.int(),
-  "previous_risk_score": zod.number().nullish(),
-  "progress_pct": zod.number(),
-  "reason_codes": zod.array(zod.string()),
-  "recommended_action": zod.string().describe('Stable code (`review_submissions_first`, …).'),
-  "risk_components": zod.record(zod.string(), zod.number()),
-  "risk_level": zod.enum(['low', 'medium', 'high']),
-  "risk_score": zod.number(),
-  "risk_score_delta": zod.number().nullish(),
-  "risk_trend": zod.enum(['newly_at_risk', 'worsening', 'improving', 'recovered', 'stable']),
-  "top_contributing_factor": zod.string().nullish(),
-  "user_display_name": zod.string(),
-  "user_id": zod.uuid(),
-  "why_now": zod.string().describe('Stable code explaining the strongest signal.')
+  cohort_name: zod.string().nullish(),
+  confidence_level: zod.enum(['low', 'medium', 'high']),
+  course_id: zod.uuid(),
+  course_name: zod.string(),
+  days_since_last_activity: zod.int().nullish(),
+  failed_assessments: zod.int(),
+  intervention_count: zod.int(),
+  last_intervention_at_unix: zod.int().nullish(),
+  last_intervention_outcome: zod.string().nullish(),
+  last_intervention_type: zod.string().nullish(),
+  missing_required_assessments: zod.int(),
+  open_grading_blocks: zod.int(),
+  previous_risk_score: zod.number().nullish(),
+  progress_pct: zod.number(),
+  reason_codes: zod.array(zod.string()),
+  recommended_action: zod.string().describe('Stable code (`review_submissions_first`, …).'),
+  risk_components: zod.record(zod.string(), zod.number()),
+  risk_level: zod.enum(['low', 'medium', 'high']),
+  risk_score: zod.number(),
+  risk_score_delta: zod.number().nullish(),
+  risk_trend: zod.enum(['newly_at_risk', 'worsening', 'improving', 'recovered', 'stable']),
+  top_contributing_factor: zod.string().nullish(),
+  user_display_name: zod.string(),
+  user_id: zod.uuid(),
+  why_now: zod.string().describe('Stable code explaining the strongest signal.'),
 })
 
-export type AtRiskLearnerRow = zod.input<typeof AtRiskLearnerRow>;
-export type AtRiskLearnerRowOutput = zod.output<typeof AtRiskLearnerRow>;
+export type AtRiskLearnerRow = zod.input<typeof AtRiskLearnerRow>
+export type AtRiskLearnerRowOutput = zod.output<typeof AtRiskLearnerRow>

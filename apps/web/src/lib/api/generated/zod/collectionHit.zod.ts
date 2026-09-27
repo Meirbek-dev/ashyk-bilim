@@ -5,14 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CollectionHit = zod.object({
-  "description": zod.string(),
-  "id": zod.uuid(),
-  "name": zod.string(),
-  "public": zod.boolean()
-}).describe('Collections in search results are light — no embedded courses.')
+export const CollectionHit = zod
+  .object({
+    description: zod.string(),
+    id: zod.uuid(),
+    name: zod.string(),
+    public: zod.boolean(),
+  })
+  .describe('Collections in search results are light — no embedded courses.')
 
-export type CollectionHit = zod.input<typeof CollectionHit>;
-export type CollectionHitOutput = zod.output<typeof CollectionHit>;
+export type CollectionHit = zod.input<typeof CollectionHit>
+export type CollectionHitOutput = zod.output<typeof CollectionHit>

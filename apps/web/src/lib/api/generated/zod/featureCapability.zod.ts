@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const FeatureCapability = zod.object({
-  "enabled": zod.boolean(),
-  "key": zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-  "reason": zod.string().nullish()
+  enabled: zod.boolean(),
+  key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
+  reason: zod.string().nullish(),
 })
 
-export type FeatureCapability = zod.input<typeof FeatureCapability>;
-export type FeatureCapabilityOutput = zod.output<typeof FeatureCapability>;
+export type FeatureCapability = zod.input<typeof FeatureCapability>
+export type FeatureCapabilityOutput = zod.output<typeof FeatureCapability>

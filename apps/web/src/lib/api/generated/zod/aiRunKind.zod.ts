@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const AiRunKind = zod.enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa']).describe('Which agent a run executes (legacy `run_metadata.kind`).')
+export const AiRunKind = zod
+  .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
+  .describe('Which agent a run executes (legacy `run_metadata.kind`).')
 
-export type AiRunKind = zod.input<typeof AiRunKind>;
-export type AiRunKindOutput = zod.output<typeof AiRunKind>;
+export type AiRunKind = zod.input<typeof AiRunKind>
+export type AiRunKindOutput = zod.output<typeof AiRunKind>

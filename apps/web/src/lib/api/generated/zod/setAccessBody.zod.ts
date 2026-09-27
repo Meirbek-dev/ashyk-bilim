@@ -5,13 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const SetAccessBody = zod.object({
-  "mode": zod.enum(['all_course_learners', 'restricted']),
-  "user_ids": zod.array(zod.uuid()).optional().describe('Direct allowlist (restricted mode); each must be a course member (enrolled learner).'),
-  "usergroup_ids": zod.array(zod.uuid()).optional().describe('Group allowlist (restricted mode); each must be linked to the course.')
+  mode: zod.enum(['all_course_learners', 'restricted']),
+  user_ids: zod
+    .array(zod.uuid())
+    .optional()
+    .describe('Direct allowlist (restricted mode); each must be a course member (enrolled learner).'),
+  usergroup_ids: zod
+    .array(zod.uuid())
+    .optional()
+    .describe('Group allowlist (restricted mode); each must be linked to the course.'),
 })
 
-export type SetAccessBody = zod.input<typeof SetAccessBody>;
-export type SetAccessBodyOutput = zod.output<typeof SetAccessBody>;
+export type SetAccessBody = zod.input<typeof SetAccessBody>
+export type SetAccessBodyOutput = zod.output<typeof SetAccessBody>

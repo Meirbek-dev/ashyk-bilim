@@ -5,19 +5,28 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const SaveGradeBody = zod.object({
-  "action": zod.enum(['save', 'publish', 'return']),
-  "audit_note": zod.string().nullish().describe('Grader\'s note for the audit trail; never shown to the learner.'),
-  "feedback": zod.string().nullish().describe('Overall feedback shown to the learner; omitted = keep the stored one.'),
-  "final_score": zod.number().nullish().describe('Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).'),
-  "item_grades": zod.array(zod.object({
-  "feedback": zod.string().optional(),
-  "item_id": zod.uuid(),
-  "score": zod.number().nullish().describe('Points for this item (its `max_score` scale).')
-})).optional()
+  action: zod.enum(['save', 'publish', 'return']),
+  audit_note: zod.string().nullish().describe("Grader's note for the audit trail; never shown to the learner."),
+  feedback: zod.string().nullish().describe('Overall feedback shown to the learner; omitted = keep the stored one.'),
+  final_score: zod
+    .number()
+    .nullish()
+    .describe(
+      'Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).',
+    ),
+  item_grades: zod
+    .array(
+      zod.object({
+        feedback: zod.string().optional(),
+        item_id: zod.uuid(),
+        score: zod.number().nullish().describe('Points for this item (its `max_score` scale).'),
+      }),
+    )
+    .optional(),
 })
 
-export type SaveGradeBody = zod.input<typeof SaveGradeBody>;
-export type SaveGradeBodyOutput = zod.output<typeof SaveGradeBody>;
+export type SaveGradeBody = zod.input<typeof SaveGradeBody>
+export type SaveGradeBodyOutput = zod.output<typeof SaveGradeBody>

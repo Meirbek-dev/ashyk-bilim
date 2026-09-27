@@ -5,26 +5,33 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const SubmissionAnalysis = zod.object({
-  "analysis": zod.looseObject({
-
-}),
-  "created_at_unix": zod.int(),
-  "evidence": zod.looseObject({
-
-}),
-  "file_submission_attempt_id": zod.union([zod.uuid().describe('The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.'),zod.null()]).optional(),
-  "gap_count": zod.int(),
-  "id": zod.uuid(),
-  "language": zod.string(),
-  "model_name": zod.string().nullish(),
-  "run_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "status": zod.string(),
-  "submission_id": zod.union([zod.uuid().describe('The analysed assessment submission — `null` for a file attempt.'),zod.null()]).optional(),
-  "triggered_by": zod.union([zod.uuid(),zod.null()]).optional()
+  analysis: zod.looseObject({}),
+  created_at_unix: zod.int(),
+  evidence: zod.looseObject({}),
+  file_submission_attempt_id: zod
+    .union([
+      zod
+        .uuid()
+        .describe(
+          'The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
+        ),
+      zod.null(),
+    ])
+    .optional(),
+  gap_count: zod.int(),
+  id: zod.uuid(),
+  language: zod.string(),
+  model_name: zod.string().nullish(),
+  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  status: zod.string(),
+  submission_id: zod
+    .union([zod.uuid().describe('The analysed assessment submission — `null` for a file attempt.'), zod.null()])
+    .optional(),
+  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
-export type SubmissionAnalysis = zod.input<typeof SubmissionAnalysis>;
-export type SubmissionAnalysisOutput = zod.output<typeof SubmissionAnalysis>;
+export type SubmissionAnalysis = zod.input<typeof SubmissionAnalysis>
+export type SubmissionAnalysisOutput = zod.output<typeof SubmissionAnalysis>

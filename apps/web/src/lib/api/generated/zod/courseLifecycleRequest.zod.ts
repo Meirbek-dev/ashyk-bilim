@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CourseLifecycleRequest = zod.object({
-  "action": zod.string().describe('`publish` or `unpublish`.')
+  action: zod.string().describe('`publish` or `unpublish`.'),
 })
 
-export type CourseLifecycleRequest = zod.input<typeof CourseLifecycleRequest>;
-export type CourseLifecycleRequestOutput = zod.output<typeof CourseLifecycleRequest>;
+export type CourseLifecycleRequest = zod.input<typeof CourseLifecycleRequest>
+export type CourseLifecycleRequestOutput = zod.output<typeof CourseLifecycleRequest>

@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const BulkActionId = zod.uuid()
 
-export type BulkActionId = zod.input<typeof BulkActionId>;
-export type BulkActionIdOutput = zod.output<typeof BulkActionId>;
+export type BulkActionId = zod.input<typeof BulkActionId>
+export type BulkActionIdOutput = zod.output<typeof BulkActionId>

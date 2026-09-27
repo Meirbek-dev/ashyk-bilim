@@ -5,13 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const LanguageInfo = zod.object({
-  "id": zod.int(),
-  "monaco_language": zod.string().describe('Monaco editor language id.'),
-  "name": zod.string()
-}).describe('A Judge0 language the platform allows.')
+export const LanguageInfo = zod
+  .object({
+    id: zod.int(),
+    monaco_language: zod.string().describe('Monaco editor language id.'),
+    name: zod.string(),
+  })
+  .describe('A Judge0 language the platform allows.')
 
-export type LanguageInfo = zod.input<typeof LanguageInfo>;
-export type LanguageInfoOutput = zod.output<typeof LanguageInfo>;
+export type LanguageInfo = zod.input<typeof LanguageInfo>
+export type LanguageInfoOutput = zod.output<typeof LanguageInfo>

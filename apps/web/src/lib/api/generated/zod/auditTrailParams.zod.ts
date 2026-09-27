@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AuditTrailParams = zod.object({
-  "limit": zod.int().optional()
+  limit: zod.int().optional(),
 })
 
-export type AuditTrailParams = zod.input<typeof AuditTrailParams>;
-export type AuditTrailParamsOutput = zod.output<typeof AuditTrailParams>;
+export type AuditTrailParams = zod.input<typeof AuditTrailParams>
+export type AuditTrailParamsOutput = zod.output<typeof AuditTrailParams>

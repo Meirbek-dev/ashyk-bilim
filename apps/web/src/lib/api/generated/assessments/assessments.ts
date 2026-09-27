@@ -5,12 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -25,10 +20,10 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
+import {
   AccessView,
   ActivityId,
   Assessment,
@@ -53,193 +48,241 @@ import type {
   StudentOverride,
   UpdateAssessmentRequest,
   UpdateItemRequest,
-  UserId
-} from '../zod';
+  UserId,
+} from '../zod'
 
-import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator';
-import type { ErrorType , BodyType } from '../../orval-mutator';
+import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
+import type { ErrorType, BodyType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
-export const getGetActivityAssessmentUrl = (id: ActivityId,) => {
-
-
-
-
+export const getGetActivityAssessmentUrl = (id: ActivityId) => {
   return `/api/v2/activities/${id}/assessment`
 }
 
 /**
  * @summary The assessment behind an activity (same access rules as by id).
  */
-export const getActivityAssessment = async (id: ActivityId, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
+export const getActivityAssessment = async (
+  id: ActivityId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  return orvalMutator<AssessmentDetail>(
+    getGetActivityAssessmentUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentDetail,
+  )
+}
 
-  return orvalMutator<AssessmentDetail>(getGetActivityAssessmentUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getGetActivityAssessmentQueryKey = (id: ActivityId) => {
+  return [`/api/v2/activities/${id}/assessment`] as const
+}
 
-
+export const getGetActivityAssessmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  AssessmentDetail,
-);}
-
-
-
-
-
-export const getGetActivityAssessmentQueryKey = (id: ActivityId,) => {
-    return [
-    `/api/v2/activities/${id}/assessment`
-    ] as const;
-    }
-
-
-export const getGetActivityAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(id: ActivityId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetActivityAssessmentQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetActivityAssessmentQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityAssessment>>> = ({ signal }) =>
+    getActivityAssessment(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityAssessment>>> = ({ signal }) => getActivityAssessment(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivityAssessment>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetActivityAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityAssessment>>>
 export type GetActivityAssessmentQueryError = ErrorType<Problem>
 
-
-export function useGetActivityAssessment<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>> & Pick<
+export function useGetActivityAssessment<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getActivityAssessment>>,
           TError,
           Awaited<ReturnType<typeof getActivityAssessment>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetActivityAssessment<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>> & Pick<
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetActivityAssessment<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getActivityAssessment>>,
           TError,
           Awaited<ReturnType<typeof getActivityAssessment>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetActivityAssessment<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetActivityAssessment<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The assessment behind an activity (same access rules as by id).
  */
 
-export function useGetActivityAssessment<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useGetActivityAssessment<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetActivityAssessmentQueryOptions(id, options)
 
-  const queryOptions = getGetActivityAssessmentQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGetActivityAssessmentSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(id: ActivityId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getGetActivityAssessmentSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetActivityAssessmentQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetActivityAssessmentQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityAssessment>>> = ({ signal }) =>
+    getActivityAssessment(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityAssessment>>> = ({ signal }) => getActivityAssessment(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetActivityAssessmentSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityAssessment>>>
 export type GetActivityAssessmentSuspenseQueryError = ErrorType<Problem>
 
-
-export function useGetActivityAssessmentSuspense<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetActivityAssessmentSuspense<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetActivityAssessmentSuspense<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetActivityAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetActivityAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetActivityAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The assessment behind an activity (same access rules as by id).
  */
 
-export function useGetActivityAssessmentSuspense<TData = Awaited<ReturnType<typeof getActivityAssessment>>, TError = ErrorType<Problem>>(
- id: ActivityId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useGetActivityAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getActivityAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: ActivityId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getActivityAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetActivityAssessmentSuspenseQueryOptions(id, options)
 
-  const queryOptions = getGetActivityAssessmentSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getDeleteItemUrl = (id: AssessmentItemId,) => {
-
-
-
-
+export const getDeleteItemUrl = (id: AssessmentItemId) => {
   return `/api/v2/assessment-items/${id}`
 }
 
@@ -247,73 +290,56 @@ export const getDeleteItemUrl = (id: AssessmentItemId,) => {
  * @summary Delete an item; siblings renumber.
  */
 export const deleteItem = async (id: AssessmentItemId, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+  return orvalMutator<void>(
+    getDeleteItemUrl(id),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
 
-  return orvalMutator<void>(getDeleteItemUrl(id),
-  {
-    ...options,
-    method: 'DELETE'
+export const getDeleteItemMutationKey = () => ['deleteItem'] as const
 
+export const getDeleteItemMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError, DeleteItemMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError, DeleteItemMutationVariables, TContext> => {
+  const mutationKey = getDeleteItemMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  voidParser,
-);}
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItem>>, DeleteItemMutationVariables> = props => {
+    const { id } = props ?? {}
 
+    return deleteItem(id, requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type DeleteItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItem>>>
 
+export type DeleteItemMutationError = ErrorType<Problem>
+export type DeleteItemMutationVariables = { id: AssessmentItemId }
 
-export const getDeleteItemMutationKey = () => ['deleteItem'] as const;
-
-export const getDeleteItemMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,DeleteItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,DeleteItemMutationVariables, TContext> => {
-
-const mutationKey = getDeleteItemMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItem>>, DeleteItemMutationVariables> = (props) => {
-          const {id} = props ?? {};
-
-          return  deleteItem(id,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItem>>>
-
-    export type DeleteItemMutationError = ErrorType<Problem>
-    export type DeleteItemMutationVariables = {id: AssessmentItemId}
-
-    /**
+/**
  * @summary Delete an item; siblings renumber.
  */
-export const useDeleteItem = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,DeleteItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteItem>>,
-        TError,
-        DeleteItemMutationVariables,
-        TContext
-      > => {
-      return useMutation(getDeleteItemMutationOptions(options), queryClient);
-    }
-    export const getUpdateItemUrl = (id: AssessmentItemId,) => {
-
-
-
-
+export const useDeleteItem = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError, DeleteItemMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof deleteItem>>, TError, DeleteItemMutationVariables, TContext> => {
+  return useMutation(getDeleteItemMutationOptions(options), queryClient)
+}
+export const getUpdateItemUrl = (id: AssessmentItemId) => {
   return `/api/v2/assessment-items/${id}`
 }
 
@@ -321,90 +347,78 @@ export const useDeleteItem = <TError = ErrorType<Problem>,
  * @summary Partial item update. Body/max-score changes are refused (409) once a
 published assessment has graded submissions.
  */
-export const updateItem = async (id: AssessmentItemId,
-    updateItemRequest: UpdateItemRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentItem> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updateItem = async (
+  id: AssessmentItemId,
+  updateItemRequest: UpdateItemRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentItem> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentItem>(getUpdateItemUrl(id),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(updateItemRequest)
-  },
-  AssessmentItem,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentItem>(
+    getUpdateItemUrl(id),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateItemRequest),
+    },
+    AssessmentItem,
+  )
+}
 
+export const getUpdateItemMutationKey = () => ['updateItem'] as const
 
+export const getUpdateItemMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError, UpdateItemMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError, UpdateItemMutationVariables, TContext> => {
+  const mutationKey = getUpdateItemMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem>>, UpdateItemMutationVariables> = props => {
+    const { id, data } = props ?? {}
 
+    return updateItem(id, data, requestOptions)
+  }
 
-export const getUpdateItemMutationKey = () => ['updateItem'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdateItemMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,UpdateItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,UpdateItemMutationVariables, TContext> => {
+export type UpdateItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateItem>>>
+export type UpdateItemMutationBody = BodyType<UpdateItemRequest>
+export type UpdateItemMutationError = ErrorType<Problem>
+export type UpdateItemMutationVariables = { id: AssessmentItemId; data: BodyType<UpdateItemRequest> }
 
-const mutationKey = getUpdateItemMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem>>, UpdateItemMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  updateItem(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateItem>>>
-    export type UpdateItemMutationBody = BodyType<UpdateItemRequest>
-    export type UpdateItemMutationError = ErrorType<Problem>
-    export type UpdateItemMutationVariables = {id: AssessmentItemId;data: BodyType<UpdateItemRequest>}
-
-    /**
+/**
  * @summary Partial item update. Body/max-score changes are refused (409) once a
 published assessment has graded submissions.
  */
-export const useUpdateItem = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,UpdateItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateItem>>,
-        TError,
-        UpdateItemMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateItemMutationOptions(options), queryClient);
-    }
-    export const getCreateAssessmentUrl = () => {
-
-
-
-
+export const useUpdateItem = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError, UpdateItemMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof updateItem>>, TError, UpdateItemMutationVariables, TContext> => {
+  return useMutation(getUpdateItemMutationOptions(options), queryClient)
+}
+export const getCreateAssessmentUrl = () => {
   return `/api/v2/assessments`
 }
 
@@ -414,88 +428,99 @@ export const useUpdateItem = <TError = ErrorType<Problem>,
  * item.
  * @summary Create an assessment with its backing activity (appended to the chapter).
  */
-export const createAssessment = async (createAssessmentRequest: CreateAssessmentRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const createAssessment = async (
+  createAssessmentRequest: CreateAssessmentRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentDetail>(getCreateAssessmentUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(createAssessmentRequest)
-  },
-  AssessmentDetail,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentDetail>(
+    getCreateAssessmentUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(createAssessmentRequest),
+    },
+    AssessmentDetail,
+  )
+}
 
+export const getCreateAssessmentMutationKey = () => ['createAssessment'] as const
 
+export const getCreateAssessmentMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAssessment>>,
+    TError,
+    CreateAssessmentMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAssessment>>,
+  TError,
+  CreateAssessmentMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCreateAssessmentMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAssessment>>,
+    CreateAssessmentMutationVariables
+  > = props => {
+    const { data } = props ?? {}
 
+    return createAssessment(data, requestOptions)
+  }
 
-export const getCreateAssessmentMutationKey = () => ['createAssessment'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getCreateAssessmentMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssessment>>, TError,CreateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof createAssessment>>, TError,CreateAssessmentMutationVariables, TContext> => {
+export type CreateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAssessment>>>
+export type CreateAssessmentMutationBody = BodyType<CreateAssessmentRequest>
+export type CreateAssessmentMutationError = ErrorType<Problem>
+export type CreateAssessmentMutationVariables = { data: BodyType<CreateAssessmentRequest> }
 
-const mutationKey = getCreateAssessmentMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssessment>>, CreateAssessmentMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  createAssessment(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAssessment>>>
-    export type CreateAssessmentMutationBody = BodyType<CreateAssessmentRequest>
-    export type CreateAssessmentMutationError = ErrorType<Problem>
-    export type CreateAssessmentMutationVariables = {data: BodyType<CreateAssessmentRequest>}
-
-    /**
+/**
  * @summary Create an assessment with its backing activity (appended to the chapter).
  */
-export const useCreateAssessment = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssessment>>, TError,CreateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createAssessment>>,
-        TError,
-        CreateAssessmentMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateAssessmentMutationOptions(options), queryClient);
-    }
-    export const getGetAssessmentUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useCreateAssessment = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createAssessment>>,
+      TError,
+      CreateAssessmentMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createAssessment>>,
+  TError,
+  CreateAssessmentMutationVariables,
+  TContext
+> => {
+  return useMutation(getCreateAssessmentMutationOptions(options), queryClient)
+}
+export const getGetAssessmentUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}`
 }
 
@@ -503,158 +528,201 @@ export const useCreateAssessment = <TError = ErrorType<Problem>,
  * @summary Full assessment with items and policy. Authors always; learners only
 once published (404 otherwise — no existence leak).
  */
-export const getAssessment = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
+export const getAssessment = async (
+  id: AssessmentId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  return orvalMutator<AssessmentDetail>(
+    getGetAssessmentUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AssessmentDetail,
+  )
+}
 
-  return orvalMutator<AssessmentDetail>(getGetAssessmentUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getGetAssessmentQueryKey = (id: AssessmentId) => {
+  return [`/api/v2/assessments/${id}`] as const
+}
 
-
+export const getGetAssessmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  AssessmentDetail,
-);}
-
-
-
-
-
-export const getGetAssessmentQueryKey = (id: AssessmentId,) => {
-    return [
-    `/api/v2/assessments/${id}`
-    ] as const;
-    }
-
-
-export const getGetAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetAssessmentQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessment>>> = ({ signal }) =>
+    getAssessment(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessment>>> = ({ signal }) => getAssessment(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAssessment>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessment>>>
 export type GetAssessmentQueryError = ErrorType<Problem>
 
-
 export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAssessment>>,
           TError,
           Awaited<ReturnType<typeof getAssessment>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAssessment>>,
           TError,
           Awaited<ReturnType<typeof getAssessment>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Full assessment with items and policy. Authors always; learners only
 once published (404 otherwise — no existence leak).
  */
 
 export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAssessmentQueryOptions(id, options)
 
-  const queryOptions = getGetAssessmentQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGetAssessmentSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getGetAssessmentSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetAssessmentQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessment>>> = ({ signal }) =>
+    getAssessment(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessment>>> = ({ signal }) => getAssessment(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetAssessmentSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessment>>>
 export type GetAssessmentSuspenseQueryError = ErrorType<Problem>
 
-
-export function useGetAssessmentSuspense<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAssessmentSuspense<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAssessmentSuspense<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Full assessment with items and policy. Authors always; learners only
 once published (404 otherwise — no existence leak).
  */
 
-export function useGetAssessmentSuspense<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useGetAssessmentSuspense<
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAssessment>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAssessmentSuspenseQueryOptions(id, options)
 
-  const queryOptions = getGetAssessmentSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getUpdateAssessmentUrl = (id: AssessmentId,) => {
-
-
-
-
+export const getUpdateAssessmentUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}`
 }
 
@@ -662,246 +730,281 @@ export const getUpdateAssessmentUrl = (id: AssessmentId,) => {
  * @summary Title/description/weight/grading type. Archived assessments are
 read-only; a published one with submissions must be unpublished first.
  */
-export const updateAssessment = async (id: AssessmentId,
-    updateAssessmentRequest: UpdateAssessmentRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updateAssessment = async (
+  id: AssessmentId,
+  updateAssessmentRequest: UpdateAssessmentRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentDetail>(getUpdateAssessmentUrl(id),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(updateAssessmentRequest)
-  },
-  AssessmentDetail,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentDetail>(
+    getUpdateAssessmentUrl(id),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateAssessmentRequest),
+    },
+    AssessmentDetail,
+  )
+}
 
+export const getUpdateAssessmentMutationKey = () => ['updateAssessment'] as const
 
+export const getUpdateAssessmentMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAssessment>>,
+    TError,
+    UpdateAssessmentMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAssessment>>,
+  TError,
+  UpdateAssessmentMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdateAssessmentMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAssessment>>,
+    UpdateAssessmentMutationVariables
+  > = props => {
+    const { id, data } = props ?? {}
 
+    return updateAssessment(id, data, requestOptions)
+  }
 
-export const getUpdateAssessmentMutationKey = () => ['updateAssessment'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdateAssessmentMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssessment>>, TError,UpdateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateAssessment>>, TError,UpdateAssessmentMutationVariables, TContext> => {
+export type UpdateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateAssessment>>>
+export type UpdateAssessmentMutationBody = BodyType<UpdateAssessmentRequest>
+export type UpdateAssessmentMutationError = ErrorType<Problem>
+export type UpdateAssessmentMutationVariables = { id: AssessmentId; data: BodyType<UpdateAssessmentRequest> }
 
-const mutationKey = getUpdateAssessmentMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAssessment>>, UpdateAssessmentMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  updateAssessment(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateAssessment>>>
-    export type UpdateAssessmentMutationBody = BodyType<UpdateAssessmentRequest>
-    export type UpdateAssessmentMutationError = ErrorType<Problem>
-    export type UpdateAssessmentMutationVariables = {id: AssessmentId;data: BodyType<UpdateAssessmentRequest>}
-
-    /**
+/**
  * @summary Title/description/weight/grading type. Archived assessments are
 read-only; a published one with submissions must be unpublished first.
  */
-export const useUpdateAssessment = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssessment>>, TError,UpdateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateAssessment>>,
-        TError,
-        UpdateAssessmentMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateAssessmentMutationOptions(options), queryClient);
-    }
-    export const getGetAccessUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useUpdateAssessment = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateAssessment>>,
+      TError,
+      UpdateAssessmentMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateAssessment>>,
+  TError,
+  UpdateAssessmentMutationVariables,
+  TContext
+> => {
+  return useMutation(getUpdateAssessmentMutationOptions(options), queryClient)
+}
+export const getGetAccessUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/access`
 }
 
 /**
  * @summary Who may take the assessment (authors only).
  */
-export const getAccess = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<AccessView> => {
+export const getAccess = async (
+  id: AssessmentId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AccessView> => {
+  return orvalMutator<AccessView>(
+    getGetAccessUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AccessView,
+  )
+}
 
-  return orvalMutator<AccessView>(getGetAccessUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getGetAccessQueryKey = (id: AssessmentId) => {
+  return [`/api/v2/assessments/${id}/access`] as const
+}
 
-
+export const getGetAccessQueryOptions = <TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  AccessView,
-);}
-
-
-
-
-
-export const getGetAccessQueryKey = (id: AssessmentId,) => {
-    return [
-    `/api/v2/assessments/${id}/access`
-    ] as const;
-    }
-
-
-export const getGetAccessQueryOptions = <TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetAccessQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAccessQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccess>>> = ({ signal }) =>
+    getAccess(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccess>>> = ({ signal }) => getAccess(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAccess>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getAccess>>>
 export type GetAccessQueryError = ErrorType<unknown>
 
-
 export function useGetAccess<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getAccess>>,
-          TError,
-          Awaited<ReturnType<typeof getAccess>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof getAccess>>, TError, Awaited<ReturnType<typeof getAccess>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAccess<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAccess>>,
           TError,
           Awaited<ReturnType<typeof getAccess>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAccess<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Who may take the assessment (authors only).
  */
 
 export function useGetAccess<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAccessQueryOptions(id, options)
 
-  const queryOptions = getGetAccessQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGetAccessSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getGetAccessSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAccess>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetAccessQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAccessQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccess>>> = ({ signal }) =>
+    getAccess(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccess>>> = ({ signal }) => getAccess(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetAccessSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getAccess>>>
 export type GetAccessSuspenseQueryError = ErrorType<unknown>
 
-
 export function useGetAccessSuspense<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAccessSuspense<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAccessSuspense<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Who may take the assessment (authors only).
  */
 
 export function useGetAccessSuspense<TData = Awaited<ReturnType<typeof getAccess>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAccess>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAccessSuspenseQueryOptions(id, options)
 
-  const queryOptions = getGetAccessSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getSetAccessUrl = (id: AssessmentId,) => {
-
-
-
-
+export const getSetAccessUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/access`
 }
 
@@ -913,91 +1016,79 @@ export const getSetAccessUrl = (id: AssessmentId,) => {
 course (users need course access, groups must be linked); switching to
 all-course-learners wipes both lists.
  */
-export const setAccess = async (id: AssessmentId,
-    setAccessRequest: SetAccessRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AccessView> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const setAccess = async (
+  id: AssessmentId,
+  setAccessRequest: SetAccessRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AccessView> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AccessView>(getSetAccessUrl(id),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(setAccessRequest)
-  },
-  AccessView,
-);}
+    return headers
+  }
+  return orvalMutator<AccessView>(
+    getSetAccessUrl(id),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(setAccessRequest),
+    },
+    AccessView,
+  )
+}
 
+export const getSetAccessMutationKey = () => ['setAccess'] as const
 
+export const getSetAccessMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError, SetAccessMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError, SetAccessMutationVariables, TContext> => {
+  const mutationKey = getSetAccessMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccess>>, SetAccessMutationVariables> = props => {
+    const { id, data } = props ?? {}
 
+    return setAccess(id, data, requestOptions)
+  }
 
-export const getSetAccessMutationKey = () => ['setAccess'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getSetAccessMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError,SetAccessMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError,SetAccessMutationVariables, TContext> => {
+export type SetAccessMutationResult = NonNullable<Awaited<ReturnType<typeof setAccess>>>
+export type SetAccessMutationBody = BodyType<SetAccessRequest>
+export type SetAccessMutationError = ErrorType<Problem>
+export type SetAccessMutationVariables = { id: AssessmentId; data: BodyType<SetAccessRequest> }
 
-const mutationKey = getSetAccessMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccess>>, SetAccessMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  setAccess(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SetAccessMutationResult = NonNullable<Awaited<ReturnType<typeof setAccess>>>
-    export type SetAccessMutationBody = BodyType<SetAccessRequest>
-    export type SetAccessMutationError = ErrorType<Problem>
-    export type SetAccessMutationVariables = {id: AssessmentId;data: BodyType<SetAccessRequest>}
-
-    /**
+/**
  * @summary Replace the access policy. Restricted lists are validated against the
 course (users need course access, groups must be linked); switching to
 all-course-learners wipes both lists.
  */
-export const useSetAccess = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError,SetAccessMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof setAccess>>,
-        TError,
-        SetAccessMutationVariables,
-        TContext
-      > => {
-      return useMutation(getSetAccessMutationOptions(options), queryClient);
-    }
-    export const getAttemptStateUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useSetAccess = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof setAccess>>, TError, SetAccessMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof setAccess>>, TError, SetAccessMutationVariables, TContext> => {
+  return useMutation(getSetAccessMutationOptions(options), queryClient)
+}
+export const getAttemptStateUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/attempt-state`
 }
 
@@ -1008,332 +1099,394 @@ export const useSetAccess = <TError = ErrorType<Problem>,
  * `ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.
  * @summary What the caller may do with this assessment right now.
  */
-export const attemptState = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<AttemptState> => {
+export const attemptState = async (
+  id: AssessmentId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AttemptState> => {
+  return orvalMutator<AttemptState>(
+    getAttemptStateUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AttemptState,
+  )
+}
 
-  return orvalMutator<AttemptState>(getAttemptStateUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getAttemptStateQueryKey = (id: AssessmentId) => {
+  return [`/api/v2/assessments/${id}/attempt-state`] as const
+}
 
-
+export const getAttemptStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof attemptState>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  AttemptState,
-);}
-
-
-
-
-
-export const getAttemptStateQueryKey = (id: AssessmentId,) => {
-    return [
-    `/api/v2/assessments/${id}/attempt-state`
-    ] as const;
-    }
-
-
-export const getAttemptStateQueryOptions = <TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getAttemptStateQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getAttemptStateQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof attemptState>>> = ({ signal }) =>
+    attemptState(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof attemptState>>> = ({ signal }) => attemptState(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof attemptState>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type AttemptStateQueryResult = NonNullable<Awaited<ReturnType<typeof attemptState>>>
 export type AttemptStateQueryError = ErrorType<Problem>
 
-
 export function useAttemptState<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof attemptState>>,
           TError,
           Awaited<ReturnType<typeof attemptState>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAttemptState<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof attemptState>>,
           TError,
           Awaited<ReturnType<typeof attemptState>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAttemptState<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary What the caller may do with this assessment right now.
  */
 
 export function useAttemptState<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getAttemptStateQueryOptions(id, options)
 
-  const queryOptions = getAttemptStateQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getAttemptStateSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getAttemptStateSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof attemptState>>,
+  TError = ErrorType<Problem>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getAttemptStateQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getAttemptStateQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof attemptState>>> = ({ signal }) =>
+    attemptState(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof attemptState>>> = ({ signal }) => attemptState(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AttemptStateSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof attemptState>>>
 export type AttemptStateSuspenseQueryError = ErrorType<Problem>
 
-
 export function useAttemptStateSuspense<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAttemptStateSuspense<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAttemptStateSuspense<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary What the caller may do with this assessment right now.
  */
 
 export function useAttemptStateSuspense<TData = Awaited<ReturnType<typeof attemptState>>, TError = ErrorType<Problem>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof attemptState>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getAttemptStateSuspenseQueryOptions(id, options)
 
-  const queryOptions = getAttemptStateSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getAuditTrailUrl = (id: AssessmentId,
-    params?: AuditTrailParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getAuditTrailUrl = (id: AssessmentId, params?: AuditTrailParams) => {
+  const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
-  });
+  })
 
-  const stringifiedParams = normalizedParams.toString();
+  const stringifiedParams = normalizedParams.toString()
 
-  return stringifiedParams.length > 0 ? `/api/v2/assessments/${id}/audit?${stringifiedParams}` : `/api/v2/assessments/${id}/audit`
+  return stringifiedParams.length > 0
+    ? `/api/v2/assessments/${id}/audit?${stringifiedParams}`
+    : `/api/v2/assessments/${id}/audit`
 }
 
 /**
  * @summary Lifecycle transitions and override changes, newest first.
  */
-export const auditTrail = async (id: AssessmentId,
-    params?: AuditTrailParams, options?: Parameters<typeof orvalMutator>[1]): Promise<AuditEvent[]> => {
+export const auditTrail = async (
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AuditEvent[]> => {
+  return orvalMutator<AuditEvent[]>(
+    getAuditTrailUrl(id, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(AuditEvent),
+  )
+}
 
-  return orvalMutator<AuditEvent[]>(getAuditTrailUrl(id,params),
-  {
-    ...options,
-    method: 'GET'
+export const getAuditTrailQueryKey = (id: AssessmentId, params?: AuditTrailParams) => {
+  return [`/api/v2/assessments/${id}/audit`, ...(params ? [params] : [])] as const
+}
 
-
+export const getAuditTrailQueryOptions = <TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  arrayParser(AuditEvent),
-);}
-
-
-
-
-
-export const getAuditTrailQueryKey = (id: AssessmentId,
-    params?: AuditTrailParams,) => {
-    return [
-    `/api/v2/assessments/${id}/audit`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getAuditTrailQueryOptions = <TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getAuditTrailQueryKey(id, params)
 
-  const queryKey =  queryOptions?.queryKey ?? getAuditTrailQueryKey(id,params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof auditTrail>>> = ({ signal }) =>
+    auditTrail(id, params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof auditTrail>>> = ({ signal }) => auditTrail(id,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof auditTrail>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type AuditTrailQueryResult = NonNullable<Awaited<ReturnType<typeof auditTrail>>>
 export type AuditTrailQueryError = ErrorType<unknown>
 
-
 export function useAuditTrail<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params: undefined |  AuditTrailParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  params: undefined | AuditTrailParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof auditTrail>>,
           TError,
           Awaited<ReturnType<typeof auditTrail>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAuditTrail<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof auditTrail>>,
           TError,
           Awaited<ReturnType<typeof auditTrail>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAuditTrail<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Lifecycle transitions and override changes, newest first.
  */
 
 export function useAuditTrail<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getAuditTrailQueryOptions(id, params, options)
 
-  const queryOptions = getAuditTrailQueryOptions(id,params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getAuditTrailSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getAuditTrailSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof auditTrail>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getAuditTrailQueryKey(id, params)
 
-  const queryKey =  queryOptions?.queryKey ?? getAuditTrailQueryKey(id,params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof auditTrail>>> = ({ signal }) =>
+    auditTrail(id, params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof auditTrail>>> = ({ signal }) => auditTrail(id,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type AuditTrailSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof auditTrail>>>
 export type AuditTrailSuspenseQueryError = ErrorType<unknown>
 
-
 export function useAuditTrailSuspense<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params: undefined |  AuditTrailParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  params: undefined | AuditTrailParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAuditTrailSuspense<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAuditTrailSuspense<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Lifecycle transitions and override changes, newest first.
  */
 
 export function useAuditTrailSuspense<TData = Awaited<ReturnType<typeof auditTrail>>, TError = ErrorType<unknown>>(
- id: AssessmentId,
-    params?: AuditTrailParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  params?: AuditTrailParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof auditTrail>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getAuditTrailSuspenseQueryOptions(id, params, options)
 
-  const queryOptions = getAuditTrailSuspenseQueryOptions(id,params,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getDuplicateAssessmentUrl = (id: AssessmentId,) => {
-
-
-
-
+export const getDuplicateAssessmentUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/duplicate`
 }
 
@@ -1342,269 +1495,269 @@ export const getDuplicateAssessmentUrl = (id: AssessmentId,) => {
 per-student overrides), appended to the same or a given chapter of the
 same course.
  */
-export const duplicateAssessment = async (id: AssessmentId,
-    duplicateRequest: DuplicateRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const duplicateAssessment = async (
+  id: AssessmentId,
+  duplicateRequest: DuplicateRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentDetail>(getDuplicateAssessmentUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(duplicateRequest)
-  },
-  AssessmentDetail,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentDetail>(
+    getDuplicateAssessmentUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(duplicateRequest),
+    },
+    AssessmentDetail,
+  )
+}
 
+export const getDuplicateAssessmentMutationKey = () => ['duplicateAssessment'] as const
 
+export const getDuplicateAssessmentMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateAssessment>>,
+    TError,
+    DuplicateAssessmentMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof duplicateAssessment>>,
+  TError,
+  DuplicateAssessmentMutationVariables,
+  TContext
+> => {
+  const mutationKey = getDuplicateAssessmentMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof duplicateAssessment>>,
+    DuplicateAssessmentMutationVariables
+  > = props => {
+    const { id, data } = props ?? {}
 
+    return duplicateAssessment(id, data, requestOptions)
+  }
 
-export const getDuplicateAssessmentMutationKey = () => ['duplicateAssessment'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getDuplicateAssessmentMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateAssessment>>, TError,DuplicateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof duplicateAssessment>>, TError,DuplicateAssessmentMutationVariables, TContext> => {
+export type DuplicateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateAssessment>>>
+export type DuplicateAssessmentMutationBody = BodyType<DuplicateRequest>
+export type DuplicateAssessmentMutationError = ErrorType<Problem>
+export type DuplicateAssessmentMutationVariables = { id: AssessmentId; data: BodyType<DuplicateRequest> }
 
-const mutationKey = getDuplicateAssessmentMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateAssessment>>, DuplicateAssessmentMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  duplicateAssessment(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DuplicateAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateAssessment>>>
-    export type DuplicateAssessmentMutationBody = BodyType<DuplicateRequest>
-    export type DuplicateAssessmentMutationError = ErrorType<Problem>
-    export type DuplicateAssessmentMutationVariables = {id: AssessmentId;data: BodyType<DuplicateRequest>}
-
-    /**
+/**
  * @summary Deep-copy as a new draft (policy + items; not access lists or
 per-student overrides), appended to the same or a given chapter of the
 same course.
  */
-export const useDuplicateAssessment = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateAssessment>>, TError,DuplicateAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof duplicateAssessment>>,
-        TError,
-        DuplicateAssessmentMutationVariables,
-        TContext
-      > => {
-      return useMutation(getDuplicateAssessmentMutationOptions(options), queryClient);
-    }
-    export const getCreateItemUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useDuplicateAssessment = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof duplicateAssessment>>,
+      TError,
+      DuplicateAssessmentMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof duplicateAssessment>>,
+  TError,
+  DuplicateAssessmentMutationVariables,
+  TContext
+> => {
+  return useMutation(getDuplicateAssessmentMutationOptions(options), queryClient)
+}
+export const getCreateItemUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/items`
 }
 
 /**
  * @summary Append an item (kind must suit the assessment; at most 200 items).
  */
-export const createItem = async (id: AssessmentId,
-    createItemRequest: CreateItemRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentItem> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const createItem = async (
+  id: AssessmentId,
+  createItemRequest: CreateItemRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentItem> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentItem>(getCreateItemUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(createItemRequest)
-  },
-  AssessmentItem,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentItem>(
+    getCreateItemUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(createItemRequest),
+    },
+    AssessmentItem,
+  )
+}
 
+export const getCreateItemMutationKey = () => ['createItem'] as const
 
+export const getCreateItemMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError, CreateItemMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError, CreateItemMutationVariables, TContext> => {
+  const mutationKey = getCreateItemMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItem>>, CreateItemMutationVariables> = props => {
+    const { id, data } = props ?? {}
 
+    return createItem(id, data, requestOptions)
+  }
 
-export const getCreateItemMutationKey = () => ['createItem'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getCreateItemMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,CreateItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,CreateItemMutationVariables, TContext> => {
+export type CreateItemMutationResult = NonNullable<Awaited<ReturnType<typeof createItem>>>
+export type CreateItemMutationBody = BodyType<CreateItemRequest>
+export type CreateItemMutationError = ErrorType<Problem>
+export type CreateItemMutationVariables = { id: AssessmentId; data: BodyType<CreateItemRequest> }
 
-const mutationKey = getCreateItemMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItem>>, CreateItemMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  createItem(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateItemMutationResult = NonNullable<Awaited<ReturnType<typeof createItem>>>
-    export type CreateItemMutationBody = BodyType<CreateItemRequest>
-    export type CreateItemMutationError = ErrorType<Problem>
-    export type CreateItemMutationVariables = {id: AssessmentId;data: BodyType<CreateItemRequest>}
-
-    /**
+/**
  * @summary Append an item (kind must suit the assessment; at most 200 items).
  */
-export const useCreateItem = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,CreateItemMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createItem>>,
-        TError,
-        CreateItemMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateItemMutationOptions(options), queryClient);
-    }
-    export const getReorderItemsUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useCreateItem = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError, CreateItemMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof createItem>>, TError, CreateItemMutationVariables, TContext> => {
+  return useMutation(getCreateItemMutationOptions(options), queryClient)
+}
+export const getReorderItemsUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/items/reorder`
 }
 
 /**
  * @summary Reorder items; returns the full list in the new order.
  */
-export const reorderItems = async (id: AssessmentId,
-    reorderItemsRequest: ReorderItemsRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentItem[]> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const reorderItems = async (
+  id: AssessmentId,
+  reorderItemsRequest: ReorderItemsRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentItem[]> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentItem[]>(getReorderItemsUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(reorderItemsRequest)
-  },
-  arrayParser(AssessmentItem),
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentItem[]>(
+    getReorderItemsUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(reorderItemsRequest),
+    },
+    arrayParser(AssessmentItem),
+  )
+}
 
+export const getReorderItemsMutationKey = () => ['reorderItems'] as const
 
+export const getReorderItemsMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reorderItems>>,
+    TError,
+    ReorderItemsMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof reorderItems>>, TError, ReorderItemsMutationVariables, TContext> => {
+  const mutationKey = getReorderItemsMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reorderItems>>,
+    ReorderItemsMutationVariables
+  > = props => {
+    const { id, data } = props ?? {}
 
+    return reorderItems(id, data, requestOptions)
+  }
 
-export const getReorderItemsMutationKey = () => ['reorderItems'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getReorderItemsMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderItems>>, TError,ReorderItemsMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof reorderItems>>, TError,ReorderItemsMutationVariables, TContext> => {
+export type ReorderItemsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderItems>>>
+export type ReorderItemsMutationBody = BodyType<ReorderItemsRequest>
+export type ReorderItemsMutationError = ErrorType<Problem>
+export type ReorderItemsMutationVariables = { id: AssessmentId; data: BodyType<ReorderItemsRequest> }
 
-const mutationKey = getReorderItemsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderItems>>, ReorderItemsMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  reorderItems(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ReorderItemsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderItems>>>
-    export type ReorderItemsMutationBody = BodyType<ReorderItemsRequest>
-    export type ReorderItemsMutationError = ErrorType<Problem>
-    export type ReorderItemsMutationVariables = {id: AssessmentId;data: BodyType<ReorderItemsRequest>}
-
-    /**
+/**
  * @summary Reorder items; returns the full list in the new order.
  */
-export const useReorderItems = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderItems>>, TError,ReorderItemsMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof reorderItems>>,
-        TError,
-        ReorderItemsMutationVariables,
-        TContext
-      > => {
-      return useMutation(getReorderItemsMutationOptions(options), queryClient);
-    }
-    export const getLifecycleUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useReorderItems = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof reorderItems>>,
+      TError,
+      ReorderItemsMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof reorderItems>>, TError, ReorderItemsMutationVariables, TContext> => {
+  return useMutation(getReorderItemsMutationOptions(options), queryClient)
+}
+export const getLifecycleUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/lifecycle`
 }
 
@@ -1615,592 +1768,624 @@ export const useReorderItems = <TError = ErrorType<Problem>,
  * the issues as field errors); scheduling needs a future time.
  * @summary Lifecycle transition.
  */
-export const lifecycle = async (id: AssessmentId,
-    lifecycleRequest: LifecycleRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const lifecycle = async (
+  id: AssessmentId,
+  lifecycleRequest: LifecycleRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentDetail>(getLifecycleUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(lifecycleRequest)
-  },
-  AssessmentDetail,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentDetail>(
+    getLifecycleUrl(id),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(lifecycleRequest),
+    },
+    AssessmentDetail,
+  )
+}
 
+export const getLifecycleMutationKey = () => ['lifecycle'] as const
 
+export const getLifecycleMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError, LifecycleMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError, LifecycleMutationVariables, TContext> => {
+  const mutationKey = getLifecycleMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof lifecycle>>, LifecycleMutationVariables> = props => {
+    const { id, data } = props ?? {}
 
+    return lifecycle(id, data, requestOptions)
+  }
 
-export const getLifecycleMutationKey = () => ['lifecycle'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getLifecycleMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError,LifecycleMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError,LifecycleMutationVariables, TContext> => {
+export type LifecycleMutationResult = NonNullable<Awaited<ReturnType<typeof lifecycle>>>
+export type LifecycleMutationBody = BodyType<LifecycleRequest>
+export type LifecycleMutationError = ErrorType<Problem>
+export type LifecycleMutationVariables = { id: AssessmentId; data: BodyType<LifecycleRequest> }
 
-const mutationKey = getLifecycleMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof lifecycle>>, LifecycleMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  lifecycle(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type LifecycleMutationResult = NonNullable<Awaited<ReturnType<typeof lifecycle>>>
-    export type LifecycleMutationBody = BodyType<LifecycleRequest>
-    export type LifecycleMutationError = ErrorType<Problem>
-    export type LifecycleMutationVariables = {id: AssessmentId;data: BodyType<LifecycleRequest>}
-
-    /**
+/**
  * @summary Lifecycle transition.
  */
-export const useLifecycle = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError,LifecycleMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof lifecycle>>,
-        TError,
-        LifecycleMutationVariables,
-        TContext
-      > => {
-      return useMutation(getLifecycleMutationOptions(options), queryClient);
-    }
-    export const getListOverridesUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useLifecycle = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof lifecycle>>, TError, LifecycleMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof lifecycle>>, TError, LifecycleMutationVariables, TContext> => {
+  return useMutation(getLifecycleMutationOptions(options), queryClient)
+}
+export const getListOverridesUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/overrides`
 }
 
 /**
  * @summary Every per-student override on the assessment.
  */
-export const listOverrides = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentOverride[]> => {
+export const listOverrides = async (
+  id: AssessmentId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<StudentOverride[]> => {
+  return orvalMutator<StudentOverride[]>(
+    getListOverridesUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(StudentOverride),
+  )
+}
 
-  return orvalMutator<StudentOverride[]>(getListOverridesUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getListOverridesQueryKey = (id: AssessmentId) => {
+  return [`/api/v2/assessments/${id}/overrides`] as const
+}
 
-
+export const getListOverridesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  arrayParser(StudentOverride),
-);}
-
-
-
-
-
-export const getListOverridesQueryKey = (id: AssessmentId,) => {
-    return [
-    `/api/v2/assessments/${id}/overrides`
-    ] as const;
-    }
-
-
-export const getListOverridesQueryOptions = <TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListOverridesQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getListOverridesQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listOverrides>>> = ({ signal }) =>
+    listOverrides(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOverrides>>> = ({ signal }) => listOverrides(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listOverrides>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ListOverridesQueryResult = NonNullable<Awaited<ReturnType<typeof listOverrides>>>
 export type ListOverridesQueryError = ErrorType<unknown>
 
-
 export function useListOverrides<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listOverrides>>,
           TError,
           Awaited<ReturnType<typeof listOverrides>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListOverrides<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listOverrides>>,
           TError,
           Awaited<ReturnType<typeof listOverrides>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListOverrides<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Every per-student override on the assessment.
  */
 
 export function useListOverrides<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListOverridesQueryOptions(id, options)
 
-  const queryOptions = getListOverridesQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getListOverridesSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getListOverridesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListOverridesQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getListOverridesQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listOverrides>>> = ({ signal }) =>
+    listOverrides(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOverrides>>> = ({ signal }) => listOverrides(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListOverridesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listOverrides>>>
 export type ListOverridesSuspenseQueryError = ErrorType<unknown>
 
-
-export function useListOverridesSuspense<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListOverridesSuspense<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListOverridesSuspense<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListOverridesSuspense<
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListOverridesSuspense<
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListOverridesSuspense<
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Every per-student override on the assessment.
  */
 
-export function useListOverridesSuspense<TData = Awaited<ReturnType<typeof listOverrides>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useListOverridesSuspense<
+  TData = Awaited<ReturnType<typeof listOverrides>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listOverrides>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListOverridesSuspenseQueryOptions(id, options)
 
-  const queryOptions = getListOverridesSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getUpdateOverrideUrl = (id: AssessmentId,
-    userId: UserId,) => {
-
-
-
-
+export const getUpdateOverrideUrl = (id: AssessmentId, userId: UserId) => {
   return `/api/v2/assessments/${id}/overrides/${userId}`
 }
 
 /**
  * @summary Replace a student's override.
  */
-export const updateOverride = async (id: AssessmentId,
-    userId: UserId,
-    overrideRequest: OverrideRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentOverride> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updateOverride = async (
+  id: AssessmentId,
+  userId: UserId,
+  overrideRequest: OverrideRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<StudentOverride> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<StudentOverride>(getUpdateOverrideUrl(id,userId),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(overrideRequest)
-  },
-  StudentOverride,
-);}
+    return headers
+  }
+  return orvalMutator<StudentOverride>(
+    getUpdateOverrideUrl(id, userId),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(overrideRequest),
+    },
+    StudentOverride,
+  )
+}
 
+export const getUpdateOverrideMutationKey = () => ['updateOverride'] as const
 
+export const getUpdateOverrideMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOverride>>,
+    TError,
+    UpdateOverrideMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateOverride>>,
+  TError,
+  UpdateOverrideMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdateOverrideMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateOverride>>,
+    UpdateOverrideMutationVariables
+  > = props => {
+    const { id, userId, data } = props ?? {}
 
+    return updateOverride(id, userId, data, requestOptions)
+  }
 
-export const getUpdateOverrideMutationKey = () => ['updateOverride'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdateOverrideMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOverride>>, TError,UpdateOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateOverride>>, TError,UpdateOverrideMutationVariables, TContext> => {
+export type UpdateOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof updateOverride>>>
+export type UpdateOverrideMutationBody = BodyType<OverrideRequest>
+export type UpdateOverrideMutationError = ErrorType<unknown>
+export type UpdateOverrideMutationVariables = { id: AssessmentId; userId: UserId; data: BodyType<OverrideRequest> }
 
-const mutationKey = getUpdateOverrideMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOverride>>, UpdateOverrideMutationVariables> = (props) => {
-          const {id,userId,data} = props ?? {};
-
-          return  updateOverride(id,userId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof updateOverride>>>
-    export type UpdateOverrideMutationBody = BodyType<OverrideRequest>
-    export type UpdateOverrideMutationError = ErrorType<unknown>
-    export type UpdateOverrideMutationVariables = {id: AssessmentId;userId: UserId;data: BodyType<OverrideRequest>}
-
-    /**
+/**
  * @summary Replace a student's override.
  */
-export const useUpdateOverride = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOverride>>, TError,UpdateOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateOverride>>,
-        TError,
-        UpdateOverrideMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateOverrideMutationOptions(options), queryClient);
-    }
-    export const getCreateOverrideUrl = (id: AssessmentId,
-    userId: UserId,) => {
-
-
-
-
+export const useUpdateOverride = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateOverride>>,
+      TError,
+      UpdateOverrideMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof updateOverride>>, TError, UpdateOverrideMutationVariables, TContext> => {
+  return useMutation(getUpdateOverrideMutationOptions(options), queryClient)
+}
+export const getCreateOverrideUrl = (id: AssessmentId, userId: UserId) => {
   return `/api/v2/assessments/${id}/overrides/${userId}`
 }
 
 /**
  * @summary Grant a student more attempts / a later due date / a late-penalty waiver.
  */
-export const createOverride = async (id: AssessmentId,
-    userId: UserId,
-    overrideRequest: OverrideRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentOverride> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const createOverride = async (
+  id: AssessmentId,
+  userId: UserId,
+  overrideRequest: OverrideRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<StudentOverride> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<StudentOverride>(getCreateOverrideUrl(id,userId),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(overrideRequest)
-  },
-  StudentOverride,
-);}
+    return headers
+  }
+  return orvalMutator<StudentOverride>(
+    getCreateOverrideUrl(id, userId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(overrideRequest),
+    },
+    StudentOverride,
+  )
+}
 
+export const getCreateOverrideMutationKey = () => ['createOverride'] as const
 
+export const getCreateOverrideMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createOverride>>,
+    TError,
+    CreateOverrideMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createOverride>>,
+  TError,
+  CreateOverrideMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCreateOverrideMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createOverride>>,
+    CreateOverrideMutationVariables
+  > = props => {
+    const { id, userId, data } = props ?? {}
 
+    return createOverride(id, userId, data, requestOptions)
+  }
 
-export const getCreateOverrideMutationKey = () => ['createOverride'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getCreateOverrideMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOverride>>, TError,CreateOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof createOverride>>, TError,CreateOverrideMutationVariables, TContext> => {
+export type CreateOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof createOverride>>>
+export type CreateOverrideMutationBody = BodyType<OverrideRequest>
+export type CreateOverrideMutationError = ErrorType<Problem>
+export type CreateOverrideMutationVariables = { id: AssessmentId; userId: UserId; data: BodyType<OverrideRequest> }
 
-const mutationKey = getCreateOverrideMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOverride>>, CreateOverrideMutationVariables> = (props) => {
-          const {id,userId,data} = props ?? {};
-
-          return  createOverride(id,userId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof createOverride>>>
-    export type CreateOverrideMutationBody = BodyType<OverrideRequest>
-    export type CreateOverrideMutationError = ErrorType<Problem>
-    export type CreateOverrideMutationVariables = {id: AssessmentId;userId: UserId;data: BodyType<OverrideRequest>}
-
-    /**
+/**
  * @summary Grant a student more attempts / a later due date / a late-penalty waiver.
  */
-export const useCreateOverride = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOverride>>, TError,CreateOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createOverride>>,
-        TError,
-        CreateOverrideMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateOverrideMutationOptions(options), queryClient);
-    }
-    export const getDeleteOverrideUrl = (id: AssessmentId,
-    userId: UserId,) => {
-
-
-
-
+export const useCreateOverride = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createOverride>>,
+      TError,
+      CreateOverrideMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof createOverride>>, TError, CreateOverrideMutationVariables, TContext> => {
+  return useMutation(getCreateOverrideMutationOptions(options), queryClient)
+}
+export const getDeleteOverrideUrl = (id: AssessmentId, userId: UserId) => {
   return `/api/v2/assessments/${id}/overrides/${userId}`
 }
 
 /**
  * @summary Remove a student's override.
  */
-export const deleteOverride = async (id: AssessmentId,
-    userId: UserId, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const deleteOverride = async (
+  id: AssessmentId,
+  userId: UserId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  return orvalMutator<void>(
+    getDeleteOverrideUrl(id, userId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
 
-  return orvalMutator<void>(getDeleteOverrideUrl(id,userId),
-  {
-    ...options,
-    method: 'DELETE'
+export const getDeleteOverrideMutationKey = () => ['deleteOverride'] as const
 
+export const getDeleteOverrideMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteOverride>>,
+    TError,
+    DeleteOverrideMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteOverride>>,
+  TError,
+  DeleteOverrideMutationVariables,
+  TContext
+> => {
+  const mutationKey = getDeleteOverrideMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  voidParser,
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteOverride>>,
+    DeleteOverrideMutationVariables
+  > = props => {
+    const { id, userId } = props ?? {}
 
+    return deleteOverride(id, userId, requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type DeleteOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOverride>>>
 
+export type DeleteOverrideMutationError = ErrorType<unknown>
+export type DeleteOverrideMutationVariables = { id: AssessmentId; userId: UserId }
 
-export const getDeleteOverrideMutationKey = () => ['deleteOverride'] as const;
-
-export const getDeleteOverrideMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOverride>>, TError,DeleteOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteOverride>>, TError,DeleteOverrideMutationVariables, TContext> => {
-
-const mutationKey = getDeleteOverrideMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteOverride>>, DeleteOverrideMutationVariables> = (props) => {
-          const {id,userId} = props ?? {};
-
-          return  deleteOverride(id,userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOverride>>>
-
-    export type DeleteOverrideMutationError = ErrorType<unknown>
-    export type DeleteOverrideMutationVariables = {id: AssessmentId;userId: UserId}
-
-    /**
+/**
  * @summary Remove a student's override.
  */
-export const useDeleteOverride = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOverride>>, TError,DeleteOverrideMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteOverride>>,
-        TError,
-        DeleteOverrideMutationVariables,
-        TContext
-      > => {
-      return useMutation(getDeleteOverrideMutationOptions(options), queryClient);
-    }
-    export const getSetPolicyUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useDeleteOverride = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteOverride>>,
+      TError,
+      DeleteOverrideMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof deleteOverride>>, TError, DeleteOverrideMutationVariables, TContext> => {
+  return useMutation(getDeleteOverrideMutationOptions(options), queryClient)
+}
+export const getSetPolicyUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/policy`
 }
 
 /**
  * @summary Replace the whole policy block (bumps `policy_version`).
  */
-export const setPolicy = async (id: AssessmentId,
-    policy: Policy, options?: Parameters<typeof orvalMutator>[1]): Promise<AssessmentDetail> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const setPolicy = async (
+  id: AssessmentId,
+  policy: Policy,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AssessmentDetail> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<AssessmentDetail>(getSetPolicyUrl(id),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(policy)
-  },
-  AssessmentDetail,
-);}
+    return headers
+  }
+  return orvalMutator<AssessmentDetail>(
+    getSetPolicyUrl(id),
+    {
+      ...options,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(policy),
+    },
+    AssessmentDetail,
+  )
+}
 
+export const getSetPolicyMutationKey = () => ['setPolicy'] as const
 
+export const getSetPolicyMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError, SetPolicyMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError, SetPolicyMutationVariables, TContext> => {
+  const mutationKey = getSetPolicyMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPolicy>>, SetPolicyMutationVariables> = props => {
+    const { id, data } = props ?? {}
 
+    return setPolicy(id, data, requestOptions)
+  }
 
-export const getSetPolicyMutationKey = () => ['setPolicy'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getSetPolicyMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError,SetPolicyMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError,SetPolicyMutationVariables, TContext> => {
+export type SetPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof setPolicy>>>
+export type SetPolicyMutationBody = BodyType<Policy>
+export type SetPolicyMutationError = ErrorType<Problem>
+export type SetPolicyMutationVariables = { id: AssessmentId; data: BodyType<Policy> }
 
-const mutationKey = getSetPolicyMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPolicy>>, SetPolicyMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  setPolicy(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SetPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof setPolicy>>>
-    export type SetPolicyMutationBody = BodyType<Policy>
-    export type SetPolicyMutationError = ErrorType<Problem>
-    export type SetPolicyMutationVariables = {id: AssessmentId;data: BodyType<Policy>}
-
-    /**
+/**
  * @summary Replace the whole policy block (bumps `policy_version`).
  */
-export const useSetPolicy = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError,SetPolicyMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof setPolicy>>,
-        TError,
-        SetPolicyMutationVariables,
-        TContext
-      > => {
-      return useMutation(getSetPolicyMutationOptions(options), queryClient);
-    }
-    export const getReadinessUrl = (id: AssessmentId,) => {
-
-
-
-
+export const useSetPolicy = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof setPolicy>>, TError, SetPolicyMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof setPolicy>>, TError, SetPolicyMutationVariables, TContext> => {
+  return useMutation(getSetPolicyMutationOptions(options), queryClient)
+}
+export const getReadinessUrl = (id: AssessmentId) => {
   return `/api/v2/assessments/${id}/readiness`
 }
 
@@ -2208,303 +2393,382 @@ export const useSetPolicy = <TError = ErrorType<Problem>,
  * @summary What blocks publication right now.
  */
 export const readiness = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<Readiness> => {
+  return orvalMutator<Readiness>(
+    getReadinessUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Readiness,
+  )
+}
 
-  return orvalMutator<Readiness>(getReadinessUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getReadinessQueryKey = (id: AssessmentId) => {
+  return [`/api/v2/assessments/${id}/readiness`] as const
+}
 
-
+export const getReadinessQueryOptions = <TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  Readiness,
-);}
-
-
-
-
-
-export const getReadinessQueryKey = (id: AssessmentId,) => {
-    return [
-    `/api/v2/assessments/${id}/readiness`
-    ] as const;
-    }
-
-
-export const getReadinessQueryOptions = <TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getReadinessQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getReadinessQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof readiness>>> = ({ signal }) =>
+    readiness(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof readiness>>> = ({ signal }) => readiness(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof readiness>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof readiness>>>
 export type ReadinessQueryError = ErrorType<unknown>
 
-
 export function useReadiness<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof readiness>>,
-          TError,
-          Awaited<ReturnType<typeof readiness>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof readiness>>, TError, Awaited<ReturnType<typeof readiness>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadiness<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>> & Pick<
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof readiness>>,
           TError,
           Awaited<ReturnType<typeof readiness>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadiness<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary What blocks publication right now.
  */
 
 export function useReadiness<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getReadinessQueryOptions(id, options)
 
-  const queryOptions = getReadinessQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getReadinessSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getReadinessSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof readiness>>,
+  TError = ErrorType<unknown>,
+>(
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getReadinessQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getReadinessQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof readiness>>> = ({ signal }) =>
+    readiness(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof readiness>>> = ({ signal }) => readiness(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ReadinessSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof readiness>>>
 export type ReadinessSuspenseQueryError = ErrorType<unknown>
 
-
 export function useReadinessSuspense<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadinessSuspense<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReadinessSuspense<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary What blocks publication right now.
  */
 
 export function useReadinessSuspense<TData = Awaited<ReturnType<typeof readiness>>, TError = ErrorType<unknown>>(
- id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  id: AssessmentId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof readiness>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getReadinessSuspenseQueryOptions(id, options)
 
-  const queryOptions = getReadinessSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getListCourseAssessmentsUrl = (id: CourseId,) => {
-
-
-
-
+export const getListCourseAssessmentsUrl = (id: CourseId) => {
   return `/api/v2/courses/${id}/assessments`
 }
 
 /**
  * @summary Course overview: authors see every assessment, others only published.
  */
-export const listCourseAssessments = async (id: CourseId, options?: Parameters<typeof orvalMutator>[1]): Promise<Assessment[]> => {
+export const listCourseAssessments = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Assessment[]> => {
+  return orvalMutator<Assessment[]>(
+    getListCourseAssessmentsUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(Assessment),
+  )
+}
 
-  return orvalMutator<Assessment[]>(getListCourseAssessmentsUrl(id),
-  {
-    ...options,
-    method: 'GET'
+export const getListCourseAssessmentsQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/assessments`] as const
+}
 
-
+export const getListCourseAssessmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  arrayParser(Assessment),
-);}
-
-
-
-
-
-export const getListCourseAssessmentsQueryKey = (id: CourseId,) => {
-    return [
-    `/api/v2/courses/${id}/assessments`
-    ] as const;
-    }
-
-
-export const getListCourseAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(id: CourseId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListCourseAssessmentsQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getListCourseAssessmentsQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseAssessments>>> = ({ signal }) =>
+    listCourseAssessments(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseAssessments>>> = ({ signal }) => listCourseAssessments(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCourseAssessments>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ListCourseAssessmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listCourseAssessments>>>
 export type ListCourseAssessmentsQueryError = ErrorType<unknown>
 
-
-export function useListCourseAssessments<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>> & Pick<
+export function useListCourseAssessments<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listCourseAssessments>>,
           TError,
           Awaited<ReturnType<typeof listCourseAssessments>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourseAssessments<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>> & Pick<
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCourseAssessments<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listCourseAssessments>>,
           TError,
           Awaited<ReturnType<typeof listCourseAssessments>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourseAssessments<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCourseAssessments<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Course overview: authors see every assessment, others only published.
  */
 
-export function useListCourseAssessments<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useListCourseAssessments<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListCourseAssessmentsQueryOptions(id, options)
 
-  const queryOptions = getListCourseAssessmentsQueryOptions(id,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getListCourseAssessmentsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(id: CourseId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getListCourseAssessmentsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListCourseAssessmentsQueryKey(id)
 
-  const queryKey =  queryOptions?.queryKey ?? getListCourseAssessmentsQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseAssessments>>> = ({ signal }) =>
+    listCourseAssessments(id, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseAssessments>>> = ({ signal }) => listCourseAssessments(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListCourseAssessmentsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listCourseAssessments>>>
 export type ListCourseAssessmentsSuspenseQueryError = ErrorType<unknown>
 
-
-export function useListCourseAssessmentsSuspense<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourseAssessmentsSuspense<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourseAssessmentsSuspense<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCourseAssessmentsSuspense<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCourseAssessmentsSuspense<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCourseAssessmentsSuspense<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Course overview: authors see every assessment, others only published.
  */
 
-export function useListCourseAssessmentsSuspense<TData = Awaited<ReturnType<typeof listCourseAssessments>>, TError = ErrorType<unknown>>(
- id: CourseId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+export function useListCourseAssessmentsSuspense<
+  TData = Awaited<ReturnType<typeof listCourseAssessments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseAssessments>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListCourseAssessmentsSuspenseQueryOptions(id, options)
 
-  const queryOptions = getListCourseAssessmentsSuspenseQueryOptions(id,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
-
-
-
-
-
-

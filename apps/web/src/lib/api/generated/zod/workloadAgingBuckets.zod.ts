@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const WorkloadAgingBuckets = zod.object({
-  "d1_3": zod.int(),
-  "d3_7": zod.int(),
-  "d7_plus": zod.int(),
-  "h0_24": zod.int()
+  d1_3: zod.int(),
+  d3_7: zod.int(),
+  d7_plus: zod.int(),
+  h0_24: zod.int(),
 })
 
-export type WorkloadAgingBuckets = zod.input<typeof WorkloadAgingBuckets>;
-export type WorkloadAgingBucketsOutput = zod.output<typeof WorkloadAgingBuckets>;
+export type WorkloadAgingBuckets = zod.input<typeof WorkloadAgingBuckets>
+export type WorkloadAgingBucketsOutput = zod.output<typeof WorkloadAgingBuckets>

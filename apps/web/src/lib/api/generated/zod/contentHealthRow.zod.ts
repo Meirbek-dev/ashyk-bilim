@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ContentHealthRow = zod.object({
-  "course_id": zod.uuid(),
-  "note": zod.string(),
-  "severity": zod.enum(['info', 'warning', 'critical']),
-  "signal": zod.string().describe('`content_freshness` | `average_progress` | `grading_backlog`.'),
-  "value": zod.number().nullish()
+  course_id: zod.uuid(),
+  note: zod.string(),
+  severity: zod.enum(['info', 'warning', 'critical']),
+  signal: zod.string().describe('`content_freshness` | `average_progress` | `grading_backlog`.'),
+  value: zod.number().nullish(),
 })
 
-export type ContentHealthRow = zod.input<typeof ContentHealthRow>;
-export type ContentHealthRowOutput = zod.output<typeof ContentHealthRow>;
+export type ContentHealthRow = zod.input<typeof ContentHealthRow>
+export type ContentHealthRowOutput = zod.output<typeof ContentHealthRow>

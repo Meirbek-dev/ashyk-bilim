@@ -5,15 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const ReadinessIssue = zod.object({
-  "area": zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
-  "code": zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
-  "item_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "message": zod.string(),
-  "severity": zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.')
-}).describe('One thing blocking (or advising against) publication.')
+export const ReadinessIssue = zod
+  .object({
+    area: zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
+    code: zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
+    item_id: zod.union([zod.uuid(), zod.null()]).optional(),
+    message: zod.string(),
+    severity: zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.'),
+  })
+  .describe('One thing blocking (or advising against) publication.')
 
-export type ReadinessIssue = zod.input<typeof ReadinessIssue>;
-export type ReadinessIssueOutput = zod.output<typeof ReadinessIssue>;
+export type ReadinessIssue = zod.input<typeof ReadinessIssue>
+export type ReadinessIssueOutput = zod.output<typeof ReadinessIssue>

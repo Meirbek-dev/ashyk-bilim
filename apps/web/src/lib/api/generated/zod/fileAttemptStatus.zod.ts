@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const FileAttemptStatus = zod.enum(['draft', 'submitted', 'graded', 'published', 'returned']).describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).')
+export const FileAttemptStatus = zod
+  .enum(['draft', 'submitted', 'graded', 'published', 'returned'])
+  .describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).')
 
-export type FileAttemptStatus = zod.input<typeof FileAttemptStatus>;
-export type FileAttemptStatusOutput = zod.output<typeof FileAttemptStatus>;
+export type FileAttemptStatus = zod.input<typeof FileAttemptStatus>
+export type FileAttemptStatusOutput = zod.output<typeof FileAttemptStatus>

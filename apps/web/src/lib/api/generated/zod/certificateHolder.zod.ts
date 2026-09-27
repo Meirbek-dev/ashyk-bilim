@@ -5,11 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CertificateHolder = zod.object({
-  "display_name": zod.string()
-}).describe('What a verifier learns about the holder: the name on the certificate.')
+export const CertificateHolder = zod
+  .object({
+    display_name: zod.string(),
+  })
+  .describe('What a verifier learns about the holder: the name on the certificate.')
 
-export type CertificateHolder = zod.input<typeof CertificateHolder>;
-export type CertificateHolderOutput = zod.output<typeof CertificateHolder>;
+export type CertificateHolder = zod.input<typeof CertificateHolder>
+export type CertificateHolderOutput = zod.output<typeof CertificateHolder>

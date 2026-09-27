@@ -5,14 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const SessionInfo = zod.object({
-  "mfa_enabled": zod.boolean().describe('TOTP enrolled on the account.'),
-  "permissions": zod.array(zod.string()),
-  "roles": zod.array(zod.string()),
-  "user_id": zod.uuid()
-}).describe('The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).')
+export const SessionInfo = zod
+  .object({
+    mfa_enabled: zod.boolean().describe('TOTP enrolled on the account.'),
+    permissions: zod.array(zod.string()),
+    roles: zod.array(zod.string()),
+    user_id: zod.uuid(),
+  })
+  .describe(
+    'The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).',
+  )
 
-export type SessionInfo = zod.input<typeof SessionInfo>;
-export type SessionInfoOutput = zod.output<typeof SessionInfo>;
+export type SessionInfo = zod.input<typeof SessionInfo>
+export type SessionInfoOutput = zod.output<typeof SessionInfo>

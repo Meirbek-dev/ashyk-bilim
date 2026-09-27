@@ -5,12 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -25,10 +20,10 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
+import {
   ChangePasswordRequest,
   GoogleCallbackParams,
   GoogleStartParams,
@@ -40,43 +35,39 @@ import type {
   TotpEnrollment,
   TotpVerifyRequest,
   UserProfile,
-  VerifyEmailRequest
-} from '../zod';
+  VerifyEmailRequest,
+} from '../zod'
 
-import { orvalMutator, arrayParser, stringifyQueryParam, unknownParser, voidParser } from '../../orval-mutator';
-import type { ErrorType , BodyType } from '../../orval-mutator';
+import { orvalMutator, arrayParser, stringifyQueryParam, unknownParser, voidParser } from '../../orval-mutator'
+import type { ErrorType, BodyType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
-export const getGoogleStartUrl = (params?: GoogleStartParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGoogleStartUrl = (params?: GoogleStartParams) => {
+  const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
-  });
+  })
 
-  const stringifiedParams = normalizedParams.toString();
+  const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0 ? `/api/v2/auth/google?${stringifiedParams}` : `/api/v2/auth/google`
 }
@@ -84,720 +75,700 @@ export const getGoogleStartUrl = (params?: GoogleStartParams,) => {
 /**
  * @summary Start Google sign-in: 303 to Google's consent screen.
  */
-export const googleStart = async (params?: GoogleStartParams, options?: Parameters<typeof orvalMutator>[1]): Promise<unknown> => {
+export const googleStart = async (
+  params?: GoogleStartParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<unknown> => {
+  return orvalMutator<unknown>(
+    getGoogleStartUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    unknownParser,
+  )
+}
 
-  return orvalMutator<unknown>(getGoogleStartUrl(params),
-  {
-    ...options,
-    method: 'GET'
+export const getGoogleStartQueryKey = (params?: GoogleStartParams) => {
+  return [`/api/v2/auth/google`, ...(params ? [params] : [])] as const
+}
 
-
+export const getGoogleStartQueryOptions = <TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  unknownParser,
-);}
-
-
-
-
-
-export const getGoogleStartQueryKey = (params?: GoogleStartParams,) => {
-    return [
-    `/api/v2/auth/google`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGoogleStartQueryOptions = <TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(params?: GoogleStartParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGoogleStartQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getGoogleStartQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleStart>>> = ({ signal }) =>
+    googleStart(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof googleStart>>> = ({ signal }) => googleStart(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof googleStart>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GoogleStartQueryResult = NonNullable<Awaited<ReturnType<typeof googleStart>>>
 export type GoogleStartQueryError = ErrorType<void>
 
-
 export function useGoogleStart<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params: undefined |  GoogleStartParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>> & Pick<
+  params: undefined | GoogleStartParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof googleStart>>,
           TError,
           Awaited<ReturnType<typeof googleStart>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleStart<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>> & Pick<
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof googleStart>>,
           TError,
           Awaited<ReturnType<typeof googleStart>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleStart<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Start Google sign-in: 303 to Google's consent screen.
  */
 
 export function useGoogleStart<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGoogleStartQueryOptions(params, options)
 
-  const queryOptions = getGoogleStartQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGoogleStartSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(params?: GoogleStartParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getGoogleStartSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof googleStart>>,
+  TError = ErrorType<void>,
+>(
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGoogleStartQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getGoogleStartQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleStart>>> = ({ signal }) =>
+    googleStart(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof googleStart>>> = ({ signal }) => googleStart(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GoogleStartSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof googleStart>>>
 export type GoogleStartSuspenseQueryError = ErrorType<void>
 
-
 export function useGoogleStartSuspense<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params: undefined |  GoogleStartParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: undefined | GoogleStartParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleStartSuspense<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleStartSuspense<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Start Google sign-in: 303 to Google's consent screen.
  */
 
 export function useGoogleStartSuspense<TData = Awaited<ReturnType<typeof googleStart>>, TError = ErrorType<void>>(
- params?: GoogleStartParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params?: GoogleStartParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleStart>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGoogleStartSuspenseQueryOptions(params, options)
 
-  const queryOptions = getGoogleStartSuspenseQueryOptions(params,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGoogleCallbackUrl = (params?: GoogleCallbackParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGoogleCallbackUrl = (params?: GoogleCallbackParams) => {
+  const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
     }
-  });
+  })
 
-  const stringifiedParams = normalizedParams.toString();
+  const stringifiedParams = normalizedParams.toString()
 
-  return stringifiedParams.length > 0 ? `/api/v2/auth/google/callback?${stringifiedParams}` : `/api/v2/auth/google/callback`
+  return stringifiedParams.length > 0
+    ? `/api/v2/auth/google/callback?${stringifiedParams}`
+    : `/api/v2/auth/google/callback`
 }
 
 /**
  * @summary Google redirects here; on success the session cookie is set and the
 browser continues to the original callback path.
  */
-export const googleCallback = async (params?: GoogleCallbackParams, options?: Parameters<typeof orvalMutator>[1]): Promise<unknown> => {
+export const googleCallback = async (
+  params?: GoogleCallbackParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<unknown> => {
+  return orvalMutator<unknown>(
+    getGoogleCallbackUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    unknownParser,
+  )
+}
 
-  return orvalMutator<unknown>(getGoogleCallbackUrl(params),
-  {
-    ...options,
-    method: 'GET'
+export const getGoogleCallbackQueryKey = (params?: GoogleCallbackParams) => {
+  return [`/api/v2/auth/google/callback`, ...(params ? [params] : [])] as const
+}
 
-
+export const getGoogleCallbackQueryOptions = <
+  TData = Awaited<ReturnType<typeof googleCallback>>,
+  TError = ErrorType<void>,
+>(
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
   },
-  unknownParser,
-);}
-
-
-
-
-
-export const getGoogleCallbackQueryKey = (params?: GoogleCallbackParams,) => {
-    return [
-    `/api/v2/auth/google/callback`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGoogleCallbackQueryOptions = <TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(params?: GoogleCallbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGoogleCallbackQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getGoogleCallbackQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallback>>> = ({ signal }) =>
+    googleCallback(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallback>>> = ({ signal }) => googleCallback(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof googleCallback>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GoogleCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof googleCallback>>>
 export type GoogleCallbackQueryError = ErrorType<void>
 
-
 export function useGoogleCallback<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params: undefined |  GoogleCallbackParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>> & Pick<
+  params: undefined | GoogleCallbackParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof googleCallback>>,
           TError,
           Awaited<ReturnType<typeof googleCallback>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleCallback<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>> & Pick<
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof googleCallback>>,
           TError,
           Awaited<ReturnType<typeof googleCallback>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleCallback<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Google redirects here; on success the session cookie is set and the
 browser continues to the original callback path.
  */
 
 export function useGoogleCallback<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGoogleCallbackQueryOptions(params, options)
 
-  const queryOptions = getGoogleCallbackQueryOptions(params,options)
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getGoogleCallbackSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(params?: GoogleCallbackParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+export const getGoogleCallbackSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof googleCallback>>,
+  TError = ErrorType<void>,
+>(
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
 ) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGoogleCallbackQueryKey(params)
 
-  const queryKey =  queryOptions?.queryKey ?? getGoogleCallbackQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallback>>> = ({ signal }) =>
+    googleCallback(params, { signal, ...requestOptions })
 
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallback>>> = ({ signal }) => googleCallback(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GoogleCallbackSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof googleCallback>>>
 export type GoogleCallbackSuspenseQueryError = ErrorType<void>
 
-
 export function useGoogleCallbackSuspense<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params: undefined |  GoogleCallbackParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params: undefined | GoogleCallbackParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleCallbackSuspense<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGoogleCallbackSuspense<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Google redirects here; on success the session cookie is set and the
 browser continues to the original callback path.
  */
 
 export function useGoogleCallbackSuspense<TData = Awaited<ReturnType<typeof googleCallback>>, TError = ErrorType<void>>(
- params?: GoogleCallbackParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  params?: GoogleCallbackParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof googleCallback>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGoogleCallbackSuspenseQueryOptions(params, options)
 
-  const queryOptions = getGoogleCallbackSuspenseQueryOptions(params,options)
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getLoginUrl = () => {
-
-
-
-
   return `/api/v2/auth/login`
 }
 
 /**
  * @summary Password login (headless Zitadel session check behind the BFF).
  */
-export const login = async (loginRequest: LoginRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<SessionInfo> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const login = async (
+  loginRequest: LoginRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<SessionInfo> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<SessionInfo>(getLoginUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(loginRequest)
-  },
-  SessionInfo,
-);}
+    return headers
+  }
+  return orvalMutator<SessionInfo>(
+    getLoginUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(loginRequest),
+    },
+    SessionInfo,
+  )
+}
 
+export const getLoginMutationKey = () => ['login'] as const
 
+export const getLoginMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof login>>, TError, LoginMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError, LoginMutationVariables, TContext> => {
+  const mutationKey = getLoginMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, LoginMutationVariables> = props => {
+    const { data } = props ?? {}
 
+    return login(data, requestOptions)
+  }
 
-export const getLoginMutationKey = () => ['login'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getLoginMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext> => {
+export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
+export type LoginMutationBody = BodyType<LoginRequest>
+export type LoginMutationError = ErrorType<Problem>
+export type LoginMutationVariables = { data: BodyType<LoginRequest> }
 
-const mutationKey = getLoginMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, LoginMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  login(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
-    export type LoginMutationBody = BodyType<LoginRequest>
-    export type LoginMutationError = ErrorType<Problem>
-    export type LoginMutationVariables = {data: BodyType<LoginRequest>}
-
-    /**
+/**
  * @summary Password login (headless Zitadel session check behind the BFF).
  */
-export const useLogin = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof login>>,
-        TError,
-        LoginMutationVariables,
-        TContext
-      > => {
-      return useMutation(getLoginMutationOptions(options), queryClient);
-    }
-    export const getLogoutUrl = () => {
-
-
-
-
+export const useLogin = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof login>>, TError, LoginMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof login>>, TError, LoginMutationVariables, TContext> => {
+  return useMutation(getLoginMutationOptions(options), queryClient)
+}
+export const getLogoutUrl = () => {
   return `/api/v2/auth/logout`
 }
 
 /**
  * @summary Logout: revoke the current session and clear the cookie. Idempotent.
  */
-export const logout = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const logout = async (options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+  return orvalMutator<void>(
+    getLogoutUrl(),
+    {
+      ...options,
+      method: 'POST',
+    },
+    voidParser,
+  )
+}
 
-  return orvalMutator<void>(getLogoutUrl(),
-  {
-    ...options,
-    method: 'POST'
+export const getLogoutMutationKey = () => ['logout'] as const
 
+export const getLogoutMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
+  const mutationKey = getLogoutMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  voidParser,
-);}
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
+    return logout(requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
 
+export type LogoutMutationError = ErrorType<Problem>
 
-
-export const getLogoutMutationKey = () => ['logout'] as const;
-
-export const getLogoutMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
-
-const mutationKey = getLogoutMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
-
-
-          return  logout(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
-
-    export type LogoutMutationError = ErrorType<Problem>
-
-
-    /**
+/**
  * @summary Logout: revoke the current session and clear the cookie. Idempotent.
  */
-export const useLogout = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof logout>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getLogoutMutationOptions(options), queryClient);
-    }
-    export const getTotpEnrollUrl = () => {
-
-
-
-
+export const useLogout = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
+  return useMutation(getLogoutMutationOptions(options), queryClient)
+}
+export const getTotpEnrollUrl = () => {
   return `/api/v2/auth/mfa/totp`
 }
 
 /**
  * @summary Start TOTP enrollment (secrets are returned exactly once).
  */
-export const totpEnroll = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<TotpEnrollment> => {
+export const totpEnroll = async (options?: Parameters<typeof orvalMutator>[1]): Promise<TotpEnrollment> => {
+  return orvalMutator<TotpEnrollment>(
+    getTotpEnrollUrl(),
+    {
+      ...options,
+      method: 'POST',
+    },
+    TotpEnrollment,
+  )
+}
 
-  return orvalMutator<TotpEnrollment>(getTotpEnrollUrl(),
-  {
-    ...options,
-    method: 'POST'
+export const getTotpEnrollMutationKey = () => ['totpEnroll'] as const
 
+export const getTotpEnrollMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError, void, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError, void, TContext> => {
+  const mutationKey = getTotpEnrollMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  TotpEnrollment,
-);}
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpEnroll>>, void> = () => {
+    return totpEnroll(requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type TotpEnrollMutationResult = NonNullable<Awaited<ReturnType<typeof totpEnroll>>>
 
+export type TotpEnrollMutationError = ErrorType<Problem>
 
-
-export const getTotpEnrollMutationKey = () => ['totpEnroll'] as const;
-
-export const getTotpEnrollMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError,void, TContext> => {
-
-const mutationKey = getTotpEnrollMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpEnroll>>, void> = () => {
-
-
-          return  totpEnroll(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type TotpEnrollMutationResult = NonNullable<Awaited<ReturnType<typeof totpEnroll>>>
-
-    export type TotpEnrollMutationError = ErrorType<Problem>
-
-
-    /**
+/**
  * @summary Start TOTP enrollment (secrets are returned exactly once).
  */
-export const useTotpEnroll = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof totpEnroll>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getTotpEnrollMutationOptions(options), queryClient);
-    }
-    export const getTotpRemoveUrl = () => {
-
-
-
-
+export const useTotpEnroll = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpEnroll>>, TError, void, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof totpEnroll>>, TError, void, TContext> => {
+  return useMutation(getTotpEnrollMutationOptions(options), queryClient)
+}
+export const getTotpRemoveUrl = () => {
   return `/api/v2/auth/mfa/totp`
 }
 
 /**
  * @summary Remove the TOTP authenticator.
  */
-export const totpRemove = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const totpRemove = async (options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+  return orvalMutator<void>(
+    getTotpRemoveUrl(),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
 
-  return orvalMutator<void>(getTotpRemoveUrl(),
-  {
-    ...options,
-    method: 'DELETE'
+export const getTotpRemoveMutationKey = () => ['totpRemove'] as const
 
+export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+  const mutationKey = getTotpRemoveMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  voidParser,
-);}
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, void> = () => {
+    return totpRemove(requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type TotpRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof totpRemove>>>
 
+export type TotpRemoveMutationError = ErrorType<unknown>
 
-
-export const getTotpRemoveMutationKey = () => ['totpRemove'] as const;
-
-export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError,void, TContext> => {
-
-const mutationKey = getTotpRemoveMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, void> = () => {
-
-
-          return  totpRemove(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type TotpRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof totpRemove>>>
-
-    export type TotpRemoveMutationError = ErrorType<unknown>
-
-
-    /**
+/**
  * @summary Remove the TOTP authenticator.
  */
-export const useTotpRemove = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError,void, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof totpRemove>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getTotpRemoveMutationOptions(options), queryClient);
-    }
-    export const getTotpVerifyUrl = () => {
-
-
-
-
+export const useTotpRemove = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+  return useMutation(getTotpRemoveMutationOptions(options), queryClient)
+}
+export const getTotpVerifyUrl = () => {
   return `/api/v2/auth/mfa/totp/verify`
 }
 
 /**
  * @summary Activate TOTP with the first code from the authenticator app.
  */
-export const totpVerify = async (totpVerifyRequest: TotpVerifyRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const totpVerify = async (
+  totpVerifyRequest: TotpVerifyRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<void>(getTotpVerifyUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(totpVerifyRequest)
-  },
-  voidParser,
-);}
+    return headers
+  }
+  return orvalMutator<void>(
+    getTotpVerifyUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(totpVerifyRequest),
+    },
+    voidParser,
+  )
+}
 
+export const getTotpVerifyMutationKey = () => ['totpVerify'] as const
 
+export const getTotpVerifyMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError, TotpVerifyMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError, TotpVerifyMutationVariables, TContext> => {
+  const mutationKey = getTotpVerifyMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpVerify>>, TotpVerifyMutationVariables> = props => {
+    const { data } = props ?? {}
 
+    return totpVerify(data, requestOptions)
+  }
 
-export const getTotpVerifyMutationKey = () => ['totpVerify'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getTotpVerifyMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError,TotpVerifyMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError,TotpVerifyMutationVariables, TContext> => {
+export type TotpVerifyMutationResult = NonNullable<Awaited<ReturnType<typeof totpVerify>>>
+export type TotpVerifyMutationBody = BodyType<TotpVerifyRequest>
+export type TotpVerifyMutationError = ErrorType<Problem>
+export type TotpVerifyMutationVariables = { data: BodyType<TotpVerifyRequest> }
 
-const mutationKey = getTotpVerifyMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpVerify>>, TotpVerifyMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  totpVerify(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type TotpVerifyMutationResult = NonNullable<Awaited<ReturnType<typeof totpVerify>>>
-    export type TotpVerifyMutationBody = BodyType<TotpVerifyRequest>
-    export type TotpVerifyMutationError = ErrorType<Problem>
-    export type TotpVerifyMutationVariables = {data: BodyType<TotpVerifyRequest>}
-
-    /**
+/**
  * @summary Activate TOTP with the first code from the authenticator app.
  */
-export const useTotpVerify = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError,TotpVerifyMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof totpVerify>>,
-        TError,
-        TotpVerifyMutationVariables,
-        TContext
-      > => {
-      return useMutation(getTotpVerifyMutationOptions(options), queryClient);
-    }
-    export const getChangePasswordUrl = () => {
-
-
-
-
+export const useTotpVerify = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpVerify>>, TError, TotpVerifyMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof totpVerify>>, TError, TotpVerifyMutationVariables, TContext> => {
+  return useMutation(getTotpVerifyMutationOptions(options), queryClient)
+}
+export const getChangePasswordUrl = () => {
   return `/api/v2/auth/password`
 }
 
@@ -805,89 +776,95 @@ export const useTotpVerify = <TError = ErrorType<Problem>,
  * @summary Change the caller's password (current password checked by Zitadel).
 Every other session of the caller is revoked.
  */
-export const changePassword = async (changePasswordRequest: ChangePasswordRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const changePassword = async (
+  changePasswordRequest: ChangePasswordRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<void>(getChangePasswordUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(changePasswordRequest)
-  },
-  voidParser,
-);}
+    return headers
+  }
+  return orvalMutator<void>(
+    getChangePasswordUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(changePasswordRequest),
+    },
+    voidParser,
+  )
+}
 
+export const getChangePasswordMutationKey = () => ['changePassword'] as const
 
+export const getChangePasswordMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changePassword>>,
+    TError,
+    ChangePasswordMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof changePassword>>,
+  TError,
+  ChangePasswordMutationVariables,
+  TContext
+> => {
+  const mutationKey = getChangePasswordMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof changePassword>>,
+    ChangePasswordMutationVariables
+  > = props => {
+    const { data } = props ?? {}
 
+    return changePassword(data, requestOptions)
+  }
 
-export const getChangePasswordMutationKey = () => ['changePassword'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getChangePasswordMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,ChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,ChangePasswordMutationVariables, TContext> => {
+export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
+export type ChangePasswordMutationBody = BodyType<ChangePasswordRequest>
+export type ChangePasswordMutationError = ErrorType<Problem>
+export type ChangePasswordMutationVariables = { data: BodyType<ChangePasswordRequest> }
 
-const mutationKey = getChangePasswordMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePassword>>, ChangePasswordMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  changePassword(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
-    export type ChangePasswordMutationBody = BodyType<ChangePasswordRequest>
-    export type ChangePasswordMutationError = ErrorType<Problem>
-    export type ChangePasswordMutationVariables = {data: BodyType<ChangePasswordRequest>}
-
-    /**
+/**
  * @summary Change the caller's password (current password checked by Zitadel).
 Every other session of the caller is revoked.
  */
-export const useChangePassword = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,ChangePasswordMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof changePassword>>,
-        TError,
-        ChangePasswordMutationVariables,
-        TContext
-      > => {
-      return useMutation(getChangePasswordMutationOptions(options), queryClient);
-    }
-    export const getRegisterUrl = () => {
-
-
-
-
+export const useChangePassword = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof changePassword>>,
+      TError,
+      ChangePasswordMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof changePassword>>, TError, ChangePasswordMutationVariables, TContext> => {
+  return useMutation(getChangePasswordMutationOptions(options), queryClient)
+}
+export const getRegisterUrl = () => {
   return `/api/v2/auth/register`
 }
 
@@ -899,401 +876,429 @@ export const useChangePassword = <TError = ErrorType<Problem>,
  * @summary Self-registration: creates the account (default `user` role) and emails
 a verification code.
  */
-export const register = async (registerRequest: RegisterRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<UserProfile> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const register = async (
+  registerRequest: RegisterRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UserProfile> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<UserProfile>(getRegisterUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(registerRequest)
-  },
-  UserProfile,
-);}
+    return headers
+  }
+  return orvalMutator<UserProfile>(
+    getRegisterUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(registerRequest),
+    },
+    UserProfile,
+  )
+}
 
+export const getRegisterMutationKey = () => ['register'] as const
 
+export const getRegisterMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext> => {
+  const mutationKey = getRegisterMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof register>>, RegisterMutationVariables> = props => {
+    const { data } = props ?? {}
 
+    return register(data, requestOptions)
+  }
 
-export const getRegisterMutationKey = () => ['register'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getRegisterMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext> => {
+export type RegisterMutationResult = NonNullable<Awaited<ReturnType<typeof register>>>
+export type RegisterMutationBody = BodyType<RegisterRequest>
+export type RegisterMutationError = ErrorType<Problem>
+export type RegisterMutationVariables = { data: BodyType<RegisterRequest> }
 
-const mutationKey = getRegisterMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof register>>, RegisterMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  register(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RegisterMutationResult = NonNullable<Awaited<ReturnType<typeof register>>>
-    export type RegisterMutationBody = BodyType<RegisterRequest>
-    export type RegisterMutationError = ErrorType<Problem>
-    export type RegisterMutationVariables = {data: BodyType<RegisterRequest>}
-
-    /**
+/**
  * @summary Self-registration: creates the account (default `user` role) and emails
 a verification code.
  */
-export const useRegister = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof register>>,
-        TError,
-        RegisterMutationVariables,
-        TContext
-      > => {
-      return useMutation(getRegisterMutationOptions(options), queryClient);
-    }
-    export const getCurrentSessionUrl = () => {
-
-
-
-
+export const useRegister = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof register>>, TError, RegisterMutationVariables, TContext> => {
+  return useMutation(getRegisterMutationOptions(options), queryClient)
+}
+export const getCurrentSessionUrl = () => {
   return `/api/v2/auth/session`
 }
 
 /**
  * @summary The caller's current session (also the cheapest "am I logged in?" probe).
  */
-export const currentSession = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<SessionInfo> => {
-
-  return orvalMutator<SessionInfo>(getCurrentSessionUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  SessionInfo,
-);}
-
-
-
-
+export const currentSession = async (options?: Parameters<typeof orvalMutator>[1]): Promise<SessionInfo> => {
+  return orvalMutator<SessionInfo>(
+    getCurrentSessionUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    SessionInfo,
+  )
+}
 
 export const getCurrentSessionQueryKey = () => {
-    return [
-    `/api/v2/auth/session`
-    ] as const;
-    }
+  return [`/api/v2/auth/session`] as const
+}
 
+export const getCurrentSessionQueryOptions = <
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getCurrentSessionQueryOptions = <TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getCurrentSessionQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof currentSession>>> = ({ signal }) =>
+    currentSession({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getCurrentSessionQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof currentSession>>> = ({ signal }) => currentSession({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof currentSession>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CurrentSessionQueryResult = NonNullable<Awaited<ReturnType<typeof currentSession>>>
 export type CurrentSessionQueryError = ErrorType<Problem>
 
-
 export function useCurrentSession<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>> & Pick<
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof currentSession>>,
           TError,
           Awaited<ReturnType<typeof currentSession>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentSession<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>> & Pick<
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof currentSession>>,
           TError,
           Awaited<ReturnType<typeof currentSession>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentSession<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The caller's current session (also the cheapest "am I logged in?" probe).
  */
 
 export function useCurrentSession<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getCurrentSessionQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getCurrentSessionSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getCurrentSessionQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof currentSession>>> = ({ signal }) =>
+    currentSession({ signal, ...requestOptions })
 
-
-
-export const getCurrentSessionSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCurrentSessionQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof currentSession>>> = ({ signal }) => currentSession({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CurrentSessionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof currentSession>>>
 export type CurrentSessionSuspenseQueryError = ErrorType<Problem>
 
-
-export function useCurrentSessionSuspense<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCurrentSessionSuspense<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCurrentSessionSuspense<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCurrentSessionSuspense<
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCurrentSessionSuspense<
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCurrentSessionSuspense<
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The caller's current session (also the cheapest "am I logged in?" probe).
  */
 
-export function useCurrentSessionSuspense<TData = Awaited<ReturnType<typeof currentSession>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+export function useCurrentSessionSuspense<
+  TData = Awaited<ReturnType<typeof currentSession>>,
+  TError = ErrorType<Problem>,
+>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentSession>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getCurrentSessionSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getListSessionsUrl = () => {
-
-
-
-
   return `/api/v2/auth/sessions`
 }
 
 /**
  * @summary All live sessions of the caller (handles are non-bearer identifiers).
  */
-export const listSessions = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<SessionSummary[]> => {
-
-  return orvalMutator<SessionSummary[]>(getListSessionsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  arrayParser(SessionSummary),
-);}
-
-
-
-
+export const listSessions = async (options?: Parameters<typeof orvalMutator>[1]): Promise<SessionSummary[]> => {
+  return orvalMutator<SessionSummary[]>(
+    getListSessionsUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(SessionSummary),
+  )
+}
 
 export const getListSessionsQueryKey = () => {
-    return [
-    `/api/v2/auth/sessions`
-    ] as const;
-    }
+  return [`/api/v2/auth/sessions`] as const
+}
 
+export const getListSessionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSessions>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getListSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getListSessionsQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) =>
+    listSessions({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getListSessionsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) => listSessions({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSessions>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ListSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSessions>>>
 export type ListSessionsQueryError = ErrorType<Problem>
 
-
 export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>> & Pick<
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listSessions>>,
           TError,
           Awaited<ReturnType<typeof listSessions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>> & Pick<
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listSessions>>,
           TError,
           Awaited<ReturnType<typeof listSessions>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary All live sessions of the caller (handles are non-bearer identifiers).
  */
 
 export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListSessionsQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getListSessionsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSessions>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getListSessionsQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) =>
+    listSessions({ signal, ...requestOptions })
 
-
-
-export const getListSessionsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListSessionsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) => listSessions({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type ListSessionsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listSessions>>>
 export type ListSessionsSuspenseQueryError = ErrorType<Problem>
 
-
 export function useListSessionsSuspense<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSessionsSuspense<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSessionsSuspense<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary All live sessions of the caller (handles are non-bearer identifiers).
  */
 
 export function useListSessionsSuspense<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<Problem>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListSessionsSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
-export const getRevokeSessionUrl = (handle: string,) => {
-
-
-
-
+export const getRevokeSessionUrl = (handle: string) => {
   return `/api/v2/auth/sessions/${handle}`
 }
 
@@ -1301,153 +1306,146 @@ export const getRevokeSessionUrl = (handle: string,) => {
  * @summary Revoke one of the caller's own sessions by handle.
  */
 export const revokeSession = async (handle: string, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+  return orvalMutator<void>(
+    getRevokeSessionUrl(handle),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
 
-  return orvalMutator<void>(getRevokeSessionUrl(handle),
-  {
-    ...options,
-    method: 'DELETE'
+export const getRevokeSessionMutationKey = () => ['revokeSession'] as const
 
+export const getRevokeSessionMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeSession>>,
+    TError,
+    RevokeSessionMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError, RevokeSessionMutationVariables, TContext> => {
+  const mutationKey = getRevokeSessionMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
-  },
-  voidParser,
-);}
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeSession>>,
+    RevokeSessionMutationVariables
+  > = props => {
+    const { handle } = props ?? {}
 
+    return revokeSession(handle, requestOptions)
+  }
 
+  return { mutationFn, ...mutationOptions }
+}
 
+export type RevokeSessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeSession>>>
 
+export type RevokeSessionMutationError = ErrorType<Problem>
+export type RevokeSessionMutationVariables = { handle: string }
 
-export const getRevokeSessionMutationKey = () => ['revokeSession'] as const;
-
-export const getRevokeSessionMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,RevokeSessionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,RevokeSessionMutationVariables, TContext> => {
-
-const mutationKey = getRevokeSessionMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeSession>>, RevokeSessionMutationVariables> = (props) => {
-          const {handle} = props ?? {};
-
-          return  revokeSession(handle,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RevokeSessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeSession>>>
-
-    export type RevokeSessionMutationError = ErrorType<Problem>
-    export type RevokeSessionMutationVariables = {handle: string}
-
-    /**
+/**
  * @summary Revoke one of the caller's own sessions by handle.
  */
-export const useRevokeSession = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,RevokeSessionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof revokeSession>>,
-        TError,
-        RevokeSessionMutationVariables,
-        TContext
-      > => {
-      return useMutation(getRevokeSessionMutationOptions(options), queryClient);
-    }
-    export const getVerifyEmailUrl = () => {
-
-
-
-
+export const useRevokeSession = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof revokeSession>>,
+      TError,
+      RevokeSessionMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof revokeSession>>, TError, RevokeSessionMutationVariables, TContext> => {
+  return useMutation(getRevokeSessionMutationOptions(options), queryClient)
+}
+export const getVerifyEmailUrl = () => {
   return `/api/v2/auth/verify-email`
 }
 
 /**
  * @summary Confirm the email address with the emailed code (public).
  */
-export const verifyEmail = async (verifyEmailRequest: VerifyEmailRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const verifyEmail = async (
+  verifyEmailRequest: VerifyEmailRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<void>(getVerifyEmailUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(verifyEmailRequest)
-  },
-  voidParser,
-);}
+    return headers
+  }
+  return orvalMutator<void>(
+    getVerifyEmailUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(verifyEmailRequest),
+    },
+    voidParser,
+  )
+}
 
+export const getVerifyEmailMutationKey = () => ['verifyEmail'] as const
 
+export const getVerifyEmailMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext> => {
+  const mutationKey = getVerifyEmailMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyEmail>>, VerifyEmailMutationVariables> = props => {
+    const { data } = props ?? {}
 
+    return verifyEmail(data, requestOptions)
+  }
 
-export const getVerifyEmailMutationKey = () => ['verifyEmail'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getVerifyEmailMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError,VerifyEmailMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError,VerifyEmailMutationVariables, TContext> => {
+export type VerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof verifyEmail>>>
+export type VerifyEmailMutationBody = BodyType<VerifyEmailRequest>
+export type VerifyEmailMutationError = ErrorType<Problem>
+export type VerifyEmailMutationVariables = { data: BodyType<VerifyEmailRequest> }
 
-const mutationKey = getVerifyEmailMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyEmail>>, VerifyEmailMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  verifyEmail(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type VerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof verifyEmail>>>
-    export type VerifyEmailMutationBody = BodyType<VerifyEmailRequest>
-    export type VerifyEmailMutationError = ErrorType<Problem>
-    export type VerifyEmailMutationVariables = {data: BodyType<VerifyEmailRequest>}
-
-    /**
+/**
  * @summary Confirm the email address with the emailed code (public).
  */
-export const useVerifyEmail = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyEmail>>, TError,VerifyEmailMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof verifyEmail>>,
-        TError,
-        VerifyEmailMutationVariables,
-        TContext
-      > => {
-      return useMutation(getVerifyEmailMutationOptions(options), queryClient);
-    }
+export const useVerifyEmail = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof verifyEmail>>,
+      TError,
+      VerifyEmailMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext> => {
+  return useMutation(getVerifyEmailMutationOptions(options), queryClient)
+}

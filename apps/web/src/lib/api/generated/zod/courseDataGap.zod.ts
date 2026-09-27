@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CourseDataGap = zod.object({
-  "course_id": zod.uuid(),
-  "course_name": zod.string(),
-  "learner_count": zod.int(),
-  "reason": zod.string()
+  course_id: zod.uuid(),
+  course_name: zod.string(),
+  learner_count: zod.int(),
+  reason: zod.string(),
 })
 
-export type CourseDataGap = zod.input<typeof CourseDataGap>;
-export type CourseDataGapOutput = zod.output<typeof CourseDataGap>;
+export type CourseDataGap = zod.input<typeof CourseDataGap>
+export type CourseDataGapOutput = zod.output<typeof CourseDataGap>

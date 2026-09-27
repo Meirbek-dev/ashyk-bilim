@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CreateBlockBody = zod.object({
-  "block_type": zod.string().describe('`image`, `pdf`, or `video`.'),
-  "file_name": zod.string().nullish().describe('Original client-side file name, for display.'),
-  "upload_id": zod.uuid().describe('A finalized upload (purpose must match the block type).')
+  block_type: zod.string().describe('`image`, `pdf`, or `video`.'),
+  file_name: zod.string().nullish().describe('Original client-side file name, for display.'),
+  upload_id: zod.uuid().describe('A finalized upload (purpose must match the block type).'),
 })
 
-export type CreateBlockBody = zod.input<typeof CreateBlockBody>;
-export type CreateBlockBodyOutput = zod.output<typeof CreateBlockBody>;
+export type CreateBlockBody = zod.input<typeof CreateBlockBody>
+export type CreateBlockBodyOutput = zod.output<typeof CreateBlockBody>

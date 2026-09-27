@@ -5,14 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const UpdateMyProfileBody = zod.object({
-  "avatar_upload_id": zod.uuid().nullish().describe('Finalized `avatar` upload to claim as the new avatar; `null`\nremoves the current one.'),
-  "bio": zod.string().nullish(),
-  "display_name": zod.string().nullish(),
-  "locale": zod.string().nullish().describe('One of the platform locales.')
-}).describe('Partial update; omitted fields are unchanged.')
+export const UpdateMyProfileBody = zod
+  .object({
+    avatar_upload_id: zod
+      .uuid()
+      .nullish()
+      .describe('Finalized `avatar` upload to claim as the new avatar; `null`\nremoves the current one.'),
+    bio: zod.string().nullish(),
+    display_name: zod.string().nullish(),
+    locale: zod.string().nullish().describe('One of the platform locales.'),
+  })
+  .describe('Partial update; omitted fields are unchanged.')
 
-export type UpdateMyProfileBody = zod.input<typeof UpdateMyProfileBody>;
-export type UpdateMyProfileBodyOutput = zod.output<typeof UpdateMyProfileBody>;
+export type UpdateMyProfileBody = zod.input<typeof UpdateMyProfileBody>
+export type UpdateMyProfileBodyOutput = zod.output<typeof UpdateMyProfileBody>

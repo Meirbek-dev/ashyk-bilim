@@ -5,26 +5,30 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const WorkItem = zod.object({
-  "activity_id": zod.uuid(),
-  "activity_title": zod.string(),
-  "allowed_actions": zod.array(zod.string()),
-  "course_id": zod.uuid(),
-  "course_title": zod.string(),
-  "created_at_unix": zod.int().nullish(),
-  "description": zod.string(),
-  "due_at_unix": zod.int().nullish(),
-  "href": zod.string().describe('Client route for the primary action.'),
-  "id": zod.string(),
-  "kind": zod.string(),
-  "primary_action": zod.string(),
-  "priority": zod.enum(['critical', 'high', 'normal', 'low']),
-  "role": zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'),
-  "status": zod.string(),
-  "title": zod.string()
-}).describe('One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).')
+export const WorkItem = zod
+  .object({
+    activity_id: zod.uuid(),
+    activity_title: zod.string(),
+    allowed_actions: zod.array(zod.string()),
+    course_id: zod.uuid(),
+    course_title: zod.string(),
+    created_at_unix: zod.int().nullish(),
+    description: zod.string(),
+    due_at_unix: zod.int().nullish(),
+    href: zod.string().describe('Client route for the primary action.'),
+    id: zod.string(),
+    kind: zod.string(),
+    primary_action: zod.string(),
+    priority: zod.enum(['critical', 'high', 'normal', 'low']),
+    role: zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'),
+    status: zod.string(),
+    title: zod.string(),
+  })
+  .describe(
+    'One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).',
+  )
 
-export type WorkItem = zod.input<typeof WorkItem>;
-export type WorkItemOutput = zod.output<typeof WorkItem>;
+export type WorkItem = zod.input<typeof WorkItem>
+export type WorkItemOutput = zod.output<typeof WorkItem>

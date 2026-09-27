@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const SetAccessHeaders = zod.object({
-  "If-Match": zod.int().nullish()
+  'If-Match': zod.int().nullish(),
 })
 
-export type SetAccessHeaders = zod.input<typeof SetAccessHeaders>;
-export type SetAccessHeadersOutput = zod.output<typeof SetAccessHeaders>;
+export type SetAccessHeaders = zod.input<typeof SetAccessHeaders>
+export type SetAccessHeadersOutput = zod.output<typeof SetAccessHeaders>

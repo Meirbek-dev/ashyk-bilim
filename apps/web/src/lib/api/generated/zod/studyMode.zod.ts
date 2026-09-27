@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const StudyMode = zod.enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen']).describe('Study companion modes (legacy `StudyMode`).')
+export const StudyMode = zod
+  .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
+  .describe('Study companion modes (legacy `StudyMode`).')
 
-export type StudyMode = zod.input<typeof StudyMode>;
-export type StudyModeOutput = zod.output<typeof StudyMode>;
+export type StudyMode = zod.input<typeof StudyMode>
+export type StudyModeOutput = zod.output<typeof StudyMode>

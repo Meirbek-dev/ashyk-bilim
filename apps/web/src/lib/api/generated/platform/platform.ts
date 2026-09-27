@@ -5,12 +5,7 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -25,43 +20,32 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
 
-import type {
-  Platform,
-  Problem,
-  UpdatePlatformRequest
-} from '../zod';
+import { Platform, Problem, UpdatePlatformRequest } from '../zod'
 
-import { orvalMutator } from '../../orval-mutator';
-import type { ErrorType , BodyType } from '../../orval-mutator';
+import { orvalMutator } from '../../orval-mutator'
+import type { ErrorType, BodyType } from '../../orval-mutator'
 
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
+  const result = { queryKey } as T & { queryKey: K }
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
+    if (key === 'queryKey') continue
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    });
+    })
   }
-  return result;
-};
+  return result
+}
 
 export const getGetPlatformUrl = () => {
-
-
-
-
   return `/api/v2/platform`
 }
 
@@ -70,75 +54,82 @@ export const getGetPlatformUrl = () => {
 navigation, auth pages, and landing content from it before any session
 exists.
  */
-export const getPlatform = async ( options?: Parameters<typeof orvalMutator>[1]): Promise<Platform> => {
-
-  return orvalMutator<Platform>(getGetPlatformUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  },
-  Platform,
-);}
-
-
-
-
+export const getPlatform = async (options?: Parameters<typeof orvalMutator>[1]): Promise<Platform> => {
+  return orvalMutator<Platform>(
+    getGetPlatformUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Platform,
+  )
+}
 
 export const getGetPlatformQueryKey = () => {
-    return [
-    `/api/v2/platform`
-    ] as const;
-    }
+  return [`/api/v2/platform`] as const
+}
 
+export const getGetPlatformQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlatform>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-export const getGetPlatformQueryOptions = <TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetPlatformQueryKey()
 
-const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatform>>> = ({ signal }) =>
+    getPlatform({ signal, ...requestOptions })
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPlatformQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatform>>> = ({ signal }) => getPlatform({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlatform>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetPlatformQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatform>>>
 export type GetPlatformQueryError = ErrorType<unknown>
 
-
 export function useGetPlatform<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>> & Pick<
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>> &
+      Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPlatform>>,
           TError,
           Awaited<ReturnType<typeof getPlatform>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPlatform<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>> & Pick<
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>> &
+      Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPlatform>>,
           TError,
           Awaited<ReturnType<typeof getPlatform>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPlatform<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The platform singleton. Intentionally public: the frontend bootstraps
 navigation, auth pages, and landing content from it before any session
@@ -146,56 +137,68 @@ exists.
  */
 
 export function useGetPlatform<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetPlatformQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getGetPlatformSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlatform>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
 
+  const queryKey = queryOptions?.queryKey ?? getGetPlatformQueryKey()
 
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatform>>> = ({ signal }) =>
+    getPlatform({ signal, ...requestOptions })
 
-
-
-export const getGetPlatformSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetPlatformQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatform>>> = ({ signal }) => getPlatform({ signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetPlatformSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatform>>>
 export type GetPlatformSuspenseQueryError = ErrorType<unknown>
 
-
 export function useGetPlatformSuspense<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPlatformSuspense<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPlatformSuspense<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The platform singleton. Intentionally public: the frontend bootstraps
 navigation, auth pages, and landing content from it before any session
@@ -203,27 +206,22 @@ exists.
  */
 
 export function useGetPlatformSuspense<TData = Awaited<ReturnType<typeof getPlatform>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getPlatform>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetPlatformSuspenseQueryOptions(options)
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 
-  return withQueryKey(query, queryOptions.queryKey);
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
-
-
-
-
-
 export const getUpdatePlatformUrl = () => {
-
-
-
-
   return `/api/v2/platform`
 }
 
@@ -232,82 +230,92 @@ export const getUpdatePlatformUrl = () => {
 Branding changes claim finalized `platform-logo` / `platform-thumbnail`
 uploads; the replaced object is released for reaping.
  */
-export const updatePlatform = async (updatePlatformRequest: UpdatePlatformRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<Platform> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
+export const updatePlatform = async (
+  updatePlatformRequest: UpdatePlatformRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Platform> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
     }
-    const headers: Record<string, string | readonly string[]> = {};
+    const headers: Record<string, string | readonly string[]> = {}
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
+      if (value !== undefined) headers[name] = value
     }
-    return headers;
-  };
-return orvalMutator<Platform>(getUpdatePlatformUrl(),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(updatePlatformRequest)
-  },
-  Platform,
-);}
+    return headers
+  }
+  return orvalMutator<Platform>(
+    getUpdatePlatformUrl(),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updatePlatformRequest),
+    },
+    Platform,
+  )
+}
 
+export const getUpdatePlatformMutationKey = () => ['updatePlatform'] as const
 
+export const getUpdatePlatformMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlatform>>,
+    TError,
+    UpdatePlatformMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePlatform>>,
+  TError,
+  UpdatePlatformMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdatePlatformMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePlatform>>,
+    UpdatePlatformMutationVariables
+  > = props => {
+    const { data } = props ?? {}
 
+    return updatePlatform(data, requestOptions)
+  }
 
-export const getUpdatePlatformMutationKey = () => ['updatePlatform'] as const;
+  return { mutationFn, ...mutationOptions }
+}
 
-export const getUpdatePlatformMutationOptions = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatform>>, TError,UpdatePlatformMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof updatePlatform>>, TError,UpdatePlatformMutationVariables, TContext> => {
+export type UpdatePlatformMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlatform>>>
+export type UpdatePlatformMutationBody = BodyType<UpdatePlatformRequest>
+export type UpdatePlatformMutationError = ErrorType<Problem>
+export type UpdatePlatformMutationVariables = { data: BodyType<UpdatePlatformRequest> }
 
-const mutationKey = getUpdatePlatformMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePlatform>>, UpdatePlatformMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  updatePlatform(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdatePlatformMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlatform>>>
-    export type UpdatePlatformMutationBody = BodyType<UpdatePlatformRequest>
-    export type UpdatePlatformMutationError = ErrorType<Problem>
-    export type UpdatePlatformMutationVariables = {data: BodyType<UpdatePlatformRequest>}
-
-    /**
+/**
  * @summary Update platform settings (requires `platform:update:platform` — admins).
 Branding changes claim finalized `platform-logo` / `platform-thumbnail`
 uploads; the replaced object is released for reaping.
  */
-export const useUpdatePlatform = <TError = ErrorType<Problem>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatform>>, TError,UpdatePlatformMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updatePlatform>>,
-        TError,
-        UpdatePlatformMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdatePlatformMutationOptions(options), queryClient);
-    }
+export const useUpdatePlatform = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updatePlatform>>,
+      TError,
+      UpdatePlatformMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof updatePlatform>>, TError, UpdatePlatformMutationVariables, TContext> => {
+  return useMutation(getUpdatePlatformMutationOptions(options), queryClient)
+}

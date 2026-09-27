@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ItemFeedbackView = zod.object({
-  "comment": zod.string(),
-  "created_at_unix": zod.int(),
-  "item_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "max_score": zod.number().nullish(),
-  "score": zod.number().nullish()
+  comment: zod.string(),
+  created_at_unix: zod.int(),
+  item_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  max_score: zod.number().nullish(),
+  score: zod.number().nullish(),
 })
 
-export type ItemFeedbackView = zod.input<typeof ItemFeedbackView>;
-export type ItemFeedbackViewOutput = zod.output<typeof ItemFeedbackView>;
+export type ItemFeedbackView = zod.input<typeof ItemFeedbackView>
+export type ItemFeedbackViewOutput = zod.output<typeof ItemFeedbackView>

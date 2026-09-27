@@ -5,14 +5,23 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const QaForwardedProps = zod.object({
-  "activity_id": zod.union([zod.uuid().describe('Narrow the context to one activity of the course.'),zod.null()]).optional(),
-  "client_turn_id": zod.string().nullish().describe('Client turn id: a retry with the same id replays the stored answer.'),
-  "language": zod.string().nullish(),
-  "thread_id": zod.union([zod.uuid().describe('Continue an existing thread of the caller in this course.'),zod.null()]).optional()
-}).describe('What this API reads from AG-UI `forwardedProps`.')
+export const QaForwardedProps = zod
+  .object({
+    activity_id: zod
+      .union([zod.uuid().describe('Narrow the context to one activity of the course.'), zod.null()])
+      .optional(),
+    client_turn_id: zod
+      .string()
+      .nullish()
+      .describe('Client turn id: a retry with the same id replays the stored answer.'),
+    language: zod.string().nullish(),
+    thread_id: zod
+      .union([zod.uuid().describe('Continue an existing thread of the caller in this course.'), zod.null()])
+      .optional(),
+  })
+  .describe('What this API reads from AG-UI `forwardedProps`.')
 
-export type QaForwardedProps = zod.input<typeof QaForwardedProps>;
-export type QaForwardedPropsOutput = zod.output<typeof QaForwardedProps>;
+export type QaForwardedProps = zod.input<typeof QaForwardedProps>
+export type QaForwardedPropsOutput = zod.output<typeof QaForwardedProps>

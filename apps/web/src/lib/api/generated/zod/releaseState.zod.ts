@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const ReleaseState = zod.enum(['hidden', 'awaiting_release', 'visible', 'returned_for_revision']).describe('What the learner may see of a grade (legacy `release_state`).')
+export const ReleaseState = zod
+  .enum(['hidden', 'awaiting_release', 'visible', 'returned_for_revision'])
+  .describe('What the learner may see of a grade (legacy `release_state`).')
 
-export type ReleaseState = zod.input<typeof ReleaseState>;
-export type ReleaseStateOutput = zod.output<typeof ReleaseState>;
+export type ReleaseState = zod.input<typeof ReleaseState>
+export type ReleaseStateOutput = zod.output<typeof ReleaseState>

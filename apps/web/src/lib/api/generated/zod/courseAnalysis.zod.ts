@@ -5,29 +5,25 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const CourseAnalysis = zod.object({
-  "content_hash": zod.string().nullish(),
-  "course_id": zod.uuid(),
-  "created_at_unix": zod.int(),
-  "evidence": zod.looseObject({
-
-}),
-  "id": zod.uuid(),
-  "language": zod.string(),
-  "model_name": zod.string().nullish(),
-  "previous_public_score": zod.int().nullish(),
-  "public_score": zod.int(),
-  "published_at_unix": zod.int().nullish(),
-  "report": zod.looseObject({
-
-}),
-  "run_id": zod.union([zod.uuid(),zod.null()]).optional(),
-  "stale": zod.boolean().describe('The course content changed since this analysis (latest view only).'),
-  "status": zod.enum(['draft', 'needs_human_review', 'published']).describe('Course analysis publication state.'),
-  "triggered_by": zod.union([zod.uuid(),zod.null()]).optional()
+  content_hash: zod.string().nullish(),
+  course_id: zod.uuid(),
+  created_at_unix: zod.int(),
+  evidence: zod.looseObject({}),
+  id: zod.uuid(),
+  language: zod.string(),
+  model_name: zod.string().nullish(),
+  previous_public_score: zod.int().nullish(),
+  public_score: zod.int(),
+  published_at_unix: zod.int().nullish(),
+  report: zod.looseObject({}),
+  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  stale: zod.boolean().describe('The course content changed since this analysis (latest view only).'),
+  status: zod.enum(['draft', 'needs_human_review', 'published']).describe('Course analysis publication state.'),
+  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
 })
 
-export type CourseAnalysis = zod.input<typeof CourseAnalysis>;
-export type CourseAnalysisOutput = zod.output<typeof CourseAnalysis>;
+export type CourseAnalysis = zod.input<typeof CourseAnalysis>
+export type CourseAnalysisOutput = zod.output<typeof CourseAnalysis>

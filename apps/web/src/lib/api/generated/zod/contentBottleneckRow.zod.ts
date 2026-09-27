@@ -5,25 +5,29 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const ContentBottleneckRow = zod.object({
-  "activity_id": zod.uuid(),
-  "activity_name": zod.string(),
-  "activity_type": zod.string(),
-  "avg_time_seconds": zod.number().nullish(),
-  "completed_learners": zod.int(),
-  "completion_rate": zod.number().nullish(),
-  "course_id": zod.uuid(),
-  "course_name": zod.string(),
-  "exit_count": zod.int(),
-  "failed_assessments": zod.int(),
-  "note": zod.string(),
-  "severity": zod.enum(['info', 'warning', 'critical']),
-  "signal": zod.string().describe('`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`.'),
-  "stale_days": zod.int().nullish(),
-  "started_learners": zod.int()
+  activity_id: zod.uuid(),
+  activity_name: zod.string(),
+  activity_type: zod.string(),
+  avg_time_seconds: zod.number().nullish(),
+  completed_learners: zod.int(),
+  completion_rate: zod.number().nullish(),
+  course_id: zod.uuid(),
+  course_name: zod.string(),
+  exit_count: zod.int(),
+  failed_assessments: zod.int(),
+  note: zod.string(),
+  severity: zod.enum(['info', 'warning', 'critical']),
+  signal: zod
+    .string()
+    .describe(
+      '`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`.',
+    ),
+  stale_days: zod.int().nullish(),
+  started_learners: zod.int(),
 })
 
-export type ContentBottleneckRow = zod.input<typeof ContentBottleneckRow>;
-export type ContentBottleneckRowOutput = zod.output<typeof ContentBottleneckRow>;
+export type ContentBottleneckRow = zod.input<typeof ContentBottleneckRow>
+export type ContentBottleneckRowOutput = zod.output<typeof ContentBottleneckRow>

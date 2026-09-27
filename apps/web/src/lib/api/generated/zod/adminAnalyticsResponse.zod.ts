@@ -5,54 +5,66 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AdminAnalyticsResponse = zod.object({
-  "cohort_retention": zod.array(zod.object({
-  "avg_progress_pct": zod.number().nullish(),
-  "cohort_id": zod.uuid(),
-  "cohort_name": zod.string(),
-  "learners": zod.int(),
-  "retained_learners": zod.int(),
-  "retention_rate": zod.number().nullish()
-})),
-  "content_roi": zod.array(zod.object({
-  "active_learners_7d": zod.int(),
-  "at_risk_learners": zod.int(),
-  "completion_rate": zod.number(),
-  "content_roi_score": zod.number().nullish(),
-  "course_id": zod.uuid(),
-  "course_name": zod.string(),
-  "health_score": zod.number()
-})),
-  "course_health_ranking": zod.array(zod.object({
-  "active_learners_7d": zod.int(),
-  "at_risk_learners": zod.int(),
-  "completion_rate": zod.number(),
-  "content_roi_score": zod.number().nullish(),
-  "course_id": zod.uuid(),
-  "course_name": zod.string(),
-  "health_score": zod.number()
-})),
-  "department_program_performance": zod.array(zod.object({
-  "completion_rate": zod.number().nullish(),
-  "course_count": zod.int(),
-  "health_score": zod.number().nullish(),
-  "learner_count": zod.int(),
-  "program_id": zod.union([zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'),zod.null()]).optional(),
-  "program_name": zod.string()
-})),
-  "generated_at_unix": zod.int(),
-  "teacher_workload_comparison": zod.array(zod.object({
-  "at_risk_learners": zod.int(),
-  "managed_course_count": zod.int(),
-  "median_feedback_latency_hours": zod.number().nullish(),
-  "sla_breaches": zod.int(),
-  "teacher_display_name": zod.string(),
-  "teacher_user_id": zod.uuid(),
-  "workload_backlog": zod.int()
-}))
+  cohort_retention: zod.array(
+    zod.object({
+      avg_progress_pct: zod.number().nullish(),
+      cohort_id: zod.uuid(),
+      cohort_name: zod.string(),
+      learners: zod.int(),
+      retained_learners: zod.int(),
+      retention_rate: zod.number().nullish(),
+    }),
+  ),
+  content_roi: zod.array(
+    zod.object({
+      active_learners_7d: zod.int(),
+      at_risk_learners: zod.int(),
+      completion_rate: zod.number(),
+      content_roi_score: zod.number().nullish(),
+      course_id: zod.uuid(),
+      course_name: zod.string(),
+      health_score: zod.number(),
+    }),
+  ),
+  course_health_ranking: zod.array(
+    zod.object({
+      active_learners_7d: zod.int(),
+      at_risk_learners: zod.int(),
+      completion_rate: zod.number(),
+      content_roi_score: zod.number().nullish(),
+      course_id: zod.uuid(),
+      course_name: zod.string(),
+      health_score: zod.number(),
+    }),
+  ),
+  department_program_performance: zod.array(
+    zod.object({
+      completion_rate: zod.number().nullish(),
+      course_count: zod.int(),
+      health_score: zod.number().nullish(),
+      learner_count: zod.int(),
+      program_id: zod
+        .union([zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'), zod.null()])
+        .optional(),
+      program_name: zod.string(),
+    }),
+  ),
+  generated_at_unix: zod.int(),
+  teacher_workload_comparison: zod.array(
+    zod.object({
+      at_risk_learners: zod.int(),
+      managed_course_count: zod.int(),
+      median_feedback_latency_hours: zod.number().nullish(),
+      sla_breaches: zod.int(),
+      teacher_display_name: zod.string(),
+      teacher_user_id: zod.uuid(),
+      workload_backlog: zod.int(),
+    }),
+  ),
 })
 
-export type AdminAnalyticsResponse = zod.input<typeof AdminAnalyticsResponse>;
-export type AdminAnalyticsResponseOutput = zod.output<typeof AdminAnalyticsResponse>;
+export type AdminAnalyticsResponse = zod.input<typeof AdminAnalyticsResponse>
+export type AdminAnalyticsResponseOutput = zod.output<typeof AdminAnalyticsResponse>

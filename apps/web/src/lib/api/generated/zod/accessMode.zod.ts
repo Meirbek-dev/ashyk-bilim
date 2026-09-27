@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const AccessMode = zod.enum(['all_course_learners', 'restricted'])
 
-export type AccessMode = zod.input<typeof AccessMode>;
-export type AccessModeOutput = zod.output<typeof AccessMode>;
+export type AccessMode = zod.input<typeof AccessMode>
+export type AccessModeOutput = zod.output<typeof AccessMode>

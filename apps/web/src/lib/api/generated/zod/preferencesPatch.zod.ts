@@ -5,20 +5,42 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const PreferencesPatch = zod.object({
-  "display": zod.union([zod.object({
-  "animatedEffects": zod.boolean().nullish(),
-  "compactMode": zod.boolean().nullish()
-}),zod.null()]).optional(),
-  "notifications": zod.union([zod.object({
-  "xpGain": zod.boolean().nullish()
-}),zod.null()]).optional(),
-  "privacy": zod.union([zod.object({
-  "showOnLeaderboard": zod.boolean().nullish().describe('`false` hides the profile from the leaderboard (and its rank is `null`).')
-}),zod.null()]).optional()
-}).describe('`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.')
+export const PreferencesPatch = zod
+  .object({
+    display: zod
+      .union([
+        zod.object({
+          animatedEffects: zod.boolean().nullish(),
+          compactMode: zod.boolean().nullish(),
+        }),
+        zod.null(),
+      ])
+      .optional(),
+    notifications: zod
+      .union([
+        zod.object({
+          xpGain: zod.boolean().nullish(),
+        }),
+        zod.null(),
+      ])
+      .optional(),
+    privacy: zod
+      .union([
+        zod.object({
+          showOnLeaderboard: zod
+            .boolean()
+            .nullish()
+            .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
+        }),
+        zod.null(),
+      ])
+      .optional(),
+  })
+  .describe(
+    '`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.',
+  )
 
-export type PreferencesPatch = zod.input<typeof PreferencesPatch>;
-export type PreferencesPatchOutput = zod.output<typeof PreferencesPatch>;
+export type PreferencesPatch = zod.input<typeof PreferencesPatch>
+export type PreferencesPatchOutput = zod.output<typeof PreferencesPatch>

@@ -5,16 +5,20 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
-export const CreateUserRequest = zod.object({
-  "email": zod.string(),
-  "first_name": zod.string(),
-  "last_name": zod.string(),
-  "password": zod.string().nullish(),
-  "roles": zod.array(zod.string()).nullish().describe('Extra role slugs on top of the default `user`.'),
-  "username": zod.string()
-}).describe('Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).')
+export const CreateUserRequest = zod
+  .object({
+    email: zod.string(),
+    first_name: zod.string(),
+    last_name: zod.string(),
+    password: zod.string().nullish(),
+    roles: zod.array(zod.string()).nullish().describe('Extra role slugs on top of the default `user`.'),
+    username: zod.string(),
+  })
+  .describe(
+    'Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).',
+  )
 
-export type CreateUserRequest = zod.input<typeof CreateUserRequest>;
-export type CreateUserRequestOutput = zod.output<typeof CreateUserRequest>;
+export type CreateUserRequest = zod.input<typeof CreateUserRequest>
+export type CreateUserRequestOutput = zod.output<typeof CreateUserRequest>

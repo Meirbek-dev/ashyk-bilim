@@ -5,16 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const RunAggregate = zod.object({
-  "aborted": zod.int(),
-  "failed": zod.int(),
-  "queued": zod.int(),
-  "running": zod.int(),
-  "succeeded": zod.int(),
-  "total": zod.int()
+  aborted: zod.int(),
+  failed: zod.int(),
+  queued: zod.int(),
+  running: zod.int(),
+  succeeded: zod.int(),
+  total: zod.int(),
 })
 
-export type RunAggregate = zod.input<typeof RunAggregate>;
-export type RunAggregateOutput = zod.output<typeof RunAggregate>;
+export type RunAggregate = zod.input<typeof RunAggregate>
+export type RunAggregateOutput = zod.output<typeof RunAggregate>

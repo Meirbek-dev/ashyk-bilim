@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod';
+import * as zod from 'zod'
 
 export const TeacherCourseDetailSummary = zod.object({
-  "active_learners_7d": zod.int(),
-  "at_risk_learners": zod.int(),
-  "avg_progress_pct": zod.number(),
-  "certificates_issued": zod.int(),
-  "completion_rate": zod.number(),
-  "enrolled_learners": zod.int(),
-  "ungraded_submissions": zod.int()
+  active_learners_7d: zod.int(),
+  at_risk_learners: zod.int(),
+  avg_progress_pct: zod.number(),
+  certificates_issued: zod.int(),
+  completion_rate: zod.number(),
+  enrolled_learners: zod.int(),
+  ungraded_submissions: zod.int(),
 })
 
-export type TeacherCourseDetailSummary = zod.input<typeof TeacherCourseDetailSummary>;
-export type TeacherCourseDetailSummaryOutput = zod.output<typeof TeacherCourseDetailSummary>;
+export type TeacherCourseDetailSummary = zod.input<typeof TeacherCourseDetailSummary>
+export type TeacherCourseDetailSummaryOutput = zod.output<typeof TeacherCourseDetailSummary>
