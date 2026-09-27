@@ -32,13 +32,12 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
-                Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).map((activity: AppActivity) =>
-                    activity.activity_uuid === activityUuid ? Object.assign(activity, payload) : activity,
-                  ),
-                }),
-              ),
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) => ({
+                ...chapter,
+                activities: (chapter.activities ?? []).map((activity: AppActivity) =>
+                  activity.activity_uuid === activityUuid ? { ...activity, ...payload } : activity,
+                ),
+              })),
             }
           : current,
       )
@@ -95,13 +94,12 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
-                Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).filter(
-                    (activity: AppActivity) => activity.activity_uuid !== activityUuid,
-                  ),
-                }),
-              ),
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) => ({
+                ...chapter,
+                activities: (chapter.activities ?? []).filter(
+                  (activity: AppActivity) => activity.activity_uuid !== activityUuid,
+                ),
+              })),
             }
           : current,
       )
