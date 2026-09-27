@@ -300,14 +300,18 @@ pub async fn list_sessions(
 
 // ── TOTP MFA self-service ───────────────────────────────────────────────────
 
-/// Start TOTP enrollment (secrets are returned exactly once).
+/// Start TOTP enrollment.
+///
+/// A repeat start within 10 minutes returns the same pending secret
+/// (UX-254); a start racing another to the identity provider answers
+/// `idempotency-in-progress` and its retry gets the winner's secret.
 #[utoipa::path(
     post,
     path = "/auth/mfa/totp",
     tag = "auth",
     responses(
         (status = 200, description = "Enrollment secrets", body = crate::dto::auth::TotpEnrollment),
-        (status = 409, description = "Already enrolled", body = Problem,
+        (status = 409, description = "Already enrolled, or a start is in progress", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -315,11 +319,14 @@ pub async fn totp_enroll(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<crate::dto::auth::TotpEnrollment>> {
-    let registration = state.identity.totp_enroll(&actor).await?;
-    Ok(Json(crate::dto::auth::TotpEnrollment {
-        uri: registration.uri,
-        secret: secrecy::ExposeSecret::expose_secret(&registration.secret).to_owned(),
-    }))
+    detached(async move {
+        let registration = state.identity.totp_enroll(&actor).await?;
+        Ok(Json(crate::dto::auth::TotpEnrollment {
+            uri: registration.uri,
+            secret: secrecy::ExposeSecret::expose_secret(&registration.secret).to_owned(),
+        }))
+    })
+    .await
 }
 
 /// Activate TOTP with the first code from the authenticator app.

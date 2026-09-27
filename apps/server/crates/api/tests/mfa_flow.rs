@@ -405,6 +405,87 @@ async fn enrolling_twice_is_a_conflict(pool: PgPool) {
     assert_eq!(res.json()["code"], "conflict");
 }
 
+/// UX-254: two enrolment starts in flight at once — the second answers
+/// `idempotency-in-progress` while the first is at Zitadel (never registering
+/// a secret of its own), and its retry gets the first tab's pending secret.
+/// Only activation ends the pending enrolment: the next start registers anew.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
+    /// Signals each registration as it arrives, then answers slowly (the
+    /// second start lands meanwhile); a new secret per call, as Zitadel does.
+    struct Register {
+        calls: std::sync::atomic::AtomicUsize,
+        tx: tokio::sync::mpsc::UnboundedSender<usize>,
+    }
+    impl wiremock::Respond for Register {
+        fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
+            let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+            let _ = self.tx.send(n);
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_secs(1))
+                .set_body_json(serde_json::json!({
+                    "details": {},
+                    "uri": format!("otpauth://totp/ZITADEL:r@example.com?secret=S{n}"),
+                    "secret": format!("S{n}")
+                }))
+        }
+    }
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
+        .respond_with(Register {
+            calls: 0.into(),
+            tx,
+        })
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp/verify", session.user_id)))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({});
+    let enrol = || app.post_as(&session, "/api/v2/auth/mfa/totp", &body);
+
+    let (first, second) = tokio::join!(enrol(), async {
+        assert_eq!(rx.recv().await, Some(1), "the first start is at Zitadel");
+        enrol().await
+    });
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["secret"], "S1");
+    assert_eq!(second.status, StatusCode::CONFLICT, "{}", second.text());
+    assert_eq!(second.json()["code"], "idempotency-in-progress");
+    assert!(
+        rx.try_recv().is_err(),
+        "the loser never registered a secret of its own"
+    );
+
+    // The loser's retry (any later tab) sees the first tab's secret.
+    let retry = enrol().await;
+    assert_eq!(retry.status, StatusCode::OK, "{}", retry.text());
+    assert_eq!(retry.json()["secret"], "S1");
+    assert_eq!(retry.json()["uri"], first.json()["uri"]);
+
+    let verify = app
+        .post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "654321" }),
+        )
+        .await;
+    assert_eq!(verify.status, StatusCode::NO_CONTENT, "{}", verify.text());
+    let fresh = enrol().await;
+    assert_eq!(fresh.status, StatusCode::OK, "{}", fresh.text());
+    assert_eq!(fresh.json()["secret"], "S2");
+}
+
 /// UX-158: a TOTP login fenced by a role rewrite mid-flight retries without
 /// resending the (now replayed) code — the first attempt verified it — and
 /// opens the session instead of answering `invalid-totp-code`.

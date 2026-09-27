@@ -23,6 +23,7 @@ use ab_core::id::UserId;
 use ab_core::language::Language;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
+use redis::AsyncCommands;
 use secrecy::SecretString;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
@@ -52,6 +53,11 @@ const REGISTER_ATTEMPT_IP_LIMIT: (u32, Duration) = (60, Duration::from_hours(1))
 
 /// Authenticator-app issuer when the platform singleton has no name yet.
 const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
+
+/// How long a started TOTP enrolment is handed back unchanged to a repeat
+/// start (UX-254): Zitadel replaces the pending secret on every registration,
+/// so a second tab must see the first tab's secret, not kill it.
+const TOTP_ENROL_TTL: Duration = Duration::from_mins(10);
 
 pub const TOTP_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_TOTP";
 pub const PASSWORD_METHOD: &str = "AUTHENTICATION_METHOD_TYPE_PASSWORD";
@@ -84,6 +90,10 @@ fn query_encode(value: &str) -> String {
         }
     }
     out
+}
+
+fn totp_pending_key(actor: &Actor) -> String {
+    format!("totp_pending:{}", actor.user_id)
 }
 
 /// Zitadel labels the authenticator entry with its own name
@@ -870,17 +880,7 @@ impl IdentityService {
         // revoked each other. The runner is `detached()` (BUG-214), so the
         // lock is always handed back; the TTL covers a crash.
         let lock = format!("lock:password:user:{}", actor.user_id);
-        let mut redis = self.sessions.redis();
-        let locked: Option<String> = redis::cmd("SET")
-            .arg(&lock)
-            .arg(1)
-            .arg("NX")
-            .arg("EX")
-            .arg(30)
-            .query_async(&mut redis)
-            .await
-            .map_err(|e| Error::internal("password change lock", e))?;
-        if locked.is_none() {
+        if !self.try_lock(&lock).await? {
             self.limiter.release(&key).await?;
             return Err(Error::conflict("a password change is already in progress"));
         }
@@ -888,11 +888,7 @@ impl IdentityService {
             .zitadel
             .change_password(&actor.zitadel_user_id, current, new)
             .await;
-        let _: i64 = redis::cmd("DEL")
-            .arg(&lock)
-            .query_async(&mut redis)
-            .await
-            .map_err(|e| Error::internal("password change unlock", e))?;
+        self.unlock(&lock).await?;
         if let Err(err) = changed {
             if err.code() != ErrorCode::InvalidCredentials {
                 self.limiter.release(&key).await?;
@@ -916,26 +912,94 @@ impl IdentityService {
         .await
     }
 
+    /// Per-user mutex in Redis (`SET NX`), 30 s TTL for a crash; callers run
+    /// under `detached()` so the lock is always handed back.
+    async fn try_lock(&self, key: &str) -> Result<bool> {
+        let mut redis = self.sessions.redis();
+        let locked: Option<String> = redis::cmd("SET")
+            .arg(key)
+            .arg(1)
+            .arg("NX")
+            .arg("EX")
+            .arg(30)
+            .query_async(&mut redis)
+            .await
+            .map_err(|e| Error::internal("taking lock", e))?;
+        Ok(locked.is_some())
+    }
+
+    async fn unlock(&self, key: &str) -> Result<()> {
+        let mut redis = self.sessions.redis();
+        let _: i64 = redis
+            .del(key)
+            .await
+            .map_err(|e| Error::internal("releasing lock", e))?;
+        Ok(())
+    }
+
     // ── TOTP self-service (optional MFA, DECISIONS.md: TOTP only) ──────────
 
     /// Start TOTP enrollment; returns the otpauth URI + secret for the
     /// authenticator app. Conflict if already enrolled and verified.
+    ///
+    /// A start within [`TOTP_ENROL_TTL`] of a pending one returns that
+    /// pending secret again (UX-254: Zitadel replaces the pending secret on
+    /// every registration — a second tab would otherwise kill the first
+    /// tab's QR). Two starts racing to Zitadel are serialized on a per-user
+    /// lock; the loser answers `idempotency-in-progress` and its retry gets
+    /// the winner's secret.
     pub async fn totp_enroll(&self, actor: &Actor) -> Result<TotpRegistration> {
-        let mut registration = self.zitadel.register_totp(&actor.zitadel_user_id).await?;
+        let mut redis = self.sessions.redis();
+        let pending_key = totp_pending_key(actor);
+        let pending: Option<String> = redis
+            .get(&pending_key)
+            .await
+            .map_err(|e| Error::internal("reading pending totp enrolment", e))?;
+        if let Some(pending) = pending {
+            let (uri, secret): (String, String) = serde_json::from_str(&pending)
+                .map_err(|e| Error::internal("corrupt pending totp enrolment", e))?;
+            return Ok(TotpRegistration {
+                uri,
+                secret: SecretString::from(secret),
+            });
+        }
+        let lock = format!("lock:totp:user:{}", actor.user_id);
+        if !self.try_lock(&lock).await? {
+            return Err(Error::app(
+                ErrorCode::IdempotencyInProgress,
+                "a totp enrolment start is already in progress",
+            ));
+        }
+        let registered = self.zitadel.register_totp(&actor.zitadel_user_id).await;
+        self.unlock(&lock).await?;
+        let mut registration = registered?;
         let issuer = ab_db::platform::get_platform(&self.pool)
             .await?
             .map(|platform| platform.name)
             .filter(|name| !name.trim().is_empty())
             .unwrap_or_else(|| DEFAULT_PLATFORM_NAME.to_owned());
         registration.uri = brand_otpauth_uri(&registration.uri, &issuer);
+        let payload = serde_json::to_string(&(
+            &registration.uri,
+            secrecy::ExposeSecret::expose_secret(&registration.secret),
+        ))
+        .map_err(|e| Error::internal("serializing pending totp enrolment", e))?;
+        let () = redis
+            .set_ex(&pending_key, payload, TOTP_ENROL_TTL.as_secs())
+            .await
+            .map_err(|e| Error::internal("storing pending totp enrolment", e))?;
         Ok(registration)
     }
 
     /// Activate the enrollment with a first code.
     pub async fn totp_activate(&self, actor: &Actor, code: &str) -> Result<()> {
-        self.zitadel
-            .verify_totp(&actor.zitadel_user_id, code)
-            .await?;
+        let verified = self.zitadel.verify_totp(&actor.zitadel_user_id, code).await;
+        // A wrong code leaves the pending secret valid; anything else
+        // (activated, no enrolment pending) ends it.
+        if !matches!(&verified, Err(err) if err.code() == ErrorCode::InvalidTotpCode) {
+            self.forget_pending_totp(actor).await?;
+        }
+        verified?;
         self.sessions.set_mfa_enabled(actor.user_id, true).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -951,6 +1015,7 @@ impl IdentityService {
     /// Remove the TOTP authenticator (idempotent).
     pub async fn totp_remove(&self, actor: &Actor) -> Result<()> {
         self.zitadel.remove_totp(&actor.zitadel_user_id).await?;
+        self.forget_pending_totp(actor).await?;
         self.sessions.set_mfa_enabled(actor.user_id, false).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -961,6 +1026,15 @@ impl IdentityService {
             serde_json::json!({ "method": "totp" }),
         )
         .await
+    }
+
+    async fn forget_pending_totp(&self, actor: &Actor) -> Result<()> {
+        let mut redis = self.sessions.redis();
+        let _: i64 = redis
+            .del(totp_pending_key(actor))
+            .await
+            .map_err(|e| Error::internal("clearing pending totp enrolment", e))?;
+        Ok(())
     }
 
     /// Terminate the actor's current session (idempotent). Our session is
