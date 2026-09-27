@@ -167,4 +167,22 @@ describe('course collaboration (v2 roster)', () => {
     renderWithClient(<StatusProbe />)
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('PENDING/contributor'))
   })
+
+  // UX-233: an approval reaches a pending applicant's open landing without a reload.
+  it('polls while the caller’s application is pending', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      harness.userId = 'helper-1'
+      renderWithClient(<StatusProbe />)
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('PENDING/contributor'))
+      api.listContributors.mockResolvedValue([creator, { ...applicant, status: 'active' }])
+      await vi.advanceTimersByTimeAsync(10_000)
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('ACTIVE/contributor'))
+      const calls = api.listContributors.mock.calls.length
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(api.listContributors).toHaveBeenCalledTimes(calls)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

@@ -31,13 +31,14 @@ export function contributorsQueryOptions(courseUuid: string) {
 
 export function useContributors(
   courseUuid: string | null | undefined,
-  options?: { enabled?: boolean; refetchInterval?: number },
+  options?: { enabled?: boolean; refetchInterval?: number | ((roster: Contributor[] | undefined) => number | false) },
 ) {
+  const interval = options?.refetchInterval
   return useQuery({
     ...contributorsQueryOptions(courseUuid ?? '__disabled__'),
     enabled: (options?.enabled ?? true) && Boolean(courseUuid),
     // Visible tab only (`refetchIntervalInBackground` stays false).
-    refetchInterval: options?.refetchInterval ?? false,
+    refetchInterval: typeof interval === 'function' ? query => interval(query.state.data) : (interval ?? false),
   })
 }
 
