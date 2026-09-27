@@ -185,4 +185,29 @@ describe('course collaboration (v2 roster)', () => {
       vi.useRealTimers()
     }
   })
+
+  // UX-251: the approval also refreshes the learner-state behind the landing CTA
+  // (staff never enrol — «Начать курс» would 409).
+  it('invalidates the learner-state when the poll sees the approval', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      harness.userId = 'helper-1'
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const learnerStateKey = ['learner-course', 'course-1', 'state']
+      client.setQueryData(learnerStateKey, { enrolled: false })
+      render(
+        <QueryClientProvider client={client}>
+          <StatusProbe />
+        </QueryClientProvider>,
+      )
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('PENDING/contributor'))
+      expect(client.getQueryState(learnerStateKey)?.isInvalidated).toBe(false)
+      api.listContributors.mockResolvedValue([creator, { ...applicant, status: 'active' }])
+      await vi.advanceTimersByTimeAsync(10_000)
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('ACTIVE/contributor'))
+      await waitFor(() => expect(client.getQueryState(learnerStateKey)?.isInvalidated).toBe(true))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
