@@ -89,6 +89,49 @@ pub struct ProfileRow {
     pub locale: String,
 }
 
+/// The public profile page's subject (`GET /users/{username}`): the search
+/// card plus the bio (UX-230). Active users only; never the email.
+pub struct PublicProfileRow {
+    pub id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub bio: String,
+    pub avatar_key: Option<String>,
+}
+
+pub async fn find_public_profile(
+    pool: &PgPool,
+    username: &str,
+) -> Result<Option<PublicProfileRow>> {
+    let row = sqlx::query_as!(
+        PublicProfileRow,
+        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key
+           FROM users
+           WHERE status = 'active' AND lower(username) = lower($1)"#,
+        username
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// The same card by id (editor user blocks store the id); active users only.
+pub async fn find_public_profile_by_id(
+    pool: &PgPool,
+    id: UserId,
+) -> Result<Option<PublicProfileRow>> {
+    let row = sqlx::query_as!(
+        PublicProfileRow,
+        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key
+           FROM users
+           WHERE status = 'active' AND id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
 pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,

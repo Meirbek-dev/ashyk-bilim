@@ -21,14 +21,17 @@ export interface AppUserProfileData {
   username: string
 }
 
-function toProfile(user: UserHit | AdminUserPage['items'][number]): AppUserProfileData {
+/** `GET /users/{username}` (`PublicProfile`): the search card plus the bio (UX-230). */
+type PublicProfile = UserHit & { bio: string }
+
+function toProfile(user: PublicProfile | AdminUserPage['items'][number]): AppUserProfileData {
   return {
     id: user.id,
     username: user.username,
     display_name: user.display_name,
     first_name: user.display_name,
     last_name: '',
-    bio: '',
+    bio: 'bio' in user ? user.bio : '',
     details: {},
     profile: {},
     avatar_key: 'avatar_key' in user ? (user.avatar_key ?? null) : null,
@@ -57,7 +60,7 @@ function decodeRouteParam(value: string): string {
  */
 export async function getUserByUsername(username: string): Promise<AppUserProfileData | null> {
   try {
-    return toProfile(await apiJson<UserHit>(`users/${encodeURIComponent(decodeRouteParam(username))}`))
+    return toProfile(await apiJson<PublicProfile>(`users/${encodeURIComponent(decodeRouteParam(username))}`))
   } catch (error) {
     if (isApiError(error) && error.status === 404) return null
     throw error

@@ -54,6 +54,30 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
     }
 }
 
+/// `GET /users/{username}`: the public card plus the bio (no email —
+/// FINDINGS #16). Search keeps the lean `UserHit`.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PublicProfile {
+    pub id: UserId,
+    pub username: String,
+    pub display_name: String,
+    /// Empty when unset.
+    pub bio: String,
+    pub avatar_key: Option<String>,
+}
+
+impl From<ab_db::identity::PublicProfileRow> for PublicProfile {
+    fn from(u: ab_db::identity::PublicProfileRow) -> Self {
+        Self {
+            id: u.id,
+            username: u.username,
+            display_name: u.display_name,
+            bio: u.bio,
+            avatar_key: u.avatar_key,
+        }
+    }
+}
+
 /// Admin account creation (`POST /users`). No `Debug` — may carry a
 /// password. Without one the account is IdP-only (Google sign-in).
 #[derive(Deserialize, garde::Validate, ToSchema)]

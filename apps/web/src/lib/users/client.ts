@@ -44,14 +44,17 @@ export interface PublicUser {
   username: string
 }
 
-function toPublicUser(user: UserHit | AdminUser): PublicUser {
+/** `GET /users/{username}` / `by-id` (`PublicProfile`): the search card plus the bio (UX-230). */
+type PublicProfile = UserHit & { bio: string }
+
+function toPublicUser(user: PublicProfile | AdminUser): PublicUser {
   return {
     id: user.id,
     username: user.username,
     display_name: user.display_name,
     first_name: user.display_name,
     last_name: '',
-    bio: '',
+    bio: 'bio' in user ? user.bio : '',
     details: {},
     profile: {},
     ...('email' in user ? { email: user.email, roles: user.roles } : {}),
@@ -61,12 +64,12 @@ function toPublicUser(user: UserHit | AdminUser): PublicUser {
 
 /** `GET /users/{username}`: the public card (404 → rejects like any API error). */
 export async function getUserByUsername(username: string): Promise<PublicUser> {
-  return toPublicUser(await apiJson<UserHit>(`users/${encodeURIComponent(username)}`))
+  return toPublicUser(await apiJson<PublicProfile>(`users/${encodeURIComponent(username)}`))
 }
 
 /** `GET /users/by-id/{id}`: the same public card, by id (editor user blocks store the id). */
 export async function getUserById(userId: string): Promise<PublicUser> {
-  return toPublicUser(await apiJson<UserHit>(`users/by-id/${encodeURIComponent(userId)}`))
+  return toPublicUser(await apiJson<PublicProfile>(`users/by-id/${encodeURIComponent(userId)}`))
 }
 
 /** `GET /users/{username}/courses`: authored + actively co-authored courses (public ones for strangers). */

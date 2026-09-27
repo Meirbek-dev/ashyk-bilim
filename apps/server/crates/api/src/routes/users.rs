@@ -8,10 +8,9 @@ use secrecy::SecretString;
 
 use crate::detach::detached;
 use crate::dto::courses::CoursePage;
-use crate::dto::search::UserHit;
 use crate::dto::users::{
-    AdminUser, AdminUserListQuery, AdminUserPage, CreateUserRequest, SetUserStatusRequest,
-    UpdateProfileRequest, UserCoursesQuery, UserProfile,
+    AdminUser, AdminUserListQuery, AdminUserPage, CreateUserRequest, PublicProfile,
+    SetUserStatusRequest, UpdateProfileRequest, UserCoursesQuery, UserProfile,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{ClientIp, CurrentActor, MaybeActor, Path, Query, ValidJson};
@@ -196,8 +195,8 @@ pub async fn set_user_status(
 
 /// Public profile card by username (legacy `GET /users/username/{username}`).
 ///
-/// Id, username, display name and avatar — readable anonymously, active
-/// users only. The profile page resolves its subject here instead of
+/// Id, username, display name, bio and avatar — readable anonymously,
+/// active users only. The profile page resolves its subject here instead of
 /// scanning `/search`.
 #[utoipa::path(
     get,
@@ -205,7 +204,7 @@ pub async fn set_user_status(
     tag = "users",
     params(("username" = String, Path, description = "Username (case-insensitive)")),
     responses(
-        (status = 200, description = "Public profile", body = UserHit),
+        (status = 200, description = "Public profile", body = PublicProfile),
         (status = 404, description = "Unknown user", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -214,8 +213,8 @@ pub async fn public_profile(
     State(state): State<AppState>,
     MaybeActor(_actor): MaybeActor,
     Path(username): Path<String>,
-) -> ApiResult<Json<UserHit>> {
-    let user = ab_db::search::find_user_hit_by_username(&state.pool, &username)
+) -> ApiResult<Json<PublicProfile>> {
+    let user = ab_db::identity::find_public_profile(&state.pool, &username)
         .await?
         .ok_or_else(|| ab_core::Error::not_found("user"))?;
     Ok(Json(user.into()))
@@ -231,7 +230,7 @@ pub async fn public_profile(
     tag = "users",
     params(("user_id" = UserId, Path, description = "User id")),
     responses(
-        (status = 200, description = "Public profile", body = UserHit),
+        (status = 200, description = "Public profile", body = PublicProfile),
         (status = 404, description = "Unknown or inactive user", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -240,8 +239,8 @@ pub async fn public_profile_by_id(
     State(state): State<AppState>,
     MaybeActor(_actor): MaybeActor,
     Path(user_id): Path<UserId>,
-) -> ApiResult<Json<UserHit>> {
-    let user = ab_db::search::find_user_hit_by_id(&state.pool, user_id)
+) -> ApiResult<Json<PublicProfile>> {
+    let user = ab_db::identity::find_public_profile_by_id(&state.pool, user_id)
         .await?
         .ok_or_else(|| ab_core::Error::not_found("user"))?;
     Ok(Json(user.into()))

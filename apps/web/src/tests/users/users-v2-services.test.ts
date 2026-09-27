@@ -39,6 +39,7 @@ describe('users (v2)', () => {
       id: user,
       username: 'teacher',
       display_name: 'Daniyar Teacher',
+      bio: 'Teaches Rust',
       avatar_key: 'a/b.png',
     })
     const profile = await getUserByUsername('Teacher')
@@ -47,6 +48,7 @@ describe('users (v2)', () => {
       id: user,
       username: 'teacher',
       first_name: 'Daniyar Teacher',
+      bio: 'Teaches Rust',
       avatar_key: 'a/b.png',
     })
   })

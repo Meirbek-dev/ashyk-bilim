@@ -533,6 +533,15 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert_eq!(card.json()["display_name"], "author");
     assert!(card.json()["avatar_key"].is_null());
     assert!(card.json().get("email").is_none());
+    // UX-230: the bio is public (empty when unset).
+    assert_eq!(card.json()["bio"], "");
+    sqlx::query("UPDATE users SET bio = 'Teaches Rust' WHERE id = $1")
+        .bind(author.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let card = app.get("/api/v2/users/Author").await;
+    assert_eq!(card.json()["bio"], "Teaches Rust");
     let no_card = app.get("/api/v2/users/nobody").await;
     assert_eq!(no_card.status, StatusCode::NOT_FOUND);
     // Editor user blocks resolve the same card by id — anonymously too.
