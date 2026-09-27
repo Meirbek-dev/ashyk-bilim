@@ -20,7 +20,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { getErrorMessage } from '@/types/shared'
+import { useApiError } from '@/hooks/useApiError'
 
 import NewActivityButton from '@/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton'
 import ActivityElement from './ActivityElement'
@@ -110,6 +110,7 @@ function ChapterElement({
 }: ChapterElementProps) {
   const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true)
   const t = useTranslations('CourseEdit')
+  const { toastApiError } = useApiError()
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(chapter?.name ?? '')
@@ -171,7 +172,7 @@ function ChapterElement({
       setIsEditing(false)
       toast.success(t('chapterUpdatedSuccess'))
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t('chapterUpdateFailed')))
+      toastApiError(error, undefined, t('chapterUpdateFailed'))
       setEditedName(chapterName)
     } finally {
       setIsSavingEdit(false)
@@ -186,7 +187,7 @@ function ChapterElement({
       setIsDeleteDialogOpen(false)
       toast.success(t('chapterDeletedSuccess'))
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t('chapterDeleteFailed')))
+      toastApiError(error, undefined, t('chapterDeleteFailed'))
       setIsDeleteDialogOpen(false)
     } finally {
       setIsDeletingChapter(false)

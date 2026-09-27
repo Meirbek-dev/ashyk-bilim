@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { getErrorMessage } from '@/types/shared'
+import { useApiError } from '@/hooks/useApiError'
 
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
 import ChapterElement from './DraggableElements/ChapterElement'
@@ -41,6 +41,7 @@ type ActiveDragData = { type: 'chapter'; chapter: AppChapter } | { type: 'activi
 
 function CurriculumEditor() {
   const t = useTranslations('CourseEdit.Structure')
+  const { toastApiError } = useApiError()
   const tCommon = useTranslations('Common.DragAndDrop')
 
   const course = useCourse()
@@ -177,7 +178,7 @@ function CurriculumEditor() {
       toast.success(t('orderSaved'))
     } catch (error: unknown) {
       setStructureStatus('error')
-      toast.error(getErrorMessage(error, t('saveOrderError')))
+      toastApiError(error, undefined, t('saveOrderError'))
     }
   }
 
