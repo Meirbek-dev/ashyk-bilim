@@ -124,6 +124,12 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
     ): ProcessedError => {
       const options = normalizeOptions(setErrorOrOptions, customFallback)
       const processed = handleApiError(error, options)
+      // Field errors bound inline are the message — a second toast repeats it and outlives a
+      // later successful save (pass 28, UX-244).
+      if (options.setError && processed.fieldErrors.some(err => err.field)) {
+        if (options.toastId !== undefined) toast.dismiss(options.toastId)
+        return processed
+      }
       let toastMessage = processed.description
 
       if (processed.supportReference) {

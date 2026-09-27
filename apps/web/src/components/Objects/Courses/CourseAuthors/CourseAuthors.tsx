@@ -398,7 +398,7 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
         render={
           <Button
             type="button"
-            id="delete-update-button"
+            aria-label={t('deleteUpdate')}
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-150"
@@ -428,7 +428,7 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
             {isPending ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
-                {t('deleting')}
+                {t('deletingUpdate')}
               </div>
             ) : (
               t('deleteUpdate')

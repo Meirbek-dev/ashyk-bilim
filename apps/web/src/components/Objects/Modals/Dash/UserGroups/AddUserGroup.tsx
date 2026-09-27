@@ -59,7 +59,7 @@ function AddUserGroup(props: AddUserGroupProps) {
       <Field>
         <FieldLabel htmlFor="name">{t('nameLabel')}</FieldLabel>
         <FieldContent>
-          <Input id="name" type="text" {...form.register('name')} />
+          <Input id="name" type="text" aria-invalid={!!form.formState.errors.name} {...form.register('name')} />
         </FieldContent>
         <FieldError errors={[form.formState.errors.name]} />
       </Field>
@@ -67,7 +67,12 @@ function AddUserGroup(props: AddUserGroupProps) {
       <Field>
         <FieldLabel htmlFor="description">{t('descriptionLabel')}</FieldLabel>
         <FieldContent>
-          <Input id="description" type="text" {...form.register('description')} />
+          <Input
+            id="description"
+            type="text"
+            aria-invalid={!!form.formState.errors.description}
+            {...form.register('description')}
+          />
         </FieldContent>
         <FieldError errors={[form.formState.errors.description]} />
       </Field>

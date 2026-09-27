@@ -59,6 +59,25 @@ describe('InlineStatusStrip (UX-009)', () => {
     expect(screen.getByText('Экзамен')).toBeInTheDocument()
   })
 
+  it('drops the draft chip when attempts are closed — the leftover draft is not continuable (UX-237)', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(queryKeys.assessments.attemptState('asm-1'), {
+      attempts_used: 1,
+      disabled_reasons: ['ACCESS_RESTRICTED'],
+    })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages}>
+          <InlineStatusStrip
+            runtime={{ ...runtime, progress: { state: 'in_progress', attempt_count: 2 } } as typeof runtime}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+    expect(screen.queryByText('Черновик')).toBeNull()
+    expect(screen.getByText('Экзамен')).toBeInTheDocument()
+  })
+
   it('never reads more attempts used than the cap (UX-189)', () => {
     renderStrip(2)
     expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()

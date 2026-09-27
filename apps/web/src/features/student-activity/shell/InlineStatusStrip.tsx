@@ -71,8 +71,11 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   // Human-readable activity kind label
   items.push(tKinds(activityType))
 
-  // State — staff previewing track no progress of their own (UX-194)
-  const stateLabel = runtime.permissions.staff_preview ? null : getStateChip(state, t)
+  // State — staff previewing track no progress of their own (UX-194). UX-237: off the
+  // allowlist a leftover draft cannot be continued; the result card shows the counted attempt.
+  const accessClosed = attemptState?.disabled_reasons?.includes('ACCESS_RESTRICTED') ?? false
+  const staleDraft = accessClosed && state === 'in_progress'
+  const stateLabel = runtime.permissions.staff_preview || staleDraft ? null : getStateChip(state, t)
   if (stateLabel) items.push(stateLabel)
 
   // Passing score (not grade_release_mode)
