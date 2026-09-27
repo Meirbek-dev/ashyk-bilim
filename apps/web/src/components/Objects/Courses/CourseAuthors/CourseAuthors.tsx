@@ -24,6 +24,7 @@ import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
 import { useQueryClient } from '@tanstack/react-query'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useSession } from '@/hooks/useSession'
+import { useApiError } from '@/hooks/useApiError'
 import { format, formatDistanceToNow } from 'date-fns'
 import { Controller, useForm } from 'react-hook-form'
 import { Textarea } from '@components/ui/textarea'
@@ -212,6 +213,7 @@ function NewUpdateForm({
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const validationSchema = createUpdateFormSchema(t)
+  const { toastApiError } = useApiError<UpdateFormInputValues>()
 
   const form = useForm<UpdateFormInputValues, unknown, UpdateFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -227,17 +229,19 @@ function NewUpdateForm({
       content: values.content,
       course_uuid: courseUuid,
     }
-    const res = await createCourseUpdate(body)
-    if (res.status === 200) {
-      toast.success(t('updateAddedSuccess'))
-      setSelectedView('list')
-      form.reset()
-      void queryClient.invalidateQueries({
-        queryKey: getCourseUpdatesQueryKey(courseUuid),
-      })
-    } else {
-      toast.error(t('updateAddFailed'))
+    // POST answers 201; failures throw an APIError (UX-242: not a `status === 200` check).
+    try {
+      await createCourseUpdate(body)
+    } catch (error) {
+      toastApiError(error, { setError: form.setError, fallback: t('updateAddFailed') })
+      return
     }
+    toast.success(t('updateAddedSuccess'))
+    setSelectedView('list')
+    form.reset()
+    void queryClient.invalidateQueries({
+      queryKey: getCourseUpdatesQueryKey(courseUuid),
+    })
   }
 
   return (
@@ -368,23 +372,23 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
   const t = useTranslations('Courses.CourseAuthors')
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const { toastApiError } = useApiError()
 
   function handleDelete() {
     startTransition(async () => {
       const toast_loading = toast.loading(t('deletingUpdate'))
-      const res = await deleteCourseUpdate(courseUuid, update.courseupdate_uuid)
-
-      if (res.status === 200) {
-        toast.dismiss(toast_loading)
-        toast.success(t('updateDeletedSuccess'))
-        void queryClient.invalidateQueries({
-          queryKey: getCourseUpdatesQueryKey(courseUuid),
-        })
-        setIsOpen(false)
-      } else {
-        toast.dismiss(toast_loading)
-        toast.error(t('updateDeleteFailed'))
+      // DELETE answers 204; failures throw an APIError (UX-242).
+      try {
+        await deleteCourseUpdate(courseUuid, update.courseupdate_uuid)
+      } catch (error) {
+        toastApiError(error, { fallback: t('updateDeleteFailed'), toastId: toast_loading })
+        return
       }
+      toast.success(t('updateDeletedSuccess'), { id: toast_loading })
+      void queryClient.invalidateQueries({
+        queryKey: getCourseUpdatesQueryKey(courseUuid),
+      })
+      setIsOpen(false)
     })
   }
 

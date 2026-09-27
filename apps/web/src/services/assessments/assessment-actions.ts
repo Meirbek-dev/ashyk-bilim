@@ -1,7 +1,9 @@
-'use server'
-
 /**
  * Client-side assessment API functions for the new unified endpoints.
+ * Plain functions, NOT server actions: `GradeForm` needs the problem+json code
+ * and the `StaleGradeError` class of a 412, neither of which survives the
+ * server-action boundary (GAUNTLET BUG-035, UX-242). No `cacheTag()` consumer
+ * reads `submissions`/`overrides`, so nothing is revalidated.
  *
  * These wrap the canonical /assessments/{uuid}/... REST routes introduced
  * in the World-Class LMS plan Phases 1–5.
@@ -14,7 +16,6 @@ import { toUnix } from '@/lib/api/contract'
 import { teacherSubmissionFromWire } from '@/features/grading/domain/wire'
 import type { Submission } from '@/features/grading/domain'
 import { runItem } from '@/lib/api/generated/code/code'
-import { revalidateTag } from 'next/cache'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -240,7 +241,6 @@ export async function createStudentPolicyOverride(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  revalidateTag('overrides', 'max')
   return response
 }
 
@@ -254,7 +254,6 @@ export async function updateStudentPolicyOverride(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  revalidateTag('overrides', 'max')
   return response
 }
 
@@ -262,7 +261,6 @@ export async function deleteStudentPolicyOverride(assessmentUuid: string, userId
   await apiJson<void>(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'DELETE',
   })
-  revalidateTag('overrides', 'max')
 }
 
 // ── Item-level grading ────────────────────────────────────────────────────────
@@ -294,8 +292,6 @@ export async function saveGradingDraft(
       headers,
       body: JSON.stringify(body),
     })
-
-    revalidateTag('submissions', 'max')
     return teacherSubmissionFromWire(response)
   } catch (error) {
     if (isApiError(error) && error.status === 412) {
@@ -345,9 +341,7 @@ export async function runCodeItem(
       ...(caseResult.time_seconds !== undefined && caseResult.time_seconds !== null
         ? { time: caseResult.time_seconds }
         : {}),
-      ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null
-        ? { memory: caseResult.memory_kb }
-        : {}),
+      ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null ? { memory: caseResult.memory_kb } : {}),
     })),
   }
 }

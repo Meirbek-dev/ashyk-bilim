@@ -187,7 +187,9 @@ describe('getAssessmentByActivityUuid', () => {
   })
 
   it('returns null on 404', async () => {
-    mocks.getActivityAssessment.mockRejectedValue(new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }))
+    mocks.getActivityAssessment.mockRejectedValue(
+      new APIError({ code: 'NOT_FOUND', message: 'Not found', status: 404 }),
+    )
 
     const result = await getAssessmentByActivityUuid('activity_ghost')
 
@@ -344,7 +346,6 @@ describe('createStudentPolicyOverride', () => {
       }),
     )
     expect(result.id).toBe(1)
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
   })
 
   it('throws on failure', async () => {
@@ -373,7 +374,6 @@ describe('updateStudentPolicyOverride', () => {
       }),
     )
     expect(result.max_attempts_override).toBe(5)
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
   })
 
   it('throws on failure', async () => {
@@ -395,7 +395,6 @@ describe('deleteStudentPolicyOverride', () => {
       'assessments/asm_1/overrides/5',
       expect.objectContaining({ method: 'DELETE' }),
     )
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
   })
 
   it('throws on failure', async () => {
@@ -432,7 +431,6 @@ describe('saveGradingDraft', () => {
         }),
       }),
     )
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('submissions', 'max')
   })
 
   it('includes If-Match header when version is provided', async () => {

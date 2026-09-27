@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn(), apiResult: mocks.apiResult }))
 
-import { updateCourseMetadata, updateCourseThumbnail } from '@/services/courses/courses'
+import { updateCourseMetadata, updateCourseThumbnail } from '@/services/courses/course-writes'
 
 function wireCourse(extra: Record<string, unknown> = {}) {
   return {

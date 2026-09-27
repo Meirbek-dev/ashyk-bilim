@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
+import type { FieldValues, UseFormSetError } from 'react-hook-form'
 
 type SaveResponse = { success?: boolean; status?: number; data?: unknown } | void
 
@@ -28,9 +29,12 @@ function normalizeResponse(response: SaveResponse): NormalizedSaveResponse {
   return { success: true, data: response as NormalizedSaveResponse['data'] }
 }
 
-interface SaveSectionOptions {
+interface SaveSectionOptions<TFieldValues extends FieldValues> {
   onSuccess?: () => void
+  /** The section shows the message itself (an inline alert): no toast, one message (UX-242). */
   onError?: (message: string) => void
+  /** Binds problem+json `field_errors` to the form (`Errors.fields.<code>`). */
+  setError?: UseFormSetError<TFieldValues>
   successMessage?: string
   errorMessage?: string
   section?: CourseDirtySection
@@ -54,11 +58,13 @@ interface SaveInvocationOptions {
  *  - calling onSuccess (e.g. markClean)
  *  - refreshing cached course queries when the caller is not already using an optimistic mutation flow
  */
-export function useSaveSection(options?: SaveSectionOptions) {
+export function useSaveSection<TFieldValues extends FieldValues = FieldValues>(
+  options?: SaveSectionOptions<TFieldValues>,
+) {
   const [isSaving, setIsSaving] = useState(false)
   const tCommon = useTranslations('Common')
   const tErrors = useTranslations('Errors')
-  const { toastApiError } = useApiError()
+  const { handleApiError, toastApiError } = useApiError<TFieldValues>()
   const { refreshCourseMeta, refreshCourseEditor } = useCourse()
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const syncLastKnownUpdateDate = useCourseEditorStore(state => state.syncLastKnownUpdateDate)
@@ -88,8 +94,8 @@ export function useSaveSection(options?: SaveSectionOptions) {
             response.data,
             invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
           )
-          options?.onError?.(message)
-          toast.error(message)
+          if (options?.onError) options.onError(message)
+          else toast.error(message)
           return
         }
 
@@ -120,8 +126,10 @@ export function useSaveSection(options?: SaveSectionOptions) {
           return
         }
         // Localized problem+json copy (`Errors.codes.<code>`), never the raw English message.
-        const { message } = toastApiError(error, {
+        const present = options?.onError ? handleApiError : toastApiError
+        const { message } = present(error, {
           fallback: invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
+          ...(options?.setError ? { setError: options.setError } : {}),
         })
         options?.onError?.(message)
       } finally {
@@ -129,7 +137,17 @@ export function useSaveSection(options?: SaveSectionOptions) {
       }
     },
 
-    [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate, tCommon, tErrors, toastApiError],
+    [
+      options,
+      refreshCourseEditor,
+      refreshCourseMeta,
+      setConflict,
+      syncLastKnownUpdateDate,
+      tCommon,
+      tErrors,
+      handleApiError,
+      toastApiError,
+    ],
   )
 
   useEffect(() => {

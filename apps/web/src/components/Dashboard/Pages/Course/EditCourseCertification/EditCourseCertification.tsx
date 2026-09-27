@@ -302,10 +302,6 @@ function EditCourseCertification() {
             await updateCertification({
               certification_id: existingCertification.id,
               config,
-
-              options: {
-                courseUuid: courseStructure.course_uuid,
-              },
             })
             return
           }
@@ -313,17 +309,12 @@ function EditCourseCertification() {
           await createCertification({
             course_id: courseStructure.course_uuid,
             config,
-            options: {
-              courseUuid: courseStructure.course_uuid,
-            },
           })
           return
         }
 
         if (existingCertification) {
-          await deleteCertification(existingCertification.id, {
-            courseUuid: courseStructure.course_uuid,
-          })
+          await deleteCertification(existingCertification.id)
         }
 
         return { success: true }

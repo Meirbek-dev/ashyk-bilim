@@ -46,9 +46,7 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
     }
 
     try {
-      await linkResourcesToUserGroup(effectiveUserGroup, [courseId], {
-        courseUuid: courseId,
-      })
+      await linkResourcesToUserGroup(effectiveUserGroup, [courseId])
       props.setUserGroupModal(false)
       toast.success(t('linkSuccess'))
       await course.refreshEditorData()

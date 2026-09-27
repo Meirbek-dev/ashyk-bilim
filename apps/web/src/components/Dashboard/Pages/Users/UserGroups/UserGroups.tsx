@@ -28,6 +28,7 @@ import type { Usergroup } from '@/lib/api/generated/zod'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import { Button } from '@/components/ui/button'
 
@@ -80,6 +81,7 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
 
 function UserGroups() {
   const t = useTranslations('DashPage.UserSettings.usergroupsSection')
+  const { toastApiError } = useApiError()
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false)
   const [editUserGroupModal, setEditUserGroupModal] = useState(false)
@@ -101,8 +103,8 @@ function UserGroups() {
         queryKey: queryKeys.userGroups.all(),
       })
       toast.success(t('userGroupDeletedSuccess'), { id: toastId })
-    } catch {
-      toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.deleteUserGroupFailed'), toastId })
     }
   }
 
@@ -186,7 +188,12 @@ function UserGroups() {
                 if (!isOpen) handleCloseModal('edit')
               }}
               dialogTrigger={
-                <Button variant="secondary" size="sm" onClick={() => handleOpenModal('edit', row.original)} type="button">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleOpenModal('edit', row.original)}
+                  type="button"
+                >
                   <Pencil className="size-3.5" />
                   {t('editButton')}
                 </Button>

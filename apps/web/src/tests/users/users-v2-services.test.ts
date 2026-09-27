@@ -125,7 +125,7 @@ describe('certifications (v2)', () => {
   it('creates with {course_id, config}, patches {config}, verifies by code', async () => {
     vi.mocked(apiJson).mockResolvedValue({})
     vi.mocked(apiResult).mockResolvedValue({ data: {}, headers: {}, requestId: null, status: 200, statusText: '' })
-    await createCertification({ course_id: course, config: { a: 1 }, options: { courseUuid: course } })
+    await createCertification({ course_id: course, config: { a: 1 } })
     expect(apiJson).toHaveBeenLastCalledWith(
       'certifications',
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ course_id: course, config: { a: 1 } }) }),

@@ -148,8 +148,28 @@ describe('EditUserGroup success detection (v2)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
 
     await vi.waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('toastError')
+      expect(toast.error).toHaveBeenCalledWith('toastError', expect.anything())
     })
     expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  // UX-242: a plain module (not a server action) keeps the 422 field errors,
+  // and the dialog binds them to the input.
+  it('shows a server field error under the name input', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    updateUserGroup.mockReset().mockRejectedValue(
+      new APIError({
+        code: 'validation-failed',
+        message: 'invalid',
+        status: 422,
+        fieldErrors: [{ field: 'name', code: 'too-long', message: 'name is too long' }],
+      }),
+    )
+    const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
+
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+
+    expect(await screen.findByText('name is too long')).toBeTruthy()
   })
 })

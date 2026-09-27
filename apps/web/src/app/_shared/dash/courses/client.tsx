@@ -36,7 +36,7 @@ import {
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbnails/CourseThumbnail'
-import { updateCourseAccess } from '@services/courses/courses'
+import { updateCourseAccess } from '@services/courses/course-writes'
 import { deleteCourseFromBackend } from '@services/courses/course-delete'
 import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'

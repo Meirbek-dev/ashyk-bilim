@@ -1,8 +1,7 @@
 'use server'
 
-import { apiJson, apiResult } from '@/lib/api-client'
-import { Contributor, Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
-import type { AddContributorRequest, UpdateContributorRequest } from '@/lib/api/generated/zod'
+import { apiJson } from '@/lib/api-client'
+import { Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
 import { stripEntityPrefix, toAppChapter, toAppCourse } from '@/hooks/courses/courseKeys'
@@ -10,27 +9,13 @@ import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
- This file includes POST, PUT, DELETE requests and cached GET requests
+ Cached GET requests and cache revalidation. Writes live in `course-writes.ts`
+ (plain functions, not server actions — BUG-035 / UX-242).
 */
 
 export type NormalizedCourseWithPermissions = AppCourse
 
 const serverGet = () => ({ method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 })
-
-const toTagArray = (raw: unknown): string[] => {
-  if (Array.isArray(raw)) return raw.filter((tag): tag is string => typeof tag === 'string')
-  if (typeof raw !== 'string' || !raw) return []
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed.filter((tag): tag is string => typeof tag === 'string')
-  } catch {
-    // comma-delimited fallback below
-  }
-  return raw
-    .split(',')
-    .map(tag => tag.trim())
-    .filter(Boolean)
-}
 
 export async function revalidateCourse(course_uuid?: string) {
   const { revalidateTag } = await import('next/cache')
@@ -90,150 +75,4 @@ export async function getCourseMetadata(
         .filter(chapter => chapter.activities.length > 0)
         .map(chapter => toAppChapter(chapter))
   return { ...toAppCourse(course), chapters }
-}
-
-interface CourseWriteOptions {
-  lastKnownUpdateDate?: string | null | undefined
-  includeEditableList?: boolean
-  includePublicList?: boolean
-}
-
-const toUpdateCourseRequest = (data: AppPayload) => ({
-  ...(data.name === undefined ? {} : { name: data.name }),
-  ...(data.description === undefined ? {} : { description: data.description }),
-  ...(data.about === undefined ? {} : { about: data.about }),
-  ...(data.tags === undefined ? {} : { tags: toTagArray(data.tags) }),
-  ...(typeof data.open_to_contributors === 'boolean' ? { open_to_contributors: data.open_to_contributors } : {}),
-  ...(typeof data.thumbnail_upload_id === 'string' || data.thumbnail_upload_id === null
-    ? { thumbnail_upload_id: data.thumbnail_upload_id }
-    : {}),
-  ...(Array.isArray(data.learnings)
-    ? {
-        learnings: (data.learnings as unknown as { id?: string; text: string; emoji?: string | null }[]).map(
-          ({ id, text, emoji }) => ({ id, text, emoji: emoji || null }),
-        ),
-      }
-    : {}),
-})
-
-async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>) {
-  const id = stripEntityPrefix(course_uuid)
-  const result = await apiResult(
-    `courses/${id}`,
-    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-    Course.parse,
-  )
-  await revalidateCourse(id)
-  return { ...result, data: toAppCourse(result.data) }
-}
-
-/** `thumbnail_type` is not in the v2 `UpdateCourseRequest` and is dropped. */
-export async function updateCourseMetadata(course_uuid: string, data: AppPayload, _options?: CourseWriteOptions) {
-  return patchCourse(course_uuid, toUpdateCourseRequest(data))
-}
-
-/** `public` goes through the lifecycle route; everything else is a plain course PATCH. */
-export async function updateCourseAccess(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
-  if (typeof data.public === 'boolean') return updateCourseLifecycle(course_uuid, data.public, options)
-  return patchCourse(course_uuid, toUpdateCourseRequest(data))
-}
-
-export async function updateCourseLifecycle(courseUuid: string, makePublic: boolean, _options?: CourseWriteOptions) {
-  const id = stripEntityPrefix(courseUuid)
-  const result = await apiResult(
-    `courses/${id}/lifecycle`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: makePublic ? 'publish' : 'unpublish' }),
-    },
-    Course.parse,
-  )
-  await revalidateCourse(id)
-  return { ...result, data: toAppCourse(result.data) }
-}
-
-/** Claim a finalized `course-thumbnail` upload (`uploadFile(file, 'course-thumbnail').id`) as the thumbnail. */
-/** `null` removes the current thumbnail (UX-147). */
-export async function updateCourseThumbnail(course_uuid: string, uploadId: string | null) {
-  return patchCourse(course_uuid, { thumbnail_upload_id: uploadId })
-}
-
-/**
- * `POST courses` (JSON), then publish through the lifecycle route when asked.
- * `thumbnail` and `template` have no v2 contract yet and are ignored.
- */
-export async function createNewCourse(
-  course_body: AppPayload,
-  _thumbnail: Blob | File | null | undefined,
-  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
-) {
-  const { name = '', description = '', tags: courseTags = '', visibility } = course_body
-
-  const result = await apiResult(
-    'courses',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, about: description, tags: toTagArray(courseTags) }),
-    },
-    Course.parse,
-  )
-  const course = visibility ? (await updateCourseLifecycle(result.data.id, true)).data : toAppCourse(result.data)
-  await revalidateCourse()
-
-  return { ...result, data: course }
-}
-
-/* Contributors — `courses/{id}/contributors` (roles creator|maintainer|contributor|reporter, statuses pending|active|inactive). */
-
-async function revalidateContributors(course_uuid: string) {
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(courseTag.contributors(course_uuid), 'max')
-  revalidateTag(courseTag.detail(course_uuid), 'max')
-}
-
-export async function getContributors(course_uuid: string): Promise<Contributor[]> {
-  const id = stripEntityPrefix(course_uuid)
-  return apiJson(`courses/${id}/contributors`, serverGet(), data => Contributor.array().parse(data))
-}
-
-export async function addContributor(course_uuid: string, body: AddContributorRequest): Promise<Contributor> {
-  const id = stripEntityPrefix(course_uuid)
-  const result = await apiJson(
-    `courses/${id}/contributors`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-    Contributor.parse,
-  )
-  await revalidateContributors(id)
-  return result
-}
-
-export async function editContributor(
-  course_uuid: string,
-  user_id: string,
-  body: UpdateContributorRequest,
-): Promise<Contributor> {
-  const id = stripEntityPrefix(course_uuid)
-  const result = await apiJson(
-    `courses/${id}/contributors/${user_id}`,
-    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-    Contributor.parse,
-  )
-  await revalidateContributors(id)
-  return result
-}
-
-export async function removeContributor(course_uuid: string, user_id: string): Promise<void> {
-  const id = stripEntityPrefix(course_uuid)
-  await apiJson(`courses/${id}/contributors/${user_id}`, { method: 'DELETE' })
-  await revalidateContributors(id)
-}
-
-/** `POST courses/{id}/contributors/apply` → `contributor/pending`; 409 `conflict` when already on the roster or the course is closed. */
-export async function applyForContributor(course_uuid: string): Promise<Contributor> {
-  const id = stripEntityPrefix(course_uuid)
-  const result = await apiJson(`courses/${id}/contributors/apply`, { method: 'POST' }, Contributor.parse)
-  await revalidateContributors(id)
-  return result
 }

@@ -1,13 +1,13 @@
-'use server'
-
+// Plain isomorphic functions, NOT server actions: problem+json codes and
+// field errors must reach the client `useApiError` (GAUNTLET BUG-035, UX-242).
+// Nothing reads these cache tags (no `cacheTag()` consumer), so nothing is revalidated.
 import { apiResult } from '@/lib/api-client'
 import { CourseUpdate } from '@/lib/api/generated/zod'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
-import { tags } from '@/lib/cacheTags'
 
 /** `POST courses/{id}/updates` — answers 201 with the created `CourseUpdate`. */
 export async function createCourseUpdate(body: AppPayload) {
-  const data = await apiResult(
+  return apiResult(
     `courses/${stripEntityPrefix(String(body.course_uuid ?? ''))}/updates`,
     {
       method: 'POST',
@@ -16,19 +16,9 @@ export async function createCourseUpdate(body: AppPayload) {
     },
     CourseUpdate.parse,
   )
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return data
 }
 
 /** `DELETE course-updates/{id}` — answers 204. */
 export async function deleteCourseUpdate(_course_uuid: string, update_uuid: string | number) {
-  const data = await apiResult(`course-updates/${update_uuid}`, { method: 'DELETE' })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.courses, 'max')
-
-  return data
+  return apiResult(`course-updates/${update_uuid}`, { method: 'DELETE' })
 }

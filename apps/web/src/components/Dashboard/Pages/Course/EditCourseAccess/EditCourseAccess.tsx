@@ -315,9 +315,7 @@ function UnlinkUserGroupRow({ usergroup, courseUuid }: { usergroup: Usergroup; c
     const userGroupId = usergroup.id
     startTransition(async () => {
       try {
-        await unLinkResourcesToUserGroup(userGroupId, [courseUuid], {
-          courseUuid,
-        })
+        await unLinkResourcesToUserGroup(userGroupId, [courseUuid])
         toast.success(t('unlinkUserGroupSuccess'))
         await course.refreshEditorData()
         setIsOpen(false)

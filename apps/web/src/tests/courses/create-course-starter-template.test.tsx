@@ -2,11 +2,13 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useCreateCourseMutation } from '@/features/courses/create/useCreateCourseMutation'
-import { createNewCourse, getCourseMetadata } from '@services/courses/courses'
+import { createNewCourse } from '@services/courses/course-writes'
+import { getCourseMetadata } from '@services/courses/courses'
 import { createChapter } from '@services/courses/chapters'
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
-vi.mock('@services/courses/courses', () => ({ createNewCourse: vi.fn(), getCourseMetadata: vi.fn() }))
+vi.mock('@services/courses/course-writes', () => ({ createNewCourse: vi.fn() }))
+vi.mock('@services/courses/courses', () => ({ getCourseMetadata: vi.fn() }))
 vi.mock('@services/courses/chapters', () => ({ createChapter: vi.fn() }))
 
 const courseId = '01a08bfb-2c9b-71b3-8985-d541d2b1716b'

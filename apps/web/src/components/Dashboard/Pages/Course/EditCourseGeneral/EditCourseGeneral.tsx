@@ -196,13 +196,16 @@ function EditCourseGeneral() {
     errorMessage: t('errors.saveFailed'),
     successMessage: tCommon('saved'),
     onError: setError,
+    setError: form.setError,
   })
 
   // Hydrate form from server data on mount / when server data changes.
   // RHF's `reset` only runs when values actually differ, so it's cheap.
   useEffect(() => {
     if (!isLoading && courseStructure) {
-      form.reset(serverValues, { keepDirtyValues: true })
+      // keepErrors: a failed save rolls the optimistic cache back, and that
+      // re-hydration must not wipe the server's field errors (UX-242).
+      form.reset(serverValues, { keepDirtyValues: true, keepErrors: true })
     }
   }, [courseStructure, isLoading, serverValues, form])
 
@@ -356,7 +359,8 @@ function EditCourseGeneral() {
                       Array.isArray(form.formState.errors.learnings) ? form.formState.errors.learnings : undefined
                     }
                   />
-                  <FieldError errors={[form.formState.errors.learnings?.root]} />
+                  {/* `learnings.root`: schema; `learnings` itself: a server field error (UX-242). */}
+                  <FieldError errors={[form.formState.errors.learnings?.root ?? form.formState.errors.learnings]} />
                 </Field>
               )}
             />

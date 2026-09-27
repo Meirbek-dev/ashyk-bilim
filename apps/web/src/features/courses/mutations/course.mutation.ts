@@ -7,7 +7,7 @@ import {
   updateCourseLifecycle,
   updateCourseMetadata,
   updateCourseThumbnail,
-} from '@services/courses/courses'
+} from '@services/courses/course-writes'
 import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSchemas'
 import { useCourseEditorStore } from '@/stores/courses'
 import { uploadFile } from '@services/media/uploads'

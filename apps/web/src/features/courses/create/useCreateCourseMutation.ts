@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { createNewCourse, getCourseMetadata } from '@services/courses/courses'
+import { createNewCourse } from '@services/courses/course-writes'
+import { getCourseMetadata } from '@services/courses/courses'
 import { createChapter } from '@services/courses/chapters'
 import {
   cleanCourseUuid,

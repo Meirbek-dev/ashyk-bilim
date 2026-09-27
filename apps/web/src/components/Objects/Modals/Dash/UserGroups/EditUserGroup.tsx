@@ -10,6 +10,7 @@ import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 import * as v from 'valibot'
 
 interface EditUserGroupProps {
@@ -35,6 +36,7 @@ function EditUserGroup(props: EditUserGroupProps) {
   const queryClient = useQueryClient()
   const t = useTranslations('Components.EditUserGroup')
   const validationSchema = createValidationSchema(t)
+  const { toastApiError } = useApiError<UserGroupInputValues>()
 
   const form = useForm<UserGroupInputValues, unknown, UserGroupFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -52,8 +54,8 @@ function EditUserGroup(props: EditUserGroupProps) {
       })
       props.onSaved()
       toast.success(t('toastSuccess'))
-    } catch {
-      toast.error(t('toastError'))
+    } catch (error) {
+      toastApiError(error, { setError: form.setError, fallback: t('toastError') })
     }
   }
 
