@@ -60,4 +60,26 @@ describe('TrailCourseElement progress', () => {
     expect(screen.getByText('67%')).toBeInTheDocument()
     expect(screen.getByText('2 / 3 шага')).toBeInTheDocument()
   })
+
+  // UX-232: nothing required yet reads like the landing, not «0 / 0 шагов 0%».
+  it('shows the landing empty state for a course with no required steps', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(['learner-course', courseId, 'state'], {
+      outline: [],
+      progress: { completed_required_count: 0, total_required_count: 0, progress_pct: 0 },
+      next_action: { id: 'none', activity_id: null },
+    } as unknown as LearnerCourseState)
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+          <TrailCourseElement
+            course={{ course_uuid: courseId, name: 'Пустой курс' } as AppCourse}
+            run={{ course_total_steps: 0, steps: [] } as unknown as AppTrailRun}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText(ruMessages.CoursePage.noPublishedActivities)).toBeInTheDocument()
+    expect(screen.queryByText('0%')).not.toBeInTheDocument()
+  })
 })

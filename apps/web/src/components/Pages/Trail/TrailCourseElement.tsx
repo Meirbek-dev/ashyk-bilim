@@ -38,6 +38,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const courseid = course.course_uuid.replace('course_', '')
   const router = useRouter()
   const t = useTranslations('Trail')
+  const tCourse = useTranslations('CoursePage')
   // Trail `steps` are lesson-type only; completion comes from learner-state.
   const learnerProgress = useLearnerCourseProgress(courseid)
   const course_total_steps = learnerProgress.isLoaded ? learnerProgress.total : (run.course_total_steps ?? 0)
@@ -112,26 +113,30 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
           </button>
         </div>
 
-        {/* Progress */}
-        <div className="space-y-1.5">
-          <div className="text-muted-foreground flex items-center justify-between text-xs">
-            <span className="tabular-nums">
-              {t('stepsProgress', {
-                completed: course_completed_steps,
-                total: course_total_steps,
-              })}
-            </span>
-            <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
-              {course_progress}%
-            </span>
+        {/* Progress — UX-232: nothing required yet reads like the landing, not «0 / 0 шагов». */}
+        {learnerProgress.isLoaded && course_total_steps === 0 ? (
+          <p className="text-muted-foreground text-xs">{tCourse('noPublishedActivities')}</p>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
+              <span className="tabular-nums">
+                {t('stepsProgress', {
+                  completed: course_completed_steps,
+                  total: course_total_steps,
+                })}
+              </span>
+              <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
+                {course_progress}%
+              </span>
+            </div>
+            <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-300"
+                style={{ width: `${course_progress}%` }}
+              />
+            </div>
           </div>
-          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-            <div
-              className="bg-primary h-full rounded-full transition-all duration-300"
-              style={{ width: `${course_progress}%` }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Certificate */}
         {isCompleted && (
