@@ -23,7 +23,11 @@
 //!   user (called by RBAC admin flows). That rewrite runs after the Postgres
 //!   commit and can fail, so the request path also compares the record with
 //!   the user row's `rbac_version` ([`SessionStore::fenced`], BUG-345) and
-//!   reloads grants only for a record left behind.
+//!   reloads grants only for a record left behind. That fence is the one
+//!   Postgres read on the request path (a PK lookup of the user row per
+//!   authenticated request, DECISIONS 2026-09-27) and cannot be cached in
+//!   Redis: the Redis write that would carry the row's version is exactly
+//!   the write whose failure the fence covers (UX-256).
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
