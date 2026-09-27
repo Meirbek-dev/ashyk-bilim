@@ -8319,6 +8319,7 @@
           },
           "totals": {
             "submissions": "{count, plural, one {# submission} other {# submissions}}",
+            "submissionsAtLeast": "{count}+ submissions",
             "selected": "{count} selected"
           },
           "loading": "Loading",
@@ -9650,6 +9651,7 @@
           "queueTitle": "Review queue",
           "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
           "queueTotal": "{count, plural, =1 {# submission} other {# submissions}}",
+          "queueTotalAtLeast": "{count}+ submissions",
           "queueSelected": "{count, plural, =1 {# selected} other {# selected}}",
           "searchLearner": "Search learner",
           "statusFilter": "Status filter",

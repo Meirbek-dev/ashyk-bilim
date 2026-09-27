@@ -43,8 +43,12 @@ function toReviewStatus(status: SubmissionListQueryParams['status']): string | n
 
 /**
  * v2 lists submissions as keyset pages; the review UI still thinks in page
- * numbers, so page N is reached by walking N-1 cursors. `total`/`pages` are
- * what is knowable: exact once the last page is reached, otherwise "at least".
+ * numbers, so page N is reached by walking N-1 cursors, in the server's
+ * `sort`/`order` (BUG-351 — cursors are only valid within one order).
+ * A queue that shrank below the requested page answers with the last page
+ * actually reached (never a relabelled one), and `total` counts only rows
+ * that exist through it: exact when `has_more` is false, a lower bound
+ * otherwise.
  * ponytail: O(N) requests for page N — fine for a per-assessment queue.
  */
 async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<SubmissionsPage> {
@@ -52,25 +56,29 @@ async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<
   const status = toReviewStatus(params.status)
   if (status) base.set('status', status)
   if (params.search) base.set('search', params.search)
+  if (params.sortBy === 'final_score' || params.sortBy === 'attempt_number') base.set('sort', params.sortBy)
+  if (params.sortDir === 'asc') base.set('order', 'asc')
   base.set('limit', String(params.pageSize))
 
   let cursor: string | null = null
   let page: ReviewPage = { items: [], next_cursor: null }
-  for (let index = 1; index <= params.page; index += 1) {
+  let reached = 0
+  while (reached < Math.max(1, params.page)) {
     const query = new URLSearchParams(base)
     if (cursor) query.set('cursor', cursor)
     page = await apiJson(`assessments/${params.assessmentUuid}/submissions?${query}`, undefined, ReviewPage.parse)
+    reached += 1
     cursor = page.next_cursor ?? null
     if (!cursor) break
   }
-  const seenBefore = (params.page - 1) * params.pageSize
-  const total = seenBefore + page.items.length + (page.next_cursor ? 1 : 0)
+  const hasMore = Boolean(page.next_cursor)
   return {
     items: page.items.map(reviewItemFromWire),
-    page: params.page,
+    page: reached,
     page_size: params.pageSize,
-    pages: page.next_cursor ? params.page + 1 : params.page,
-    total,
+    pages: hasMore ? reached + 1 : reached,
+    total: (reached - 1) * params.pageSize + page.items.length,
+    has_more: hasMore,
   }
 }
 

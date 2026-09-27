@@ -18,6 +18,7 @@ import type { StatusFilter, SubmissionListProps } from '../types'
 export default function SubmissionList({
   submissions,
   total,
+  hasMore = false,
   pages,
   page,
   activeFilter,
@@ -76,7 +77,9 @@ export default function SubmissionList({
       </div>
 
       <div className="text-muted-foreground mt-4 flex items-center justify-between text-xs">
-        <span>{t('totals.submissions', { count: total })}</span>
+        <span>
+          {hasMore ? t('totals.submissionsAtLeast', { count: total }) : t('totals.submissions', { count: total })}
+        </span>
         <span>{t('totals.selected', { count: selectedUuids.size })}</span>
       </div>
 

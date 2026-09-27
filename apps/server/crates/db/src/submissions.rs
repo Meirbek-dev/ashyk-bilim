@@ -759,8 +759,12 @@ pub struct ReviewRow {
     pub staff: bool,
 }
 
-/// Non-draft submissions of an assessment, newest first (keyset on id),
-/// optionally filtered by status / lateness / learner-name substring.
+/// Non-draft submissions of an assessment, optionally filtered by status /
+/// lateness / learner-name substring, ordered by `sort` (`submitted_at`,
+/// `final_score` — ungraded as -1 — or `attempt_number`), descending unless
+/// `ascending`; ties newest first. Keyset on (key, id): the cursor stays a
+/// submission id and its key is read back (BUG-351).
+#[allow(clippy::too_many_arguments)]
 pub async fn list_for_review(
     pool: &PgPool,
     assessment_id: AssessmentId,
@@ -768,6 +772,8 @@ pub async fn list_for_review(
     late_only: bool,
     search: Option<&str>,
     cursor: Option<SubmissionId>,
+    sort: &str,
+    ascending: bool,
     limit: i64,
 ) -> Result<Vec<ReviewRow>> {
     let pattern = search.map(|s| format!("%{}%", crate::like_escape(s)));
@@ -784,19 +790,31 @@ pub async fn list_for_review(
                             AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
                   is_course_staff(s.course_id, s.user_id) AS "staff!"
            FROM submissions s JOIN users u ON u.id = s.user_id
+           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text
+                  WHEN 'final_score' THEN coalesce(s.final_score, -1)
+                  WHEN 'attempt_number' THEN s.attempt_number::float8
+                  ELSE coalesce(extract(epoch FROM s.submitted_at)::float8, 0) END AS key) k
            WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
              AND ($2::text IS NULL OR s.status = $2)
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
-             AND ($5::uuid IS NULL OR s.id < $5)
-           ORDER BY s.id DESC
+             AND ($5::uuid IS NULL OR (k.key, s.id) < (
+                  SELECT $8::float8 * CASE $7::text
+                           WHEN 'final_score' THEN coalesce(c.final_score, -1)
+                           WHEN 'attempt_number' THEN c.attempt_number::float8
+                           ELSE coalesce(extract(epoch FROM c.submitted_at)::float8, 0) END,
+                         c.id
+                  FROM submissions c WHERE c.id = $5))
+           ORDER BY k.key DESC, s.id DESC
            LIMIT $6"#,
         assessment_id.0,
         status.map(SubmissionStatus::as_str),
         late_only,
         pattern.as_deref(),
         cursor.map(|c| c.0),
-        limit
+        limit,
+        sort,
+        if ascending { -1.0_f64 } else { 1.0_f64 }
     )
     .fetch_all(pool)
     .await?;

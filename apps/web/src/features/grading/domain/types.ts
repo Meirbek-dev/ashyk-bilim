@@ -58,7 +58,9 @@ export interface SubmissionsPage {
   page: number
   page_size: number
   pages: number
+  /** Rows through `page`: exact unless `has_more` (then a lower bound). */
   total: number
+  has_more: boolean
 }
 export interface SubmissionStats extends Stats {
   needs_grading_count: number

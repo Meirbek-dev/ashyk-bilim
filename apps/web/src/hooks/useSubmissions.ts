@@ -75,10 +75,14 @@ export function useSubmissions({
   const query = useQuery(
     submissionsHookOptions(activityId, assessmentUuid, page, pageSize, search ?? '', sortBy, sortDir, status ?? 'ALL'),
   )
+  // BUG-351: a queue that shrank below the selected page answers with the
+  // last page it has — follow it rather than keep asking for a phantom page.
+  if (query.data && query.data.page < page) setPage(query.data.page)
 
   return {
     submissions: query.data?.items ?? [],
     total: query.data?.total ?? 0,
+    hasMore: query.data?.has_more ?? false,
     pages: query.data?.pages ?? 1,
     page,
     setPage,

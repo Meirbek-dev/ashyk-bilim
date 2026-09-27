@@ -14,6 +14,8 @@ export interface ReviewNavigationState {
 export interface SubmissionListProps {
   submissions: Submission[]
   total: number
+  /** `total` is a lower bound: the queue continues past the last page. */
+  hasMore?: boolean
   pages: number
   page: number
   activeFilter: StatusFilter

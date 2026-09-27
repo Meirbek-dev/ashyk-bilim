@@ -212,4 +212,43 @@ describe('submissionsQueryOptions', () => {
     expect(result?.items[0]?.staff).toBe(true)
     expect(result?.pages).toBe(1)
   })
+
+  // BUG-351 (audit AUD-026/027): the sort control reaches the server, and a
+  // queue that shrank below the selected page reports the page it reached.
+  const queueParams = {
+    assessmentUuid: ASM_ID,
+    page: 1,
+    pageSize: 20,
+    search: '',
+    sortBy: 'final_score',
+    sortDir: 'asc' as const,
+    status: 'ALL' as const,
+  }
+
+  it('sends the sort and order to the server', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockResolvedValue({ items: [], next_cursor: null })
+    await submissionsQueryOptions(queueParams).queryFn?.(undefined as never)
+    const [path] = mocks.apiJson.mock.calls[0] as [string]
+    expect(Object.fromEntries(new URL(path, 'http://x').searchParams)).toEqual({
+      sort: 'final_score',
+      order: 'asc',
+      limit: '20',
+    })
+  })
+
+  it('answers a shrunken queue with the page reached and no invented rows', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockResolvedValue({ items: [], next_cursor: null })
+    const result = await submissionsQueryOptions({ ...queueParams, page: 3 }).queryFn?.(undefined as never)
+    expect(mocks.apiJson).toHaveBeenCalledTimes(1)
+    expect(result).toMatchObject({ page: 1, pages: 1, total: 0, has_more: false })
+  })
+
+  it('reports a lower bound while more pages remain', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockResolvedValue({ items: [], next_cursor: SUB_ID })
+    const result = await submissionsQueryOptions({ ...queueParams, page: 2 }).queryFn?.(undefined as never)
+    expect(result).toMatchObject({ page: 2, pages: 3, total: 20, has_more: true })
+  })
 })

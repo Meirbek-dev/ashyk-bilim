@@ -97,7 +97,7 @@ export default function GradingReviewWorkspace({
     ...(search ? { search } : {}),
   }
 
-  const { submissions, total, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
+  const { submissions, total, hasMore, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
   const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid ?? null)
 
   const hasSubmissions = submissions.length > 0
@@ -232,6 +232,7 @@ export default function GradingReviewWorkspace({
         <SubmissionList
           submissions={submissions}
           total={total}
+          hasMore={hasMore}
           pages={pages}
           page={page}
           activeFilter={activeFilter}

@@ -23,8 +23,9 @@ use uuid::Uuid;
 
 use super::double_option;
 
+pub use ab_domain::analytics::filters::SortOrder;
 pub use ab_domain::grading::teacher::{
-    ItemAnalytics, ItemFeedbackView, PublishSummary, ScoreBucket, UserSummary,
+    ItemAnalytics, ItemFeedbackView, PublishSummary, ReviewSort, ScoreBucket, UserSummary,
 };
 
 /// Queue filter; `needs_grading` is `pending`.
@@ -58,8 +59,12 @@ pub struct ReviewQuery {
     pub late_only: bool,
     /// Substring of the learner's username or display name.
     pub search: Option<String>,
-    /// `next_cursor` of the previous page.
+    /// `next_cursor` of the previous page (valid only with the same sort/order).
     pub cursor: Option<SubmissionId>,
+    /// Queue order (default `submitted_at`); ties newest first.
+    pub sort: Option<ReviewSort>,
+    /// Default `desc`.
+    pub order: Option<SortOrder>,
     /// 1..=100 (default 25).
     pub limit: Option<i64>,
 }

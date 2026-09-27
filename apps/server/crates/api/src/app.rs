@@ -36,7 +36,12 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
     // Enums that only appear as query parameters are not collected from the
     // route registrations; anything referenced by `IntoParams` goes here.
     // `AiSubjectId` only appears in path params, which utoipa does not collect.
-    components(schemas(crate::dto::grading::ReviewStatus, ab_core::id::AiSubjectId)),
+    components(schemas(
+        crate::dto::grading::ReviewStatus,
+        crate::dto::grading::ReviewSort,
+        crate::dto::grading::SortOrder,
+        ab_core::id::AiSubjectId
+    )),
     tags(
         (name = "health", description = "Liveness and readiness probes"),
         (name = "auth", description = "Sessions and authentication (BFF cookie)"),

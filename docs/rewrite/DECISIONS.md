@@ -1575,3 +1575,18 @@ Implements three more items of the owner answers above. Routes:
   lease. A lost release frees its slot after one hour whatever the client
   does; a rejected attempt changes nothing. Leases are not renewed, so a
   stream open longer than an hour stops counting toward the cap.
+
+## The grading review queue sorts on the server (2026-09-27, gauntlet pass 28)
+
+- **`GET /assessments/{id}/submissions` takes `sort`** (`submitted_at` —
+  default, `final_score`, `attempt_number`) **and `order`** (`desc` —
+  default, `asc`) (BUG-351). Keyset on (sort key, id): the cursor stays a
+  submission id and the server reads the cursor row's key back, so a
+  cursor is valid only within the sort/order that produced it. Ungraded
+  work sorts as score -1 (last descending, first ascending); ties are
+  newest first in both directions. The default order is now the
+  submission time, not the id (draft-creation time).
+- **The page walk reports what exists.** The review UI still pages by
+  number over cursors; a queue that shrank below the selected page answers
+  with the last page reached (the UI follows it), and `total` counts only
+  rows through that page — shown as «N+» while more pages remain.

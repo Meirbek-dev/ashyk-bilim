@@ -21,7 +21,7 @@ use ab_core::id::{
 use ab_core::permission::Action;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::submissions::{NewGradingEntry, NewItemFeedback, SubmissionRow};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
@@ -86,11 +86,34 @@ impl ReviewStatus {
     }
 }
 
+/// Queue order (BUG-351): newest submission, score (ungraded lowest) or
+/// attempt number; ties newest first.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ReviewSort {
+    #[default]
+    SubmittedAt,
+    FinalScore,
+    AttemptNumber,
+}
+
+impl ReviewSort {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::SubmittedAt => "submitted_at",
+            Self::FinalScore => "final_score",
+            Self::AttemptNumber => "attempt_number",
+        }
+    }
+}
+
 pub struct ReviewFilter<'a> {
     pub status: Option<ReviewStatus>,
     pub late_only: bool,
     pub search: Option<&'a str>,
     pub cursor: Option<SubmissionId>,
+    pub sort: ReviewSort,
+    pub ascending: bool,
     pub limit: i64,
 }
 
@@ -716,7 +739,7 @@ impl GradingService {
 
     // ── Reads ───────────────────────────────────────────────────────────
 
-    /// Non-draft submissions, newest first, keyset on id.
+    /// Non-draft submissions in `filter.sort` order, keyset on (key, id).
     pub async fn review_queue(
         &self,
         actor: &Actor,
@@ -732,6 +755,8 @@ impl GradingService {
             filter.late_only,
             filter.search,
             filter.cursor,
+            filter.sort.as_str(),
+            filter.ascending,
             limit + 1,
         )
         .await?;

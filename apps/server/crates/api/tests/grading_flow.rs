@@ -807,6 +807,80 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
     assert!(row.ends_with(",76"), "{row}");
 }
 
+/// BUG-351: `sort`/`order` order the whole queue, not one page — a walk of
+/// one-row pages through the cursors yields the full order (ungraded work
+/// scores lowest; ties newest first).
+#[sqlx::test(migrations = "../../migrations")]
+async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 3 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let alice = learner(&app, "alice").await;
+    let mut bob_subs = Vec::new();
+    for score in [Some(40), Some(76), None] {
+        let sub = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+        if let Some(score) = score {
+            let published = app
+                .send(grade(
+                    &teacher,
+                    &sub,
+                    Some("1"),
+                    &serde_json::json!({ "action": "publish", "final_score": score }),
+                ))
+                .await;
+            assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+        }
+        bob_subs.push(sub);
+    }
+    let alice_sub = submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
+    let (b1, b2, b3) = (
+        bob_subs[0].as_str(),
+        bob_subs[1].as_str(),
+        bob_subs[2].as_str(),
+    );
+    let alice_sub = alice_sub.as_str();
+
+    let walk = async |params: &str| {
+        let mut ids = Vec::new();
+        let mut cursor: Option<String> = None;
+        loop {
+            let after = cursor
+                .as_deref()
+                .map(|c| format!("&cursor={c}"))
+                .unwrap_or_default();
+            let page = app
+                .get_as(
+                    &teacher,
+                    &format!("/api/v2/assessments/{id}/submissions?limit=1{params}{after}"),
+                )
+                .await;
+            assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+            for item in page.json()["items"].as_array().unwrap() {
+                ids.push(item["id"].as_str().unwrap().to_owned());
+            }
+            match page.json()["next_cursor"].as_str() {
+                Some(next) => cursor = Some(next.to_owned()),
+                None => return ids,
+            }
+        }
+    };
+    assert_eq!(walk("&sort=final_score").await, [b2, b1, alice_sub, b3]);
+    assert_eq!(
+        walk("&sort=final_score&order=asc").await,
+        [alice_sub, b3, b1, b2]
+    );
+    assert_eq!(walk("&sort=attempt_number").await, [b3, b2, alice_sub, b1]);
+    assert_eq!(walk("").await, [alice_sub, b3, b2, b1]);
+}
+
 /// BUG-174: a stored override survives any save that does not name a new
 /// raw — a feedback-only republish that re-sends every item keeps 55, and
 /// the grader's view reports the override; dropping it takes an explicit

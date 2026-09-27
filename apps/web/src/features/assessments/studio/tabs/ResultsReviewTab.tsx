@@ -86,7 +86,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const [isExporting, startExportTransition] = useTransition()
 
   // v2 queue: keyset `GET assessments/{id}/submissions` (status/search/cursor/limit)
-  // walked page-by-page by the shared grading query; sort is applied client-side.
+  // walked page-by-page by the shared grading query in the server's sort/order (BUG-351).
   const statsQuery = useQuery({ ...submissionStatsQueryOptions(assessmentUuid), ...LIVE })
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
   const queueQuery = useQuery({
@@ -96,16 +96,12 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
 
   const stats = statsQuery.isSuccess ? statsQuery.data : null
   const itemAnalytics = itemAnalyticsQuery.isSuccess ? itemAnalyticsQuery.data : []
-  const queue = queueQuery.isSuccess ? queueQuery.data : { items: [], total: 0, page, page_size: 10, pages: 1 }
-  const sortValue = (submission: Submission) =>
-    sortBy === 'final_score'
-      ? (submission.final_score ?? -1)
-      : sortBy === 'attempt_number'
-        ? submission.attempt_number
-        : Date.parse(submission.submitted_at ?? submission.updated_at ?? '') || 0
-  const queueItems = queue.items
-    .filter(submission => !lateOnly || submission.is_late)
-    .toSorted((a, b) => (sortDir === 'asc' ? sortValue(a) - sortValue(b) : sortValue(b) - sortValue(a)))
+  const queue = queueQuery.isSuccess
+    ? queueQuery.data
+    : { items: [], total: 0, page, page_size: 10, pages: 1, has_more: false }
+  // A queue that shrank below the selected page answers with its last page.
+  if (queueQuery.isSuccess && queueQuery.data.page < page) setPage(queueQuery.data.page)
+  const queueItems = queue.items.filter(submission => !lateOnly || submission.is_late)
   const selectedSubmissions = queueItems.filter(submission => selectedUuids.has(submission.submission_uuid))
   const promptCounts = countItemActionPrompts(itemAnalytics)
   const integritySummary = summarizeIntegrityEvents(queueItems)
@@ -192,7 +188,11 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               <p className="text-muted-foreground text-xs">{t('queueBody')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{t('queueTotal', { count: queue.total })}</Badge>
+              <Badge variant="outline">
+                {queue.has_more
+                  ? t('queueTotalAtLeast', { count: queue.total })
+                  : t('queueTotal', { count: queue.total })}
+              </Badge>
               <Badge variant="outline">{t('queueSelected', { count: selectedUuids.size })}</Badge>
             </div>
           </div>
@@ -239,7 +239,13 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               <NativeSelectOption value="final_score">{t('sortScore')}</NativeSelectOption>
               <NativeSelectOption value="attempt_number">{t('sortAttempt')}</NativeSelectOption>
             </NativeSelect>
-            <Button variant="outline" onClick={() => setSortDir(value => (value === 'asc' ? 'desc' : 'asc'))}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSortDir(value => (value === 'asc' ? 'desc' : 'asc'))
+                setPage(1)
+              }}
+            >
               {sortDir === 'asc' ? <ArrowUp className="size-4" /> : <ArrowDown className="size-4" />}
               {sortDir === 'asc' ? t('sortAscending') : t('sortDescending')}
             </Button>

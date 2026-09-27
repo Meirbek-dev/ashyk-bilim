@@ -8349,6 +8349,7 @@
           },
           "totals": {
             "submissions": "{count} жұмыс",
+            "submissionsAtLeast": "{count}+ жұмыс",
             "selected": "{count} таңдалды"
           },
           "loading": "Жүктелуде",
@@ -9095,6 +9096,7 @@
           "queueTitle": "Тексеру кезегі",
           "queueBody": "Қолмен бағаланатын элементтерді бағалаңыз, дайын нәтижелерді жариялаңыз және әрекеттерді түзетуге қайтарыңыз.",
           "queueTotal": "{count, plural, =1 {# жіберілім} other {# жіберілім}}",
+          "queueTotalAtLeast": "{count}+ жіберілім",
           "queueSelected": "{count, plural, =1 {# таңдалды} other {# таңдалды}}",
           "searchLearner": "Оқушыны іздеу",
           "statusFilter": "Күй сүзгісі",

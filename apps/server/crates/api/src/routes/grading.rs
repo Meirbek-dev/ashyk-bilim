@@ -19,7 +19,8 @@ use axum::response::{IntoResponse, Response};
 use crate::detach::detached;
 use crate::dto::grading::{
     BulkAction, DeadlineExtensionRequest, GradeRequest, GradebookPage, GradebookQuery,
-    GradingEntry, ItemAnalytics, PublishSummary, ReviewPage, ReviewQuery, Stats, TeacherSubmission,
+    GradingEntry, ItemAnalytics, PublishSummary, ReviewPage, ReviewQuery, SortOrder, Stats,
+    TeacherSubmission,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
@@ -49,7 +50,8 @@ pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
         })
 }
 
-/// Submitted work awaiting or holding a grade, newest first.
+/// Submitted work awaiting or holding a grade, newest first unless `sort` /
+/// `order` say otherwise (cursors are valid only within one sort/order).
 ///
 /// Needs `assessment:grade` on the course. `status=needs_grading` is the
 /// pending queue. Keyset-paged: pass `next_cursor` back as `cursor`.
@@ -78,6 +80,8 @@ pub async fn review_queue(
                 late_only: query.late_only,
                 search: query.search.as_deref().filter(|s| !s.trim().is_empty()),
                 cursor: query.cursor,
+                sort: query.sort.unwrap_or_default(),
+                ascending: matches!(query.order, Some(SortOrder::Asc)),
                 limit: query.limit.unwrap_or(DEFAULT_REVIEW_PAGE),
             },
         )
