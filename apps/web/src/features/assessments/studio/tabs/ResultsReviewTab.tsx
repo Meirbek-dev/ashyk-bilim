@@ -90,7 +90,16 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const statsQuery = useQuery({ ...submissionStatsQueryOptions(assessmentUuid), ...LIVE })
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
   const queueQuery = useQuery({
-    ...submissionsQueryOptions({ assessmentUuid, page, pageSize: 10, search, sortBy, sortDir, status: statusFilter }),
+    ...submissionsQueryOptions({
+      assessmentUuid,
+      page,
+      pageSize: 10,
+      search,
+      sortBy,
+      sortDir,
+      status: statusFilter,
+      lateOnly,
+    }),
     ...LIVE,
   })
 
@@ -101,7 +110,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
     : { items: [], total: 0, page, page_size: 10, pages: 1, has_more: false }
   // A queue that shrank below the selected page answers with its last page.
   if (queueQuery.isSuccess && queueQuery.data.page < page) setPage(queueQuery.data.page)
-  const queueItems = queue.items.filter(submission => !lateOnly || submission.is_late)
+  const queueItems = queue.items
   const selectedSubmissions = queueItems.filter(submission => selectedUuids.has(submission.submission_uuid))
   const promptCounts = countItemActionPrompts(itemAnalytics)
   const integritySummary = summarizeIntegrityEvents(queueItems)
@@ -249,7 +258,14 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               {sortDir === 'asc' ? <ArrowUp className="size-4" /> : <ArrowDown className="size-4" />}
               {sortDir === 'asc' ? t('sortAscending') : t('sortDescending')}
             </Button>
-            <Button variant={lateOnly ? 'default' : 'outline'} onClick={() => setLateOnly(value => !value)}>
+            <Button
+              variant={lateOnly ? 'default' : 'outline'}
+              aria-pressed={lateOnly}
+              onClick={() => {
+                setLateOnly(value => !value)
+                setPage(1)
+              }}
+            >
               {t('lateOnly')}
             </Button>
           </div>

@@ -23,6 +23,8 @@ export interface SubmissionListQueryParams {
   sortBy: string
   sortDir: 'asc' | 'desc'
   status: SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
+  /** Server-side `late_only` — pages and totals follow it. */
+  lateOnly?: boolean
 }
 
 export const GRADEBOOK_POLL_MS = 15_000
@@ -56,6 +58,7 @@ async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<
   const status = toReviewStatus(params.status)
   if (status) base.set('status', status)
   if (params.search) base.set('search', params.search)
+  if (params.lateOnly) base.set('late_only', 'true')
   if (params.sortBy === 'final_score' || params.sortBy === 'attempt_number') base.set('sort', params.sortBy)
   if (params.sortDir === 'asc') base.set('order', 'asc')
   base.set('limit', String(params.pageSize))

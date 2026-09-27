@@ -237,6 +237,14 @@ describe('submissionsQueryOptions', () => {
     })
   })
 
+  it('filters late work on the server so pages and totals follow it', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockResolvedValue({ items: [], next_cursor: null })
+    await submissionsQueryOptions({ ...queueParams, lateOnly: true }).queryFn?.(undefined as never)
+    const [path] = mocks.apiJson.mock.calls[0] as [string]
+    expect(new URL(path, 'http://x').searchParams.get('late_only')).toBe('true')
+  })
+
   it('answers a shrunken queue with the page reached and no invented rows', async () => {
     mocks.apiJson.mockReset()
     mocks.apiJson.mockResolvedValue({ items: [], next_cursor: null })

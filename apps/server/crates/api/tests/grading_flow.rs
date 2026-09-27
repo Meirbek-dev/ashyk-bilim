@@ -879,6 +879,37 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
     );
     assert_eq!(walk("&sort=attempt_number").await, [b3, b2, alice_sub, b1]);
     assert_eq!(walk("").await, [alice_sub, b3, b2, b1]);
+
+    // A cursor whose row has since vanished keeps the walk going (the id
+    // comparison) instead of ending the queue with an empty page.
+    let first = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions?limit=1"),
+        )
+        .await;
+    let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
+    assert_eq!(cursor, alice_sub);
+    sqlx::query("DELETE FROM submissions WHERE id = $1::uuid")
+        .bind(&cursor)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let rest = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions?cursor={cursor}"),
+        )
+        .await;
+    assert_eq!(rest.status, StatusCode::OK, "{}", rest.text());
+    let body = rest.json();
+    let ids: Vec<&str> = body["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|item| item["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(ids, [b3, b2, b1]);
 }
 
 /// BUG-174: a stored override survives any save that does not name a new

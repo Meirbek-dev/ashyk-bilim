@@ -219,6 +219,7 @@ export default function GradingReviewWorkspace({
       <ReviewLayout
         activityId={activityId}
         total={total}
+        hasMore={hasMore}
         selectedSubmissions={selectedSubmissions}
         onBulkRefresh={async () => {
           setSelectedUuids(new Set())

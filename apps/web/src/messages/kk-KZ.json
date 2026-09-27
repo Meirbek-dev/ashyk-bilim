@@ -8363,7 +8363,9 @@
           "releaseStateAwaitingRelease": "Жарияланым күтуде",
           "releaseStateVisible": "Студентке көрінеді",
           "releaseStateReturned": "Қайтарылды",
-          "ownAttempt": "Сіздің әрекетіңіз"
+          "ownAttempt": "Сіздің әрекетіңіз",
+          "previousPage": "Алдыңғы бет",
+          "nextPage": "Келесі бет"
         },
         "bulkActions": {
           "selectedCount": "{count} таңдалды",

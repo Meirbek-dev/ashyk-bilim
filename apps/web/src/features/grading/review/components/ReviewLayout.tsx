@@ -20,6 +20,7 @@ export default function ReviewLayout({
   assessmentUuid,
   title,
   total,
+  hasMore = false,
   stats,
   reviewQueueSummary,
   selectedSubmissions,
@@ -30,6 +31,8 @@ export default function ReviewLayout({
   assessmentUuid?: string
   title?: string
   total: number
+  /** `total` is the queue's lower bound (more pages remain). */
+  hasMore?: boolean
   stats?: SubmissionStats | null
   reviewQueueSummary: ReviewQueueSummary
   selectedSubmissions: Submission[]
@@ -49,7 +52,9 @@ export default function ReviewLayout({
               <p className="text-muted-foreground text-sm">
                 {t('layout.queueDescription', {
                   count: stats?.needs_grading_count ?? 0,
-                  total,
+                  // Both figures are the assessment's (stats); until they
+                  // load, the queue's own count — «20+» while more pages remain.
+                  total: stats ? stats.total : hasMore ? `${total}+` : total,
                 })}
               </p>
             </div>

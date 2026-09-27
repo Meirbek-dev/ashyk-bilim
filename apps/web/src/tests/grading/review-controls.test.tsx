@@ -956,6 +956,34 @@ describe('teacher review controls', () => {
       expect(screen.getByText('80%')).toBeInTheDocument()
     })
 
+    // BUG-351 re-verify: the queue pager is named, and a lower-bound total says so.
+    it('names the pager buttons and marks a lower-bound total', () => {
+      render(
+        <SubmissionList
+          submissions={[createSubmission({ submission_uuid: 'one' })]}
+          total={20}
+          hasMore
+          pages={3}
+          page={2}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set()}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={vi.fn()}
+        />,
+      )
+      expect(screen.getByRole('button', { name: 'previousPage' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'nextPage' })).toBeEnabled()
+      expect(screen.getByText(/totals\.submissionsAtLeast/)).toBeInTheDocument()
+    })
+
     // UX-193: the viewer's own attempt is marked, never bulk-selectable, and
     // opening it says why the form is not there.
     it("marks the viewer's own attempt and says why it cannot be graded", () => {

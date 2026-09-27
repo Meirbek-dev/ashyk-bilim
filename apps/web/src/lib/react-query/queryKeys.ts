@@ -75,6 +75,7 @@ export const queryKeys = {
       sortBy: string
       sortDir: 'asc' | 'desc'
       status: string
+      lateOnly?: boolean
     }) => ['grading', 'submissions', params] as const,
   },
   landing: {

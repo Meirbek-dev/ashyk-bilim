@@ -158,8 +158,14 @@ export default function SubmissionList({
 
       {pages > 1 ? (
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(current => current - 1)}>
-            <ChevronLeft className="size-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={t('previousPage')}
+            disabled={page <= 1}
+            onClick={() => onPageChange(current => current - 1)}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
           </Button>
           <span className="text-muted-foreground text-sm">
             {page} / {pages}
@@ -167,10 +173,11 @@ export default function SubmissionList({
           <Button
             variant="outline"
             size="sm"
+            aria-label={t('nextPage')}
             disabled={page >= pages}
             onClick={() => onPageChange(current => current + 1)}
           >
-            <ChevronRight className="size-4" />
+            <ChevronRight className="size-4" aria-hidden />
           </Button>
         </div>
       ) : null}

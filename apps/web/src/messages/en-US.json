@@ -8333,7 +8333,9 @@
           "releaseStateAwaitingRelease": "Awaiting release",
           "releaseStateVisible": "Visible",
           "releaseStateReturned": "Returned",
-          "ownAttempt": "Your attempt"
+          "ownAttempt": "Your attempt",
+          "previousPage": "Previous page",
+          "nextPage": "Next page"
         },
         "submissionInspector": {
           "selectSubmission": "Select a submission to begin reviewing.",

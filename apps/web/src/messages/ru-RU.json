@@ -8348,7 +8348,9 @@
           "releaseStateAwaitingRelease": "Ожидает публикации",
           "releaseStateVisible": "Видно",
           "releaseStateReturned": "Возвращено",
-          "ownAttempt": "Ваша попытка"
+          "ownAttempt": "Ваша попытка",
+          "previousPage": "Предыдущая страница",
+          "nextPage": "Следующая страница"
         },
         "submissionInspector": {
           "selectSubmission": "Выберите работу, чтобы начать проверку.",

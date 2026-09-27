@@ -764,7 +764,10 @@ pub struct ReviewRow {
 /// Optional filters: status / lateness / learner-name substring; ordered by `sort` (`submitted_at`,
 /// `final_score` — ungraded as -1 — or `attempt_number`), descending unless
 /// `ascending`; ties newest first. Keyset on (key, id): the cursor stays a
-/// submission id and its key is read back (BUG-351).
+/// submission id and its key is read back (BUG-351). A cursor whose row is
+/// gone falls back to `id < cursor` so the walk goes on rather than ending.
+/// ponytail: under a non-id sort that fallback may skip or repeat rows once;
+/// carry the key in the cursor if rows ever vanish routinely.
 #[allow(clippy::too_many_arguments)]
 pub async fn list_for_review(
     pool: &PgPool,
@@ -799,13 +802,13 @@ pub async fn list_for_review(
              AND ($2::text IS NULL OR s.status = $2)
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
-             AND ($5::uuid IS NULL OR (k.key, s.id) < (
+             AND ($5::uuid IS NULL OR coalesce((k.key, s.id) < (
                   SELECT $8::float8 * CASE $7::text
                            WHEN 'final_score' THEN coalesce(c.final_score, -1)
                            WHEN 'attempt_number' THEN c.attempt_number::float8
                            ELSE coalesce(extract(epoch FROM c.submitted_at)::float8, 0) END,
                          c.id
-                  FROM submissions c WHERE c.id = $5))
+                  FROM submissions c WHERE c.id = $5), s.id < $5))
            ORDER BY k.key DESC, s.id DESC
            LIMIT $6"#,
         assessment_id.0,

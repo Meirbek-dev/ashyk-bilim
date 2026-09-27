@@ -1584,7 +1584,8 @@ Implements three more items of the owner answers above. Routes:
   submission id and the server reads the cursor row's key back, so a
   cursor is valid only within the sort/order that produced it. Ungraded
   work sorts as score -1 (last descending, first ascending); ties are
-  newest first in both directions. The default order is now the
+  newest first in both directions. A cursor whose row is gone falls back to
+  `id < cursor`, so the walk continues instead of ending on an empty page. The default order is now the
   submission time, not the id (draft-creation time).
 - **The page walk reports what exists.** The review UI still pages by
   number over cursors; a queue that shrank below the selected page answers
