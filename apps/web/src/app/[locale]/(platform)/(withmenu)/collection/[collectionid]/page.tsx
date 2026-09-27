@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server'
 import AppLink from '@/components/ui/AppLink'
 import { Layers } from 'lucide-react'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Badge } from '@/components/ui/badge'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import { isApiError } from '@/lib/api/assertSuccess'
@@ -50,7 +51,21 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformCollectionPage(props: { params: Promise<{ collectionid: string }> }) {
+interface PageProps {
+  params: Promise<{ collectionid: string }>
+}
+
+// The fetch runs inside the boundary (Next 16: uncached data outside
+// <Suspense> blocks the route — UX-231).
+export default function PlatformCollectionPage(props: PageProps) {
+  return (
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
+      <CollectionContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function CollectionContent(props: PageProps) {
   const t = await getTranslations('General')
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
@@ -59,7 +74,8 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
     col = await getCollectionById(collectionid)
   } catch (error) {
     // A plain not-found (or a malformed id, 422) is a page state, not an error boundary.
-    if (isApiError(error) && (error.status === 404 || error.status === 422)) return <ResourceNotFound type="collection" />
+    if (isApiError(error) && (error.status === 404 || error.status === 422))
+      return <ResourceNotFound type="collection" />
     throw error
   }
   const courses = (col.courses ?? []).filter(

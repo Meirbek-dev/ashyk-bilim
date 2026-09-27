@@ -57,18 +57,11 @@ interface PageProps {
   params: Promise<{ locale: string }>
 }
 
-export default async function PlatformCollectionsPage(props: PageProps) {
-  const { locale } = await props.params
-  const t = await getTranslations({ locale, namespace: 'PageLoading' })
-
+// Params are awaited inside the boundary (Next 16: uncached data outside
+// <Suspense> blocks the route — UX-231).
+export default function PlatformCollectionsPage(props: PageProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="text-muted-foreground flex h-[200px] w-full items-center justify-center text-sm">
-          {t('loading')}
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
       <CollectionsContent params={props.params} />
     </Suspense>
   )
