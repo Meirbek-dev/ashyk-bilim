@@ -41,7 +41,13 @@ vi.mock('@/features/grading/queries/use-grading-events', () => ({
 }))
 
 vi.mock('@/hooks/useApiError', () => ({
-  useApiError: () => ({ toastApiError: gradingQueryMocks.toastApiError }),
+  useApiError: () => ({
+    toastApiError: gradingQueryMocks.toastApiError,
+    // UX-258: the localized problem mapping, not the wire `detail`.
+    handleApiError: (error: unknown, options?: { fallback?: string }) => ({
+      message: `localized:${(error as { status?: number }).status ?? 'unknown'}:${options?.fallback ?? ''}`,
+    }),
+  }),
 }))
 
 vi.mock('@/features/assessments/registry', () => ({
@@ -385,9 +391,10 @@ describe('CourseGradebookCommandCenter', () => {
     expect(screen.queryByText('summary.learnersFiltered')).not.toBeInTheDocument()
   })
 
-  it('shows the API error instead of staying in a loading state', () => {
+  // UX-258: a 403 «no gradebook access to this course» reads localized, not the raw wire detail.
+  it('shows the localized API error instead of staying in a loading state', () => {
     queryState = {
-      error: new Error('Internal Server Error'),
+      error: Object.assign(new Error('no gradebook access to this course'), { status: 403 }),
       isError: true,
       isLoading: false,
       refetch: vi.fn(),
@@ -395,7 +402,8 @@ describe('CourseGradebookCommandCenter', () => {
 
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Internal Server Error')
+    expect(screen.getByRole('alert')).toHaveTextContent('localized:403:loadError')
+    expect(screen.getByRole('alert')).not.toHaveTextContent('no gradebook access')
     expect(screen.queryByText('loading')).not.toBeInTheDocument()
   })
 

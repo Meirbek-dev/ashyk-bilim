@@ -45,7 +45,7 @@ const PAGE_SIZE = 25
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook')
   const locale = useLocale()
-  const { toastApiError } = useApiError()
+  const { handleApiError, toastApiError } = useApiError()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -127,9 +127,10 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   if (isLoading) return <div className="text-muted-foreground text-sm">{t('loading')}</div>
 
   if (isError) {
+    // UX-258: the problem+json code, localized — never the server's English `detail`.
     return (
       <div role="alert" className="text-destructive text-sm">
-        {error instanceof Error ? error.message : t('loadError')}
+        {handleApiError(error, { fallback: t('loadError') }).message}
       </div>
     )
   }

@@ -49,7 +49,10 @@ function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) 
   return can(session, permsSet, Resources.COURSE, Actions.CREATE, Scopes.APP)
 }
 
-export function deriveCourseWorkspaceCapabilities(session: AuthSession, course: AppCourse): CourseWorkspaceCapabilities {
+export function deriveCourseWorkspaceCapabilities(
+  session: AuthSession,
+  course: AppCourse,
+): CourseWorkspaceCapabilities {
   const permsSet = new Set(session.permissions)
   const isCreator = typeof course.creator_id === 'string' && course.creator_id === session.userId
   const isAuthor = isCourseAuthor(course, session.userId)
@@ -68,7 +71,11 @@ export function deriveCourseWorkspaceCapabilities(session: AuthSession, course: 
   const canManageCertificate = canOwnOrPlatform(session, permsSet, isAuthor, Resources.CERTIFICATE, Actions.CREATE)
   // Delete stays creator-only on the server.
   const canDeleteCourse = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.DELETE)
-  const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate
+  // Gradebook / review need the server's grading gate (`assessment:grade` platform
+  // or authorship). UX-258: the instructor role's `certificate:create:platform`
+  // is not course access — it used to open the workspace of every course.
+  const canGrade = canOwnOrPlatform(session, permsSet, isAuthor, Resources.ASSESSMENT, Actions.GRADE)
+  const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canGrade
 
   return {
     canViewWorkspace: canReviewCourse || canManageSettings,
