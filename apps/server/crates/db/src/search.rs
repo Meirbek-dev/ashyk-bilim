@@ -173,7 +173,10 @@ pub struct UserHitRow {
 
 /// Prefix matches rank above substring matches; active users only.
 /// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
+/// A one-character word matches only a whole word of the username or
+/// display name, as in course search (UX-238: `c` is not every «…c…»).
 pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {
+    let letters = word_patterns(query).letters;
     let literal = crate::like_escape(query);
     let substring = format!("%{literal}%");
     let prefix = format!("{literal}%");
@@ -183,11 +186,13 @@ pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<
            FROM users
            WHERE status = 'active'
              AND (username ILIKE $1 ESCAPE '\' OR display_name ILIKE $1 ESCAPE '\')
+             AND search_matches(username || ' ' || display_name, ARRAY[]::text[], $4, ARRAY[]::text[])
            ORDER BY (username ILIKE $2 ESCAPE '\' OR display_name ILIKE $2 ESCAPE '\') DESC, username
            LIMIT $3"#,
         substring,
         prefix,
-        limit
+        limit,
+        &letters
     )
     .fetch_all(pool)
     .await?;

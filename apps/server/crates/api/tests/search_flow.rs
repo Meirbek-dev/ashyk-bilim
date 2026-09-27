@@ -330,4 +330,18 @@ async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool)
         let listed = app.get(&format!("/api/v2/courses?q={q}")).await;
         assert_eq!(names(&listed.json()["items"]), expected, "courses {q}");
     }
+    // UX-238: people search applies the one-letter rule too — `c` is the
+    // whole word of «c.dev», not the «c» inside «teacher» or «cooper».
+    for name in ["c.dev", "cooper"] {
+        app.create_user(name, &format!("{name}@example.com"), &[])
+            .await;
+    }
+    let people = app.get_as(&teacher, "/api/v2/search?q=c").await;
+    let people: Vec<_> = people.json()["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|u| u["username"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(people, ["c.dev"]);
 }
