@@ -47,6 +47,7 @@ import {
   uploadSubmissionFile,
 } from '@/features/file-submissions/services/file-submissions'
 import type {
+  FileSubmissionActivity,
   FileSubmissionAttempt,
   FileSubmissionAttemptFile,
 } from '@/features/file-submissions/services/file-submissions'
@@ -101,13 +102,16 @@ export function fileRejection(
   file: File,
   allowedMimes: string[],
   maxMb: number | null | undefined,
-): { key: 'fileTooLarge'; size: number } | { key: 'fileTypeNotAllowed'; type: string } | null {
+): { key: 'fileTooLarge'; size: number } | { key: 'fileTypeNotAllowed'; type: string | null } | null {
   if (maxMb && file.size > maxMb * 1024 * 1024) return { key: 'fileTooLarge', size: maxMb }
   if (allowedMimes.length === 0) return null
   const allowed = allowedMimes.some(mime =>
     mime.endsWith('/*') ? file.type.startsWith(mime.slice(0, -1)) : file.type === mime,
   )
-  return allowed ? null : { key: 'fileTypeNotAllowed', type: file.type || file.name.split('.').pop() || '?' }
+  // UX-236: the MIME type, else the extension; null (shown as «без расширения») when there is none.
+  const dot = file.name.lastIndexOf('.')
+  const ext = dot > 0 ? file.name.slice(dot + 1) : ''
+  return allowed ? null : { key: 'fileTypeNotAllowed', type: file.type || ext || null }
 }
 
 // ── Status badge config ───────────────────────────────────────────────────────
@@ -214,7 +218,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
             status: why ? 'rejected' : 'queued',
             progress: 0,
           }
-          if (why) slot.error = t(why.key, why)
+          if (why) slot.error = 'type' in why ? t(why.key, { type: why.type ?? t('noExtension') }) : t(why.key, why)
           return slot
         }),
       ])
@@ -229,10 +233,10 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       if (!data) throw new Error(t('notAvailable'))
       setIsUploading(true)
 
+      // BUG-335: the attempt is read fresh at send time (a refetch or another tab may
+      // have bumped its version during the upload), never from the render closure.
       // Ensure draft exists
-      if (!activeAttempt) {
-        await startFileSubmissionDraft(data.id)
-      }
+      const started = activeAttempt ? null : await startFileSubmissionDraft(data.id)
 
       // Upload pending slots
       const uploaded: PendingFileSlot[] = []
@@ -267,18 +271,35 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         await uploadSlot(slot)
       }
 
-      const files = [
-        ...attachedFiles.map((f: FileSubmissionAttemptFile) => ({
-          upload_id: f.upload_id,
-          display_name: f.filename,
-        })),
-        ...uploaded.map(s => ({
-          upload_id: s.upload_id!,
-          display_name: s.file.name,
-        })),
-      ]
-      const version = activeAttempt?.version ?? null
-      return submit ? submitFileSubmission(data.id, files, version) : saveFileSubmissionDraft(data.id, files, version)
+      // The attached list comes from the same fresh attempt as the version, so a
+      // retry keeps what another tab attached meanwhile.
+      const send = (attempt: FileSubmissionAttempt | null) => {
+        const files = [
+          ...(attempt?.files ?? []).map((f: FileSubmissionAttemptFile) => ({
+            upload_id: f.upload_id,
+            display_name: f.filename,
+          })),
+          ...uploaded.map(s => ({
+            upload_id: s.upload_id!,
+            display_name: s.file.name,
+          })),
+        ]
+        const version = attempt?.version ?? null
+        return submit ? submitFileSubmission(data.id, files, version) : saveFileSubmissionDraft(data.id, files, version)
+      }
+      const cached = queryClient.getQueryData<FileSubmissionActivity>(queryKey(activityUuid))?.current_attempt ?? null
+      try {
+        return await send(started && (!cached || cached.version < started.version) ? started : cached)
+      } catch (error) {
+        if (!hasErrorCode(error, 'precondition-failed')) throw error
+        // Stale anyway (a write landed between the read and the send): refetch, retry once.
+        const latest = await queryClient.fetchQuery({
+          queryKey: queryKey(activityUuid),
+          queryFn: () => getFileSubmissionByActivity(activityUuid),
+          staleTime: 0,
+        })
+        return send(latest.current_attempt ?? null)
+      }
     },
     onSuccess: async (_attempt, { submit }) => {
       setSlots([])

@@ -86,3 +86,18 @@ describe('FileSubmissionWorkspace picker + submit confirm (UX-036)', () => {
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith('fs-1', expect.any(Array), 1))
   })
 })
+
+// UX-236: an extensionless file no longer shows its whole name as the «type».
+describe('fileRejection type label', () => {
+  it('is the extension when present, null (localized «без расширения») otherwise', async () => {
+    const { fileRejection } = await import('@/features/file-submissions/student/FileSubmissionWorkspace')
+    expect(fileRejection(new File(['x'], 'Makefile'), ['application/pdf'], 1)).toEqual({
+      key: 'fileTypeNotAllowed',
+      type: null,
+    })
+    expect(fileRejection(new File(['x'], 'a.tar.gz'), ['application/pdf'], 1)).toEqual({
+      key: 'fileTypeNotAllowed',
+      type: 'gz',
+    })
+  })
+})
