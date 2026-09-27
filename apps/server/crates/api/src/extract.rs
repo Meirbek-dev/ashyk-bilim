@@ -48,14 +48,22 @@ impl FromRequestParts<AppState> for CurrentActor {
 /// (touching it). `session-expired` once it is logged out, revoked or past
 /// its cap.
 pub async fn resolve_actor(state: &AppState, token: &str) -> ab_core::Result<Actor> {
-    actor_of(token, state.sessions.get_and_touch(token).await?)
+    let record = state.sessions.get_and_touch(token).await?;
+    actor_of(
+        token,
+        state.sessions.fenced(&state.pool, token, record).await?,
+    )
 }
 
 /// [`resolve_actor`] without touching: open SSE streams re-run this on every
 /// access re-check, so a logout or a role change reaches them (BUG-320)
 /// while an unattended tab still idles out.
 pub async fn peek_actor(state: &AppState, token: &str) -> ab_core::Result<Actor> {
-    actor_of(token, state.sessions.peek(token).await?)
+    let record = state.sessions.peek(token).await?;
+    actor_of(
+        token,
+        state.sessions.fenced(&state.pool, token, record).await?,
+    )
 }
 
 fn actor_of(token: &str, record: Option<SessionRecord>) -> ab_core::Result<Actor> {
@@ -84,12 +92,9 @@ impl FromRequestParts<AppState> for MaybeActor {
         let Some(cookie) = jar.get(SESSION_COOKIE) else {
             return Ok(Self(Actor::anonymous()));
         };
-        let record = state.sessions.get_and_touch(cookie.value()).await;
-        let actor = match record {
-            Ok(Some(record)) => Actor::from_session(cookie.value().to_owned(), &record)
-                .unwrap_or_else(|_| Actor::anonymous()),
-            _ => Actor::anonymous(),
-        };
+        let actor = resolve_actor(state, cookie.value())
+            .await
+            .unwrap_or_else(|_| Actor::anonymous());
         Ok(Self(actor))
     }
 }

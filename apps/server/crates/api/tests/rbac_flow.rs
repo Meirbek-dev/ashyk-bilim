@@ -529,3 +529,126 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
         assert_eq!(field["code"], "required", "{field}");
     }
 }
+
+/// BUG-345: a role removal or custom-role deletion commits before the live
+/// sessions are rewritten. When that rewrite fails (an injected per-user
+/// Redis fault) the change still holds — 204, audited — because the session
+/// is fenced on the user row's bumped `rbac_version`: the revoked grant is
+/// gone on its next request, with nothing left for a retry to repair.
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_session_rewrite_cannot_keep_a_revoked_grant(pool: PgPool) {
+    use redis::AsyncCommands;
+    let app = TestApp::spawn(pool).await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let mut redis = app.sessions.redis();
+    async fn grants(app: &TestApp, session: &ab_testkit::MintedSession) -> Vec<serde_json::Value> {
+        let info = app.get_as(session, "/api/v2/auth/session").await;
+        assert_eq!(info.status, StatusCode::OK, "{}", info.text());
+        info.json()["permissions"].as_array().unwrap().clone()
+    }
+    // The epoch INCR is the rewrite's first Redis step: a non-integer value
+    // makes it fail for this user only.
+    let fail_rewrite = |user: ab_core::id::UserId| format!("user_epoch:{user}");
+
+    // Role removal.
+    let target = app
+        .create_user("revoked", "revoked@example.com", &["instructor"])
+        .await;
+    let session = app
+        .mint_session_for(target, &["course:create:platform"])
+        .await;
+    let _: () = redis.set(fail_rewrite(target), "fault").await.unwrap();
+    let uri = format!("/api/v2/users/{target}/roles/instructor");
+    let first = app.delete_as(&admin, &uri).await;
+    let _: () = redis.del(fail_rewrite(target)).await.unwrap();
+    assert_eq!(first.status, StatusCode::NO_CONTENT, "{}", first.text());
+    let retry = app.delete_as(&admin, &uri).await;
+    assert_eq!(retry.status, StatusCode::NOT_FOUND);
+    assert!(
+        !grants(&app, &session)
+            .await
+            .contains(&serde_json::json!("course:create:platform"))
+    );
+    let create = app
+        .post_as(
+            &session,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "After revocation" }),
+        )
+        .await;
+    assert_eq!(create.status, StatusCode::FORBIDDEN, "{}", create.text());
+
+    // Custom-role deletion: the holders are bumped with the delete.
+    let created = app
+        .post_as(
+            &admin,
+            "/api/v2/rbac/roles",
+            &serde_json::json!({ "slug": "creator", "display_name": "Creator", "priority": 5 }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::NO_CONTENT);
+    let set = app
+        .send(
+            axum::http::Request::builder()
+                .method("PUT")
+                .uri("/api/v2/rbac/roles/creator/permissions")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &admin.cookie)
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "permissions": ["course:create:platform"] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(set.status, StatusCode::NO_CONTENT);
+    let holder = app.create_user("holder", "holder@example.com", &[]).await;
+    let holder_session = app.mint_session_for(holder, &[]).await;
+    let assigned = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/users/{holder}/roles"),
+            &serde_json::json!({ "role": "creator" }),
+        )
+        .await;
+    assert_eq!(assigned.status, StatusCode::NO_CONTENT);
+    assert!(
+        grants(&app, &holder_session)
+            .await
+            .contains(&serde_json::json!("course:create:platform"))
+    );
+    let _: () = redis.set(fail_rewrite(holder), "fault").await.unwrap();
+    let deleted = app.delete_as(&admin, "/api/v2/rbac/roles/creator").await;
+    let _: () = redis.del(fail_rewrite(holder)).await.unwrap();
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM auth_audit_log WHERE event IN ('role-unassigned', 'role-deleted')",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(audited, 2);
+    assert!(
+        !grants(&app, &holder_session)
+            .await
+            .contains(&serde_json::json!("course:create:platform"))
+    );
+
+    // A disabled account's session whose revoke failed is ended by the fence.
+    let _: () = redis.set(fail_rewrite(holder), "fault").await.unwrap();
+    let disabled = app
+        .patch_as(
+            &admin,
+            &format!("/api/v2/users/{holder}/status"),
+            &serde_json::json!({ "disabled": true }),
+        )
+        .await;
+    let _: () = redis.del(fail_rewrite(holder)).await.unwrap();
+    assert_eq!(
+        disabled.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        disabled.text()
+    );
+    let gone = app.get_as(&holder_session, "/api/v2/auth/session").await;
+    assert_eq!(gone.status, StatusCode::UNAUTHORIZED, "{}", gone.text());
+}

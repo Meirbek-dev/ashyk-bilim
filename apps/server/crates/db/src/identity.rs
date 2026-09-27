@@ -460,32 +460,37 @@ pub async fn update_role(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Everyone currently holding the role (for rbac propagation).
-pub async fn list_role_member_ids(pool: &PgPool, role_id: uuid::Uuid) -> Result<Vec<UserId>> {
-    let ids = sqlx::query_scalar!(
-        r#"SELECT user_id AS "user_id: UserId" FROM user_roles WHERE role_id = $1"#,
-        role_id
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(ids)
-}
-
-/// Custom roles only; membership rows cascade.
-pub async fn delete_role(pool: &PgPool, role_id: uuid::Uuid) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM roles WHERE id = $1 AND NOT is_system", role_id)
-        .execute(pool)
+/// Delete a custom role; membership rows cascade.
+///
+/// Every holder's `rbac_version` is bumped in the same transaction, so their
+/// sessions are fenced even if the rewrite after commit never lands
+/// (BUG-345). Returns the bumped `(holder, version)` pairs, `None` for a
+/// missing/system role.
+pub async fn delete_role(pool: &PgPool, role_id: uuid::Uuid) -> Result<Option<Vec<(UserId, i64)>>> {
+    let mut tx = pool.begin().await?;
+    if !lock_custom_role(&mut tx, role_id).await? {
+        return Ok(None);
+    }
+    let holders = bump_role_holders(&mut tx, role_id).await?;
+    sqlx::query!("DELETE FROM roles WHERE id = $1", role_id)
+        .execute(&mut *tx)
         .await?;
-    Ok(deleted.rows_affected() == 1)
+    tx.commit().await?;
+    Ok(Some(holders))
 }
 
-/// Replace the role's grant set wholesale (validated by the caller).
+/// Replace a custom role's grant set wholesale (validated by the caller) and
+/// bump every holder in the same transaction (see [`delete_role`]).
+/// `None` for a missing/system role.
 pub async fn replace_role_permissions(
     pool: &PgPool,
     role_id: uuid::Uuid,
     permissions: &[String],
-) -> Result<()> {
+) -> Result<Option<Vec<(UserId, i64)>>> {
     let mut tx = pool.begin().await?;
+    if !lock_custom_role(&mut tx, role_id).await? {
+        return Ok(None);
+    }
     sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role_id)
         .execute(&mut *tx)
         .await?;
@@ -499,19 +504,36 @@ pub async fn replace_role_permissions(
         .execute(&mut *tx)
         .await?;
     }
+    let holders = bump_role_holders(&mut tx, role_id).await?;
     tx.commit().await?;
-    Ok(())
+    Ok(Some(holders))
 }
 
-/// Bump without touching membership (role definition changed).
-pub async fn bump_rbac_version(pool: &PgPool, user_id: UserId) -> Result<Option<i64>> {
-    let version = sqlx::query_scalar!(
-        "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
-        user_id.0
+/// Lock the custom role row: an assignment's FK check waits on it, so no
+/// holder can join between the bump and the commit.
+async fn lock_custom_role(conn: &mut sqlx::PgConnection, role_id: uuid::Uuid) -> Result<bool> {
+    let locked = sqlx::query_scalar!(
+        "SELECT id FROM roles WHERE id = $1 AND NOT is_system FOR UPDATE",
+        role_id
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *conn)
     .await?;
-    Ok(version)
+    Ok(locked.is_some())
+}
+
+async fn bump_role_holders(
+    conn: &mut sqlx::PgConnection,
+    role_id: uuid::Uuid,
+) -> Result<Vec<(UserId, i64)>> {
+    let rows = sqlx::query!(
+        r#"UPDATE users SET rbac_version = rbac_version + 1
+           WHERE id IN (SELECT user_id FROM user_roles WHERE role_id = $1)
+           RETURNING id AS "id: UserId", rbac_version"#,
+        role_id
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.rbac_version)).collect())
 }
 
 // ── Admin user management ───────────────────────────────────────────────────

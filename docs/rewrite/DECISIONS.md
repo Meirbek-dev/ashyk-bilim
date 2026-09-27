@@ -1590,3 +1590,24 @@ Implements three more items of the owner answers above. Routes:
   number over cursors; a queue that shrank below the selected page answers
   with the last page reached (the UI follows it), and `total` counts only
   rows through that page — shown as «N+» while more pages remain.
+
+## Session grants are fenced on the user row (2026-09-27, gauntlet pass 28)
+
+- **The request path reads the user row once per authenticated request**
+  (BUG-345), replacing "request paths never re-check Postgres" (slice 1.8,
+  ARCHITECTURE §7 now as written: `rbac_version` on the user row
+  invalidates sessions). A grant change commits in Postgres before its
+  Redis session rewrite, which can fail or be lost with the process;
+  `SessionStore::fenced` compares the record's `rbac_version` with the
+  row's (one PK lookup) and, for a record left behind, reloads the grants
+  (persisted to the record best-effort) or ends the session when the
+  account is no longer active. A record whose user row does not exist
+  passes as is.
+- **Every grant change bumps `rbac_version` in its own transaction**:
+  assign/unassign and status as before; custom-role delete and grant-set
+  replace now bump every holder with the change, under a lock on the role
+  row (a concurrent assignment's FK check waits for it).
+- **The post-commit rewrite is best-effort.** Role assign/unassign/delete,
+  grant replace and account disable answer 204 and write their audit row
+  even when the session rewrite/revoke fails (logged): the change already
+  holds, and a retry would only 404 on it.

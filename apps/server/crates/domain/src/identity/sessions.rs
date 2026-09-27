@@ -20,8 +20,10 @@
 //!   oldest; expired ids are pruned first, in the create step (BUG-277).
 //! - Permission changes propagate at mutation time:
 //!   [`SessionStore::rewrite_user_sessions`] updates every live session of a
-//!   user (called by RBAC admin flows), so request-path reads never hit
-//!   Postgres.
+//!   user (called by RBAC admin flows). That rewrite runs after the Postgres
+//!   commit and can fail, so the request path also compares the record with
+//!   the user row's `rbac_version` ([`SessionStore::fenced`], BUG-345) and
+//!   reloads grants only for a record left behind.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -454,37 +456,96 @@ impl SessionStore {
         mut edit: impl FnMut(&mut SessionRecord) -> bool,
     ) -> Result<u32> {
         self.bump_epoch(user_id).await?;
-        let mut conn = self.redis.clone();
-        let script = redis::Script::new(REWRITE_IF_UNCHANGED);
         let mut updated = 0;
         for id in self.list(user_id).await? {
-            // ponytail: 3 CAS rounds; two rewriters of one user racing thrice is not a real workload.
-            for _ in 0..3 {
-                let raw: Option<String> = conn
-                    .get(session_key(&id))
-                    .await
-                    .map_err(|e| Error::internal("loading session", e))?;
-                let Some(raw) = raw else { break };
-                let mut record: SessionRecord = serde_json::from_str(&raw)
-                    .map_err(|e| Error::internal("corrupt session record", e))?;
-                if !edit(&mut record) {
-                    break;
-                }
-                let payload = serde_json::to_string(&record)
-                    .map_err(|e| Error::internal("serializing session", e))?;
-                let written: i32 = script
-                    .key(session_key(&id))
-                    .arg(&raw)
-                    .arg(payload)
-                    .invoke_async(&mut conn)
-                    .await
-                    .map_err(|e| Error::internal("rewriting session", e))?;
-                if written == 1 {
-                    updated += 1;
-                    break;
-                }
+            if self.edit_session(&id, &mut edit).await? {
+                updated += 1;
             }
         }
         Ok(updated)
+    }
+
+    /// Compare-and-set `edit` onto one session; `true` once written.
+    async fn edit_session(
+        &self,
+        id: &str,
+        mut edit: impl FnMut(&mut SessionRecord) -> bool,
+    ) -> Result<bool> {
+        let mut conn = self.redis.clone();
+        let script = redis::Script::new(REWRITE_IF_UNCHANGED);
+        // ponytail: 3 CAS rounds; two rewriters of one user racing thrice is not a real workload.
+        for _ in 0..3 {
+            let raw: Option<String> = conn
+                .get(session_key(id))
+                .await
+                .map_err(|e| Error::internal("loading session", e))?;
+            let Some(raw) = raw else { break };
+            let mut record: SessionRecord = serde_json::from_str(&raw)
+                .map_err(|e| Error::internal("corrupt session record", e))?;
+            if !edit(&mut record) {
+                break;
+            }
+            let payload = serde_json::to_string(&record)
+                .map_err(|e| Error::internal("serializing session", e))?;
+            let written: i32 = script
+                .key(session_key(id))
+                .arg(&raw)
+                .arg(payload)
+                .invoke_async(&mut conn)
+                .await
+                .map_err(|e| Error::internal("rewriting session", e))?;
+            if written == 1 {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Fence a session against the user's durable `rbac_version` (BUG-345):
+    /// a grant change commits in Postgres before its session rewrite, so a
+    /// failed or lost rewrite leaves a record behind the user row. Such a
+    /// record is repaired before use — fresh grants (persisted best-effort),
+    /// or revoked when the account is no longer active. A record whose user
+    /// row is gone is passed through as is.
+    pub async fn fenced(
+        &self,
+        pool: &sqlx::PgPool,
+        id: &str,
+        record: Option<SessionRecord>,
+    ) -> Result<Option<SessionRecord>> {
+        let Some(mut record) = record else {
+            return Ok(None);
+        };
+        let Some(user) = ab_db::identity::find_auth_user(pool, record.user_id).await? else {
+            return Ok(Some(record));
+        };
+        if user.rbac_version <= record.rbac_version {
+            return Ok(Some(record));
+        }
+        if user.status != "active" {
+            self.revoke(record.user_id, id).await?;
+            return Ok(None);
+        }
+        // Version first, grants after: the grants are never older than it.
+        let (roles, permissions) = ab_db::identity::load_user_grants(pool, record.user_id).await?;
+        let version = user.rbac_version;
+        if let Err(err) = self
+            .edit_session(id, |stored| {
+                if stored.rbac_version >= version {
+                    return false;
+                }
+                stored.roles.clone_from(&roles);
+                stored.permissions.clone_from(&permissions);
+                stored.rbac_version = version;
+                true
+            })
+            .await
+        {
+            tracing::warn!(error = %err, user_id = %record.user_id, "stale session repair not persisted");
+        }
+        record.roles = roles;
+        record.permissions = permissions;
+        record.rbac_version = version;
+        Ok(Some(record))
     }
 }

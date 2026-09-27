@@ -1,8 +1,9 @@
 //! Role administration (slice 1.8 core).
 //!
 //! List roles, assign/unassign user roles. Every mutation bumps the user's
-//! `rbac_version` and rewrites their live sessions so new grants apply
-//! immediately — request paths never re-check Postgres (ARCHITECTURE §7).
+//! `rbac_version` in its own transaction and then rewrites their live
+//! sessions so new grants apply immediately; a rewrite that fails (or never
+//! runs) is caught on the request path by [`SessionStore::fenced`] (BUG-345).
 
 use ab_core::id::UserId;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -88,7 +89,7 @@ impl RbacAdminService {
         let version = ab_db::identity::assign_role(&self.pool, user_id, role.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
-        self.propagate(user_id, version).await?;
+        self.propagate(user_id, version).await;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(user_id),
@@ -128,7 +129,7 @@ impl RbacAdminService {
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
         tx.commit().await?;
-        self.propagate(user_id, version).await?;
+        self.propagate(user_id, version).await;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(user_id),
@@ -210,11 +211,10 @@ impl RbacAdminService {
         if role.is_system {
             return Err(Error::forbidden("system roles cannot be deleted"));
         }
-        let members = ab_db::identity::list_role_member_ids(&self.pool, role.id).await?;
-        if !ab_db::identity::delete_role(&self.pool, role.id).await? {
-            return Err(Error::not_found("custom role"));
-        }
-        self.propagate_all(&members).await?;
+        let holders = ab_db::identity::delete_role(&self.pool, role.id)
+            .await?
+            .ok_or_else(|| Error::not_found("custom role"))?;
+        self.propagate_all(&holders).await;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             None,
@@ -264,9 +264,10 @@ impl RbacAdminService {
                 "system role grants are managed by migration",
             ));
         }
-        ab_db::identity::replace_role_permissions(&self.pool, role.id, &permissions).await?;
-        let members = ab_db::identity::list_role_member_ids(&self.pool, role.id).await?;
-        self.propagate_all(&members).await?;
+        let holders = ab_db::identity::replace_role_permissions(&self.pool, role.id, &permissions)
+            .await?
+            .ok_or_else(|| Error::not_found("custom role"))?;
+        self.propagate_all(&holders).await;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             None,
@@ -331,9 +332,17 @@ impl RbacAdminService {
             return Err(Error::not_found("user"));
         }
         tx.commit().await?;
+        // The status flip bumped `rbac_version`: a session this revoke
+        // misses is ended by the request-path fence (BUG-345).
         if disabled {
-            let revoked = self.sessions.revoke_all(user_id).await?;
-            tracing::info!(%user_id, revoked, "account disabled, sessions revoked");
+            match self.sessions.revoke_all(user_id).await {
+                Ok(revoked) => {
+                    tracing::info!(%user_id, revoked, "account disabled, sessions revoked");
+                }
+                Err(error) => {
+                    tracing::warn!(%user_id, %error, "session revoke failed; sessions stay fenced");
+                }
+            }
         }
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -350,54 +359,55 @@ impl RbacAdminService {
         .await
     }
 
-    /// Bump + rewrite sessions for every affected user (role-level change).
-    /// The members' re-projections run concurrently under one shared inline
-    /// wait, never one per member back to back (UX-210); those still busy
-    /// are left to their queued jobs.
-    async fn propagate_all(&self, user_ids: &[UserId]) -> Result<()> {
-        let mut changed = Vec::new();
-        let outcome: Result<()> = async {
-            for &user_id in user_ids {
-                if let Some(version) =
-                    ab_db::identity::bump_rbac_version(&self.pool, user_id).await?
-                {
-                    self.push_grants(user_id, version).await?;
-                    changed.push(user_id);
-                }
-            }
-            Ok(())
+    /// Rewrite sessions for every holder already bumped by the role-level
+    /// change. The holders' re-projections run concurrently under one shared
+    /// inline wait, never one per holder back to back (UX-210); those still
+    /// busy are left to their queued jobs.
+    async fn propagate_all(&self, holders: &[(UserId, i64)]) {
+        for &(user_id, version) in holders {
+            self.push_grants(user_id, version).await;
         }
-        .await;
         let projector = ProgressProjector::new(self.pool.clone());
         futures::future::join_all(
-            changed
+            holders
                 .iter()
-                .map(|user_id| projector.after_staff_change(*user_id, None)),
+                .map(|&(user_id, _)| projector.after_staff_change(user_id, None)),
         )
         .await;
-        outcome
     }
 
     /// [`Self::push_grants`], then re-project the courses they hold a run
     /// in: a grant change can move them off (or onto) every course's staff
     /// (`is_course_staff`, BUG-291).
-    async fn propagate(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
-        self.push_grants(user_id, rbac_version).await?;
+    async fn propagate(&self, user_id: UserId, rbac_version: i64) {
+        self.push_grants(user_id, rbac_version).await;
         ProgressProjector::new(self.pool.clone())
             .after_staff_change(user_id, None)
             .await;
-        Ok(())
     }
 
-    /// Push the user's fresh grants into every live session.
-    async fn push_grants(&self, user_id: UserId, rbac_version: i64) -> Result<()> {
-        let (roles, permissions) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
-        let updated = self
-            .sessions
-            .rewrite_user_sessions(user_id, &roles, &permissions, rbac_version)
-            .await?;
-        tracing::info!(%user_id, rbac_version, sessions = updated, "rbac change propagated");
-        Ok(())
+    /// Push the user's fresh grants into every live session. Best-effort:
+    /// the change is committed with its `rbac_version` bump, which fences
+    /// every session this misses ([`SessionStore::fenced`], BUG-345) — a
+    /// failure is logged, never turned into an error for a change that
+    /// already holds (and whose audit row must still be written).
+    async fn push_grants(&self, user_id: UserId, rbac_version: i64) {
+        let pushed = async {
+            let (roles, permissions) =
+                ab_db::identity::load_user_grants(&self.pool, user_id).await?;
+            self.sessions
+                .rewrite_user_sessions(user_id, &roles, &permissions, rbac_version)
+                .await
+        }
+        .await;
+        match pushed {
+            Ok(sessions) => {
+                tracing::info!(%user_id, rbac_version, sessions, "rbac change propagated");
+            }
+            Err(error) => {
+                tracing::warn!(%user_id, rbac_version, %error, "rbac session rewrite failed; stale sessions stay fenced");
+            }
+        }
     }
 }
 
