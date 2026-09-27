@@ -24,6 +24,7 @@ import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAutho
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
+import CourseThumbnailVideo from '@components/Pages/Courses/CourseThumbnailVideo'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useSession } from '@/hooks/useSession'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
@@ -288,14 +289,8 @@ function CourseClient(props: CourseClientProps) {
                     return (
                       <div className="border-border relative w-full overflow-hidden rounded-xl border">
                         {course.thumbnail_type === 'both' && mediaSwitcher}
-                        <video
+                        <CourseThumbnailVideo
                           src={getCourseThumbnailMediaDirectory(course?.course_uuid, course?.thumbnail_video)}
-                          className="h-auto w-full bg-black object-contain"
-                          controls
-                          autoPlay
-                          muted
-                          preload="metadata"
-                          playsInline
                         />
                       </div>
                     )
