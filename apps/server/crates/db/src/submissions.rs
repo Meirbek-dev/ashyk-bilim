@@ -348,10 +348,16 @@ pub struct SubmitOutcome<'a> {
     /// The hand-in moment; `None` is now (BUG-315: a timer sweep hands in
     /// at the moment the clock ran out).
     pub submitted_at: Option<i64>,
+    /// BUG-344: the draft this outcome was graded from — the `draft_version`
+    /// and stored `violation_count` read before grading. A save or a
+    /// violation report since then leaves the row untouched.
+    pub read_draft_version: i64,
+    pub read_violation_count: i32,
 }
 
 /// Draft → submitted. `false` when the row is no longer a draft (a
-/// concurrent submit or the timer got there first).
+/// concurrent submit or the timer got there first) or no longer the draft
+/// that was graded (BUG-344).
 pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_>) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
@@ -362,7 +368,8 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
                submitted_at = COALESCE(to_timestamp($13::bigint), now()),
                graded_at = CASE WHEN $11 THEN now() ELSE NULL END,
                duration_seconds = $12
-           WHERE id = $1 AND status = 'draft'"#,
+           WHERE id = $1 AND status = 'draft'
+             AND draft_version = $14 AND violation_count = $15"#,
         id.0,
         o.status.as_str(),
         o.answers,
@@ -375,7 +382,9 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
         o.auto_submit_reason.map(AutoSubmitReason::as_str),
         o.graded,
         o.duration_seconds,
-        o.submitted_at
+        o.submitted_at,
+        o.read_draft_version,
+        o.read_violation_count
     )
     .execute(pool)
     .await?;

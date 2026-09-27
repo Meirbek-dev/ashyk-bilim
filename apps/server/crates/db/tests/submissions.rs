@@ -101,6 +101,8 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         graded: true,
         duration_seconds: Some(42),
         submitted_at: None,
+        read_draft_version: 2,
+        read_violation_count: 0,
     };
     assert!(
         submissions::persist_submit(&pool, first, outcome)
@@ -120,6 +122,8 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         graded: true,
         duration_seconds: None,
         submitted_at: None,
+        read_draft_version: 2,
+        read_violation_count: 0,
     };
     assert!(
         !submissions::persist_submit(&pool, first, again)

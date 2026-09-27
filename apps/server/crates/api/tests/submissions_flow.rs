@@ -3,7 +3,7 @@
 //! manual review), the attempt cap, the timer sweep, anti-cheat zeroing.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, wait_until};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
@@ -2070,4 +2070,95 @@ async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
         .get_as(&lena, &format!("/api/v2/assessments/{id}/submissions/me"))
         .await;
     assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
+}
+
+/// BUG-344: a violation report or draft save committed while the submit
+/// grades is never overwritten by the draft that was graded — the violation
+/// re-grades the attempt (zeroed past the threshold), a pinned draft version
+/// that moved is a 409.
+#[sqlx::test(migrations = "../../migrations")]
+async fn submit_never_overwrites_a_draft_changed_while_grading(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "tab_switch_detection": true, "violation_threshold": 1, "max_attempts": 5 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer = serde_json::json!({
+        "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } },
+        "violation_count": 0,
+    });
+    // Holds the row, lets the submit queue its final UPDATE behind the lock,
+    // applies `change` as a concurrent writer, then releases.
+    let race = async |name: &str, if_match: Option<&str>, change: &'static str| {
+        let session = learner(&app, name).await;
+        let draft = app
+            .post_as(
+                &session,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let sub_uuid = uuid::Uuid::parse_str(&sub_id).unwrap();
+        let mut holder = app.pool.begin().await.unwrap();
+        sqlx::query("SELECT id FROM submissions WHERE id = $1 FOR UPDATE")
+            .bind(sub_uuid)
+            .execute(&mut *holder)
+            .await
+            .unwrap();
+        let mut request = submit(&session, &sub_id, None, &answer);
+        if let Some(version) = if_match {
+            request
+                .headers_mut()
+                .insert(header::IF_MATCH, version.parse().unwrap());
+        }
+        let submitting = app.send(request);
+        let writer = async {
+            wait_until("submit's final UPDATE queued on the row lock", async || {
+                sqlx::query_scalar::<_, bool>(
+                    "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+                     WHERE datname = current_database() AND wait_event_type = 'Lock'
+                       AND query LIKE 'UPDATE submissions SET%status = $2%')",
+                )
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
+            })
+            .await;
+            sqlx::query(change)
+                .bind(sub_uuid)
+                .execute(&mut *holder)
+                .await
+                .unwrap();
+            holder.commit().await.unwrap();
+        };
+        let (response, ()) = tokio::join!(submitting, writer);
+        response
+    };
+
+    let violated = race(
+        "vera",
+        None,
+        "UPDATE submissions SET violation_count = violation_count + 1 WHERE id = $1",
+    )
+    .await;
+    assert_eq!(violated.status, StatusCode::OK, "{}", violated.text());
+    assert_eq!(violated.json()["violation_count"], 1, "{}", violated.text());
+    assert_eq!(violated.json()["final_score"], 0.0, "{}", violated.text());
+
+    let moved = race(
+        "dana",
+        Some("\"1\""),
+        "UPDATE submissions SET answers = '{}'::jsonb, draft_version = draft_version + 1 WHERE id = $1",
+    )
+    .await;
+    assert_eq!(moved.status, StatusCode::CONFLICT, "{}", moved.text());
+    assert_eq!(moved.json()["details"]["actual"], 2, "{}", moved.text());
 }

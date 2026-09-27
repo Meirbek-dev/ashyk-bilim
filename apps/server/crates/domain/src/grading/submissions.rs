@@ -44,6 +44,8 @@ pub const DRAFT_SAVE_WINDOW: Duration = Duration::from_secs(5);
 /// Submits: 3 per learner per 10s (legacy rate limit dependency).
 pub const SUBMIT_LIMIT: u32 = 3;
 pub const SUBMIT_WINDOW: Duration = Duration::from_secs(10);
+/// BUG-344: how many times a hand-in re-grades a draft that changed under it.
+const FINALIZE_ATTEMPTS: usize = 3;
 /// Timer backoff: 120s · 2^n capped at an hour, five attempts.
 pub const AUTO_SUBMIT_MAX_ATTEMPTS: i32 = 5;
 /// Violation events kept per draft (the count itself is unbounded).
@@ -749,72 +751,86 @@ impl SubmissionsService {
         reported_violations: i32,
         expected_draft_version: Option<i64>,
     ) -> Result<StudentSubmission> {
-        let submission = self.owned(actor, id).await?;
-        if submission.status != SubmissionStatus::Draft {
-            return Err(Error::conflict("submission was already submitted"));
-        }
-        if let Some(expected) = expected_draft_version
-            && expected != submission.draft_version
-        {
-            return Err(stale_draft(expected, submission.draft_version));
-        }
-        let violation_count = submission.violation_count.max(reported_violations);
-        let ctx = self.context(actor, submission).await?;
-        // BUG-224: a draft opened against older content never scores items
-        // the learner did not see — `start` again re-syncs it to the current
-        // version once the items are reloaded.
-        if ctx.submission.content_version < ctx.assessment.content_version {
-            return Err(Error::app_with_details(
-                ErrorCode::Conflict,
-                "assessment content changed since the draft was opened; reopen it",
-                serde_json::json!({
-                    "field": "content_version",
-                    "expected": ctx.submission.content_version,
-                    "actual": ctx.assessment.content_version,
-                }),
-            ));
-        }
-        let answers = match patch {
-            Some(patch) => Self::merge(&ctx, patch)?,
-            None => Self::merge(&ctx, Answers::new())?,
-        };
-        // UX-111: like `save_draft`, only a submit that passed validation
-        // spends the budget — a 409/422 must not lock the learner out.
-        let submit_key = format!("submit_rl:{}", actor.user_id);
-        if !self
-            .limiter
-            .check(&submit_key, SUBMIT_LIMIT, SUBMIT_WINDOW)
+        let mut limited = false;
+        // BUG-344: a save or violation report landing while this submit
+        // grades leaves the row alone (`finalize` → `None`); grade the draft
+        // as it is now. The version check below makes a moved draft a 409
+        // when the client pinned one.
+        for _ in 0..FINALIZE_ATTEMPTS {
+            let submission = self.owned(actor, id).await?;
+            if submission.status != SubmissionStatus::Draft {
+                return Err(Error::conflict("submission was already submitted"));
+            }
+            if let Some(expected) = expected_draft_version
+                && expected != submission.draft_version
+            {
+                return Err(stale_draft(expected, submission.draft_version));
+            }
+            let violation_count = submission.violation_count.max(reported_violations);
+            let ctx = self.context(actor, submission).await?;
+            // BUG-224: a draft opened against older content never scores items
+            // the learner did not see — `start` again re-syncs it to the current
+            // version once the items are reloaded.
+            if ctx.submission.content_version < ctx.assessment.content_version {
+                return Err(Error::app_with_details(
+                    ErrorCode::Conflict,
+                    "assessment content changed since the draft was opened; reopen it",
+                    serde_json::json!({
+                        "field": "content_version",
+                        "expected": ctx.submission.content_version,
+                        "actual": ctx.assessment.content_version,
+                    }),
+                ));
+            }
+            let answers = Self::merge(&ctx, patch.clone().unwrap_or_default())?;
+            // UX-111: like `save_draft`, only a submit that passed validation
+            // spends the budget — a 409/422 must not lock the learner out.
+            if !limited {
+                let submit_key = format!("submit_rl:{}", actor.user_id);
+                if !self
+                    .limiter
+                    .check(&submit_key, SUBMIT_LIMIT, SUBMIT_WINDOW)
+                    .await?
+                {
+                    let retry_after = self.limiter.retry_after(&submit_key, SUBMIT_WINDOW).await?;
+                    return Err(Error::app_with_details(
+                        ErrorCode::RateLimited,
+                        "too many submit attempts; slow down",
+                        serde_json::json!({ "retry_after_seconds": retry_after }),
+                    ));
+                }
+                limited = true;
+            }
+            let preview = ctx.preview;
+            let Some((fresh, effective, total)) = Self::finalize(
+                &self.runner,
+                self.events.as_ref(),
+                ctx,
+                answers,
+                FinalizeOptions {
+                    skip_constraints: false,
+                    violation_count,
+                    auto_submit_reason: None,
+                    submitted_at: None,
+                },
+            )
             .await?
-        {
-            let retry_after = self.limiter.retry_after(&submit_key, SUBMIT_WINDOW).await?;
-            return Err(Error::app_with_details(
-                ErrorCode::RateLimited,
-                "too many submit attempts; slow down",
-                serde_json::json!({ "retry_after_seconds": retry_after }),
-            ));
+            else {
+                continue;
+            };
+            self.projector
+                .after_submission(fresh.assessment_id, fresh.user_id, preview)
+                .await;
+            return self.student_view(fresh, &effective, total).await;
         }
-        let preview = ctx.preview;
-        let fresh = Self::finalize(
-            &self.runner,
-            self.events.as_ref(),
-            ctx,
-            answers,
-            FinalizeOptions {
-                skip_constraints: false,
-                violation_count,
-                auto_submit_reason: None,
-                submitted_at: None,
-            },
-        )
-        .await?;
-        self.projector
-            .after_submission(fresh.0.assessment_id, fresh.0.user_id, preview)
-            .await;
-        let (fresh, effective, total) = fresh;
-        self.student_view(fresh, &effective, total).await
+        Err(Error::conflict(
+            "the draft kept changing while it was submitted; try again",
+        ))
     }
 
-    /// The pipeline proper. Returns (row, effective policy, item count).
+    /// The pipeline proper. Returns (row, effective policy, item count);
+    /// `None` when the draft changed while it was graded (BUG-344) — the
+    /// caller re-reads and grades it again.
     #[allow(
         clippy::too_many_lines,
         reason = "the submit pipeline order is the contract; kept in one place"
@@ -825,7 +841,7 @@ impl SubmissionsService {
         ctx: Context,
         answers: Answers,
         opts: FinalizeOptions,
-    ) -> Result<(Submission, EffectivePolicy, usize)> {
+    ) -> Result<Option<(Submission, EffectivePolicy, usize)>> {
         let pool = runner.pool();
         let now = now_unix();
         let Context {
@@ -915,10 +931,16 @@ impl SubmissionsService {
                     .started_at
                     .map(|s| i32::try_from((at - s).max(0)).unwrap_or(i32::MAX)),
                 submitted_at: opts.submitted_at,
+                read_draft_version: submission.draft_version,
+                read_violation_count: submission.violation_count,
             },
         )
         .await?;
         if !written {
+            let row = ab_db::submissions::get_submission(pool, submission.id).await?;
+            if row.is_some_and(|row| row.status == SubmissionStatus::Draft) {
+                return Ok(None);
+            }
             return Err(Error::conflict("submission was already submitted"));
         }
         let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
@@ -977,7 +999,7 @@ impl SubmissionsService {
                 )
                 .await;
         }
-        Ok((fresh, effective, items.len()))
+        Ok(Some((fresh, effective, items.len())))
     }
 
     /// Kind-dispatched auto grade. Code challenges grade from the newest
@@ -1116,12 +1138,29 @@ impl SubmissionsService {
         events: Option<&GradingEvents>,
         id: SubmissionId,
     ) -> Result<()> {
+        // BUG-344: a save or violation report racing the hand-in re-grades.
+        for _ in 0..FINALIZE_ATTEMPTS {
+            if Self::auto_submit_once(runner, events, id).await? {
+                return Ok(());
+            }
+        }
+        Err(Error::conflict(
+            "the draft kept changing while it was handed in",
+        ))
+    }
+
+    /// `false` when the draft changed while it was graded.
+    async fn auto_submit_once(
+        runner: &CodeRunner,
+        events: Option<&GradingEvents>,
+        id: SubmissionId,
+    ) -> Result<bool> {
         let pool = runner.pool();
         let submission = ab_db::submissions::get_submission(pool, id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
         if submission.status != SubmissionStatus::Draft {
-            return Ok(());
+            return Ok(true);
         }
         let assessment = ab_db::assessments::get_assessment(pool, submission.assessment_id)
             .await?
@@ -1166,7 +1205,7 @@ impl SubmissionsService {
         )?;
         let violation_count = submission.violation_count;
         let (assessment_id, user_id) = (submission.assessment_id, submission.user_id);
-        Self::finalize(
+        if Self::finalize(
             runner,
             events,
             Context {
@@ -1184,10 +1223,14 @@ impl SubmissionsService {
                 submitted_at: Some(submitted_at),
             },
         )
-        .await?;
+        .await?
+        .is_none()
+        {
+            return Ok(false);
+        }
         ProgressProjector::new(pool.clone())
             .reproject_submission(assessment_id, user_id)
             .await;
-        Ok(())
+        Ok(true)
     }
 }

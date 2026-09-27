@@ -1539,3 +1539,12 @@ Implements three more items of the owner answers above. Routes:
   keep them so `risk_trend` still sees a learner who was low yesterday; a
   `recovered` learner (now low) leaves the list, as the intervention
   summary's `recovered_learners` already reports.
+
+## Submission and upload integrity (2026-09-27, gauntlet pass 28)
+
+- **A submit grades the draft as it is when it lands** (BUG-344). The
+  final write matches the `draft_version` and violation count it graded;
+  a save or violation report committed meanwhile makes the submit re-read
+  and re-grade (up to three times, then 409) rather than publish a stale
+  verdict. A client that pinned the version (`If-Match`) gets the
+  stale-draft 409 instead of its newer answers being submitted for it.
