@@ -82,4 +82,30 @@ describe('TrailCourseElement progress', () => {
     expect(screen.getByText(ruMessages.CoursePage.noPublishedActivities)).toBeInTheDocument()
     expect(screen.queryByText('0%')).not.toBeInTheDocument()
   })
+
+  // UX-252: «Сертификат недоступен» only when the course certifies but has not issued.
+  it.each([
+    [false, false],
+    [true, true],
+  ])('completed course with certificate.configured=%s shows the unavailable row: %s', (configured, shown) => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(['learner-course', courseId, 'state'], {
+      outline: [],
+      progress: { completed_required_count: 2, total_required_count: 2, progress_pct: 100 },
+      next_action: { id: 'review_completion', activity_id: null },
+      certificate: { configured, eligible: configured, issued: false },
+    } as unknown as LearnerCourseState)
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+          <TrailCourseElement
+            course={{ course_uuid: courseId, name: 'Основы Python' } as AppCourse}
+            run={{ course_total_steps: 2, steps: [] } as unknown as AppTrailRun}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText('100%')).toBeInTheDocument()
+    expect(Boolean(screen.queryByText(ruMessages.Trail.noCertificateAvailable))).toBe(shown)
+  })
 })

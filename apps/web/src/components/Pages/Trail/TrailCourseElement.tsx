@@ -45,9 +45,12 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const course_completed_steps = learnerProgress.isLoaded ? learnerProgress.completed : 0
   const course_progress = learnerProgress.isLoaded ? learnerProgress.percent : 0
   const isCompleted = course_progress === 100
-  const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)
+  // UX-252: a course with no certification shows no certificate row at all;
+  // «недоступен» is for one that certifies but has not issued yet.
+  const showCertificate = isCompleted && learnerProgress.certificateConfigured
+  const certificateQuery = useUserCertificateByCourse(showCertificate ? course.course_uuid : null)
   const courseCertificate = certificateQuery.data?.data?.[0] ?? null
-  const isLoadingCertificate = isCompleted && certificateQuery.isPending
+  const isLoadingCertificate = showCertificate && certificateQuery.isPending
   const [confirmQuit, setConfirmQuit] = useState(false)
   const { toastApiError } = useApiError()
 
@@ -139,7 +142,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
         )}
 
         {/* Certificate */}
-        {isCompleted && (
+        {showCertificate && (
           <div className="flex flex-wrap items-center gap-1.5">
             {isLoadingCertificate ? (
               <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">

@@ -14,6 +14,8 @@ export function useLearnerCourseProgress(courseUuid: string, enabled = true) {
     ...learnerCourseProgress(query.data),
     isLoaded: query.data !== undefined,
     nextAction: query.data?.next_action?.id ?? null,
+    /** The course certifies at all (UX-252: no certification → no «недоступен»). */
+    certificateConfigured: query.data?.certificate?.configured ?? false,
     certificateHref: query.data?.certificate?.issued ? (query.data.certificate.href ?? null) : null,
   }
 }
