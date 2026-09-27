@@ -50,6 +50,8 @@ pub struct WordPatterns {
     pub excluded: Vec<String>,
 }
 
+/// The `search_matches` regexes for each word of `query`.
+///
 /// A word must start where a word starts (or the text does) unless it
 /// starts with a symbol; a one-character word must also end there, so `c`
 /// finds «C» and «C#» but not every word starting with «c». Regex
