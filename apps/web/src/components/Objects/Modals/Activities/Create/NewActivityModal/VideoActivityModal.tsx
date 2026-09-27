@@ -5,15 +5,15 @@ import type { ChangeEvent } from 'react'
 import { SiYoutube } from '@icons-pack/react-simple-icons'
 import { constructAcceptValue } from '@/lib/constants'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@components/ui/button'
 import { cn } from '@/lib/utils'
 import { Label } from '@components/ui/label'
+import { FieldError } from '@/components/ui/field'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
 import type { SubtitleFile } from './components/SubtitleManager'
@@ -41,7 +41,6 @@ interface ExternalVideoObject {
 
 function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) {
   const t = useTranslations('Components.VideoModal')
-  const platform = usePlatform()
   const [video, setVideo] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [name, setName] = useState('')
@@ -55,16 +54,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     subtitles: [],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-
-  // Debug: Log platform data when component mounts or platform changes
-  useEffect(() => {
-    console.log('VideoModal - Context data:', {
-      platform,
-      hasPlatform: Boolean(platform),
-      courseProp: course,
-      courseData: course?.courseStructure || course,
-    })
-  }, [platform, course])
 
   const isYouTubeUrlValid = youtubeUrl ? /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(youtubeUrl) : false
 
@@ -139,13 +128,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     }
   }
 
-  const canSubmit = (() => {
-    if (!name.trim()) return false
-    if (selectedView === 'file') return Boolean(video)
-    if (selectedView === 'youtube') return isYouTubeUrlValid
-    return false
-  })()
-
   const handleSubmit = async (formData: FormData) => {
     const submittedName = String(formData.get('name') ?? '').trim()
     const submittedYoutubeUrl = String(formData.get('youtubeUrl') ?? '').trim()
@@ -160,7 +142,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
         submittedYoutubeUrl,
       })
     ) {
-      toast.error(t('errorFixErrorsBeforeSubmitting'))
       return
     }
 
@@ -215,7 +196,8 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
 
   return (
     <div className="mx-auto max-w-2xl">
-      <form action={handleSubmit} className="space-y-5">
+      {/* UX-238: validateForm marks every field inline (trimmed name included), as the other create dialogs do. */}
+      <form action={handleSubmit} noValidate className="space-y-5">
         {/* Header */}
         <div className="border-b border-gray-100 pb-4">
           <div className="mb-1 flex items-center gap-2.5">
@@ -242,19 +224,11 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
             }}
             type="text"
             required
+            aria-invalid={errors.name ? true : undefined}
             placeholder={t('activityNamePlaceholder')}
-            className={cn('h-9', errors.name && 'border-red-300 focus-visible:ring-red-200')}
+            className="h-9"
           />
-          {errors.name && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-1 text-xs text-red-500"
-            >
-              <AlertCircle size={12} />
-              {errors.name}
-            </motion.p>
-          )}
+          <FieldError errors={[errors.name ? { message: errors.name } : undefined]} />
         </div>
 
         {/* Video Source */}
@@ -429,7 +403,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
 
         {/* Submit */}
         <div className="flex justify-end border-t border-gray-100 pt-4">
-          <Button type="submit" disabled={isSubmitting || !canSubmit} size="sm" className="gap-2 px-5">
+          <Button type="submit" disabled={isSubmitting} size="sm" className="gap-2 px-5">
             {isSubmitting ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
