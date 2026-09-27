@@ -696,21 +696,6 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
 /// and a submit past the limit but inside the grace is accepted.
 #[sqlx::test(migrations = "../../migrations")]
 async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
-    let app = TestApp::spawn(pool).await;
-    let teacher = instructor(&app, "teacher").await;
-    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
-    let (id, items) = published_assessment(
-        &app,
-        &teacher,
-        &chapter_id,
-        "quiz",
-        serde_json::json!({ "time_limit_seconds": 60, "grace_period_minutes": 1 }),
-        &[choice_item("Q1")],
-    )
-    .await;
-    let alice = learner(&app, "alice").await;
-    let answer =
-        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
     async fn start_aged(app: &TestApp, who: &MintedSession, id: &str, secs: f64) -> String {
         let draft = app
             .post_as(
@@ -731,6 +716,21 @@ async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
         .unwrap();
         sub
     }
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60, "grace_period_minutes": 1 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
     let runner = app.code_runner();
     let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
 
