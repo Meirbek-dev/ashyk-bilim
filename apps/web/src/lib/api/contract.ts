@@ -13,20 +13,23 @@ export function emptyPage<T>(): Page<T> {
   return { items: [], next_cursor: null }
 }
 
-/** Walk a keyset listing to the end (bounded by `maxPages`, default 20). */
-export async function collectPages<T>(
-  fetchPage: (cursor: string | null) => Promise<Page<T>>,
-  maxPages = 20,
-): Promise<T[]> {
+/**
+ * Walk a keyset listing to the end — every cursor is followed, so callers get
+ * the whole list (BUG-352: a 20-page cap silently dropped the rest). A cursor
+ * seen twice is a server loop: an error, never a quietly truncated list.
+ */
+export async function collectPages<T>(fetchPage: (cursor: string | null) => Promise<Page<T>>): Promise<T[]> {
   const items: T[] = []
+  const seen = new Set<string>()
   let cursor: string | null = null
-  for (let index = 0; index < maxPages; index += 1) {
+  for (;;) {
     const page: Page<T> = await fetchPage(cursor)
     items.push(...page.items)
-    if (!page.next_cursor) break
+    if (!page.next_cursor) return items
+    if (seen.has(page.next_cursor)) throw new Error(`Keyset listing repeated cursor ${page.next_cursor}`)
+    seen.add(page.next_cursor)
     cursor = page.next_cursor
   }
-  return items
 }
 
 /** Convert an epoch-seconds `*_unix` value to a `Date` (`null` stays `null`). */
