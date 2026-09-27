@@ -134,12 +134,16 @@ function SignupClient() {
     INITIAL_STATE,
   )
 
+  // UX-255: `useActionState` keeps the previous result until the action settles —
+  // a stale «Обязательно» under a now-filled field is masked while pending (as login, UX-083).
+  const fieldErrors: SignupState['fieldErrors'] = isPending ? {} : state.fieldErrors
+
   const field = (name: FieldName, label: string, input: React.ReactNode, hint?: string) => (
     <Field key={name}>
       <FieldLabel>{label}</FieldLabel>
       <FieldContent>{input}</FieldContent>
       {hint ? <FieldDescription>{hint}</FieldDescription> : null}
-      <FieldError>{state.fieldErrors[name]}</FieldError>
+      <FieldError>{fieldErrors[name]}</FieldError>
     </Field>
   )
 

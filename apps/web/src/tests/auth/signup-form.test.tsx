@@ -68,6 +68,24 @@ describe('/auth/signup', () => {
     expect(registerAction).not.toHaveBeenCalled()
   })
 
+  // UX-255: an empty submit left «required» under the fields; filling them and
+  // submitting again kept the stale errors for the whole pending window (as login, UX-083).
+  it('clears field errors while the next submit is pending', async () => {
+    let settle: (value: unknown) => void = () => {}
+    registerAction.mockImplementation(() => new Promise(resolve => (settle = resolve)))
+    const user = userEvent.setup()
+    render(<SignupClient />)
+    await user.click(screen.getByRole('button', { name: 'submit' }))
+    await waitFor(() => expect(screen.getAllByText('required').length).toBeGreaterThan(0))
+
+    await fillValid(user)
+    await user.click(screen.getByRole('button', { name: 'submit' }))
+    await waitFor(() => expect(registerAction).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('required')).toBeNull()
+    settle({ ok: false, code: 'email-taken' })
+    expect(await screen.findByText('Email taken')).toBeInTheDocument()
+  })
+
   it('posts the wire shape and lands on login with a toast', async () => {
     registerAction.mockResolvedValue({ ok: true })
     const user = userEvent.setup()
