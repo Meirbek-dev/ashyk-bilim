@@ -4,9 +4,17 @@ import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
-import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
+import { reportGradingAccessLost, useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
+import { APIError } from '@/lib/api/assertSuccess'
 
-const mocks = vi.hoisted(() => ({ replace: vi.fn(), toast: vi.fn(), dismiss: vi.fn(), unauthenticated: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  replace: vi.fn(),
+  toast: vi.fn(),
+  dismiss: vi.fn(),
+  unauthenticated: vi.fn(),
+  toastApiError: vi.fn(),
+}))
+vi.mock('@/hooks/useApiError', () => ({ useApiError: () => ({ toastApiError: mocks.toastApiError }) }))
 
 vi.mock('@services/config/config', () => ({ getAPIUrl: () => 'http://api.test/api/v2/' }))
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -122,5 +130,45 @@ describe('useCourseGradingEvents', () => {
   it('does nothing without a course id', () => {
     renderHook(() => useCourseGradingEvents(undefined), { wrapper })
     expect(FakeEventSource.instances).toHaveLength(0)
+  })
+
+  // UX-259: a 403/404 from a grading save (demoted mid-session) runs the same
+  // re-check as a closed stream; a refused probe routes away, no generic toast.
+  it('a reported save 404 runs the access re-check and routes away once refused', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 403 })),
+    )
+    const { result } = renderHook(() => useCourseGradingEvents(COURSE_ID), { wrapper })
+    const notFound = new APIError({ status: 404, code: 'not-found', message: 'not found', requestId: null })
+    let reported = false
+    await act(async () => {
+      reported = reportGradingAccessLost(notFound)
+    })
+    expect(reported).toBe(true)
+    expect(result.current.accessLost).toBe(true)
+    expect(FakeEventSource.instances[0]!.closed).toBe(true)
+    expect(mocks.toast).toHaveBeenCalledWith('accessLost', expect.objectContaining({ duration: Infinity }))
+    expect(mocks.replace).toHaveBeenCalledWith('/unauthorized')
+    expect(mocks.toastApiError).not.toHaveBeenCalled()
+  })
+
+  it('a reported save error with access intact falls back to the error toast', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 200 })),
+    )
+    const { result } = renderHook(() => useCourseGradingEvents(COURSE_ID), { wrapper })
+    const gone = new APIError({ status: 404, code: 'not-found', message: 'not found', requestId: null })
+    await act(async () => {
+      reportGradingAccessLost(gone)
+    })
+    expect(result.current.accessLost).toBe(false)
+    expect(mocks.toastApiError).toHaveBeenCalledWith(gone)
+    expect(mocks.replace).not.toHaveBeenCalled()
+    // Unmounted streams or other statuses leave the caller to toast.
+    expect(
+      reportGradingAccessLost(new APIError({ status: 500, code: 'internal', message: 'x', requestId: null })),
+    ).toBe(false)
   })
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { getAPIUrl } from '@services/config/config'
 import { useRouter } from '@/i18n/navigation'
 import { handleBrowserUnauthenticated } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 
 /** Named SSE events on `GET courses/{id}/grading/events`. */
 export const GRADING_EVENT_NAMES = [
@@ -18,9 +20,23 @@ export const GRADING_EVENT_NAMES = [
 ] as const
 
 const ACCESS_LOST_TOAST = 'grading-access-lost'
+const ACCESS_LOST_EVENT = 'grading:access-lost'
+let mountedStreams = 0
 
 export function courseGradingEventsUrl(courseId: string) {
   return `${getAPIUrl().replace(/\/+$/, '')}/courses/${courseId}/grading/events`
+}
+
+/**
+ * UX-259: a 403/404 from a grading save (demoted while the page was open —
+ * the 404 is the id-secret rule) runs the same access re-check as a `closed`
+ * stream instead of a generic toast. Returns `false` when no stream hook is
+ * mounted or the error is something else, so the caller toasts as usual.
+ */
+export function reportGradingAccessLost(error: unknown): boolean {
+  if (!isApiError(error) || (error.status !== 403 && error.status !== 404) || mountedStreams === 0) return false
+  window.dispatchEvent(new CustomEvent(ACCESS_LOST_EVENT, { detail: error }))
+  return true
 }
 
 export interface CourseGradingStream {
@@ -44,9 +60,12 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('Features.Grading.Stream')
+  const { toastApiError } = useApiError()
   const [live, setLive] = useState(false)
   const [accessLost, setAccessLost] = useState(false)
   const [generation, setGeneration] = useState(0)
+  // The save error behind a UX-259 report: toasted only if the re-check says access is intact.
+  const reportedError = useRef<unknown>(null)
 
   useEffect(() => {
     if (!courseId || typeof EventSource === 'undefined') return
@@ -55,16 +74,25 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
       void queryClient.invalidateQueries({ queryKey: ['grading'] })
       void queryClient.invalidateQueries({ queryKey: ['file-submission'] })
     }
-    source.addEventListener('connected', () => setLive(true))
-    source.addEventListener('closed', () => {
+    const lost = () => {
       source.close()
       setLive(false)
       setAccessLost(true)
       invalidate()
-    })
+    }
+    const onReport = (event: Event) => {
+      reportedError.current = (event as CustomEvent).detail
+      lost()
+    }
+    source.addEventListener('connected', () => setLive(true))
+    source.addEventListener('closed', lost)
     for (const name of GRADING_EVENT_NAMES) source.addEventListener(name, invalidate)
     source.onerror = () => setLive(false)
+    window.addEventListener(ACCESS_LOST_EVENT, onReport)
+    mountedStreams += 1
     return () => {
+      mountedStreams -= 1
+      window.removeEventListener(ACCESS_LOST_EVENT, onReport)
       source.close()
       setLive(false)
     }
@@ -83,6 +111,10 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
       probe.abort()
       toast.dismiss(ACCESS_LOST_TOAST)
       if (response.ok) {
+        // Access is intact: the save failed for another reason — say that one.
+        const error = reportedError.current
+        reportedError.current = null
+        if (error) toastApiError(error)
         setAccessLost(false)
         setGeneration(value => value + 1)
       } else if (response.status === 401) {
@@ -94,7 +126,7 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
     // A failed probe (offline, unmounted) leaves the controls disabled.
     confirm().catch(() => undefined)
     return () => probe.abort()
-  }, [accessLost, courseId, router, t])
+  }, [accessLost, courseId, router, t, toastApiError])
 
   return { live, accessLost }
 }

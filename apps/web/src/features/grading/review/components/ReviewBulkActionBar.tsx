@@ -14,6 +14,7 @@ import { toUnix } from '@/lib/api/contract'
 import { ifMatchHeaders } from '@/lib/api/headers'
 import { saveBlob } from '@/lib/download'
 import { useApiError } from '@/hooks/useApiError'
+import { reportGradingAccessLost } from '@/features/grading/queries/use-grading-events'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -118,7 +119,11 @@ export default function ReviewBulkActionBar({
       return
     }
     startTransition(async () => {
-      const result = await saveGrades(targets, status, auditNote.trim(), error => handleApiError(error).message)
+      const result = await saveGrades(targets, status, auditNote.trim(), error => {
+        // UX-259: a 403/404 means the grader may have been demoted — run the stream's access re-check.
+        reportGradingAccessLost(error)
+        return handleApiError(error).message
+      })
       setFailedSubmissions(result.failures)
       const failed = result.failures.length > 0
       if (failed) {

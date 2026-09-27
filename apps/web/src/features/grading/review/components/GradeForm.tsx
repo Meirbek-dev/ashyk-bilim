@@ -31,6 +31,7 @@ import {
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
 import { useApiError } from '@/hooks/useApiError'
+import { reportGradingAccessLost } from '@/features/grading/queries/use-grading-events'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
@@ -321,6 +322,9 @@ export default function GradeForm({
             // Keep what was typed; the refetch below raises the colleague notice.
             setDirty(true)
             await mutate()
+          } else if (reportGradingAccessLost(error)) {
+            // UX-259: demoted meanwhile — the stream re-check decides, not a «not found» toast.
+            setDirty(true)
           } else {
             const processed = handleApiError(error, { fallback: tItemGrading('toasts.failed') })
             // BUG-197: the server's 409 on a publish — an item still awaits

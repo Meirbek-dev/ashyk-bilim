@@ -50,7 +50,7 @@ import { SubmissionAIEntry } from '@/features/submission-analysis'
 import { useApiError } from '@/hooks/useApiError'
 import { useSession } from '@/hooks/useSession'
 import { saveBlob } from '@/lib/download'
-import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
+import { reportGradingAccessLost, useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import {
   downloadFileSubmissionCsv,
@@ -279,6 +279,8 @@ export default function FileSubmissionReviewWorkspace({
         void queryClient.invalidateQueries({ queryKey: attemptQueryKey(attempt.id) })
         return
       }
+      // UX-259: a 403/404 mid-session runs the stream's access re-check instead of a generic toast.
+      if (reportGradingAccessLost(gradeError)) return
       toastApiError(gradeError, { fallback: t('updateSubmissionFailed') })
     },
   })
