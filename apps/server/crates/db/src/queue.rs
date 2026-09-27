@@ -9,6 +9,10 @@
 //!   the same job.
 //! - A claimed job must be resolved with [`succeed`] or [`fail`]; if the worker
 //!   dies, [`reap`] returns stale jobs to the queue (or dead-letters them).
+//! - `attempts` is the claim generation: only [`claim`] increments it, so the
+//!   resolution UPDATEs match `(id, attempts)` and a stale worker's late result
+//!   (its job reaped and re-claimed meanwhile) is a no-op — they return
+//!   `false` for a lost lease (BUG-342).
 //!
 //! SQL here is runtime-checked (dynamic-ish operational statements, exercised
 //! end-to-end by `crates/db/tests/queue.rs` on real Postgres in CI).
@@ -185,70 +189,65 @@ where
 }
 
 /// Dead-letter a job immediately (no retries) — e.g. no handler registered.
-pub async fn mark_dead<'e, E>(executor: E, id: JobId, error: &str) -> Result<()>
+/// `false`: the claim was lost (reaped, possibly re-claimed) — nothing changed.
+pub async fn mark_dead<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
 {
-    sqlx::query(
+    let done = sqlx::query(
         r"UPDATE jobs
-          SET status = 'dead', last_error = $2,
+          SET status = 'dead', last_error = $3,
               locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
-          WHERE id = $1 AND status = 'running'",
+          WHERE id = $1 AND attempts = $2 AND status = 'running'",
     )
-    .bind(id)
+    .bind(job.id)
+    .bind(job.attempts)
     .bind(error)
     .execute(executor)
     .await?;
-    Ok(())
+    Ok(done.rows_affected() == 1)
 }
 
-pub async fn succeed<'e, E>(executor: E, id: JobId) -> Result<()>
+/// `false`: the claim was lost (reaped, possibly re-claimed) — nothing changed.
+pub async fn succeed<'e, E>(executor: E, job: &ClaimedJob) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
 {
-    sqlx::query(
+    let done = sqlx::query(
         r"UPDATE jobs
           SET status = 'succeeded', locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
-          WHERE id = $1 AND status = 'running'",
+          WHERE id = $1 AND attempts = $2 AND status = 'running'",
     )
-    .bind(id)
+    .bind(job.id)
+    .bind(job.attempts)
     .execute(executor)
     .await?;
-    Ok(())
+    Ok(done.rows_affected() == 1)
 }
 
 /// Record a failure: requeue with exponential backoff, or dead-letter once
-/// `max_attempts` is exhausted.
-pub async fn fail<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<()>
+/// `max_attempts` is exhausted. `false`: the claim was lost — nothing changed.
+pub async fn fail<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
 {
     if job.attempts >= job.max_attempts {
-        sqlx::query(
-            r"UPDATE jobs
-              SET status = 'dead', last_error = $2,
-                  locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
-              WHERE id = $1 AND status = 'running'",
-        )
-        .bind(job.id)
-        .bind(error)
-        .execute(executor)
-        .await?;
-    } else {
-        sqlx::query(
-            r"UPDATE jobs
-              SET status = 'queued', last_error = $2,
-                  run_at = now() + make_interval(secs => $3),
-                  locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
-              WHERE id = $1 AND status = 'running'",
-        )
-        .bind(job.id)
-        .bind(error)
-        .bind(backoff_delay(job.attempts).as_secs_f64())
-        .execute(executor)
-        .await?;
+        return mark_dead(executor, job, error).await;
     }
-    Ok(())
+    let done = sqlx::query(
+        r"UPDATE jobs
+          SET status = 'queued', last_error = $3,
+              run_at = now() + make_interval(secs => $4),
+              locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
+          WHERE id = $1 AND attempts = $2 AND status = 'running'",
+    )
+    .bind(job.id)
+    .bind(job.attempts)
+    .bind(error)
+    .bind(backoff_delay(job.attempts).as_secs_f64())
+    .execute(executor)
+    .await?;
+    Ok(done.rows_affected() == 1)
 }
 
 /// Return stale `running` jobs (dead worker) to the queue, or dead-letter them

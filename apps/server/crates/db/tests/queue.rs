@@ -26,7 +26,7 @@ async fn enqueue_claim_succeed_roundtrip(pool: PgPool) {
     // Claimed jobs are invisible to other workers.
     assert!(queue::claim(&pool, "w2", 10).await.unwrap().is_empty());
 
-    queue::succeed(&pool, id).await.unwrap();
+    assert!(queue::succeed(&pool, &claimed[0]).await.unwrap());
     let status: String = sqlx::query_scalar("SELECT status FROM jobs WHERE id = $1")
         .bind(id)
         .fetch_one(&pool)
@@ -54,7 +54,7 @@ async fn dedupe_drops_duplicate_live_jobs(pool: PgPool) {
 
     // Once the live job resolves, the key is reusable.
     let claimed = queue::claim(&pool, "w1", 1).await.unwrap();
-    queue::succeed(&pool, claimed[0].id).await.unwrap();
+    assert!(queue::succeed(&pool, &claimed[0]).await.unwrap());
     assert!(queue::enqueue(&pool, &job).await.unwrap().is_some());
 }
 
@@ -179,4 +179,36 @@ async fn heartbeat_updates_only_own_running_jobs(pool: PgPool) {
             .await
             .unwrap();
     assert!(fresh);
+}
+
+/// BUG-342 (AUD-004): worker A's claim is reaped and re-claimed by B; A's
+/// late success/failure must not resolve or requeue B's claim.
+#[sqlx::test(migrations = "../../migrations")]
+async fn stale_claim_cannot_resolve_a_newer_claim(pool: PgPool) {
+    queue::enqueue(&pool, &NewJob::new("k", serde_json::json!({})))
+        .await
+        .unwrap();
+    let a = queue::claim(&pool, "worker-A", 1).await.unwrap().remove(0);
+    sqlx::query("UPDATE jobs SET heartbeat_at = now() - interval '10 minutes'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(queue::reap(&pool, Duration::from_mins(1)).await.unwrap(), 1);
+    let b = queue::claim(&pool, "worker-B", 1).await.unwrap().remove(0);
+    assert_eq!(b.attempts, 2);
+
+    assert!(!queue::succeed(&pool, &a).await.unwrap());
+    assert!(!queue::fail(&pool, &a, "late").await.unwrap());
+    assert!(!queue::mark_dead(&pool, &a, "late").await.unwrap());
+    let (status, owner): (String, Option<String>) =
+        sqlx::query_as("SELECT status, locked_by FROM jobs")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        (status.as_str(), owner.as_deref()),
+        ("running", Some("worker-B"))
+    );
+
+    assert!(queue::succeed(&pool, &b).await.unwrap());
 }

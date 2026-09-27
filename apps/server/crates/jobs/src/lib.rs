@@ -203,24 +203,27 @@ async fn execute(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: Claim
 
     let Some(handler) = handler else {
         tracing::error!("no handler registered — dead-lettering");
-        if let Err(err) = queue::mark_dead(pool, job.id, "no handler registered for kind").await {
-            tracing::error!(%err, "failed to dead-letter job");
-        }
+        let resolved = queue::mark_dead(pool, &job, "no handler registered for kind").await;
+        log_resolution(resolved, "dead-letter");
         return;
     };
 
     let outcome = handler.handle(job.payload.clone()).await;
     match outcome {
-        Ok(()) => {
-            if let Err(err) = queue::succeed(pool, job.id).await {
-                tracing::error!(%err, "failed to mark job succeeded");
-            }
-        }
+        Ok(()) => log_resolution(queue::succeed(pool, &job).await, "succeed"),
         Err(job_err) => {
             tracing::warn!(error = %job_err, "job failed");
-            if let Err(err) = queue::fail(pool, &job, &job_err.to_string()).await {
-                tracing::error!(%err, "failed to record job failure");
-            }
+            log_resolution(queue::fail(pool, &job, &job_err.to_string()).await, "fail");
         }
+    }
+}
+
+/// `Ok(false)`: our claim was reaped (and maybe re-claimed) while we ran —
+/// the late result is dropped, never applied to the newer claim (BUG-342).
+fn log_resolution(resolved: Result<bool>, action: &str) {
+    match resolved {
+        Ok(true) => {}
+        Ok(false) => tracing::warn!(action, "job lease lost before resolution; result dropped"),
+        Err(err) => tracing::error!(%err, action, "failed to resolve job"),
     }
 }
