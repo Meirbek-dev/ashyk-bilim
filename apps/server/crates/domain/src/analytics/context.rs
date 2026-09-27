@@ -264,11 +264,12 @@ impl AnalyticsContext {
         let trail_runs = ab_db::analytics::list_trail_runs(pool, course_ids).await?;
         let certificates = ab_db::analytics::list_certificates(pool, course_ids).await?;
         let events = ab_db::analytics::list_events(pool, course_ids, since).await?;
-        let course_authors = ab_db::analytics::list_course_authors(pool, course_ids)
-            .await?
-            .into_iter()
-            .map(|a| (a.course_id, a.user_id))
-            .collect();
+        let course_authors: HashSet<SnapshotKey> =
+            ab_db::analytics::list_course_authors(pool, course_ids)
+                .await?
+                .into_iter()
+                .map(|a| (a.course_id, a.user_id))
+                .collect();
 
         let mut user_ids: BTreeSet<UserId> = BTreeSet::new();
         user_ids.extend(trail_runs.iter().map(|r| r.user_id));
@@ -277,9 +278,14 @@ impl AnalyticsContext {
         user_ids.extend(submissions.iter().map(|r| r.user_id));
         user_ids.extend(certificates.iter().map(|r| r.user_id));
         user_ids.extend(courses.iter().filter_map(|c| c.creator_id));
+        let member_ids: Vec<UserId> = user_ids.iter().copied().collect();
+        // BUG-338: every id a report names needs its row — co-authors head
+        // the admin workload (UX-183) without being creators or learners.
+        // Cohort memberships stay those of learners and creators.
+        user_ids.extend(course_authors.iter().map(|(_, u)| *u));
         let user_ids: Vec<UserId> = user_ids.into_iter().collect();
         let users = ab_db::analytics::list_users(pool, &user_ids).await?;
-        let memberships = ab_db::analytics::list_memberships(pool, &user_ids).await?;
+        let memberships = ab_db::analytics::list_memberships(pool, &member_ids).await?;
 
         let mut usergroup_names = BTreeMap::new();
         let mut cohorts_by_user: HashMap<UserId, BTreeSet<UsergroupId>> = HashMap::new();
@@ -308,6 +314,27 @@ impl AnalyticsContext {
             cohorts_by_user,
             course_authors,
         })
+    }
+
+    /// Load the rows of users named outside the context's own tables
+    /// (graders, bulk-action actors) so `display_name` never falls back to
+    /// the placeholder for a real user (BUG-338).
+    pub async fn load_users(
+        &mut self,
+        pool: &PgPool,
+        ids: impl IntoIterator<Item = UserId>,
+    ) -> Result<()> {
+        let missing: BTreeSet<UserId> = ids
+            .into_iter()
+            .filter(|u| !self.users.contains_key(u))
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let missing: Vec<UserId> = missing.into_iter().collect();
+        let rows = ab_db::analytics::list_users(pool, &missing).await?;
+        self.users.extend(rows.into_iter().map(|u| (u.id, u)));
+        Ok(())
     }
 
     #[must_use]

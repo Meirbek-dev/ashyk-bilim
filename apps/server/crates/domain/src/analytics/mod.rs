@@ -358,12 +358,16 @@ impl AnalyticsService {
     ) -> Result<TeacherAssessmentDetailResponse> {
         let scope = self.read_scope(actor, filters).await?;
         let assessment = self.scoped_assessment(&scope, kind, id).await?;
-        let ctx = AnalyticsContext::load(&self.pool, &[assessment.course_id], None).await?;
+        let mut ctx = AnalyticsContext::load(&self.pool, &[assessment.course_id], None).await?;
+        let entries = ab_db::analytics::list_grading_entries_for_assessment(&self.pool, id).await?;
+        let actions = ab_db::analytics::list_bulk_actions_for_assessment(&self.pool, id).await?;
+        let actors = entries.iter().filter_map(|e| e.graded_by);
+        let actors = actors.chain(actions.iter().filter_map(|a| a.performed_by));
+        ctx.load_users(&self.pool, actors.collect::<Vec<_>>())
+            .await?;
         let info = ctx
             .assessment(id)
             .ok_or_else(|| Error::not_found("assessment"))?;
-        let entries = ab_db::analytics::list_grading_entries_for_assessment(&self.pool, id).await?;
-        let actions = ab_db::analytics::list_bulk_actions_for_assessment(&self.pool, id).await?;
         Ok(assessments::build_detail(
             &ctx,
             filters,

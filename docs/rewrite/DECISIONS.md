@@ -1520,3 +1520,12 @@ Implements three more items of the owner answers above. Routes:
   applies `is_course_staff` (the `is_teacher_preview` set) to migrated
   submissions, as migration 20260924000004 did once for rows present then —
   the restore loads after that migration ran.
+
+## Analytics funnel and at-risk definitions (2026-09-27, gauntlet pass 28)
+
+- **The course-completion funnel's `completed` share is of `enrolled`**
+  (BUG-338). Legacy (`services/analytics/courses.py`) divided by
+  `active_learners_7d or enrolled`, but a learner who finished weeks ago is
+  completed without being active in the last 7 days, so the share reached
+  300 % on real data. `enrolled` is the only earlier step that contains
+  `completed`; the field keeps its name and stays <= 100 %.

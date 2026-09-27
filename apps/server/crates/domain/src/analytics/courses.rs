@@ -414,10 +414,10 @@ pub fn build_course_detail(
         FunnelStep {
             label: "completed".to_owned(),
             count: count_i64(completed),
-            pct_of_previous: safe_pct_counts(
-                completed,
-                if active_7d > 0 { active_7d } else { enrolled },
-            ),
+            // BUG-338: of the enrolled, not of `active_7d` (legacy): a learner
+            // who finished weeks ago is completed but not active, so only
+            // `enrolled` contains this step and the share stays <= 100 %.
+            pct_of_previous: safe_pct_counts(completed, enrolled),
         },
     ];
     let mut chapter_dropoff = Vec::new();

@@ -2073,6 +2073,48 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
     );
 }
 
+/// BUG-338: `completed` is a share of `enrolled` — learners who finished
+/// earlier are not in `active_7d`, which made the share 300 %.
+#[sqlx::test(migrations = "../../migrations")]
+async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Finished").await;
+    let lesson_id = lesson(&app, &teacher, &chapter_id, "Only lesson").await;
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    let mut learners = Vec::new();
+    for name in ["alice", "bob", "carol"] {
+        let who = learner(&app, name).await;
+        enrol(&pool, &course_id, who.user_id, 100.0).await;
+        learners.push(who);
+    }
+    sqlx::query("UPDATE course_progress SET certificate_eligible = true WHERE course_id = $1")
+        .bind(course_uuid)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, state, last_activity_at)          VALUES ($1, $2, $3, 'completed', now())",
+    )
+    .bind(course_uuid)
+    .bind(uuid::Uuid::parse_str(&lesson_id).unwrap())
+    .bind(learners[0].user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let res = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/courses/{course_id}"),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    let funnel = &res.json()["funnels"]["course_completion"];
+    assert_eq!(funnel[1]["count"], 1, "{funnel}");
+    assert_eq!(funnel[2]["count"], 3, "{funnel}");
+    assert_eq!(funnel[2]["pct_of_previous"], 100.0, "{funnel}");
+}
+
 /// UX-183: the admin workload comparison groups courses by the teacher
 /// scope rule (`scope::resolve`: creator + active non-reporter co-authors),
 /// so a co-author's row matches inspecting that teacher.
@@ -2082,9 +2124,14 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
     let alpha = instructor(&app, "alpha").await;
     let beta = instructor(&app, "beta").await;
     let carol = instructor(&app, "carol").await;
+    let dave = instructor(&app, "dave").await;
     public_course(&app, &alpha, "Alpha's own").await;
     let (shared, _) = public_course(&app, &beta, "Beta's").await;
-    for (who, authorship) in [(&alpha, "maintainer"), (&carol, "reporter")] {
+    for (who, authorship) in [
+        (&alpha, "maintainer"),
+        (&carol, "reporter"),
+        (&dave, "contributor"),
+    ] {
         sqlx::query(
             "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1, $2, $3)",
         )
@@ -2111,6 +2158,10 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
     assert_eq!(count_of(&alpha), Some(serde_json::json!(2)), "{rows}");
     assert_eq!(count_of(&beta), Some(serde_json::json!(1)), "{rows}");
     assert_eq!(count_of(&carol), None, "a reporter is out: {rows}");
+    // BUG-338: a co-author who is neither a creator nor a learner is named.
+    assert_eq!(count_of(&dave), Some(serde_json::json!(1)), "{rows}");
+    let dave_row = find_row(rows, "teacher_user_id", &dave.user_id.to_string()).unwrap();
+    assert_ne!(dave_row["teacher_display_name"], "(unknown user)", "{rows}");
     let inspected = app
         .get_as(
             &admin,
