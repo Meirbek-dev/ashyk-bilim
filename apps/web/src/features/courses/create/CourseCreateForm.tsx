@@ -3,6 +3,7 @@
 import { Controller } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useApiError } from '@/hooks/useApiError'
 import { toast } from 'sonner'
 
 import { useCourseCreateForm } from './useCourseCreateForm'
@@ -16,6 +17,7 @@ import { Spinner } from '@/components/ui/spinner'
 
 export function CourseCreateForm() {
   const t = useTranslations('DashPage.CourseManagement.Create')
+  const { toastApiError } = useApiError()
   const router = useRouter()
   const { form, structureMode, sourceCourseUuid } = useCourseCreateForm()
   const { mutate, isPending } = useCreateCourseMutation()
@@ -34,7 +36,7 @@ export function CourseCreateForm() {
     )
 
     if (result.status === 'error') {
-      toast.error(result.message)
+      toastApiError(result.error, undefined, t('toasts.failed'))
       return
     }
     if (result.status === 'partial') {

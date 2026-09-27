@@ -36,14 +36,7 @@ export function useCreateCourseMutation() {
         const createdCourseUuid = typeof created?.course_uuid === 'string' ? created.course_uuid : null
 
         if (!created || !createdCourseUuid) {
-          const detail =
-            created && typeof created === 'object' && 'detail' in (created as Record<string, unknown>)
-              ? (created as Record<string, unknown>).detail
-              : undefined
-          return {
-            status: 'error',
-            message: typeof detail === 'string' ? detail : 'Course creation failed.',
-          }
+          return { status: 'error', error: null }
         }
 
         const courseUuid = cleanCourseUuid(createdCourseUuid)
@@ -150,8 +143,7 @@ export function useCreateCourseMutation() {
           destinationPath,
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unable to create course.'
-        return { status: 'error', message }
+        return { status: 'error', error }
       } finally {
         setIsPending(false)
       }

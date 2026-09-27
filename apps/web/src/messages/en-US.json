@@ -3931,7 +3931,8 @@
         "toasts": {
           "created": "Course created.",
           "partial": "Course created. {imported} of {total} chapters imported. {failed} failed.",
-          "outlineFailed": "Course created, but the source course outline could not be loaded. Add chapters manually."
+          "outlineFailed": "Course created, but the source course outline could not be loaded. Add chapters manually.",
+          "failed": "Could not create the course"
         },
         "visibility": {
           "private": {

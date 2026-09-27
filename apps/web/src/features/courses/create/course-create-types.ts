@@ -59,7 +59,8 @@ export interface CourseCreateOutlineUnavailable {
 /** A complete failure result. */
 export interface CourseCreateFailure {
   status: 'error'
-  message: string
+  /** Rendered through the localized API error presenter. */
+  error: unknown
 }
 
 export type CourseCreateResult =
