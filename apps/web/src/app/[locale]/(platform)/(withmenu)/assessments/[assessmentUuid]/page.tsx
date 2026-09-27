@@ -1,5 +1,6 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import { redirect as redirectWithLocale } from '@/i18n/navigation'
@@ -36,12 +37,24 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
  *  - Student: /course/{courseUuid}/activity/{activityUuid}
  *  - Teacher (review param): /editor/course/{courseUuid}/activity/{activityUuid}?tab=review&submission={submissionUuid}
  * Fallback (no course): notFound()
+ *
+ * The session read and the fetch run inside the page's own `<Suspense>`
+ * (UX-243, the /dash e1b8539 pattern).
  */
-export default async function AssessmentAttemptPage(props: Props) {
-  const [{ assessmentUuid }, searchParams, initialSession] = await Promise.all([
+export default function AssessmentAttemptPage(props: Props) {
+  return (
+    <Suspense fallback={null}>
+      <AssessmentForward {...props} />
+    </Suspense>
+  )
+}
+
+async function AssessmentForward(props: Props) {
+  const [{ assessmentUuid }, searchParams, initialSession, locale] = await Promise.all([
     props.params,
     props.searchParams,
     getSession(),
+    getLocale(),
   ])
   const reviewSubmissionUuid = getSearchParam(searchParams, 'review') ?? null
 
@@ -51,13 +64,14 @@ export default async function AssessmentAttemptPage(props: Props) {
     const returnTo = reviewSubmissionUuid
       ? `/assessments/${assessmentUuid}?review=${encodeURIComponent(reviewSubmissionUuid)}`
       : `/assessments/${assessmentUuid}`
-    return redirectWithLocale({ href: `/login?returnTo=${encodeURIComponent(returnTo)}`, locale: await getLocale() })
+    return redirectWithLocale({ href: `/login?returnTo=${encodeURIComponent(returnTo)}`, locale })
   }
 
   const assessment = await getAssessmentByUuid(assessmentUuid)
   if (!assessment) notFound()
 
-  // Redirect to canonical URL when course context is available
+  // Redirect to canonical URL when course context is available — locale-aware,
+  // so there is no extra 307 through the locale middleware (UX-243).
   if (assessment.course_uuid && assessment.activity_uuid) {
     const cleanCourse = assessment.course_uuid.replace(/^course_/, '')
     const cleanActivity = assessment.activity_uuid.replace(/^activity_/, '')
@@ -65,10 +79,13 @@ export default async function AssessmentAttemptPage(props: Props) {
     // Teacher review deep-link: ?review={submissionUuid} → editor review tab
     if (reviewSubmissionUuid) {
       const cleanSubmission = reviewSubmissionUuid.replace(/^submission_/, '')
-      redirect(`/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`)
+      return redirectWithLocale({
+        href: `/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`,
+        locale,
+      })
     }
 
-    redirect(`/course/${cleanCourse}/activity/${cleanActivity}`)
+    return redirectWithLocale({ href: `/course/${cleanCourse}/activity/${cleanActivity}`, locale })
   }
 
   // No course context — render a minimal standalone shell (future: teacher preview)
