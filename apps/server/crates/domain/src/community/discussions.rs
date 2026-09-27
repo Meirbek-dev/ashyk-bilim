@@ -305,6 +305,9 @@ impl DiscussionsService {
                 "only a moderator can change a discussion's status",
             ));
         }
+        // A non-moderator's same-as-read status is never written: a hide
+        // landing between the read and the UPDATE must survive (BUG-346).
+        let status = status.filter(|_| abilities.moderate);
         if let Some(content) = content {
             validate_content(content)?;
         }

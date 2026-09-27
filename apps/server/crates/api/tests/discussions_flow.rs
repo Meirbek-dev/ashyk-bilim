@@ -491,3 +491,63 @@ async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
     assert!(counts.iter().all(|&(likes, _)| likes == 3), "{counts:?}");
     assert_eq!(counts[0].1, 15, "{counts:?}");
 }
+
+/// BUG-346: an owner edit carrying an unchanged `status` never writes the
+/// column — a moderator hide committed while the edit waits on the row lock
+/// survives it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Racing forum").await;
+    let owner = learner(&app, "owner").await;
+    let post = app
+        .post_as(
+            &owner,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &serde_json::json!({ "content": "Original" }),
+        )
+        .await;
+    assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
+    let id = post.json()["id"].as_str().unwrap().to_owned();
+    let mut moderator = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM course_discussions WHERE id = $1::uuid FOR UPDATE")
+        .bind(&id)
+        .fetch_one(&mut *moderator)
+        .await
+        .unwrap();
+    let path = format!("/api/v2/discussions/{id}");
+    let body = serde_json::json!({ "content": "Edited", "status": "active" });
+    let edit = app.patch_as(&owner, &path, &body);
+    let hide = async {
+        // The owner's UPDATE is parked on the row lock before the hide lands.
+        loop {
+            let blocked: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'
+                   AND query LIKE '%UPDATE course_discussions%')",
+            )
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+            if blocked {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        sqlx::query("UPDATE course_discussions SET status = 'hidden' WHERE id = $1::uuid")
+            .bind(&id)
+            .execute(&mut *moderator)
+            .await
+            .unwrap();
+        moderator.commit().await.unwrap();
+    };
+    let (edited, ()) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        tokio::join!(edit, hide)
+    })
+    .await
+    .expect("owner UPDATE reached the row lock");
+    assert_eq!(edited.status, StatusCode::OK, "{}", edited.text());
+    assert_eq!(edited.json()["content"], "Edited");
+    assert_eq!(edited.json()["status"], "hidden");
+}
