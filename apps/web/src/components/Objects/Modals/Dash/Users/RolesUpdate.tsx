@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
 import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac'
 import { APIError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 import { Field, FieldError, FieldLabel } from '@components/ui/field'
 import { BarLoader } from '@components/Objects/Loaders/BarLoader'
 import { Alert, AlertDescription } from '@components/ui/alert'
@@ -41,6 +42,7 @@ const RolesUpdate: FC<Props> = props => {
   const t = useTranslations('Components.RolesUpdate')
   const validationSchema = createValidationSchema(validationT)
   const [error, setError] = useState<string | null>(null)
+  const { handleApiError } = useApiError()
   // The role the user holds as far as this dialog knows (BUG-347): once the
   // old role is removed, a failed assign must not make the retry remove it
   // again — the retry only assigns.
@@ -101,8 +103,7 @@ const RolesUpdate: FC<Props> = props => {
     } catch (submitError: unknown) {
       // A half-done replacement changed the user's roles: show the real ones.
       void queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
-      const detail = submitError instanceof Error ? submitError.message : 'Unknown error'
-      setError(detail)
+      setError(handleApiError(submitError).description)
       toast.error(t('toastError'), { id: toastId })
     }
   }
@@ -112,10 +113,7 @@ const RolesUpdate: FC<Props> = props => {
       {error && (
         <Alert variant="destructive">
           <AlertDescription>
-            <strong>
-              {t('errorPrefix')} {error.split(':')[0]}:{' '}
-            </strong>
-            {error.split(':').slice(1).join(':')}
+            <strong>{t('errorPrefix')}:</strong> {error}
           </AlertDescription>
         </Alert>
       )}
