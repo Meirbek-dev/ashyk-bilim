@@ -4446,7 +4446,7 @@ expression: json
             "type": "string"
           },
           "put_url": {
-            "description": "PUT the file bytes here (presigned; valid for ~15 minutes).",
+            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412.",
             "type": "string"
           }
         },
@@ -4611,7 +4611,8 @@ expression: json
           "PAST_DUE",
           "MAX_ATTEMPTS_REACHED",
           "TIME_LIMIT_EXPIRED",
-          "REMEDIATION_REQUIRED"
+          "REMEDIATION_REQUIRED",
+          "ACCESS_RESTRICTED"
         ],
         "type": "string"
       },
@@ -8146,6 +8147,37 @@ expression: json
         ],
         "type": "object"
       },
+      "PublicProfile": {
+        "description": "`GET /users/{username}`: the public card plus the bio (no email —\nFINDINGS #16). Search keeps the lean `UserHit`.",
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "description": "Empty when unset.",
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "bio"
+        ],
+        "type": "object"
+      },
       "PublishSummary": {
         "properties": {
           "already_published_count": {
@@ -8200,6 +8232,23 @@ expression: json
           "parentRunId": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "protocolVersion": {
+            "description": "AG-UI 1.0 (`\"1.0\"`); absent from pre-1.0 clients.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resume": {
+            "description": "AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.",
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
               "null"
             ]
           },
@@ -8385,7 +8434,26 @@ expression: json
               "null"
             ]
           },
+          "encryptedValue": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "AG-UI 1.0 message members; accepted and ignored.",
             "type": [
               "string",
               "null"
@@ -8403,6 +8471,12 @@ expression: json
           },
           "role": {
             "type": "string"
+          },
+          "subagentRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -8948,6 +9022,15 @@ expression: json
         ],
         "type": "object"
       },
+      "ReviewSort": {
+        "description": "Queue order (BUG-351): newest submission, score (ungraded lowest) or\nattempt number; ties newest first.",
+        "enum": [
+          "submitted_at",
+          "final_score",
+          "attempt_number"
+        ],
+        "type": "string"
+      },
       "ReviewStatus": {
         "description": "Queue filter; `needs_grading` is `pending`.",
         "enum": [
@@ -8968,12 +9051,9 @@ expression: json
         "type": "string"
       },
       "RiskDistributionCounts": {
+        "description": "At-risk learners by level (medium + high, UX-240).",
         "properties": {
           "high": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "low": {
             "format": "int64",
             "type": "integer"
           },
@@ -8984,8 +9064,7 @@ expression: json
         },
         "required": [
           "high",
-          "medium",
-          "low"
+          "medium"
         ],
         "type": "object"
       },
@@ -9335,6 +9414,21 @@ expression: json
           "parentRunId": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "protocolVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resume": {
+            "items": {
+              "type": "object"
+            },
+            "type": [
+              "array",
               "null"
             ]
           },
@@ -9763,6 +9857,13 @@ expression: json
           "warning",
           "breached",
           "not_applicable"
+        ],
+        "type": "string"
+      },
+      "SortOrder": {
+        "enum": [
+          "asc",
+          "desc"
         ],
         "type": "string"
       },
@@ -17432,7 +17533,7 @@ expression: json
     },
     "/api/v2/assessments/{id}/attempt-state": {
       "get": {
-        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access, the allowlist when restricted, and\n`assessment:submit:assigned` (authors preview freely).",
+        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.",
         "operationId": "attempt_state",
         "parameters": [
           {
@@ -18235,7 +18336,7 @@ expression: json
             }
           },
           {
-            "description": "`next_cursor` of the previous page.",
+            "description": "`next_cursor` of the previous page (valid only with the same sort/order).",
             "in": "query",
             "name": "cursor",
             "required": false,
@@ -18243,6 +18344,38 @@ expression: json
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/SubmissionId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Queue order (default `submitted_at`); ties newest first.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewSort"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Default `desc`.",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SortOrder"
                 },
                 {
                   "type": "null"
@@ -18286,7 +18419,7 @@ expression: json
             "description": "No grading access"
           }
         },
-        "summary": "Submitted work awaiting or holding a grade, newest first.",
+        "summary": "Submitted work awaiting or holding a grade, newest first unless `sort` /\n`order` say otherwise (cursors are valid only within one sort/order).",
         "tags": [
           "grading"
         ]
@@ -24431,7 +24564,7 @@ expression: json
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserHit"
+                  "$ref": "#/components/schemas/PublicProfile"
                 }
               }
             },
@@ -24710,7 +24843,7 @@ expression: json
     },
     "/api/v2/users/{username}": {
       "get": {
-        "description": "Id, username, display name and avatar — readable anonymously, active\nusers only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio and avatar — readable anonymously,\nactive users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {
@@ -24728,7 +24861,7 @@ expression: json
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserHit"
+                  "$ref": "#/components/schemas/PublicProfile"
                 }
               }
             },
