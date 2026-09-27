@@ -5,41 +5,31 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const scopeCapabilitiesContextOneSourceCountMin = 0
+export const scopeCapabilitiesContextOneSourceCountMin = 0;
+
 
 export const ScopeCapabilities = zod.object({
-  available: zod.boolean(),
-  context: zod
-    .union([
-      zod.object({
-        activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        activity_label: zod.string().nullish(),
-        course_label: zod.string(),
-        source_count: zod.int().min(scopeCapabilitiesContextOneSourceCountMin),
-      }),
-      zod.null(),
-    ])
-    .optional(),
-  context_visibility: zod.string().describe('`student` or `teacher`.'),
-  features: zod.array(
-    zod.object({
-      enabled: zod.boolean(),
-      key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-      reason: zod.string().nullish(),
-    }),
-  ),
-  modes: zod.array(zod.string()),
-  reason: zod.string().nullish(),
-  restricted: zod.boolean(),
-  role: zod
-    .enum(['student', 'teacher', 'author', 'admin'])
-    .describe("The caller's role in an AI thread (legacy `AIThreadRole`)."),
-  surface: zod
-    .enum(['student-activity', 'teacher-studio', 'teacher-review', 'course-page', 'admin'])
-    .describe('Which client screen is asking (legacy `AISurface`).'),
+  "available": zod.boolean(),
+  "context": zod.union([zod.object({
+  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "activity_label": zod.string().nullish(),
+  "course_label": zod.string(),
+  "source_count": zod.int().min(scopeCapabilitiesContextOneSourceCountMin)
+}),zod.null()]).optional(),
+  "context_visibility": zod.string().describe('`student` or `teacher`.'),
+  "features": zod.array(zod.object({
+  "enabled": zod.boolean(),
+  "key": zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
+  "reason": zod.string().nullish()
+})),
+  "modes": zod.array(zod.string()),
+  "reason": zod.string().nullish(),
+  "restricted": zod.boolean(),
+  "role": zod.enum(['student', 'teacher', 'author', 'admin']).describe('The caller\'s role in an AI thread (legacy `AIThreadRole`).'),
+  "surface": zod.enum(['student-activity', 'teacher-studio', 'teacher-review', 'course-page', 'admin']).describe('Which client screen is asking (legacy `AISurface`).')
 })
 
-export type ScopeCapabilities = zod.input<typeof ScopeCapabilities>
-export type ScopeCapabilitiesOutput = zod.output<typeof ScopeCapabilities>
+export type ScopeCapabilities = zod.input<typeof ScopeCapabilities>;
+export type ScopeCapabilitiesOutput = zod.output<typeof ScopeCapabilities>;

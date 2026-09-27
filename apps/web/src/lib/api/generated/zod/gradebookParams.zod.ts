@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const GradebookParams = zod.object({
-  cursor: zod.string().nullish(),
-  limit: zod.int().nullish(),
+  "cursor": zod.string().nullish(),
+  "limit": zod.int().nullish()
 })
 
-export type GradebookParams = zod.input<typeof GradebookParams>
-export type GradebookParamsOutput = zod.output<typeof GradebookParams>
+export type GradebookParams = zod.input<typeof GradebookParams>;
+export type GradebookParamsOutput = zod.output<typeof GradebookParams>;

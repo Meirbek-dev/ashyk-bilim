@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const RegisterHeaders = zod.object({
-  'Idempotency-Key': zod.string().nullish(),
-  'Accept-Language': zod.string().nullish(),
+  "Idempotency-Key": zod.string().nullish(),
+  "Accept-Language": zod.string().nullish()
 })
 
-export type RegisterHeaders = zod.input<typeof RegisterHeaders>
-export type RegisterHeadersOutput = zod.output<typeof RegisterHeaders>
+export type RegisterHeaders = zod.input<typeof RegisterHeaders>;
+export type RegisterHeadersOutput = zod.output<typeof RegisterHeaders>;

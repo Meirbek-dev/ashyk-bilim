@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ViolationState = zod.object({
-  exceeded: zod.boolean().describe('Submitting now zeroes the attempt.'),
-  threshold: zod.int(),
-  violation_count: zod.int(),
+  "exceeded": zod.boolean().describe('Submitting now zeroes the attempt.'),
+  "threshold": zod.int(),
+  "violation_count": zod.int()
 })
 
-export type ViolationState = zod.input<typeof ViolationState>
-export type ViolationStateOutput = zod.output<typeof ViolationState>
+export type ViolationState = zod.input<typeof ViolationState>;
+export type ViolationStateOutput = zod.output<typeof ViolationState>;

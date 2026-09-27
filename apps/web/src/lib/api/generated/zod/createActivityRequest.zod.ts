@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CreateActivityRequest = zod.object({
-  activity_sub_type: zod.string().describe('Must pair with `activity_type` (e.g. `video_youtube`).'),
-  activity_type: zod.string().describe('One of the closed activity-type set (e.g. `video`, `exam`).'),
-  name: zod.string(),
+  "activity_sub_type": zod.string().describe('Must pair with `activity_type` (e.g. `video_youtube`).'),
+  "activity_type": zod.string().describe('One of the closed activity-type set (e.g. `video`, `exam`).'),
+  "name": zod.string()
 })
 
-export type CreateActivityRequest = zod.input<typeof CreateActivityRequest>
-export type CreateActivityRequestOutput = zod.output<typeof CreateActivityRequest>
+export type CreateActivityRequest = zod.input<typeof CreateActivityRequest>;
+export type CreateActivityRequestOutput = zod.output<typeof CreateActivityRequest>;

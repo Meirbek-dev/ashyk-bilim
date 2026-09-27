@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ActivityDropoffRow = zod.object({
-  activity_id: zod.uuid(),
-  activity_name: zod.string(),
-  activity_type: zod.string(),
-  chapter_id: zod.uuid(),
-  current_step_completions: zod.int(),
-  dropoff_pct: zod.number(),
-  previous_step_completions: zod.int(),
+  "activity_id": zod.uuid(),
+  "activity_name": zod.string(),
+  "activity_type": zod.string(),
+  "chapter_id": zod.uuid(),
+  "current_step_completions": zod.int(),
+  "dropoff_pct": zod.number(),
+  "previous_step_completions": zod.int()
 })
 
-export type ActivityDropoffRow = zod.input<typeof ActivityDropoffRow>
-export type ActivityDropoffRowOutput = zod.output<typeof ActivityDropoffRow>
+export type ActivityDropoffRow = zod.input<typeof ActivityDropoffRow>;
+export type ActivityDropoffRowOutput = zod.output<typeof ActivityDropoffRow>;

@@ -5,25 +5,21 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const AssessmentSupportDiagnostics = zod.object({
-  alerts: zod.array(
-    zod.object({
-      code: zod
-        .string()
-        .describe('`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.'),
-      severity: zod.enum(['info', 'warning', 'critical']),
-      summary: zod.string(),
-    }),
-  ),
-  audit_event_count: zod.int(),
-  cohort_filter_applied: zod.boolean(),
-  note: zod.string(),
-  scoped_cohort_count: zod.int(),
-  scoped_eligible_learners: zod.int(),
-  scoped_visible_learners: zod.int(),
+  "alerts": zod.array(zod.object({
+  "code": zod.string().describe('`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.'),
+  "severity": zod.enum(['info', 'warning', 'critical']),
+  "summary": zod.string()
+})),
+  "audit_event_count": zod.int(),
+  "cohort_filter_applied": zod.boolean(),
+  "note": zod.string(),
+  "scoped_cohort_count": zod.int(),
+  "scoped_eligible_learners": zod.int(),
+  "scoped_visible_learners": zod.int()
 })
 
-export type AssessmentSupportDiagnostics = zod.input<typeof AssessmentSupportDiagnostics>
-export type AssessmentSupportDiagnosticsOutput = zod.output<typeof AssessmentSupportDiagnostics>
+export type AssessmentSupportDiagnostics = zod.input<typeof AssessmentSupportDiagnostics>;
+export type AssessmentSupportDiagnosticsOutput = zod.output<typeof AssessmentSupportDiagnostics>;

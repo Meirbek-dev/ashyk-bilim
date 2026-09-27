@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const DeadlineExtensionRequest = zod.object({
-  new_due_at_unix: zod.int().describe('Unix seconds, at most 9999-12-31 (the timestamp range).'),
-  reason: zod.string().optional(),
-  user_ids: zod.array(zod.uuid()),
+  "new_due_at_unix": zod.int().describe('Unix seconds, at most 9999-12-31 (the timestamp range).'),
+  "reason": zod.string().optional(),
+  "user_ids": zod.array(zod.uuid())
 })
 
-export type DeadlineExtensionRequest = zod.input<typeof DeadlineExtensionRequest>
-export type DeadlineExtensionRequestOutput = zod.output<typeof DeadlineExtensionRequest>
+export type DeadlineExtensionRequest = zod.input<typeof DeadlineExtensionRequest>;
+export type DeadlineExtensionRequestOutput = zod.output<typeof DeadlineExtensionRequest>;

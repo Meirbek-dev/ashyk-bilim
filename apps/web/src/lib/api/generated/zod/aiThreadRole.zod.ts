@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const AiThreadRole = zod
-  .enum(['student', 'teacher', 'author', 'admin'])
-  .describe("The caller's role in an AI thread (legacy `AIThreadRole`).")
+export const AiThreadRole = zod.enum(['student', 'teacher', 'author', 'admin']).describe('The caller\'s role in an AI thread (legacy `AIThreadRole`).')
 
-export type AiThreadRole = zod.input<typeof AiThreadRole>
-export type AiThreadRoleOutput = zod.output<typeof AiThreadRole>
+export type AiThreadRole = zod.input<typeof AiThreadRole>;
+export type AiThreadRoleOutput = zod.output<typeof AiThreadRole>;

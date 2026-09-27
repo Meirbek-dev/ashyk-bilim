@@ -5,34 +5,26 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const TeacherOverviewTrends = zod.object({
-  active_learners: zod.array(
-    zod.object({
-      bucket_start_unix: zod.int(),
-      value: zod.number(),
-    }),
-  ),
-  completions: zod.array(
-    zod.object({
-      bucket_start_unix: zod.int(),
-      value: zod.number(),
-    }),
-  ),
-  grading_completed: zod.array(
-    zod.object({
-      bucket_start_unix: zod.int(),
-      value: zod.number(),
-    }),
-  ),
-  submissions: zod.array(
-    zod.object({
-      bucket_start_unix: zod.int(),
-      value: zod.number(),
-    }),
-  ),
+  "active_learners": zod.array(zod.object({
+  "bucket_start_unix": zod.int(),
+  "value": zod.number()
+})),
+  "completions": zod.array(zod.object({
+  "bucket_start_unix": zod.int(),
+  "value": zod.number()
+})),
+  "grading_completed": zod.array(zod.object({
+  "bucket_start_unix": zod.int(),
+  "value": zod.number()
+})),
+  "submissions": zod.array(zod.object({
+  "bucket_start_unix": zod.int(),
+  "value": zod.number()
+}))
 })
 
-export type TeacherOverviewTrends = zod.input<typeof TeacherOverviewTrends>
-export type TeacherOverviewTrendsOutput = zod.output<typeof TeacherOverviewTrends>
+export type TeacherOverviewTrends = zod.input<typeof TeacherOverviewTrends>;
+export type TeacherOverviewTrendsOutput = zod.output<typeof TeacherOverviewTrends>;

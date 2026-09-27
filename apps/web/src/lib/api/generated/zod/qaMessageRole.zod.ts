@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const QaMessageRole = zod.enum(['user', 'assistant']).describe('Q&A message author.')
 
-export type QaMessageRole = zod.input<typeof QaMessageRole>
-export type QaMessageRoleOutput = zod.output<typeof QaMessageRole>
+export type QaMessageRole = zod.input<typeof QaMessageRole>;
+export type QaMessageRoleOutput = zod.output<typeof QaMessageRole>;

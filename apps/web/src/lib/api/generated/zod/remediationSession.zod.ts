@@ -5,39 +5,30 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const RemediationSession = zod.object({
-  activity_id: zod.uuid(),
-  analysis_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  created_at_unix: zod.int(),
-  file_submission_attempt_id: zod
-    .union([
-      zod
-        .uuid()
-        .describe(
-          'The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
-        ),
-      zod.null(),
-    ])
-    .optional(),
-  gate_mode: zod.boolean(),
-  id: zod.uuid(),
-  language: zod.string(),
-  lecture: zod.looseObject({}),
-  passed_at_unix: zod.int().nullish(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  score: zod.int().nullish(),
-  status: zod
-    .enum(['assigned', 'in_progress', 'passed', 'failed'])
-    .describe('Remediation session lifecycle (legacy string states).'),
-  student_user_id: zod.uuid(),
-  submission_id: zod
-    .union([zod.uuid().describe('The remediated assessment submission — `null` for a file attempt.'), zod.null()])
-    .optional(),
-  test: zod.looseObject({}),
-  updated_at_unix: zod.int(),
+  "activity_id": zod.uuid(),
+  "analysis_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "created_at_unix": zod.int(),
+  "file_submission_attempt_id": zod.union([zod.uuid().describe('The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.'),zod.null()]).optional(),
+  "gate_mode": zod.boolean(),
+  "id": zod.uuid(),
+  "language": zod.string(),
+  "lecture": zod.looseObject({
+
+}),
+  "passed_at_unix": zod.int().nullish(),
+  "run_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "score": zod.int().nullish(),
+  "status": zod.enum(['assigned', 'in_progress', 'passed', 'failed']).describe('Remediation session lifecycle (legacy string states).'),
+  "student_user_id": zod.uuid(),
+  "submission_id": zod.union([zod.uuid().describe('The remediated assessment submission — `null` for a file attempt.'),zod.null()]).optional(),
+  "test": zod.looseObject({
+
+}),
+  "updated_at_unix": zod.int()
 })
 
-export type RemediationSession = zod.input<typeof RemediationSession>
-export type RemediationSessionOutput = zod.output<typeof RemediationSession>
+export type RemediationSession = zod.input<typeof RemediationSession>;
+export type RemediationSessionOutput = zod.output<typeof RemediationSession>;

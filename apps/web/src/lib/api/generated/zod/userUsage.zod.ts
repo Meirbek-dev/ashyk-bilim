@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const UserUsage = zod.object({
-  input_tokens: zod.int(),
-  month: zod.string().describe('`YYYY-MM-01`.'),
-  output_tokens: zod.int(),
-  run_count: zod.int(),
-  user_id: zod.uuid(),
+  "input_tokens": zod.int(),
+  "month": zod.string().describe('`YYYY-MM-01`.'),
+  "output_tokens": zod.int(),
+  "run_count": zod.int(),
+  "user_id": zod.uuid()
 })
 
-export type UserUsage = zod.input<typeof UserUsage>
-export type UserUsageOutput = zod.output<typeof UserUsage>
+export type UserUsage = zod.input<typeof UserUsage>;
+export type UserUsageOutput = zod.output<typeof UserUsage>;

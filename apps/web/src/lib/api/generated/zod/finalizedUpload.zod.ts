@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FinalizedUpload = zod.object({
-  id: zod.uuid(),
-  key: zod.string(),
-  size_bytes: zod.int(),
+  "id": zod.uuid(),
+  "key": zod.string(),
+  "size_bytes": zod.int()
 })
 
-export type FinalizedUpload = zod.input<typeof FinalizedUpload>
-export type FinalizedUploadOutput = zod.output<typeof FinalizedUpload>
+export type FinalizedUpload = zod.input<typeof FinalizedUpload>;
+export type FinalizedUploadOutput = zod.output<typeof FinalizedUpload>;

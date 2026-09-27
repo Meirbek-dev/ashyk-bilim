@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const BulkActionStatus = zod.enum(['pending', 'running', 'completed', 'failed'])
 
-export type BulkActionStatus = zod.input<typeof BulkActionStatus>
-export type BulkActionStatusOutput = zod.output<typeof BulkActionStatus>
+export type BulkActionStatus = zod.input<typeof BulkActionStatus>;
+export type BulkActionStatusOutput = zod.output<typeof BulkActionStatus>;

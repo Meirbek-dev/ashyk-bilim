@@ -5,19 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const AdminUser = zod
-  .object({
-    created_at_unix: zod.int(),
-    display_name: zod.string(),
-    email: zod.string(),
-    id: zod.uuid(),
-    roles: zod.array(zod.string()),
-    status: zod.string().describe('`active` or `disabled`.'),
-    username: zod.string(),
-  })
-  .describe('Admin listing row (includes email + status — platform:read gated).')
+export const AdminUser = zod.object({
+  "created_at_unix": zod.int(),
+  "display_name": zod.string(),
+  "email": zod.string(),
+  "id": zod.uuid(),
+  "roles": zod.array(zod.string()),
+  "status": zod.string().describe('`active` or `disabled`.'),
+  "username": zod.string()
+}).describe('Admin listing row (includes email + status — platform:read gated).')
 
-export type AdminUser = zod.input<typeof AdminUser>
-export type AdminUserOutput = zod.output<typeof AdminUser>
+export type AdminUser = zod.input<typeof AdminUser>;
+export type AdminUserOutput = zod.output<typeof AdminUser>;

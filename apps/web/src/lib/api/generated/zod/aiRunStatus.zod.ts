@@ -5,13 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const AiRunStatus = zod
-  .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
-  .describe(
-    'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
-  )
+export const AiRunStatus = zod.enum(['queued', 'running', 'succeeded', 'failed', 'aborted']).describe('Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.')
 
-export type AiRunStatus = zod.input<typeof AiRunStatus>
-export type AiRunStatusOutput = zod.output<typeof AiRunStatus>
+export type AiRunStatus = zod.input<typeof AiRunStatus>;
+export type AiRunStatusOutput = zod.output<typeof AiRunStatus>;

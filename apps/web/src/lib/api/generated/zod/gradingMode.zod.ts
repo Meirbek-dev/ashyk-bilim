@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const GradingMode = zod.enum(['auto', 'manual', 'auto_then_manual'])
 
-export type GradingMode = zod.input<typeof GradingMode>
-export type GradingModeOutput = zod.output<typeof GradingMode>
+export type GradingMode = zod.input<typeof GradingMode>;
+export type GradingModeOutput = zod.output<typeof GradingMode>;

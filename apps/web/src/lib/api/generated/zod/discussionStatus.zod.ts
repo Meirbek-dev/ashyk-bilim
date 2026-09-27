@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const DiscussionStatus = zod
-  .enum(['active', 'hidden', 'deleted'])
-  .describe('Course discussion visibility (legacy `DiscussionStatusEnum`).')
+export const DiscussionStatus = zod.enum(['active', 'hidden', 'deleted']).describe('Course discussion visibility (legacy `DiscussionStatusEnum`).')
 
-export type DiscussionStatus = zod.input<typeof DiscussionStatus>
-export type DiscussionStatusOutput = zod.output<typeof DiscussionStatus>
+export type DiscussionStatus = zod.input<typeof DiscussionStatus>;
+export type DiscussionStatusOutput = zod.output<typeof DiscussionStatus>;

@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ViolationRequest = zod.object({
-  detail: zod.string().nullish(),
-  kind: zod.string().describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.'),
+  "detail": zod.string().nullish(),
+  "kind": zod.string().describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.')
 })
 
-export type ViolationRequest = zod.input<typeof ViolationRequest>
-export type ViolationRequestOutput = zod.output<typeof ViolationRequest>
+export type ViolationRequest = zod.input<typeof ViolationRequest>;
+export type ViolationRequestOutput = zod.output<typeof ViolationRequest>;

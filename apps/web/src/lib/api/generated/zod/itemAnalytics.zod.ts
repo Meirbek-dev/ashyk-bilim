@@ -5,18 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ItemAnalytics = zod.object({
-  avg_score_pct: zod.number().nullish(),
-  correct_pct: zod.number().nullish(),
-  discrimination_index: zod.number().nullish().describe('Classic (top 27% − bottom 27%) / n, from six attempts up.'),
-  item_id: zod.uuid(),
-  kind: zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
-  max_score: zod.number(),
-  response_count: zod.int(),
-  title: zod.string(),
+  "avg_score_pct": zod.number().nullish(),
+  "correct_pct": zod.number().nullish(),
+  "discrimination_index": zod.number().nullish().describe('Classic (top 27% − bottom 27%) / n, from six attempts up.'),
+  "item_id": zod.uuid(),
+  "kind": zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
+  "max_score": zod.number(),
+  "response_count": zod.int(),
+  "title": zod.string()
 })
 
-export type ItemAnalytics = zod.input<typeof ItemAnalytics>
-export type ItemAnalyticsOutput = zod.output<typeof ItemAnalytics>
+export type ItemAnalytics = zod.input<typeof ItemAnalytics>;
+export type ItemAnalyticsOutput = zod.output<typeof ItemAnalytics>;

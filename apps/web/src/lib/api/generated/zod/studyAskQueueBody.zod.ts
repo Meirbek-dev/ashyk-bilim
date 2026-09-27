@@ -5,16 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const StudyAskQueueBody = zod.object({
-  language: zod.string().optional(),
-  mode: zod
-    .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
-    .optional()
-    .describe('Study companion modes (legacy `StudyMode`).'),
-  question: zod.string(),
+  "language": zod.string().optional(),
+  "mode": zod.enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen']).optional().describe('Study companion modes (legacy `StudyMode`).'),
+  "question": zod.string()
 })
 
-export type StudyAskQueueBody = zod.input<typeof StudyAskQueueBody>
-export type StudyAskQueueBodyOutput = zod.output<typeof StudyAskQueueBody>
+export type StudyAskQueueBody = zod.input<typeof StudyAskQueueBody>;
+export type StudyAskQueueBodyOutput = zod.output<typeof StudyAskQueueBody>;

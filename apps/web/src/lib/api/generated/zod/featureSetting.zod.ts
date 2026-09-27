@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FeatureSetting = zod.object({
-  editable: zod.boolean().describe('Flags come from the environment; there is no runtime toggle.'),
-  enabled: zod.boolean(),
-  key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-  source: zod.string(),
+  "editable": zod.boolean().describe('Flags come from the environment; there is no runtime toggle.'),
+  "enabled": zod.boolean(),
+  "key": zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
+  "source": zod.string()
 })
 
-export type FeatureSetting = zod.input<typeof FeatureSetting>
-export type FeatureSettingOutput = zod.output<typeof FeatureSetting>
+export type FeatureSetting = zod.input<typeof FeatureSetting>;
+export type FeatureSettingOutput = zod.output<typeof FeatureSetting>;

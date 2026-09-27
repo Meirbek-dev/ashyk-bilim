@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SetUserStatusBody = zod.object({
-  disabled: zod.boolean().describe('`true` disables the account and revokes every live session.'),
+  "disabled": zod.boolean().describe('`true` disables the account and revokes every live session.')
 })
 
-export type SetUserStatusBody = zod.input<typeof SetUserStatusBody>
-export type SetUserStatusBodyOutput = zod.output<typeof SetUserStatusBody>
+export type SetUserStatusBody = zod.input<typeof SetUserStatusBody>;
+export type SetUserStatusBodyOutput = zod.output<typeof SetUserStatusBody>;

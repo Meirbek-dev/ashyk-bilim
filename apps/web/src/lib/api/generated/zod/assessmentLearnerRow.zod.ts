@@ -5,29 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const AssessmentLearnerRow = zod.object({
-  attempts: zod.int(),
-  best_score: zod.number().nullish(),
-  graded_at_unix: zod.int().nullish(),
-  last_score: zod.number().nullish(),
-  pending_attempt: zod
-    .int()
-    .nullish()
-    .describe(
-      'The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt.',
-    ),
-  status: zod
-    .string()
-    .nullish()
-    .describe(
-      "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell's rule.",
-    ),
-  submitted_at_unix: zod.int().nullish(),
-  user_display_name: zod.string(),
-  user_id: zod.uuid(),
+  "attempts": zod.int(),
+  "best_score": zod.number().nullish(),
+  "graded_at_unix": zod.int().nullish(),
+  "last_score": zod.number().nullish(),
+  "pending_attempt": zod.int().nullish().describe('The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt.'),
+  "status": zod.string().nullish().describe('Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell\'s rule.'),
+  "submitted_at_unix": zod.int().nullish(),
+  "user_display_name": zod.string(),
+  "user_id": zod.uuid()
 })
 
-export type AssessmentLearnerRow = zod.input<typeof AssessmentLearnerRow>
-export type AssessmentLearnerRowOutput = zod.output<typeof AssessmentLearnerRow>
+export type AssessmentLearnerRow = zod.input<typeof AssessmentLearnerRow>;
+export type AssessmentLearnerRowOutput = zod.output<typeof AssessmentLearnerRow>;

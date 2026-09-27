@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CreateDiscussionBody = zod.object({
-  content: zod.string().describe('HTML or text; must contain visible text.'),
-  parent_id: zod.union([zod.uuid().describe('Reply to this post (one level).'), zod.null()]).optional(),
+  "content": zod.string().describe('HTML or text; must contain visible text.'),
+  "parent_id": zod.union([zod.uuid().describe('Reply to this post (one level).'),zod.null()]).optional()
 })
 
-export type CreateDiscussionBody = zod.input<typeof CreateDiscussionBody>
-export type CreateDiscussionBodyOutput = zod.output<typeof CreateDiscussionBody>
+export type CreateDiscussionBody = zod.input<typeof CreateDiscussionBody>;
+export type CreateDiscussionBodyOutput = zod.output<typeof CreateDiscussionBody>;

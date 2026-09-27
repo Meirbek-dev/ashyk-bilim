@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const StreakKind = zod.enum(['login', 'learning']).describe('Streak kinds (legacy `StreakType`).')
 
-export type StreakKind = zod.input<typeof StreakKind>
-export type StreakKindOutput = zod.output<typeof StreakKind>
+export type StreakKind = zod.input<typeof StreakKind>;
+export type StreakKindOutput = zod.output<typeof StreakKind>;

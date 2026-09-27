@@ -5,13 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const QueueSubmissionAnalysisBody = zod
-  .object({
-    language: zod.string().optional(),
-  })
-  .describe('`{language}` for the analysis-style agents (default `auto`).')
+export const QueueSubmissionAnalysisBody = zod.object({
+  "language": zod.string().optional()
+}).describe('`{language}` for the analysis-style agents (default `auto`).')
 
-export type QueueSubmissionAnalysisBody = zod.input<typeof QueueSubmissionAnalysisBody>
-export type QueueSubmissionAnalysisBodyOutput = zod.output<typeof QueueSubmissionAnalysisBody>
+export type QueueSubmissionAnalysisBody = zod.input<typeof QueueSubmissionAnalysisBody>;
+export type QueueSubmissionAnalysisBodyOutput = zod.output<typeof QueueSubmissionAnalysisBody>;

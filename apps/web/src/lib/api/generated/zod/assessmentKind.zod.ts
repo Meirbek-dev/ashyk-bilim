@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const AssessmentKind = zod
-  .enum(['quiz', 'exam', 'code_challenge'])
-  .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.')
+export const AssessmentKind = zod.enum(['quiz', 'exam', 'code_challenge']).describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.')
 
-export type AssessmentKind = zod.input<typeof AssessmentKind>
-export type AssessmentKindOutput = zod.output<typeof AssessmentKind>
+export type AssessmentKind = zod.input<typeof AssessmentKind>;
+export type AssessmentKindOutput = zod.output<typeof AssessmentKind>;

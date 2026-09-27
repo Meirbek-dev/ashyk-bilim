@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const UpdateChapterBody = zod.object({
-  description: zod.string().nullish(),
-  name: zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "name": zod.string().nullish()
 })
 
-export type UpdateChapterBody = zod.input<typeof UpdateChapterBody>
-export type UpdateChapterBodyOutput = zod.output<typeof UpdateChapterBody>
+export type UpdateChapterBody = zod.input<typeof UpdateChapterBody>;
+export type UpdateChapterBodyOutput = zod.output<typeof UpdateChapterBody>;

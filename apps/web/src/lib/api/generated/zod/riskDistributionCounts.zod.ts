@@ -5,14 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const RiskDistributionCounts = zod
-  .object({
-    high: zod.int(),
-    medium: zod.int(),
-  })
-  .describe('At-risk learners by level (medium + high, UX-240).')
+export const RiskDistributionCounts = zod.object({
+  "high": zod.int(),
+  "medium": zod.int()
+}).describe('At-risk learners by level (medium + high, UX-240).')
 
-export type RiskDistributionCounts = zod.input<typeof RiskDistributionCounts>
-export type RiskDistributionCountsOutput = zod.output<typeof RiskDistributionCounts>
+export type RiskDistributionCounts = zod.input<typeof RiskDistributionCounts>;
+export type RiskDistributionCountsOutput = zod.output<typeof RiskDistributionCounts>;

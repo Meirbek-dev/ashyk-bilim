@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CritiqueLectureBody = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  language: zod.string().optional(),
+  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "language": zod.string().optional()
 })
 
-export type CritiqueLectureBody = zod.input<typeof CritiqueLectureBody>
-export type CritiqueLectureBodyOutput = zod.output<typeof CritiqueLectureBody>
+export type CritiqueLectureBody = zod.input<typeof CritiqueLectureBody>;
+export type CritiqueLectureBodyOutput = zod.output<typeof CritiqueLectureBody>;

@@ -5,15 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SetRolePermissionsBody = zod.object({
-  permissions: zod
-    .array(zod.string())
-    .describe(
-      'Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`).',
-    ),
+  "permissions": zod.array(zod.string()).describe('Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`).')
 })
 
-export type SetRolePermissionsBody = zod.input<typeof SetRolePermissionsBody>
-export type SetRolePermissionsBodyOutput = zod.output<typeof SetRolePermissionsBody>
+export type SetRolePermissionsBody = zod.input<typeof SetRolePermissionsBody>;
+export type SetRolePermissionsBodyOutput = zod.output<typeof SetRolePermissionsBody>;

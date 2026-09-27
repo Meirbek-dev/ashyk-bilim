@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FileAttemptFileId = zod.uuid()
 
-export type FileAttemptFileId = zod.input<typeof FileAttemptFileId>
-export type FileAttemptFileIdOutput = zod.output<typeof FileAttemptFileId>
+export type FileAttemptFileId = zod.input<typeof FileAttemptFileId>;
+export type FileAttemptFileIdOutput = zod.output<typeof FileAttemptFileId>;

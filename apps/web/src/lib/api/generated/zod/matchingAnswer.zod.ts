@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const MatchingAnswer = zod.object({
-  left: zod.string(),
-  right: zod.string(),
+  "left": zod.string(),
+  "right": zod.string()
 })
 
-export type MatchingAnswer = zod.input<typeof MatchingAnswer>
-export type MatchingAnswerOutput = zod.output<typeof MatchingAnswer>
+export type MatchingAnswer = zod.input<typeof MatchingAnswer>;
+export type MatchingAnswerOutput = zod.output<typeof MatchingAnswer>;

@@ -5,28 +5,25 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const readinessBlockerCountMin = 0
+export const readinessBlockerCountMin = 0;
 
-export const readinessWarningCountMin = 0
+export const readinessWarningCountMin = 0;
+
 
 export const Readiness = zod.object({
-  blocker_count: zod.int().min(readinessBlockerCountMin),
-  issues: zod.array(
-    zod
-      .object({
-        area: zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
-        code: zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
-        item_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        message: zod.string(),
-        severity: zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.'),
-      })
-      .describe('One thing blocking (or advising against) publication.'),
-  ),
-  ok: zod.boolean(),
-  warning_count: zod.int().min(readinessWarningCountMin),
+  "blocker_count": zod.int().min(readinessBlockerCountMin),
+  "issues": zod.array(zod.object({
+  "area": zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
+  "code": zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
+  "item_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "message": zod.string(),
+  "severity": zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.')
+}).describe('One thing blocking (or advising against) publication.')),
+  "ok": zod.boolean(),
+  "warning_count": zod.int().min(readinessWarningCountMin)
 })
 
-export type Readiness = zod.input<typeof Readiness>
-export type ReadinessOutput = zod.output<typeof Readiness>
+export type Readiness = zod.input<typeof Readiness>;
+export type ReadinessOutput = zod.output<typeof Readiness>;

@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const RiskLevel = zod.enum(['low', 'medium', 'high'])
 
-export type RiskLevel = zod.input<typeof RiskLevel>
-export type RiskLevelOutput = zod.output<typeof RiskLevel>
+export type RiskLevel = zod.input<typeof RiskLevel>;
+export type RiskLevelOutput = zod.output<typeof RiskLevel>;

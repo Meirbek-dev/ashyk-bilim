@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const FindingReviewAction = zod
-  .enum(['accepted', 'dismissed', 'task_created'])
-  .describe('Teacher review verdict on one course-analysis finding.')
+export const FindingReviewAction = zod.enum(['accepted', 'dismissed', 'task_created']).describe('Teacher review verdict on one course-analysis finding.')
 
-export type FindingReviewAction = zod.input<typeof FindingReviewAction>
-export type FindingReviewActionOutput = zod.output<typeof FindingReviewAction>
+export type FindingReviewAction = zod.input<typeof FindingReviewAction>;
+export type FindingReviewActionOutput = zod.output<typeof FindingReviewAction>;

@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const LeaderboardEntry = zod.object({
-  avatar_key: zod.string().nullish(),
-  display_name: zod.string(),
-  level: zod.int(),
-  rank: zod.int(),
-  total_xp: zod.int(),
-  user_id: zod.uuid(),
-  username: zod.string(),
+  "avatar_key": zod.string().nullish(),
+  "display_name": zod.string(),
+  "level": zod.int(),
+  "rank": zod.int(),
+  "total_xp": zod.int(),
+  "user_id": zod.uuid(),
+  "username": zod.string()
 })
 
-export type LeaderboardEntry = zod.input<typeof LeaderboardEntry>
-export type LeaderboardEntryOutput = zod.output<typeof LeaderboardEntry>
+export type LeaderboardEntry = zod.input<typeof LeaderboardEntry>;
+export type LeaderboardEntryOutput = zod.output<typeof LeaderboardEntry>;

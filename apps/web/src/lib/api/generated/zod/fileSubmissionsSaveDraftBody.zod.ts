@@ -5,20 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const FileSubmissionsSaveDraftBody = zod
-  .object({
-    files: zod
-      .array(
-        zod.object({
-          display_name: zod.string().nullish(),
-          upload_id: zod.uuid(),
-        }),
-      )
-      .optional(),
-  })
-  .describe("The draft's complete file list (replaces what was attached before).")
+export const FileSubmissionsSaveDraftBody = zod.object({
+  "files": zod.array(zod.object({
+  "display_name": zod.string().nullish(),
+  "upload_id": zod.uuid()
+})).optional()
+}).describe('The draft\'s complete file list (replaces what was attached before).')
 
-export type FileSubmissionsSaveDraftBody = zod.input<typeof FileSubmissionsSaveDraftBody>
-export type FileSubmissionsSaveDraftBodyOutput = zod.output<typeof FileSubmissionsSaveDraftBody>
+export type FileSubmissionsSaveDraftBody = zod.input<typeof FileSubmissionsSaveDraftBody>;
+export type FileSubmissionsSaveDraftBodyOutput = zod.output<typeof FileSubmissionsSaveDraftBody>;

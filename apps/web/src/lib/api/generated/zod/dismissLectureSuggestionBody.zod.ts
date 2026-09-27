@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const DismissLectureSuggestionBody = zod.object({
-  suggestion_id: zod.string(),
+  "suggestion_id": zod.string()
 })
 
-export type DismissLectureSuggestionBody = zod.input<typeof DismissLectureSuggestionBody>
-export type DismissLectureSuggestionBodyOutput = zod.output<typeof DismissLectureSuggestionBody>
+export type DismissLectureSuggestionBody = zod.input<typeof DismissLectureSuggestionBody>;
+export type DismissLectureSuggestionBodyOutput = zod.output<typeof DismissLectureSuggestionBody>;

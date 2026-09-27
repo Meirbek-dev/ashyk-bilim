@@ -5,22 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const MatchingBody = zod.object({
-  explanation: zod.string().nullish(),
-  pairs: zod
-    .array(
-      zod.object({
-        left: zod.string(),
-        right: zod.string(),
-      }),
-    )
-    .describe(
-      "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
-    ),
-  prompt: zod.string().optional(),
+  "explanation": zod.string().nullish(),
+  "pairs": zod.array(zod.object({
+  "left": zod.string(),
+  "right": zod.string()
+})).describe('Required on the wire so a client\'s untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).'),
+  "prompt": zod.string().optional()
 })
 
-export type MatchingBody = zod.input<typeof MatchingBody>
-export type MatchingBodyOutput = zod.output<typeof MatchingBody>
+export type MatchingBody = zod.input<typeof MatchingBody>;
+export type MatchingBodyOutput = zod.output<typeof MatchingBody>;

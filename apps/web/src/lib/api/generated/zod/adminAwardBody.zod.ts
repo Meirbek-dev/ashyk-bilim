@@ -5,16 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const AdminAwardBody = zod
-  .object({
-    amount: zod.int(),
-    idempotency_key: zod.string().nullish(),
-    reason: zod.string().nullish(),
-    user_id: zod.uuid(),
-  })
-  .describe('Platform managers grant XP to a user.')
+export const AdminAwardBody = zod.object({
+  "amount": zod.int(),
+  "idempotency_key": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "user_id": zod.uuid()
+}).describe('Platform managers grant XP to a user.')
 
-export type AdminAwardBody = zod.input<typeof AdminAwardBody>
-export type AdminAwardBodyOutput = zod.output<typeof AdminAwardBody>
+export type AdminAwardBody = zod.input<typeof AdminAwardBody>;
+export type AdminAwardBodyOutput = zod.output<typeof AdminAwardBody>;

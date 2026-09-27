@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const InterventionSummary = zod.object({
-  avg_risk_delta_after_intervention: zod.number().nullish(),
-  open: zod.int(),
-  recovered_learners: zod.int(),
-  resolved: zod.int(),
-  total: zod.int(),
+  "avg_risk_delta_after_intervention": zod.number().nullish(),
+  "open": zod.int(),
+  "recovered_learners": zod.int(),
+  "resolved": zod.int(),
+  "total": zod.int()
 })
 
-export type InterventionSummary = zod.input<typeof InterventionSummary>
-export type InterventionSummaryOutput = zod.output<typeof InterventionSummary>
+export type InterventionSummary = zod.input<typeof InterventionSummary>;
+export type InterventionSummaryOutput = zod.output<typeof InterventionSummary>;

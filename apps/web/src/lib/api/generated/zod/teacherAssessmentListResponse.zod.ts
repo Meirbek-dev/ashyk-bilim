@@ -5,54 +5,43 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const TeacherAssessmentListResponse = zod.object({
-  cohort_options: zod.array(
-    zod.object({
-      label: zod.string(),
-      value: zod.string(),
-    }),
-  ),
-  course_options: zod.array(
-    zod.object({
-      label: zod.string(),
-      value: zod.string(),
-    }),
-  ),
-  generated_at_unix: zod.int(),
-  items: zod.array(
-    zod.object({
-      activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-      assessment_id: zod.uuid(),
-      assessment_type: zod
-        .enum(['quiz', 'exam', 'code_challenge'])
-        .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
-      avg_attempts: zod.number().nullish(),
-      completion_rate: zod.number().nullish(),
-      course_id: zod.uuid(),
-      course_name: zod.string(),
-      difficulty_score: zod.number().nullish(),
-      discrimination_index: zod.number().nullish(),
-      grading_latency_hours_p50: zod.number().nullish(),
-      grading_latency_hours_p90: zod.number().nullish(),
-      median_score: zod.number().nullish(),
-      outlier_reason_codes: zod.array(zod.string()),
-      pass_rate: zod.number().nullish(),
-      reliability_score: zod.number().nullish(),
-      score_variance: zod.number().nullish(),
-      submission_rate: zod.number().nullish(),
-      suspicious_flag: zod
-        .string()
-        .nullish()
-        .describe('`too_easy` | `too_hard` | `low_discrimination` | `low_variance`.'),
-      title: zod.string(),
-    }),
-  ),
-  page: zod.int(),
-  page_size: zod.int(),
-  total: zod.int(),
+  "cohort_options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string()
+})),
+  "course_options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string()
+})),
+  "generated_at_unix": zod.int(),
+  "items": zod.array(zod.object({
+  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "assessment_id": zod.uuid(),
+  "assessment_type": zod.enum(['quiz', 'exam', 'code_challenge']).describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+  "avg_attempts": zod.number().nullish(),
+  "completion_rate": zod.number().nullish(),
+  "course_id": zod.uuid(),
+  "course_name": zod.string(),
+  "difficulty_score": zod.number().nullish(),
+  "discrimination_index": zod.number().nullish(),
+  "grading_latency_hours_p50": zod.number().nullish(),
+  "grading_latency_hours_p90": zod.number().nullish(),
+  "median_score": zod.number().nullish(),
+  "outlier_reason_codes": zod.array(zod.string()),
+  "pass_rate": zod.number().nullish(),
+  "reliability_score": zod.number().nullish(),
+  "score_variance": zod.number().nullish(),
+  "submission_rate": zod.number().nullish(),
+  "suspicious_flag": zod.string().nullish().describe('`too_easy` | `too_hard` | `low_discrimination` | `low_variance`.'),
+  "title": zod.string()
+})),
+  "page": zod.int(),
+  "page_size": zod.int(),
+  "total": zod.int()
 })
 
-export type TeacherAssessmentListResponse = zod.input<typeof TeacherAssessmentListResponse>
-export type TeacherAssessmentListResponseOutput = zod.output<typeof TeacherAssessmentListResponse>
+export type TeacherAssessmentListResponse = zod.input<typeof TeacherAssessmentListResponse>;
+export type TeacherAssessmentListResponseOutput = zod.output<typeof TeacherAssessmentListResponse>;

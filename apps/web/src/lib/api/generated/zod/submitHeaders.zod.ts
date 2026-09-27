@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SubmitHeaders = zod.object({
-  'If-Match': zod.int().nullish(),
-  'Idempotency-Key': zod.string().nullish(),
+  "If-Match": zod.int().nullish(),
+  "Idempotency-Key": zod.string().nullish()
 })
 
-export type SubmitHeaders = zod.input<typeof SubmitHeaders>
-export type SubmitHeadersOutput = zod.output<typeof SubmitHeaders>
+export type SubmitHeaders = zod.input<typeof SubmitHeaders>;
+export type SubmitHeadersOutput = zod.output<typeof SubmitHeaders>;

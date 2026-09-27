@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const UpdateCollectionRequest = zod.object({
-  courses: zod.array(zod.uuid()).nullish().describe('Replaces the whole membership when present (legacy semantics).'),
-  description: zod.string().nullish(),
-  name: zod.string().nullish(),
-  public: zod.boolean().nullish(),
+  "courses": zod.array(zod.uuid()).nullish().describe('Replaces the whole membership when present (legacy semantics).'),
+  "description": zod.string().nullish(),
+  "name": zod.string().nullish(),
+  "public": zod.boolean().nullish()
 })
 
-export type UpdateCollectionRequest = zod.input<typeof UpdateCollectionRequest>
-export type UpdateCollectionRequestOutput = zod.output<typeof UpdateCollectionRequest>
+export type UpdateCollectionRequest = zod.input<typeof UpdateCollectionRequest>;
+export type UpdateCollectionRequestOutput = zod.output<typeof UpdateCollectionRequest>;

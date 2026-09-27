@@ -5,7 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import {
+  queryOptions as queryOptionsBuilder,
+  useMutation,
+  useQuery,
+  useSuspenseQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,10 +25,10 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult,
-} from '@tanstack/react-query'
+  UseSuspenseQueryResult
+} from '@tanstack/react-query';
 
-import {
+import type {
   AssessmentId,
   ItemFeedbackView,
   Problem,
@@ -32,30 +37,37 @@ import {
   SubmissionId,
   SubmitRequest,
   ViolationRequest,
-  ViolationState,
-} from '../zod'
+  ViolationState
+} from '../zod';
 
-import { orvalMutator, arrayParser, stringParser } from '../../orval-mutator'
-import type { ErrorType, BodyType } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringParser } from '../../orval-mutator';
+import type { ErrorType , BodyType } from '../../orval-mutator';
 
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K }
+  const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue
+    if (key === 'queryKey') continue;
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    })
+    });
   }
-  return result
-}
+  return result;
+};
 
-export const getStartSubmissionUrl = (id: AssessmentId) => {
+export const getStartSubmissionUrl = (id: AssessmentId,) => {
+
+
+
+
   return `/api/v2/assessments/${id}/submissions`
 }
 
@@ -64,668 +76,542 @@ export const getStartSubmissionUrl = (id: AssessmentId) => {
  * (403) with the blocking reasons when the attempt state disallows it.
  * @summary Open a draft attempt (or return the one already open).
  */
-export const startSubmission = async (
-  id: AssessmentId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission> => {
-  return orvalMutator<StudentSubmission>(
-    getStartSubmissionUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-    StudentSubmission,
-  )
-}
+export const startSubmission = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission> => {
 
-export const getStartSubmissionMutationKey = () => ['startSubmission'] as const
+  return orvalMutator<StudentSubmission>(getStartSubmissionUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
-export const getStartSubmissionMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof startSubmission>>,
-    TError,
-    StartSubmissionMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof startSubmission>>,
-  TError,
-  StartSubmissionMutationVariables,
-  TContext
-> => {
-  const mutationKey = getStartSubmissionMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof startSubmission>>,
-    StartSubmissionMutationVariables
-  > = props => {
-    const { id } = props ?? {}
+  },
+  StudentSubmission,
+);}
 
-    return startSubmission(id, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
 
-export type StartSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof startSubmission>>>
 
-export type StartSubmissionMutationError = ErrorType<Problem>
-export type StartSubmissionMutationVariables = { id: AssessmentId }
 
-/**
+export const getStartSubmissionMutationKey = () => ['startSubmission'] as const;
+
+export const getStartSubmissionMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSubmission>>, TError,StartSubmissionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof startSubmission>>, TError,StartSubmissionMutationVariables, TContext> => {
+
+const mutationKey = getStartSubmissionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startSubmission>>, StartSubmissionMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  startSubmission(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof startSubmission>>>
+
+    export type StartSubmissionMutationError = ErrorType<Problem>
+    export type StartSubmissionMutationVariables = {id: AssessmentId}
+
+    /**
  * @summary Open a draft attempt (or return the one already open).
  */
-export const useStartSubmission = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof startSubmission>>,
-      TError,
-      StartSubmissionMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof startSubmission>>,
-  TError,
-  StartSubmissionMutationVariables,
-  TContext
-> => {
-  return useMutation(getStartSubmissionMutationOptions(options), queryClient)
-}
-export const getCurrentDraftUrl = (id: AssessmentId) => {
+export const useStartSubmission = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSubmission>>, TError,StartSubmissionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startSubmission>>,
+        TError,
+        StartSubmissionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartSubmissionMutationOptions(options), queryClient);
+    }
+    export const getCurrentDraftUrl = (id: AssessmentId,) => {
+
+
+
+
   return `/api/v2/assessments/${id}/submissions/draft`
 }
 
 /**
  * @summary The caller's open draft for this assessment (404 when none).
  */
-export const currentDraft = async (
-  id: AssessmentId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission> => {
-  return orvalMutator<StudentSubmission>(
-    getCurrentDraftUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    StudentSubmission,
-  )
-}
+export const currentDraft = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission> => {
 
-export const getCurrentDraftQueryKey = (id: AssessmentId) => {
-  return [`/api/v2/assessments/${id}/submissions/draft`] as const
-}
+  return orvalMutator<StudentSubmission>(getCurrentDraftUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getCurrentDraftQueryOptions = <
-  TData = Awaited<ReturnType<typeof currentDraft>>,
-  TError = ErrorType<Problem>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  StudentSubmission,
+);}
+
+
+
+
+
+export const getCurrentDraftQueryKey = (id: AssessmentId,) => {
+    return [
+    `/api/v2/assessments/${id}/submissions/draft`
+    ] as const;
+    }
+
+
+export const getCurrentDraftQueryOptions = <TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCurrentDraftQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof currentDraft>>> = ({ signal }) =>
-    currentDraft(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getCurrentDraftQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof currentDraft>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof currentDraft>>> = ({ signal }) => currentDraft(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CurrentDraftQueryResult = NonNullable<Awaited<ReturnType<typeof currentDraft>>>
 export type CurrentDraftQueryError = ErrorType<Problem>
 
+
 export function useCurrentDraft<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>> &
-      Pick<
+ id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof currentDraft>>,
           TError,
           Awaited<ReturnType<typeof currentDraft>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentDraft<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>> &
-      Pick<
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof currentDraft>>,
           TError,
           Awaited<ReturnType<typeof currentDraft>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentDraft<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The caller's open draft for this assessment (404 when none).
  */
 
 export function useCurrentDraft<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCurrentDraftQueryOptions(id, options)
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getCurrentDraftQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getCurrentDraftSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof currentDraft>>,
-  TError = ErrorType<Problem>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getCurrentDraftSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCurrentDraftQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof currentDraft>>> = ({ signal }) =>
-    currentDraft(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getCurrentDraftQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof currentDraft>>> = ({ signal }) => currentDraft(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type CurrentDraftSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof currentDraft>>>
 export type CurrentDraftSuspenseQueryError = ErrorType<Problem>
 
+
 export function useCurrentDraftSuspense<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentDraftSuspense<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCurrentDraftSuspense<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary The caller's open draft for this assessment (404 when none).
  */
 
 export function useCurrentDraftSuspense<TData = Awaited<ReturnType<typeof currentDraft>>, TError = ErrorType<Problem>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCurrentDraftSuspenseQueryOptions(id, options)
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof currentDraft>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getCurrentDraftSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getMySubmissionsUrl = (id: AssessmentId) => {
+
+
+
+
+
+export const getMySubmissionsUrl = (id: AssessmentId,) => {
+
+
+
+
   return `/api/v2/assessments/${id}/submissions/me`
 }
 
 /**
  * @summary Every attempt the caller made on this assessment, newest first.
  */
-export const mySubmissions = async (
-  id: AssessmentId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission[]> => {
-  return orvalMutator<StudentSubmission[]>(
-    getMySubmissionsUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    arrayParser(StudentSubmission),
-  )
-}
+export const mySubmissions = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission[]> => {
 
-export const getMySubmissionsQueryKey = (id: AssessmentId) => {
-  return [`/api/v2/assessments/${id}/submissions/me`] as const
-}
+  return orvalMutator<StudentSubmission[]>(getMySubmissionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getMySubmissionsQueryOptions = <
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  arrayParser(StudentSubmission),
+);}
+
+
+
+
+
+export const getMySubmissionsQueryKey = (id: AssessmentId,) => {
+    return [
+    `/api/v2/assessments/${id}/submissions/me`
+    ] as const;
+    }
+
+
+export const getMySubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMySubmissionsQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof mySubmissions>>> = ({ signal }) =>
-    mySubmissions(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getMySubmissionsQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof mySubmissions>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof mySubmissions>>> = ({ signal }) => mySubmissions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type MySubmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof mySubmissions>>>
 export type MySubmissionsQueryError = ErrorType<unknown>
 
+
 export function useMySubmissions<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>> &
-      Pick<
+ id: AssessmentId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof mySubmissions>>,
           TError,
           Awaited<ReturnType<typeof mySubmissions>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMySubmissions<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>> &
-      Pick<
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof mySubmissions>>,
           TError,
           Awaited<ReturnType<typeof mySubmissions>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMySubmissions<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Every attempt the caller made on this assessment, newest first.
  */
 
 export function useMySubmissions<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMySubmissionsQueryOptions(id, options)
+ id: AssessmentId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getMySubmissionsQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getMySubmissionsSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getMySubmissionsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMySubmissionsQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof mySubmissions>>> = ({ signal }) =>
-    mySubmissions(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getMySubmissionsQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof mySubmissions>>> = ({ signal }) => mySubmissions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MySubmissionsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof mySubmissions>>>
 export type MySubmissionsSuspenseQueryError = ErrorType<unknown>
 
-export function useMySubmissionsSuspense<
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMySubmissionsSuspense<
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMySubmissionsSuspense<
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useMySubmissionsSuspense<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
+ id: AssessmentId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMySubmissionsSuspense<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMySubmissionsSuspense<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Every attempt the caller made on this assessment, newest first.
  */
 
-export function useMySubmissionsSuspense<
-  TData = Awaited<ReturnType<typeof mySubmissions>>,
-  TError = ErrorType<unknown>,
->(
-  id: AssessmentId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMySubmissionsSuspenseQueryOptions(id, options)
+export function useMySubmissionsSuspense<TData = Awaited<ReturnType<typeof mySubmissions>>, TError = ErrorType<unknown>>(
+ id: AssessmentId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof mySubmissions>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getMySubmissionsSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getGetSubmissionUrl = (id: SubmissionId) => {
+
+
+
+
+
+export const getGetSubmissionUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}`
 }
 
 /**
  * @summary One attempt the caller owns (404 for anyone else's).
  */
-export const getSubmission = async (
-  id: SubmissionId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission> => {
-  return orvalMutator<StudentSubmission>(
-    getGetSubmissionUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    StudentSubmission,
-  )
-}
+export const getSubmission = async (id: SubmissionId, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission> => {
 
-export const getGetSubmissionQueryKey = (id: SubmissionId) => {
-  return [`/api/v2/submissions/${id}`] as const
-}
+  return orvalMutator<StudentSubmission>(getGetSubmissionUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getGetSubmissionQueryOptions = <
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  StudentSubmission,
+);}
+
+
+
+
+
+export const getGetSubmissionQueryKey = (id: SubmissionId,) => {
+    return [
+    `/api/v2/submissions/${id}`
+    ] as const;
+    }
+
+
+export const getGetSubmissionQueryOptions = <TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGetSubmissionQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubmission>>> = ({ signal }) =>
-    getSubmission(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getGetSubmissionQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getSubmission>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubmission>>> = ({ signal }) => getSubmission(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetSubmissionQueryResult = NonNullable<Awaited<ReturnType<typeof getSubmission>>>
 export type GetSubmissionQueryError = ErrorType<Problem>
 
+
 export function useGetSubmission<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getSubmission>>,
           TError,
           Awaited<ReturnType<typeof getSubmission>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSubmission<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getSubmission>>,
           TError,
           Awaited<ReturnType<typeof getSubmission>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSubmission<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary One attempt the caller owns (404 for anyone else's).
  */
 
 export function useGetSubmission<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetSubmissionQueryOptions(id, options)
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getGetSubmissionQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getGetSubmissionSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getGetSubmissionSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGetSubmissionQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubmission>>> = ({ signal }) =>
-    getSubmission(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getGetSubmissionQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubmission>>> = ({ signal }) => getSubmission(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type GetSubmissionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getSubmission>>>
 export type GetSubmissionSuspenseQueryError = ErrorType<Problem>
 
-export function useGetSubmissionSuspense<
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetSubmissionSuspense<
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetSubmissionSuspense<
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetSubmissionSuspense<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSubmissionSuspense<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSubmissionSuspense<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary One attempt the caller owns (404 for anyone else's).
  */
 
-export function useGetSubmissionSuspense<
-  TData = Awaited<ReturnType<typeof getSubmission>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetSubmissionSuspenseQueryOptions(id, options)
+export function useGetSubmissionSuspense<TData = Awaited<ReturnType<typeof getSubmission>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getSubmission>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getGetSubmissionSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getSubmissionsSaveDraftUrl = (id: SubmissionId) => {
+
+
+
+
+
+export const getSubmissionsSaveDraftUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}/draft`
 }
 
@@ -735,100 +621,89 @@ export const getSubmissionsSaveDraftUrl = (id: SubmissionId) => {
  * Throttled to one save per 5 seconds per draft (429).
  * @summary Merge answers into the open draft.
  */
-export const submissionsSaveDraft = async (
-  id: SubmissionId,
-  saveDraftRequest: SaveDraftRequest,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission> => {
-  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {}
-    if (h instanceof Headers) return Object.fromEntries(h.entries())
+export const submissionsSaveDraft = async (id: SubmissionId,
+    saveDraftRequest: SaveDraftRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
-      )
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
     }
-    const headers: Record<string, string | readonly string[]> = {}
+    const headers: Record<string, string | readonly string[]> = {};
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value
+      if (value !== undefined) headers[name] = value;
     }
-    return headers
-  }
-  return orvalMutator<StudentSubmission>(
-    getSubmissionsSaveDraftUrl(id),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(saveDraftRequest),
-    },
-    StudentSubmission,
-  )
-}
+    return headers;
+  };
+return orvalMutator<StudentSubmission>(getSubmissionsSaveDraftUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(saveDraftRequest)
+  },
+  StudentSubmission,
+);}
 
-export const getSubmissionsSaveDraftMutationKey = () => ['submissionsSaveDraft'] as const
 
-export const getSubmissionsSaveDraftMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof submissionsSaveDraft>>,
-    TError,
-    SubmissionsSaveDraftMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof submissionsSaveDraft>>,
-  TError,
-  SubmissionsSaveDraftMutationVariables,
-  TContext
-> => {
-  const mutationKey = getSubmissionsSaveDraftMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof submissionsSaveDraft>>,
-    SubmissionsSaveDraftMutationVariables
-  > = props => {
-    const { id, data } = props ?? {}
 
-    return submissionsSaveDraft(id, data, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
+export const getSubmissionsSaveDraftMutationKey = () => ['submissionsSaveDraft'] as const;
 
-export type SubmissionsSaveDraftMutationResult = NonNullable<Awaited<ReturnType<typeof submissionsSaveDraft>>>
-export type SubmissionsSaveDraftMutationBody = BodyType<SaveDraftRequest>
-export type SubmissionsSaveDraftMutationError = ErrorType<Problem>
-export type SubmissionsSaveDraftMutationVariables = { id: SubmissionId; data: BodyType<SaveDraftRequest> }
+export const getSubmissionsSaveDraftMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submissionsSaveDraft>>, TError,SubmissionsSaveDraftMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof submissionsSaveDraft>>, TError,SubmissionsSaveDraftMutationVariables, TContext> => {
 
-/**
+const mutationKey = getSubmissionsSaveDraftMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submissionsSaveDraft>>, SubmissionsSaveDraftMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submissionsSaveDraft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmissionsSaveDraftMutationResult = NonNullable<Awaited<ReturnType<typeof submissionsSaveDraft>>>
+    export type SubmissionsSaveDraftMutationBody = BodyType<SaveDraftRequest>
+    export type SubmissionsSaveDraftMutationError = ErrorType<Problem>
+    export type SubmissionsSaveDraftMutationVariables = {id: SubmissionId;data: BodyType<SaveDraftRequest>}
+
+    /**
  * @summary Merge answers into the open draft.
  */
-export const useSubmissionsSaveDraft = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof submissionsSaveDraft>>,
-      TError,
-      SubmissionsSaveDraftMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof submissionsSaveDraft>>,
-  TError,
-  SubmissionsSaveDraftMutationVariables,
-  TContext
-> => {
-  return useMutation(getSubmissionsSaveDraftMutationOptions(options), queryClient)
-}
-export const getSubmissionEventsUrl = (id: SubmissionId) => {
+export const useSubmissionsSaveDraft = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submissionsSaveDraft>>, TError,SubmissionsSaveDraftMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submissionsSaveDraft>>,
+        TError,
+        SubmissionsSaveDraftMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmissionsSaveDraftMutationOptions(options), queryClient);
+    }
+    export const getSubmissionEventsUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}/events`
 }
 
@@ -839,383 +714,312 @@ export const getSubmissionEventsUrl = (id: SubmissionId) => {
  * stream id to send back as `Last-Event-ID` on reconnect.
  * @summary Grading events for one submission as `text/event-stream`.
  */
-export const submissionEvents = async (
-  id: SubmissionId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<string> => {
-  return orvalMutator<string>(
-    getSubmissionEventsUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    stringParser,
-  )
-}
+export const submissionEvents = async (id: SubmissionId, options?: Parameters<typeof orvalMutator>[1]): Promise<string> => {
 
-export const getSubmissionEventsQueryKey = (id: SubmissionId) => {
-  return [`/api/v2/submissions/${id}/events`] as const
-}
+  return orvalMutator<string>(getSubmissionEventsUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getSubmissionEventsQueryOptions = <
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  stringParser,
+);}
+
+
+
+
+
+export const getSubmissionEventsQueryKey = (id: SubmissionId,) => {
+    return [
+    `/api/v2/submissions/${id}/events`
+    ] as const;
+    }
+
+
+export const getSubmissionEventsQueryOptions = <TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getSubmissionEventsQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof submissionEvents>>> = ({ signal }) =>
-    submissionEvents(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getSubmissionEventsQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof submissionEvents>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof submissionEvents>>> = ({ signal }) => submissionEvents(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type SubmissionEventsQueryResult = NonNullable<Awaited<ReturnType<typeof submissionEvents>>>
 export type SubmissionEventsQueryError = ErrorType<Problem>
 
+
 export function useSubmissionEvents<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof submissionEvents>>,
           TError,
           Awaited<ReturnType<typeof submissionEvents>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSubmissionEvents<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof submissionEvents>>,
           TError,
           Awaited<ReturnType<typeof submissionEvents>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSubmissionEvents<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Grading events for one submission as `text/event-stream`.
  */
 
 export function useSubmissionEvents<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getSubmissionEventsQueryOptions(id, options)
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getSubmissionEventsQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getSubmissionEventsSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getSubmissionEventsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getSubmissionEventsQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof submissionEvents>>> = ({ signal }) =>
-    submissionEvents(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getSubmissionEventsQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof submissionEvents>>> = ({ signal }) => submissionEvents(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type SubmissionEventsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof submissionEvents>>>
 export type SubmissionEventsSuspenseQueryError = ErrorType<Problem>
 
-export function useSubmissionEventsSuspense<
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSubmissionEventsSuspense<
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSubmissionEventsSuspense<
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSubmissionEventsSuspense<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSubmissionEventsSuspense<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSubmissionEventsSuspense<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Grading events for one submission as `text/event-stream`.
  */
 
-export function useSubmissionEventsSuspense<
-  TData = Awaited<ReturnType<typeof submissionEvents>>,
-  TError = ErrorType<Problem>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getSubmissionEventsSuspenseQueryOptions(id, options)
+export function useSubmissionEventsSuspense<TData = Awaited<ReturnType<typeof submissionEvents>>, TError = ErrorType<Problem>>(
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof submissionEvents>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getSubmissionEventsSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getMyFeedbackUrl = (id: SubmissionId) => {
+
+
+
+
+
+export const getMyFeedbackUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}/feedback`
 }
 
 /**
  * @summary Released item feedback on one of the caller's own submissions.
  */
-export const myFeedback = async (
-  id: SubmissionId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<ItemFeedbackView[]> => {
-  return orvalMutator<ItemFeedbackView[]>(
-    getMyFeedbackUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    arrayParser(ItemFeedbackView),
-  )
-}
+export const myFeedback = async (id: SubmissionId, options?: Parameters<typeof orvalMutator>[1]): Promise<ItemFeedbackView[]> => {
 
-export const getMyFeedbackQueryKey = (id: SubmissionId) => {
-  return [`/api/v2/submissions/${id}/feedback`] as const
-}
+  return orvalMutator<ItemFeedbackView[]>(getMyFeedbackUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getMyFeedbackQueryOptions = <TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  arrayParser(ItemFeedbackView),
+);}
+
+
+
+
+
+export const getMyFeedbackQueryKey = (id: SubmissionId,) => {
+    return [
+    `/api/v2/submissions/${id}/feedback`
+    ] as const;
+    }
+
+
+export const getMyFeedbackQueryOptions = <TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMyFeedbackQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof myFeedback>>> = ({ signal }) =>
-    myFeedback(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getMyFeedbackQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof myFeedback>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof myFeedback>>> = ({ signal }) => myFeedback(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type MyFeedbackQueryResult = NonNullable<Awaited<ReturnType<typeof myFeedback>>>
 export type MyFeedbackQueryError = ErrorType<unknown>
 
+
 export function useMyFeedback<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof myFeedback>>,
           TError,
           Awaited<ReturnType<typeof myFeedback>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMyFeedback<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>> &
-      Pick<
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof myFeedback>>,
           TError,
           Awaited<ReturnType<typeof myFeedback>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMyFeedback<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Released item feedback on one of the caller's own submissions.
  */
 
 export function useMyFeedback<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMyFeedbackQueryOptions(id, options)
+ id: SubmissionId, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getMyFeedbackQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getMyFeedbackSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof myFeedback>>,
-  TError = ErrorType<unknown>,
->(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getMyFeedbackSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMyFeedbackQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof myFeedback>>> = ({ signal }) =>
-    myFeedback(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getMyFeedbackQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof myFeedback>>> = ({ signal }) => myFeedback(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type MyFeedbackSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myFeedback>>>
 export type MyFeedbackSuspenseQueryError = ErrorType<unknown>
 
+
 export function useMyFeedbackSuspense<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMyFeedbackSuspense<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMyFeedbackSuspense<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Released item feedback on one of the caller's own submissions.
  */
 
 export function useMyFeedbackSuspense<TData = Awaited<ReturnType<typeof myFeedback>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMyFeedbackSuspenseQueryOptions(id, options)
+ id: SubmissionId, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myFeedback>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getMyFeedbackSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getSubmitSubmissionUrl = (id: SubmissionId) => {
+
+
+
+
+
+export const getSubmitSubmissionUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}/submit`
 }
 
@@ -1226,100 +1030,89 @@ export const getSubmitSubmissionUrl = (id: SubmissionId) => {
  * 422. Limited to 3 submits per 10 seconds per learner.
  * @summary Submit the draft for grading.
  */
-export const submitSubmission = async (
-  id: SubmissionId,
-  submitRequest: SubmitRequest,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<StudentSubmission> => {
-  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {}
-    if (h instanceof Headers) return Object.fromEntries(h.entries())
+export const submitSubmission = async (id: SubmissionId,
+    submitRequest: SubmitRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<StudentSubmission> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
-      )
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
     }
-    const headers: Record<string, string | readonly string[]> = {}
+    const headers: Record<string, string | readonly string[]> = {};
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value
+      if (value !== undefined) headers[name] = value;
     }
-    return headers
-  }
-  return orvalMutator<StudentSubmission>(
-    getSubmitSubmissionUrl(id),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(submitRequest),
-    },
-    StudentSubmission,
-  )
-}
+    return headers;
+  };
+return orvalMutator<StudentSubmission>(getSubmitSubmissionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(submitRequest)
+  },
+  StudentSubmission,
+);}
 
-export const getSubmitSubmissionMutationKey = () => ['submitSubmission'] as const
 
-export const getSubmitSubmissionMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof submitSubmission>>,
-    TError,
-    SubmitSubmissionMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof submitSubmission>>,
-  TError,
-  SubmitSubmissionMutationVariables,
-  TContext
-> => {
-  const mutationKey = getSubmitSubmissionMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof submitSubmission>>,
-    SubmitSubmissionMutationVariables
-  > = props => {
-    const { id, data } = props ?? {}
 
-    return submitSubmission(id, data, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
+export const getSubmitSubmissionMutationKey = () => ['submitSubmission'] as const;
 
-export type SubmitSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof submitSubmission>>>
-export type SubmitSubmissionMutationBody = BodyType<SubmitRequest>
-export type SubmitSubmissionMutationError = ErrorType<Problem>
-export type SubmitSubmissionMutationVariables = { id: SubmissionId; data: BodyType<SubmitRequest> }
+export const getSubmitSubmissionMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSubmission>>, TError,SubmitSubmissionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitSubmission>>, TError,SubmitSubmissionMutationVariables, TContext> => {
 
-/**
+const mutationKey = getSubmitSubmissionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitSubmission>>, SubmitSubmissionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitSubmission(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof submitSubmission>>>
+    export type SubmitSubmissionMutationBody = BodyType<SubmitRequest>
+    export type SubmitSubmissionMutationError = ErrorType<Problem>
+    export type SubmitSubmissionMutationVariables = {id: SubmissionId;data: BodyType<SubmitRequest>}
+
+    /**
  * @summary Submit the draft for grading.
  */
-export const useSubmitSubmission = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof submitSubmission>>,
-      TError,
-      SubmitSubmissionMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof submitSubmission>>,
-  TError,
-  SubmitSubmissionMutationVariables,
-  TContext
-> => {
-  return useMutation(getSubmitSubmissionMutationOptions(options), queryClient)
-}
-export const getReportViolationUrl = (id: SubmissionId) => {
+export const useSubmitSubmission = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSubmission>>, TError,SubmitSubmissionMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submitSubmission>>,
+        TError,
+        SubmitSubmissionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitSubmissionMutationOptions(options), queryClient);
+    }
+    export const getReportViolationUrl = (id: SubmissionId,) => {
+
+
+
+
   return `/api/v2/submissions/${id}/violations`
 }
 
@@ -1328,96 +1121,81 @@ export const getReportViolationUrl = (id: SubmissionId) => {
  * attempt (a detector is on and the threshold is reached).
  * @summary Report one anti-cheat event on the open draft.
  */
-export const reportViolation = async (
-  id: SubmissionId,
-  violationRequest: ViolationRequest,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<ViolationState> => {
-  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {}
-    if (h instanceof Headers) return Object.fromEntries(h.entries())
+export const reportViolation = async (id: SubmissionId,
+    violationRequest: ViolationRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<ViolationState> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
-      )
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
     }
-    const headers: Record<string, string | readonly string[]> = {}
+    const headers: Record<string, string | readonly string[]> = {};
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value
+      if (value !== undefined) headers[name] = value;
     }
-    return headers
-  }
-  return orvalMutator<ViolationState>(
-    getReportViolationUrl(id),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(violationRequest),
-    },
-    ViolationState,
-  )
-}
+    return headers;
+  };
+return orvalMutator<ViolationState>(getReportViolationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(violationRequest)
+  },
+  ViolationState,
+);}
 
-export const getReportViolationMutationKey = () => ['reportViolation'] as const
 
-export const getReportViolationMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof reportViolation>>,
-    TError,
-    ReportViolationMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof reportViolation>>,
-  TError,
-  ReportViolationMutationVariables,
-  TContext
-> => {
-  const mutationKey = getReportViolationMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof reportViolation>>,
-    ReportViolationMutationVariables
-  > = props => {
-    const { id, data } = props ?? {}
 
-    return reportViolation(id, data, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
+export const getReportViolationMutationKey = () => ['reportViolation'] as const;
 
-export type ReportViolationMutationResult = NonNullable<Awaited<ReturnType<typeof reportViolation>>>
-export type ReportViolationMutationBody = BodyType<ViolationRequest>
-export type ReportViolationMutationError = ErrorType<Problem>
-export type ReportViolationMutationVariables = { id: SubmissionId; data: BodyType<ViolationRequest> }
+export const getReportViolationMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportViolation>>, TError,ReportViolationMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportViolation>>, TError,ReportViolationMutationVariables, TContext> => {
 
-/**
+const mutationKey = getReportViolationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportViolation>>, ReportViolationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportViolation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportViolationMutationResult = NonNullable<Awaited<ReturnType<typeof reportViolation>>>
+    export type ReportViolationMutationBody = BodyType<ViolationRequest>
+    export type ReportViolationMutationError = ErrorType<Problem>
+    export type ReportViolationMutationVariables = {id: SubmissionId;data: BodyType<ViolationRequest>}
+
+    /**
  * @summary Report one anti-cheat event on the open draft.
  */
-export const useReportViolation = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof reportViolation>>,
-      TError,
-      ReportViolationMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof reportViolation>>,
-  TError,
-  ReportViolationMutationVariables,
-  TContext
-> => {
-  return useMutation(getReportViolationMutationOptions(options), queryClient)
-}
+export const useReportViolation = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportViolation>>, TError,ReportViolationMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportViolation>>,
+        TError,
+        ReportViolationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReportViolationMutationOptions(options), queryClient);
+    }

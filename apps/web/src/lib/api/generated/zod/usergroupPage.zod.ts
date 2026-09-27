@@ -5,29 +5,21 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const UsergroupPage = zod
-  .object({
-    items: zod.array(
-      zod.object({
-        can_write: zod
-          .boolean()
-          .describe(
-            'Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).',
-          ),
-        created_at_unix: zod.int(),
-        creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        description: zod.string(),
-        id: zod.uuid(),
-        member_count: zod.int(),
-        name: zod.string(),
-        updated_at_unix: zod.int(),
-      }),
-    ),
-    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
-  })
-  .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
+export const UsergroupPage = zod.object({
+  "items": zod.array(zod.object({
+  "can_write": zod.boolean().describe('Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).'),
+  "created_at_unix": zod.int(),
+  "creator_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "description": zod.string(),
+  "id": zod.uuid(),
+  "member_count": zod.int(),
+  "name": zod.string(),
+  "updated_at_unix": zod.int()
+})),
+  "next_cursor": zod.union([zod.uuid(),zod.null()]).optional()
+}).describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 
-export type UsergroupPage = zod.input<typeof UsergroupPage>
-export type UsergroupPageOutput = zod.output<typeof UsergroupPage>
+export type UsergroupPage = zod.input<typeof UsergroupPage>;
+export type UsergroupPageOutput = zod.output<typeof UsergroupPage>;

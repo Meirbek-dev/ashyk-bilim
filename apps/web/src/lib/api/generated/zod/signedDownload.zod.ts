@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SignedDownload = zod.object({
-  content_type: zod.string(),
-  expires_at_unix: zod.int(),
-  file_id: zod.uuid(),
-  filename: zod.string(),
-  url: zod.string(),
+  "content_type": zod.string(),
+  "expires_at_unix": zod.int(),
+  "file_id": zod.uuid(),
+  "filename": zod.string(),
+  "url": zod.string()
 })
 
-export type SignedDownload = zod.input<typeof SignedDownload>
-export type SignedDownloadOutput = zod.output<typeof SignedDownload>
+export type SignedDownload = zod.input<typeof SignedDownload>;
+export type SignedDownloadOutput = zod.output<typeof SignedDownload>;

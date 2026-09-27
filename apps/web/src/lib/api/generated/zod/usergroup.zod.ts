@@ -5,22 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Usergroup = zod.object({
-  can_write: zod
-    .boolean()
-    .describe(
-      'Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).',
-    ),
-  created_at_unix: zod.int(),
-  creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  description: zod.string(),
-  id: zod.uuid(),
-  member_count: zod.int(),
-  name: zod.string(),
-  updated_at_unix: zod.int(),
+  "can_write": zod.boolean().describe('Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).'),
+  "created_at_unix": zod.int(),
+  "creator_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "description": zod.string(),
+  "id": zod.uuid(),
+  "member_count": zod.int(),
+  "name": zod.string(),
+  "updated_at_unix": zod.int()
 })
 
-export type Usergroup = zod.input<typeof Usergroup>
-export type UsergroupOutput = zod.output<typeof Usergroup>
+export type Usergroup = zod.input<typeof Usergroup>;
+export type UsergroupOutput = zod.output<typeof Usergroup>;

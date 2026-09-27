@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ExportAtRiskHeaders = zod.object({
-  'Accept-Language': zod.string().nullish(),
+  "Accept-Language": zod.string().nullish()
 })
 
-export type ExportAtRiskHeaders = zod.input<typeof ExportAtRiskHeaders>
-export type ExportAtRiskHeadersOutput = zod.output<typeof ExportAtRiskHeaders>
+export type ExportAtRiskHeaders = zod.input<typeof ExportAtRiskHeaders>;
+export type ExportAtRiskHeadersOutput = zod.output<typeof ExportAtRiskHeaders>;

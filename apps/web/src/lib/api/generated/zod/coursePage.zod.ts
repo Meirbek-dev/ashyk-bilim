@@ -5,66 +5,37 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const CoursePage = zod
-  .object({
-    items: zod.array(
-      zod.object({
-        about: zod.string(),
-        contributor_ids: zod
-          .array(zod.uuid())
-          .describe(
-            'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
-          ),
-        created_at_unix: zod.int(),
-        creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        description: zod.string(),
-        id: zod.uuid(),
-        learnings: zod
-          .array(
-            zod
-              .object({
-                emoji: zod.string().nullish(),
-                id: zod.string(),
-                text: zod.string(),
-              })
-              .describe('One "What you\'ll learn" entry.'),
-          )
-          .describe('"What you\'ll learn", in display order.'),
-        name: zod.string(),
-        open_to_contributors: zod.boolean(),
-        public: zod.boolean(),
-        tags: zod.array(zod.string()),
-        thumbnail_key: zod
-          .string()
-          .nullish()
-          .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
-        thumbnail_video_key: zod
-          .string()
-          .nullish()
-          .describe(
-            'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
-          ),
-        updated_at_unix: zod.int(),
-      }),
-    ),
-    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
-    summary: zod
-      .union([
-        zod
-          .object({
-            attention: zod.int().describe('Courses matching the `attention` preset.'),
-            private: zod.int().describe('Drafts.'),
-            ready: zod.int().describe('Published courses.'),
-            total: zod.int(),
-          })
-          .describe('Present only when the request had `mine=true`.'),
-        zod.null(),
-      ])
-      .optional(),
-  })
-  .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
+export const CoursePage = zod.object({
+  "items": zod.array(zod.object({
+  "about": zod.string(),
+  "contributor_ids": zod.array(zod.uuid()).describe('Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.'),
+  "created_at_unix": zod.int(),
+  "creator_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "description": zod.string(),
+  "id": zod.uuid(),
+  "learnings": zod.array(zod.object({
+  "emoji": zod.string().nullish(),
+  "id": zod.string(),
+  "text": zod.string()
+}).describe('One "What you\'ll learn" entry.')).describe('"What you\'ll learn", in display order.'),
+  "name": zod.string(),
+  "open_to_contributors": zod.boolean(),
+  "public": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "thumbnail_key": zod.string().nullish().describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+  "thumbnail_video_key": zod.string().nullish().describe('Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.'),
+  "updated_at_unix": zod.int()
+})),
+  "next_cursor": zod.union([zod.uuid(),zod.null()]).optional(),
+  "summary": zod.union([zod.object({
+  "attention": zod.int().describe('Courses matching the `attention` preset.'),
+  "private": zod.int().describe('Drafts.'),
+  "ready": zod.int().describe('Published courses.'),
+  "total": zod.int()
+}).describe('Present only when the request had `mine=true`.'),zod.null()]).optional()
+}).describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 
-export type CoursePage = zod.input<typeof CoursePage>
-export type CoursePageOutput = zod.output<typeof CoursePage>
+export type CoursePage = zod.input<typeof CoursePage>;
+export type CoursePageOutput = zod.output<typeof CoursePage>;

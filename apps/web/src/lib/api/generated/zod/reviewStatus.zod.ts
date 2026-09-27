@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const ReviewStatus = zod
-  .enum(['needs_grading', 'pending', 'graded', 'published', 'returned'])
-  .describe('Queue filter; `needs_grading` is `pending`.')
+export const ReviewStatus = zod.enum(['needs_grading', 'pending', 'graded', 'published', 'returned']).describe('Queue filter; `needs_grading` is `pending`.')
 
-export type ReviewStatus = zod.input<typeof ReviewStatus>
-export type ReviewStatusOutput = zod.output<typeof ReviewStatus>
+export type ReviewStatus = zod.input<typeof ReviewStatus>;
+export type ReviewStatusOutput = zod.output<typeof ReviewStatus>;

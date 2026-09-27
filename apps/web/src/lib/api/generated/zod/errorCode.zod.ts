@@ -5,51 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const ErrorCode = zod
-  .enum([
-    'internal',
-    'not-found',
-    'method-not-allowed',
-    'forbidden',
-    'unauthenticated',
-    'conflict',
-    'idempotency-in-progress',
-    'validation-failed',
-    'precondition-failed',
-    'rate-limited',
-    'payload-too-large',
-    'activity-not-ready',
-    'course-not-ready',
-    'unsupported-media-type',
-    'service-unavailable',
-    'invalid-credentials',
-    'mfa-required',
-    'session-expired',
-    'csrf-rejected',
-    'account-disabled',
-    'google-oauth-expired',
-    'account-exists',
-    'invalid-totp-code',
-    'username-taken',
-    'email-taken',
-    'role-slug-taken',
-    'last-admin',
-    'self-disable',
-    'link-preview-failed',
-    'code-runner-degraded',
-    'compile-error',
-    'language-not-allowed',
-    'grade-not-released',
-    'grade-own-attempt',
-    'ai-disabled',
-    'ai-budget-exhausted',
-    'ai-rate-limited',
-    'ai-run-cancelled',
-    'ai-provider-unavailable',
-  ])
-  .describe('Stable, closed set of machine-readable error codes.')
+export const ErrorCode = zod.enum(['internal', 'not-found', 'method-not-allowed', 'forbidden', 'unauthenticated', 'conflict', 'idempotency-in-progress', 'validation-failed', 'precondition-failed', 'rate-limited', 'payload-too-large', 'activity-not-ready', 'course-not-ready', 'unsupported-media-type', 'service-unavailable', 'invalid-credentials', 'mfa-required', 'session-expired', 'csrf-rejected', 'account-disabled', 'google-oauth-expired', 'account-exists', 'invalid-totp-code', 'username-taken', 'email-taken', 'role-slug-taken', 'last-admin', 'self-disable', 'link-preview-failed', 'code-runner-degraded', 'compile-error', 'language-not-allowed', 'grade-not-released', 'grade-own-attempt', 'ai-disabled', 'ai-budget-exhausted', 'ai-rate-limited', 'ai-run-cancelled', 'ai-provider-unavailable']).describe('Stable, closed set of machine-readable error codes.')
 
-export type ErrorCode = zod.input<typeof ErrorCode>
-export type ErrorCodeOutput = zod.output<typeof ErrorCode>
+export type ErrorCode = zod.input<typeof ErrorCode>;
+export type ErrorCodeOutput = zod.output<typeof ErrorCode>;

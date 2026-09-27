@@ -5,15 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const RunArtifact = zod.object({
-  content: zod.looseObject({}),
-  created_at_unix: zod.int(),
-  final: zod.boolean(),
-  id: zod.uuid(),
-  kind: zod.string(),
+  "content": zod.looseObject({
+
+}),
+  "created_at_unix": zod.int(),
+  "final": zod.boolean(),
+  "id": zod.uuid(),
+  "kind": zod.string()
 })
 
-export type RunArtifact = zod.input<typeof RunArtifact>
-export type RunArtifactOutput = zod.output<typeof RunArtifact>
+export type RunArtifact = zod.input<typeof RunArtifact>;
+export type RunArtifactOutput = zod.output<typeof RunArtifact>;

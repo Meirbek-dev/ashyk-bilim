@@ -5,9 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const StudyAsk200 = zod.looseObject({})
+export const StudyAsk200 = zod.looseObject({
 
-export type StudyAsk200 = zod.input<typeof StudyAsk200>
-export type StudyAsk200Output = zod.output<typeof StudyAsk200>
+})
+
+export type StudyAsk200 = zod.input<typeof StudyAsk200>;
+export type StudyAsk200Output = zod.output<typeof StudyAsk200>;

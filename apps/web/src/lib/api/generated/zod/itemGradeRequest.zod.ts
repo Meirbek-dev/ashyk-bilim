@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ItemGradeRequest = zod.object({
-  feedback: zod.string().optional(),
-  item_id: zod.uuid(),
-  score: zod.number().nullish().describe('Points for this item (its `max_score` scale).'),
+  "feedback": zod.string().optional(),
+  "item_id": zod.uuid(),
+  "score": zod.number().nullish().describe('Points for this item (its `max_score` scale).')
 })
 
-export type ItemGradeRequest = zod.input<typeof ItemGradeRequest>
-export type ItemGradeRequestOutput = zod.output<typeof ItemGradeRequest>
+export type ItemGradeRequest = zod.input<typeof ItemGradeRequest>;
+export type ItemGradeRequestOutput = zod.output<typeof ItemGradeRequest>;

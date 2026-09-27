@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const RemediationStatus = zod
-  .enum(['assigned', 'in_progress', 'passed', 'failed'])
-  .describe('Remediation session lifecycle (legacy string states).')
+export const RemediationStatus = zod.enum(['assigned', 'in_progress', 'passed', 'failed']).describe('Remediation session lifecycle (legacy string states).')
 
-export type RemediationStatus = zod.input<typeof RemediationStatus>
-export type RemediationStatusOutput = zod.output<typeof RemediationStatus>
+export type RemediationStatus = zod.input<typeof RemediationStatus>;
+export type RemediationStatusOutput = zod.output<typeof RemediationStatus>;

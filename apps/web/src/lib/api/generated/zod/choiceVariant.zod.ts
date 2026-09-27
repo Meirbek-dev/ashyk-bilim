@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ChoiceVariant = zod.enum(['single_choice', 'multiple_choice', 'true_false'])
 
-export type ChoiceVariant = zod.input<typeof ChoiceVariant>
-export type ChoiceVariantOutput = zod.output<typeof ChoiceVariant>
+export type ChoiceVariant = zod.input<typeof ChoiceVariant>;
+export type ChoiceVariantOutput = zod.output<typeof ChoiceVariant>;

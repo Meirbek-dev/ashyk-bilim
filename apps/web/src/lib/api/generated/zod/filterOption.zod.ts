@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FilterOption = zod.object({
-  label: zod.string(),
-  value: zod.string(),
+  "label": zod.string(),
+  "value": zod.string()
 })
 
-export type FilterOption = zod.input<typeof FilterOption>
-export type FilterOptionOutput = zod.output<typeof FilterOption>
+export type FilterOption = zod.input<typeof FilterOption>;
+export type FilterOptionOutput = zod.output<typeof FilterOption>;

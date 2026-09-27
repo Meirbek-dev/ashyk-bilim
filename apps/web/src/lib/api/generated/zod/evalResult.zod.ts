@@ -5,18 +5,20 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const EvalResult = zod.object({
-  created_at_unix: zod.int(),
-  dataset: zod.string(),
-  details: zod.looseObject({}),
-  evaluator: zod.string(),
-  id: zod.uuid(),
-  passed: zod.boolean().nullish(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  score: zod.number().nullish(),
+  "created_at_unix": zod.int(),
+  "dataset": zod.string(),
+  "details": zod.looseObject({
+
+}),
+  "evaluator": zod.string(),
+  "id": zod.uuid(),
+  "passed": zod.boolean().nullish(),
+  "run_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "score": zod.number().nullish()
 })
 
-export type EvalResult = zod.input<typeof EvalResult>
-export type EvalResultOutput = zod.output<typeof EvalResult>
+export type EvalResult = zod.input<typeof EvalResult>;
+export type EvalResultOutput = zod.output<typeof EvalResult>;

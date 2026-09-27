@@ -5,12 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const UpdateGamificationConfigRequest = zod.object({
-  daily_xp_limit: zod.int().nullish(),
-  rewards: zod.looseObject({}).optional(),
+  "daily_xp_limit": zod.int().nullish(),
+  "rewards": zod.looseObject({
+
+}).optional()
 })
 
-export type UpdateGamificationConfigRequest = zod.input<typeof UpdateGamificationConfigRequest>
-export type UpdateGamificationConfigRequestOutput = zod.output<typeof UpdateGamificationConfigRequest>
+export type UpdateGamificationConfigRequest = zod.input<typeof UpdateGamificationConfigRequest>;
+export type UpdateGamificationConfigRequestOutput = zod.output<typeof UpdateGamificationConfigRequest>;

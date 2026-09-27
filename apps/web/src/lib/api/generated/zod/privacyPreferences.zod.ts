@@ -5,14 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const PrivacyPreferences = zod.object({
-  showOnLeaderboard: zod
-    .boolean()
-    .nullish()
-    .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
+  "showOnLeaderboard": zod.boolean().nullish().describe('`false` hides the profile from the leaderboard (and its rank is `null`).')
 })
 
-export type PrivacyPreferences = zod.input<typeof PrivacyPreferences>
-export type PrivacyPreferencesOutput = zod.output<typeof PrivacyPreferences>
+export type PrivacyPreferences = zod.input<typeof PrivacyPreferences>;
+export type PrivacyPreferencesOutput = zod.output<typeof PrivacyPreferences>;

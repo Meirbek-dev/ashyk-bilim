@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const RemediationRequest = zod.object({
-  gate_mode: zod.boolean().optional(),
-  language: zod.string().optional(),
+  "gate_mode": zod.boolean().optional(),
+  "language": zod.string().optional()
 })
 
-export type RemediationRequest = zod.input<typeof RemediationRequest>
-export type RemediationRequestOutput = zod.output<typeof RemediationRequest>
+export type RemediationRequest = zod.input<typeof RemediationRequest>;
+export type RemediationRequestOutput = zod.output<typeof RemediationRequest>;

@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const AddUsergroupMembersBody = zod.object({
-  user_ids: zod.array(zod.uuid()),
+  "user_ids": zod.array(zod.uuid())
 })
 
-export type AddUsergroupMembersBody = zod.input<typeof AddUsergroupMembersBody>
-export type AddUsergroupMembersBodyOutput = zod.output<typeof AddUsergroupMembersBody>
+export type AddUsergroupMembersBody = zod.input<typeof AddUsergroupMembersBody>;
+export type AddUsergroupMembersBodyOutput = zod.output<typeof AddUsergroupMembersBody>;

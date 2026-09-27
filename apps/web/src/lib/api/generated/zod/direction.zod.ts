@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Direction = zod.enum(['up', 'down', 'flat'])
 
-export type Direction = zod.input<typeof Direction>
-export type DirectionOutput = zod.output<typeof Direction>
+export type Direction = zod.input<typeof Direction>;
+export type DirectionOutput = zod.output<typeof Direction>;

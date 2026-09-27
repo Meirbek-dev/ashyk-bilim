@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FormFieldType = zod.enum(['text', 'textarea', 'number', 'date'])
 
-export type FormFieldType = zod.input<typeof FormFieldType>
-export type FormFieldTypeOutput = zod.output<typeof FormFieldType>
+export type FormFieldType = zod.input<typeof FormFieldType>;
+export type FormFieldTypeOutput = zod.output<typeof FormFieldType>;

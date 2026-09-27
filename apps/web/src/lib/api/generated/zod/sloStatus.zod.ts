@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SloStatus = zod.enum(['healthy', 'warning', 'breached', 'not_applicable'])
 
-export type SloStatus = zod.input<typeof SloStatus>
-export type SloStatusOutput = zod.output<typeof SloStatus>
+export type SloStatus = zod.input<typeof SloStatus>;
+export type SloStatusOutput = zod.output<typeof SloStatus>;

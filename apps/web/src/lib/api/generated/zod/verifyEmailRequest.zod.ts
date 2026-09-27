@@ -5,14 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const VerifyEmailRequest = zod
-  .object({
-    code: zod.string(),
-    email: zod.string(),
-  })
-  .describe('Confirm the emailed verification code.')
+export const VerifyEmailRequest = zod.object({
+  "code": zod.string(),
+  "email": zod.string()
+}).describe('Confirm the emailed verification code.')
 
-export type VerifyEmailRequest = zod.input<typeof VerifyEmailRequest>
-export type VerifyEmailRequestOutput = zod.output<typeof VerifyEmailRequest>
+export type VerifyEmailRequest = zod.input<typeof VerifyEmailRequest>;
+export type VerifyEmailRequestOutput = zod.output<typeof VerifyEmailRequest>;

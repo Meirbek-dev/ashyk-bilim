@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FunnelStep = zod.object({
-  count: zod.int(),
-  label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-  pct_of_previous: zod.number().nullish(),
+  "count": zod.int(),
+  "label": zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
+  "pct_of_previous": zod.number().nullish()
 })
 
-export type FunnelStep = zod.input<typeof FunnelStep>
-export type FunnelStepOutput = zod.output<typeof FunnelStep>
+export type FunnelStep = zod.input<typeof FunnelStep>;
+export type FunnelStepOutput = zod.output<typeof FunnelStep>;

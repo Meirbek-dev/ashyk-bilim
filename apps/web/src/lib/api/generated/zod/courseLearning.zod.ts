@@ -5,15 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const CourseLearning = zod
-  .object({
-    emoji: zod.string().nullish(),
-    id: zod.string(),
-    text: zod.string(),
-  })
-  .describe('One "What you\'ll learn" entry.')
+export const CourseLearning = zod.object({
+  "emoji": zod.string().nullish(),
+  "id": zod.string(),
+  "text": zod.string()
+}).describe('One "What you\'ll learn" entry.')
 
-export type CourseLearning = zod.input<typeof CourseLearning>
-export type CourseLearningOutput = zod.output<typeof CourseLearning>
+export type CourseLearning = zod.input<typeof CourseLearning>;
+export type CourseLearningOutput = zod.output<typeof CourseLearning>;

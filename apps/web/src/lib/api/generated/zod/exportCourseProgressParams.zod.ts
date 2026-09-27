@@ -5,22 +5,22 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ExportCourseProgressParams = zod.object({
-  window: zod.string().optional(),
-  compare: zod.string().optional(),
-  bucket: zod.string().optional(),
-  bucket_start: zod.string().optional(),
-  course_ids: zod.string().optional(),
-  cohort_ids: zod.string().optional(),
-  teacher_user_id: zod.string().optional(),
-  timezone: zod.string().optional(),
-  page: zod.int().optional(),
-  page_size: zod.int().optional(),
-  sort_by: zod.string().optional(),
-  sort_order: zod.string().optional(),
+  "window": zod.string().optional(),
+  "compare": zod.string().optional(),
+  "bucket": zod.string().optional(),
+  "bucket_start": zod.string().optional(),
+  "course_ids": zod.string().optional(),
+  "cohort_ids": zod.string().optional(),
+  "teacher_user_id": zod.string().optional(),
+  "timezone": zod.string().optional(),
+  "page": zod.int().optional(),
+  "page_size": zod.int().optional(),
+  "sort_by": zod.string().optional(),
+  "sort_order": zod.string().optional()
 })
 
-export type ExportCourseProgressParams = zod.input<typeof ExportCourseProgressParams>
-export type ExportCourseProgressParamsOutput = zod.output<typeof ExportCourseProgressParams>
+export type ExportCourseProgressParams = zod.input<typeof ExportCourseProgressParams>;
+export type ExportCourseProgressParamsOutput = zod.output<typeof ExportCourseProgressParams>;

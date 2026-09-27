@@ -5,11 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const FileSubmissionLifecycle = zod
-  .enum(['draft', 'published', 'archived'])
-  .describe('File-submission activity lifecycle (legacy `FileSubmissionLifecycle`).')
+export const FileSubmissionLifecycle = zod.enum(['draft', 'published', 'archived']).describe('File-submission activity lifecycle (legacy `FileSubmissionLifecycle`).')
 
-export type FileSubmissionLifecycle = zod.input<typeof FileSubmissionLifecycle>
-export type FileSubmissionLifecycleOutput = zod.output<typeof FileSubmissionLifecycle>
+export type FileSubmissionLifecycle = zod.input<typeof FileSubmissionLifecycle>;
+export type FileSubmissionLifecycleOutput = zod.output<typeof FileSubmissionLifecycle>;

@@ -5,19 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const ActionId = zod.enum([
-  'enroll',
-  'start',
-  'continue',
-  'revise',
-  'view_feedback',
-  'wait_for_grade',
-  'view_certificate',
-  'review_completion',
-  'none',
-])
+export const ActionId = zod.enum(['enroll', 'start', 'continue', 'revise', 'view_feedback', 'wait_for_grade', 'view_certificate', 'review_completion', 'none'])
 
-export type ActionId = zod.input<typeof ActionId>
-export type ActionIdOutput = zod.output<typeof ActionId>
+export type ActionId = zod.input<typeof ActionId>;
+export type ActionIdOutput = zod.output<typeof ActionId>;

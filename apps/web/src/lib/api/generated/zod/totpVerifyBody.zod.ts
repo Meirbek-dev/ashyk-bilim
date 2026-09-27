@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const TotpVerifyBody = zod.object({
-  code: zod.string(),
+  "code": zod.string()
 })
 
-export type TotpVerifyBody = zod.input<typeof TotpVerifyBody>
-export type TotpVerifyBodyOutput = zod.output<typeof TotpVerifyBody>
+export type TotpVerifyBody = zod.input<typeof TotpVerifyBody>;
+export type TotpVerifyBodyOutput = zod.output<typeof TotpVerifyBody>;

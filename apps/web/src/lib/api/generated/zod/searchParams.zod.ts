@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const SearchParams = zod.object({
-  q: zod.string(),
-  limit: zod.int().optional(),
+  "q": zod.string(),
+  "limit": zod.int().optional()
 })
 
-export type SearchParams = zod.input<typeof SearchParams>
-export type SearchParamsOutput = zod.output<typeof SearchParams>
+export type SearchParams = zod.input<typeof SearchParams>;
+export type SearchParamsOutput = zod.output<typeof SearchParams>;

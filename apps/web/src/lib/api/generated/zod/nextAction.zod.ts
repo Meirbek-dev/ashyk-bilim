@@ -5,26 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const NextAction = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  enabled: zod.boolean(),
-  href: zod.string().nullish(),
-  id: zod.enum([
-    'enroll',
-    'start',
-    'continue',
-    'revise',
-    'view_feedback',
-    'wait_for_grade',
-    'view_certificate',
-    'review_completion',
-    'none',
-  ]),
-  label: zod.string(),
-  reason: zod.string(),
+  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "enabled": zod.boolean(),
+  "href": zod.string().nullish(),
+  "id": zod.enum(['enroll', 'start', 'continue', 'revise', 'view_feedback', 'wait_for_grade', 'view_certificate', 'review_completion', 'none']),
+  "label": zod.string(),
+  "reason": zod.string()
 })
 
-export type NextAction = zod.input<typeof NextAction>
-export type NextActionOutput = zod.output<typeof NextAction>
+export type NextAction = zod.input<typeof NextAction>;
+export type NextActionOutput = zod.output<typeof NextAction>;

@@ -5,7 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import { queryOptions as queryOptionsBuilder, useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import {
+  queryOptions as queryOptionsBuilder,
+  useMutation,
+  useQuery,
+  useSuspenseQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -20,32 +25,44 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult,
-} from '@tanstack/react-query'
+  UseSuspenseQueryResult
+} from '@tanstack/react-query';
 
-import { CreateUploadRequest, CreatedUpload, FinalizedUpload, Problem } from '../zod'
+import type {
+  CreateUploadRequest,
+  CreatedUpload,
+  FinalizedUpload,
+  Problem
+} from '../zod';
 
-import { orvalMutator, unknownParser } from '../../orval-mutator'
-import type { ErrorType, BodyType } from '../../orval-mutator'
+import { orvalMutator, unknownParser } from '../../orval-mutator';
+import type { ErrorType , BodyType } from '../../orval-mutator';
 
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K }
+  const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
     // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue
+    if (key === 'queryKey') continue;
     Object.defineProperty(result, key, {
       enumerable: true,
       configurable: true,
       get: () => (query as Record<string, unknown>)[key],
-    })
+    });
   }
-  return result
-}
+  return result;
+};
 
 export const getCreateUploadUrl = () => {
+
+
+
+
   return `/api/v2/uploads`
 }
 
@@ -55,89 +72,88 @@ export const getCreateUploadUrl = () => {
  * access. Bytes go directly to storage, not this API.
  * @summary Start an upload: validates the purpose policy and returns a presigned PUT.
  */
-export const createUpload = async (
-  createUploadRequest: CreateUploadRequest,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<CreatedUpload> => {
-  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {}
-    if (h instanceof Headers) return Object.fromEntries(h.entries())
+export const createUpload = async (createUploadRequest: CreateUploadRequest, options?: Parameters<typeof orvalMutator>[1]): Promise<CreatedUpload> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
     if (Symbol.iterator in h) {
       return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
-      )
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
     }
-    const headers: Record<string, string | readonly string[]> = {}
+    const headers: Record<string, string | readonly string[]> = {};
     for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value
+      if (value !== undefined) headers[name] = value;
     }
-    return headers
-  }
-  return orvalMutator<CreatedUpload>(
-    getCreateUploadUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(createUploadRequest),
-    },
-    CreatedUpload,
-  )
-}
+    return headers;
+  };
+return orvalMutator<CreatedUpload>(getCreateUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createUploadRequest)
+  },
+  CreatedUpload,
+);}
 
-export const getCreateUploadMutationKey = () => ['createUpload'] as const
 
-export const getCreateUploadMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createUpload>>,
-    TError,
-    CreateUploadMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<Awaited<ReturnType<typeof createUpload>>, TError, CreateUploadMutationVariables, TContext> => {
-  const mutationKey = getCreateUploadMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createUpload>>,
-    CreateUploadMutationVariables
-  > = props => {
-    const { data } = props ?? {}
 
-    return createUpload(data, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
+export const getCreateUploadMutationKey = () => ['createUpload'] as const;
 
-export type CreateUploadMutationResult = NonNullable<Awaited<ReturnType<typeof createUpload>>>
-export type CreateUploadMutationBody = BodyType<CreateUploadRequest>
-export type CreateUploadMutationError = ErrorType<Problem>
-export type CreateUploadMutationVariables = { data: BodyType<CreateUploadRequest> }
+export const getCreateUploadMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUpload>>, TError,CreateUploadMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof createUpload>>, TError,CreateUploadMutationVariables, TContext> => {
 
-/**
+const mutationKey = getCreateUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUpload>>, CreateUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateUploadMutationResult = NonNullable<Awaited<ReturnType<typeof createUpload>>>
+    export type CreateUploadMutationBody = BodyType<CreateUploadRequest>
+    export type CreateUploadMutationError = ErrorType<Problem>
+    export type CreateUploadMutationVariables = {data: BodyType<CreateUploadRequest>}
+
+    /**
  * @summary Start an upload: validates the purpose policy and returns a presigned PUT.
  */
-export const useCreateUpload = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof createUpload>>,
-      TError,
-      CreateUploadMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<Awaited<ReturnType<typeof createUpload>>, TError, CreateUploadMutationVariables, TContext> => {
-  return useMutation(getCreateUploadMutationOptions(options), queryClient)
-}
-export const getDownloadUploadUrl = (id: string) => {
+export const useCreateUpload = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUpload>>, TError,CreateUploadMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createUpload>>,
+        TError,
+        CreateUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateUploadMutationOptions(options), queryClient);
+    }
+    export const getDownloadUploadUrl = (id: string,) => {
+
+
+
+
   return `/api/v2/uploads/${id}/download`
 }
 
@@ -145,207 +161,155 @@ export const getDownloadUploadUrl = (id: string) => {
  * @summary Redirect to a short-lived presigned download URL.
  */
 export const downloadUpload = async (id: string, options?: Parameters<typeof orvalMutator>[1]): Promise<unknown> => {
-  return orvalMutator<unknown>(
-    getDownloadUploadUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    unknownParser,
-  )
-}
 
-export const getDownloadUploadQueryKey = (id: string) => {
-  return [`/api/v2/uploads/${id}/download`] as const
-}
+  return orvalMutator<unknown>(getDownloadUploadUrl(id),
+  {
+    ...options,
+    method: 'GET'
 
-export const getDownloadUploadQueryOptions = <
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
+
   },
+  unknownParser,
+);}
+
+
+
+
+
+export const getDownloadUploadQueryKey = (id: string,) => {
+    return [
+    `/api/v2/uploads/${id}/download`
+    ] as const;
+    }
+
+
+export const getDownloadUploadQueryOptions = <TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) =>
-    downloadUpload(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getDownloadUploadQueryKey(id);
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof downloadUpload>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) => downloadUpload(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type DownloadUploadQueryResult = NonNullable<Awaited<ReturnType<typeof downloadUpload>>>
 export type DownloadUploadQueryError = ErrorType<void | Problem>
 
-export function useDownloadUpload<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> &
-      Pick<
+
+export function useDownloadUpload<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof downloadUpload>>,
           TError,
           Awaited<ReturnType<typeof downloadUpload>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadUpload<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> &
-      Pick<
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadUpload<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof downloadUpload>>,
           TError,
           Awaited<ReturnType<typeof downloadUpload>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadUpload<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+        > , 'initialData'
+      >, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadUpload<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Redirect to a short-lived presigned download URL.
  */
 
-export function useDownloadUpload<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getDownloadUploadQueryOptions(id, options)
+export function useDownloadUpload<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getDownloadUploadQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getDownloadUploadSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
+
+
+
+
+
+export const getDownloadUploadSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(id)
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) =>
-    downloadUpload(id, { signal, ...requestOptions })
+  const queryKey =  queryOptions?.queryKey ?? getDownloadUploadQueryKey(id);
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) => downloadUpload(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
 export type DownloadUploadSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof downloadUpload>>>
 export type DownloadUploadSuspenseQueryError = ErrorType<void | Problem>
 
-export function useDownloadUploadSuspense<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadUploadSuspense<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadUploadSuspense<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDownloadUploadSuspense<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadUploadSuspense<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadUploadSuspense<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Redirect to a short-lived presigned download URL.
  */
 
-export function useDownloadUploadSuspense<
-  TData = Awaited<ReturnType<typeof downloadUpload>>,
-  TError = ErrorType<void | Problem>,
->(
-  id: string,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getDownloadUploadSuspenseQueryOptions(id, options)
+export function useDownloadUploadSuspense<TData = Awaited<ReturnType<typeof downloadUpload>>, TError = ErrorType<void | Problem>>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
+  const queryOptions = getDownloadUploadSuspenseQueryOptions(id,options)
 
-  return withQueryKey(query, queryOptions.queryKey)
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const getFinalizeUploadUrl = (id: string) => {
+
+
+
+
+
+export const getFinalizeUploadUrl = (id: string,) => {
+
+
+
+
   return `/api/v2/uploads/${id}/finalize`
 }
 
@@ -354,76 +318,68 @@ export const getFinalizeUploadUrl = (id: string) => {
 With an `Idempotency-Key`, a retry replays the original 200 for 24h
 instead of the "already finalized" 409.
  */
-export const finalizeUpload = async (
-  id: string,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<FinalizedUpload> => {
-  return orvalMutator<FinalizedUpload>(
-    getFinalizeUploadUrl(id),
-    {
-      ...options,
-      method: 'POST',
-    },
-    FinalizedUpload,
-  )
-}
+export const finalizeUpload = async (id: string, options?: Parameters<typeof orvalMutator>[1]): Promise<FinalizedUpload> => {
 
-export const getFinalizeUploadMutationKey = () => ['finalizeUpload'] as const
+  return orvalMutator<FinalizedUpload>(getFinalizeUploadUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
-export const getFinalizeUploadMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof finalizeUpload>>,
-    TError,
-    FinalizeUploadMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof finalizeUpload>>,
-  TError,
-  FinalizeUploadMutationVariables,
-  TContext
-> => {
-  const mutationKey = getFinalizeUploadMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof finalizeUpload>>,
-    FinalizeUploadMutationVariables
-  > = props => {
-    const { id } = props ?? {}
+  },
+  FinalizedUpload,
+);}
 
-    return finalizeUpload(id, requestOptions)
-  }
 
-  return { mutationFn, ...mutationOptions }
-}
 
-export type FinalizeUploadMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeUpload>>>
 
-export type FinalizeUploadMutationError = ErrorType<Problem>
-export type FinalizeUploadMutationVariables = { id: string }
 
-/**
+export const getFinalizeUploadMutationKey = () => ['finalizeUpload'] as const;
+
+export const getFinalizeUploadMutationOptions = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeUpload>>, TError,FinalizeUploadMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalizeUpload>>, TError,FinalizeUploadMutationVariables, TContext> => {
+
+const mutationKey = getFinalizeUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalizeUpload>>, FinalizeUploadMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  finalizeUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalizeUploadMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeUpload>>>
+
+    export type FinalizeUploadMutationError = ErrorType<Problem>
+    export type FinalizeUploadMutationVariables = {id: string}
+
+    /**
  * @summary Finalize after the PUT: verifies the object exists and is within policy.
 With an `Idempotency-Key`, a retry replays the original 200 for 24h
 instead of the "already finalized" 409.
  */
-export const useFinalizeUpload = <TError = ErrorType<Problem>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof finalizeUpload>>,
-      TError,
-      FinalizeUploadMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<Awaited<ReturnType<typeof finalizeUpload>>, TError, FinalizeUploadMutationVariables, TContext> => {
-  return useMutation(getFinalizeUploadMutationOptions(options), queryClient)
-}
+export const useFinalizeUpload = <TError = ErrorType<Problem>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeUpload>>, TError,FinalizeUploadMutationVariables, TContext>, request?: SecondParameter<typeof orvalMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof finalizeUpload>>,
+        TError,
+        FinalizeUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinalizeUploadMutationOptions(options), queryClient);
+    }

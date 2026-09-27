@@ -5,19 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const RegisterBody = zod
-  .object({
-    email: zod.string(),
-    first_name: zod.string(),
-    last_name: zod.string(),
-    password: zod.string(),
-    username: zod.string().describe('3–48 characters: letters, digits, `.`, `_`, `-`.'),
-  })
-  .describe(
-    'Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].',
-  )
+export const RegisterBody = zod.object({
+  "email": zod.string(),
+  "first_name": zod.string(),
+  "last_name": zod.string(),
+  "password": zod.string(),
+  "username": zod.string().describe('3–48 characters: letters, digits, `.`, `_`, `-`.')
+}).describe('Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].')
 
-export type RegisterBody = zod.input<typeof RegisterBody>
-export type RegisterBodyOutput = zod.output<typeof RegisterBody>
+export type RegisterBody = zod.input<typeof RegisterBody>;
+export type RegisterBodyOutput = zod.output<typeof RegisterBody>;

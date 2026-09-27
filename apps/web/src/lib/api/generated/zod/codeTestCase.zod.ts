@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CodeTestCase = zod.object({
-  description: zod.string().nullish(),
-  expected_output: zod.string().optional(),
-  id: zod.string(),
-  input: zod.string().optional(),
-  is_visible: zod.boolean().optional(),
-  match_mode: zod.enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker']).optional(),
-  weight: zod.int().optional(),
+  "description": zod.string().nullish(),
+  "expected_output": zod.string().optional(),
+  "id": zod.string(),
+  "input": zod.string().optional(),
+  "is_visible": zod.boolean().optional(),
+  "match_mode": zod.enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker']).optional(),
+  "weight": zod.int().optional()
 })
 
-export type CodeTestCase = zod.input<typeof CodeTestCase>
-export type CodeTestCaseOutput = zod.output<typeof CodeTestCase>
+export type CodeTestCase = zod.input<typeof CodeTestCase>;
+export type CodeTestCaseOutput = zod.output<typeof CodeTestCase>;

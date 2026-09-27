@@ -5,21 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const GradingBacklogItem = zod.object({
-  age_hours: zod.number().nullish(),
-  assessment_id: zod.uuid(),
-  assessment_type: zod
-    .enum(['quiz', 'exam', 'code_challenge'])
-    .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
-  awaiting_review: zod.int(),
-  course_id: zod.uuid(),
-  course_name: zod.string(),
-  oldest_submitted_at_unix: zod.int().nullish(),
-  sla_breaches: zod.int(),
-  title: zod.string(),
+  "age_hours": zod.number().nullish(),
+  "assessment_id": zod.uuid(),
+  "assessment_type": zod.enum(['quiz', 'exam', 'code_challenge']).describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+  "awaiting_review": zod.int(),
+  "course_id": zod.uuid(),
+  "course_name": zod.string(),
+  "oldest_submitted_at_unix": zod.int().nullish(),
+  "sla_breaches": zod.int(),
+  "title": zod.string()
 })
 
-export type GradingBacklogItem = zod.input<typeof GradingBacklogItem>
-export type GradingBacklogItemOutput = zod.output<typeof GradingBacklogItem>
+export type GradingBacklogItem = zod.input<typeof GradingBacklogItem>;
+export type GradingBacklogItemOutput = zod.output<typeof GradingBacklogItem>;

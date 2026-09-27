@@ -5,15 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const BulkActionType = zod.enum([
-  'extend_deadline',
-  'release_grades',
-  'return_all',
-  'override_score',
-  'batch_grade',
-])
+export const BulkActionType = zod.enum(['extend_deadline', 'release_grades', 'return_all', 'override_score', 'batch_grade'])
 
-export type BulkActionType = zod.input<typeof BulkActionType>
-export type BulkActionTypeOutput = zod.output<typeof BulkActionType>
+export type BulkActionType = zod.input<typeof BulkActionType>;
+export type BulkActionTypeOutput = zod.output<typeof BulkActionType>;

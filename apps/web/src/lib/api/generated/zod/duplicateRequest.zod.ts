@@ -5,14 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const DuplicateRequest = zod.object({
-  chapter_id: zod
-    .union([zod.uuid().describe("Target chapter in the same course; defaults to the source's chapter."), zod.null()])
-    .optional(),
-  title: zod.string().nullish().describe('Defaults to `"<title> (copy)"`.'),
+  "chapter_id": zod.union([zod.uuid().describe('Target chapter in the same course; defaults to the source\'s chapter.'),zod.null()]).optional(),
+  "title": zod.string().nullish().describe('Defaults to `"<title> (copy)"`.')
 })
 
-export type DuplicateRequest = zod.input<typeof DuplicateRequest>
-export type DuplicateRequestOutput = zod.output<typeof DuplicateRequest>
+export type DuplicateRequest = zod.input<typeof DuplicateRequest>;
+export type DuplicateRequestOutput = zod.output<typeof DuplicateRequest>;

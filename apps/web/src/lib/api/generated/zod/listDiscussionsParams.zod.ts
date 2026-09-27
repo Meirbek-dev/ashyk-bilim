@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ListDiscussionsParams = zod.object({
-  include_replies: zod.boolean().nullish(),
-  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
-  limit: zod.int().nullish(),
+  "include_replies": zod.boolean().nullish(),
+  "cursor": zod.union([zod.uuid(),zod.null()]).optional(),
+  "limit": zod.int().nullish()
 })
 
-export type ListDiscussionsParams = zod.input<typeof ListDiscussionsParams>
-export type ListDiscussionsParamsOutput = zod.output<typeof ListDiscussionsParams>
+export type ListDiscussionsParams = zod.input<typeof ListDiscussionsParams>;
+export type ListDiscussionsParamsOutput = zod.output<typeof ListDiscussionsParams>;

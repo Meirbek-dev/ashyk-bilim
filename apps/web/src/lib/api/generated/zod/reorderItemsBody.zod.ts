@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ReorderItemsBody = zod.object({
-  items: zod.array(zod.uuid()).describe('Item ids in the desired order; omitted items follow in their\ncurrent order.'),
+  "items": zod.array(zod.uuid()).describe('Item ids in the desired order; omitted items follow in their\ncurrent order.')
 })
 
-export type ReorderItemsBody = zod.input<typeof ReorderItemsBody>
-export type ReorderItemsBodyOutput = zod.output<typeof ReorderItemsBody>
+export type ReorderItemsBody = zod.input<typeof ReorderItemsBody>;
+export type ReorderItemsBodyOutput = zod.output<typeof ReorderItemsBody>;

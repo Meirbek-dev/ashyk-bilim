@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const GradeReleaseMode = zod.enum(['immediate', 'batch'])
 
-export type GradeReleaseMode = zod.input<typeof GradeReleaseMode>
-export type GradeReleaseModeOutput = zod.output<typeof GradeReleaseMode>
+export type GradeReleaseMode = zod.input<typeof GradeReleaseMode>;
+export type GradeReleaseModeOutput = zod.output<typeof GradeReleaseMode>;

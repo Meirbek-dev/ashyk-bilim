@@ -5,16 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const UserHit = zod
-  .object({
-    avatar_key: zod.string().nullish(),
-    display_name: zod.string(),
-    id: zod.uuid(),
-    username: zod.string(),
-  })
-  .describe('Public-profile projection (no email — FINDINGS #16).')
+export const UserHit = zod.object({
+  "avatar_key": zod.string().nullish(),
+  "display_name": zod.string(),
+  "id": zod.uuid(),
+  "username": zod.string()
+}).describe('Public-profile projection (no email — FINDINGS #16).')
 
-export type UserHit = zod.input<typeof UserHit>
-export type UserHitOutput = zod.output<typeof UserHit>
+export type UserHit = zod.input<typeof UserHit>;
+export type UserHitOutput = zod.output<typeof UserHit>;

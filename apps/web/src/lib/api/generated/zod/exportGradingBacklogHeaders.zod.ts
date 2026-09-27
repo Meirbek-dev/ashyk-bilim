@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ExportGradingBacklogHeaders = zod.object({
-  'Accept-Language': zod.string().nullish(),
+  "Accept-Language": zod.string().nullish()
 })
 
-export type ExportGradingBacklogHeaders = zod.input<typeof ExportGradingBacklogHeaders>
-export type ExportGradingBacklogHeadersOutput = zod.output<typeof ExportGradingBacklogHeaders>
+export type ExportGradingBacklogHeaders = zod.input<typeof ExportGradingBacklogHeaders>;
+export type ExportGradingBacklogHeadersOutput = zod.output<typeof ExportGradingBacklogHeaders>;

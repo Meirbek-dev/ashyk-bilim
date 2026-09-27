@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const FileSubmissionsSaveDraftHeaders = zod.object({
-  'If-Match': zod.int().nullish(),
+  "If-Match": zod.int().nullish()
 })
 
-export type FileSubmissionsSaveDraftHeaders = zod.input<typeof FileSubmissionsSaveDraftHeaders>
-export type FileSubmissionsSaveDraftHeadersOutput = zod.output<typeof FileSubmissionsSaveDraftHeaders>
+export type FileSubmissionsSaveDraftHeaders = zod.input<typeof FileSubmissionsSaveDraftHeaders>;
+export type FileSubmissionsSaveDraftHeadersOutput = zod.output<typeof FileSubmissionsSaveDraftHeaders>;

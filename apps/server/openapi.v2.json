@@ -5778,7 +5778,7 @@
         "tags": [
           "grading"
         ],
-        "summary": "Submitted work awaiting or holding a grade, newest first.",
+        "summary": "Submitted work awaiting or holding a grade, newest first unless `sort` /\n`order` say otherwise (cursors are valid only within one sort/order).",
         "description": "Needs `assessment:grade` on the course. `status=needs_grading` is the\npending queue. Keyset-paged: pass `next_cursor` back as `cursor`.",
         "operationId": "review_queue",
         "parameters": [
@@ -5829,12 +5829,44 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "`next_cursor` of the previous page.",
+            "description": "`next_cursor` of the previous page (valid only with the same sort/order).",
             "required": false,
             "schema": {
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/SubmissionId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Queue order (default `submitted_at`); ties newest first.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewSort"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Default `desc`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SortOrder"
                 },
                 {
                   "type": "null"
@@ -16989,7 +17021,7 @@
           },
           "put_url": {
             "type": "string",
-            "description": "PUT the file bytes here (presigned; valid for ~15 minutes)."
+            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412."
           }
         }
       },
@@ -21558,6 +21590,15 @@
           }
         }
       },
+      "ReviewSort": {
+        "type": "string",
+        "description": "Queue order (BUG-351): newest submission, score (ungraded lowest) or\nattempt number; ties newest first.",
+        "enum": [
+          "submitted_at",
+          "final_score",
+          "attempt_number"
+        ]
+      },
       "ReviewStatus": {
         "type": "string",
         "description": "Queue filter; `needs_grading` is `pending`.",
@@ -22385,6 +22426,13 @@
           "warning",
           "breached",
           "not_applicable"
+        ]
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
         ]
       },
       "Stats": {

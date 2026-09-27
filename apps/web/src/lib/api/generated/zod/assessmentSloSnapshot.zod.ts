@@ -5,17 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const AssessmentSloSnapshot = zod.object({
-  backlog_count: zod.int(),
-  note: zod.string(),
-  observed_p50_hours: zod.number().nullish(),
-  observed_p90_hours: zod.number().nullish(),
-  overdue_backlog_count: zod.int(),
-  status: zod.enum(['healthy', 'warning', 'breached', 'not_applicable']),
-  target_hours: zod.number().nullish(),
+  "backlog_count": zod.int(),
+  "note": zod.string(),
+  "observed_p50_hours": zod.number().nullish(),
+  "observed_p90_hours": zod.number().nullish(),
+  "overdue_backlog_count": zod.int(),
+  "status": zod.enum(['healthy', 'warning', 'breached', 'not_applicable']),
+  "target_hours": zod.number().nullish()
 })
 
-export type AssessmentSloSnapshot = zod.input<typeof AssessmentSloSnapshot>
-export type AssessmentSloSnapshotOutput = zod.output<typeof AssessmentSloSnapshot>
+export type AssessmentSloSnapshot = zod.input<typeof AssessmentSloSnapshot>;
+export type AssessmentSloSnapshotOutput = zod.output<typeof AssessmentSloSnapshot>;

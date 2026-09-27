@@ -5,22 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const XpSource = zod
-  .enum([
-    'activity_completion',
-    'course_completion',
-    'login_bonus',
-    'quiz_completion',
-    'exam_completion',
-    'streak_bonus',
-    'admin_award',
-    'code_challenge_completion',
-    'code_challenge_perfect',
-    'code_challenge_first_solve',
-  ])
-  .describe('Why XP was granted (legacy `XPSource`).')
+export const XpSource = zod.enum(['activity_completion', 'course_completion', 'login_bonus', 'quiz_completion', 'exam_completion', 'streak_bonus', 'admin_award', 'code_challenge_completion', 'code_challenge_perfect', 'code_challenge_first_solve']).describe('Why XP was granted (legacy `XPSource`).')
 
-export type XpSource = zod.input<typeof XpSource>
-export type XpSourceOutput = zod.output<typeof XpSource>
+export type XpSource = zod.input<typeof XpSource>;
+export type XpSourceOutput = zod.output<typeof XpSource>;

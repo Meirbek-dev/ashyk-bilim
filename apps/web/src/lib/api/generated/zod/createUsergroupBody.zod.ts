@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CreateUsergroupBody = zod.object({
-  description: zod.string().nullish(),
-  name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
+  "description": zod.string().nullish(),
+  "name": zod.string().describe('Blank → 422 `required` (trimmed in the service).')
 })
 
-export type CreateUsergroupBody = zod.input<typeof CreateUsergroupBody>
-export type CreateUsergroupBodyOutput = zod.output<typeof CreateUsergroupBody>
+export type CreateUsergroupBody = zod.input<typeof CreateUsergroupBody>;
+export type CreateUsergroupBodyOutput = zod.output<typeof CreateUsergroupBody>;

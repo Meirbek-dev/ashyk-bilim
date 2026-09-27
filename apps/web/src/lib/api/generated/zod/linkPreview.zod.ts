@@ -5,17 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const LinkPreview = zod
-  .object({
-    description: zod.string().nullish(),
-    image_url: zod.string().nullish().describe('Absolute `http(s)` image URL, when the page declares one.'),
-    site_name: zod.string().nullish(),
-    title: zod.string().nullish(),
-    url: zod.string().describe('The URL the page was read from (after redirects).'),
-  })
-  .describe('OpenGraph / `<title>` summary of a public web page.')
+export const LinkPreview = zod.object({
+  "description": zod.string().nullish(),
+  "image_url": zod.string().nullish().describe('Absolute `http(s)` image URL, when the page declares one.'),
+  "site_name": zod.string().nullish(),
+  "title": zod.string().nullish(),
+  "url": zod.string().describe('The URL the page was read from (after redirects).')
+}).describe('OpenGraph / `<title>` summary of a public web page.')
 
-export type LinkPreview = zod.input<typeof LinkPreview>
-export type LinkPreviewOutput = zod.output<typeof LinkPreview>
+export type LinkPreview = zod.input<typeof LinkPreview>;
+export type LinkPreviewOutput = zod.output<typeof LinkPreview>;

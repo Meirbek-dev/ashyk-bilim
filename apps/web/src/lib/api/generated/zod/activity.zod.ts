@@ -5,19 +5,19 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Activity = zod.object({
-  activity_sub_type: zod.string(),
-  activity_type: zod.string(),
-  chapter_id: zod.uuid(),
-  course_id: zod.uuid(),
-  id: zod.uuid(),
-  name: zod.string(),
-  position: zod.int().describe('1-based, contiguous within the chapter.'),
-  published: zod.boolean(),
-  version: zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.'),
+  "activity_sub_type": zod.string(),
+  "activity_type": zod.string(),
+  "chapter_id": zod.uuid(),
+  "course_id": zod.uuid(),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "position": zod.int().describe('1-based, contiguous within the chapter.'),
+  "published": zod.boolean(),
+  "version": zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.')
 })
 
-export type Activity = zod.input<typeof Activity>
-export type ActivityOutput = zod.output<typeof Activity>
+export type Activity = zod.input<typeof Activity>;
+export type ActivityOutput = zod.output<typeof Activity>;

@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const GradeAttemptHeaders = zod.object({
-  'If-Match': zod.int(),
+  "If-Match": zod.int()
 })
 
-export type GradeAttemptHeaders = zod.input<typeof GradeAttemptHeaders>
-export type GradeAttemptHeadersOutput = zod.output<typeof GradeAttemptHeaders>
+export type GradeAttemptHeaders = zod.input<typeof GradeAttemptHeaders>;
+export type GradeAttemptHeadersOutput = zod.output<typeof GradeAttemptHeaders>;

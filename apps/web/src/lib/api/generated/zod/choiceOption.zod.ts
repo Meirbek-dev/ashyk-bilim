@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const ChoiceOption = zod.object({
-  id: zod.string(),
-  is_correct: zod.boolean().optional(),
-  text: zod.string().optional(),
+  "id": zod.string(),
+  "is_correct": zod.boolean().optional(),
+  "text": zod.string().optional()
 })
 
-export type ChoiceOption = zod.input<typeof ChoiceOption>
-export type ChoiceOptionOutput = zod.output<typeof ChoiceOption>
+export type ChoiceOption = zod.input<typeof ChoiceOption>;
+export type ChoiceOptionOutput = zod.output<typeof ChoiceOption>;

@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const TeacherOverviewScope = zod.object({
-  cohort_ids: zod.array(zod.uuid()),
-  course_ids: zod.array(zod.uuid()),
-  teacher_user_id: zod.uuid(),
+  "cohort_ids": zod.array(zod.uuid()),
+  "course_ids": zod.array(zod.uuid()),
+  "teacher_user_id": zod.uuid()
 })
 
-export type TeacherOverviewScope = zod.input<typeof TeacherOverviewScope>
-export type TeacherOverviewScopeOutput = zod.output<typeof TeacherOverviewScope>
+export type TeacherOverviewScope = zod.input<typeof TeacherOverviewScope>;
+export type TeacherOverviewScopeOutput = zod.output<typeof TeacherOverviewScope>;

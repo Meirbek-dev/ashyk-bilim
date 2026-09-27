@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const OpenTextBody = zod.object({
-  min_words: zod.int().nullish(),
-  prompt: zod.string().optional(),
-  rubric: zod.string().nullish(),
+  "min_words": zod.int().nullish(),
+  "prompt": zod.string().optional(),
+  "rubric": zod.string().nullish()
 })
 
-export type OpenTextBody = zod.input<typeof OpenTextBody>
-export type OpenTextBodyOutput = zod.output<typeof OpenTextBody>
+export type OpenTextBody = zod.input<typeof OpenTextBody>;
+export type OpenTextBodyOutput = zod.output<typeof OpenTextBody>;

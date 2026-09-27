@@ -5,20 +5,16 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const SessionSummary = zod
-  .object({
-    created_at_unix: zod.int(),
-    current: zod.boolean(),
-    handle: zod.string(),
-    ip: zod.string().nullish(),
-    last_seen_unix: zod.int(),
-    user_agent: zod.string().nullish(),
-  })
-  .describe(
-    "One of the caller's live sessions. `handle` is a non-bearer identifier\n(raw session ids never leave the server).",
-  )
+export const SessionSummary = zod.object({
+  "created_at_unix": zod.int(),
+  "current": zod.boolean(),
+  "handle": zod.string(),
+  "ip": zod.string().nullish(),
+  "last_seen_unix": zod.int(),
+  "user_agent": zod.string().nullish()
+}).describe('One of the caller\'s live sessions. `handle` is a non-bearer identifier\n(raw session ids never leave the server).')
 
-export type SessionSummary = zod.input<typeof SessionSummary>
-export type SessionSummaryOutput = zod.output<typeof SessionSummary>
+export type SessionSummary = zod.input<typeof SessionSummary>;
+export type SessionSummaryOutput = zod.output<typeof SessionSummary>;

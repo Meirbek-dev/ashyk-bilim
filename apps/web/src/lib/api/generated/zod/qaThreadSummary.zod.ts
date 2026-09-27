@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const QaThreadSummary = zod.object({
-  id: zod.uuid(),
-  last_message_preview: zod.string(),
-  message_count: zod.int(),
-  title: zod.string().nullish(),
-  updated_at_unix: zod.int(),
+  "id": zod.uuid(),
+  "last_message_preview": zod.string(),
+  "message_count": zod.int(),
+  "title": zod.string().nullish(),
+  "updated_at_unix": zod.int()
 })
 
-export type QaThreadSummary = zod.input<typeof QaThreadSummary>
-export type QaThreadSummaryOutput = zod.output<typeof QaThreadSummary>
+export type QaThreadSummary = zod.input<typeof QaThreadSummary>;
+export type QaThreadSummaryOutput = zod.output<typeof QaThreadSummary>;

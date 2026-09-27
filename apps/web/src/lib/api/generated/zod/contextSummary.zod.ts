@@ -5,16 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const contextSummarySourceCountMin = 0
+export const contextSummarySourceCountMin = 0;
+
 
 export const ContextSummary = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  activity_label: zod.string().nullish(),
-  course_label: zod.string(),
-  source_count: zod.int().min(contextSummarySourceCountMin),
+  "activity_id": zod.union([zod.uuid(),zod.null()]).optional(),
+  "activity_label": zod.string().nullish(),
+  "course_label": zod.string(),
+  "source_count": zod.int().min(contextSummarySourceCountMin)
 })
 
-export type ContextSummary = zod.input<typeof ContextSummary>
-export type ContextSummaryOutput = zod.output<typeof ContextSummary>
+export type ContextSummary = zod.input<typeof ContextSummary>;
+export type ContextSummaryOutput = zod.output<typeof ContextSummary>;

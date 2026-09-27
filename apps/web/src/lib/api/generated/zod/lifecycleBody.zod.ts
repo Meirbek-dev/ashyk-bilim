@@ -5,13 +5,13 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const LifecycleBody = zod.object({
-  note: zod.string().nullish(),
-  scheduled_at_unix: zod.int().nullish().describe('Required when `to` is `scheduled`; must be in the future.'),
-  to: zod.enum(['draft', 'scheduled', 'published', 'archived']),
+  "note": zod.string().nullish(),
+  "scheduled_at_unix": zod.int().nullish().describe('Required when `to` is `scheduled`; must be in the future.'),
+  "to": zod.enum(['draft', 'scheduled', 'published', 'archived'])
 })
 
-export type LifecycleBody = zod.input<typeof LifecycleBody>
-export type LifecycleBodyOutput = zod.output<typeof LifecycleBody>
+export type LifecycleBody = zod.input<typeof LifecycleBody>;
+export type LifecycleBodyOutput = zod.output<typeof LifecycleBody>;

@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const TimeSeriesPoint = zod.object({
-  bucket_start_unix: zod.int(),
-  value: zod.number(),
+  "bucket_start_unix": zod.int(),
+  "value": zod.number()
 })
 
-export type TimeSeriesPoint = zod.input<typeof TimeSeriesPoint>
-export type TimeSeriesPointOutput = zod.output<typeof TimeSeriesPoint>
+export type TimeSeriesPoint = zod.input<typeof TimeSeriesPoint>;
+export type TimeSeriesPointOutput = zod.output<typeof TimeSeriesPoint>;

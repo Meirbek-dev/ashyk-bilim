@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const AutoSubmitReason = zod.enum(['time_expired', 'integrity_violation'])
 
-export type AutoSubmitReason = zod.input<typeof AutoSubmitReason>
-export type AutoSubmitReasonOutput = zod.output<typeof AutoSubmitReason>
+export type AutoSubmitReason = zod.input<typeof AutoSubmitReason>;
+export type AutoSubmitReasonOutput = zod.output<typeof AutoSubmitReason>;

@@ -5,15 +5,15 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Chapter = zod.object({
-  course_id: zod.uuid(),
-  description: zod.string(),
-  id: zod.uuid(),
-  name: zod.string(),
-  position: zod.int().describe('1-based, contiguous within the course.'),
+  "course_id": zod.uuid(),
+  "description": zod.string(),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "position": zod.int().describe('1-based, contiguous within the course.')
 })
 
-export type Chapter = zod.input<typeof Chapter>
-export type ChapterOutput = zod.output<typeof Chapter>
+export type Chapter = zod.input<typeof Chapter>;
+export type ChapterOutput = zod.output<typeof Chapter>;

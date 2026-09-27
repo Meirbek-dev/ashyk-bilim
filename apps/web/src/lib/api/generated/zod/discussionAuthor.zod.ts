@@ -5,16 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
-export const DiscussionAuthor = zod
-  .object({
-    avatar_key: zod.string().nullish(),
-    display_name: zod.string(),
-    id: zod.uuid(),
-    username: zod.string(),
-  })
-  .describe("The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.")
+export const DiscussionAuthor = zod.object({
+  "avatar_key": zod.string().nullish(),
+  "display_name": zod.string(),
+  "id": zod.uuid(),
+  "username": zod.string()
+}).describe('The post\'s author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.')
 
-export type DiscussionAuthor = zod.input<typeof DiscussionAuthor>
-export type DiscussionAuthorOutput = zod.output<typeof DiscussionAuthor>
+export type DiscussionAuthor = zod.input<typeof DiscussionAuthor>;
+export type DiscussionAuthorOutput = zod.output<typeof DiscussionAuthor>;

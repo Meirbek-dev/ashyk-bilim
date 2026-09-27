@@ -5,21 +5,23 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const BulkAction = zod.object({
-  action_type: zod.enum(['extend_deadline', 'release_grades', 'return_all', 'override_score', 'batch_grade']),
-  affected_count: zod.int(),
-  assessment_id: zod.uuid(),
-  completed_at_unix: zod.int().nullish(),
-  created_at_unix: zod.int(),
-  error_log: zod.string(),
-  id: zod.uuid(),
-  params: zod.looseObject({}),
-  performed_by: zod.union([zod.uuid(), zod.null()]).optional(),
-  status: zod.enum(['pending', 'running', 'completed', 'failed']),
-  target_user_ids: zod.array(zod.uuid()),
+  "action_type": zod.enum(['extend_deadline', 'release_grades', 'return_all', 'override_score', 'batch_grade']),
+  "affected_count": zod.int(),
+  "assessment_id": zod.uuid(),
+  "completed_at_unix": zod.int().nullish(),
+  "created_at_unix": zod.int(),
+  "error_log": zod.string(),
+  "id": zod.uuid(),
+  "params": zod.looseObject({
+
+}),
+  "performed_by": zod.union([zod.uuid(),zod.null()]).optional(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "target_user_ids": zod.array(zod.uuid())
 })
 
-export type BulkAction = zod.input<typeof BulkAction>
-export type BulkActionOutput = zod.output<typeof BulkAction>
+export type BulkAction = zod.input<typeof BulkAction>;
+export type BulkActionOutput = zod.output<typeof BulkAction>;

@@ -5,18 +5,18 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const QuestionDifficultyRow = zod.object({
-  accuracy_pct: zod.number().nullish(),
-  avg_time_seconds: zod.number().nullish(),
-  discrimination_index: zod.number().nullish(),
-  distractor_issue_count: zod.int(),
-  question_id: zod.string(),
-  question_label: zod.string(),
-  strong_miss_pct: zod.number().nullish(),
-  weak_correct_pct: zod.number().nullish(),
+  "accuracy_pct": zod.number().nullish(),
+  "avg_time_seconds": zod.number().nullish(),
+  "discrimination_index": zod.number().nullish(),
+  "distractor_issue_count": zod.int(),
+  "question_id": zod.string(),
+  "question_label": zod.string(),
+  "strong_miss_pct": zod.number().nullish(),
+  "weak_correct_pct": zod.number().nullish()
 })
 
-export type QuestionDifficultyRow = zod.input<typeof QuestionDifficultyRow>
-export type QuestionDifficultyRowOutput = zod.output<typeof QuestionDifficultyRow>
+export type QuestionDifficultyRow = zod.input<typeof QuestionDifficultyRow>;
+export type QuestionDifficultyRowOutput = zod.output<typeof QuestionDifficultyRow>;

@@ -5,11 +5,11 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CreateCollectionHeaders = zod.object({
-  'Idempotency-Key': zod.string().nullish(),
+  "Idempotency-Key": zod.string().nullish()
 })
 
-export type CreateCollectionHeaders = zod.input<typeof CreateCollectionHeaders>
-export type CreateCollectionHeadersOutput = zod.output<typeof CreateCollectionHeaders>
+export type CreateCollectionHeaders = zod.input<typeof CreateCollectionHeaders>;
+export type CreateCollectionHeadersOutput = zod.output<typeof CreateCollectionHeaders>;

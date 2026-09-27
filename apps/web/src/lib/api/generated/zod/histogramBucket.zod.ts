@@ -5,12 +5,12 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const HistogramBucket = zod.object({
-  count: zod.int(),
-  label: zod.string(),
+  "count": zod.int(),
+  "label": zod.string()
 })
 
-export type HistogramBucket = zod.input<typeof HistogramBucket>
-export type HistogramBucketOutput = zod.output<typeof HistogramBucket>
+export type HistogramBucket = zod.input<typeof HistogramBucket>;
+export type HistogramBucketOutput = zod.output<typeof HistogramBucket>;

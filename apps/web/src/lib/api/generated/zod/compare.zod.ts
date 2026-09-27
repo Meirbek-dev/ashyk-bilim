@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Compare = zod.enum(['previous_period', 'none'])
 
-export type Compare = zod.input<typeof Compare>
-export type CompareOutput = zod.output<typeof Compare>
+export type Compare = zod.input<typeof Compare>;
+export type CompareOutput = zod.output<typeof Compare>;

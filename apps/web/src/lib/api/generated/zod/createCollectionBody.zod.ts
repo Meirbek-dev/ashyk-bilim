@@ -5,14 +5,14 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const CreateCollectionBody = zod.object({
-  courses: zod.array(zod.uuid()).nullish().describe('Course membership; every course must be readable by the caller.'),
-  description: zod.string().nullish(),
-  name: zod.string(),
-  public: zod.boolean().nullish(),
+  "courses": zod.array(zod.uuid()).nullish().describe('Course membership; every course must be readable by the caller.'),
+  "description": zod.string().nullish(),
+  "name": zod.string(),
+  "public": zod.boolean().nullish()
 })
 
-export type CreateCollectionBody = zod.input<typeof CreateCollectionBody>
-export type CreateCollectionBodyOutput = zod.output<typeof CreateCollectionBody>
+export type CreateCollectionBody = zod.input<typeof CreateCollectionBody>;
+export type CreateCollectionBodyOutput = zod.output<typeof CreateCollectionBody>;

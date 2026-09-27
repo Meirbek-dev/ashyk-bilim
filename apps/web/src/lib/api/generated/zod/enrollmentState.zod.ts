@@ -5,9 +5,9 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const EnrollmentState = zod.enum(['not_enrolled', 'in_progress', 'completed'])
 
-export type EnrollmentState = zod.input<typeof EnrollmentState>
-export type EnrollmentStateOutput = zod.output<typeof EnrollmentState>
+export type EnrollmentState = zod.input<typeof EnrollmentState>;
+export type EnrollmentStateOutput = zod.output<typeof EnrollmentState>;

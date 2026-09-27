@@ -5,15 +5,17 @@
  * University LMS / MOOC platform API (v2, Rust rewrite).
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from 'zod'
+import * as zod from 'zod';
 
 export const Certification = zod.object({
-  config: zod.looseObject({}).describe("The client's PDF designer document (opaque to the server)."),
-  course_id: zod.uuid(),
-  created_at_unix: zod.int(),
-  id: zod.uuid(),
-  updated_at_unix: zod.int(),
+  "config": zod.looseObject({
+
+}).describe('The client\'s PDF designer document (opaque to the server).'),
+  "course_id": zod.uuid(),
+  "created_at_unix": zod.int(),
+  "id": zod.uuid(),
+  "updated_at_unix": zod.int()
 })
 
-export type Certification = zod.input<typeof Certification>
-export type CertificationOutput = zod.output<typeof Certification>
+export type Certification = zod.input<typeof Certification>;
+export type CertificationOutput = zod.output<typeof Certification>;
