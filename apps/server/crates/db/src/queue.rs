@@ -173,21 +173,6 @@ where
     Ok(())
 }
 
-/// Refresh heartbeats for everything this worker currently runs.
-pub async fn heartbeat_worker<'e, E>(executor: E, worker: &str) -> Result<()>
-where
-    E: sqlx::PgExecutor<'e>,
-{
-    sqlx::query(
-        r"UPDATE jobs SET heartbeat_at = now()
-          WHERE locked_by = $1 AND status = 'running'",
-    )
-    .bind(worker)
-    .execute(executor)
-    .await?;
-    Ok(())
-}
-
 /// Dead-letter a job immediately (no retries) — e.g. no handler registered.
 /// `false`: the claim was lost (reaped, possibly re-claimed) — nothing changed.
 pub async fn mark_dead<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<bool>

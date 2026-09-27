@@ -1,6 +1,6 @@
 //! Worker runtime against real Postgres: execution, retry/dead-letter,
 //! unknown-kind handling, graceful drain.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -151,6 +151,51 @@ async fn unknown_kind_is_dead_lettered_not_retried(pool: PgPool) {
             .unwrap();
     assert_eq!(attempts, 1, "unknown kinds must not be retried");
     assert!(error.unwrap().contains("no handler registered"));
+
+    cancel.cancel();
+    handle.await.unwrap().unwrap();
+}
+
+struct Panics;
+
+impl JobHandler for Panics {
+    fn kind(&self) -> &'static str {
+        "test:panic"
+    }
+    fn handle(&self, _payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
+        async { panic!("intentional test panic") }.boxed()
+    }
+}
+
+/// BUG-341 (AUD-003): a job whose task ended without resolving its row
+/// (here: a panic) must stop being heartbeated, so the reaper recovers it.
+/// Before the fix the worker renewed every `running` row it owned and this
+/// job stayed `running` forever.
+#[sqlx::test(migrations = "../../migrations")]
+async fn abandoned_job_is_not_heartbeated_and_gets_reaped(pool: PgPool) {
+    let config = WorkerConfig {
+        heartbeat_interval: Duration::from_millis(50),
+        reap_after: Duration::from_millis(500),
+        reap_interval: Duration::from_millis(100),
+        ..fast_config()
+    };
+    let worker = Worker::new(pool.clone(), config).register(Panics).unwrap();
+    queue::enqueue(
+        &pool,
+        &NewJob::new("test:panic", serde_json::json!({})).max_attempts(1),
+    )
+    .await
+    .unwrap();
+
+    let cancel = CancellationToken::new();
+    let handle = tokio::spawn(worker.run(cancel.clone()));
+
+    wait_for_status(&pool, "dead", 1).await;
+    let error: Option<String> = sqlx::query_scalar("SELECT last_error FROM jobs")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(error.as_deref(), Some("worker lost (reaped)"));
 
     cancel.cancel();
     handle.await.unwrap().unwrap();

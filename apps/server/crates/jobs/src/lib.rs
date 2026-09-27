@@ -16,6 +16,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use ab_core::id::JobId;
 use ab_core::{Error, Result};
 use ab_db::queue::{self, ClaimedJob, NOTIFY_CHANNEL};
 use futures::future::BoxFuture;
@@ -103,6 +104,10 @@ impl Worker {
 
         let semaphore = Arc::new(tokio::sync::Semaphore::new(self.config.concurrency));
         let mut tasks = tokio::task::JoinSet::new();
+        // Heartbeats cover exactly the jobs with a live task: a task that
+        // ended without resolving its row (completion UPDATE failed, panic)
+        // stops being renewed, so the reaper recovers it (BUG-341).
+        let mut running: HashMap<tokio::task::Id, JobId> = HashMap::new();
         let mut poll = tokio::time::interval(self.config.poll_interval);
         let mut heartbeat = tokio::time::interval(self.config.heartbeat_interval);
         let mut reaper = tokio::time::interval(self.config.reap_interval);
@@ -112,7 +117,8 @@ impl Worker {
         tracing::info!(worker = %self.id, kinds = ?self.registered_kinds(), "worker started");
 
         loop {
-            self.claim_available(&semaphore, &mut tasks).await;
+            self.claim_available(&semaphore, &mut tasks, &mut running)
+                .await;
 
             tokio::select! {
                 () = cancel.cancelled() => break,
@@ -125,7 +131,10 @@ impl Worker {
                     }
                 },
                 _ = heartbeat.tick() => {
-                    if let Err(err) = queue::heartbeat_worker(&self.pool, &self.id).await {
+                    let ids: Vec<JobId> = running.values().copied().collect();
+                    if !ids.is_empty()
+                        && let Err(err) = queue::heartbeat(&self.pool, &self.id, &ids).await
+                    {
                         tracing::warn!(%err, "heartbeat failed");
                     }
                 },
@@ -143,19 +152,15 @@ impl Worker {
                         Err(err) => tracing::warn!(%err, "scheduler tick failed"),
                     }
                 },
-                Some(joined) = tasks.join_next(), if !tasks.is_empty() => {
-                    if let Err(err) = joined {
-                        tracing::error!(%err, "job task panicked or was aborted");
-                    }
+                Some(joined) = tasks.join_next_with_id(), if !tasks.is_empty() => {
+                    finished(&mut running, joined);
                 },
             }
         }
 
         tracing::info!(in_flight = tasks.len(), "worker draining");
-        while let Some(joined) = tasks.join_next().await {
-            if let Err(err) = joined {
-                tracing::error!(%err, "job task panicked during drain");
-            }
+        while let Some(joined) = tasks.join_next_with_id().await {
+            finished(&mut running, joined);
         }
         tracing::info!("worker drained");
         Ok(())
@@ -166,6 +171,7 @@ impl Worker {
         &self,
         semaphore: &Arc<tokio::sync::Semaphore>,
         tasks: &mut tokio::task::JoinSet<()>,
+        running: &mut HashMap<tokio::task::Id, JobId>,
     ) {
         let free = semaphore.available_permits();
         if free == 0 {
@@ -187,16 +193,34 @@ impl Worker {
             };
             let handler = self.handlers.get(job.kind.as_str()).cloned();
             let pool = self.pool.clone();
-            tasks.spawn(async move {
+            let job_id = job.id;
+            let task = tasks.spawn(async move {
                 let _permit = permit;
                 execute(&pool, handler, job).await;
             });
+            running.insert(task.id(), job_id);
         }
     }
 }
 
-/// Execute one claimed job and resolve its status. Never panics; never leaves
-/// a job `running`.
+/// A job task ended: stop heartbeating its job; a panic is reported with the
+/// job's id (the reaper retries or dead-letters it once its heartbeat is stale).
+fn finished(
+    running: &mut HashMap<tokio::task::Id, JobId>,
+    joined: std::result::Result<(tokio::task::Id, ()), tokio::task::JoinError>,
+) {
+    let task = joined
+        .as_ref()
+        .map_or_else(tokio::task::JoinError::id, |(id, ())| *id);
+    let job = running.remove(&task);
+    if let Err(err) = joined {
+        tracing::error!(%err, job = ?job, "job task panicked or was aborted");
+    }
+}
+
+/// Execute one claimed job and resolve its status. A handler panic or a
+/// failed resolution leaves the row `running`: this task ending stops its
+/// heartbeat, and the reaper recovers the job.
 async fn execute(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: ClaimedJob) {
     let span = tracing::info_span!("job", id = %job.id, kind = %job.kind, attempt = job.attempts);
     let _guard = span.enter();
