@@ -4372,7 +4372,6 @@
         "placeholder": "Жаза бастаңыз немесе командалар үшін `/` енгізіңіз…"
       },
       "EditorWrapper": {
-        "detailedSaveError": "{status} қатесі: {message}",
         "saveError": "Қате: Белсенділікті сақтау мүмкін болмады.",
         "saveSuccess": "Белсенділік сақталды!",
         "saving": "Сақталуда...",

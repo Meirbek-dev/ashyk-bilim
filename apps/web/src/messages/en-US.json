@@ -4357,7 +4357,6 @@
         "placeholder": "Start writing or type `/` for commands…"
       },
       "EditorWrapper": {
-        "detailedSaveError": "Error {status}: {message}",
         "saveError": "Error: Could not save activity.",
         "saveSuccess": "Activity saved!",
         "saving": "Saving...",

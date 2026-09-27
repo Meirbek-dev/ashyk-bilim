@@ -70,7 +70,7 @@ export function CourseCreateForm() {
               {...form.register('title')}
             />
             <FieldDescription>{t('quickCreateTitleHelp')}</FieldDescription>
-            <FieldError errors={form.formState.errors.title ? [{ message: t('review.blockingReasons.title') }] : []} />
+            <FieldError errors={[form.formState.errors.title]} />
           </Field>
         </FieldGroup>
 

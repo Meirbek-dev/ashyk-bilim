@@ -4369,7 +4369,6 @@
         "placeholder": "Начните писать или введите `/` для команд…"
       },
       "EditorWrapper": {
-        "detailedSaveError": "Ошибка {status}: {message}",
         "saveError": "Ошибка: Не удалось сохранить активность.",
         "saveSuccess": "Активность сохранена!",
         "saving": "Сохранение...",

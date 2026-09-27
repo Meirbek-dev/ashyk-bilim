@@ -4,8 +4,9 @@ import * as v from 'valibot'
 // Course general section
 // ---------------------------------------------------------------------------
 
-// Mirrors `UpdateCourseRequest` (name ≤ 500, description ≤ 5000, about ≤ 20000,
-// ≤ 20 tags of ≤ 64 chars); the thumbnail travels the upload pipeline separately.
+// Within `UpdateCourseRequest` (server: name ≤ 500, description ≤ 5000, about ≤ 20000,
+// ≤ 20 tags of ≤ 64 chars); the UI caps titles at 100 (`Validation.titleTooLong`).
+// The thumbnail travels the upload pipeline separately.
 export const courseGeneralSchema = v.object({
   name: v.pipe(v.string(), v.trim(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
   description: v.pipe(v.string(), v.maxLength(5000, 'description_too_long')),

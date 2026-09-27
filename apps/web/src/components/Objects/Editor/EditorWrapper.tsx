@@ -6,6 +6,7 @@ import { PlatformContextProvider } from '@/components/Contexts/PlatformContext'
 import { stripEmptyFileBlocks } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core'
 import { useTranslations } from 'next-intl'
+import { useApiError } from '@/hooks/useApiError'
 import type { JSX } from 'react'
 import { toast } from 'sonner'
 
@@ -29,6 +30,7 @@ interface EditorWrapperProps {
 
 function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   const t = useTranslations('DashPage.Editor.EditorWrapper')
+  const { handleApiError } = useApiError()
   const activityAutosave = useActivityAutosave({
     activityUuid: props.activity.activity_uuid,
     courseUuid: props.course.course_uuid,
@@ -46,9 +48,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       success: () => <b>{t('saveSuccess')}</b>,
       error: err => {
         if (err?.status === 403) return <b>{t('noAccess')}</b>
-        const errorMessage = err?.data?.detail || err?.data?.message || t('saveError')
-        const status = err?.status
-        return <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>
+        return <b>{handleApiError(err, undefined, t('saveError')).message}</b>
       },
     })
   }
