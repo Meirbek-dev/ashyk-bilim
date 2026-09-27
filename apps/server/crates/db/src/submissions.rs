@@ -759,8 +759,9 @@ pub struct ReviewRow {
     pub staff: bool,
 }
 
-/// Non-draft submissions of an assessment, optionally filtered by status /
-/// lateness / learner-name substring, ordered by `sort` (`submitted_at`,
+/// Non-draft submissions of an assessment, filtered and ordered for review.
+///
+/// Optional filters: status / lateness / learner-name substring; ordered by `sort` (`submitted_at`,
 /// `final_score` — ungraded as -1 — or `attempt_number`), descending unless
 /// `ascending`; ties newest first. Keyset on (key, id): the cursor stays a
 /// submission id and its key is read back (BUG-351).

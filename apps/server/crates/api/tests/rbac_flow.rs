@@ -538,14 +538,14 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
 #[sqlx::test(migrations = "../../migrations")]
 async fn failed_session_rewrite_cannot_keep_a_revoked_grant(pool: PgPool) {
     use redis::AsyncCommands;
-    let app = TestApp::spawn(pool).await;
-    let admin = app.mint_session(&["*:*:*"]).await;
-    let mut redis = app.sessions.redis();
     async fn grants(app: &TestApp, session: &ab_testkit::MintedSession) -> Vec<serde_json::Value> {
         let info = app.get_as(session, "/api/v2/auth/session").await;
         assert_eq!(info.status, StatusCode::OK, "{}", info.text());
         info.json()["permissions"].as_array().unwrap().clone()
     }
+    let app = TestApp::spawn(pool).await;
+    let admin = app.mint_session(&["*:*:*"]).await;
+    let mut redis = app.sessions.redis();
     // The epoch INCR is the rewrite's first Redis step: a non-integer value
     // makes it fail for this user only.
     let fail_rewrite = |user: ab_core::id::UserId| format!("user_epoch:{user}");
