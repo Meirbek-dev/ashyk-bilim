@@ -115,6 +115,57 @@ describe('RolesUpdate unchanged role (UX-094)', () => {
   })
 })
 
+describe('RolesUpdate partial failure (BUG-347)', () => {
+  const userId = '0198c0ae-0000-7000-8000-000000000001'
+
+  async function renderDialog(setRolesModal = vi.fn()) {
+    const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
+    render(
+      <RolesUpdate user={{ id: userId, username: 'alice' }} setRolesModal={setRolesModal} alreadyAssignedRole="user" />,
+    )
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } })
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+    return setRolesModal
+  }
+
+  async function backend(held: Set<string>) {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    removeRoleFromUser.mockReset().mockImplementation(async (_id: string, role: string) => {
+      if (!held.delete(role))
+        throw new APIError({ code: 'not-found', message: 'role assignment not found', status: 404 })
+    })
+    assignRoleToUser.mockReset().mockImplementation(async (_id: string, role: string) => {
+      held.add(role)
+    })
+  }
+
+  it('retries only the assign after the old role was already removed', async () => {
+    const held = new Set(['user'])
+    await backend(held)
+    assignRoleToUser.mockRejectedValueOnce(new Error('network'))
+    const { toast } = await import('sonner')
+    vi.mocked(toast.error).mockClear()
+
+    const setRolesModal = await renderDialog()
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
+    expect(held.size).toBe(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect([...held]).toEqual(['admin'])
+    expect(removeRoleFromUser).toHaveBeenCalledTimes(1)
+    vi.mocked(toast.error).mockClear()
+  })
+
+  it('treats a 404 on the old role as already removed', async () => {
+    const held = new Set<string>()
+    await backend(held)
+    const setRolesModal = await renderDialog()
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect([...held]).toEqual(['admin'])
+  })
+})
+
 describe('EditUserGroup success detection (v2)', () => {
   it('reports success when the PATCH resolves without a 200 status field (204/body response)', async () => {
     updateUserGroup.mockReset().mockResolvedValue({ id: 'group-1', name: 'Team', description: '' })

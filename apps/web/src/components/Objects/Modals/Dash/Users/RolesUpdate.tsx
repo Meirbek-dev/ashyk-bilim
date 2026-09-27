@@ -2,6 +2,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
 import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac'
+import { APIError } from '@/lib/api/assertSuccess'
 import { Field, FieldError, FieldLabel } from '@components/ui/field'
 import { BarLoader } from '@components/Objects/Loaders/BarLoader'
 import { Alert, AlertDescription } from '@components/ui/alert'
@@ -40,6 +41,10 @@ const RolesUpdate: FC<Props> = props => {
   const t = useTranslations('Components.RolesUpdate')
   const validationSchema = createValidationSchema(validationT)
   const [error, setError] = useState<string | null>(null)
+  // The role the user holds as far as this dialog knows (BUG-347): once the
+  // old role is removed, a failed assign must not make the retry remove it
+  // again — the retry only assigns.
+  const [heldRole, setHeldRole] = useState(props.alreadyAssignedRole)
 
   const form = useForm<FormData, unknown, RoleFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -65,7 +70,7 @@ const RolesUpdate: FC<Props> = props => {
   const handleSubmit = async (values: FormData) => {
     setError(null)
     // Same role as before: nothing to change, no DELETE + POST round-trip.
-    if (values.role === props.alreadyAssignedRole) {
+    if (values.role === heldRole) {
       props.setRolesModal(false)
       return
     }
@@ -77,8 +82,14 @@ const RolesUpdate: FC<Props> = props => {
         throw new Error('User ID is missing')
       }
 
-      if (props.alreadyAssignedRole) {
-        await removeRoleFromUser(userId, props.alreadyAssignedRole)
+      if (heldRole) {
+        try {
+          await removeRoleFromUser(userId, heldRole)
+        } catch (removeError: unknown) {
+          // 404: already gone (a lost response, another admin) — the goal of this step.
+          if (!(removeError instanceof APIError && removeError.status === 404)) throw removeError
+        }
+        setHeldRole('')
       }
       await assignRoleToUser(userId, values.role)
 
@@ -88,6 +99,8 @@ const RolesUpdate: FC<Props> = props => {
       props.setRolesModal(false)
       toast.success(t('toastSuccess'), { id: toastId })
     } catch (submitError: unknown) {
+      // A half-done replacement changed the user's roles: show the real ones.
+      void queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
       const detail = submitError instanceof Error ? submitError.message : 'Unknown error'
       setError(detail)
       toast.error(t('toastError'), { id: toastId })
