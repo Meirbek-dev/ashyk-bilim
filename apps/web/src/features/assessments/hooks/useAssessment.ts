@@ -323,7 +323,8 @@ function useAssessment(
  * The attempt the card is about: the open draft; else, while the newest
  * hand-in still waits on the teacher, the newest released one — a retake must
  * not hide the grade of record (UX-123), which then names the pending attempt
- * as a secondary line; else the newest.
+ * as a secondary line; else the newest hand-in. A draft that is not the open
+ * one (attempts closed for the learner, UX-237) never hides the attempt of record.
  */
 export function shownSubmission<
   T extends { id: string; status: string; release_state: string; attempt_number: number },
@@ -331,7 +332,7 @@ export function shownSubmission<
   rows: readonly T[],
   draftId: string | null | undefined,
 ): { latest: T | undefined; pendingAttemptNumber: number | null } {
-  const newest = rows[0]
+  const newest = rows.find(row => row.status !== 'DRAFT')
   const draft = rows.find(row => row.id === draftId)
   const released = isAwaitingRelease(newest)
     ? rows.find(row => row.status !== 'DRAFT' && row.release_state === 'visible')

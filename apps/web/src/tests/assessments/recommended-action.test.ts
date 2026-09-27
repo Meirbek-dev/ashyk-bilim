@@ -42,4 +42,11 @@ describe('shownSubmission', () => {
     expect(shownSubmission([draft, pending, released], 's3')).toEqual({ latest: draft, pendingAttemptNumber: null })
     expect(shownSubmission([released], null)).toEqual({ latest: released, pendingAttemptNumber: null })
   })
+
+  // UX-237: attempts closed (ACCESS_RESTRICTED clears draft_id) — the leftover
+  // draft must not replace the published attempt.
+  it('shows the published attempt, not a draft that is no longer open', () => {
+    expect(shownSubmission([draft, released], null)).toEqual({ latest: released, pendingAttemptNumber: null })
+    expect(shownSubmission([draft], null)).toEqual({ latest: undefined, pendingAttemptNumber: null })
+  })
 })
