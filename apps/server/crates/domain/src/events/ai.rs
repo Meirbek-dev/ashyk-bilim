@@ -68,7 +68,7 @@ fn decode(run_id: AiRunId, id: &redis::streams::StreamId) -> Option<AiStoredEven
 
 impl AiEvents {
     /// `client` opens the dedicated per-subscriber connections; `redis` is
-    /// the shared multiplexed handle for publishing and counters.
+    /// the shared multiplexed handle for publishing and slot leases.
     #[must_use]
     pub const fn new(client: redis::Client, redis: ConnectionManager) -> Self {
         Self { client, redis }

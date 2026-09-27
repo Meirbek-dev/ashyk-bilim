@@ -9,11 +9,18 @@ use ab_domain::events::{GradingEvents, MAX_CONNECTIONS_PER_USER};
 use ab_domain::identity::SessionStore;
 
 async fn events() -> GradingEvents {
+    events_and_redis().await.0
+}
+
+async fn events_and_redis() -> (GradingEvents, redis::aio::ConnectionManager) {
     let url = std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into());
     let store = SessionStore::connect(&url)
         .await
         .expect("test redis reachable (see AGENTS.md local dev stack)");
-    GradingEvents::new(store.client(), store.redis())
+    (
+        GradingEvents::new(store.client(), store.redis()),
+        store.redis(),
+    )
 }
 
 #[tokio::test]
@@ -93,5 +100,66 @@ async fn connection_slots_are_capped_per_user() {
         events.slots_in_use(user).await.unwrap(),
         MAX_CONNECTIONS_PER_USER - 1
     );
+    assert!(events.acquire_slot(user).await.unwrap().is_some());
+}
+
+/// BUG-343 (AUD-005): a release removes only its own lease. With the old
+/// counter a late release (after the key expired and a new connection took
+/// a slot) ran DECR→0 then DEL and erased the new connection's slot.
+#[tokio::test]
+async fn late_release_never_erases_another_connection() {
+    let (events, mut redis) = events_and_redis().await;
+    let user = UserId::new();
+    let old = events.acquire_slot(user).await.unwrap().expect("slot");
+    // The set expires while `old` is still open…
+    let _: i64 = redis::AsyncCommands::del(&mut redis, format!("sse_leases:{user}"))
+        .await
+        .unwrap();
+    // …a new connection takes a slot, then `old` finally disconnects.
+    let new = events.acquire_slot(user).await.unwrap().expect("slot");
+    drop(old);
+    // The release runs on a spawned task.
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(events.slots_in_use(user).await.unwrap(), 1);
+    drop(new);
+}
+
+/// BUG-343 (AUD-006): rejected attempts must not extend leaked slots — each
+/// lease keeps its own expiry, and expired leases free their slots.
+#[tokio::test]
+async fn rejected_attempts_do_not_keep_leaked_slots_alive() {
+    let (events, mut redis) = events_and_redis().await;
+    let user = UserId::new();
+    let key = format!("sse_leases:{user}");
+    // Five leaked leases (their releases were lost), expiring in 10 minutes.
+    let now = i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+    .unwrap();
+    for n in 0..MAX_CONNECTIONS_PER_USER {
+        let _: i64 = redis::AsyncCommands::zadd(&mut redis, &key, format!("leak-{n}"), now + 600)
+            .await
+            .unwrap();
+    }
+    for _ in 0..3 {
+        assert!(events.acquire_slot(user).await.unwrap().is_none());
+    }
+    let unchanged: i64 = redis::AsyncCommands::zcount(&mut redis, &key, now + 600, now + 600)
+        .await
+        .unwrap();
+    assert_eq!(
+        unchanged, MAX_CONNECTIONS_PER_USER,
+        "a rejected attempt must not add a lease or touch lease expiry"
+    );
+    // Once the leaked leases expire, the user can connect again.
+    for n in 0..MAX_CONNECTIONS_PER_USER {
+        let _: i64 = redis::AsyncCommands::zadd(&mut redis, &key, format!("leak-{n}"), now - 1)
+            .await
+            .unwrap();
+    }
+    assert_eq!(events.slots_in_use(user).await.unwrap(), 0);
     assert!(events.acquire_slot(user).await.unwrap().is_some());
 }

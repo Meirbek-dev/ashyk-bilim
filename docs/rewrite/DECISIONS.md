@@ -1560,3 +1560,18 @@ Implements three more items of the owner answers above. Routes:
   is therefore final: `fail_run` moves only `queued`/`running` runs, and a
   refused feature row rolls the whole success back instead of flipping a
   committed `succeeded` run to `failed`.
+
+## Job claims and SSE slots are leases (2026-09-27, gauntlet pass 28)
+
+- **A job is resolved only under its own claim** (BUG-342). `attempts` is
+  the claim generation; `succeed`/`fail`/`mark_dead` match `(id, attempts)`
+  and report a lost lease instead of touching a newer claim. The worker
+  heartbeats only jobs whose task is still alive (BUG-341), so a job whose
+  task panicked or whose resolution failed is reaped and retried — handlers
+  stay idempotent.
+- **SSE connection slots are per-connection leases** (BUG-343): a Redis
+  sorted set per user (`sse_leases:{user}`, score = expiry), acquired by one
+  Lua script (prune expired → cap 5 → add), released by `ZREM` of the own
+  lease. A lost release frees its slot after one hour whatever the client
+  does; a rejected attempt changes nothing. Leases are not renewed, so a
+  stream open longer than an hour stops counting toward the cap.

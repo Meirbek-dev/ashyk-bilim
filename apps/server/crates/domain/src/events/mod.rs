@@ -7,10 +7,11 @@
 //! log like the legacy sorted set. Live delivery is `XREAD BLOCK` on a
 //! dedicated connection per subscriber (a blocking read must never sit on
 //! the shared multiplexed connection). Per-user concurrent connections are
-//! capped with a Redis counter (legacy limit 5).
+//! capped at 5 (legacy limit) with per-connection leases in a Redis sorted
+//! set (member = lease id, score = its expiry).
 //!
 //! [`ai::AiEvents`] is the sibling for AI run streams (`sse:ai:{run}`) and
-//! shares the connection-slot counter.
+//! shares the per-user connection slots.
 
 pub mod ai;
 
@@ -29,7 +30,9 @@ use serde::Serialize;
 pub const MAX_CONNECTIONS_PER_USER: i64 = 5;
 /// Events kept per submission stream (approximate trimming).
 const STREAM_MAXLEN: usize = 1024;
-/// Stale connection counters expire on their own (legacy 3600s).
+/// A lease whose release was lost expires on its own (legacy 3600s).
+/// ponytail: live streams are not renewed, so one open past an hour stops
+/// counting toward the cap; renew from the stream loop if that ever matters.
 const SLOT_TTL_SECS: i64 = 3600;
 /// Streams die with the submission's relevance; refreshed on every publish.
 const STREAM_TTL_SECS: i64 = 7 * 24 * 3600;
@@ -83,23 +86,23 @@ pub struct StoredEvent {
     pub sent_at: i64,
 }
 
-/// Holds one of a user's connection slots; released on drop.
+/// Holds one of a user's connection slots (a lease); released on drop.
 pub struct ConnectionSlot {
     redis: ConnectionManager,
     key: String,
+    lease: String,
 }
 
 impl Drop for ConnectionSlot {
     fn drop(&mut self) {
         let mut redis = self.redis.clone();
         let key = std::mem::take(&mut self.key);
-        // Drop cannot await; the release is a fire-and-forget task. A lost
-        // decrement is bounded by the counter's TTL.
+        let lease = std::mem::take(&mut self.lease);
+        // Drop cannot await; the release is a fire-and-forget task. `ZREM`
+        // removes only this lease, so it can never erase another
+        // connection's slot; a lost release expires with the lease.
         tokio::spawn(async move {
-            let remaining: redis::RedisResult<i64> = redis.decr(&key, 1).await;
-            if matches!(remaining, Ok(n) if n <= 0) {
-                let _: redis::RedisResult<()> = redis.del(&key).await;
-            }
+            let _: redis::RedisResult<i64> = redis.zrem(&key, &lease).await;
         });
     }
 }
@@ -116,9 +119,23 @@ fn now_unix() -> i64 {
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
+/// A sorted set of leases (renamed from the legacy `sse_conn:` counter,
+/// a plain string — the old keys expire on their own).
 fn slot_key(user_id: UserId) -> String {
-    format!("sse_conn:{user_id}")
+    format!("sse_leases:{user_id}")
 }
+
+/// Atomically: drop expired leases, then add ours unless the cap is reached.
+/// A rejected attempt changes nothing, so retries cannot keep leaked leases
+/// alive (BUG-343). KEYS[1] = set; ARGV = cap, ttl secs, lease id.
+const ACQUIRE_SLOT_LUA: &str = r"
+local now = tonumber(redis.call('TIME')[1])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', now)
+if redis.call('ZCARD', KEYS[1]) >= tonumber(ARGV[1]) then return 0 end
+redis.call('ZADD', KEYS[1], now + tonumber(ARGV[2]), ARGV[3])
+redis.call('EXPIRE', KEYS[1], ARGV[2])
+return 1
+";
 
 /// A connection whose reads may block for the whole `XREAD BLOCK` window:
 /// the crate's default 500 ms response timeout would cut every idle
@@ -134,28 +151,26 @@ pub(crate) async fn subscriber_connection(
         .map_err(|e| Error::internal("redis subscriber connection", e))
 }
 
-/// The per-user SSE connection counter, shared by every event stream.
+/// Take a per-user SSE connection lease, shared by every event stream.
 pub(crate) async fn acquire_slot_with(
     redis: &ConnectionManager,
     user_id: UserId,
 ) -> Result<Option<ConnectionSlot>> {
     let mut conn = redis.clone();
     let key = slot_key(user_id);
-    let count: i64 = conn
-        .incr(&key, 1)
+    let lease = uuid::Uuid::now_v7().to_string();
+    let acquired: i64 = redis::Script::new(ACQUIRE_SLOT_LUA)
+        .key(&key)
+        .arg(MAX_CONNECTIONS_PER_USER)
+        .arg(SLOT_TTL_SECS)
+        .arg(&lease)
+        .invoke_async(&mut conn)
         .await
-        .map_err(|e| Error::internal("sse slot incr", e))?;
-    let _: () = conn
-        .expire(&key, SLOT_TTL_SECS)
-        .await
-        .map_err(|e| Error::internal("sse slot expire", e))?;
-    if count > MAX_CONNECTIONS_PER_USER {
-        let _: redis::RedisResult<i64> = conn.decr(&key, 1).await;
-        return Ok(None);
-    }
-    Ok(Some(ConnectionSlot {
+        .map_err(|e| Error::internal("sse slot acquire", e))?;
+    Ok((acquired == 1).then(|| ConnectionSlot {
         redis: redis.clone(),
         key,
+        lease,
     }))
 }
 
@@ -174,7 +189,7 @@ fn decode(stream: Stream, id: &redis::streams::StreamId) -> Option<StoredEvent> 
 
 impl GradingEvents {
     /// `client` opens the dedicated per-subscriber connections; `redis` is
-    /// the shared multiplexed handle for publishing and counters.
+    /// the shared multiplexed handle for publishing and slot leases.
     #[must_use]
     pub const fn new(client: redis::Client, redis: ConnectionManager) -> Self {
         Self { client, redis }
@@ -254,14 +269,13 @@ impl GradingEvents {
         acquire_slot_with(&self.redis, user_id).await
     }
 
-    /// Current slot count (health/tests).
+    /// Current unexpired lease count (health/tests).
     pub async fn slots_in_use(&self, user_id: UserId) -> Result<i64> {
         let mut redis = self.redis.clone();
-        let count: Option<i64> = redis
-            .get(slot_key(user_id))
+        redis
+            .zcount(slot_key(user_id), format!("({}", now_unix()), "+inf")
             .await
-            .map_err(|e| Error::internal("sse slot get", e))?;
-        Ok(count.unwrap_or(0))
+            .map_err(|e| Error::internal("sse slot count", e))
     }
 }
 
