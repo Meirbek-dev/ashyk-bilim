@@ -364,8 +364,7 @@ impl AnalyticsService {
         let actions = ab_db::analytics::list_bulk_actions_for_assessment(&self.pool, id).await?;
         let actors = entries.iter().filter_map(|e| e.graded_by);
         let actors = actors.chain(actions.iter().filter_map(|a| a.performed_by));
-        ctx.load_users(&self.pool, actors.collect::<Vec<_>>())
-            .await?;
+        ctx.load_users(&self.pool, actors).await?;
         let info = ctx
             .assessment(id)
             .ok_or_else(|| Error::not_found("assessment"))?;

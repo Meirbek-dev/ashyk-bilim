@@ -172,6 +172,7 @@ pub struct UserHitRow {
 }
 
 /// Prefix matches rank above substring matches; active users only.
+///
 /// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
 /// A one-character word matches only a whole word of the username or
 /// display name, as in course search (UX-238: `c` is not every «…c…»).
