@@ -178,10 +178,21 @@ const ProgressBar: FC<ProgressBarProps> = ({ percentage, courseName, t }) => (
   </div>
 )
 
+/** UX-250: the bar reads «…», not «0%», while the learner-state is still loading. */
+const ProgressSkeleton: FC = () => (
+  <div className="flex items-center gap-2.5" aria-busy>
+    <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
+      <div className="bg-muted-foreground/20 h-full w-2/5 animate-pulse rounded-full" />
+    </div>
+    <span className="text-muted-foreground/50 text-xs">…</span>
+  </div>
+)
+
 interface CourseActionsProps {
   isEnrolled: boolean
   isLoading: boolean
-  progressPercentage: number
+  /** `null` until the learner-state resolved (UX-250). */
+  progressPercentage: number | null
   courseUrl: string
   courseName: string
   /** Management cards link to the learner preview, not to "start learning". */
@@ -206,12 +217,7 @@ const CourseActions: FC<CourseActionsProps> = ({
   if (isLoading) {
     return (
       <div className="w-full space-y-2">
-        <div className="flex items-center gap-2.5">
-          <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
-            <div className="bg-muted-foreground/20 h-full w-2/5 animate-pulse rounded-full" />
-          </div>
-          <span className="text-muted-foreground/50 text-xs">…</span>
-        </div>
+        <ProgressSkeleton />
         <Button size="sm" className="w-full" disabled aria-disabled>
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
           {t('loading', { defaultValue: 'Loading…' })}
@@ -232,7 +238,11 @@ const CourseActions: FC<CourseActionsProps> = ({
     const href = isCertificate && certificateHref ? getAbsoluteUrl(certificateHref) : courseUrl
     return (
       <div className="w-full space-y-2">
-        <ProgressBar percentage={progressPercentage} courseName={courseName} t={t} />
+        {progressPercentage === null ? (
+          <ProgressSkeleton />
+        ) : (
+          <ProgressBar percentage={progressPercentage} courseName={courseName} t={t} />
+        )}
         <Button nativeButton={false} render={<Link href={href} />} aria-label={label} size="sm" className="w-full">
           {isCertificate ? <Award className="mr-2 h-3.5 w-3.5" /> : <Play className="mr-2 h-3.5 w-3.5" />}
           {label}
@@ -427,8 +437,10 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
   // Trail `steps` are lesson-type only; completion comes from learner-state
   // (same source as the course page). Only enrolled courses have a state.
+  // UX-250: unknown is `null` (skeleton), never «0%» — the trail's step ratio
+  // is a different metric (lesson steps only) and would jump to the real value.
   const learnerProgress = useLearnerCourseProgress(cleanCourseUuid, isAuthenticated && Boolean(courseRun))
-  const progressPercentage = learnerProgress.isLoaded ? learnerProgress.percent : 0
+  const progressPercentage = learnerProgress.isLoaded ? learnerProgress.percent : null
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
