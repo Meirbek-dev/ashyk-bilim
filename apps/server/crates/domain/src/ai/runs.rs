@@ -53,10 +53,12 @@ pub(crate) struct FinishSpec<'a> {
     pub model_name: &'a str,
     pub artifact: serde_json::Value,
     pub citations: Vec<serde_json::Value>,
-    pub input_tokens: i32,
-    /// Provider-reported completion tokens; estimated from the artifact
-    /// when absent (legacy always estimated).
-    pub output_tokens: Option<u32>,
+    /// The admission estimate of the prompt, for a provider that reports no
+    /// usage (draft mode).
+    pub estimated_input_tokens: i32,
+    /// Provider-reported usage, recorded as is (BUG-349); a missing output
+    /// count is estimated from the artifact (legacy always estimated).
+    pub usage: ab_clients::llm::Usage,
     /// `None` = citations are not validated (legacy `not_applicable`).
     pub context_sources: Option<&'a [ContextSource]>,
 }
@@ -329,8 +331,8 @@ impl AiService {
 
     /// Legacy `_finish_run`: validate citations, then — in one transaction
     /// the caller commits with [`Self::commit_finish`] (BUG-348) —
-    /// `running → succeeded`, the artifact + evidence, the token ledger and
-    /// the `finished` event.
+    /// `running → succeeded`, the artifact + evidence, the token ledger
+    /// (settling the run's budget reservation) and the `finished` event.
     pub(crate) async fn finish_run(&self, spec: FinishSpec<'_>) -> Result<Completion> {
         let artifact = redact::redacted(spec.artifact);
         let citations: Vec<serde_json::Value> =
@@ -355,19 +357,18 @@ impl AiService {
             serde_json::json!({ "state": "checking_evidence" }),
         )
         .await?;
-        let output_tokens = spec.output_tokens.map_or_else(
-            || {
-                self.budget
-                    .estimate_for(&artifact.to_string(), spec.model_name)
-            },
-            |n| i32::try_from(n).unwrap_or(i32::MAX),
-        );
+        let reported = |n: Option<u32>| n.map(|n| i32::try_from(n).unwrap_or(i32::MAX));
+        let input_tokens = reported(spec.usage.input_tokens).unwrap_or(spec.estimated_input_tokens);
+        let output_tokens = reported(spec.usage.output_tokens).unwrap_or_else(|| {
+            self.budget
+                .estimate_for(&artifact.to_string(), spec.model_name)
+        });
         let mut tx = self.pool.begin().await?;
         let moved = ab_db::ai::finish_run(
             &mut *tx,
             spec.run_id,
             spec.model_name,
-            spec.input_tokens,
+            input_tokens,
             output_tokens,
             &serde_json::json!({ "citation_validation": validation_meta }),
         )
@@ -406,7 +407,7 @@ impl AiService {
         ab_db::ai::ledger_record(
             &mut *tx,
             spec.user_id,
-            i64::from(spec.input_tokens),
+            i64::from(input_tokens),
             i64::from(output_tokens),
         )
         .await?;
@@ -417,7 +418,7 @@ impl AiService {
             &serde_json::json!({
                 "state": "complete",
                 "model_name": spec.model_name,
-                "input_tokens": spec.input_tokens,
+                "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "citations_valid": trusted.len(),
                 "citations_invalid": invalid_count,

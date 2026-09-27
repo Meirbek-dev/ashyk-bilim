@@ -7,19 +7,20 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
-use ab_core::id::{ActivityId, AiLectureReviewId, CourseId, UserId};
+use ab_core::id::{ActivityId, AiLectureReviewId, AiRunId, CourseId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::ai::{LectureReviewRow, NewLectureReview, RunRow};
 use tokio_util::sync::CancellationToken;
 
 use super::{
-    Execution, draft_citation, metadata_id, metadata_language, metadata_optional_id, run_user,
+    Admitted, Execution, draft_citation, metadata_id, metadata_language, metadata_optional_id,
+    run_user,
 };
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
-use crate::ai::context::{self, ContextBundle};
+use crate::ai::context;
 use crate::ai::policy;
-use crate::ai::prompts::{Prompt, clipped, load_prompt};
+use crate::ai::prompts::{Prompt, load_prompt};
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{LectureReviewReport, LectureSuggestion, Level};
 use crate::identity::Actor;
@@ -87,11 +88,8 @@ impl AiService {
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
         let activity_id = self.course_activity(course_id, activity_id).await?;
-        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &clipped(&rendered))
+        let admitted = self
+            .admit_lecture_review(course_id, actor.user_id, language, None)
             .await?;
         let run = self
             .create_run(
@@ -106,7 +104,7 @@ impl AiService {
                         "course_id": course_id,
                         "activity_id": activity_id,
                         "language": language,
-                        "context_source_count": bundle.sources.len(),
+                        "context_source_count": admitted.sources.len(),
                     }),
                     thread: None,
                     title: None,
@@ -114,16 +112,8 @@ impl AiService {
             )
             .await?;
         let watch = self.cancel_watch(run.id);
-        self.lecture_review_execute(
-            &run,
-            &watch.token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            actor.user_id,
-            language,
-        )
-        .await
+        self.lecture_review_execute(&run, &watch.token, &admitted, actor.user_id, language)
+            .await
     }
 
     /// `POST /ai/lecture-authoring/{course}/critique/queue`.
@@ -172,62 +162,58 @@ impl AiService {
         let course_id: CourseId = metadata_id(run, "course_id")?;
         let language = metadata_language(run);
         let user_id = run_user(run)?;
-        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
+        let admitted = self
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget.assert_request(&self.pool, &clipped(&rendered)),
+                self.admit_lecture_review(course_id, user_id, &language, Some(run.id)),
             )
             .await?;
         self.mark_running(run.id).await?;
-        self.lecture_review_execute(
-            run,
-            token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            &language,
-        )
-        .await?;
+        self.lecture_review_execute(run, token, &admitted, user_id, &language)
+            .await?;
         Ok(())
     }
 
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the shared step of the sync and queued paths"
-    )]
+    /// The course context admitted as sent (BUG-349).
+    async fn admit_lecture_review(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+        language: &str,
+        run: Option<AiRunId>,
+    ) -> Result<Admitted> {
+        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
+        let locale = self.user_locale(user_id).await?;
+        self.admit(
+            bundle,
+            load_prompt(Prompt::LectureCritique, locale.as_deref()),
+            &[],
+            run,
+            |context| format!("Language: {language}\n\nLecture context:\n{context}"),
+        )
+        .await
+    }
+
     async fn lecture_review_execute(
         &self,
         run: &RunRow,
         token: &CancellationToken,
-        bundle: &ContextBundle,
-        rendered: &str,
-        input_tokens: i32,
+        admitted: &Admitted,
         user_id: UserId,
         language: &str,
     ) -> Result<LectureReviewRow> {
         self.settle(run.id, FAIL_CODE, async {
-            let locale = self.user_locale(user_id).await?;
-            let prompt = format!(
-                "Language: {language}\n\nLecture context:\n{}",
-                clipped(rendered)
-            );
             let exec = Execution {
                 run,
                 token,
-                bundle,
-                input_tokens,
+                admitted,
                 user_id,
             };
             let mut finished = self
                 .run_structured::<LectureReviewReport>(
                     &exec,
                     ARTIFACT_KIND,
-                    load_prompt(Prompt::LectureCritique, locale.as_deref()),
-                    &prompt,
                     OutputSchema {
                         name: LectureReviewReport::SCHEMA_NAME.into(),
                         schema: LectureReviewReport::json_schema(),

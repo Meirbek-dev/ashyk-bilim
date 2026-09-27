@@ -263,8 +263,10 @@ pub async fn mark_running(pool: &PgPool, id: AiRunId) -> Result<bool> {
 }
 
 /// `running → succeeded` with the accounting columns. `false` = not running
-/// any more (cancelled underneath us). Runs inside the completion
-/// transaction (BUG-348).
+/// any more (cancelled underneath us).
+///
+/// Runs inside the completion transaction (BUG-348), which also records the ledger — the run's budget
+/// reservation is settled here (BUG-349).
 pub async fn finish_run<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AiRunId,
@@ -274,7 +276,8 @@ pub async fn finish_run<'e>(
     metadata_patch: &serde_json::Value,
 ) -> Result<bool> {
     let result = sqlx::query!(
-        r#"UPDATE ai_runs SET status = 'succeeded', model_name = $2, input_tokens = $3,
+        r#"WITH settled AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
+           UPDATE ai_runs SET status = 'succeeded', model_name = $2, input_tokens = $3,
                output_tokens = $4, metadata = metadata || $5, completed_at = now(),
                duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
            WHERE id = $1 AND status = 'running'"#,
@@ -296,7 +299,8 @@ pub async fn finish_run<'e>(
 /// the run is still `running` here.
 pub async fn fail_run(pool: &PgPool, id: AiRunId, error_code: &str) -> Result<bool> {
     let result = sqlx::query!(
-        r#"UPDATE ai_runs SET status = 'failed', error_code = $2, completed_at = now(),
+        r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
+           UPDATE ai_runs SET status = 'failed', error_code = $2, completed_at = now(),
                duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
            WHERE id = $1 AND status IN ('queued', 'running')"#,
         id.0,
@@ -307,10 +311,12 @@ pub async fn fail_run(pool: &PgPool, id: AiRunId, error_code: &str) -> Result<bo
     Ok(result.rows_affected() > 0)
 }
 
-/// `{queued, running} → aborted`. `false` = already terminal.
+/// `{queued, running} → aborted`. `false` = already terminal. Both this and
+/// [`fail_run`] release the run's budget reservation (BUG-349).
 pub async fn abort_run(pool: &PgPool, id: AiRunId) -> Result<bool> {
     let result = sqlx::query!(
-        r#"UPDATE ai_runs SET status = 'aborted', error_code = 'CANCELLED', completed_at = now(),
+        r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
+           UPDATE ai_runs SET status = 'aborted', error_code = 'CANCELLED', completed_at = now(),
                duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
            WHERE id = $1 AND status IN ('queued', 'running')"#,
         id.0
@@ -734,15 +740,61 @@ pub async fn ledger_record<'e>(
     Ok(())
 }
 
-/// Platform-wide tokens (input + output) consumed this calendar month.
-pub async fn ledger_month_total(pool: &PgPool) -> Result<i64> {
-    let total = sqlx::query_scalar!(
-        r#"SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS "total!"
-           FROM ai_token_ledger WHERE month = date_trunc('month', now())::date"#
+/// BUG-349: hold `tokens` of the monthly `budget` for one admitted request.
+///
+/// Atomic with the check (one admission at a time): the month's ledger
+/// plus the live reservations must leave room. Returns the reservation (or
+/// `None` when refused) and the tokens already committed before it. Expired
+/// leases (a crashed holder) stop counting and are swept here.
+pub async fn reserve_tokens(
+    pool: &PgPool,
+    tokens: i64,
+    budget: i64,
+    run_id: Option<AiRunId>,
+    lease: std::time::Duration,
+) -> Result<(Option<uuid::Uuid>, i64)> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!("SELECT pg_advisory_xact_lock(hashtext('ai_token_budget'))")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!("DELETE FROM ai_token_reservations WHERE expires_at <= now()")
+        .execute(&mut *tx)
+        .await?;
+    let committed = sqlx::query_scalar!(
+        r#"SELECT ((SELECT coalesce(sum(input_tokens + output_tokens), 0)
+                    FROM ai_token_ledger WHERE month = date_trunc('month', now())::date)
+                 + (SELECT coalesce(sum(tokens), 0) FROM ai_token_reservations))::bigint
+                  AS "committed!""#
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
-    Ok(total)
+    if committed.saturating_add(tokens) > budget {
+        return Ok((None, committed));
+    }
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO ai_token_reservations (run_id, tokens, expires_at)
+           VALUES ($1, $2, now() + make_interval(secs => $3)) RETURNING id"#,
+        run_id.map(|r| r.0),
+        tokens,
+        lease.as_secs_f64()
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok((Some(id), committed))
+}
+
+/// Tie a reservation taken before its run existed to that run, so the
+/// run's settlement, failure or abort releases it.
+pub async fn attach_reservation(pool: &PgPool, id: uuid::Uuid, run_id: AiRunId) -> Result<()> {
+    sqlx::query!(
+        "UPDATE ai_token_reservations SET run_id = $2 WHERE id = $1",
+        id,
+        run_id.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 /// This month's per-user rows, heaviest consumers first.

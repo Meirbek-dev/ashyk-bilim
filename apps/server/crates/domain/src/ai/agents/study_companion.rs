@@ -4,16 +4,16 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, StudyMode};
-use ab_core::id::{CourseId, UserId};
+use ab_core::id::{AiRunId, CourseId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::ai::RunRow;
 use tokio_util::sync::CancellationToken;
 
-use super::{Execution, draft_citation, metadata_id, metadata_language, run_user};
+use super::{Admitted, Execution, draft_citation, metadata_id, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
-use crate::ai::context::{self, ContextBundle};
-use crate::ai::prompts::{Prompt, clipped, load_prompt};
+use crate::ai::context;
+use crate::ai::prompts::{Prompt, load_prompt};
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{Level, StudyCompanionAnswer};
 use crate::identity::Actor;
@@ -72,11 +72,8 @@ impl AiService {
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
-        let bundle = context::course_bundle(&self.pool, course_id, false, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &format!("{question}\n{}", clipped(&rendered)))
+        let admitted = self
+            .admit_study(course_id, actor.user_id, question, mode, language, None)
             .await?;
         let run = self
             .create_run(
@@ -92,7 +89,7 @@ impl AiService {
                         "question": question,
                         "mode": mode.as_str(),
                         "language": language,
-                        "context_source_count": bundle.sources.len(),
+                        "context_source_count": admitted.sources.len(),
                     }),
                     thread: None,
                     title: None,
@@ -100,18 +97,8 @@ impl AiService {
             )
             .await?;
         let watch = self.cancel_watch(run.id);
-        self.study_companion_execute(
-            &run,
-            &watch.token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            actor.user_id,
-            question,
-            mode,
-            language,
-        )
-        .await
+        self.study_companion_execute(&run, &watch.token, &admitted, actor.user_id, mode)
+            .await
     }
 
     /// `POST /ai/study/{course}/ask/queue`.
@@ -173,67 +160,65 @@ impl AiService {
             .and_then(serde_json::Value::as_str)
             .and_then(StudyMode::parse)
             .unwrap_or(StudyMode::Explain);
-        let bundle = context::course_bundle(&self.pool, course_id, false, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
+        let admitted = self
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget
-                    .assert_request(&self.pool, &format!("{question}\n{}", clipped(&rendered))),
+                self.admit_study(course_id, user_id, &question, mode, &language, Some(run.id)),
             )
             .await?;
         self.mark_running(run.id).await?;
-        self.study_companion_execute(
-            run,
-            token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            &question,
-            mode,
-            &language,
-        )
-        .await?;
+        self.study_companion_execute(run, token, &admitted, user_id, mode)
+            .await?;
         Ok(())
     }
 
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the shared step of the sync and queued paths"
-    )]
-    async fn study_companion_execute(
+    /// The system prompt plus the mode/language/question turn around the
+    /// fitted course context, admitted as sent (BUG-349).
+    async fn admit_study(
         &self,
-        run: &RunRow,
-        token: &CancellationToken,
-        bundle: &ContextBundle,
-        rendered: &str,
-        input_tokens: i32,
+        course_id: CourseId,
         user_id: UserId,
         question: &str,
         mode: StudyMode,
         language: &str,
+        run: Option<AiRunId>,
+    ) -> Result<Admitted> {
+        let bundle = context::course_bundle(&self.pool, course_id, false, None).await?;
+        let locale = self.user_locale(user_id).await?;
+        self.admit(
+            bundle,
+            load_prompt(Prompt::StudyCompanion, locale.as_deref()),
+            &[],
+            run,
+            |context| {
+                format!(
+                    "Mode: {mode}\nLanguage: {language}\nStudent question: {question}\n\nCourse context:\n{context}"
+                )
+            },
+        )
+        .await
+    }
+
+    async fn study_companion_execute(
+        &self,
+        run: &RunRow,
+        token: &CancellationToken,
+        admitted: &Admitted,
+        user_id: UserId,
+        mode: StudyMode,
     ) -> Result<serde_json::Value> {
         self.settle(run.id, FAIL_CODE, async {
-            let locale = self.user_locale(user_id).await?;
-            let prompt = format!(
-                "Mode: {mode}\nLanguage: {language}\nStudent question: {question}\n\nCourse context:\n{}",
-                clipped(rendered)
-            );
             let exec = Execution {
                 run,
                 token,
-                bundle,
-                input_tokens,
+                admitted,
                 user_id,
             };
             let finished = self
                 .run_structured::<StudyCompanionAnswer>(
                     &exec,
                     ARTIFACT_KIND,
-                    load_prompt(Prompt::StudyCompanion, locale.as_deref()),
-                    &prompt,
                     OutputSchema {
                         name: StudyCompanionAnswer::SCHEMA_NAME.into(),
                         schema: StudyCompanionAnswer::json_schema(),

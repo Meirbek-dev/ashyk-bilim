@@ -1611,3 +1611,13 @@ Implements three more items of the owner answers above. Routes:
   grant replace and account disable answer 204 and write their audit row
   even when the session rewrite/revoke fails (logged): the change already
   holds, and a retry would only 404 on it.
+- **AI budget admission reserves; accounting records the provider**
+  (BUG-349). An admitted request holds its prompt estimate plus the full
+  `max_output_tokens` bound against the monthly budget until its run
+  settles (`ai_token_reservations`, 15-minute lease for crashed holders),
+  so near the month's end a request is refused while its worst case does
+  not fit, even if its real answer would. The ledger records the
+  provider-reported input and output tokens; estimates fill only a missing
+  count. The per-request cap applies to the whole message set sent (system
+  prompt, history, user turn); the context is fitted to it. Remediation is
+  admitted after its analysis, so an inline refusal leaves a `failed` run.

@@ -24,7 +24,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::{DRAFT_MODEL, draft_citation};
 use crate::ai::AiService;
-use crate::ai::budget::BudgetLane;
+use crate::ai::budget::{BudgetLane, Reservation};
 use crate::ai::context::{self, ContextSource};
 use crate::ai::partial::partial_string_field;
 use crate::ai::policy;
@@ -121,7 +121,7 @@ pub struct QaSession {
     language: String,
     locale: Option<String>,
     user_id: UserId,
-    input_tokens: i32,
+    reservation: Reservation,
     history: Vec<ChatMessage>,
     started: Instant,
     /// Armed as soon as the run exists (BUG-319): a session or stream
@@ -328,6 +328,10 @@ impl AiService {
 
     /// Legacy `prepare_course_question_stream`: gates, context, budget, the
     /// thread + user message, and the run — all committed before streaming.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one turn's preparation in order: gates, history, admission, records"
+    )]
     pub async fn prepare_qa(
         &self,
         actor: &Actor,
@@ -364,11 +368,16 @@ impl AiService {
             .qa_history(continued, existing.as_ref().map(|m| m.id))
             .await?;
         let locale = self.user_locale(actor.user_id).await?;
-        let (rendered, sources, input_tokens) = self
-            .fit_qa_context(bundle, locale.as_deref(), &history, |context| {
-                qa_prompt(role, request.language, question, context)
-            })
+        let admitted = self
+            .admit(
+                bundle,
+                load_prompt(Prompt::CourseQa, locale.as_deref()),
+                &history,
+                None,
+                |context| qa_prompt(role, request.language, question, context),
+            )
             .await?;
+        let sources = admitted.sources;
         let thread_id = if let Some(thread_id) = continued {
             thread_id
         } else {
@@ -414,6 +423,7 @@ impl AiService {
             )
             .await?;
         let guard = IncompleteGuard::arm(self, &user_message, actor.user_id, run.id);
+        ab_db::ai::attach_reservation(&self.pool, admitted.reservation.id, run.id).await?;
         let thread = ab_db::ai::get_thread(&self.pool, thread_id)
             .await?
             .ok_or_else(|| Error::not_found("ai thread"))?;
@@ -422,12 +432,12 @@ impl AiService {
             user_message,
             run,
             role,
-            rendered,
+            rendered: admitted.context,
             sources,
             language: request.language.to_owned(),
             locale,
             user_id: actor.user_id,
-            input_tokens,
+            reservation: admitted.reservation,
             history,
             started: Instant::now(),
             guard,
@@ -452,30 +462,6 @@ impl AiService {
             return Err(turn_reused());
         }
         Ok(existing)
-    }
-
-    /// BUG-325: the course context cut to what fits the per-request cap next
-    /// to the system prompt, the history and the question; only a turn
-    /// whose own text is too large is refused. Returns the context, the
-    /// sources it lists and the prompt estimate.
-    async fn fit_qa_context(
-        &self,
-        bundle: context::ContextBundle,
-        locale: Option<&str>,
-        history: &[ChatMessage],
-        prompt: impl Fn(&str) -> String,
-    ) -> Result<(String, Vec<ContextSource>, i32)> {
-        let head = std::iter::once(load_prompt(Prompt::CourseQa, locale))
-            .chain(history.iter().map(|m| m.content.as_str()))
-            .collect::<Vec<_>>()
-            .join("\n");
-        let (rendered, sources) =
-            bundle.fitted(|context| self.budget.fits(&format!("{head}\n{}", prompt(context))));
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &format!("{head}\n{}", prompt(&rendered)))
-            .await?;
-        Ok((rendered, sources, input_tokens))
     }
 
     /// The thread a turn continues: the retried message's thread, else the
@@ -701,8 +687,8 @@ impl AiService {
                 model_name,
                 artifact: artifact.clone(),
                 citations,
-                input_tokens: session.input_tokens,
-                output_tokens: usage.output_tokens,
+                estimated_input_tokens: session.reservation.input_tokens,
+                usage,
                 context_sources: Some(&session.sources),
             })
             .await?;
@@ -753,7 +739,7 @@ impl AiService {
             let thread_id = session.thread.id;
             let watch = service.cancel_watch(run_id);
             if let Err(err) = service
-                .emit_execution_events(run_id, session.sources.len(), session.input_tokens)
+                .emit_execution_events(run_id, session.sources.len(), session.reservation.input_tokens)
                 .await
             {
                 tracing::warn!(%run_id, %err, "qa execution events not journaled");

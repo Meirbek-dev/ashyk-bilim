@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1)\n           UPDATE ai_runs SET status = 'aborted', error_code = 'CANCELLED', completed_at = now(),\n               duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer\n           WHERE id = $1 AND status IN ('queued', 'running')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc53ba0af04701dc824476104152bf69bb57398fc579a2f46f1bc337dea4afb7"
+}

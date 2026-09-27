@@ -7,18 +7,20 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, CourseAnalysisStatus, FindingReviewAction};
-use ab_core::id::{AiCourseAnalysisId, CourseId, UserId};
+use ab_core::id::{AiCourseAnalysisId, AiRunId, CourseId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::ai::{CourseAnalysisRow, NewCourseAnalysis, RunRow};
 use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 
-use super::{Execution, draft_citation, evidence_json, metadata_id, metadata_language, run_user};
+use super::{
+    Admitted, Execution, draft_citation, evidence_json, metadata_id, metadata_language, run_user,
+};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
-use crate::ai::context::{self, ContextBundle};
+use crate::ai::context;
 use crate::ai::policy;
-use crate::ai::prompts::{Prompt, clipped, load_prompt};
+use crate::ai::prompts::{Prompt, load_prompt};
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{CourseQualityReport, Level, Recommendation};
 use crate::identity::Actor;
@@ -86,11 +88,8 @@ impl AiService {
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
-        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &clipped(&rendered))
+        let (admitted, hash) = self
+            .admit_course_analysis(course_id, actor.user_id, language, None)
             .await?;
         let run = self
             .create_run(
@@ -104,7 +103,7 @@ impl AiService {
                     metadata: serde_json::json!({
                         "course_id": course_id,
                         "language": language,
-                        "context_source_count": bundle.sources.len(),
+                        "context_source_count": admitted.sources.len(),
                     }),
                     thread: None,
                     title: None,
@@ -115,9 +114,8 @@ impl AiService {
         self.course_analysis_execute(
             &run,
             &watch.token,
-            &bundle,
-            &rendered,
-            input_tokens,
+            &admitted,
+            &hash,
             actor.user_id,
             language,
         )
@@ -164,62 +162,63 @@ impl AiService {
         let course_id: CourseId = metadata_id(run, "course_id")?;
         let language = metadata_language(run);
         let user_id = run_user(run)?;
-        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
+        let (admitted, hash) = self
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget.assert_request(&self.pool, &clipped(&rendered)),
+                self.admit_course_analysis(course_id, user_id, &language, Some(run.id)),
             )
             .await?;
         self.mark_running(run.id).await?;
-        self.course_analysis_execute(
-            run,
-            token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            &language,
-        )
-        .await?;
+        self.course_analysis_execute(run, token, &admitted, &hash, user_id, &language)
+            .await?;
         Ok(())
     }
 
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the shared step of the sync and queued paths"
-    )]
+    /// The course context admitted as sent (BUG-349), with the hash of the
+    /// whole context (staleness is judged on all of it).
+    async fn admit_course_analysis(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+        language: &str,
+        run: Option<AiRunId>,
+    ) -> Result<(Admitted, String)> {
+        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
+        let hash = content_hash(&bundle.render());
+        let locale = self.user_locale(user_id).await?;
+        let admitted = self
+            .admit(
+                bundle,
+                load_prompt(Prompt::CourseAnalysis, locale.as_deref()),
+                &[],
+                run,
+                |context| format!("Language: {language}\n\nCourse context:\n{context}"),
+            )
+            .await?;
+        Ok((admitted, hash))
+    }
+
     async fn course_analysis_execute(
         &self,
         run: &RunRow,
         token: &CancellationToken,
-        bundle: &ContextBundle,
-        rendered: &str,
-        input_tokens: i32,
+        admitted: &Admitted,
+        content_hash: &str,
         user_id: UserId,
         language: &str,
     ) -> Result<CourseAnalysisRow> {
         self.settle(run.id, FAIL_CODE, async {
-            let locale = self.user_locale(user_id).await?;
-            let prompt = format!(
-                "Language: {language}\n\nCourse context:\n{}",
-                clipped(rendered)
-            );
             let exec = Execution {
                 run,
                 token,
-                bundle,
-                input_tokens,
+                admitted,
                 user_id,
             };
             let mut finished = self
                 .run_structured::<CourseQualityReport>(
                     &exec,
                     ARTIFACT_KIND,
-                    load_prompt(Prompt::CourseAnalysis, locale.as_deref()),
-                    &prompt,
                     OutputSchema {
                         name: CourseQualityReport::SCHEMA_NAME.into(),
                         schema: CourseQualityReport::json_schema(),
@@ -241,7 +240,7 @@ impl AiService {
                     report: &finished.artifact,
                     evidence: &evidence_json(&finished.completion.trusted),
                     model_name: &finished.model_name,
-                    content_hash: &content_hash(rendered),
+                    content_hash,
                 },
             )
             .await?;

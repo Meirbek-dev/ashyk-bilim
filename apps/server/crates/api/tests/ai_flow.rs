@@ -2393,3 +2393,108 @@ async fn ai_success_commits_with_its_artifact(pool: PgPool) {
             .unwrap();
     assert_eq!((status.as_str(), artifacts), ("succeeded", 1));
 }
+
+/// BUG-349 (AUD-022): the ledger records the provider's reported prompt
+/// tokens (the fake reports 42 in, 7 out), not the admission estimate.
+#[sqlx::test(migrations = "../../migrations")]
+async fn ai_ledger_records_reported_usage(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Usage").await;
+    mount_json_reply(&app.llm, &study_reply()).await;
+    let response = ask_study(&app, &alice, &course_id).await;
+    assert_eq!(response.status, StatusCode::OK, "{}", response.text());
+    let (input, output, run_input): (i64, i64, i32) = sqlx::query_as(
+        "SELECT input_tokens, output_tokens, (SELECT input_tokens FROM ai_runs) FROM ai_token_ledger",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((input, output, run_input), (42, 7, 42));
+    let reserved: i64 = sqlx::query_scalar("SELECT count(*) FROM ai_token_reservations")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(reserved, 0, "the settled run released its reservation");
+}
+
+/// BUG-349 (AUD-023): admission reserves input + the output bound, so two
+/// in-flight requests cannot both spend the month's last room; a released
+/// or expired reservation frees it again.
+#[sqlx::test(migrations = "../../migrations")]
+async fn monthly_budget_reserves_inflight_requests(pool: PgPool) {
+    use ab_core::config::AiConfig;
+    use ab_domain::ai::budget::TokenBudget;
+    let app = TestApp::spawn(pool).await;
+    let probe = TokenBudget::new(std::sync::Arc::new(AiConfig::default()), None);
+    let one = i64::from(probe.estimate("Hello")) + 10;
+    let budget = TokenBudget::new(
+        std::sync::Arc::new(AiConfig {
+            monthly_token_budget: 2 * one - 1,
+            max_output_tokens: 10,
+            ..AiConfig::default()
+        }),
+        None,
+    );
+    let first = budget.reserve(&app.pool, "Hello", None).await.unwrap();
+    let second = budget.reserve(&app.pool, "Hello", None).await.unwrap_err();
+    assert_eq!(second.code(), ab_core::ErrorCode::AiBudgetExhausted);
+    sqlx::query("DELETE FROM ai_token_reservations WHERE id = $1")
+        .bind(first.id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let third = budget.reserve(&app.pool, "Hello", None).await.unwrap();
+    sqlx::query(
+        "UPDATE ai_token_reservations SET expires_at = now() - interval '1 second' WHERE id = $1",
+    )
+    .bind(third.id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    budget
+        .reserve(&app.pool, "Hello", None)
+        .await
+        .expect("an expired lease frees its room");
+}
+
+/// BUG-349 (AUD-024): the per-request cap covers the whole message set
+/// sent — the system prompt and the wrappers, not just question + context:
+/// it is fitted under the cap or refused, never sent over it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn study_request_cap_covers_the_system_prompt(pool: PgPool) {
+    // Question + course context alone estimate ~215 tokens here.
+    const CAP: u32 = 300;
+    let app = TestApp::spawn_with(pool, |config| config.ai.max_tokens_per_request = CAP).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Cap").await;
+    mount_json_reply(&app.llm, &study_reply()).await;
+    let response = ask_study(&app, &alice, &course_id).await;
+    let requests = app.llm.received_requests().await.unwrap();
+    if let Some(sent) = requests.first() {
+        let body: serde_json::Value = serde_json::from_slice(&sent.body).unwrap();
+        let prompt = body["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|m| m["content"].as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let tokens = ab_clients::llm::tokens::estimate(&prompt, ab_testkit::llm::TEST_MODEL);
+        assert!(
+            tokens <= CAP as usize,
+            "{tokens} tokens sent past a cap of {CAP}"
+        );
+        assert_eq!(response.status, StatusCode::OK, "{}", response.text());
+    } else {
+        assert_eq!(
+            response.status,
+            StatusCode::SERVICE_UNAVAILABLE,
+            "{}",
+            response.text()
+        );
+        assert_eq!(response.json()["code"], "ai-budget-exhausted");
+    }
+}

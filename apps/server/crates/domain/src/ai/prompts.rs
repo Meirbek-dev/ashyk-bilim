@@ -11,11 +11,6 @@
 pub const CONTEXT_CLIP_LIMIT: usize = 12_000;
 
 #[must_use]
-pub fn clipped(text: &str) -> String {
-    clipped_at(text, CONTEXT_CLIP_LIMIT)
-}
-
-#[must_use]
 pub fn clipped_at(text: &str, limit: usize) -> String {
     if text.chars().count() <= limit {
         return text.to_owned();

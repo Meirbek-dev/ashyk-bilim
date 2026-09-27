@@ -18,7 +18,7 @@ pub mod study_companion;
 pub mod submission_analyst;
 
 use ab_clients::llm::{ChatMessage, CompletionRequest, OutputSchema, Usage};
-use ab_core::id::UserId;
+use ab_core::id::{AiRunId, UserId};
 use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::RunRow;
 use serde::Serialize;
@@ -26,19 +26,33 @@ use serde::de::DeserializeOwned;
 use tokio_util::sync::CancellationToken;
 
 use super::AiService;
-use super::context::ContextBundle;
+use super::budget::Reservation;
+use super::context::{ContextBundle, ContextSource};
 use super::runs::{Completion, FinishSpec, with_cancel};
 use super::schemas::Citation;
 
 /// Legacy `model_name` for the deterministic fallbacks.
 pub const DRAFT_MODEL: &str = "draft-mode";
 
+/// One request as it will be sent, admitted (BUG-325 / BUG-349): the
+/// context fitted so the whole message set fits the per-request cap, and
+/// that estimate plus the output bound reserved against the month.
+pub(crate) struct Admitted {
+    pub instructions: &'static str,
+    /// The fitted context rendering.
+    pub context: String,
+    /// The user turn, built around `context`.
+    pub prompt: String,
+    /// The sources `context` lists — the only citable ones.
+    pub sources: Vec<ContextSource>,
+    pub reservation: Reservation,
+}
+
 /// What one agent step needs to execute against a run.
 pub(crate) struct Execution<'a> {
     pub run: &'a RunRow,
     pub token: &'a CancellationToken,
-    pub bundle: &'a ContextBundle,
-    pub input_tokens: i32,
+    pub admitted: &'a Admitted,
     pub user_id: UserId,
 }
 
@@ -88,6 +102,38 @@ pub(crate) fn run_user(run: &RunRow) -> Result<UserId> {
 }
 
 impl AiService {
+    /// Admit one request: cut `bundle` so the system prompt, `history` and
+    /// the user turn `prompt(context)` — exactly what is sent — fit the
+    /// per-request cap (only a turn too large on its own is refused), then
+    /// reserve it (BUG-349). `run` ties the reservation to an existing run.
+    pub(crate) async fn admit(
+        &self,
+        bundle: ContextBundle,
+        instructions: &'static str,
+        history: &[ChatMessage],
+        run: Option<AiRunId>,
+        prompt: impl Fn(&str) -> String,
+    ) -> Result<Admitted> {
+        let head = std::iter::once(instructions)
+            .chain(history.iter().map(|m| m.content.as_str()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let (context, sources) =
+            bundle.fitted(|context| self.budget.fits(&format!("{head}\n{}", prompt(context))));
+        let prompt = prompt(&context);
+        let reservation = self
+            .budget
+            .reserve(&self.pool, &format!("{head}\n{prompt}"), run)
+            .await?;
+        Ok(Admitted {
+            instructions,
+            context,
+            prompt,
+            sources,
+            reservation,
+        })
+    }
+
     /// One structured completion, or the deterministic draft when no
     /// provider is configured and draft mode is on (legacy
     /// `except AIProviderUnavailable: if ai_draft_mode_enabled`).
@@ -140,16 +186,10 @@ impl AiService {
     }
 
     /// The shared non-streaming pipeline around one structured completion.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "one call site per agent; a builder would obscure the legacy flow"
-    )]
     pub(crate) async fn run_structured<T>(
         &self,
         exec: &Execution<'_>,
         artifact_kind: &str,
-        instructions: &str,
-        prompt: &str,
         schema: OutputSchema,
         citations_of: impl Fn(&T) -> &[Citation],
         draft: impl FnOnce() -> T,
@@ -158,11 +198,24 @@ impl AiService {
         T: DeserializeOwned + Serialize,
     {
         let run_id = exec.run.id;
-        self.emit_execution_events(run_id, exec.bundle.sources.len(), exec.input_tokens)
-            .await?;
+        let admitted = exec.admitted;
+        ab_db::ai::attach_reservation(&self.pool, admitted.reservation.id, run_id).await?;
+        self.emit_execution_events(
+            run_id,
+            admitted.sources.len(),
+            admitted.reservation.input_tokens,
+        )
+        .await?;
         self.ensure_not_cancelled(run_id).await?;
         let outcome = self
-            .structured_or_draft::<T>(exec.token, instructions, prompt, schema, Vec::new(), draft)
+            .structured_or_draft::<T>(
+                exec.token,
+                admitted.instructions,
+                &admitted.prompt,
+                schema,
+                Vec::new(),
+                draft,
+            )
             .await?;
         self.emit_validation_event(run_id).await?;
         let artifact = serde_json::to_value(&outcome.value)
@@ -183,9 +236,9 @@ impl AiService {
                 model_name: &outcome.model_name,
                 artifact: artifact.clone(),
                 citations,
-                input_tokens: exec.input_tokens,
-                output_tokens: outcome.usage.output_tokens,
-                context_sources: Some(&exec.bundle.sources),
+                estimated_input_tokens: admitted.reservation.input_tokens,
+                usage: outcome.usage,
+                context_sources: Some(&admitted.sources),
             })
             .await?;
         Ok(Finished {

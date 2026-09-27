@@ -18,7 +18,7 @@ use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
 use crate::ai::context::ContextBundle;
 use crate::ai::policy;
-use crate::ai::prompts::{Prompt, clipped, load_prompt};
+use crate::ai::prompts::{Prompt, load_prompt};
 use crate::ai::redact;
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{RemediationBundle, RemediationQuestion, SubmissionAnalysisReport};
@@ -84,10 +84,8 @@ impl AiService {
             return Ok(existing);
         }
         let (bundle, metadata) = self.subject_bundle(subject, user_id).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &clipped(&rendered))
+        let admitted = self
+            .admit_submission_analysis(bundle, user_id, language, None)
             .await?;
         let analysis_run = self
             .create_run(
@@ -103,7 +101,7 @@ impl AiService {
                         serde_json::json!({
                             "course_id": subject.course_id(),
                             "language": language,
-                            "context_source_count": bundle.sources.len(),
+                            "context_source_count": admitted.sources.len(),
                             "parent_run_id": run.id,
                         }),
                     ),
@@ -112,16 +110,8 @@ impl AiService {
                 },
             )
             .await?;
-        self.submission_analysis_execute(
-            &analysis_run,
-            token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            language,
-        )
-        .await
+        self.submission_analysis_execute(&analysis_run, token, &admitted, user_id, language)
+            .await
     }
 
     /// `POST /ai/remediation/{subject}/generate` — inline.
@@ -139,11 +129,6 @@ impl AiService {
             .assert_hourly(actor.user_id, BudgetLane::Remediation)
             .await?;
         let (bundle, metadata) = self.subject_bundle(&subject, actor.user_id).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &clipped(&rendered))
-            .await?;
         let activity_id = self.subject_activity(&subject).await?;
         let run = self
             .create_run(
@@ -173,9 +158,7 @@ impl AiService {
             &run,
             &watch.token,
             &subject,
-            &bundle,
-            &rendered,
-            input_tokens,
+            bundle,
             actor.user_id,
             gate_mode,
             language,
@@ -276,26 +259,10 @@ impl AiService {
         let subject = self.load_subject_by(run_subject(run)?).await?;
         let (bundle, metadata) = self.subject_bundle(&subject, user_id).await?;
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .settle(
-                run.id,
-                FAIL_CODE,
-                self.budget.assert_request(&self.pool, &clipped(&rendered)),
-            )
-            .await?;
         self.mark_running(run.id).await?;
-        Box::pin(self.remediation_execute(
-            run,
-            token,
-            &subject,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            gate_mode,
-            &language,
-        ))
+        Box::pin(
+            self.remediation_execute(run, token, &subject, bundle, user_id, gate_mode, &language),
+        )
         .await?;
         Ok(())
     }
@@ -309,9 +276,7 @@ impl AiService {
         run: &RunRow,
         token: &CancellationToken,
         subject: &Subject,
-        bundle: &ContextBundle,
-        rendered: &str,
-        input_tokens: i32,
+        bundle: ContextBundle,
         user_id: UserId,
         gate_mode: bool,
         language: &str,
@@ -337,24 +302,32 @@ impl AiService {
                 .map(|g| format!("- {}: {}", g.concept, g.remediation_goal))
                 .collect::<Vec<_>>()
                 .join("\n");
+            // BUG-349: admitted only now — the prompt carries the analysis
+            // produced above.
             let locale = self.user_locale(user_id).await?;
-            let prompt = format!(
-                "Language: {language}\n\nKnowledge gaps:\n{gap_text}\n\nSubmission context:\n{}",
-                clipped(rendered)
-            );
+            let admitted = self
+                .admit(
+                    bundle,
+                    load_prompt(Prompt::RemediationLecture, locale.as_deref()),
+                    &[],
+                    Some(run.id),
+                    |context| {
+                        format!(
+                            "Language: {language}\n\nKnowledge gaps:\n{gap_text}\n\nSubmission context:\n{context}"
+                        )
+                    },
+                )
+                .await?;
             let exec = Execution {
                 run,
                 token,
-                bundle,
-                input_tokens,
+                admitted: &admitted,
                 user_id,
             };
             let mut finished = self
                 .run_structured::<RemediationBundle>(
                     &exec,
                     ARTIFACT_KIND,
-                    load_prompt(Prompt::RemediationLecture, locale.as_deref()),
-                    &prompt,
                     OutputSchema {
                         name: RemediationBundle::SCHEMA_NAME.into(),
                         schema: RemediationBundle::json_schema(),

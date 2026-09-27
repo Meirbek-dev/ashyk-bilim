@@ -6,17 +6,17 @@
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
-use ab_core::id::{AiSubjectId, UserId};
+use ab_core::id::{AiRunId, AiSubjectId, UserId};
 use ab_core::{Error, Result};
 use ab_db::ai::{NewSubmissionAnalysis, RunRow, SubmissionAnalysisRow};
 use tokio_util::sync::CancellationToken;
 
 use super::remediation_generator::learner_only;
-use super::{Execution, draft_citation, evidence_json, metadata_language, run_user};
+use super::{Admitted, Execution, draft_citation, evidence_json, metadata_language, run_user};
 use crate::ai::AiService;
 use crate::ai::budget::BudgetLane;
 use crate::ai::context::ContextBundle;
-use crate::ai::prompts::{Prompt, clipped, load_prompt};
+use crate::ai::prompts::{Prompt, load_prompt};
 use crate::ai::runs::RunSpec;
 use crate::ai::schemas::{KnowledgeGap, Level, SubmissionAnalysisReport};
 use crate::ai::subject::{Subject, run_subject};
@@ -71,10 +71,8 @@ impl AiService {
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
         let (bundle, metadata) = self.subject_bundle(&subject, actor.user_id).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
-            .budget
-            .assert_request(&self.pool, &clipped(&rendered))
+        let admitted = self
+            .admit_submission_analysis(bundle, actor.user_id, language, None)
             .await?;
         let run = self
             .create_run(
@@ -93,7 +91,7 @@ impl AiService {
                         serde_json::json!({
                             "course_id": subject.course_id(),
                             "language": language,
-                            "context_source_count": bundle.sources.len(),
+                            "context_source_count": admitted.sources.len(),
                         }),
                     ),
                     thread: None,
@@ -102,16 +100,8 @@ impl AiService {
             )
             .await?;
         let watch = self.cancel_watch(run.id);
-        self.submission_analysis_execute(
-            &run,
-            &watch.token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            actor.user_id,
-            language,
-        )
-        .await
+        self.submission_analysis_execute(&run, &watch.token, &admitted, actor.user_id, language)
+            .await
     }
 
     /// `POST /ai/submission-analysis/{subject}/analyze/queue`.
@@ -161,61 +151,57 @@ impl AiService {
         let subject = self.load_subject_by(run_subject(run)?).await?;
         let (bundle, metadata) = self.subject_bundle(&subject, user_id).await?;
         ab_db::ai::merge_run_metadata(&self.pool, run.id, &metadata).await?;
-        let rendered = bundle.render();
-        let input_tokens = self
+        let admitted = self
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.budget.assert_request(&self.pool, &clipped(&rendered)),
+                self.admit_submission_analysis(bundle, user_id, &language, Some(run.id)),
             )
             .await?;
         self.mark_running(run.id).await?;
-        self.submission_analysis_execute(
-            run,
-            token,
-            &bundle,
-            &rendered,
-            input_tokens,
-            user_id,
-            &language,
-        )
-        .await?;
+        self.submission_analysis_execute(run, token, &admitted, user_id, &language)
+            .await?;
         Ok(())
     }
 
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the shared step of the sync and queued paths"
-    )]
+    /// The submission context admitted as sent (BUG-349).
+    pub(crate) async fn admit_submission_analysis(
+        &self,
+        bundle: ContextBundle,
+        user_id: UserId,
+        language: &str,
+        run: Option<AiRunId>,
+    ) -> Result<Admitted> {
+        let locale = self.user_locale(user_id).await?;
+        self.admit(
+            bundle,
+            load_prompt(Prompt::SubmissionAnalysis, locale.as_deref()),
+            &[],
+            run,
+            |context| format!("Language: {language}\n\nSubmission context:\n{context}"),
+        )
+        .await
+    }
+
     pub(crate) async fn submission_analysis_execute(
         &self,
         run: &RunRow,
         token: &CancellationToken,
-        bundle: &ContextBundle,
-        rendered: &str,
-        input_tokens: i32,
+        admitted: &Admitted,
         user_id: UserId,
         language: &str,
     ) -> Result<SubmissionAnalysisRow> {
         self.settle(run.id, FAIL_CODE, async {
-            let locale = self.user_locale(user_id).await?;
-            let prompt = format!(
-                "Language: {language}\n\nSubmission context:\n{}",
-                clipped(rendered)
-            );
             let exec = Execution {
                 run,
                 token,
-                bundle,
-                input_tokens,
+                admitted,
                 user_id,
             };
             let mut finished = self
                 .run_structured::<SubmissionAnalysisReport>(
                     &exec,
                     ARTIFACT_KIND,
-                    load_prompt(Prompt::SubmissionAnalysis, locale.as_deref()),
-                    &prompt,
                     OutputSchema {
                         name: SubmissionAnalysisReport::SCHEMA_NAME.into(),
                         schema: SubmissionAnalysisReport::json_schema(),
