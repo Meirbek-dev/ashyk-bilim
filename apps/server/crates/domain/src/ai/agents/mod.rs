@@ -17,7 +17,9 @@ pub mod remediation_generator;
 pub mod study_companion;
 pub mod submission_analyst;
 
-use ab_clients::llm::{ChatMessage, CompletionRequest, OutputSchema, Usage};
+use ab_clients::llm::{
+    ChatMessage, CompletionRequest, LlmError, OutputSchema, Usage, parse_structured, repair_request,
+};
 use ab_core::id::{AiRunId, UserId};
 use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::RunRow;
@@ -60,7 +62,10 @@ pub(crate) struct Execution<'a> {
 pub(crate) struct ModelOutcome<T> {
     pub value: T,
     pub model_name: String,
+    /// Every call's usage (the repair round included).
     pub usage: Usage,
+    /// The repair round's prompt estimate (0 without one).
+    pub repair_input_tokens: i32,
 }
 
 /// The result of one finished structured step, not yet committed.
@@ -137,13 +142,15 @@ impl AiService {
     /// One structured completion, or the deterministic draft when no
     /// provider is configured and draft mode is on (legacy
     /// `except AIProviderUnavailable: if ai_draft_mode_enabled`).
+    ///
+    /// An unparsable reply gets one repair round (the invalid reply and the
+    /// parse error go back to the model). It is a request of its own
+    /// (BUG-349): admitted against the per-request cap and reserved against
+    /// the month like the first, and both calls are accounted.
     pub(crate) async fn structured_or_draft<T>(
         &self,
-        token: &CancellationToken,
-        instructions: &str,
-        prompt: &str,
+        exec: &Execution<'_>,
         schema: OutputSchema,
-        history: Vec<ChatMessage>,
         draft: impl FnOnce() -> T,
     ) -> Result<ModelOutcome<T>>
     where
@@ -155,6 +162,7 @@ impl AiService {
                     value: draft(),
                     model_name: DRAFT_MODEL.to_owned(),
                     usage: Usage::default(),
+                    repair_input_tokens: 0,
                 });
             }
             return Err(Error::app(
@@ -162,26 +170,52 @@ impl AiService {
                 "AI provider is not configured and draft mode is off",
             ));
         };
-        let mut messages = Vec::with_capacity(history.len() + 2);
-        messages.push(ChatMessage::system(instructions));
-        messages.extend(history);
-        messages.push(ChatMessage::user(prompt));
         let request = CompletionRequest {
-            messages,
+            messages: vec![
+                ChatMessage::system(exec.admitted.instructions),
+                ChatMessage::user(exec.admitted.prompt.clone()),
+            ],
             output_schema: Some(schema),
             max_output_tokens: Some(self.config.max_output_tokens),
             temperature: None,
         };
-        let structured = with_cancel(token, async {
-            llm.complete_structured::<T>(&request)
-                .await
-                .map_err(Error::from)
-        })
-        .await?;
+        let complete = |request: CompletionRequest| {
+            with_cancel(exec.token, async move {
+                llm.complete(&request).await.map_err(Error::from)
+            })
+        };
+        let first = complete(request.clone()).await?;
+        let parse_err = match parse_structured::<T>(&first.text) {
+            Ok((value, _)) => {
+                return Ok(ModelOutcome {
+                    value,
+                    model_name: first.model_name,
+                    usage: first.usage,
+                    repair_input_tokens: 0,
+                });
+            }
+            Err(err) => err,
+        };
+        tracing::info!(%parse_err, "structured reply unparsable; repair round");
+        let repair = repair_request(&request, &first.text, &parse_err);
+        let sent = repair
+            .messages
+            .iter()
+            .map(|m| m.content.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let reservation = self
+            .budget
+            .reserve(&self.pool, &sent, Some(exec.run.id))
+            .await?;
+        let second = complete(repair).await?;
+        let (value, _) = parse_structured::<T>(&second.text)
+            .map_err(|err| Error::from(LlmError::InvalidOutput(err)))?;
         Ok(ModelOutcome {
-            value: structured.value,
-            model_name: structured.completion.model_name,
-            usage: structured.completion.usage,
+            value,
+            model_name: second.model_name,
+            usage: first.usage.plus(second.usage),
+            repair_input_tokens: reservation.input_tokens,
         })
     }
 
@@ -207,16 +241,7 @@ impl AiService {
         )
         .await?;
         self.ensure_not_cancelled(run_id).await?;
-        let outcome = self
-            .structured_or_draft::<T>(
-                exec.token,
-                admitted.instructions,
-                &admitted.prompt,
-                schema,
-                Vec::new(),
-                draft,
-            )
-            .await?;
+        let outcome = self.structured_or_draft::<T>(exec, schema, draft).await?;
         self.emit_validation_event(run_id).await?;
         let artifact = serde_json::to_value(&outcome.value)
             .map_err(|e| Error::internal("serialising ai artifact", e))?;
@@ -236,7 +261,10 @@ impl AiService {
                 model_name: &outcome.model_name,
                 artifact: artifact.clone(),
                 citations,
-                estimated_input_tokens: admitted.reservation.input_tokens,
+                estimated_input_tokens: admitted
+                    .reservation
+                    .input_tokens
+                    .saturating_add(outcome.repair_input_tokens),
                 usage: outcome.usage,
                 context_sources: Some(&admitted.sources),
             })

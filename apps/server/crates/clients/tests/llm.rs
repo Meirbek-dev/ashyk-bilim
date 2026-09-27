@@ -267,6 +267,9 @@ async fn structured_output_repairs_once_then_gives_up() {
     )]);
     let structured = llm.complete_structured::<Answer>(&request()).await.unwrap();
     assert!(structured.repaired);
+    // Both calls are paid for (BUG-349).
+    assert_eq!(structured.completion.usage.input_tokens, Some(84));
+    assert_eq!(structured.completion.usage.output_tokens, Some(14));
     assert_eq!(structured.value.answer_markdown, "repaired");
     assert_eq!(structured.raw["answer_markdown"], "repaired");
 

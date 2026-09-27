@@ -2498,3 +2498,86 @@ async fn study_request_cap_covers_the_system_prompt(pool: PgPool) {
         assert_eq!(response.json()["code"], "ai-budget-exhausted");
     }
 }
+
+/// Mount one unparsable structured reply (the next is `study_reply`).
+async fn mount_unparsable_then_study_reply(app: &TestApp, junk: &str) {
+    wiremock::Mock::given(wiremock::matchers::path(ab_testkit::llm::COMPLETIONS_PATH))
+        .respond_with(
+            wiremock::ResponseTemplate::new(200)
+                .set_body_json(ab_testkit::llm::completion_body(junk)),
+        )
+        .up_to_n_times(1)
+        .mount(&app.llm)
+        .await;
+    mount_json_reply(&app.llm, &study_reply()).await;
+}
+
+fn sent_tokens(request: &wiremock::Request) -> usize {
+    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+    let prompt = body["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|m| m["content"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    ab_clients::llm::tokens::estimate(&prompt, ab_testkit::llm::TEST_MODEL)
+}
+
+/// BUG-349: a structured repair round is a second paid call — both calls'
+/// usage reaches the ledger (the fake reports 42 in / 7 out per call).
+#[sqlx::test(migrations = "../../migrations")]
+async fn repair_round_usage_is_recorded(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Repair").await;
+    mount_unparsable_then_study_reply(&app, "not json at all").await;
+    let response = ask_study(&app, &alice, &course_id).await;
+    assert_eq!(response.status, StatusCode::OK, "{}", response.text());
+    assert_eq!(app.llm.received_requests().await.unwrap().len(), 2);
+    let (input, output, run_input, reserved): (i64, i64, i32, i64) = sqlx::query_as(
+        "SELECT input_tokens, output_tokens, (SELECT input_tokens FROM ai_runs),
+                (SELECT count(*) FROM ai_token_reservations) FROM ai_token_ledger",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((input, output, run_input, reserved), (84, 14, 84, 0));
+}
+
+/// BUG-349: the repair request (prompt + the invalid reply + the repair
+/// instruction) is admitted like the first — one over the per-request cap
+/// is never sent; the run fails cleanly and releases its reservations.
+#[sqlx::test(migrations = "../../migrations")]
+async fn repair_round_stays_under_the_request_cap(pool: PgPool) {
+    const CAP: u32 = 700;
+    let app = TestApp::spawn_with(pool, |config| config.ai.max_tokens_per_request = CAP).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Repair cap").await;
+    mount_unparsable_then_study_reply(&app, &"junk ".repeat(500)).await;
+    let response = ask_study(&app, &alice, &course_id).await;
+    let requests = app.llm.received_requests().await.unwrap();
+    let sizes: Vec<usize> = requests.iter().map(sent_tokens).collect();
+    assert!(
+        sizes.iter().all(|&n| n <= CAP as usize),
+        "sent {sizes:?} past a cap of {CAP}"
+    );
+    assert_eq!(sizes.len(), 1, "the repair round must not be sent");
+    assert_eq!(
+        response.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        response.text()
+    );
+    assert_eq!(response.json()["code"], "ai-budget-exhausted");
+    let (status, reserved, ledger): (String, i64, i64) = sqlx::query_as(
+        "SELECT status, (SELECT count(*) FROM ai_token_reservations),
+                (SELECT count(*) FROM ai_token_ledger) FROM ai_runs",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((status.as_str(), reserved, ledger), ("failed", 0, 0));
+}

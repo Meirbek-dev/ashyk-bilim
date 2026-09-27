@@ -115,6 +115,18 @@ pub struct Usage {
     pub output_tokens: Option<u32>,
 }
 
+impl Usage {
+    /// Two calls' usage together; a count either call omitted stays absent.
+    #[must_use]
+    pub fn plus(self, other: Self) -> Self {
+        let add = |a: Option<u32>, b: Option<u32>| Some(a?.saturating_add(b?));
+        Self {
+            input_tokens: add(self.input_tokens, other.input_tokens),
+            output_tokens: add(self.output_tokens, other.output_tokens),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Completion {
     pub text: String,
@@ -373,8 +385,9 @@ impl LlmClient {
     }
 
     /// Ask for JSON matching the request's schema and parse it as `T`. One
-    /// repair round: the invalid reply and the parse error go back to the
-    /// model, which must answer with the JSON object alone.
+    /// repair round ([`repair_request`]); the returned usage covers both
+    /// calls. Budgeted callers run the two rounds themselves so the repair
+    /// is admitted like any request.
     pub async fn complete_structured<T: DeserializeOwned>(
         &self,
         request: &CompletionRequest,
@@ -389,17 +402,12 @@ impl LlmClient {
             }),
             Err(parse_err) => {
                 tracing::info!(%parse_err, "structured reply unparsable; repair round");
-                let mut repair = request.clone();
-                repair
-                    .messages
-                    .push(ChatMessage::assistant(first.text.clone()));
-                repair.messages.push(ChatMessage::user(format!(
-                    "Your previous reply was not valid JSON for the requested schema ({parse_err}). \
-                     Reply again with only the JSON object — no prose, no code fences."
-                )));
-                let second = self.complete(&repair).await?;
+                let mut second = self
+                    .complete(&repair_request(request, &first.text, &parse_err))
+                    .await?;
                 let (value, raw) =
                     parse_structured::<T>(&second.text).map_err(LlmError::InvalidOutput)?;
+                second.usage = first.usage.plus(second.usage);
                 Ok(Structured {
                     value,
                     raw,
@@ -672,7 +680,28 @@ pub fn extract_json(text: &str) -> Result<serde_json::Value, String> {
     serde_json::from_str(&unfenced[start..=end]).map_err(|e| e.to_string())
 }
 
-fn parse_structured<T: DeserializeOwned>(text: &str) -> Result<(T, serde_json::Value), String> {
+/// The structured repair round: the invalid `reply` and the parse error go
+/// back to the model, which must answer with the JSON object alone.
+#[must_use]
+pub fn repair_request(
+    request: &CompletionRequest,
+    reply: &str,
+    parse_err: &str,
+) -> CompletionRequest {
+    let mut repair = request.clone();
+    repair
+        .messages
+        .push(ChatMessage::assistant(reply.to_owned()));
+    repair.messages.push(ChatMessage::user(format!(
+        "Your previous reply was not valid JSON for the requested schema ({parse_err}). \
+         Reply again with only the JSON object — no prose, no code fences."
+    )));
+    repair
+}
+
+/// Parse a structured reply as `T` (code fences and prose around the JSON
+/// object tolerated); the error is the reason, for [`repair_request`].
+pub fn parse_structured<T: DeserializeOwned>(text: &str) -> Result<(T, serde_json::Value), String> {
     let raw = extract_json(text)?;
     let value: T = serde_json::from_value(raw.clone()).map_err(|e| e.to_string())?;
     Ok((value, raw))
