@@ -3942,7 +3942,8 @@
         },
         "toasts": {
           "created": "Курс создан.",
-          "partial": "Курс создан. {imported} из {imported, number} глав импортировано. {failed} не удалось."
+          "partial": "Курс создан. {imported} из {total} глав импортировано. {failed} не удалось.",
+          "outlineFailed": "Курс создан, но структуру исходного курса загрузить не удалось. Добавьте главы вручную."
         },
         "visibility": {
           "private": {
@@ -10539,6 +10540,7 @@
     "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",
     "fileTooLarge": "Файл больше {size} МБ",
     "fileTypeNotAllowed": "Недопустимый тип файла ({type})",
+    "noExtension": "без расширения",
     "confirmSubmitTitle": "Отправить файлы?",
     "confirmSubmitDescription": "Это использует попытку {number} из {max}. После отправки изменить файлы нельзя.",
     "confirmSubmitAction": "Отправить",

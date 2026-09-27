@@ -38,7 +38,12 @@ export function CourseCreateForm() {
       return
     }
     if (result.status === 'partial') {
-      toast.warning(t('toasts.partial', { imported: result.importedChapterCount, failed: result.failedChapterCount }))
+      const { importedChapterCount: imported, failedChapterCount: failed } = result
+      toast.warning(
+        result.sourceFetchFailed
+          ? t('toasts.outlineFailed')
+          : t('toasts.partial', { imported, failed, total: imported + failed }),
+      )
     } else {
       toast.success(t('toasts.created'))
     }

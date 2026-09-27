@@ -3945,7 +3945,8 @@
         },
         "toasts": {
           "created": "Курс құрылды.",
-          "partial": "Курс құрылды. {imported} ішіндегі {imported, number} тарау імпортталды. {failed} сәтсіз болды."
+          "partial": "Курс құрылды. {total} тараудың {imported} импортталды. {failed} сәтсіз болды.",
+          "outlineFailed": "Курс құрылды, бірақ бастапқы курстың құрылымын жүктеу мүмкін болмады. Тарауларды қолмен қосыңыз."
         },
         "visibility": {
           "private": {
@@ -10709,6 +10710,7 @@
     "maxFilesAllowed": "{count, plural, one {Ең көбі # файл} other {Ең көбі # файл}}",
     "fileTooLarge": "Файл {size} МБ-тан үлкен",
     "fileTypeNotAllowed": "Файл түріне рұқсат жоқ ({type})",
+    "noExtension": "кеңейтімсіз",
     "confirmSubmitTitle": "Файлдарды жіберу керек пе?",
     "confirmSubmitDescription": "Бұл {max} әрекеттің {number}-сін жұмсайды. Жібергеннен кейін файлдарды өзгерту мүмкін емес.",
     "confirmSubmitAction": "Жіберу",

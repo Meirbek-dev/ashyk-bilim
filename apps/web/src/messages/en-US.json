@@ -3930,7 +3930,8 @@
         },
         "toasts": {
           "created": "Course created.",
-          "partial": "Course created. {imported} of {imported, number} chapters imported. {failed} failed."
+          "partial": "Course created. {imported} of {total} chapters imported. {failed} failed.",
+          "outlineFailed": "Course created, but the source course outline could not be loaded. Add chapters manually."
         },
         "visibility": {
           "private": {
@@ -10525,6 +10526,7 @@
     "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",
     "fileTooLarge": "File exceeds {size} MB",
     "fileTypeNotAllowed": "File type not allowed ({type})",
+    "noExtension": "no extension",
     "confirmSubmitTitle": "Submit files?",
     "confirmSubmitDescription": "This uses attempt {number} of {max}. Files cannot be changed after submitting.",
     "confirmSubmitAction": "Submit",

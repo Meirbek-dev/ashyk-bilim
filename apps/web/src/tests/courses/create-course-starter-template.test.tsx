@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useCreateCourseMutation } from '@/features/courses/create/useCreateCourseMutation'
-import { createNewCourse } from '@services/courses/courses'
+import { createNewCourse, getCourseMetadata } from '@services/courses/courses'
 import { createChapter } from '@services/courses/chapters'
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
@@ -53,5 +53,28 @@ describe('useCreateCourseMutation — BUG-012 starter template', () => {
       }),
     )
     expect(outcome).toMatchObject({ status: 'success', importedChapterCount: 2 })
+  })
+})
+
+// UX-235: a source course that cannot be read was reported as «0 of 0 imported».
+describe('useCreateCourseMutation — copy outline', () => {
+  it('flags a failed source fetch so the form can say the outline was not copied', async () => {
+    vi.mocked(getCourseMetadata).mockRejectedValue(new Error('404'))
+    const { result } = renderHook(() => useCreateCourseMutation())
+    let outcome: Awaited<ReturnType<typeof result.current.mutate>> | undefined
+    await act(async () => {
+      outcome = await result.current.mutate(
+        {
+          title: 'Copy',
+          description: '',
+          structureMode: 'copy-outline',
+          sourceCourseUuid: 'gone',
+          initialVisibility: 'private',
+        },
+        'overview',
+      )
+    })
+    expect(createChapter).not.toHaveBeenCalled()
+    expect(outcome).toMatchObject({ status: 'partial', sourceFetchFailed: true })
   })
 })

@@ -67,13 +67,14 @@ export function useCreateCourseMutation() {
                 }))
               : []
           } catch {
-            // source fetch failed — treat as partial success with 0 chapters
+            // The course exists but the outline could not be read: say so (UX-235).
             return {
               status: 'partial',
               courseUuid,
               importedChapterCount: 0,
               failedChapterCount: 0,
               destinationPath,
+              sourceFetchFailed: true,
             }
           }
 

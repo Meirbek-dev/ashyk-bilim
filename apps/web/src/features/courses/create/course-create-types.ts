@@ -42,6 +42,8 @@ export interface CourseCreatePartialSuccess {
   importedChapterCount: number
   failedChapterCount: number
   destinationPath: string
+  /** UX-235: the source course could not be read, so no outline was copied. */
+  sourceFetchFailed?: boolean
 }
 
 /** A complete failure result. */
