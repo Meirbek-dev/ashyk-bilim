@@ -7,11 +7,12 @@
  */
 import * as zod from 'zod'
 
-export const RiskDistributionCounts = zod.object({
-  high: zod.int(),
-  low: zod.int(),
-  medium: zod.int(),
-})
+export const RiskDistributionCounts = zod
+  .object({
+    high: zod.int(),
+    medium: zod.int(),
+  })
+  .describe('At-risk learners by level (medium + high, UX-240).')
 
 export type RiskDistributionCounts = zod.input<typeof RiskDistributionCounts>
 export type RiskDistributionCountsOutput = zod.output<typeof RiskDistributionCounts>

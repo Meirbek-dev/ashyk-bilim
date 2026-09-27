@@ -21579,17 +21579,13 @@
       },
       "RiskDistributionCounts": {
         "type": "object",
+        "description": "At-risk learners by level (medium + high, UX-240).",
         "required": [
           "high",
-          "medium",
-          "low"
+          "medium"
         ],
         "properties": {
           "high": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "low": {
             "type": "integer",
             "format": "int64"
           },

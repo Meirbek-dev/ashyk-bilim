@@ -444,11 +444,12 @@ export const TeacherOverviewResponse = zod.object({
     resolved: zod.int(),
     total: zod.int(),
   }),
-  risk_distribution: zod.object({
-    high: zod.int(),
-    low: zod.int(),
-    medium: zod.int(),
-  }),
+  risk_distribution: zod
+    .object({
+      high: zod.int(),
+      medium: zod.int(),
+    })
+    .describe('At-risk learners by level (medium + high, UX-240).'),
   scope: zod.object({
     cohort_ids: zod.array(zod.uuid()),
     course_ids: zod.array(zod.uuid()),
