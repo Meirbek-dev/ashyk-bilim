@@ -86,6 +86,35 @@ describe('useActivityAutosave serialization', () => {
     expect(result.current.saveStatus).toBe('saved')
   })
 
+  // Re-verify: a manual Save queued behind an autosave that hits 412 was
+  // resolved as skipped, so the editor toasted «saved» for a write that
+  // never happened.
+  it('a manual save queued behind a write that hits 412 rejects, never reports success', async () => {
+    const first = Promise.withResolvers<{ version: number }>()
+    updateActivity.mockReturnValueOnce(first.promise)
+    const { result } = renderHook(() => useActivityAutosave({ activityUuid: 'lesson-a', courseUuid: 'course-1' }))
+    act(() => result.current.onChange({ version: 1, content: 'autosaved' }))
+    await act(() => vi.advanceTimersByTimeAsync(1500))
+    let manual: Promise<void> = Promise.resolve()
+    act(() => {
+      manual = result.current.flush({ version: 1, content: 'typed before save' })
+    })
+    const outcome = manual.then(
+      () => 'resolved',
+      (error: unknown) => (error instanceof APIError ? error.code : 'other'),
+    )
+    await act(async () => {
+      first.reject(new APIError({ status: 412, code: 'precondition-failed', message: 'stale' }))
+      await outcome
+    })
+    expect(await outcome).toBe('precondition-failed')
+    expect(updateActivity).toHaveBeenCalledTimes(1)
+    expect(result.current.saveStatus).toBe('conflict')
+    // And a later Save on the stopped lesson fails too, without a request.
+    await expect(result.current.flush({ version: 1 })).rejects.toMatchObject({ code: 'precondition-failed' })
+    expect(updateActivity).toHaveBeenCalledTimes(1)
+  })
+
   it('manual save cancels the pending debounce', async () => {
     updateActivity.mockResolvedValue({ version: 2 })
     const { result } = renderHook(() => useActivityAutosave({ activityUuid: 'lesson-a', courseUuid: 'course-1' }))
