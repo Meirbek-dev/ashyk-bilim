@@ -339,6 +339,18 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let alice_sub = submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
     grade_and_publish(&app, &teacher, &quiz_id, &alice_sub, &essay_id).await;
     submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
+    // Bob last worked 5 days ago, so he is at risk (medium, UX-240).
+    for sql in [
+        "UPDATE submissions SET submitted_at = submitted_at - interval '5 days',          updated_at = updated_at - interval '5 days' WHERE user_id = $1",
+        "UPDATE activity_progress SET last_activity_at = last_activity_at - interval '5 days',          submitted_at = submitted_at - interval '5 days', started_at = started_at - interval '5 days'          WHERE user_id = $1",
+        "UPDATE analytics_events SET occurred_at = occurred_at - interval '5 days' WHERE user_id = $1",
+    ] {
+        sqlx::query(sql)
+            .bind(bob.user_id.0)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
 
     // ── Event capture ───────────────────────────────────────────────────
     assert_eq!(event_count(&pool, "submission.submitted").await, 2);
@@ -423,11 +435,17 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         "{bob_row}"
     );
     assert_eq!(bob_row["open_grading_blocks"], 1);
-    // 0.3 * (100 - 0) + 4 = 34: below the medium line, so "low" and, with no
-    // earlier snapshot, "stable" (legacy only says newly_at_risk from medium).
-    assert_eq!(bob_row["risk_score"], 34.0);
-    assert_eq!(bob_row["risk_level"], "low");
-    assert_eq!(bob_row["risk_trend"], "stable");
+    // 2 × 5 idle days + 0.3 * (100 - 0) + 4 = 44: medium, and with no
+    // earlier snapshot "newly_at_risk". Low rows are not at risk and never
+    // listed (UX-240): the summary, total and preview agree.
+    assert_eq!(bob_row["risk_score"], 44.0);
+    assert_eq!(bob_row["risk_level"], "medium");
+    assert_eq!(bob_row["risk_trend"], "newly_at_risk");
+    assert_eq!(body["summary"]["at_risk_learners"]["value"], 1.0);
+    assert_eq!(
+        body["risk_distribution"],
+        serde_json::json!({ "high": 0, "medium": 1 })
+    );
     assert_eq!(bob_row["recommended_action"], "review_submissions_first");
     assert!(
         find_row(
@@ -486,9 +504,9 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let row = &courses.json()["items"][0];
     assert_eq!(row["course_id"], course_id);
     assert_eq!(row["ungraded_submissions"], 1);
-    // Course counters only count medium/high (legacy); the low-scored
-    // learner still appears in the at-risk list because he has reason codes.
-    assert_eq!(row["at_risk_learners"], 0);
+    // The course counter and the at-risk list count the same learners
+    // (medium/high, UX-240).
+    assert_eq!(row["at_risk_learners"], 1);
     assert_eq!(row["active_learners_7d"], 2);
     assert_eq!(
         courses.json()["course_options"].as_array().unwrap().len(),
@@ -505,7 +523,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(detail.json()["course"]["id"], course_id);
     assert_eq!(detail.json()["summary"]["enrolled_learners"], 2);
     assert_eq!(detail.json()["summary"]["ungraded_submissions"], 1);
-    assert_eq!(detail.json()["summary"]["at_risk_learners"], 0);
+    assert_eq!(detail.json()["summary"]["at_risk_learners"], 1);
     assert_eq!(
         detail.json()["at_risk_learners"].as_array().unwrap().len(),
         1
@@ -1095,13 +1113,24 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     let bob = learner(&app, "bob").await;
 
     // Progress rows straight into the table: the teacher enrolled in his
-    // own course, alice at 0 % (score 30), bob at 40 % (score 18).
+    // own course, alice at 0 % (score 30 + 30 idle), bob at 40 % (18 + 30).
     for (user, pct) in [
         (teacher.user_id, 0.0),
         (alice.user_id, 0.0),
         (bob.user_id, 40.0),
     ] {
         enrol(&pool, &course_id, user, pct).await;
+    }
+    // Both last posted 15 days ago (+30): at risk, so listed (UX-240).
+    for user in [alice.user_id, bob.user_id] {
+        sqlx::query(
+            "INSERT INTO analytics_events (event_type, course_id, user_id, occurred_at)              VALUES ('discussion.posted', $1, $2, now() - interval '15 days')",
+        )
+        .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+        .bind(user.0)
+        .execute(&pool)
+        .await
+        .unwrap();
     }
 
     let at_risk = app
@@ -1899,8 +1928,9 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     let bob = learner(&app, "bob").await;
     let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
     enrol(&pool, &course_id, bob.user_id, 100.0).await;
+    // Submitted 20 days ago: idle enough to be at risk and listed (UX-240).
     let submission_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at) VALUES ($1, $2, $3, 'graded', 1, 10, now(), now()) RETURNING id",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at) VALUES ($1, $2, $3, 'graded', 1, 10, now() - interval '20 days', now() - interval '20 days') RETURNING id",
     )
     .bind(code_id)
     .bind(course_uuid)

@@ -511,7 +511,6 @@ pub fn build_teacher_overview(
         risk_distribution: RiskDistributionCounts {
             high: level_count(RiskLevel::High),
             medium: level_count(RiskLevel::Medium),
-            low: level_count(RiskLevel::Low),
         },
         intervention_summary: summarize_interventions(&inputs.interventions),
         workload,

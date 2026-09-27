@@ -10,19 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 interface AnalyticsRiskDistributionChartProps {
   counts: RiskDistributionCounts
-  totalAtRisk?: number
 }
 
-type RiskLevel = 'high' | 'medium' | 'low'
+// At-risk levels only (UX-240): low-risk learners are not at risk.
+type RiskLevel = 'high' | 'medium'
 
 // Fallback CSS values injected via style when ChartStyle variables are not yet applied.
 const RISK_COLOR_FALLBACKS: Record<RiskLevel, string> = {
   high: 'hsl(0 72% 51%)', // red-600
   medium: 'hsl(38 92% 50%)', // amber-500
-  low: 'hsl(215 16% 47%)', // slate-500
 }
 
-export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: AnalyticsRiskDistributionChartProps) {
+export default function AnalyticsRiskDistributionChart({ counts }: AnalyticsRiskDistributionChartProps) {
   const t = useTranslations('TeacherAnalytics')
   const createEntry = (level: RiskLevel, count: number) => ({
     level,
@@ -30,11 +29,7 @@ export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: 
     count,
   })
 
-  const entries = [
-    createEntry('high', counts.high ?? 0),
-    createEntry('medium', counts.medium ?? 0),
-    createEntry('low', counts.low ?? 0),
-  ]
+  const entries = [createEntry('high', counts.high ?? 0), createEntry('medium', counts.medium ?? 0)]
 
   const data = entries.filter(item => item.count > 0)
 
@@ -42,12 +37,7 @@ export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: 
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle>{t('riskDistribution.title')}</CardTitle>
-        <CardDescription>
-          {t('riskDistribution.description')}
-          {typeof totalAtRisk === 'number'
-            ? ` ${t('riskDistribution.preview', { shown: totalAtRisk, total: totalAtRisk })}`
-            : ''}
-        </CardDescription>
+        <CardDescription>{t('riskDistribution.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         {data.length ? (
@@ -57,7 +47,6 @@ export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: 
               count: { label: t('riskDistribution.learners') },
               'risk-high': { color: RISK_COLOR_FALLBACKS.high },
               'risk-medium': { color: RISK_COLOR_FALLBACKS.medium },
-              'risk-low': { color: RISK_COLOR_FALLBACKS.low },
             }}
           >
             <BarChart data={data}>

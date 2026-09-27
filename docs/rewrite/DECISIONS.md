@@ -1529,3 +1529,13 @@ Implements three more items of the owner answers above. Routes:
   completed without being active in the last 7 days, so the share reached
   300 % on real data. `enrolled` is the only earlier step that contains
   `completed`; the field keeps its name and stays <= 100 %.
+- **Low risk is not at risk** (UX-240). Legacy counted medium + high as
+  «at risk» in every summary and course counter but listed every learner
+  with a reason code (low included) in the at-risk list, its total, the
+  overview preview, the course-detail list and the at-risk CSV, so one
+  screen showed two numbers. The summary is the definition: those lists and
+  `at_risk_total` now hold medium + high only, and `RiskDistributionCounts`
+  drops `low` (contract change). Low rows stay internal — rollup snapshots
+  keep them so `risk_trend` still sees a learner who was low yesterday; a
+  `recovered` learner (now low) leaves the list, as the intervention
+  summary's `recovered_learners` already reports.

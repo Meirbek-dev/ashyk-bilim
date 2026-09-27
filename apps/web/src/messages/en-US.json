@@ -7735,7 +7735,7 @@
     },
     "riskDistribution": {
       "title": "Risk distribution",
-      "description": "Learner risk by urgency level for the current scope.",
+      "description": "At-risk learners (medium and high risk) by level for the current scope.",
       "preview": "Showing top {shown} of {total, plural, one {# at-risk enrollment} other {# at-risk enrollments}}.",
       "learners": "Learners",
       "emptyState": "No at-risk learners are currently in view for the selected scope."

@@ -124,13 +124,14 @@ impl AnalyticsService {
         scope: &TeacherScope,
         filters: &AnalyticsFilters,
     ) -> Result<Vec<types::AtRiskLearnerRow>> {
-        risk::enrich_risk_rows(
-            &self.pool,
-            scope,
-            risk::build_risk_rows(ctx, filters),
-            ctx.generated_at,
-        )
-        .await
+        // UX-240: a watchlist, its total and its export list the at-risk
+        // learners only (medium + high, the summary's definition); low rows
+        // stay internal (rollup snapshots, trends).
+        let rows = risk::build_risk_rows(ctx, filters)
+            .into_iter()
+            .filter(|r| r.risk_level.is_at_risk())
+            .collect();
+        risk::enrich_risk_rows(&self.pool, scope, rows, ctx.generated_at).await
     }
 
     /// The rollup row a teacher dashboard compares against: the platform

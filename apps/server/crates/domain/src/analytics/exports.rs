@@ -280,24 +280,26 @@ pub fn at_risk_csv(
     let rows = build_risk_rows(ctx, filters);
     document(
         &at_risk_header(language),
-        rows.into_iter().map(|r| {
-            vec![
-                r.user_id.to_string(),
-                r.user_display_name,
-                r.course_id.to_string(),
-                r.course_name,
-                r.progress_pct.to_string(),
-                opt(r.days_since_last_activity),
-                r.risk_score.to_string(),
-                risk_level(language, r.risk_level).to_owned(),
-                r.reason_codes
-                    .iter()
-                    .map(|c| code_label(language, c))
-                    .collect::<Vec<_>>()
-                    .join("; "),
-                code_label(language, r.recommended_action),
-            ]
-        }),
+        rows.into_iter()
+            .filter(|r| r.risk_level.is_at_risk())
+            .map(|r| {
+                vec![
+                    r.user_id.to_string(),
+                    r.user_display_name,
+                    r.course_id.to_string(),
+                    r.course_name,
+                    r.progress_pct.to_string(),
+                    opt(r.days_since_last_activity),
+                    r.risk_score.to_string(),
+                    risk_level(language, r.risk_level).to_owned(),
+                    r.reason_codes
+                        .iter()
+                        .map(|c| code_label(language, c))
+                        .collect::<Vec<_>>()
+                        .join("; "),
+                    code_label(language, r.recommended_action),
+                ]
+            }),
     )
 }
 

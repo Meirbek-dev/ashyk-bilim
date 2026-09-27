@@ -180,11 +180,11 @@ pub struct FilterOption {
     pub value: String,
 }
 
+/// At-risk learners by level (medium + high, UX-240).
 #[derive(Debug, Clone, Default, Serialize, ToSchema)]
 pub struct RiskDistributionCounts {
     pub high: i64,
     pub medium: i64,
-    pub low: i64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, ToSchema)]
