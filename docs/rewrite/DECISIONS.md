@@ -1548,3 +1548,8 @@ Implements three more items of the owner answers above. Routes:
   and re-grade (up to three times, then 409) rather than publish a stale
   verdict. A client that pinned the version (`If-Match`) gets the
   stale-draft 409 instead of its newer answers being submitted for it.
+- **Presigned upload URLs are create-only** (BUG-350). The PUT signs
+  `If-None-Match: *` beside `Content-Type`, so a key is written once and the
+  ledger row's key always names the bytes finalize verified — no copy to a
+  second key, no checksum column. A retried PUT whose first attempt did land
+  gets a 412; the client starts a new upload rather than overwrite.

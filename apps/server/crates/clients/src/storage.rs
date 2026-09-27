@@ -89,7 +89,10 @@ impl StorageClient {
 
     /// Presigned PUT for direct browser upload, pinned to `content_type`:
     /// the header is part of the signature (`SignedHeaders=content-type;host`),
-    /// so storage refuses a PUT that declares anything else.
+    /// so storage refuses a PUT that declares anything else. BUG-350: it is
+    /// create-only too (`If-None-Match: *` is signed) — once the object
+    /// exists, replaying the URL is a 412, so a finalized upload's bytes
+    /// cannot change under the ledger row that recorded them.
     pub fn presign_put(
         &self,
         bucket: Bucket,
@@ -102,7 +105,7 @@ impl StorageClient {
             bucket,
             key,
             &[],
-            &[("content-type", content_type)],
+            &[("content-type", content_type), ("if-none-match", "*")],
             expires_in,
         )
     }

@@ -91,6 +91,7 @@ async fn presigned_put_uploads_without_credentials() {
     let mismatched = reqwest::Client::new()
         .put(&url)
         .header("content-type", "text/html")
+        .header("if-none-match", "*")
         .body(payload.clone())
         .send()
         .await
@@ -105,6 +106,7 @@ async fn presigned_put_uploads_without_credentials() {
     let uploaded = reqwest::Client::new()
         .put(&url)
         .header("content-type", "image/png")
+        .header("if-none-match", "*")
         .body(payload.clone())
         .send()
         .await

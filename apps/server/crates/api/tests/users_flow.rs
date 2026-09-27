@@ -188,6 +188,7 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
             let put = reqwest::Client::new()
                 .put(&put_url)
                 .header("content-type", mime)
+                .header("if-none-match", "*")
                 .body(payload)
                 .send()
                 .await

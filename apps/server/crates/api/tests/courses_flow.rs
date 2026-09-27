@@ -381,6 +381,7 @@ async fn finalized_upload(
     let put = reqwest::Client::new()
         .put(&put_url)
         .header("content-type", "image/png")
+        .header("if-none-match", "*")
         .body(payload)
         .send()
         .await

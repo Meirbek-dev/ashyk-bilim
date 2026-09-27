@@ -248,6 +248,7 @@ async fn finalized_upload(app: &TestApp, session: &MintedSession) -> String {
     let put = reqwest::Client::new()
         .put(&put_url)
         .header("content-type", "application/pdf")
+        .header("if-none-match", "*")
         .body(payload.to_vec())
         .send()
         .await

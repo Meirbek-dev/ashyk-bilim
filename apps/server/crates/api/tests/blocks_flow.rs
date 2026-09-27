@@ -80,6 +80,7 @@ async fn finalized_upload(
     let put = reqwest::Client::new()
         .put(&put_url)
         .header("content-type", mime)
+        .header("if-none-match", "*")
         .body(payload)
         .send()
         .await

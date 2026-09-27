@@ -19,7 +19,9 @@ pub struct CreateUploadRequest {
 pub struct CreatedUpload {
     pub id: Uuid,
     pub key: String,
-    /// PUT the file bytes here (presigned; valid for ~15 minutes).
+    /// PUT the file bytes here (presigned; valid for ~15 minutes) with the
+    /// declared `Content-Type` and `If-None-Match: *` — the URL writes the
+    /// object once; a replay is a 412.
     pub put_url: String,
 }
 

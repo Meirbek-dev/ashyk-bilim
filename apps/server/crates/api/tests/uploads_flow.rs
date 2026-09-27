@@ -37,6 +37,7 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     let put = reqwest::Client::new()
         .put(&put_url)
         .header("content-type", "image/png")
+        .header("if-none-match", "*")
         .body(payload.clone())
         .send()
         .await
@@ -66,6 +67,24 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     let replayed = finalize().await;
     assert_eq!(replayed.status, StatusCode::OK, "{}", replayed.text());
     assert_eq!(replayed.json(), finalized.json());
+
+    // BUG-350: the PUT URL is create-only — replaying it after finalize
+    // cannot swap the bytes the ledger recorded, and dropping the signed
+    // precondition breaks the signature.
+    for precondition in [true, false] {
+        let mut replay = reqwest::Client::new()
+            .put(&put_url)
+            .header("content-type", "image/png");
+        if precondition {
+            replay = replay.header("if-none-match", "*");
+        }
+        let replay = replay.body("replacement").send().await.unwrap();
+        assert_eq!(
+            replay.status(),
+            if precondition { 412 } else { 403 },
+            "the finalized object was replaced"
+        );
+    }
 
     // Download redirects to a presigned URL that serves the bytes.
     let download = app
@@ -195,6 +214,7 @@ async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     let put = reqwest::Client::new()
         .put(body["put_url"].as_str().unwrap())
         .header("content-type", "text/html")
+        .header("if-none-match", "*")
         .body(html.clone())
         .send()
         .await

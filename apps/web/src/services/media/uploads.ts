@@ -3,7 +3,7 @@
  * storage routing"): the API never proxies bytes. Every file goes
  *
  *   POST /uploads {purpose, mime, size_bytes}  → {id, key, put_url}
- *   PUT  put_url  (raw bytes, presigned, ~15 min)
+ *   PUT  put_url  (raw bytes, presigned, ~15 min, create-only: If-None-Match: *)
  *   POST /uploads/{id}/finalize                 → {id, key, size_bytes}
  *
  * and the finalized upload `id` is then attached to its owner (profile
@@ -90,6 +90,8 @@ function putWithProgress(url: string, file: Blob, options: UploadFileOptions): P
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', url, true)
       xhr.setRequestHeader('Content-Type', contentType)
+      // BUG-350: the presigned PUT is create-only (the header is signed).
+      xhr.setRequestHeader('If-None-Match', '*')
       xhr.upload.onprogress = event => {
         const total = event.lengthComputable ? event.total : file.size
         options.onProgress?.({
@@ -120,7 +122,7 @@ function putWithProgress(url: string, file: Blob, options: UploadFileOptions): P
   return fetch(url, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': contentType },
+    headers: { 'Content-Type': contentType, 'If-None-Match': '*' },
     ...(options.signal ? { signal: options.signal } : {}),
   }).then(response => {
     if (!response.ok) {

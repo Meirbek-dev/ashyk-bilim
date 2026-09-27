@@ -23,6 +23,7 @@ async fn upload_logo(app: &TestApp, session: &MintedSession) -> (String, String)
     let put = reqwest::Client::new()
         .put(&put_url)
         .header("content-type", "image/png")
+        .header("if-none-match", "*")
         .body(payload)
         .send()
         .await
