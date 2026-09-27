@@ -12024,7 +12024,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserHit"
+                  "$ref": "#/components/schemas/PublicProfile"
                 }
               }
             }
@@ -12302,7 +12302,7 @@
           "users"
         ],
         "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
-        "description": "Id, username, display name and avatar — readable anonymously, active\nusers only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio and avatar — readable anonymously,\nactive users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {
@@ -12321,7 +12321,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserHit"
+                  "$ref": "#/components/schemas/PublicProfile"
                 }
               }
             }
@@ -20679,6 +20679,37 @@
             "format": "int64"
           },
           "verify_code": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicProfile": {
+        "type": "object",
+        "description": "`GET /users/{username}`: the public card plus the bio (no email —\nFINDINGS #16). Search keeps the lean `UserHit`.",
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "bio"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": "string",
+            "description": "Empty when unset."
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
             "type": "string"
           }
         }

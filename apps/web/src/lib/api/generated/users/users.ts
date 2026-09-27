@@ -30,10 +30,10 @@ import {
   CreateUserRequest,
   ListUsersParams,
   Problem,
+  PublicProfile,
   SetUserStatusRequest,
   UpdateProfileRequest,
   UserCoursesParams,
-  UserHit,
   UserId,
   UserProfile,
 } from '../zod'
@@ -340,14 +340,14 @@ export const getPublicProfileByIdUrl = (userId: UserId) => {
 export const publicProfileById = async (
   userId: UserId,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<UserHit> => {
-  return orvalMutator<UserHit>(
+): Promise<PublicProfile> => {
+  return orvalMutator<PublicProfile>(
     getPublicProfileByIdUrl(userId),
     {
       ...options,
       method: 'GET',
     },
-    UserHit,
+    PublicProfile,
   )
 }
 
@@ -903,22 +903,22 @@ export const getPublicProfileUrl = (username: string) => {
 }
 
 /**
- * Id, username, display name and avatar — readable anonymously, active
- * users only. The profile page resolves its subject here instead of
+ * Id, username, display name, bio and avatar — readable anonymously,
+ * active users only. The profile page resolves its subject here instead of
  * scanning `/search`.
  * @summary Public profile card by username (legacy `GET /users/username/{username}`).
  */
 export const publicProfile = async (
   username: string,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<UserHit> => {
-  return orvalMutator<UserHit>(
+): Promise<PublicProfile> => {
+  return orvalMutator<PublicProfile>(
     getPublicProfileUrl(username),
     {
       ...options,
       method: 'GET',
     },
-    UserHit,
+    PublicProfile,
   )
 }
 
