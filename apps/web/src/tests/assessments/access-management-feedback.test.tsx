@@ -118,12 +118,16 @@ describe('access management feedback (UX-057)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить доступ' }))
     const dialog = await screen.findByRole('alertdialog')
     const confirm = within(dialog).getByRole('button', { name: 'Сохранить всё равно' })
+    // UX-238: a second click before the pending state renders sends nothing either.
     fireEvent.click(confirm)
-    await waitFor(() => expect(confirm).toBeDisabled())
     fireEvent.click(confirm)
+    expect(confirm).toBeDisabled()
+    await waitFor(() => expect(mocks.setAccess).toHaveBeenCalledTimes(1))
     resolve({ mode: 'restricted', effective_user_count: 0, users: [], usergroups: [] })
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
     expect(mocks.setAccess).toHaveBeenCalledTimes(1)
+    // …and it did not re-enable while the dialog closed after the save landed.
+    expect(confirm).toBeDisabled()
   })
 
   it('a stale save (412) reloads the policy and says why instead of overwriting (UX-154)', async () => {

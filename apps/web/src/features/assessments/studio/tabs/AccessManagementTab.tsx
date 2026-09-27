@@ -90,6 +90,9 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const [confirmLockout, setConfirmLockout] = useState(false)
   // UX-213: learners with attempts the save takes off the list (0 = no dialog).
   const [confirmDropped, setConfirmDropped] = useState(0)
+  // UX-238: the confirm button stays off from its click until the dialog is
+  // gone (the close animation included); only the next dialog re-arms it.
+  const [confirmSent, setConfirmSent] = useState(false)
 
   const accessKey = queryKeys.assessments.access(assessmentUuid)
   const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
@@ -247,7 +250,12 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         (!wasRestricted || access.users.some(u => u.id === id) || inAny(savedGroups, id)) && !inAny(selectedGroups, id),
     ).length
   }
+  const confirmSave = () => {
+    setConfirmSent(true)
+    saveMutation.mutate()
+  }
   const save = async () => {
+    setConfirmSent(false)
     if (isLockout(mode, selectedUsers.size, selectedGroups.size)) {
       setConfirmLockout(true)
       return
@@ -426,7 +434,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           <AlertDialogDescription>{t('lockoutDesc')}</AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
-            <AlertDialogAction disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+            <AlertDialogAction disabled={confirmSent} onClick={confirmSave}>
               {t('lockoutConfirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -439,7 +447,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           <AlertDialogDescription>{t('dropAttemptsDesc', { count: confirmDropped })}</AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogCancel>{tDialog('cancel')}</AlertDialogCancel>
-            <AlertDialogAction disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+            <AlertDialogAction disabled={confirmSent} onClick={confirmSave}>
               {t('lockoutConfirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
