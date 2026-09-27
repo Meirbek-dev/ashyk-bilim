@@ -69,14 +69,7 @@ export function useCreateCourseMutation() {
               : []
           } catch {
             // The course exists but the outline could not be read: say so (UX-235).
-            return {
-              status: 'partial',
-              courseUuid,
-              importedChapterCount: 0,
-              failedChapterCount: 0,
-              destinationPath,
-              sourceFetchFailed: true,
-            }
+            return { status: 'partial', courseUuid, destinationPath, sourceFetchFailed: true }
           }
 
           const results = await Promise.allSettled(

@@ -37,7 +37,7 @@ test.describe('Smoke – Public pages', () => {
   })
 
   test('API health endpoint responds with 200', async ({ page }) => {
-    const apiUrl = getEnvOr('E2E_API_URL', 'http://localhost:1338/api/v1')
+    const apiUrl = getEnvOr('E2E_API_URL', 'http://localhost:8000/api/v2')
     const response = await page.request.get(`${apiUrl}/health`)
     expect(response.status()).toBe(200)
   })

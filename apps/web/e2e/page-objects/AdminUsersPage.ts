@@ -1,6 +1,10 @@
 import type { Page, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+function escapeRegExp(value: string): string {
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+}
+
 /**
  * Page Object for /en/dash/admin/users
  * Used by Admin to assign roles to other users.
@@ -51,12 +55,19 @@ export class AdminUsersPage {
     // Type to search
     const userInput = dialog.locator('input[type="search"], input[role="combobox"]').first()
     await userInput.fill(userEmail)
-    await this.page.getByRole('option', { name: new RegExp(userEmail, 'i') }).click()
+    // UX-246: an option is labelled «Name (email)». Match that exact, escaped
+    // email — a bare `new RegExp(email)` also matched proxy-teacher@ for
+    // teacher@. The option list is the popup of the dialog's own combobox
+    // (portalled, so not a DOM child of the dialog).
+    await this.page
+      .getByRole('listbox')
+      .getByRole('option', { name: new RegExp(String.raw`\(${escapeRegExp(userEmail)}\)$`, 'i') })
+      .click()
 
     // Select role
     const roleCombo = dialog.getByRole('combobox').nth(1)
     await roleCombo.click()
-    await this.page.getByRole('option', { name: new RegExp(roleName, 'i') }).click()
+    await this.page.getByRole('option', { name: new RegExp(escapeRegExp(roleName), 'i') }).click()
 
     // Confirm
     await dialog.getByRole('button', { name: /assign role|save|confirm/i }).click()

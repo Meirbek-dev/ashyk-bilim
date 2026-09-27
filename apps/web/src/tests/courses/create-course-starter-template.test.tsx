@@ -58,7 +58,8 @@ describe('useCreateCourseMutation — BUG-012 starter template', () => {
   })
 })
 
-// UX-235: a source course that cannot be read was reported as «0 of 0 imported».
+// UX-235: a source course that cannot be read was reported as «0 of 0 imported»;
+// UX-246: and its result carries no chapter counts at all (no «0 failed»).
 describe('useCreateCourseMutation — copy outline', () => {
   it('flags a failed source fetch so the form can say the outline was not copied', async () => {
     vi.mocked(getCourseMetadata).mockRejectedValue(new Error('404'))
@@ -77,6 +78,11 @@ describe('useCreateCourseMutation — copy outline', () => {
       )
     })
     expect(createChapter).not.toHaveBeenCalled()
-    expect(outcome).toMatchObject({ status: 'partial', sourceFetchFailed: true })
+    expect(outcome).toEqual({
+      status: 'partial',
+      courseUuid: expect.any(String),
+      destinationPath: expect.any(String),
+      sourceFetchFailed: true,
+    })
   })
 })

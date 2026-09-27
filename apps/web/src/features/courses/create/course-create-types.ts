@@ -42,8 +42,18 @@ export interface CourseCreatePartialSuccess {
   importedChapterCount: number
   failedChapterCount: number
   destinationPath: string
-  /** UX-235: the source course could not be read, so no outline was copied. */
-  sourceFetchFailed?: boolean
+  sourceFetchFailed?: false
+}
+
+/**
+ * UX-235/UX-246: the course was created but the source outline could not be
+ * read — nothing was attempted, so there are no chapter counts to report.
+ */
+export interface CourseCreateOutlineUnavailable {
+  status: 'partial'
+  courseUuid: string
+  destinationPath: string
+  sourceFetchFailed: true
 }
 
 /** A complete failure result. */
@@ -52,7 +62,11 @@ export interface CourseCreateFailure {
   message: string
 }
 
-export type CourseCreateResult = CourseCreateSuccess | CourseCreatePartialSuccess | CourseCreateFailure
+export type CourseCreateResult =
+  | CourseCreateSuccess
+  | CourseCreatePartialSuccess
+  | CourseCreateOutlineUnavailable
+  | CourseCreateFailure
 
 /** A course option returned from source-course search. */
 export interface SourceCourseOption {
