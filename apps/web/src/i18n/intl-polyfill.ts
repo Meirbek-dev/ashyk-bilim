@@ -53,17 +53,17 @@ function matchIcuWhitespace() {
   const proto = Intl.DateTimeFormat.prototype
   const format = Object.getOwnPropertyDescriptor(proto, 'format')
   if (format?.get) {
-    const get = format.get
     Object.defineProperty(proto, 'format', {
       ...format,
       get() {
-        const bound = get.call(this) as (date?: Date | number) => string
+        const bound = format.get?.call(this) as (date?: Date | number) => string
         return (date?: Date | number) => bound(date).replaceAll(' ', ' ')
       },
     })
   }
-  const toParts = proto.formatToParts
-  proto.formatToParts = function (date) {
-    return toParts.call(this, date).map(part => ({ ...part, value: part.value.replaceAll(' ', ' ') }))
+  // Captured through the descriptor (typed `any`, not a method) so the override below can delegate with `.call(this)`.
+  const toParts = Object.getOwnPropertyDescriptor(proto, 'formatToParts')?.value as typeof proto.formatToParts
+  proto.formatToParts = function formatToParts(date) {
+    return toParts.call(this, date).map(part => Object.assign(part, { value: part.value.replaceAll(' ', ' ') }))
   }
 }

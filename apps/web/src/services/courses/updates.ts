@@ -14,7 +14,7 @@ export async function createCourseUpdate(body: AppPayload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: body.title, content: body.content }),
     },
-    CourseUpdate.parse,
+    value => CourseUpdate.parse(value),
   )
 }
 

@@ -57,7 +57,7 @@ export function useRunSubmissionAnalysis(submissionId: string) {
           headers: { 'content-type': 'application/json' },
           timeoutMs: 120_000,
         },
-        SubmissionAnalysisView.parse,
+        value => SubmissionAnalysisView.parse(value),
       ),
     onSuccess: () =>
       queryClient.invalidateQueries({

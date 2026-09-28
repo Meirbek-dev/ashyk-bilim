@@ -87,7 +87,7 @@ export function courseEditorBundleQueryOptions(courseUuid: string) {
 }
 
 async function fetchCoursePage<TCourse>(options: CourseListKeyOptions): Promise<CourseListResponse<TCourse>> {
-  const page = await apiJson(courseEndpoints.list(options), {}, CoursePage.parse)
+  const page = await apiJson(courseEndpoints.list(options), {}, value => CoursePage.parse(value))
   return { courses: page.items.map(toAppCourse) as TCourse[], next_cursor: page.next_cursor ?? null }
 }
 
@@ -102,7 +102,9 @@ export function courseUpdatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.updates(courseUuid),
     queryFn: async () => {
-      const updates = await apiJson(`${courseEndpoints.detail(courseUuid)}/updates`, {}, z.array(CourseUpdate).parse)
+      const updates = await apiJson(`${courseEndpoints.detail(courseUuid)}/updates`, {}, value =>
+        z.array(CourseUpdate).parse(value),
+      )
       return updates.map(update => ({
         ...update,
         courseupdate_uuid: update.id,
@@ -127,7 +129,7 @@ export function courseDiscussionsQueryOptions(courseUuid: string) {
 export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
-    queryFn: async () => toAppTrail(await apiJson('trail', {}, Trail.parse)),
+    queryFn: async () => toAppTrail(await apiJson('trail', {}, value => Trail.parse(value))),
     // UX-133: a course left in another tab / unpublished by the teacher must
     // drop off `/trail` on focus — same policy as learner-state (UX-050).
     staleTime: 5_000,
@@ -140,7 +142,9 @@ export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
     queryFn: async () =>
-      normalizeLeaderboard(await apiJson(`gamification/leaderboard?limit=${limit}`, {}, Leaderboard.parse)),
+      normalizeLeaderboard(
+        await apiJson(`gamification/leaderboard?limit=${limit}`, {}, value => Leaderboard.parse(value)),
+      ),
   })
 }
 
@@ -148,7 +152,7 @@ export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
     queryFn: async () =>
-      (await apiJson('me/certificates', {}, z.array(IssuedCertificate).parse)).map(toAppCertification),
+      (await apiJson('me/certificates', {}, value => z.array(IssuedCertificate).parse(value))).map(toAppCertification),
   })
 }
 
@@ -156,10 +160,8 @@ export function userCourseCertificatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.course(courseUuid),
     queryFn: async () => {
-      const result = await apiResult(
-        `courses/${stripEntityPrefix(courseUuid)}/certificates/me`,
-        {},
-        z.array(IssuedCertificate).parse,
+      const result = await apiResult(`courses/${stripEntityPrefix(courseUuid)}/certificates/me`, {}, value =>
+        z.array(IssuedCertificate).parse(value),
       )
       return { ...result, data: result.data.map(toAppCertification) }
     },
@@ -171,7 +173,7 @@ export function certificateDetailQueryOptions(verifyCode: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.detail(verifyCode),
     queryFn: async () => {
-      const result = await apiResult(`certificates/${verifyCode}`, {}, VerifiedCertificate.parse)
+      const result = await apiResult(`certificates/${verifyCode}`, {}, value => VerifiedCertificate.parse(value))
       return { ...result, data: toAppCertification(result.data) }
     },
   })
@@ -182,10 +184,8 @@ export function activityAssessmentUuidQueryOptions(activityUuid: string) {
     queryKey: queryKeys.assessments.activityAssessmentId(activityUuid),
     queryFn: async () => {
       try {
-        const data = await apiJson(
-          `activities/${stripEntityPrefix(activityUuid)}/assessment`,
-          {},
-          AssessmentDetail.parse,
+        const data = await apiJson(`activities/${stripEntityPrefix(activityUuid)}/assessment`, {}, value =>
+          AssessmentDetail.parse(value),
         )
         return data.id
       } catch {

@@ -14,7 +14,7 @@ async function versioned(promise: ReturnType<typeof apiResult<AccessView>>): Pro
 }
 
 export function getVersionedAccess(assessmentUuid: string): Promise<VersionedAccessView> {
-  return versioned(apiResult(`assessments/${assessmentUuid}/access`, undefined, AccessView.parse))
+  return versioned(apiResult(`assessments/${assessmentUuid}/access`, undefined, value => AccessView.parse(value)))
 }
 
 /** `PUT …/access` with `If-Match`; a stale tab is 412 `precondition-failed`, never a silent overwrite. */
@@ -31,7 +31,7 @@ export function setVersionedAccess(
         headers: { 'Content-Type': 'application/json', ...ifMatchHeaders(version) },
         body: JSON.stringify(body),
       },
-      AccessView.parse,
+      value => AccessView.parse(value),
     ),
   )
 }

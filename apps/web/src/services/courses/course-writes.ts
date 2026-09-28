@@ -50,7 +50,7 @@ async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdate
   const result = await apiResult(
     `courses/${id}`,
     { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-    Course.parse,
+    value => Course.parse(value),
   )
   await revalidateCourse(id)
   return { ...result, data: toAppCourse(result.data) }
@@ -76,7 +76,7 @@ export async function updateCourseLifecycle(courseUuid: string, makePublic: bool
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: makePublic ? 'publish' : 'unpublish' }),
     },
-    Course.parse,
+    value => Course.parse(value),
   )
   await revalidateCourse(id)
   return { ...result, data: toAppCourse(result.data) }
@@ -106,7 +106,7 @@ export async function createNewCourse(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description, about: description, tags: toTagArray(courseTags) }),
     },
-    Course.parse,
+    value => Course.parse(value),
   )
   const course = visibility ? (await updateCourseLifecycle(result.data.id, true)).data : toAppCourse(result.data)
   await revalidateCourse()

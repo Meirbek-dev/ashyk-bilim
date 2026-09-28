@@ -111,7 +111,7 @@ function NewCollection() {
             courses: selectedCourses.map(id => stripEntityPrefix(String(id))),
           }),
         },
-        Collection.parse,
+        value => Collection.parse(value),
       )
       await revalidateTags(['collections'])
       toast.success(t('toast.success'))

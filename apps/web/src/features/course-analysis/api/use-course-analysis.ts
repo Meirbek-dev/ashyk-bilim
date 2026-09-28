@@ -59,7 +59,7 @@ export function useRunCourseAnalysis(courseId: string) {
           headers: { 'content-type': 'application/json' },
           timeoutMs: 120_000,
         },
-        CourseAnalysisView.parse,
+        value => CourseAnalysisView.parse(value),
       ),
     onSuccess: () =>
       queryClient.invalidateQueries({

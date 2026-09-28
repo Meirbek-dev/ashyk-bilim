@@ -69,7 +69,9 @@ async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<
   while (reached < Math.max(1, params.page)) {
     const query = new URLSearchParams(base)
     if (cursor) query.set('cursor', cursor)
-    page = await apiJson(`assessments/${params.assessmentUuid}/submissions?${query}`, undefined, ReviewPage.parse)
+    page = await apiJson(`assessments/${params.assessmentUuid}/submissions?${query}`, undefined, value =>
+      ReviewPage.parse(value),
+    )
     reached += 1
     cursor = page.next_cursor ?? null
     if (!cursor) break

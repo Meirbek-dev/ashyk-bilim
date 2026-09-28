@@ -23,7 +23,8 @@ export type RemediationSessionView = zod.output<typeof RemediationSessionView>
 export function remediationSessionQueryOptions(sessionId: string) {
   return queryOptions({
     queryKey: ['remediation-session', sessionId],
-    queryFn: () => apiJson(`ai/remediation/sessions/${sessionId}`, undefined, RemediationSessionView.parse),
+    queryFn: () =>
+      apiJson(`ai/remediation/sessions/${sessionId}`, undefined, value => RemediationSessionView.parse(value)),
     enabled: Boolean(sessionId),
   })
 }
@@ -64,7 +65,7 @@ export function useGenerateRemediation(submissionId: string) {
           body: JSON.stringify(payload),
           headers: { 'content-type': 'application/json' },
         },
-        RemediationSessionView.parse,
+        value => RemediationSessionView.parse(value),
       ),
   })
 }

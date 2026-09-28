@@ -39,7 +39,7 @@ export async function getCourses(_next?: unknown, page = 1, limit = 20) {
   for (let hop = 1; hop <= page; hop += 1) {
     const params = new URLSearchParams({ limit: String(limit) })
     if (cursor) params.set('cursor', cursor)
-    result = await apiJson(`courses?${params}`, serverGet(), CoursePage.parse)
+    result = await apiJson(`courses?${params}`, serverGet(), value => CoursePage.parse(value))
     cursor = result.next_cursor
     if (!cursor && hop < page) {
       result = emptyPage()
@@ -63,8 +63,8 @@ export async function getCourseMetadata(
 ): Promise<AppCourse> {
   const id = stripEntityPrefix(course_uuid)
   const [course, curriculum] = await Promise.all([
-    apiJson(`courses/${id}`, serverGet(), Course.parse),
-    apiJson(`courses/${id}/curriculum`, serverGet(), Curriculum.parse),
+    apiJson(`courses/${id}`, serverGet(), value => Course.parse(value)),
+    apiJson(`courses/${id}/curriculum`, serverGet(), value => Curriculum.parse(value)),
   ])
   // Learner shape: only published lessons, and no chapter without one — an
   // empty «Глава 2 — 0 учебных задач» is the author's business (UX-102).

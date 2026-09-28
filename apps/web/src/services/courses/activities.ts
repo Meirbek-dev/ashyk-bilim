@@ -66,7 +66,7 @@ export async function createActivity(data: AppPayload, chapter_id: string | numb
       activity_type: toWireActivityType(String(activity_type ?? '')),
       activity_sub_type: toWireActivityType(String(activity_sub_type ?? '')),
     }),
-    ActivitySchema.parse,
+    value => ActivitySchema.parse(value),
   )
 
   const patch = toUpdateActivityRequest(extras)
@@ -74,7 +74,7 @@ export async function createActivity(data: AppPayload, chapter_id: string | numb
     created = await withVersion(
       `activities/${created.id}`,
       json('PATCH', patch, ifMatchHeaders(created.version)),
-      ActivitySchema.parse,
+      value => ActivitySchema.parse(value),
     )
   }
 
@@ -122,7 +122,7 @@ export async function getActivity(activity_uuid: string, _next?: unknown): Promi
   return withVersion(
     `activities/${stripEntityPrefix(activity_uuid)}`,
     { method: 'GET', baseUrl: getAPIUrl(), timeoutMs: 10_000 },
-    ActivityDetail.parse,
+    value => ActivityDetail.parse(value),
   )
 }
 
@@ -136,6 +136,6 @@ export async function updateActivity(data: Record<string, unknown>, activity_uui
   return withVersion(
     `activities/${stripEntityPrefix(activity_uuid)}`,
     json('PATCH', toUpdateActivityRequest(data), ifMatchHeaders(version)),
-    ActivitySchema.parse,
+    value => ActivitySchema.parse(value),
   )
 }

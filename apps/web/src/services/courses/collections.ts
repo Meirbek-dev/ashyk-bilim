@@ -33,7 +33,7 @@ export async function createCollection(collection: {
         courses: collection.courses?.map(id => stripEntityPrefix(String(id))) ?? null,
       }),
     },
-    Collection.parse,
+    value => Collection.parse(value),
   )
 
   const { revalidateTag } = await import('next/cache')
@@ -43,12 +43,14 @@ export async function createCollection(collection: {
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: unknown): Promise<AppCollection> {
-  const data = await apiJson(`collections/${stripEntityPrefix(collection_uuid)}`, serverGet(), Collection.parse)
+  const data = await apiJson(`collections/${stripEntityPrefix(collection_uuid)}`, serverGet(), value =>
+    Collection.parse(value),
+  )
   return toAppCollection(data)
 }
 
 /** First keyset page of collections (`GET collections?limit=`). */
 export async function getCollections(_next?: unknown, limit = 20): Promise<AppCollection[]> {
-  const page = await apiJson(`collections?limit=${limit}`, serverGet(), CollectionPage.parse)
+  const page = await apiJson(`collections?limit=${limit}`, serverGet(), value => CollectionPage.parse(value))
   return page.items.map(toAppCollection)
 }

@@ -24,7 +24,7 @@ export async function updateChapter(chapterUuid: string, data: AppPayload): Prom
       ...(data.name === undefined ? {} : { name: data.name }),
       ...(data.description === undefined ? {} : { description: data.description }),
     }),
-    Chapter.parse,
+    value => Chapter.parse(value),
   )
   return toAppChapter(chapter)
 }
@@ -51,7 +51,7 @@ export async function createChapter(data: AppPayload & { course_uuid: string }):
   const chapter = await apiJson(
     `courses/${stripEntityPrefix(data.course_uuid)}/chapters`,
     json('POST', { name: data.name, description: data.description ?? null }),
-    Chapter.parse,
+    value => Chapter.parse(value),
   )
   return { ...toAppChapter(chapter), activities: [] }
 }

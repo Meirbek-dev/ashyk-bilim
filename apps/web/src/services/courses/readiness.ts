@@ -33,7 +33,7 @@ export interface CourseReadiness {
 /** `GET courses/{id}/readiness` (server-side rule set; codes documented on the route). */
 export async function getCourseReadiness(courseUuid: string): Promise<CourseReadiness> {
   const id = stripEntityPrefix(courseUuid)
-  const readiness = await apiJson(`courses/${id}/readiness`, {}, CourseReadinessSchema.parse)
+  const readiness = await apiJson(`courses/${id}/readiness`, {}, value => CourseReadinessSchema.parse(value))
   const issue =
     (severity: CourseReadinessIssue['severity']) =>
     (item: ReadinessItem): CourseReadinessIssue => ({

@@ -10,7 +10,7 @@ import { tags } from '@/lib/cacheTags'
 */
 
 async function mutateTrail(path: string, method: 'POST' | 'DELETE'): Promise<AppTrailData> {
-  const trail = await apiJson(path, { method }, Trail.parse)
+  const trail = await apiJson(path, { method }, value => Trail.parse(value))
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -28,7 +28,7 @@ export async function unmarkActivityAsComplete(activity_uuid: string) {
 
 export async function getCurrentTrail(): Promise<AppTrailData | null> {
   try {
-    return toAppTrail(await apiJson('trail', { method: 'GET' }, Trail.parse))
+    return toAppTrail(await apiJson('trail', { method: 'GET' }, value => Trail.parse(value)))
   } catch {
     return null
   }
