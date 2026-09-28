@@ -1941,6 +1941,7 @@
       "descriptionPlaceholder": "Что может делать эта роль",
       "createdRole": "Роль создана",
       "updatedRole": "Роль обновлена",
+      "roleGone": "Роль уже удалена в другой вкладке — список обновлён.",
       "deletedRole": "Роль удалена",
       "permissionsSaved": "Права роли сохранены",
       "deleteRoleTitle": "Удалить роль «{roleName}»?",

@@ -1957,6 +1957,7 @@
       "descriptionPlaceholder": "What this role can do",
       "createdRole": "Role created",
       "updatedRole": "Role updated",
+      "roleGone": "This role was already deleted in another tab — the list has been refreshed.",
       "deletedRole": "Role deleted",
       "permissionsSaved": "Role permissions saved",
       "deleteRoleTitle": "Delete the “{roleName}” role?",

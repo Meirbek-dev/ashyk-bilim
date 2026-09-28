@@ -80,6 +80,7 @@ export default function RBACAdminClient() {
   const t = useTranslations('Components.Roles')
   const tErrors = useTranslations('Errors')
   const { can } = useSession()
+  const queryClient = useQueryClient()
   const canManage = can(Resources.ROLE, Actions.MANAGE, Scopes.APP)
   const { data, isPending, isError } = useRoles()
   const roles = useMemo(
@@ -128,7 +129,16 @@ export default function RBACAdminClient() {
     ({ slug, ...body }: RoleDraft) => updateRole(slug, body),
     t('updatedRole'),
     closeDialogs,
-    inlineRoleError,
+    error => {
+      // UX-263: the role went away in another tab — close, refresh the list, say so.
+      if (hasErrorCode(error, 'not-found')) {
+        closeDialogs()
+        void queryClient.invalidateQueries({ queryKey: queryKeys.users.roles() })
+        toast.info(t('roleGone'))
+        return true
+      }
+      return inlineRoleError(error)
+    },
   )
   const remove = useRoleMutation((slug: string) => deleteRole(slug), t('deletedRole'), closeDialogs)
   const saveGrants = useRoleMutation(

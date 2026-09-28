@@ -15,7 +15,7 @@ vi.mock('next-intl', () => ({
   useTranslations: (ns?: string) =>
     Object.assign((key: string) => (ns ? key : (catalog[key] ?? key)), { has: (key: string) => key in catalog }),
 }))
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
 vi.mock('@/hooks/useSession', () => ({
   useSession: () => ({
     session: { roles: ['admin'], permissions: ['*:*:*'] },
@@ -27,10 +27,11 @@ vi.mock('@/hooks/useSession', () => ({
 const listRoles = vi.fn()
 const setRolePermissions = vi.fn()
 const createRole = vi.fn()
+const updateRole = vi.fn()
 vi.mock('@/services/rbac', () => ({
   listRoles: () => listRoles(),
   createRole: (...args: unknown[]) => createRole(...args),
-  updateRole: vi.fn(),
+  updateRole: (...args: unknown[]) => updateRole(...args),
   deleteRole: vi.fn(),
   setRolePermissions: (...args: unknown[]) => setRolePermissions(...args),
 }))
@@ -206,4 +207,21 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
     expect(createRole).not.toHaveBeenCalled()
   })
 
+  // UX-263: renaming a role another tab deleted closes the dialog, refetches the list and says so.
+  it('closes the rename dialog and refetches on a 404', async () => {
+    const user = userEvent.setup()
+    updateRole.mockRejectedValue(new APIError({ status: 404, code: 'not-found', message: 'gone' }))
+    const { invalidate } = renderPage()
+    const taRow = (await screen.findByText('Teaching assistant')).closest('tr')!
+    await user.click(within(taRow).getByRole('button', { name: 'editRoleAria' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('fieldName'), ' 2')
+    await user.click(within(dialog).getByRole('button', { name: 'save' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users', 'roles'] })
+    const { toast } = await import('sonner')
+    expect(toast.info).toHaveBeenCalledWith('roleGone')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
 })

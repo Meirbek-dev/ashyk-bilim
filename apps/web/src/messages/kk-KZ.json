@@ -1940,6 +1940,7 @@
       "descriptionPlaceholder": "Бұл рөл не істей алады",
       "createdRole": "Рөл құрылды",
       "updatedRole": "Рөл жаңартылды",
+      "roleGone": "Рөл басқа қойындыда жойылған — тізім жаңартылды.",
       "deletedRole": "Рөл жойылды",
       "permissionsSaved": "Рөл құқықтары сақталды",
       "deleteRoleTitle": "«{roleName}» рөлін жою керек пе?",
