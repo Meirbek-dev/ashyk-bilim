@@ -727,20 +727,45 @@ pub async fn list_chapter_activity_ids(
     Ok(ids)
 }
 
+/// Columns an activity write may set; `None` keeps the stored value.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ActivityWrite<'a> {
+    pub name: Option<&'a str>,
+    pub published: Option<bool>,
+    pub content: Option<&'a serde_json::Value>,
+    pub details: Option<&'a serde_json::Value>,
+    pub settings: Option<&'a serde_json::Value>,
+    /// `If-Match` guard: the write only lands when the row still carries
+    /// this version (`None` skips the check).
+    pub expected_version: Option<i32>,
+}
+
+/// The one writer of an activity row's mutable columns.
+///
+/// BUG-358: every write — a rename or publish flip as much as a content
+/// save — bumps `version` and honours `expected_version`; `false` means the
+/// row is gone or the version is stale (the caller answers 412).
 pub async fn update_activity<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: ActivityId,
-    name: Option<&str>,
-    published: Option<bool>,
+    write: ActivityWrite<'_>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE activities SET
                name = COALESCE($2, name),
-               published = COALESCE($3, published)
-           WHERE id = $1"#,
+               published = COALESCE($3, published),
+               content = COALESCE($4, content),
+               details = COALESCE($5, details),
+               settings = COALESCE($6, settings),
+               version = version + 1
+           WHERE id = $1 AND ($7::int IS NULL OR version = $7)"#,
         id.0,
-        name,
-        published
+        write.name,
+        write.published,
+        write.content,
+        write.details,
+        write.settings,
+        write.expected_version
     )
     .execute(db)
     .await?;
@@ -802,34 +827,6 @@ pub async fn get_activity_content(
     .fetch_optional(pool)
     .await?;
     Ok(row)
-}
-
-/// Writes only when `expected_version` is `None` or matches; `false` means a
-/// stale version (the caller answers 412). Every write bumps `version`.
-pub async fn update_activity_content<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    id: ActivityId,
-    content: Option<&serde_json::Value>,
-    details: Option<&serde_json::Value>,
-    settings: Option<&serde_json::Value>,
-    expected_version: Option<i32>,
-) -> Result<bool> {
-    let updated = sqlx::query!(
-        r#"UPDATE activities SET
-               content = COALESCE($2, content),
-               details = COALESCE($3, details),
-               settings = COALESCE($4, settings),
-               version = version + 1
-           WHERE id = $1 AND ($5::int IS NULL OR version = $5)"#,
-        id.0,
-        content,
-        details,
-        settings,
-        expected_version
-    )
-    .execute(db)
-    .await?;
-    Ok(updated.rows_affected() == 1)
 }
 
 /// Change the type pair together — the DB CHECK enforces validity.

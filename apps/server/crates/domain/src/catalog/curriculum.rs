@@ -459,26 +459,31 @@ impl CurriculumService {
             .await?;
         }
         let published = changes.published.filter(|p| *p != activity.published);
-        ab_db::catalog::update_activity(&mut *tx, activity_id, name, published).await?;
+        // BUG-358: one guarded write for every column — a rename under a
+        // stale `If-Match` is refused exactly like a content save.
+        let updated = ab_db::catalog::update_activity(
+            &mut *tx,
+            activity_id,
+            ab_db::catalog::ActivityWrite {
+                name,
+                published,
+                content: changes.content,
+                details: changes.details,
+                settings: changes.settings,
+                expected_version: changes.expected_version,
+            },
+        )
+        .await?;
+        if !updated {
+            // Lost the race between the check above and the write; the
+            // dropped transaction rolls the other writes back.
+            return Err(Error::app_with_details(
+                ErrorCode::PreconditionFailed,
+                "activity changed since you loaded it",
+                serde_json::json!({ "expected": changes.expected_version }),
+            ));
+        }
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
-            let updated = ab_db::catalog::update_activity_content(
-                &mut *tx,
-                activity_id,
-                changes.content,
-                changes.details,
-                changes.settings,
-                changes.expected_version,
-            )
-            .await?;
-            if !updated {
-                // Lost the race between the check above and the write; the
-                // dropped transaction rolls the other writes back.
-                return Err(Error::app_with_details(
-                    ErrorCode::PreconditionFailed,
-                    "activity changed since you loaded it",
-                    serde_json::json!({ "expected": changes.expected_version }),
-                ));
-            }
             // BUG-263: an editor block's upload is released when a save no
             // longer shows it (not on the Remove click — undo restores the
             // node) and re-claimed when a later save shows it again.

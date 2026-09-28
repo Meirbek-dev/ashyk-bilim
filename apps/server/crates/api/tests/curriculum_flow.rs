@@ -2,7 +2,7 @@
 //! (1-based contiguous positions, clamp-and-renumber moves), access control.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::{MintedSession, TestApp};
+use ab_testkit::{MintedSession, TestApp, wait_until};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
@@ -753,12 +753,85 @@ async fn content_writes_are_version_locked(pool: PgPool) {
         "AAA"
     );
 
-    // Name/publish edits from the curriculum need no version.
+    // Name/publish edits from the curriculum need no version — but BUG-358:
+    // they are row writes too, so they bump it (an open editor tab then
+    // sees 412 instead of overwriting the rename).
     let rename = app
         .patch_as(&teacher, &path, &serde_json::json!({ "name": "Renamed" }))
         .await;
     assert_eq!(rename.status, StatusCode::OK, "{}", rename.text());
-    assert_eq!(rename.json()["version"], 2);
+    assert_eq!(rename.json()["version"], 3);
+    assert_eq!(rename.headers[header::ETAG], "\"3\"");
+}
+
+/// BUG-358: a metadata PATCH honours `If-Match` under the row lock — two
+/// renames racing with the same version end 200 + 412, never 200 + 200.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Race").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+    let rename = |name: &str| {
+        Request::builder()
+            .method("PATCH")
+            .uri(&path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, "\"1\"")
+            .body(Body::from(serde_json::json!({ "name": name }).to_string()))
+            .unwrap()
+    };
+    let waiting = |n: i64| {
+        let pool = app.pool.clone();
+        async move || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+                >= n
+        }
+    };
+    // Both renames pass the unlocked pre-check (version 1) and queue on the
+    // held row lock; the guarded UPDATE decides once it is released.
+    let mut holder = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM activities WHERE id = $1::uuid FOR UPDATE")
+        .bind(&activity)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let first = app.send(rename("A"));
+    let second = app.send(rename("B"));
+    let release = async {
+        wait_until("both renames queued on the row lock", waiting(2)).await;
+        holder.rollback().await.unwrap();
+    };
+    let (first, second, ()) = tokio::join!(first, second, release);
+    let mut statuses = [first.status, second.status];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::OK, StatusCode::PRECONDITION_FAILED],
+        "{} / {}",
+        first.text(),
+        second.text()
+    );
+    let loaded = app.get_as(&teacher, &path).await;
+    assert_eq!(loaded.json()["version"], 2);
+    let winner = if first.status == StatusCode::OK {
+        "A"
+    } else {
+        "B"
+    };
+    assert_eq!(loaded.json()["name"], winner);
 }
 
 /// BUG-168: blank names (`""` / `"   "`) are 422 `name`/`required` on

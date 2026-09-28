@@ -804,8 +804,15 @@ impl AssessmentsService {
         .await?;
         if let Some(title) = title {
             // The activity carries the title into the curriculum.
-            ab_db::catalog::update_activity(&mut *tx, assessment.activity_id, Some(title), None)
-                .await?;
+            ab_db::catalog::update_activity(
+                &mut *tx,
+                assessment.activity_id,
+                ab_db::catalog::ActivityWrite {
+                    name: Some(title),
+                    ..Default::default()
+                },
+            )
+            .await?;
         }
         tx.commit().await?;
         self.detail(id).await
@@ -1054,8 +1061,10 @@ impl AssessmentsService {
         ab_db::catalog::update_activity(
             &mut *tx,
             assessment.activity_id,
-            None,
-            Some(activity_live),
+            ab_db::catalog::ActivityWrite {
+                published: Some(activity_live),
+                ..Default::default()
+            },
         )
         .await?;
         tx.commit().await?;
@@ -1114,8 +1123,15 @@ impl AssessmentsService {
             if !ab_db::assessments::publish_due(&mut *tx, id).await? {
                 continue;
             }
-            ab_db::catalog::update_activity(&mut *tx, assessment.activity_id, None, Some(true))
-                .await?;
+            ab_db::catalog::update_activity(
+                &mut *tx,
+                assessment.activity_id,
+                ab_db::catalog::ActivityWrite {
+                    published: Some(true),
+                    ..Default::default()
+                },
+            )
+            .await?;
             tx.commit().await?;
             ProgressProjector::new(pool.clone())
                 .after_course_change(assessment.course_id)

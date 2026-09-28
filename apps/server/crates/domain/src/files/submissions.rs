@@ -643,7 +643,15 @@ impl FileSubmissionsService {
             ));
         }
         if let Some(title) = title {
-            ab_db::catalog::update_activity(&mut *tx, row.activity_id, Some(title), None).await?;
+            ab_db::catalog::update_activity(
+                &mut *tx,
+                row.activity_id,
+                ab_db::catalog::ActivityWrite {
+                    name: Some(title),
+                    ..Default::default()
+                },
+            )
+            .await?;
         }
         ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
         tx.commit().await?;
@@ -702,7 +710,15 @@ impl FileSubmissionsService {
             FileSubmissionLifecycle::Published,
         )
         .await?;
-        ab_db::catalog::update_activity(&mut *tx, row.activity_id, None, Some(true)).await?;
+        ab_db::catalog::update_activity(
+            &mut *tx,
+            row.activity_id,
+            ab_db::catalog::ActivityWrite {
+                published: Some(true),
+                ..Default::default()
+            },
+        )
+        .await?;
         tx.commit().await?;
         self.projector.after_course_change(row.course_id).await;
         let row = self.load(id).await?;
