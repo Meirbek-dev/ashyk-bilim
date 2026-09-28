@@ -94,6 +94,9 @@ pub fn answers(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) -> R
 /// The v2 code item (id, title) owning a legacy Judge0 test case id.
 pub type CodeTests = HashMap<String, (Uuid, String)>;
 
+/// One folded code item: (v2 id, title, per-test legacy entries).
+type CodeGroup<'a> = (Uuid, &'a str, Vec<Map<String, Value>>);
+
 /// A `GradingBreakdown` blob with `items[].item_id` re-keyed to v2 ids;
 /// items whose legacy id resolves nowhere are dropped and reported.
 ///
@@ -113,7 +116,7 @@ pub fn breakdown(
     let mut unresolved = Vec::new();
     let mut items = Vec::new();
     // (item id, title, per-test entries) in first-seen order.
-    let mut code: Vec<(Uuid, &str, Vec<Map<String, Value>>)> = Vec::new();
+    let mut code: Vec<CodeGroup<'_>> = Vec::new();
     for item in array(src.get("items")) {
         let Some(mut m) = item.as_object().cloned() else {
             continue;
@@ -125,7 +128,7 @@ pub fn breakdown(
                 m.insert("test_id".into(), Value::String(legacy_id));
                 match code.iter_mut().find(|(o, _, _)| o == owner) {
                     Some((_, _, entries)) => entries.push(m),
-                    None => code.push((*owner, title, vec![m])),
+                    None => code.push((*owner, title.as_str(), vec![m])),
                 }
             } else {
                 unresolved.push(legacy_id);
