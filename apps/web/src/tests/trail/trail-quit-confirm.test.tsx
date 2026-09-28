@@ -35,6 +35,7 @@ function renderCard() {
   queryClient.setQueryData(['learner-course', courseId, 'state'], {
     outline: [{ id: 'c1', index: 0, title: 'x', activities: [{ id: 'a1', complete: true, activity_type: 'quiz' }] }],
     progress: { completed_required_count: 1, total_required_count: 1, progress_pct: 100 },
+    certificate: { configured: true },
     next_action: { id: 'view_certificate', activity_id: null },
   })
   render(
