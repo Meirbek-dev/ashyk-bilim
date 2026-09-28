@@ -852,6 +852,14 @@ impl SubmissionsService {
             preview,
         } = ctx;
 
+        // UX-260: a `start` racing this hand-in waits on `lock_attempts`
+        // (BUG-239) until the row is written, so it answers the settled
+        // state — never the attempt being submitted as a draft. The lock
+        // rides its own connection; the writes below stay on the pool.
+        // ponytail: one pool connection per in-flight hand-in for the whole
+        // grade (judge0 included); queue per learner if the pool starves.
+        let mut attempts = pool.begin().await?;
+        ab_db::submissions::lock_attempts(&mut attempts, assessment.id, submission.user_id).await?;
         // BUG-256: no cap check here — the cap bars opening an attempt
         // (`start`, under `lock_attempts`, BUG-239), and an open draft may
         // always be finished, as `attempt-state` promises.
@@ -936,6 +944,7 @@ impl SubmissionsService {
             },
         )
         .await?;
+        attempts.commit().await?;
         if !written {
             let row = ab_db::submissions::get_submission(pool, submission.id).await?;
             if row.is_some_and(|row| row.status == SubmissionStatus::Draft) {

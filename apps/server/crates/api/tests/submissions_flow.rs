@@ -2301,3 +2301,77 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
     .unwrap();
     assert_eq!((status.as_str(), attempts, backed_off), ("draft", 1, true));
 }
+
+/// UX-260: a `start` racing an in-flight submit waits for it (the submit
+/// holds `lock_attempts` from grading to the row write) and answers the
+/// settled state — the next attempt as a draft, never attempt 1 still as
+/// a draft while the submit turns it `pending`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 5 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let first = draft.json()["id"].as_str().unwrap().to_owned();
+    let waiting_on = async |event: &str| {
+        let event = event.to_owned();
+        wait_until(&format!("no backend waiting on {event}"), async || {
+            sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'
+                   AND wait_event = $1)",
+            )
+            .bind(&event)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+        })
+        .await;
+    };
+    // Hold the row so the submit stops at its final UPDATE, mid hand-in.
+    let mut holder = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM submissions WHERE id = $1::uuid FOR UPDATE")
+        .bind(&first)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let (submitted, started) =
+        tokio::join!(app.send(submit(&alice, &first, None, &answer)), async {
+            waiting_on("transactionid").await;
+            // The start issued now queues behind the hand-in, not the row.
+            let (path, body) = (
+                format!("/api/v2/assessments/{id}/submissions"),
+                serde_json::json!({}),
+            );
+            tokio::join!(app.post_as(&alice, &path, &body), async {
+                waiting_on("advisory").await;
+                holder.commit().await.unwrap();
+            })
+            .0
+        });
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["status"], "published");
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    assert_eq!(started.json()["attempt_number"], 2);
+    assert_eq!(started.json()["status"], "draft");
+    assert_ne!(started.json()["id"], first.as_str());
+}
