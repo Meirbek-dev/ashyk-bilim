@@ -298,21 +298,36 @@ pub async fn claim_upload(
     Ok(upload.key)
 }
 
-/// Reap expired pending/unreferenced uploads: rows first, then objects
-/// (best-effort — a missed object is retried never, but orphan objects are
-/// harmless and listable).
+/// Reap expired pending/unreferenced uploads without orphaning objects.
+///
+/// Each row is locked, its object deleted, then the row: a claim racing the sweep waits on the lock and then
+/// finds no row, and a failed object delete rolls back so the row is retried on
+/// the next sweep (object deletes are idempotent) — no orphaned objects.
 pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64> {
-    let reaped = ab_db::uploads::reap_expired(pool).await?;
     let mut deleted = 0;
-    for upload in &reaped {
+    let mut failures_in_a_row = 0;
+    for candidate in ab_db::uploads::expired(pool, 500).await? {
+        let mut tx = pool.begin().await?;
+        let Some(upload) = ab_db::uploads::lock_expired(&mut tx, candidate.id).await? else {
+            continue;
+        };
         if let Err(err) = storage
             .delete(bucket_from_name(&upload.bucket), &upload.key)
             .await
         {
-            tracing::warn!(key = %upload.key, %err, "reaped row but object deletion failed");
-        } else {
-            deleted += 1;
+            tracing::warn!(key = %upload.key, %err, "object deletion failed; row kept for the next sweep");
+            // Storage is likely down: end the sweep instead of holding a row lock
+            // through every candidate's retries; the next sweep starts over.
+            failures_in_a_row += 1;
+            if failures_in_a_row >= 3 {
+                break;
+            }
+            continue;
         }
+        ab_db::uploads::delete(&mut tx, upload.id).await?;
+        tx.commit().await?;
+        deleted += 1;
+        failures_in_a_row = 0;
     }
     Ok(deleted)
 }

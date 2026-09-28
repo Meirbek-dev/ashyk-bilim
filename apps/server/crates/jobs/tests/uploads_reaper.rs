@@ -77,3 +77,70 @@ async fn reaper_removes_expired_rows_and_objects(pool: PgPool) {
     assert_eq!(remaining, vec![format!("avatar/live-{nonce}")]);
     assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
 }
+
+/// AUD (reaper retry gap): a failed object delete must not drop the row, or the
+/// object is orphaned forever — the row stays and the next sweep reaps both.
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_object_delete_keeps_the_row_for_the_next_sweep(pool: PgPool) {
+    let storage = storage();
+    let user: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email)
+         VALUES ('z-r', 'retry', 'retry@example.com') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let key = format!("avatar/retry-{nonce}");
+    storage
+        .put(Bucket::Public, &key, b"orphan".to_vec())
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, expires_at)
+         VALUES ($1, 'avatar', 'public', $2, 'image/png', 6, now() - interval '1 minute')",
+    )
+    .bind(user)
+    .bind(&key)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // Storage down: nothing is lost, the row waits.
+    let down = Arc::new(
+        StorageClient::new(&StorageConfig {
+            endpoint: "http://127.0.0.1:9".into(),
+            access_key: "ashyq-dev".into(),
+            secret_key: SecretString::from("ashyq-dev-secret"),
+            public_bucket: "ab-public".into(),
+            private_bucket: "ab-private".into(),
+        })
+        .unwrap(),
+    );
+    let reaped = ab_domain::files::uploads::reap_expired(&pool, &down)
+        .await
+        .unwrap();
+    assert_eq!(reaped, 0);
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM uploads WHERE key = $1")
+        .bind(&key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 1);
+
+    // Storage back: the next sweep takes the object and the row.
+    let reaped = ab_domain::files::uploads::reap_expired(&pool, &storage)
+        .await
+        .unwrap();
+    assert_eq!(reaped, 1);
+    assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM uploads WHERE key = $1")
+        .bind(&key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0);
+}

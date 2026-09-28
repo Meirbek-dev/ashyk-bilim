@@ -1460,8 +1460,13 @@ async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
         .await
         .unwrap();
     }
-    let reaped = ab_db::uploads::reap_expired(&app.pool).await.unwrap();
+    let reaped = ab_db::uploads::expired(&app.pool, 500).await.unwrap();
     assert_eq!(reaped.len(), 1);
+    let mut conn = app.pool.acquire().await.unwrap();
+    ab_db::uploads::delete(&mut conn, reaped[0].id)
+        .await
+        .unwrap();
+    drop(conn);
     let left: Vec<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM uploads WHERE id = ANY($1)")
         .bind(vec![
             uuid::Uuid::parse_str(&a).unwrap(),

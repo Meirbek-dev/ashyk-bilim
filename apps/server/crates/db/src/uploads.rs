@@ -152,26 +152,55 @@ pub async fn release_reference<'e>(
 }
 
 pub struct ReapedUpload {
+    pub id: Uuid,
     pub bucket: String,
     pub key: String,
 }
 
-/// Delete expired pending rows and expired unreferenced finalized rows;
-/// returns the object locations for storage-side deletion.
+/// Expired pending rows and expired unreferenced finalized rows, oldest first
+/// (at most `limit`; the next sweep takes the rest).
 ///
 /// BUG-241: a row a file submission still points at (`ON DELETE RESTRICT`) is skipped, so one
 /// miscounted upload never fails the whole sweep.
-pub async fn reap_expired(pool: &PgPool) -> Result<Vec<ReapedUpload>> {
+pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,
-        r#"DELETE FROM uploads
+        r#"SELECT id, bucket, key FROM uploads
            WHERE expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
                   OR (status = 'finalized' AND referenced_count = 0))
              AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)
-           RETURNING bucket, key"#
+           ORDER BY expires_at
+           LIMIT $1"#,
+        limit
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// Lock one row of [`expired`] for reaping, re-checking the predicate under the
+/// lock; `None` when a claim, finalize or another sweep got to it first.
+pub async fn lock_expired(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<Option<ReapedUpload>> {
+    let row = sqlx::query_as!(
+        ReapedUpload,
+        r#"SELECT id, bucket, key FROM uploads
+           WHERE id = $1
+             AND expires_at IS NOT NULL AND expires_at < now()
+             AND (status = 'pending'
+                  OR (status = 'finalized' AND referenced_count = 0))
+             AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)
+           FOR UPDATE SKIP LOCKED"#,
+        id
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    Ok(row)
+}
+
+pub async fn delete(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<()> {
+    sqlx::query!("DELETE FROM uploads WHERE id = $1", id)
+        .execute(&mut *conn)
+        .await?;
+    Ok(())
 }
