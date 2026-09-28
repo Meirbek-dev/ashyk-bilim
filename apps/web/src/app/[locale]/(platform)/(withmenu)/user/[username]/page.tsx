@@ -53,16 +53,19 @@ async function UserProfile({ params }: UserPageProps) {
 
   try {
     userData = await getUserByUsername(username)
-    if (!userData) return <ResourceNotFound type="user" />
-    profile = userData.profile
-      ? typeof userData.profile === 'string'
-        ? JSON.parse(userData.profile)
-        : userData.profile
-      : { sections: [] }
+    profile = !userData
+      ? undefined
+      : userData.profile
+        ? typeof userData.profile === 'string'
+          ? JSON.parse(userData.profile)
+          : userData.profile
+        : { sections: [] }
   } catch (error) {
     console.error('Error fetching user data:', error)
     hasError = true
   }
+
+  if (!hasError && !userData) return <ResourceNotFound type="user" />
 
   if (hasError || !userData) {
     return (

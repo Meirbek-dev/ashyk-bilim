@@ -68,7 +68,6 @@ export function WebPreviewInsertDialog() {
             <Input
               id="web-preview-insert-url"
               type="text"
-              autoFocus
               placeholder={t('enterWebsiteUrl')}
               value={url}
               onChange={event => {

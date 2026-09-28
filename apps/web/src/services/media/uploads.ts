@@ -81,7 +81,7 @@ export function getUploadDownloadPath(uploadId: string): string {
   return `uploads/${encodeURIComponent(uploadId)}/download`
 }
 
-function putWithProgress(url: string, file: Blob, options: UploadFileOptions): Promise<void> {
+async function putWithProgress(url: string, file: Blob, options: UploadFileOptions): Promise<void> {
   const contentType = file.type || 'application/octet-stream'
 
   // XMLHttpRequest is the only browser primitive with upload progress events.
@@ -92,15 +92,15 @@ function putWithProgress(url: string, file: Blob, options: UploadFileOptions): P
       xhr.setRequestHeader('Content-Type', contentType)
       // BUG-350: the presigned PUT is create-only (the header is signed).
       xhr.setRequestHeader('If-None-Match', '*')
-      xhr.upload.onprogress = event => {
+      xhr.upload.addEventListener('progress', event => {
         const total = event.lengthComputable ? event.total : file.size
         options.onProgress?.({
           uploadedBytes: event.loaded,
           totalBytes: total,
           percentage: total > 0 ? Math.round((event.loaded / total) * 100) : 0,
         })
-      }
-      xhr.onload = () => {
+      })
+      xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve()
         } else {
@@ -111,28 +111,31 @@ function putWithProgress(url: string, file: Blob, options: UploadFileOptions): P
             }),
           )
         }
-      }
-      xhr.onerror = () => reject(clientApiError('NETWORK_UNAVAILABLE', 'Upload to storage failed', { path: url }))
-      xhr.onabort = () => reject(clientApiError('REQUEST_ABORTED', 'Upload was aborted', { path: url }))
+      })
+      xhr.addEventListener('error', () =>
+        reject(clientApiError('NETWORK_UNAVAILABLE', 'Upload to storage failed', { path: url })),
+      )
+      xhr.addEventListener('abort', () =>
+        reject(clientApiError('REQUEST_ABORTED', 'Upload was aborted', { path: url })),
+      )
       options.signal?.addEventListener('abort', () => xhr.abort(), { once: true })
       xhr.send(file)
     })
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': contentType, 'If-None-Match': '*' },
     ...(options.signal ? { signal: options.signal } : {}),
-  }).then(response => {
-    if (!response.ok) {
-      throw clientApiError('NETWORK_UNAVAILABLE', `Storage rejected the upload (${response.status})`, {
-        path: url,
-        status: response.status,
-      })
-    }
-    options.onProgress?.({ uploadedBytes: file.size, totalBytes: file.size, percentage: 100 })
   })
+  if (!response.ok) {
+    throw clientApiError('NETWORK_UNAVAILABLE', `Storage rejected the upload (${response.status})`, {
+      path: url,
+      status: response.status,
+    })
+  }
+  options.onProgress?.({ uploadedBytes: file.size, totalBytes: file.size, percentage: 100 })
 }
 
 /**

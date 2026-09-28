@@ -9,7 +9,7 @@ import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
 import PasswordInput from '@components/ui/custom/password-input'
 import { SiGoogle } from '@icons-pack/react-simple-icons'
 import { Separator } from '@components/ui/separator'
-import { useActionState, useState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@components/ui/button'
@@ -204,6 +204,13 @@ function LoginClient() {
   const redirectError = state.error || state.step !== 'credentials' ? null : messageForCode(searchParams.get('error'))
   const bannerError = state.error ?? redirectError
 
+  // The submit button that brought the user here unmounts with the credentials
+  // step, so keyboard focus would fall back to <body>; move it to the code field.
+  const totpInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (state.step === 'totp') totpInputRef.current?.focus()
+  }, [state.step])
+
   return (
     <AuthCard>
       <Link href={getAbsoluteUrl('/')}>
@@ -281,7 +288,7 @@ function LoginClient() {
                   autoComplete="one-time-code"
                   placeholder={t('totpCodePlaceholder')}
                   className="w-full"
-                  autoFocus
+                  ref={totpInputRef}
                 />
               </FieldContent>
               <FieldDescription>{t('totpHint')}</FieldDescription>

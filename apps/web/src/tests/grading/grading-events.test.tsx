@@ -28,7 +28,6 @@ const COURSE_ID = '44444444-4444-4444-8444-444444444444'
 /** The bits of `EventSource` the hook touches; `emit` plays a named server event. */
 class FakeEventSource extends EventTarget {
   static instances: FakeEventSource[] = []
-  onerror: ((event: Event) => void) | null = null
   closed = false
   constructor(
     public url: string,
@@ -84,7 +83,7 @@ describe('useCourseGradingEvents', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['grading'] })
 
     // A stream error drops `live` so the caller's polling fallback kicks in.
-    act(() => source.onerror?.(new Event('error')))
+    act(() => source.dispatchEvent(new Event('error')))
     expect(result.current.live).toBe(false)
 
     unmount()

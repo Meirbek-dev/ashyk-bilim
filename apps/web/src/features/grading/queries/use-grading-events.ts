@@ -87,7 +87,7 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
     source.addEventListener('connected', () => setLive(true))
     source.addEventListener('closed', lost)
     for (const name of GRADING_EVENT_NAMES) source.addEventListener(name, invalidate)
-    source.onerror = () => setLive(false)
+    source.addEventListener('error', () => setLive(false))
     window.addEventListener(ACCESS_LOST_EVENT, onReport)
     mountedStreams += 1
     return () => {

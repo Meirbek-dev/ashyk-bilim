@@ -45,6 +45,7 @@ const windows: NonNullable<AnalyticsQuery['window']>[] = ['7d', '28d', '90d']
 const compareOptions: NonNullable<AnalyticsQuery['compare']>[] = ['previous_period', 'none']
 const bucketOptions: NonNullable<AnalyticsQuery['bucket']>[] = ['day', 'week']
 const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
+const EMPTY_SORT_KEYS: readonly string[] = []
 
 export default function TeacherFilterBar({
   path,
@@ -52,7 +53,7 @@ export default function TeacherFilterBar({
   courseCount,
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
-  sortKeys = [],
+  sortKeys = EMPTY_SORT_KEYS,
 }: TeacherFilterBarProps) {
   const t = useTranslations('TeacherAnalytics')
   const router = useRouter()

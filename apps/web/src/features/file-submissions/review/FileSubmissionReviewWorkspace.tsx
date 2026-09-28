@@ -373,6 +373,16 @@ export default function FileSubmissionReviewWorkspace({
     )
   }
 
+  const downloadCsv = async () => {
+    try {
+      const blob = await downloadFileSubmissionCsv(config.id, locale)
+      saveBlob(blob, `file-submission-${config.id}.csv`)
+      toast.success(t('csvSaved'))
+    } catch (error) {
+      toastApiError(error, { fallback: t('csvFailed') })
+    }
+  }
+
   return (
     // UX-216: grading access lost mid-session — the grading controls go inert while it is confirmed.
     <div className="bg-background grid min-h-screen lg:grid-cols-[360px_minmax(0,1fr)]" inert={accessLost}>
@@ -430,19 +440,7 @@ export default function FileSubmissionReviewWorkspace({
               <RefreshCw data-icon="inline-start" />
               {t('refresh')}
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              aria-label={t('downloadCsv')}
-              onClick={() =>
-                void downloadFileSubmissionCsv(config.id, locale)
-                  .then(blob => {
-                    saveBlob(blob, `file-submission-${config.id}.csv`)
-                    toast.success(t('csvSaved'))
-                  })
-                  .catch(error => toastApiError(error, { fallback: t('csvFailed') }))
-              }
-            >
+            <Button size="sm" variant="outline" aria-label={t('downloadCsv')} onClick={() => void downloadCsv()}>
               <Download data-icon="inline-start" />
               CSV
             </Button>

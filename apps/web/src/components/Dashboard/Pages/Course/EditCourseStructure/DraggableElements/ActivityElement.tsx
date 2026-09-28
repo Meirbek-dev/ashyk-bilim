@@ -343,9 +343,9 @@ function ActivityElement({
             {/* UX-124: a scheduled assessment publishes itself — the badge explains why there is no toggle. */}
             {isScheduled && !activity.published ? (
               <ToolTip content={t('scheduledHint')} side="top">
-                <span className="inline-flex" tabIndex={0} aria-label={t('scheduledHint')}>
+                <button type="button" className="inline-flex cursor-default" aria-label={t('scheduledHint')}>
                   <CourseStatusBadge status="scheduled" />
-                </span>
+                </button>
               </ToolTip>
             ) : (
               <CourseStatusBadge status={activity.published ? 'live' : isArchived ? 'archived' : 'draft'} />

@@ -164,6 +164,16 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     router.push(`/dash/courses/${cleanCourse}/activity/${cleanActivity}/review`)
   }
 
+  const exportCsv = async () => {
+    try {
+      const blob = await downloadGradebookCsv(courseUuid, locale)
+      saveBlob(blob, `gradebook-${courseUuid}.csv`)
+      toast.success(t('exportDone', { count: data.students.length }))
+    } catch (error) {
+      toastApiError(error)
+    }
+  }
+
   return (
     // UX-216: grading access lost mid-session — nothing stays clickable while it is confirmed.
     <div className="space-y-5" inert={accessLost}>
@@ -173,14 +183,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         activityTypes={activityTypes}
         visibleStudentCount={visibleStudents.length}
         onFiltersChange={handleFiltersChange}
-        onExport={() => {
-          void downloadGradebookCsv(courseUuid, locale)
-            .then(blob => {
-              saveBlob(blob, `gradebook-${courseUuid}.csv`)
-              toast.success(t('exportDone', { count: data.students.length }))
-            })
-            .catch(toastApiError)
-        }}
+        onExport={() => void exportCsv()}
         onRefresh={() => void refetch()}
       />
 

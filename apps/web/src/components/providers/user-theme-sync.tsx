@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import { useSession } from '@/hooks/useSession'
 import { useTheme } from '@/components/providers/theme-provider'
 import { updateProfile } from '@/lib/users/client'
@@ -25,25 +25,24 @@ export function UserThemeSync() {
   const serverTheme = user?.theme ?? null
   const syncedRef = useRef<string | null>(serverTheme ?? DEFAULT_THEME_NAME)
   // `setTheme` changes identity with the light/dark mode; adopting must not re-run on a toggle.
-  const setThemeRef = useRef(setTheme)
-  setThemeRef.current = setTheme
+  const adoptTheme = useEffectEvent((theme: string) => setTheme(theme))
 
   useEffect(() => {
     syncedRef.current = serverTheme ?? DEFAULT_THEME_NAME
-    if (userId && serverTheme) setThemeRef.current(serverTheme)
+    if (userId && serverTheme) adoptTheme(serverTheme)
   }, [userId, serverTheme])
 
   useEffect(() => {
     if (!userId || themeName === syncedRef.current) return
-    const timer = setTimeout(() => {
-      updateProfile({ theme: themeName })
-        .then(() => {
-          syncedRef.current = themeName
-        })
-        .catch(() => {
-          // Offline or signed out: the local choice stays, the next change retries.
-        })
-    }, THEME_SYNC_DELAY_MS)
+    const persist = async () => {
+      try {
+        await updateProfile({ theme: themeName })
+        syncedRef.current = themeName
+      } catch {
+        // Offline or signed out: the local choice stays, the next change retries.
+      }
+    }
+    const timer = setTimeout(() => void persist(), THEME_SYNC_DELAY_MS)
     return () => {
       clearTimeout(timer)
     }

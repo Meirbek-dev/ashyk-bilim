@@ -54,11 +54,12 @@ async function UserPage({ params }: UserPageProps) {
 
   try {
     userData = await getUserByUsername(username)
-    if (!userData) return <ResourceNotFound type="user" />
   } catch (error) {
     console.error('Error fetching user data:', error)
     hasError = true
   }
+
+  if (!hasError && !userData) return <ResourceNotFound type="user" />
 
   if (hasError || !userData) {
     return (
