@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import CoursesActions from '@/components/Objects/Courses/CourseActions/CoursesActions'
 import CourseActionsMobile from '@/components/Objects/Courses/CourseActions/CourseActionsMobile'
 import { APIError } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 import ruMessages from '@/messages/ru-RU.json'
 
@@ -208,6 +209,23 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     renderActions({ ...enrolledWithoutRun, enrolled: false } as LearnerCourseState)
     fireEvent.click(screen.getByRole('button', { name: /Начать курс/ }))
     await waitFor(() => expect(mocks.toast.error).toHaveBeenCalledWith(expect.any(String), { id: 't1' }))
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
+  // UX-268: approved as a contributor from another tab — the 409 on «Начать курс»
+  // refetches roster + learner-state (the CTA flips), no «обновите страницу».
+  it('refetches roster and learner-state on a 409 start instead of asking for a reload', async () => {
+    mocks.apiJson.mockRejectedValueOnce(new APIError({ status: 409, code: 'conflict', message: 'staff never enrol' }))
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    renderActions({ ...enrolledWithoutRun, enrolled: false } as LearnerCourseState, client)
+    fireEvent.click(screen.getByRole('button', { name: /Начать курс/ }))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course', 'c1', 'state'] }))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.courses.contributors('c1') })
+    expect(mocks.toast.info).toHaveBeenCalledWith(ruMessages.Courses.CoursesActions.applicationAlreadyReviewed, {
+      id: 't1',
+    })
+    expect(mocks.toast.error).not.toHaveBeenCalled()
     expect(mocks.push).not.toHaveBeenCalled()
   })
 

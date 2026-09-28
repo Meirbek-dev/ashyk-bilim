@@ -140,7 +140,19 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
       // Continue: first unfinished activity (all done → the first one).
       openActivity(action === 'start' ? activities[0] : (nextUnfinished ?? activities[0]))
     } catch (error) {
-      toastApiError(error, loadingToast === undefined ? {} : { toastId: loadingToast }, t('startCourseError'))
+      // UX-268: a 409 on «Начать курс» means the learner joined the staff
+      // meanwhile (staff never enrol) and this tab's roster never polled
+      // (UX-233 polls only while its own row is pending): refetch the roster
+      // and learner-state so the CTA flips to «Открыть курс», no reload ask.
+      if (action === 'start' && hasErrorCode(error, 'conflict')) {
+        await Promise.all([
+          refreshEnrolment(),
+          queryClient.invalidateQueries({ queryKey: queryKeys.courses.contributors(courseuuid) }),
+        ])
+        toast.info(t('applicationAlreadyReviewed'), loadingToast === undefined ? {} : { id: loadingToast })
+      } else {
+        toastApiError(error, loadingToast === undefined ? {} : { toastId: loadingToast }, t('startCourseError'))
+      }
     } finally {
       setIsActionLoading(false)
     }
