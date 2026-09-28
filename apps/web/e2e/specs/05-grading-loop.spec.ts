@@ -56,7 +56,10 @@ test.describe.serial('Teacher – Grading Loop', () => {
   test('teacher can export the gradebook as the server CSV', async ({ page, gradebookPage }) => {
     await gradebookPage.goto(courseUuid)
     const downloadPromise = page.waitForEvent('download', { timeout: 15_000 })
-    await page.getByRole('button', { name: /export/i }).first().click()
+    await page
+      .getByRole('button', { name: /export/i })
+      .first()
+      .click()
     const download = await downloadPromise
     expect(download.suggestedFilename()).toBe(`gradebook-${courseUuid}.csv`)
     const stream = await download.createReadStream()

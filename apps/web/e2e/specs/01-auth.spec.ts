@@ -74,7 +74,6 @@ test.describe('Auth guard', () => {
     await page.waitForURL(/\/login/, { timeout: 10_000 })
     expect(page.url()).toContain('returnTo=')
   })
-
 })
 
 // ---------------------------------------------------------------------------

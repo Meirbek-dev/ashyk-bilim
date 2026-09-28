@@ -91,7 +91,9 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
             <InlineError description={threadQuery.error.message} error={threadQuery.error} />
           ) : messages.length === 0 ? (
             <QAStarterState
-              contextLabel={selectedThreadUuid ? t('threadContext') : activityUuid ? t('activityContext') : t('courseContext')}
+              contextLabel={
+                selectedThreadUuid ? t('threadContext') : activityUuid ? t('activityContext') : t('courseContext')
+              }
               hasActivity={Boolean(activityUuid)}
               onPrompt={submitQuestion}
             />

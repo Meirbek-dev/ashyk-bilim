@@ -73,7 +73,10 @@ export class CurriculumEditorPage {
     const chapterRow = this.chapterCard(chapterName)
     await expect(chapterRow).toBeVisible({ timeout: 10_000 })
 
-    await chapterRow.getByRole('button', { name: /add activity/i }).first().click()
+    await chapterRow
+      .getByRole('button', { name: /add activity/i })
+      .first()
+      .click()
     const dialog = this.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
@@ -81,10 +84,15 @@ export class CurriculumEditorPage {
     // response to observe), so detect creation from the DOM: a new
     // `[data-activity-element]` row in this chapter.
     const rowIds = () =>
-      chapterRow.locator('[data-activity-element]').evaluateAll(els => els.map(el => el.getAttribute('data-activity-element')))
+      chapterRow
+        .locator('[data-activity-element]')
+        .evaluateAll(els => els.map(el => el.getAttribute('data-activity-element')))
     const before = new Set(await rowIds())
 
-    await dialog.getByRole('button', { name: new RegExp(activityType, 'i') }).first().click()
+    await dialog
+      .getByRole('button', { name: new RegExp(activityType, 'i') })
+      .first()
+      .click()
 
     if (activityType === 'File Submission') {
       await dialog.getByRole('textbox', { name: /^title$/i }).fill(name ?? 'File submission')

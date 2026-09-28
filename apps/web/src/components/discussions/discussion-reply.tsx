@@ -113,15 +113,15 @@ export default function DiscussionReply({
                   </Button>
                 )}
                 {canDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteReply(postId, reply.id)}
-                  aria-label={t('delete')}
-                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
-                >
-                  <Trash2 size={12} />
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDeleteReply(postId, reply.id)}
+                    aria-label={t('delete')}
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
+                  >
+                    <Trash2 size={12} />
+                  </Button>
                 )}
               </div>
             )}

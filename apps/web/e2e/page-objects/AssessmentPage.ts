@@ -26,7 +26,9 @@ export class AssessmentPage {
   public constructor(page: Page) {
     this.page = page
     // v2 learner action bar: "Start assessment"
-    this.startButton = page.getByRole('button', { name: /^start( exam| assessment)?$|begin attempt|take exam/i }).first()
+    this.startButton = page
+      .getByRole('button', { name: /^start( exam| assessment)?$|begin attempt|take exam/i })
+      .first()
     // v2 assessment action bar: "Submit" (opens the confirmation dialog)
     this.submitButton = page.getByRole('button', { name: /^submit( exam| attempt)?$|finish/i }).first()
     this.resultDisplay = page.locator('[data-result], .result, .score, [aria-label*="score"]').first()

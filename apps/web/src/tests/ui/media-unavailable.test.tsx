@@ -9,7 +9,10 @@ import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavaila
 import ruMessages from '@/messages/ru-RU.json'
 
 function renderPdf(status: number) {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status })))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(null, { status })),
+  )
   return render(
     <NextIntlClientProvider locale="ru" messages={ruMessages}>
       <CheckedMedia url="/content/x.pdf" kind="pdf">

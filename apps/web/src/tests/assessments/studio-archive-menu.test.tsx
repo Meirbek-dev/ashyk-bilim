@@ -115,7 +115,11 @@ describe('studio archive menu item', () => {
     mocks.lifecycle = 'ARCHIVED'
     mocks.apiJson.mockClear()
     mocks.apiJson.mockRejectedValueOnce(
-      new APIError({ code: 'conflict', message: 'cannot move from archived to published; allowed: draft', status: 409 }),
+      new APIError({
+        code: 'conflict',
+        message: 'cannot move from archived to published; allowed: draft',
+        status: 409,
+      }),
     )
     render(
       <QueryClientProvider client={new QueryClient()}>

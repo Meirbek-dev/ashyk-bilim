@@ -18,8 +18,13 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'ru',
   // ru digits: «100» and «66,7» — the decimal comma is the tell.
-  useFormatter: () => ({ number: (value: number, opts?: { maximumFractionDigits?: number }) =>
-    value.toFixed(opts?.maximumFractionDigits ?? 0).replace(/\.?0+$/, '').replace('.', ',') }),
+  useFormatter: () => ({
+    number: (value: number, opts?: { maximumFractionDigits?: number }) =>
+      value
+        .toFixed(opts?.maximumFractionDigits ?? 0)
+        .replace(/\.?0+$/, '')
+        .replace('.', ','),
+  }),
 }))
 vi.mock('recharts', () => ({
   Bar: () => null,
@@ -62,13 +67,26 @@ describe('studio results view', () => {
     mocks.useQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
       const key = JSON.stringify(queryKey)
       if (key.includes('submission-stats')) {
-        return { isSuccess: true, data: { total: 1, needs_grading_count: 0, avg_score: 100, pass_rate: 66.666, distribution: [] }, refetch: vi.fn() }
+        return {
+          isSuccess: true,
+          data: { total: 1, needs_grading_count: 0, avg_score: 100, pass_rate: 66.666, distribution: [] },
+          refetch: vi.fn(),
+        }
       }
       if (key.includes('item-analytics')) {
         return {
           isSuccess: true,
           isError: false,
-          data: [{ item_id: 'i1', title: 'Q1', kind: 'choice', response_count: 1, correct_pct: 100, discrimination_index: null }],
+          data: [
+            {
+              item_id: 'i1',
+              title: 'Q1',
+              kind: 'choice',
+              response_count: 1,
+              correct_pct: 100,
+              discrimination_index: null,
+            },
+          ],
           refetch: vi.fn(),
         }
       }

@@ -10,7 +10,10 @@ testAsStudent.describe('Dashboard work queue - learner', () => {
     await expect(learnerQueue).toBeVisible()
     // A learner with released feedback legitimately has items; either state is valid.
     await expect(
-      learnerQueue.getByTestId(/^work-queue-item-/).first().or(page.getByTestId('work-queue-empty-learner')),
+      learnerQueue
+        .getByTestId(/^work-queue-item-/)
+        .first()
+        .or(page.getByTestId('work-queue-empty-learner')),
     ).toBeVisible()
     await expect(page.getByTestId('dashboard-tools')).toBeVisible()
   })

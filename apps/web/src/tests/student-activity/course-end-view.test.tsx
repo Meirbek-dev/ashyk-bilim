@@ -111,7 +111,10 @@ describe('CourseEndView (BUG-165)', () => {
     s.progress = { ...s.progress, completed_at_unix: null, completed_required_count: 2, progress_pct: 40 }
     renderView(s)
     expect(screen.getByText('Готовы начать?')).toBeInTheDocument()
-    expect(screen.getByText('Перейти к курсу').closest('a')).toHaveAttribute('href', expect.stringContaining(`/course/${courseId}`))
+    expect(screen.getByText('Перейти к курсу').closest('a')).toHaveAttribute(
+      'href',
+      expect.stringContaining(`/course/${courseId}`),
+    )
     expect(screen.queryByText('Начать обучение')).toBeNull()
     expect(screen.queryByText(/Так держать!/)).toBeNull()
     expect(screen.queryByText('40%')).toBeNull()

@@ -528,9 +528,7 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         ) : null}
       </div>
       <MarkdownContent mode="compactRichText" content={item.prompt} compact />
-      <pre className="mt-2 font-sans text-sm whitespace-pre-wrap">
-        {answerLabel}
-      </pre>
+      <pre className="mt-2 font-sans text-sm whitespace-pre-wrap">{answerLabel}</pre>
     </div>
   )
 }

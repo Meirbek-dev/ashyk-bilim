@@ -71,7 +71,10 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
             {course.historical_completion_delta_pct !== null &&
               course.historical_completion_delta_pct !== undefined && (
                 <div className="text-muted-foreground text-[11px]">
-                  {format.number(course.historical_completion_delta_pct, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })}{' '}
+                  {format.number(course.historical_completion_delta_pct, {
+                    maximumFractionDigits: 1,
+                    signDisplay: 'exceptZero',
+                  })}{' '}
                   {t('courseHealth.vsHistory')}
                 </div>
               )}

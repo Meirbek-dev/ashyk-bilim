@@ -30,7 +30,9 @@ describe('extractMarkdownPlainText', () => {
     expect(extractMarkdownPlainText('Описание курса \\*\\*гонтлет\\*\\* 11')).toBe('Описание курса **гонтлет** 11')
   })
   it('still strips real markup', () => {
-    expect(extractMarkdownSummary('# Title\n\n**bold** and `code` [link](https://x.y)')).toBe('Title bold and code link')
+    expect(extractMarkdownSummary('# Title\n\n**bold** and `code` [link](https://x.y)')).toBe(
+      'Title bold and code link',
+    )
   })
 })
 

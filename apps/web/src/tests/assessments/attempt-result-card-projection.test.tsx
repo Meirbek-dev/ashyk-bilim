@@ -71,7 +71,13 @@ describe('AttemptResultCard vs progress projection', () => {
       attemptReviews: [
         { attemptNumber: 3, percent: 0, itemScores: { [itemId]: item }, generalFeedback: null, annulled: true },
         { attemptNumber: 2, percent: 76, itemScores: { [itemId]: item }, generalFeedback: 'Молодец', annulled: false },
-        { attemptNumber: 1, percent: 40, itemScores: { [itemId]: { ...item, score: 40 } }, generalFeedback: null, annulled: false },
+        {
+          attemptNumber: 1,
+          percent: 40,
+          itemScores: { [itemId]: { ...item, score: 40 } },
+          generalFeedback: null,
+          annulled: false,
+        },
       ],
     } as unknown as AttemptViewModel
     render(wrap(<AttemptResultCard vm={reviewVm} activityState={{ ...activityState, score: 76 }} />))

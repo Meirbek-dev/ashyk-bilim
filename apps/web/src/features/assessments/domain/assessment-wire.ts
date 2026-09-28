@@ -75,7 +75,12 @@ export function itemFromWire(item: AssessmentDetail['items'][number]): Assessmen
       const author = raw as Extract<typeof raw, { pairs?: unknown }>
       body = learner.left
         ? { kind: 'MATCHING', prompt: raw.prompt ?? '', pairs: [], left: learner.left, right: learner.right ?? [] }
-        : { kind: 'MATCHING', prompt: raw.prompt ?? '', pairs: author.pairs ?? [], explanation: author.explanation ?? null }
+        : {
+            kind: 'MATCHING',
+            prompt: raw.prompt ?? '',
+            pairs: author.pairs ?? [],
+            explanation: author.explanation ?? null,
+          }
       break
     }
     case 'code': {
@@ -123,7 +128,11 @@ export function itemFromWire(item: AssessmentDetail['items'][number]): Assessmen
   }
 }
 
-const variantsToWire = { SINGLE_CHOICE: 'single_choice', MULTIPLE_CHOICE: 'multiple_choice', TRUE_FALSE: 'true_false' } as const
+const variantsToWire = {
+  SINGLE_CHOICE: 'single_choice',
+  MULTIPLE_CHOICE: 'multiple_choice',
+  TRUE_FALSE: 'true_false',
+} as const
 const scoringToWire = {
   PARTIAL_CREDIT: 'partial_credit',
   ALL_OR_NOTHING: 'all_or_nothing',

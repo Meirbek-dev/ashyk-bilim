@@ -50,7 +50,17 @@ describe('gamification preferences (v2)', () => {
 
   it('maps the wire leaderboard avatar_key to avatar_url for the trail page', async () => {
     const wire = {
-      entries: [{ rank: 1, user_id: userId, total_xp: 40, level: 1, username: 'learner', display_name: 'L', avatar_key: 'avatar/x' }],
+      entries: [
+        {
+          rank: 1,
+          user_id: userId,
+          total_xp: 40,
+          level: 1,
+          username: 'learner',
+          display_name: 'L',
+          avatar_key: 'avatar/x',
+        },
+      ],
       total_participants: 1,
     }
     vi.mocked(apiJson).mockImplementation(async (_path, _init, parse) => (parse ? parse(wire) : wire))

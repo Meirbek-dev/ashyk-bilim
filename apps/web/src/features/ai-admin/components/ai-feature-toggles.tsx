@@ -33,7 +33,9 @@ export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] })
                 </Badge>
               </div>
               <FieldDescription>
-                {t('source', { source: t.has(`sources.${feature.source}`) ? t(`sources.${feature.source}`) : feature.source })}
+                {t('source', {
+                  source: t.has(`sources.${feature.source}`) ? t(`sources.${feature.source}`) : feature.source,
+                })}
               </FieldDescription>
             </FieldContent>
           </Field>

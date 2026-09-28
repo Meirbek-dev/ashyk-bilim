@@ -15,7 +15,9 @@ vi.mock('@components/ui/AppLink', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }))
 vi.mock('@components/auth/logo', () => ({ default: () => null }))
-vi.mock('@components/auth/card', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }))
+vi.mock('@components/auth/card', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 
 const verifyEmailAction = vi.fn()
 vi.mock('@/app/actions/auth', () => ({ verifyEmailAction: (...args: unknown[]) => verifyEmailAction(...args) }))

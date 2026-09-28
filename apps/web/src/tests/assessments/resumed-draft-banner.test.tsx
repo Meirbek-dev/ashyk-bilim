@@ -13,7 +13,9 @@ import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import ruMessages from '@/messages/ru-RU.json'
 
-const mocks = vi.hoisted(() => ({ draft: { submission_uuid: 's1', id: 's1', answered_count: 0 } as Record<string, unknown> }))
+const mocks = vi.hoisted(() => ({
+  draft: { submission_uuid: 's1', id: 's1', answered_count: 0 } as Record<string, unknown>,
+}))
 
 vi.mock('@/hooks/useContributorStatus', () => ({ useContributorStatus: () => ({ contributorStatus: null }) }))
 vi.mock('@/features/assessments/shell', () => ({ useAttemptShellControls: () => undefined }))

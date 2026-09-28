@@ -10,22 +10,47 @@ const USER_ID = '01a0910c-796a-75f5-b21c-93955233d327'
 
 const course = { id: COURSE_ID, name: 'Course' } as Course
 const user = { id: USER_ID, username: 'learner', display_name: 'Learner', email: 'learner@example.com' }
-const exam = { id: EXAM_ID, activity_id: 'activity_exam', title: 'Exam', kind: 'exam' as const, due_at_unix: null, passing_score: 60 }
+const exam = {
+  id: EXAM_ID,
+  activity_id: 'activity_exam',
+  title: 'Exam',
+  kind: 'exam' as const,
+  due_at_unix: null,
+  passing_score: 60,
+}
 const upload = { id: FILE_ID, activity_id: 'activity_upload', title: 'Project Upload', due_at_unix: null }
 
 type Cell = GradebookPage['cells'][number]
 
 function examCell(status: Cell['status'], final_score: number | null = 80): Cell {
   return {
-    user_id: USER_ID, activity_id: 'activity_exam', assessment_id: EXAM_ID, submission_id: 'submission_1',
-    file_submission_id: null, attempt_id: null, status, attempt_number: 1, attempts: 1, is_late: false, final_score,
+    user_id: USER_ID,
+    activity_id: 'activity_exam',
+    assessment_id: EXAM_ID,
+    submission_id: 'submission_1',
+    file_submission_id: null,
+    attempt_id: null,
+    status,
+    attempt_number: 1,
+    attempts: 1,
+    is_late: false,
+    final_score,
   }
 }
 
 function fileCell(status: Cell['status'], final_score: number | null): Cell {
   return {
-    user_id: USER_ID, activity_id: 'activity_upload', assessment_id: null, submission_id: null,
-    file_submission_id: FILE_ID, attempt_id: 'attempt_2', status, attempt_number: 2, attempts: 2, is_late: false, final_score,
+    user_id: USER_ID,
+    activity_id: 'activity_upload',
+    assessment_id: null,
+    submission_id: null,
+    file_submission_id: FILE_ID,
+    attempt_id: 'attempt_2',
+    status,
+    attempt_number: 2,
+    attempts: 2,
+    is_late: false,
+    final_score,
   }
 }
 
@@ -49,7 +74,9 @@ describe('gradebookFromWire (UX-013)', () => {
     const curriculum = {
       chapters: [{ activities: [{ id: 'activity_exam', name: 'Final Exam' }] }],
     } as unknown as Curriculum
-    expect(gradebookFromWire([page([examCell('published')])], course, curriculum).activities[0]!.name).toBe('Final Exam')
+    expect(gradebookFromWire([page([examCell('published')])], course, curriculum).activities[0]!.name).toBe(
+      'Final Exam',
+    )
     // Without a curriculum row (unlinked activity) the assessment title is the fallback.
     expect(gradebookFromWire([page([examCell('published')])], course).activities[0]!.name).toBe('Exam')
   })
@@ -64,8 +91,13 @@ describe('gradebookFromWire (UX-013)', () => {
     ])
     const cell = data.cells.find(c => c.activity_id === 'activity_upload')!
     expect(cell).toMatchObject({
-      latest_submission_uuid: 'attempt_2', latest_submission_status: 'PUBLISHED', state: 'COMPLETED',
-      score: 77, attempt_count: 2, teacher_action_required: false, passed: null,
+      latest_submission_uuid: 'attempt_2',
+      latest_submission_status: 'PUBLISHED',
+      state: 'COMPLETED',
+      score: 77,
+      attempt_count: 2,
+      teacher_action_required: false,
+      passed: null,
     })
     expect(data.cells.find(c => c.activity_id === 'activity_exam')).toMatchObject({ state: 'PASSED', passed: true })
     expect(data.summary).toMatchObject({ activity_count: 2, completed_count: 2, not_started_count: 0 })
@@ -80,12 +112,20 @@ describe('gradebookFromWire (UX-013)', () => {
   it("judges overdue against the cell's deadline override before the assessment due", () => {
     const past = Math.floor(Date.now() / 1000) - 3600
     const future = past + 86_400
-    const overdue = gradebookFromWire([{ ...page([examCell('pending', null)]), assessments: [{ ...exam, due_at_unix: past }] }], course)
+    const overdue = gradebookFromWire(
+      [{ ...page([examCell('pending', null)]), assessments: [{ ...exam, due_at_unix: past }] }],
+      course,
+    )
     expect(overdue.summary.overdue_count).toBe(1)
     expect(matchesGradebookSavedFilter(overdue.cells[0]!, 'overdue')).toBe(true)
 
     const extended = gradebookFromWire(
-      [{ ...page([{ ...examCell('pending', null), due_at_override_unix: future }]), assessments: [{ ...exam, due_at_unix: past }] }],
+      [
+        {
+          ...page([{ ...examCell('pending', null), due_at_override_unix: future }]),
+          assessments: [{ ...exam, due_at_unix: past }],
+        },
+      ],
       course,
     )
     expect(extended.summary.overdue_count).toBe(0)
@@ -97,10 +137,18 @@ describe('gradebookFromWire (UX-013)', () => {
   it('counts awaiting-release apart from needs-grading', () => {
     const data = gradebookFromWire(
       [
-        page([
-          examCell('graded'),
-          { ...fileCell('published', 70), pending_attempt: 3, pending_attempt_id: 'attempt_3', pending_attempt_status: 'pending' },
-        ], true),
+        page(
+          [
+            examCell('graded'),
+            {
+              ...fileCell('published', 70),
+              pending_attempt: 3,
+              pending_attempt_id: 'attempt_3',
+              pending_attempt_status: 'pending',
+            },
+          ],
+          true,
+        ),
       ],
       course,
     )
@@ -143,12 +191,19 @@ describe('localizeItemFeedback (Q-2026-09-11-2)', () => {
     )
     expect(
       localizeItemFeedback(
-        { feedback: 'Partially correct (2/3)', feedback_code: 'partially-correct', feedback_params: { correct: 2, total: 3 } },
+        {
+          feedback: 'Partially correct (2/3)',
+          feedback_code: 'partially-correct',
+          feedback_params: { correct: 2, total: 3 },
+        },
         t,
       ),
     ).toBe('itemFeedback.partiallyCorrect:2/3')
     expect(
-      localizeItemFeedback({ feedback: '3/4 pairs matched', feedback_code: 'pairs-matched', feedback_params: { correct: 3, total: 4 } }, t),
+      localizeItemFeedback(
+        { feedback: '3/4 pairs matched', feedback_code: 'pairs-matched', feedback_params: { correct: 3, total: 4 } },
+        t,
+      ),
     ).toBe('itemFeedback.pairsMatched:3/4')
   })
 

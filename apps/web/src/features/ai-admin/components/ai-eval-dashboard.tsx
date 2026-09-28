@@ -69,9 +69,7 @@ export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProp
           <Metric label={t('evals.passRate')} value={formatPassRate(dashboard.evals)} />
           <Metric
             label={t('evals.averageScore')}
-            value={
-              dashboard.evals.average_score == null ? t('notAvailable') : dashboard.evals.average_score.toFixed(2)
-            }
+            value={dashboard.evals.average_score == null ? t('notAvailable') : dashboard.evals.average_score.toFixed(2)}
           />
         </div>
         <div className="flex flex-col gap-2">

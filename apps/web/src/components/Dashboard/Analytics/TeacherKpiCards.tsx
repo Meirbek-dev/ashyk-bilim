@@ -111,7 +111,10 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 <Sparkline values={sparkline} positive={metric.is_higher_better ?? true} />
               </div>
               {metric.delta_value != null && (
-                <Badge variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)} suppressHydrationWarning>
+                <Badge
+                  variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)}
+                  suppressHydrationWarning
+                >
                   {iconForDirection(metric.direction)}
                   {badgeLabel}
                 </Badge>

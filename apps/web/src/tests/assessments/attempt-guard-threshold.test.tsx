@@ -7,7 +7,9 @@ import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptG
 
 const mocks = vi.hoisted(() => ({ toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() } }))
 vi.mock('sonner', () => ({ toast: mocks.toast }))
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string, values?: Record<string, unknown>) => `${key}:${JSON.stringify(values ?? {})}` }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string, values?: Record<string, unknown>) => `${key}:${JSON.stringify(values ?? {})}`,
+}))
 
 // UX-087: the server zeroes any submit at or past the threshold, so the guard
 // forfeits and hands in at once — no 10 s «refocus to resume» grace.

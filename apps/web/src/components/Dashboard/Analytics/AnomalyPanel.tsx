@@ -40,7 +40,9 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
               </span>
             </div>
             <div className="text-foreground text-sm font-medium">{getAnalyticsMessage(tA, item).title}</div>
-            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{getAnalyticsMessage(tA, item).body}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">
+              {getAnalyticsMessage(tA, item).body}
+            </div>
           </div>
         ))}
         {!anomalies.length ? (

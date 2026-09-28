@@ -59,7 +59,13 @@ describe('getEditableCourses', () => {
 
     const page2 = await getEditableCourses(2, 1, ' alpha ', 'name', 'private')
 
-    expect(mocks.listCourses).toHaveBeenNthCalledWith(1, { mine: true, limit: 1, sort: 'name', preset: 'drafts', q: 'alpha' })
+    expect(mocks.listCourses).toHaveBeenNthCalledWith(1, {
+      mine: true,
+      limit: 1,
+      sort: 'name',
+      preset: 'drafts',
+      q: 'alpha',
+    })
     expect(mocks.listCourses).toHaveBeenNthCalledWith(2, {
       mine: true,
       limit: 1,

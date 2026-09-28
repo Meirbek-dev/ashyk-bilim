@@ -22,7 +22,17 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const id = '01a0910d-2963-7483-a97d-40dc56e9aa20'
 const wire = (can_delete: boolean): Collection =>
-  ({ id, name: 'Подборка', description: '', public: true, creator_id: null, courses: [], can_delete, created_at_unix: 0, updated_at_unix: 0 }) as Collection
+  ({
+    id,
+    name: 'Подборка',
+    description: '',
+    public: true,
+    creator_id: null,
+    courses: [],
+    can_delete,
+    created_at_unix: 0,
+    updated_at_unix: 0,
+  }) as Collection
 
 function renderCard(can_delete: boolean) {
   const queryClient = new QueryClient()

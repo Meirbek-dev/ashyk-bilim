@@ -24,8 +24,6 @@ async function PlatformCourseAccessContent({ params }: PlatformCourseAccessPageP
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: 'access',
-    children: (
-<EditCourseAccess />
-    ),
+    children: <EditCourseAccess />,
   })
 }

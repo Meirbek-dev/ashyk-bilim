@@ -77,7 +77,9 @@ export class GradingReviewPage {
   /** Run a grading action and assert its write succeeded on the wire. */
   public async expectGradeWrite(action: () => Promise<void>): Promise<void> {
     const write = this.page.waitForResponse(
-      r => r.request().method() !== 'GET' && /\/(?:file-submission-attempts|submissions)\/[^/]+\/(?:grade|publish)/u.test(r.url()),
+      r =>
+        r.request().method() !== 'GET' &&
+        /\/(?:file-submission-attempts|submissions)\/[^/]+\/(?:grade|publish)/u.test(r.url()),
       { timeout: 15_000 },
     )
     await action()

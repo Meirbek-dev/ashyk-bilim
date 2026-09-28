@@ -53,7 +53,9 @@ function fillDanglingRefs(spec) {
   for (const name of missing) {
     const known = KNOWN_SCHEMAS[name]
     if (!known) {
-      throw new Error(`openapi.v2.json references unknown schema "${name}" — add it to KNOWN_SCHEMAS or fix the contract`)
+      throw new Error(
+        `openapi.v2.json references unknown schema "${name}" — add it to KNOWN_SCHEMAS or fix the contract`,
+      )
     }
     console.warn(`[orval] filling dangling schema ref "${name}" (contract defect, see docs/FINDINGS.md)`)
     schemas[name] = known

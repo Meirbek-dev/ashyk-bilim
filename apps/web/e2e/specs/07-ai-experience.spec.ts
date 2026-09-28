@@ -249,7 +249,11 @@ function qaChatStream() {
   return sse([
     { type: 'RUN_STARTED', threadId: IDS.qaThread, runId: 'run_qa_e2e' },
     { type: 'TEXT_MESSAGE_START', messageId: IDS.qaAssistantMessage, role: 'assistant' },
-    { type: 'TEXT_MESSAGE_CONTENT', messageId: IDS.qaAssistantMessage, delta: 'Review the worked example before the quiz.' },
+    {
+      type: 'TEXT_MESSAGE_CONTENT',
+      messageId: IDS.qaAssistantMessage,
+      delta: 'Review the worked example before the quiz.',
+    },
     { type: 'TEXT_MESSAGE_END', messageId: IDS.qaAssistantMessage },
     { type: 'TOOL_CALL_START', toolCallId, toolCallName: 'course_citations', parentMessageId: IDS.qaAssistantMessage },
     {

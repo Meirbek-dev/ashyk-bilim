@@ -43,13 +43,17 @@ export function useRemediationGate(activityId: string, { poll = false } = {}) {
   const userId = user?.id ?? ''
   const sessions = useQuery({
     queryKey: mySessionsQueryKey(userId),
-    queryFn: () => apiJson(`ai/remediation/student/${userId}`, undefined, value => RemediationSessionView.array().parse(value)),
+    queryFn: () =>
+      apiJson(`ai/remediation/student/${userId}`, undefined, value => RemediationSessionView.array().parse(value)),
     enabled: Boolean(userId),
     staleTime: 0,
     refetchOnWindowFocus: 'always',
     refetchInterval: poll ? 15_000 : false,
   })
-  const session = useMemo(() => (sessions.data ? activeGateFor(sessions.data, activityId) : null), [sessions.data, activityId])
+  const session = useMemo(
+    () => (sessions.data ? activeGateFor(sessions.data, activityId) : null),
+    [sessions.data, activityId],
+  )
   return { session, userId }
 }
 
@@ -158,9 +162,15 @@ export function RemediationGate({ activityId, onCompleted }: { activityId: strin
           <div className="flex flex-wrap items-center gap-3">
             <Button
               disabled={!allRevealed || complete.isPending}
-              onClick={() => complete.mutate(questions.length ? Math.round((100 * correct.size) / questions.length) : 100)}
+              onClick={() =>
+                complete.mutate(questions.length ? Math.round((100 * correct.size) / questions.length) : 100)
+              }
             >
-              {complete.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
+              {complete.isPending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <BookOpenCheck className="size-4" />
+              )}
               {t('complete')}
             </Button>
             <span className="text-muted-foreground text-xs">{t('selfCheckNote', { threshold: 70 })}</span>

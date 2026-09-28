@@ -52,7 +52,13 @@ export function ActivityContentRenderer({
   const t = useTranslations('ActivityPage')
 
   if (isCourseEnd) {
-    return <CourseEndView courseName={course.name ?? ''} courseUuid={courseuuid} thumbnailImage={course.thumbnail_image ?? ''} />
+    return (
+      <CourseEndView
+        courseName={course.name ?? ''}
+        courseUuid={courseuuid}
+        thumbnailImage={course.thumbnail_image ?? ''}
+      />
+    )
   }
 
   if (!activity || !canView) {

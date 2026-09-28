@@ -37,7 +37,11 @@ export function WebPreviewInsertDialog() {
     }
     lookup.mutate(url, {
       onSuccess: attrs => {
-        editor.chain().focus().insertWebPreview({ ...attrs, url }).run()
+        editor
+          .chain()
+          .focus()
+          .insertWebPreview({ ...attrs, url })
+          .run()
         close()
       },
     })

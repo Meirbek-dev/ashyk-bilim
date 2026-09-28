@@ -8,15 +8,15 @@ import {
 
 describe('assessment operate view helpers', () => {
   it('turns item analytics into action prompts', () => {
-    expect(
-      getItemActionPrompt({ item_id: 'a', response_count: 12, correct_pct: 80, discrimination_index: 0.04 }),
-    ).toBe('reviewContent')
-    expect(
-      getItemActionPrompt({ item_id: 'b', response_count: 12, correct_pct: 95, discrimination_index: 0.4 }),
-    ).toBe('tooEasy')
-    expect(
-      getItemActionPrompt({ item_id: 'c', response_count: 12, correct_pct: 20, discrimination_index: 0.4 }),
-    ).toBe('tooHard')
+    expect(getItemActionPrompt({ item_id: 'a', response_count: 12, correct_pct: 80, discrimination_index: 0.04 })).toBe(
+      'reviewContent',
+    )
+    expect(getItemActionPrompt({ item_id: 'b', response_count: 12, correct_pct: 95, discrimination_index: 0.4 })).toBe(
+      'tooEasy',
+    )
+    expect(getItemActionPrompt({ item_id: 'c', response_count: 12, correct_pct: 20, discrimination_index: 0.4 })).toBe(
+      'tooHard',
+    )
 
     expect(
       countItemActionPrompts([

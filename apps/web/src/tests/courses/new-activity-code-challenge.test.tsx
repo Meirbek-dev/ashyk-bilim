@@ -13,7 +13,9 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 const mocks = vi.hoisted(() => ({ apiJson: vi.fn() }))
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
-vi.mock('sonner', () => ({ toast: { loading: vi.fn(() => 'toast'), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() } }))
+vi.mock('sonner', () => ({
+  toast: { loading: vi.fn(() => 'toast'), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
+}))
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
 vi.mock('@components/Contexts/CourseContext', () => ({
   useCourse: () => ({ courseStructure: { id: 'course-1', course_uuid: 'course-1' }, withUnpublishedActivities: true }),

@@ -36,7 +36,13 @@ interface CustomRoleInfo {
 
 type SessionRole = Session['roles'][number]
 
-const SYSTEM_ROLE_PRIORITY: string[] = [RoleSlugs.ADMIN, RoleSlugs.MAINTAINER, RoleSlugs.INSTRUCTOR, RoleSlugs.MODERATOR, RoleSlugs.USER]
+const SYSTEM_ROLE_PRIORITY: string[] = [
+  RoleSlugs.ADMIN,
+  RoleSlugs.MAINTAINER,
+  RoleSlugs.INSTRUCTOR,
+  RoleSlugs.MODERATOR,
+  RoleSlugs.USER,
+]
 const SYSTEM_ROLE_SLUGS = new Set<string>(SYSTEM_ROLE_PRIORITY)
 
 export function HeaderProfileBox() {
@@ -112,7 +118,9 @@ export function HeaderProfileBox() {
                 <UserAvatar size="sm" />
                 <div className="flex flex-col text-start">
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-semibold">{user?.display_name?.trim() || user?.username}</p>
+                    <p className="text-foreground text-sm font-semibold">
+                      {user?.display_name?.trim() || user?.username}
+                    </p>
                     {shouldShowBadge && userRoleInfo && (
                       <Tooltip>
                         <TooltipTrigger

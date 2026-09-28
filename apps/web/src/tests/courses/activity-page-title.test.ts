@@ -5,7 +5,8 @@ vi.mock('@/lib/fonts', () => ({ jetBrainsMono: { variable: '' } }))
 vi.mock('@/lib/auth/session', () => ({ getSession: async () => ({ userId: 'u1' }) }))
 vi.mock('@services/courses/courses', () => ({
   getCourseMetadata: async (id: string) => {
-    if (id === 'nope') throw new APIError({ status: 422, code: 'validation-failed', message: 'bad id', requestId: null })
+    if (id === 'nope')
+      throw new APIError({ status: 422, code: 'validation-failed', message: 'bad id', requestId: null })
     return { name: 'gauntlet12-course' }
   },
 }))

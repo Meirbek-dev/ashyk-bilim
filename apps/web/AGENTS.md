@@ -33,9 +33,9 @@ Python API (`apps/api`) is frozen reference material — never target it.
   `scripts/postprocess-orval-output.mjs` instead. Contract defects the
   transformer papers over are listed in `docs/FINDINGS.md`.
 - **Types come from the zod module:** `import type { Course, CoursePage } from
-  '@/lib/api/generated/zod'`; the same names are zod schemas (`Course.parse`).
+'@/lib/api/generated/zod'`; the same names are zod schemas (`Course.parse`).
   Generated fetchers/hooks: `import { listCourses, useListCourses } from
-  '@/lib/api/generated/courses/courses'`. Duplicate operation ids are prefixed
+'@/lib/api/generated/courses/courses'`. Duplicate operation ids are prefixed
   with their tag (`codeGetRun`, `fileSubmissionsSaveDraft`, …).
 - Hand-written calls go through `apiJson(path, init, parse)` /
   `apiResult(...)` (`@/lib/api-client`) with a **path relative to `/api/v2`**
@@ -56,10 +56,10 @@ Python API (`apps/api`) is frozen reference material — never target it.
   those keep legacy `page`/`page_size` deliberately, see DECISIONS.md
   "Analytics (2026-09-06, P7)"). Do not "fix" those into cursors.
 - **Errors are `application/problem+json`** (`{type,title,status,code,detail,
-  details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
+details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
   exposes `code` (kebab-case, closed registry), `details`, `fieldErrors`,
   `requestId`, `retryAfterSeconds`. Branch on `hasErrorCode(error,
-  'precondition-failed')`, never on English text. Display through
+'precondition-failed')`, never on English text. Display through
   `useApiError()` (looks up `Errors.codes.<code>` / `Errors.fields.<code>` in
   `src/messages/*.json`; `scripts/sync-error-codes.mjs` keeps the code list in
   sync with the registry and fails the build on gaps).

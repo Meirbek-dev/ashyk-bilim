@@ -314,7 +314,16 @@ export function DiscussionEditor({
           {/* Media */}
           <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
             <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addLink')} title={t('addLink')} />}
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  aria-label={t('addLink')}
+                  title={t('addLink')}
+                />
+              }
             >
               <LinkIcon size={16} />
             </DialogTrigger>
@@ -345,7 +354,16 @@ export function DiscussionEditor({
 
           <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
             <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addImage')} title={t('addImage')} />}
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  aria-label={t('addImage')}
+                  title={t('addImage')}
+                />
+              }
             >
               <ImageIcon size={16} />
             </DialogTrigger>
@@ -376,7 +394,16 @@ export function DiscussionEditor({
 
           <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
             <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={t('addVideo')} title={t('addVideo')} />}
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  aria-label={t('addVideo')}
+                  title={t('addVideo')}
+                />
+              }
             >
               <SiYoutube size={16} />
             </DialogTrigger>

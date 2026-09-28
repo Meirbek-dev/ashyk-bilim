@@ -92,7 +92,15 @@ const headerProps = vi.hoisted(() => ({ courseUuid: '', activityUuid: '' }))
 
 vi.mock('../../components/Objects/Editor/chrome', () => ({
   EditorShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  EditorHeader: ({ onSave, courseUuid, activityUuid }: { onSave: () => void; courseUuid: string; activityUuid: string }) => {
+  EditorHeader: ({
+    onSave,
+    courseUuid,
+    activityUuid,
+  }: {
+    onSave: () => void
+    courseUuid: string
+    activityUuid: string
+  }) => {
     headerProps.courseUuid = courseUuid
     headerProps.activityUuid = activityUuid
     return (

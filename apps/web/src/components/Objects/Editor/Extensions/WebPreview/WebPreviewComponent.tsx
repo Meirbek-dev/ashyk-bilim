@@ -443,7 +443,9 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                     </span>
                     <span className="mb-1 block text-sm font-medium text-gray-700">{t('previewUnavailable')}</span>
                     {isHttpUrl(previewUrl) ? (
-                      <span className="mb-3 block text-xs leading-snug text-gray-500">{t('previewUnavailableHint')}</span>
+                      <span className="mb-3 block text-xs leading-snug text-gray-500">
+                        {t('previewUnavailableHint')}
+                      </span>
                     ) : null}
                   </div>
                 )}

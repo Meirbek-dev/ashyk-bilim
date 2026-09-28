@@ -97,11 +97,10 @@ export type ItemBody =
  * The columns a matching attempt renders: the learner read's (`left`/`right`,
  * right shuffled by the server) or, for authors previewing, the pairs' texts.
  */
-export function matchingColumns(body: {
-  pairs: MatchPair[]
-  left?: MatchOption[]
-  right?: MatchOption[]
-}): { left: MatchOption[]; right: MatchOption[] } {
+export function matchingColumns(body: { pairs: MatchPair[]; left?: MatchOption[]; right?: MatchOption[] }): {
+  left: MatchOption[]
+  right: MatchOption[]
+} {
   if (body.left && body.right) return { left: body.left, right: body.right }
   return {
     left: body.pairs.map(p => ({ id: p.left, text: p.left })),

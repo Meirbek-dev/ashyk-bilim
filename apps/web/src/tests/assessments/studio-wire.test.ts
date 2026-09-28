@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
-import { buildAssessmentPatch, studioDetailFromWire, toAssessmentEditorState } from '@/features/assessments/studio/utils'
+import {
+  buildAssessmentPatch,
+  studioDetailFromWire,
+  toAssessmentEditorState,
+} from '@/features/assessments/studio/utils'
 import type { AssessmentDetail } from '@/lib/api/generated/zod'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 

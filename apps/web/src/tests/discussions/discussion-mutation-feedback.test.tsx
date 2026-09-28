@@ -89,4 +89,3 @@ describe('discussion mutation feedback', () => {
     expect(screen.getByRole('button', { name: 'downvote' })).toHaveAttribute('aria-pressed', 'false')
   })
 })
-

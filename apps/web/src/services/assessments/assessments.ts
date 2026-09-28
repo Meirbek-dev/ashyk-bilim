@@ -48,9 +48,12 @@ function summaryFromWire(assessment: AssessmentDetail): AssessmentSummary {
     title: assessment.title,
     description: assessment.description,
     lifecycle: assessment.lifecycle,
-    scheduled_at: assessment.scheduled_at_unix != null ? new Date(assessment.scheduled_at_unix * 1000).toISOString() : null,
-    published_at: assessment.published_at_unix != null ? new Date(assessment.published_at_unix * 1000).toISOString() : null,
-    archived_at: assessment.archived_at_unix != null ? new Date(assessment.archived_at_unix * 1000).toISOString() : null,
+    scheduled_at:
+      assessment.scheduled_at_unix != null ? new Date(assessment.scheduled_at_unix * 1000).toISOString() : null,
+    published_at:
+      assessment.published_at_unix != null ? new Date(assessment.published_at_unix * 1000).toISOString() : null,
+    archived_at:
+      assessment.archived_at_unix != null ? new Date(assessment.archived_at_unix * 1000).toISOString() : null,
   }
 }
 

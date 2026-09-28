@@ -10,17 +10,42 @@ const activityId = '22222222-2222-4222-8222-222222222222'
 const chapterId = '33333333-3333-4333-8333-333333333333'
 function learnerState(): LearnerCourseState {
   return {
-    course_id: courseId, title: 'Course', public: true, enrolled: true, enrollment_state: 'in_progress',
+    course_id: courseId,
+    title: 'Course',
+    public: true,
+    enrolled: true,
+    enrollment_state: 'in_progress',
     certificate: { configured: false, eligible: false, issued: false },
     next_action: { id: 'start', enabled: true, label: 'Start', reason: '', activity_id: activityId },
     permissions: { can_access: true, can_discover: true, can_enroll: true },
-    progress: { completed_required_count: 0, missing_required_count: 1, needs_grading_count: 0,
-      progress_pct: 0, total_required_count: 1 },
-    outline: [{ id: chapterId, index: 0, title: 'Chapter', activities: [{
-      id: activityId, title: 'Lesson', activity_type: 'dynamic', available: true, required: true,
-      complete: false, is_late: false, state: 'not_started', allowed_actions: ['start'],
-      due_at_unix: 1700000000,
-    }] }],
+    progress: {
+      completed_required_count: 0,
+      missing_required_count: 1,
+      needs_grading_count: 0,
+      progress_pct: 0,
+      total_required_count: 1,
+    },
+    outline: [
+      {
+        id: chapterId,
+        index: 0,
+        title: 'Chapter',
+        activities: [
+          {
+            id: activityId,
+            title: 'Lesson',
+            activity_type: 'dynamic',
+            available: true,
+            required: true,
+            complete: false,
+            is_late: false,
+            state: 'not_started',
+            allowed_actions: ['start'],
+            due_at_unix: 1700000000,
+          },
+        ],
+      },
+    ],
   }
 }
 
@@ -30,7 +55,8 @@ describe('learner runtime v2 adapter', () => {
     state = learnerState()
     vi.mocked(apiJson).mockReset()
     vi.mocked(apiJson).mockImplementation(async (_path, init, parse) =>
-      init?.method ? {} : parse ? parse(state) : state)
+      init?.method ? {} : parse ? parse(state) : state,
+    )
   })
 
   it('uses the learner projection and preserves IDs and due dates', async () => {
@@ -47,11 +73,13 @@ describe('learner runtime v2 adapter', () => {
     activity.state = 'returned'
     activity.allowed_actions = ['revise', 'view_feedback']
     expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toEqual({
-      id: 'revise', enabled: true,
+      id: 'revise',
+      enabled: true,
     })
     activity.state = 'locked'
     expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toMatchObject({
-      id: 'none', enabled: false,
+      id: 'none',
+      enabled: false,
     })
   })
 
@@ -60,7 +88,11 @@ describe('learner runtime v2 adapter', () => {
     expect(runtime.activity).toBeNull()
     expect(runtime.primary_action).toEqual({ id: 'back_to_course', enabled: true })
     expect(runtime.progress).toMatchObject({ state: 'course_end', complete: false })
-    expect(runtime.outline?.[0]?.activities?.[0]).toMatchObject({ id: activityId, complete: false, state: 'not_started' })
+    expect(runtime.outline?.[0]?.activities?.[0]).toMatchObject({
+      id: activityId,
+      complete: false,
+      state: 'not_started',
+    })
   })
 
   it('returns null for an activity outside the learner outline (BUG-025: unpublished draft)', async () => {
@@ -71,8 +103,9 @@ describe('learner runtime v2 adapter', () => {
     await runStudentActivityAction(courseId, activityId, { command: 'mark_complete' })
     expect(apiJson).toHaveBeenNthCalledWith(1, `trail/activities/${activityId}`, { method: 'POST' })
     vi.mocked(apiJson).mockReset().mockRejectedValue(new Error('Forbidden'))
-    await expect(runStudentActivityAction(courseId, activityId, { command: 'unmark_complete' }))
-      .rejects.toThrow('Forbidden')
+    await expect(runStudentActivityAction(courseId, activityId, { command: 'unmark_complete' })).rejects.toThrow(
+      'Forbidden',
+    )
     expect(apiJson).toHaveBeenCalledTimes(1)
   })
 })

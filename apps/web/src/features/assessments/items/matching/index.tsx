@@ -28,7 +28,6 @@ export interface MatchingBody {
   right?: MatchOption[]
 }
 
-
 export interface MatchingAnswer {
   kind: 'MATCHING'
   matches: { left: string; right: string }[]

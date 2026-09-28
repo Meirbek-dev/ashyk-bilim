@@ -6,9 +6,12 @@ import LoginClient from '@/app/[locale]/auth/login/login'
 
 vi.mock('next-intl', () => ({
   useTranslations: () =>
-    Object.assign((key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key), {
-      has: () => false,
-    }),
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key),
+      {
+        has: () => false,
+      },
+    ),
   useLocale: () => 'ru-RU',
 }))
 let searchParams = new URLSearchParams()
@@ -18,7 +21,9 @@ vi.mock('@components/ui/AppLink', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }))
 vi.mock('@components/auth/logo', () => ({ default: () => null }))
-vi.mock('@components/auth/card', () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }))
+vi.mock('@components/auth/card', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 
 const loginAction = vi.fn()
 vi.mock('@/app/actions/auth', () => ({ loginAction: (...args: unknown[]) => loginAction(...args) }))

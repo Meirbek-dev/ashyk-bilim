@@ -117,9 +117,9 @@ describe('Frontend Auth Actions (v2 BFF)', () => {
         json: async () => ({}),
       })
 
-      await expect(
-        loginAction({ login: 'user', password: 'password123', returnTo: '/dash/courses' }),
-      ).rejects.toThrow('REDIRECTED_TO:/dash/courses')
+      await expect(loginAction({ login: 'user', password: 'password123', returnTo: '/dash/courses' })).rejects.toThrow(
+        'REDIRECTED_TO:/dash/courses',
+      )
     })
 
     it('resends the second factor as totp_code', async () => {

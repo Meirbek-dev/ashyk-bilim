@@ -12,8 +12,7 @@ import { useApiError } from '@/hooks/useApiError'
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 vi.mock('next-intl', () => ({
   useTranslations: () => {
-    const t = (key: string, values?: Record<string, unknown>) =>
-      values ? `${key}:${JSON.stringify(values)}` : key
+    const t = (key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key)
     t.has = (key: string) => ['rateLimited', 'rateLimitedRetry', 'codes.rate-limited'].includes(key)
     return t
   },

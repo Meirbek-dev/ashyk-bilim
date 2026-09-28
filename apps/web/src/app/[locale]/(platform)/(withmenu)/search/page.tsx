@@ -28,9 +28,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 
   if (searchType !== 'all' && searchType) {
     const typeLabel = t(searchType as 'courses' | 'collections' | 'users')
-    title = searchQuery
-      ? `${typeLabel}: ${searchQuery} - ${APP_NAME}`
-      : `${typeLabel} - ${APP_NAME}`
+    title = searchQuery ? `${typeLabel}: ${searchQuery} - ${APP_NAME}` : `${typeLabel} - ${APP_NAME}`
     description = searchQuery
       ? `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${typeLabel.toLowerCase()} ${t('at')} ${APP_NAME}.`
       : `${t('browse')} ${typeLabel.toLowerCase()} ${t('at')} ${APP_NAME}.`

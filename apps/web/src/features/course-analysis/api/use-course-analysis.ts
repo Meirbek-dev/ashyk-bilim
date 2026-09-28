@@ -99,10 +99,7 @@ export function useReviewCourseFinding(courseId: string) {
       findingId: string
     }) => reviewCourseFinding(analysisId, { action, finding_id: findingId, note: null }),
     onSuccess: data => {
-      queryClient.setQueryData(
-        latestCourseAnalysisQueryOptions(courseId).queryKey,
-        CourseAnalysisView.parse(data),
-      )
+      queryClient.setQueryData(latestCourseAnalysisQueryOptions(courseId).queryKey, CourseAnalysisView.parse(data))
     },
   })
 }

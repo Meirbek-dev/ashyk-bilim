@@ -68,7 +68,10 @@ export class CoursePlayerPage {
     const link = this.page.getByRole('link', { name: activityName }).first()
     if (!(await link.isVisible())) {
       // Expand every collapsed chapter (only the first is open by default)
-      for (const chapter of await this.page.getByRole('button', { expanded: false }).filter({ hasText: /activit/i }).all()) {
+      for (const chapter of await this.page
+        .getByRole('button', { expanded: false })
+        .filter({ hasText: /activit/i })
+        .all()) {
         await chapter.click()
       }
     }

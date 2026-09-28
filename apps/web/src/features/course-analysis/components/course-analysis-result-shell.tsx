@@ -101,9 +101,7 @@ export function CourseAnalysisResultShell({
             {analysis.report.summary ?? t('defaultDescription')}
           </p>
           <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-            <span>
-              {modelLabel(t, analysis.model_name)}
-            </span>
+            <span>{modelLabel(t, analysis.model_name)}</span>
             <span>{t('citationsCount', { count: citations.length })}</span>
             {createdAt ? <span>{format.dateTime(createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</span> : null}
           </div>

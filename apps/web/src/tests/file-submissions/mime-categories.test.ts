@@ -14,11 +14,22 @@ describe('getMimeCategories', () => {
 
   it('has every category key in all three catalogs', () => {
     const keys = [
-      'pdf', 'documents', 'images', 'spreadsheets', 'presentations', 'archives',
-      'textAndCode', 'text', 'code', 'video', 'audio', 'anyFile',
+      'pdf',
+      'documents',
+      'images',
+      'spreadsheets',
+      'presentations',
+      'archives',
+      'textAndCode',
+      'text',
+      'code',
+      'video',
+      'audio',
+      'anyFile',
     ]
     for (const catalog of [ruRU, kkKZ, enUS]) {
-      const labels = (catalog as { FileSubmission: { mimeCategories: Record<string, string> } }).FileSubmission.mimeCategories
+      const labels = (catalog as { FileSubmission: { mimeCategories: Record<string, string> } }).FileSubmission
+        .mimeCategories
       for (const key of keys) expect(labels[key], key).toBeTruthy()
     }
   })

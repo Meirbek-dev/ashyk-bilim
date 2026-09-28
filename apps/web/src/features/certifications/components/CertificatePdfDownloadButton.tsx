@@ -66,7 +66,11 @@ export function CertificatePdfDownloadButton({
       aria-busy={loading}
       data-testid="certificate-pdf-download"
     >
-      {loading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Download className="size-4" aria-hidden="true" />}
+      {loading ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <Download className="size-4" aria-hidden="true" />
+      )}
       <span>{loading ? t('preparing') : t('download')}</span>
     </Button>
   )

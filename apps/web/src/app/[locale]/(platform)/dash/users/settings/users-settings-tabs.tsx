@@ -24,7 +24,9 @@ export default function UsersSettingsTabs() {
             return can(Resources.APP, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
           }
           case 'usergroups': {
-            return can(Resources.USERGROUP, Actions.READ, Scopes.APP) || can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
+            return (
+              can(Resources.USERGROUP, Actions.READ, Scopes.APP) || can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
+            )
           }
           default: {
             return true

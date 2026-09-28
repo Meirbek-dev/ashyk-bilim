@@ -3,7 +3,15 @@ import { getTranslations } from 'next-intl/server'
 import { getCourseMetadata } from '@services/courses/courses'
 import { getActivity } from '@services/courses/activities'
 
-type WorkspaceTab = 'overview' | 'details' | 'content' | 'gradebook' | 'settings' | 'collaboration' | 'certificate' | 'publish'
+type WorkspaceTab =
+  | 'overview'
+  | 'details'
+  | 'content'
+  | 'gradebook'
+  | 'settings'
+  | 'collaboration'
+  | 'certificate'
+  | 'publish'
 
 /**
  * `<course name> · <section>` for the course workspace pages (the dash layout

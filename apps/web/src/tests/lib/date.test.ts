@@ -16,9 +16,9 @@ describe('formatDate', () => {
   })
 
   it('defers to Intl for ru/en and blanks invalid input', () => {
-    expect(formatDate('2026-09-11T00:00:00Z', 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })).toBe(
-      '11 сент. 2026 г.',
-    )
+    expect(
+      formatDate('2026-09-11T00:00:00Z', 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }),
+    ).toBe('11 сент. 2026 г.')
     expect(formatDate('not a date', 'kk-KZ')).toBe('')
   })
 })

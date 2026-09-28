@@ -154,7 +154,9 @@ describe('AssessmentOperationsPanel', () => {
     expect(screen.getByText('Backlog is approaching the release target for manual grading.')).toBeInTheDocument()
     expect(screen.queryByText('pages.assessmentOpsMigrationTitle')).not.toBeInTheDocument()
     // UX-096: audit rows use the shared `DATE_TIME_OPTIONS` style («May 5, 03:00 PM»-like, tz-dependent).
-    expect(screen.getByText(formatDate(new Date('2026-05-05T10:00:00Z'), 'en-US', DATE_TIME_OPTIONS))).toBeInTheDocument()
+    expect(
+      screen.getByText(formatDate(new Date('2026-05-05T10:00:00Z'), 'en-US', DATE_TIME_OPTIONS)),
+    ).toBeInTheDocument()
     expect(screen.getByText('Support follow-up is recommended for the active alerts.')).toBeInTheDocument()
     expect(screen.getByText('Grading latency is outside the current service target.')).toBeInTheDocument()
     expect(screen.getByText('Alpha Cohort')).toBeInTheDocument()

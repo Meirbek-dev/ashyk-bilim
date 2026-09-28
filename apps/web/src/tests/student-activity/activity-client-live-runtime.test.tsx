@@ -6,7 +6,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vite-plus/test'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 
-vi.mock('@components/Contexts/CourseContext', () => ({ CourseProvider: (p: { children: React.ReactNode }) => p.children }))
+vi.mock('@components/Contexts/CourseContext', () => ({
+  CourseProvider: (p: { children: React.ReactNode }) => p.children,
+}))
 vi.mock('@/features/assessments/shell/ActivityLayoutContext', () => ({
   ActivityLayoutProvider: (p: { children: React.ReactNode }) => p.children,
 }))

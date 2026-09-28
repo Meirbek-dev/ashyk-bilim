@@ -47,32 +47,35 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
   })
 
   const initialState: VerifyState = { values: { email, code }, error: null, fieldErrors: {}, version: 0 }
-  const [state, action, isPending] = useActionState(async (prev: VerifyState, formData: FormData): Promise<VerifyState> => {
-    const version = prev.version + 1
-    const values = { email: String(formData.get('email') ?? ''), code: String(formData.get('code') ?? '') }
-    const parsed = v.safeParse(schema, values)
-    if (!parsed.success) {
-      const flat = v.flatten<typeof schema>(parsed.issues)
-      return {
-        values,
-        error: null,
-        fieldErrors: {
-          ...(flat.nested?.email?.[0] ? { email: flat.nested.email[0] } : {}),
-          ...(flat.nested?.code?.[0] ? { code: flat.nested.code[0] } : {}),
-        },
-        version,
+  const [state, action, isPending] = useActionState(
+    async (prev: VerifyState, formData: FormData): Promise<VerifyState> => {
+      const version = prev.version + 1
+      const values = { email: String(formData.get('email') ?? ''), code: String(formData.get('code') ?? '') }
+      const parsed = v.safeParse(schema, values)
+      if (!parsed.success) {
+        const flat = v.flatten<typeof schema>(parsed.issues)
+        return {
+          values,
+          error: null,
+          fieldErrors: {
+            ...(flat.nested?.email?.[0] ? { email: flat.nested.email[0] } : {}),
+            ...(flat.nested?.code?.[0] ? { code: flat.nested.code[0] } : {}),
+          },
+          version,
+        }
       }
-    }
-    const result = await verifyEmailAction(parsed.output)
-    if (!result.ok) {
-      if (result.fieldErrors?.code) return { values, error: null, fieldErrors: { code: t('invalidCode') }, version }
-      const key = `codes.${result.code}`
-      return { values, error: errorsT.has(key) ? errorsT(key) : t('failed'), fieldErrors: {}, version }
-    }
-    toast.success(t('success'))
-    router.push('/auth/login')
-    return { ...initialState, version }
-  }, initialState)
+      const result = await verifyEmailAction(parsed.output)
+      if (!result.ok) {
+        if (result.fieldErrors?.code) return { values, error: null, fieldErrors: { code: t('invalidCode') }, version }
+        const key = `codes.${result.code}`
+        return { values, error: errorsT.has(key) ? errorsT(key) : t('failed'), fieldErrors: {}, version }
+      }
+      toast.success(t('success'))
+      router.push('/auth/login')
+      return { ...initialState, version }
+    },
+    initialState,
+  )
 
   return (
     <AuthCard>

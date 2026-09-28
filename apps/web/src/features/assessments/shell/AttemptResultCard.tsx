@@ -121,7 +121,10 @@ export default function AttemptResultCard({
           ) : null}
           {showScore && recordAttempt && recordAttempt !== reviews[0] ? (
             <p className="text-muted-foreground text-xs" data-testid="record-attempt">
-              {t('recordAttempt', { attempt: recordAttempt.attemptNumber, score: formatPercent(recordAttempt.percent) })}
+              {t('recordAttempt', {
+                attempt: recordAttempt.attemptNumber,
+                score: formatPercent(recordAttempt.percent),
+              })}
             </p>
           ) : null}
           {vm.pendingAttemptNumber !== null ? (
@@ -203,7 +206,10 @@ export default function AttemptResultCard({
           </button>
           {breakdownOpen && annulled ? (
             // UX-116: an annulled attempt's items are not verdicts — its score is 0 by rule.
-            <p className="text-muted-foreground border-border border-t px-4 py-3 text-sm" data-testid="attempt-annulled">
+            <p
+              className="text-muted-foreground border-border border-t px-4 py-3 text-sm"
+              data-testid="attempt-annulled"
+            >
               {t('attemptAnnulled')}
             </p>
           ) : breakdownOpen ? (

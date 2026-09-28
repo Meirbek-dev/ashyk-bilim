@@ -197,7 +197,11 @@ export function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTi
  * (`PUT assessments/{id}/policy`, which replaces the whole block — so
  * fields the editor doesn't expose are carried forward from `raw_policy`).
  */
-export function buildAssessmentPatch(_mode: StudioMode, assessment: AssessmentStudioDetail, state: AssessmentEditorState) {
+export function buildAssessmentPatch(
+  _mode: StudioMode,
+  assessment: AssessmentStudioDetail,
+  state: AssessmentEditorState,
+) {
   const details = {
     title: state.title,
     description: state.description,

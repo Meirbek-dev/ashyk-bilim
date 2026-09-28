@@ -81,7 +81,12 @@ describe('submit rate limited', () => {
   it('re-queues the unsaved answers as a draft save when the submit fails', async () => {
     vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
       if (String(path).endsWith('/submit'))
-        throw new APIError({ code: 'rate-limited', status: 429, message: 'slow down', headers: { 'retry-after': '10' } })
+        throw new APIError({
+          code: 'rate-limited',
+          status: 429,
+          message: 'slow down',
+          headers: { 'retry-after': '10' },
+        })
       if (init?.method === 'PATCH') return parse!({ ...fixture, draft_version: 4 })
       return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
     })

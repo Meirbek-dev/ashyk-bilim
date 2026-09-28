@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vite-plus/test'
-import { buildLoginRedirect, getPostAuthRedirect, isProtectedRoute, normalizeReturnTo, isAuthRoute } from '@/lib/auth/redirect'
+import {
+  buildLoginRedirect,
+  getPostAuthRedirect,
+  isProtectedRoute,
+  normalizeReturnTo,
+  isAuthRoute,
+} from '@/lib/auth/redirect'
 import { getPathInfo, isEditorLegacyRoute, toInternalAuthPath, toInternalEditorPath } from '@/lib/auth/routes'
 
 describe('Auth Redirect Logic', () => {

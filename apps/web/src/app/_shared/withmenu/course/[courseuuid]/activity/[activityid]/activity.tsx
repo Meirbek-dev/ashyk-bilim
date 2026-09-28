@@ -17,7 +17,13 @@ interface ActivityClientProps {
   runtime: StudentActivityRuntime
 }
 
-export default function ActivityClient({ activityid, courseuuid, activity, course, runtime: initialRuntime }: ActivityClientProps) {
+export default function ActivityClient({
+  activityid,
+  courseuuid,
+  activity,
+  course,
+  runtime: initialRuntime,
+}: ActivityClientProps) {
   // The server-rendered runtime seeds the query the action bar invalidates; it
   // then follows learner-state's focus policy so the sidebar sees a lesson
   // published meanwhile (UX-080). Unpublished under us → keep the last runtime.
