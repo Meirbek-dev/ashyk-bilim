@@ -188,4 +188,22 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
     await user.type(name, 'H')
     expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  // UX-262: «Bad Slug!» used to stop silently on the native pattern — now a field error, no request.
+  it('rejects a malformed slug on the field before any request', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Teaching assistant')
+    await user.click(screen.getByRole('button', { name: 'createRole' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('fieldName'), 'Helper')
+    const slug = within(dialog).getByLabelText('fieldSlug')
+    await user.type(slug, 'Bad Slug!')
+    await user.click(within(dialog).getByRole('button', { name: 'save' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('slugInvalid')
+    expect(slug).toHaveAttribute('aria-invalid', 'true')
+    expect(createRole).not.toHaveBeenCalled()
+  })
+
 })

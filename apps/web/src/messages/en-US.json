@@ -1953,6 +1953,7 @@
       "namePlaceholder": "e.g. Teaching assistant",
       "slugPlaceholder": "e.g. teaching-assistant",
       "slugHelp": "Permanent kebab-case identifier; cannot be changed after creation.",
+      "slugInvalid": "Slug: lowercase Latin letters, digits and hyphens only (kebab-case).",
       "descriptionPlaceholder": "What this role can do",
       "createdRole": "Role created",
       "updatedRole": "Role updated",

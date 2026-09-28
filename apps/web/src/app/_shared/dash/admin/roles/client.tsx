@@ -99,18 +99,31 @@ export default function RBACAdminClient() {
     setGrantsFor(null)
   }
 
-  /** A taken slug (409, UX-096) or a blank name (422 `display_name`, UX-100) lands on its field, not in a toast. */
+  /**
+   * A taken slug (409, UX-096), a malformed slug (422 `slug`, UX-262) or a blank
+   * name (422 `display_name`, UX-100) lands on its field, not in a toast.
+   */
   const inlineRoleError = (error: unknown) => {
     if (hasErrorCode(error, 'role-slug-taken')) {
       setSlugError(tErrors('codes.role-slug-taken'))
       return true
     }
-    const name = isApiError(error) ? error.fieldErrors.find(item => item.field === 'display_name') : undefined
+    const fields = isApiError(error) ? error.fieldErrors : []
+    if (fields.some(item => item.field === 'slug')) {
+      setSlugError(t('slugInvalid'))
+      return true
+    }
+    const name = fields.find(item => item.field === 'display_name')
     if (!name) return false
     setNameError(tErrors.has(`fields.${name.code}`) ? tErrors(`fields.${name.code}`) : name.message)
     return true
   }
-  const create = useRoleMutation((draft: RoleDraft) => createRole(draft), t('createdRole'), closeDialogs, inlineRoleError)
+  const create = useRoleMutation(
+    (draft: RoleDraft) => createRole(draft),
+    t('createdRole'),
+    closeDialogs,
+    inlineRoleError,
+  )
   const update = useRoleMutation(
     ({ slug, ...body }: RoleDraft) => updateRole(slug, body),
     t('updatedRole'),
@@ -269,7 +282,16 @@ export default function RBACAdminClient() {
               onSlugChange={() => setSlugError(null)}
               onNameChange={() => setNameError(null)}
               onCancel={() => setEditing(null)}
-              onSubmit={draft => (editing === 'new' ? create.mutate(draft) : update.mutate(draft))}
+              onSubmit={draft => {
+                // UX-262: the server's kebab-case rule, checked here so a bad slug
+                // is a field error, not a silent native-validation stop.
+                if (editing === 'new' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) {
+                  setSlugError(t('slugInvalid'))
+                  return
+                }
+                if (editing === 'new') create.mutate(draft)
+                else update.mutate(draft)
+              }}
             />
           )}
         </DialogContent>
@@ -351,6 +373,8 @@ function RoleForm({
 
   return (
     <form
+      // UX-262: the native `pattern` stop was silent inside the dialog; the submit validates the slug itself.
+      noValidate
       onSubmit={event => {
         event.preventDefault()
         onSubmit({ slug, display_name: name.trim(), description: description.trim(), priority })

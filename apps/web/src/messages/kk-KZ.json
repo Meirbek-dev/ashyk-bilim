@@ -1936,6 +1936,7 @@
       "namePlaceholder": "Мысалы, Мұғалім көмекшісі",
       "slugPlaceholder": "мысалы, teaching-assistant",
       "slugHelp": "Kebab-case форматындағы тұрақты идентификатор; құрылғаннан кейін өзгермейді.",
+      "slugInvalid": "Слаг: тек кіші латын әріптері, сандар және сызықшалар (kebab-case).",
       "descriptionPlaceholder": "Бұл рөл не істей алады",
       "createdRole": "Рөл құрылды",
       "updatedRole": "Рөл жаңартылды",

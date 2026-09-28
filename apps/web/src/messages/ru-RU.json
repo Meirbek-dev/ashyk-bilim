@@ -1937,6 +1937,7 @@
       "namePlaceholder": "Например, Ассистент преподавателя",
       "slugPlaceholder": "например, teaching-assistant",
       "slugHelp": "Постоянный идентификатор в kebab-case; после создания не меняется.",
+      "slugInvalid": "Слаг: только строчные латинские буквы, цифры и дефисы (kebab-case).",
       "descriptionPlaceholder": "Что может делать эта роль",
       "createdRole": "Роль создана",
       "updatedRole": "Роль обновлена",
