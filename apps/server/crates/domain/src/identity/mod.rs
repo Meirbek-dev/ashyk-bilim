@@ -4,6 +4,7 @@
 pub mod actor;
 pub mod auth;
 pub mod google;
+pub mod profile;
 pub mod rate_limit;
 pub mod rbac_admin;
 pub mod sessions;

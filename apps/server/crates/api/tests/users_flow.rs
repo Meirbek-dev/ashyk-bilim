@@ -824,3 +824,162 @@ async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
         assert_eq!(pinned, 0, "a claimed upload is not the avatar");
     }
 }
+
+/// BUG-361/362: the profile builder document and the UI theme round-trip
+/// through `PATCH /users/me`; the sections are public, the theme is not.
+#[sqlx::test(migrations = "../../migrations")]
+async fn profile_sections_and_theme_round_trip(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("builder", "b@example.com", &["user"]).await;
+    let session = app
+        .mint_session_for(user, &["user:read:own", "user:update:own"])
+        .await;
+
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.json()["profile"], serde_json::json!({ "sections": [] }));
+    assert_eq!(me.json()["theme"], serde_json::Value::Null);
+
+    let sections = serde_json::json!([
+        {"id": "section-1", "type": "experience", "title": " Опыт ",
+         "experiences": [{"title": "Преподаватель", "organization": "НАО \"ТоУ\"",
+                          "startDate": "2024-09-01", "current": true, "description": "  "}]},
+        {"id": "section-2", "type": "image-gallery", "title": "Галерея",
+         "images": [{"url": "https://img.example.com/a.jpg?w=740", "caption": "аватар"}]},
+        {"id": "section-3", "type": "courses", "title": "Курсы"}
+    ]);
+    let updated = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "profile": { "sections": sections }, "theme": "vintagePaper" }),
+        )
+        .await;
+    assert_eq!(updated.status, StatusCode::OK, "{}", updated.text());
+    let body = updated.json();
+    assert_eq!(body["theme"], "vintagePaper");
+    assert_eq!(body["profile"]["sections"][0]["title"], "Опыт");
+    assert_eq!(
+        body["profile"]["sections"][0]["experiences"][0]["description"],
+        ""
+    );
+    assert!(
+        body["profile"]["sections"][0]["experiences"][0]
+            .get("endDate")
+            .is_none()
+    );
+    assert_eq!(body["profile"]["sections"][2]["type"], "courses");
+
+    // Anonymous public read carries the sections, never the theme.
+    let public = app.get("/api/v2/users/builder").await;
+    assert_eq!(public.status, StatusCode::OK);
+    assert_eq!(
+        public.json()["profile"]["sections"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    assert!(public.json().get("theme").is_none());
+    let by_id = app.get(&format!("/api/v2/users/by-id/{}", user.0)).await;
+    assert_eq!(
+        by_id.json()["profile"]["sections"][1]["images"][0]["caption"],
+        "аватар"
+    );
+
+    // A bio-only patch keeps both; `theme: null` clears the theme only.
+    let bio = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "bio": "hi" }),
+        )
+        .await;
+    assert_eq!(bio.json()["theme"], "vintagePaper");
+    assert_eq!(
+        bio.json()["profile"]["sections"].as_array().unwrap().len(),
+        3
+    );
+    let cleared = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "theme": null }),
+        )
+        .await;
+    assert_eq!(cleared.status, StatusCode::OK, "{}", cleared.text());
+    assert_eq!(cleared.json()["theme"], serde_json::Value::Null);
+    assert_eq!(
+        cleared.json()["profile"]["sections"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn profile_sections_and_theme_are_validated(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("strict", "s@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &["user:update:own"]).await;
+
+    // Unknown section kind: a parse error, nothing stored.
+    let unknown = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "profile": { "sections": [{"id": "s", "type": "hero", "title": "x"}] } }),
+        )
+        .await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+
+    // Non-http(s) URLs are field errors with the section path.
+    let bad_url = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "profile": { "sections": [
+                {"id": "s", "type": "links", "title": "x",
+                 "links": [{"title": "evil", "url": "javascript:alert(1)"}]}
+            ] } }),
+        )
+        .await;
+    assert_eq!(
+        bad_url.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad_url.text()
+    );
+    assert_eq!(
+        bad_url.json()["field_errors"][0]["field"],
+        "profile.sections[0].links[0].url"
+    );
+    assert_eq!(bad_url.json()["field_errors"][0]["code"], "invalid");
+
+    let bad_theme = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "theme": "bad slug!" }),
+        )
+        .await;
+    assert_eq!(bad_theme.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(bad_theme.json()["field_errors"][0]["field"], "theme");
+
+    let stored: (serde_json::Value, Option<String>) =
+        sqlx::query_as("SELECT profile, theme FROM users WHERE id = $1")
+            .bind(user.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        stored,
+        (serde_json::json!({ "sections": [] }), None),
+        "nothing was stored"
+    );
+}

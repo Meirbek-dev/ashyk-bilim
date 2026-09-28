@@ -87,6 +87,10 @@ pub struct ProfileRow {
     pub bio: String,
     pub avatar_key: Option<String>,
     pub locale: String,
+    /// The profile builder document (`ab_domain::identity::profile`), `{"sections": []}` when unset.
+    pub profile: serde_json::Value,
+    /// UI theme slug; `None` = the web default.
+    pub theme: Option<String>,
 }
 
 /// The public profile page's subject (`GET /users/{username}`): the search
@@ -97,6 +101,7 @@ pub struct PublicProfileRow {
     pub display_name: String,
     pub bio: String,
     pub avatar_key: Option<String>,
+    pub profile: serde_json::Value,
 }
 
 pub async fn find_public_profile(
@@ -105,7 +110,7 @@ pub async fn find_public_profile(
 ) -> Result<Option<PublicProfileRow>> {
     let row = sqlx::query_as!(
         PublicProfileRow,
-        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key
+        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key, profile
            FROM users
            WHERE status = 'active' AND lower(username) = lower($1)"#,
         username
@@ -122,7 +127,7 @@ pub async fn find_public_profile_by_id(
 ) -> Result<Option<PublicProfileRow>> {
     let row = sqlx::query_as!(
         PublicProfileRow,
-        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key
+        r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key, profile
            FROM users
            WHERE status = 'active' AND id = $1"#,
         id.0
@@ -135,7 +140,7 @@ pub async fn find_public_profile_by_id(
 pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,
-        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale
+        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme
            FROM users WHERE id = $1"#,
         user_id.0
     )
@@ -144,27 +149,35 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
     Ok(row)
 }
 
-/// Partial profile update; `None` fields keep their value. Returns the
-/// updated row (`None` if the user vanished).
+/// Partial profile update; `None` fields keep their value (`theme`:
+/// `Some(None)` clears it). Returns the updated row (`None` if the user
+/// vanished).
 pub async fn update_profile(
     pool: &PgPool,
     user_id: UserId,
     display_name: Option<&str>,
     bio: Option<&str>,
     locale: Option<&str>,
+    profile: Option<&serde_json::Value>,
+    theme: Option<Option<&str>>,
 ) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,
         r#"UPDATE users SET
                display_name = COALESCE($2, display_name),
                bio = COALESCE($3, bio),
-               locale = COALESCE($4, locale)
+               locale = COALESCE($4, locale),
+               profile = COALESCE($5, profile),
+               theme = CASE WHEN $6 THEN $7 ELSE theme END
            WHERE id = $1
-           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale"#,
+           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme"#,
         user_id.0,
         display_name,
         bio,
-        locale
+        locale,
+        profile,
+        theme.is_some(),
+        theme.flatten()
     )
     .fetch_optional(pool)
     .await?;

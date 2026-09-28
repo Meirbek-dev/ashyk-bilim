@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET\n               display_name = COALESCE($2, display_name),\n               bio = COALESCE($3, bio),\n               locale = COALESCE($4, locale)\n           WHERE id = $1\n           RETURNING id AS \"id: UserId\", username, email, display_name, bio, avatar_key, locale",
+  "query": "SELECT id AS \"id: UserId\", username, display_name, bio, avatar_key, profile\n           FROM users\n           WHERE status = 'active' AND id = $1",
   "describe": {
     "columns": [
       {
@@ -27,17 +27,6 @@
       },
       {
         "ordinal": 2,
-        "name": "email",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "email"
-          }
-        }
-      },
-      {
-        "ordinal": 3,
         "name": "display_name",
         "type_info": "Text",
         "origin": {
@@ -48,7 +37,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "bio",
         "type_info": "Text",
         "origin": {
@@ -59,7 +48,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "avatar_key",
         "type_info": "Text",
         "origin": {
@@ -70,27 +59,23 @@
         }
       },
       {
-        "ordinal": 6,
-        "name": "locale",
-        "type_info": "Text",
+        "ordinal": 5,
+        "name": "profile",
+        "type_info": "Jsonb",
         "origin": {
           "Table": {
             "table": "users",
-            "name": "locale"
+            "name": "profile"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text",
-        "Text",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
-      false,
       false,
       false,
       false,
@@ -99,5 +84,5 @@
       false
     ]
   },
-  "hash": "491c1ab0a477d44dfdd6d1ca210e83bd7cfcb34497ecf3e3493f892efd17112d"
+  "hash": "7dde27c301045549889568a92f4166a814254f27acec8209676ab6f3be35f7bb"
 }

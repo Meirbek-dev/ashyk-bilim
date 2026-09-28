@@ -831,6 +831,29 @@ expression: json
         ],
         "type": "object"
       },
+      "AffiliationSection": {
+        "additionalProperties": false,
+        "properties": {
+          "affiliations": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileAffiliation"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "affiliations"
+        ],
+        "type": "object"
+      },
       "AiArtifactId": {
         "format": "uuid",
         "type": "string"
@@ -3978,6 +4001,23 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "CoursesSection": {
+        "additionalProperties": false,
+        "description": "The user's authored courses; rendered from `GET /users/{username}/courses`.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
       "CreateActivityRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4902,6 +4942,29 @@ expression: json
         },
         "type": "object"
       },
+      "EducationSection": {
+        "additionalProperties": false,
+        "properties": {
+          "education": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileEducation"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "education"
+        ],
+        "type": "object"
+      },
       "EffectivePolicy": {
         "properties": {
           "allow_late": {
@@ -5104,6 +5167,29 @@ expression: json
           "total",
           "passed",
           "failed"
+        ],
+        "type": "object"
+      },
+      "ExperienceSection": {
+        "additionalProperties": false,
+        "properties": {
+          "experiences": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileExperience"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "experiences"
         ],
         "type": "object"
       },
@@ -5763,6 +5849,43 @@ expression: json
         ],
         "type": "object"
       },
+      "GamificationSection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GamificationSectionSettings"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
+      "GamificationSectionSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "showLeaderboard": {
+            "type": "boolean"
+          },
+          "showLevel": {
+            "type": "boolean"
+          },
+          "showStreaks": {
+            "type": "boolean"
+          },
+          "showXp": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "GradeAction": {
         "enum": [
           "save",
@@ -6287,6 +6410,29 @@ expression: json
         "required": [
           "label",
           "count"
+        ],
+        "type": "object"
+      },
+      "ImageGallerySection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileImage"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "images"
         ],
         "type": "object"
       },
@@ -7370,6 +7516,29 @@ expression: json
         ],
         "type": "object"
       },
+      "LinksSection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileLink"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "links"
+        ],
+        "type": "object"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "description": "Password login. No `Debug` derive — the password must never format.",
@@ -8076,6 +8245,380 @@ expression: json
         ],
         "type": "object"
       },
+      "ProfileAffiliation": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "description": "Blank or an `http(s)` URL.",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "logoUrl"
+        ],
+        "type": "object"
+      },
+      "ProfileEducation": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "degree": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "institution",
+          "degree",
+          "field",
+          "startDate",
+          "current"
+        ],
+        "type": "object"
+      },
+      "ProfileExperience": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization": {
+            "type": "string"
+          },
+          "startDate": {
+            "description": "`YYYY-MM-DD` as the builder's date picker writes it.",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "organization",
+          "startDate",
+          "current",
+          "description"
+        ],
+        "type": "object"
+      },
+      "ProfileImage": {
+        "additionalProperties": false,
+        "properties": {
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "type": "object"
+      },
+      "ProfileLink": {
+        "additionalProperties": false,
+        "properties": {
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ],
+        "type": "object"
+      },
+      "ProfileSection": {
+        "description": "One builder section, tagged by `type` (legacy kebab-case kinds).",
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageGallerySection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "image-gallery"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TextSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "text"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinksSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "links"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SkillsSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "skills"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExperienceSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "experience"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EducationSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "education"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AffiliationSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "affiliation"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoursesSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "courses"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GamificationSection"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "gamification"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        ]
+      },
+      "ProfileSections": {
+        "additionalProperties": false,
+        "description": "`{ \"sections\": [...] }`, the stored column's default.\n\nEvery array and plain-text field is required so the contract's TypeScript\nshape needs no fallbacks; only the legacy-optional ones are `Option`.",
+        "properties": {
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileSection"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "sections"
+        ],
+        "type": "object"
+      },
+      "ProfileSkill": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SkillLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "ProgressState": {
         "properties": {
           "completed_at_unix": {
@@ -8166,6 +8709,10 @@ expression: json
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileSections",
+            "description": "The profile builder sections (`{sections: []}` when unset)."
+          },
           "username": {
             "type": "string"
           }
@@ -8174,7 +8721,8 @@ expression: json
           "id",
           "username",
           "display_name",
-          "bio"
+          "bio",
+          "profile"
         ],
         "type": "object"
       },
@@ -9848,6 +10396,38 @@ expression: json
         ],
         "type": "object"
       },
+      "SkillLevel": {
+        "enum": [
+          "beginner",
+          "intermediate",
+          "advanced",
+          "expert"
+        ],
+        "type": "string"
+      },
+      "SkillsSection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileSkill"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "skills"
+        ],
+        "type": "object"
+      },
       "SloStatus": {
         "enum": [
           "healthy",
@@ -11218,6 +11798,26 @@ expression: json
         ],
         "type": "object"
       },
+      "TextSection": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content"
+        ],
+        "type": "object"
+      },
       "TimeSeriesPoint": {
         "properties": {
           "bucket_start_unix": {
@@ -11855,6 +12455,24 @@ expression: json
               "string",
               "null"
             ]
+          },
+          "profile": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileSections",
+                "description": "The whole profile builder document (replaces the stored one). Unknown\nsection kinds/fields, non-`http(s)` URLs and oversized text are 422\nwith `profile.sections[i]…` field errors."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "theme": {
+            "description": "UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it.",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "type": "object"
@@ -12007,6 +12625,17 @@ expression: json
             "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).",
             "type": "boolean"
           },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileSections",
+            "description": "The profile builder document (`{\"sections\": []}` when unset)."
+          },
+          "theme": {
+            "description": "UI theme slug chosen by the user; `null` = the web default.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "username": {
             "type": "string"
           }
@@ -12018,6 +12647,7 @@ expression: json
           "display_name",
           "bio",
           "locale",
+          "profile",
           "mfa_enabled",
           "has_password",
           "google_linked"
@@ -24663,7 +25293,7 @@ expression: json
             "description": "Validation failed"
           }
         },
-        "summary": "Update the caller's own profile (requires `user:update:own`).",
+        "summary": "Update the caller's own profile (requires `user:update:own`): names,\nbio, locale, avatar, the profile builder `profile` document and the UI\n`theme`.",
         "tags": [
           "users"
         ]
@@ -24845,7 +25475,7 @@ expression: json
     },
     "/api/v2/users/{username}": {
       "get": {
-        "description": "Id, username, display name, bio and avatar — readable anonymously,\nactive users only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio, avatar and the profile builder sections\n— readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {

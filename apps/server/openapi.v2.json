@@ -12105,7 +12105,7 @@
         "tags": [
           "users"
         ],
-        "summary": "Update the caller's own profile (requires `user:update:own`).",
+        "summary": "Update the caller's own profile (requires `user:update:own`): names,\nbio, locale, avatar, the profile builder `profile` document and the UI\n`theme`.",
         "operationId": "update_my_profile",
         "requestBody": {
           "content": {
@@ -12331,7 +12331,7 @@
           "users"
         ],
         "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
-        "description": "Id, username, display name, bio and avatar — readable anonymously,\nactive users only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio, avatar and the profile builder sections\n— readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {
@@ -13395,6 +13395,29 @@
             ]
           }
         }
+      },
+      "AffiliationSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "affiliations"
+        ],
+        "properties": {
+          "affiliations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileAffiliation"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "AiArtifactId": {
         "type": "string",
@@ -16543,6 +16566,23 @@
         "type": "string",
         "format": "uuid"
       },
+      "CoursesSection": {
+        "type": "object",
+        "description": "The user's authored courses; rendered from `GET /users/{username}/courses`.",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateActivityRequest": {
         "type": "object",
         "required": [
@@ -17467,6 +17507,29 @@
         },
         "additionalProperties": false
       },
+      "EducationSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "education"
+        ],
+        "properties": {
+          "education": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileEducation"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "EffectivePolicy": {
         "type": "object",
         "required": [
@@ -17671,6 +17734,29 @@
             "format": "int64"
           }
         }
+      },
+      "ExperienceSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "experiences"
+        ],
+        "properties": {
+          "experiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileExperience"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "FeatureCapability": {
         "type": "object",
@@ -18328,6 +18414,43 @@
           }
         }
       },
+      "GamificationSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GamificationSectionSettings"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GamificationSectionSettings": {
+        "type": "object",
+        "properties": {
+          "showLeaderboard": {
+            "type": "boolean"
+          },
+          "showLevel": {
+            "type": "boolean"
+          },
+          "showStreaks": {
+            "type": "boolean"
+          },
+          "showXp": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "GradeAction": {
         "type": "string",
         "enum": [
@@ -18854,6 +18977,29 @@
             "type": "string"
           }
         }
+      },
+      "ImageGallerySection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "images"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileImage"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "InsightFeedItem": {
         "type": "object",
@@ -19935,6 +20081,29 @@
           }
         }
       },
+      "LinksSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "links"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileLink"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginRequest": {
         "type": "object",
         "description": "Password login. No `Debug` derive — the password must never format.",
@@ -20641,6 +20810,380 @@
           }
         }
       },
+      "ProfileAffiliation": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "logoUrl"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "Blank or an `http(s)` URL."
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileEducation": {
+        "type": "object",
+        "required": [
+          "institution",
+          "degree",
+          "field",
+          "startDate",
+          "current"
+        ],
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "degree": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileExperience": {
+        "type": "object",
+        "required": [
+          "title",
+          "organization",
+          "startDate",
+          "current",
+          "description"
+        ],
+        "properties": {
+          "current": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "`YYYY-MM-DD` as the builder's date picker writes it."
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileImage": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileLink": {
+        "type": "object",
+        "required": [
+          "title",
+          "url"
+        ],
+        "properties": {
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileSection": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImageGallerySection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "image-gallery"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TextSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "text"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinksSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "links"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SkillsSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "skills"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExperienceSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "experience"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EducationSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "education"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AffiliationSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "affiliation"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoursesSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "courses"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GamificationSection"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "gamification"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "description": "One builder section, tagged by `type` (legacy kebab-case kinds)."
+      },
+      "ProfileSections": {
+        "type": "object",
+        "description": "`{ \"sections\": [...] }`, the stored column's default.\n\nEvery array and plain-text field is required so the contract's TypeScript\nshape needs no fallbacks; only the legacy-optional ones are `Option`.",
+        "required": [
+          "sections"
+        ],
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSection"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileSkill": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SkillLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "ProgressState": {
         "type": "object",
         "required": [
@@ -20719,7 +21262,8 @@
           "id",
           "username",
           "display_name",
-          "bio"
+          "bio",
+          "profile"
         ],
         "properties": {
           "avatar_key": {
@@ -20737,6 +21281,10 @@
           },
           "id": {
             "$ref": "#/components/schemas/UserId"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileSections",
+            "description": "The profile builder sections (`{sections: []}` when unset)."
           },
           "username": {
             "type": "string"
@@ -22413,6 +22961,38 @@
           }
         }
       },
+      "SkillLevel": {
+        "type": "string",
+        "enum": [
+          "beginner",
+          "intermediate",
+          "advanced",
+          "expert"
+        ]
+      },
+      "SkillsSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "skills"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSkill"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "SloStatus": {
         "type": "string",
         "enum": [
@@ -23783,6 +24363,26 @@
           }
         }
       },
+      "TextSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "TimeSeriesPoint": {
         "type": "object",
         "required": [
@@ -24420,6 +25020,24 @@
               "null"
             ],
             "description": "One of the platform locales."
+          },
+          "profile": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileSections",
+                "description": "The whole profile builder document (replaces the stored one). Unknown\nsection kinds/fields, non-`http(s)` URLs and oversized text are 422\nwith `profile.sections[i]…` field errors."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "theme": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it."
           }
         },
         "additionalProperties": false
@@ -24546,6 +25164,7 @@
           "display_name",
           "bio",
           "locale",
+          "profile",
           "mfa_enabled",
           "has_password",
           "google_linked"
@@ -24583,6 +25202,17 @@
           "mfa_enabled": {
             "type": "boolean",
             "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer)."
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ProfileSections",
+            "description": "The profile builder document (`{\"sections\": []}` when unset)."
+          },
+          "theme": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "UI theme slug chosen by the user; `null` = the web default."
           },
           "username": {
             "type": "string"

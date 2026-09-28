@@ -2,6 +2,8 @@ use ab_core::id::UserId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+pub use ab_domain::identity::profile::ProfileSections;
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserProfile {
     pub id: UserId,
@@ -11,6 +13,11 @@ pub struct UserProfile {
     pub bio: String,
     pub avatar_key: Option<String>,
     pub locale: String,
+    /// The profile builder document (`{"sections": []}` when unset).
+    #[schema(value_type = ProfileSections)]
+    pub profile: serde_json::Value,
+    /// UI theme slug chosen by the user; `null` = the web default.
+    pub theme: Option<String>,
     /// TOTP enrolled on the account (`false` where no session is involved,
     /// e.g. the registration answer).
     pub mfa_enabled: bool,
@@ -47,6 +54,8 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             bio: p.bio,
             avatar_key: p.avatar_key,
             locale: p.locale,
+            profile: p.profile,
+            theme: p.theme,
             mfa_enabled: false,
             has_password: false,
             google_linked: false,
@@ -64,6 +73,9 @@ pub struct PublicProfile {
     /// Empty when unset.
     pub bio: String,
     pub avatar_key: Option<String>,
+    /// The profile builder sections (`{sections: []}` when unset).
+    #[schema(value_type = ProfileSections)]
+    pub profile: serde_json::Value,
 }
 
 impl From<ab_db::identity::PublicProfileRow> for PublicProfile {
@@ -74,6 +86,7 @@ impl From<ab_db::identity::PublicProfileRow> for PublicProfile {
             display_name: u.display_name,
             bio: u.bio,
             avatar_key: u.avatar_key,
+            profile: u.profile,
         }
     }
 }
@@ -115,6 +128,16 @@ pub struct UpdateProfileRequest {
     #[serde(default, deserialize_with = "super::double_option")]
     #[schema(value_type = Option<uuid::Uuid>)]
     pub avatar_upload_id: Option<Option<uuid::Uuid>>,
+    /// The whole profile builder document (replaces the stored one). Unknown
+    /// section kinds/fields, non-`http(s)` URLs and oversized text are 422
+    /// with `profile.sections[i]…` field errors.
+    #[garde(skip)]
+    pub profile: Option<ProfileSections>,
+    /// UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it.
+    #[garde(skip)]
+    #[serde(default, deserialize_with = "super::double_option")]
+    #[schema(value_type = Option<String>)]
+    pub theme: Option<Option<String>>,
 }
 
 /// Admin listing row (includes email + status — platform:read gated).

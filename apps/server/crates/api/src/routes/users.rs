@@ -36,7 +36,9 @@ pub async fn my_profile(
     Ok(Json(UserProfile::for_actor(profile, &actor)))
 }
 
-/// Update the caller's own profile (requires `user:update:own`).
+/// Update the caller's own profile (requires `user:update:own`): names,
+/// bio, locale, avatar, the profile builder `profile` document and the UI
+/// `theme`.
 #[utoipa::path(
     patch,
     path = "/users/me",
@@ -67,6 +69,8 @@ pub async fn update_my_profile(
                     bio: request.bio,
                     locale: request.locale,
                     avatar_upload_id: request.avatar_upload_id,
+                    profile: request.profile,
+                    theme: request.theme,
                 },
             )
             .await?;
@@ -195,8 +199,8 @@ pub async fn set_user_status(
 
 /// Public profile card by username (legacy `GET /users/username/{username}`).
 ///
-/// Id, username, display name, bio and avatar — readable anonymously,
-/// active users only. The profile page resolves its subject here instead of
+/// Id, username, display name, bio, avatar and the profile builder sections
+/// — readable anonymously, active users only. The profile page resolves its subject here instead of
 /// scanning `/search`.
 #[utoipa::path(
     get,

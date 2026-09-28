@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
+use crate::identity::profile::{ProfileSections, theme_slug};
 
 pub use ab_db::identity::ProfileRow as Profile;
 
@@ -18,6 +19,10 @@ pub struct ProfileChanges {
     /// Finalized `avatar` upload to claim as the new avatar; `Some(None)`
     /// removes the current one (UX-163).
     pub avatar_upload_id: Option<Option<Uuid>>,
+    /// The whole profile builder document replaces the stored one (BUG-361).
+    pub profile: Option<ProfileSections>,
+    /// UI theme slug; `Some(None)` clears it back to the default (BUG-362).
+    pub theme: Option<Option<String>>,
 }
 
 #[derive(Clone)]
@@ -57,6 +62,18 @@ impl UsersService {
             .bio
             .as_deref()
             .map(ab_core::strip_controls_multiline);
+        let profile = changes
+            .profile
+            .map(|mut sections| {
+                sections.normalize()?;
+                serde_json::to_value(sections).map_err(|e| Error::internal("serialize profile", e))
+            })
+            .transpose()?;
+        let theme = changes
+            .theme
+            .as_ref()
+            .map(|t| t.as_deref().map(theme_slug).transpose())
+            .transpose()?;
         if let Some(upload_id) = changes.avatar_upload_id {
             self.replace_avatar(actor, upload_id).await?;
         }
@@ -66,6 +83,8 @@ impl UsersService {
             display_name.as_deref(),
             bio.as_deref().map(str::trim),
             changes.locale.as_deref(),
+            profile.as_ref(),
+            theme,
         )
         .await?
         .ok_or_else(|| Error::not_found("user"))
