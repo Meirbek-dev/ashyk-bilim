@@ -85,9 +85,14 @@ export const courseCreateSchema = v.pipe(
     initialVisibility: v.picklist(['private', 'public'] as const),
     destination: v.picklist(['overview', 'curriculum'] as const),
   }),
-  v.check(
-    values => values.structureMode !== 'copy-outline' || Boolean(values.sourceCourseUuid?.trim()),
-    'source_course_required',
+  // UX-266: forwarded onto the field — a root-level issue never reached
+  // `errors.sourceCourseUuid` (the form's only reader) and fell to a generic toast.
+  v.forward(
+    v.check(
+      values => values.structureMode !== 'copy-outline' || Boolean(values.sourceCourseUuid?.trim()),
+      'source_course_required',
+    ),
+    ['sourceCourseUuid'],
   ),
 )
 
