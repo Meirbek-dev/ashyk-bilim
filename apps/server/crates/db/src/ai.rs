@@ -831,6 +831,18 @@ pub async fn attach_reservation(pool: &PgPool, id: uuid::Uuid, run_id: AiRunId) 
     Ok(())
 }
 
+/// Drop a reservation that never got its run (admitted, then the run's
+/// creation failed — BUG-356); one tied to a run is the run's to settle.
+pub async fn release_unattached_reservation(pool: &PgPool, id: uuid::Uuid) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM ai_token_reservations WHERE id = $1 AND run_id IS NULL",
+        id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// This month's per-user rows, heaviest consumers first.
 pub async fn ledger_month_rows(pool: &PgPool, limit: i64) -> Result<Vec<LedgerRow>> {
     let rows = sqlx::query_as!(

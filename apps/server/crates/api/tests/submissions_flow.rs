@@ -2162,3 +2162,142 @@ async fn submit_never_overwrites_a_draft_changed_while_grading(pool: PgPool) {
     assert_eq!(moved.status, StatusCode::CONFLICT, "{}", moved.text());
     assert_eq!(moved.json()["details"]["actual"], 2, "{}", moved.text());
 }
+
+/// BUG-356 (BUG-344): a draft that moves under every re-grade round is
+/// given up after three — the submit is a 409 «kept changing» that spent
+/// the submit budget once, not once per round (two more accepted submits
+/// go through, the fourth is the 429); the timer sweep gives up the same
+/// way and backs the draft off instead of looping.
+#[sqlx::test(migrations = "../../migrations")]
+async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 5, "time_limit_seconds": 60, "grace_period_minutes": 0 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let start = async || {
+        let draft = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap()
+    };
+    let lock = async |sub: uuid::Uuid| {
+        let mut holder = app.pool.begin().await.unwrap();
+        sqlx::query("SELECT id FROM submissions WHERE id = $1 FOR UPDATE")
+            .bind(sub)
+            .execute(&mut *holder)
+            .await
+            .unwrap();
+        holder
+    };
+    // Three rounds: each time the hand-in's final UPDATE queues behind the
+    // held row lock, bump `draft_version` under it, release, lock again.
+    let keep_changing = async |sub: uuid::Uuid, holder: sqlx::Transaction<'_, sqlx::Postgres>| {
+        let mut held = Some(holder);
+        for _ in 0..3 {
+            let mut holder = match held.take() {
+                Some(holder) => holder,
+                None => lock(sub).await,
+            };
+            wait_until(
+                "the hand-in's final UPDATE never queued on the row lock",
+                async || {
+                    sqlx::query_scalar::<_, bool>(
+                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+                     WHERE datname = current_database() AND wait_event_type = 'Lock'
+                       AND query LIKE 'UPDATE submissions SET%status = $2%')",
+                    )
+                    .fetch_one(&app.pool)
+                    .await
+                    .unwrap()
+                },
+            )
+            .await;
+            sqlx::query("UPDATE submissions SET draft_version = draft_version + 1 WHERE id = $1")
+                .bind(sub)
+                .execute(&mut *holder)
+                .await
+                .unwrap();
+            holder.commit().await.unwrap();
+        }
+    };
+
+    let first = start().await;
+    let holder = lock(first).await;
+    let (given_up, ()) = tokio::join!(
+        app.send(submit(&alice, &first.to_string(), None, &answer)),
+        keep_changing(first, holder)
+    );
+    assert_eq!(given_up.status, StatusCode::CONFLICT, "{}", given_up.text());
+    assert!(
+        given_up.text().contains("kept changing"),
+        "{}",
+        given_up.text()
+    );
+    let (status, version): (String, i64) =
+        sqlx::query_as("SELECT status, draft_version FROM submissions WHERE id = $1")
+            .bind(first)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!((status.as_str(), version), ("draft", 4));
+
+    // One spend for the three rounds: two more accepted, the fourth is 429.
+    let done = app
+        .send(submit(&alice, &first.to_string(), None, &answer))
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let second = start().await;
+    let done = app
+        .send(submit(&alice, &second.to_string(), None, &answer))
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let third = start().await;
+    let spam = app
+        .send(submit(&alice, &third.to_string(), None, &answer))
+        .await;
+    assert_eq!(
+        spam.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        spam.text()
+    );
+
+    // The sweep: the expired draft moves under every round → backed off.
+    sqlx::query("UPDATE submissions SET started_at = now() - interval '1 hour' WHERE id = $1")
+        .bind(third)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let holder = lock(third).await;
+    let runner = app.code_runner();
+    let sweep = tokio::spawn(async move {
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10).await
+    });
+    keep_changing(third, holder).await;
+    assert_eq!(sweep.await.unwrap().unwrap(), 0, "given up, not handed in");
+    let (status, attempts, backed_off): (String, i32, bool) = sqlx::query_as(
+        "SELECT status, auto_submit_attempts, auto_submit_retry_at > now()
+         FROM submissions WHERE id = $1",
+    )
+    .bind(third)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((status.as_str(), attempts, backed_off), ("draft", 1, true));
+}

@@ -2605,9 +2605,51 @@ async fn failed_run_charges_its_paid_calls(pool: PgPool) {
         .mount(&app.llm)
         .await;
     let response = ask_study(&app, &alice, &course_id).await;
-    assert_ne!(response.status, StatusCode::OK, "{}", response.text());
+    assert_eq!(
+        response.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        response.text()
+    );
+    assert_eq!(response.json()["code"], "ai-provider-unavailable");
     assert_eq!(app.llm.received_requests().await.unwrap().len(), 2);
     assert_eq!(failed_run_charges(&app).await, ("failed".into(), 0, 84, 14));
+}
+
+/// BUG-356: a request admitted (reserved) whose run then fails to be
+/// created releases its reservation at once — nothing else would, and the
+/// 15-minute lease would hold the estimate plus the output bound meanwhile.
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_run_creation_releases_its_reservation(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "No runs").await;
+    mount_json_reply(&app.llm, &study_reply()).await;
+    sqlx::raw_sql(
+        "CREATE FUNCTION refuse_run() RETURNS trigger LANGUAGE plpgsql AS
+             $$ BEGIN RAISE EXCEPTION 'no runs today'; END $$;
+         CREATE TRIGGER refuse_run BEFORE INSERT ON ai_runs EXECUTE FUNCTION refuse_run();",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let response = ask_study(&app, &alice, &course_id).await;
+    assert_eq!(
+        response.status,
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "{}",
+        response.text()
+    );
+    assert!(app.llm.received_requests().await.unwrap().is_empty());
+    ab_testkit::wait_until("the orphan reservation was never released", async || {
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM ai_token_reservations")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+            == 0
+    })
+    .await;
 }
 
 /// BUG-349: a streamed Q&A answer that proves unusable was still paid for —

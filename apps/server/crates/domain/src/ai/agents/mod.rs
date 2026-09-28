@@ -25,6 +25,7 @@ use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::RunRow;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use sqlx::PgPool;
 use tokio_util::sync::CancellationToken;
 
 use super::AiService;
@@ -48,6 +49,30 @@ pub(crate) struct Admitted {
     /// The sources `context` lists — the only citable ones.
     pub sources: Vec<ContextSource>,
     pub reservation: Reservation,
+    _lease: ReservationLease,
+}
+
+/// Releases the reservation if it never got a run (BUG-356): the run's
+/// creation failed between `admit` and `attach_reservation`, so nothing
+/// else would free it before its lease ran out. A no-op once attached.
+struct ReservationLease {
+    pool: PgPool,
+    id: uuid::Uuid,
+}
+
+impl Drop for ReservationLease {
+    fn drop(&mut self) {
+        let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        let pool = self.pool.clone();
+        let id = self.id;
+        handle.spawn(async move {
+            if let Err(err) = ab_db::ai::release_unattached_reservation(&pool, id).await {
+                tracing::warn!(%id, %err, "orphan ai reservation not released");
+            }
+        });
+    }
 }
 
 /// What one agent step needs to execute against a run.
@@ -136,6 +161,10 @@ impl AiService {
             prompt,
             sources,
             reservation,
+            _lease: ReservationLease {
+                pool: self.pool.clone(),
+                id: reservation.id,
+            },
         })
     }
 
