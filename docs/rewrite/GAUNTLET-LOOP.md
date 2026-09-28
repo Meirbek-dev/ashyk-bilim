@@ -31,7 +31,7 @@ decisions go to `QUESTIONS.md` at the repo root and you keep going on everything
 1. `git log -3 --oneline`, then read `docs/rewrite/GAUNTLET.md` **Setup facts** and the
    top of **Pass log**. That is the resume point. Every quirk of this machine is already
    recorded there and in `apps/server/AGENTS.md` — do not rediscover them.
-2. Every shell: `$env:CARGO_TARGET_DIR='C:\cargo-target\ashyq-server'`.
+2. Every shell: `$env:CARGO_TARGET_DIR='E:\dev-caches\cargo-target\ashyq-server'`.
 3. Stack: podman containers `ashyq-test-pg` :5433, `ashyq-test-redis` :6380,
    `ashyq-zitadel` :8081, `ashyq-rustfs` :9002 (+ CORS and public policy from `extra/`).
    They are `--rm`; if missing, recreate per AGENTS.md, then `ashyq_dev` + migrations,

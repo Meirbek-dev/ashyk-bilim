@@ -14,7 +14,7 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   proxy account and moving its `zitadel_user_id` onto the migrated row (park the proxy first —
   unique key), then logging in with the MIGRATED login: `ast.dinara1987.4301` (learner),
   `aizhan0212@mail.ru` (teacher), password `GauntletDev!2026`.
-- Build: `$env:CARGO_TARGET_DIR='C:\cargo-target\ashyq-server'` in every shell.
+- Build: `$env:CARGO_TARGET_DIR='E:\dev-caches\cargo-target\ashyq-server'` in every shell.
 - Podman stack (network `ashyq-dev`): `ashyq-test-pg` :5433, `ashyq-test-redis` :6380,
   `ashyq-zitadel` :8081, `ashyq-rustfs` :9002 (buckets `ab-public`, `ab-private`).
   All are `--rm`: gone after a machine restart, recreate per `apps/server/AGENTS.md`.
@@ -46,8 +46,8 @@ Durable state for the gauntlet loop (see the loop brief). Resume from this file.
   `taskkill //F //IM ashyq.exe` first (bit us twice).
 - **Next 16 keeps the previous route segment in a hidden `<Activity>`** — CSS locators
   like `input[name=…]` match the stale form too; scope to `form:visible`.
-- **Cargo target hygiene**: `C:\cargo-target\ashyq-server` reached 135 GB (test-binary
-  hashes); `cargo clean` + rebuild when C: runs low. Build test binaries with
+- **Cargo target hygiene**: `E:\dev-caches\cargo-target\ashyq-server` reached 135 GB (test-binary
+  hashes); `cargo clean` + rebuild when E: runs low. Build test binaries with
   `--build-jobs 2` while anything else heavy runs.
 - **Playwright**: `apps/web/e2e/.env.test.local` (gitignored) carries the three accounts
   and `E2E_API_URL=http://127.0.0.1:8000/api/v2` (Node resolves `localhost` to `::1`,

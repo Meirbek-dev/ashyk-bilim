@@ -46,9 +46,11 @@ just cov          # coverage report + floor check
 **Build location (this machine):** X: is small and the debug target dir grows
 to 30+ GB — X: ran completely out of disk once (2026-08-16; symptom: LNK1180/
 LNK1318 / "IO failure on output stream: no space on device"). Set
-`$env:CARGO_TARGET_DIR = 'C:\cargo-target\ashyq-server'` at the start of every
+`$env:CARGO_TARGET_DIR = 'E:\dev-caches\cargo-target\ashyq-server'` at the start of every
 session before building. If builds still fail on space, delete that dir and
-rebuild.
+rebuild. Since 2026-09-29 all Rust caches live on E: (user env vars):
+`CARGO_HOME=E:\dev-caches\cargo` (registry + installed tools, on PATH),
+`RUSTUP_HOME=E:\dev-caches\rustup`, default `CARGO_TARGET_DIR=E:\dev-caches\cargo-target`.
 
 Linking the ~15 `ab-api` integration-test binaries in parallel can exhaust
 the Windows page file (`os error 1455`, surfacing as bogus `can't find crate`
