@@ -19,6 +19,8 @@ interface CourseQAChatOptions {
 }
 
 interface CourseQAChatSnapshot {
+  /** When the pending question was asked (epoch seconds), for the optimistic messages. */
+  askedAtUnix: number | null
   citations: AICitation[]
   errorCode: string | null
   partialAnswer: string
@@ -27,6 +29,7 @@ interface CourseQAChatSnapshot {
 }
 
 const initialSnapshot: CourseQAChatSnapshot = {
+  askedAtUnix: null,
   citations: [],
   errorCode: null,
   partialAnswer: '',
@@ -91,6 +94,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
       abortRef.current = abortController
       lastTurnRef.current = { clientTurnId, question }
       setSnapshot({
+        askedAtUnix: Math.floor(Date.now() / 1000),
         citations: [],
         errorCode: null,
         partialAnswer: '',
@@ -150,7 +154,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         if (agentRef.current === agent) agentRef.current = null
       }
     },
-    [activityUuid, courseUuid, onThread, queryClient, threadUuid],
+    [activityUuid, courseUuid, locale, onThread, queryClient, threadUuid],
   )
 
   const stop = useCallback(() => {

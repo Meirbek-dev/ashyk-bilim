@@ -189,7 +189,7 @@ export function NativeItemAuthor({
         )
       }
     },
-    [assessment.assessment_uuid, displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t],
   )
 
   useEffect(() => {
@@ -277,7 +277,7 @@ export function NativeItemAuthor({
         throw error
       }
     },
-    [assessment.assessment_uuid, displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t],
   )
 
   const queryClient = useQueryClient()

@@ -49,12 +49,13 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   const messages = useMemo(() => {
     const base = selectedThreadUuid && threadQuery.isSuccess ? threadQuery.data : []
     const pending: QAMessage[] = []
+    const askedAtUnix = chat.askedAtUnix ?? 0
     if (chat.pendingQuestion) {
       pending.push({
         id: 'pending-user',
         role: 'user',
         content: chat.pendingQuestion,
-        created_at_unix: Math.floor(Date.now() / 1000),
+        created_at_unix: askedAtUnix,
       })
     }
     if (chat.partialAnswer) {
@@ -64,11 +65,12 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
         content: chat.partialAnswer,
         citations: { citations: chat.citations },
         metadata: { incomplete: chat.status === 'cancelled' },
-        created_at_unix: Math.floor(Date.now() / 1000),
+        created_at_unix: askedAtUnix,
       })
     }
     return [...base, ...pending]
   }, [
+    chat.askedAtUnix,
     chat.citations,
     chat.partialAnswer,
     chat.pendingQuestion,

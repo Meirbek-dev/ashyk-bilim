@@ -1,5 +1,5 @@
 import type ArtplayerType from 'artplayer'
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import Artplayer from 'artplayer'
 import { useTranslations } from 'next-intl'
 import { MediaUnavailable, useMediaMissing } from '@components/Objects/Activities/Media/MediaUnavailable'
@@ -42,13 +42,12 @@ export default function ArtPlayer({
     if (missing && instanceRef.current && !instanceRef.current.isDestroy) instanceRef.current.destroy(false)
   }, [missing])
 
-  useEffect(() => {
-    if (!artRef.current) return
-
+  // One player per mount: the props are read when the container mounts.
+  const createPlayer = useEffectEvent((container: HTMLDivElement) => {
     const art: ArtplayerType = new Artplayer({
       url: (option.url as string) || '',
       ...option,
-      container: artRef.current,
+      container,
       volume: 1,
       isLive: false,
       pip: !!option.pip,
@@ -133,7 +132,12 @@ export default function ArtPlayer({
         art.destroy(false)
       }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  })
+
+  useEffect(() => {
+    if (!artRef.current) return
+    return createPlayer(artRef.current)
+  }, [])
 
   if (missing) return <MediaUnavailable kind="video" />
   return <div ref={artRef} {...rest} />

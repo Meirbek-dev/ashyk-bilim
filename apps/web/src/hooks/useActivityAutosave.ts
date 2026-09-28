@@ -72,38 +72,35 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
     async (id: string, entry: Lane) => {
       if (entry.running) return
       entry.running = true
-      try {
-        while (entry.next) {
-          const { payload, waiters } = entry.next
-          entry.next = null
-          const stopped = stoppedError(id, entry)
-          if (stopped) {
-            for (const waiter of waiters) waiter.reject(stopped)
-            continue
-          }
-          setStatus(id, 'saving')
-          try {
-            const saved = await updateRef.current(id, {
-              ...payload,
-              version: entry.version ?? (typeof payload.version === 'number' ? payload.version : undefined),
-            })
-            if (typeof saved.version === 'number') entry.version = saved.version
-            if (!entry.next && !entry.timer) setStatus(id, 'saved')
-            for (const waiter of waiters) waiter.resolve()
-          } catch (error: unknown) {
-            const status = hasErrorCode(error, 'precondition-failed')
-              ? 'conflict'
-              : isApiError(error) && error.status === 403
-                ? 'forbidden'
-                : 'error'
-            if (status !== 'error') entry.stopped = error
-            setStatus(id, status)
-            for (const waiter of waiters) waiter.reject(error)
-          }
+      while (entry.next) {
+        const { payload, waiters } = entry.next
+        entry.next = null
+        const stopped = stoppedError(id, entry)
+        if (stopped) {
+          for (const waiter of waiters) waiter.reject(stopped)
+          continue
         }
-      } finally {
-        entry.running = false
+        setStatus(id, 'saving')
+        try {
+          const saved = await updateRef.current(id, {
+            ...payload,
+            version: entry.version ?? (typeof payload.version === 'number' ? payload.version : undefined),
+          })
+          if (typeof saved.version === 'number') entry.version = saved.version
+          if (!entry.next && !entry.timer) setStatus(id, 'saved')
+          for (const waiter of waiters) waiter.resolve()
+        } catch (error: unknown) {
+          const status = hasErrorCode(error, 'precondition-failed')
+            ? 'conflict'
+            : isApiError(error) && error.status === 403
+              ? 'forbidden'
+              : 'error'
+          if (status !== 'error') entry.stopped = error
+          setStatus(id, status)
+          for (const waiter of waiters) waiter.reject(error)
+        }
       }
+      entry.running = false
     },
     [setStatus],
   )

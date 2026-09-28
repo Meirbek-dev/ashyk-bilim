@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -167,11 +167,18 @@ export default function GradingReviewWorkspace({
     !initialPanel.isLoading &&
     initialPanel.submission === null &&
     !isSelectedUuidValid
-  useEffect(() => {
-    if (!initialUnknown) return
+  const [unknownParam, setUnknownParam] = useState<string | null>(null)
+  if (initialUnknown && unknownParam !== initialSubmissionUuid) {
+    setUnknownParam(initialSubmissionUuid ?? null)
+    setSelectedUuid(null)
+  }
+  const dropUnknownParam = useEffectEvent(() => {
     toast.warning(t('unknownSubmissionParam'))
-    selectSubmission(null)
-  }, [initialUnknown, selectSubmission, t])
+    updateUrl({ submission: null })
+  })
+  useEffect(() => {
+    if (unknownParam) dropUnknownParam()
+  }, [unknownParam])
 
   const selectByOffset = useCallback(
     (offset: number) => {

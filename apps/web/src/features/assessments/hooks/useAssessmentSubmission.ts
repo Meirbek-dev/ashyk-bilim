@@ -69,14 +69,20 @@ function keepAnswers(submissionId: string | null, answers: Record<string, ItemAn
   }
 }
 
-function takeKeptAnswers(submissionId: string): Record<string, ItemAnswer> | null {
+function peekKeptAnswers(submissionId: string): Record<string, ItemAnswer> | null {
   try {
     const kept = sessionStorage.getItem(KEPT_ANSWERS_PREFIX + submissionId)
-    if (kept === null) return null
-    sessionStorage.removeItem(KEPT_ANSWERS_PREFIX + submissionId)
-    return JSON.parse(kept) as Record<string, ItemAnswer>
+    return kept === null ? null : (JSON.parse(kept) as Record<string, ItemAnswer>)
   } catch {
     return null
+  }
+}
+
+function dropKeptAnswers(submissionId: string): void {
+  try {
+    sessionStorage.removeItem(KEPT_ANSWERS_PREFIX + submissionId)
+  } catch {
+    // Storage blocked: nothing was kept there either.
   }
 }
 
@@ -603,21 +609,28 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   }, [save])
 
   // UX-212: back from the login page — the answers a 401 kept for this
-  // attempt replace the draft's and are saved straight away. Checked once
-  // per opened draft: a 401 in this mount keeps them for the next one.
+  // attempt replace the draft's (adopted here, after the seeding above) and
+  // are saved straight away by the effect. Checked once per opened draft: a
+  // 401 in this mount keeps them for the next one.
   const openDraftId = draft?.status === 'DRAFT' ? draft.submission_uuid : null
-  const keptCheckedRef = useRef<string | null>(null)
+  const [keptCheckedId, setKeptCheckedId] = useState<string | null>(null)
+  const [restoredDraftId, setRestoredDraftId] = useState<string | null>(null)
+  if (openDraftId && openDraftId !== keptCheckedId) {
+    setKeptCheckedId(openDraftId)
+    const kept = peekKeptAnswers(openDraftId)
+    if (kept) {
+      setLocalAnswers(kept)
+      setSaveState('dirty')
+      setRestoredDraftId(openDraftId)
+    }
+  }
   useEffect(() => {
-    if (!openDraftId || keptCheckedRef.current === openDraftId) return
-    keptCheckedRef.current = openDraftId
-    const kept = takeKeptAnswers(openDraftId)
-    if (!kept) return
-    localAnswersRef.current = kept
-    setLocalAnswers(kept)
-    setSaveState('dirty')
+    if (!restoredDraftId) return
+    // `localAnswersRef` already mirrors the adopted answers (its sync effect runs first).
+    dropKeptAnswers(restoredDraftId)
     toast.info(t('sessionEndedRestored'))
     saveRef.current()
-  }, [openDraftId, t])
+  }, [restoredDraftId, t])
 
   const submit = useCallback(
     (options?: SubmitOptions) =>
@@ -644,14 +657,18 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   // the page. On unload / route change, send the pending draft straight
   // away (`keepalive` outlives the document); the server's own 5 s window
   // may still 429 it — the unsaved-changes guard is the learner's warning.
-  const dirtyRef = useRef(false)
-  dirtyRef.current = saveState === 'dirty' || pendingAnswersRef.current !== null
+  const saveStateRef = useRef(saveState)
+  useEffect(() => {
+    saveStateRef.current = saveState
+  }, [saveState])
   const flushPending = useCallback(() => {
-    if (!dirtyRef.current || !submissionIdRef.current || draftVersionRef.current === undefined) return
+    if (saveStateRef.current !== 'dirty' && pendingAnswersRef.current === null) return
+    if (!submissionIdRef.current || draftVersionRef.current === undefined) return
     if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
     nextSaveTimeoutRef.current = null
     pendingAnswersRef.current = null
-    dirtyRef.current = false
+    // The unmount flush and the `pagehide` one must not send the same draft twice.
+    saveStateRef.current = 'saving'
     void saveAssessmentDraft(submissionIdRef.current, draftVersionRef.current, localAnswersRef.current, {
       keepalive: true,
     }).catch(() => undefined)

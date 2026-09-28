@@ -141,6 +141,7 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
       cancelled = true
       window.removeEventListener('focus', probe)
     }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- UX-076: `pathname` is the trigger (re-probe on every client navigation), not an input.
   }, [pathname, userId])
 
   // ── Cross-tab session sync via BroadcastChannel ───────────────────────────

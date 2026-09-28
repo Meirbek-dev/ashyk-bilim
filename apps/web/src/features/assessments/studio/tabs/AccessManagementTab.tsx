@@ -122,12 +122,15 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
     (Boolean(courseUuid) && (groupsQuery.isPending || learnersQuery.isPending))
   const loadError = accessQuery.error ?? overridesQuery.error ?? groupsQuery.error ?? learnersQuery.error
 
-  useEffect(() => {
-    if (!access) return
+  // The form mirrors the access on record: (re)seeded whenever a load or a
+  // save hands over a new object.
+  const [seededAccess, setSeededAccess] = useState<typeof access>(null)
+  if (access && access !== seededAccess) {
+    setSeededAccess(access)
     setMode(access.mode)
     setSelectedUsers(new Set(access.users.map(user => user.id)))
     setSelectedGroups(new Set(access.usergroups.map(group => group.id)))
-  }, [access])
+  }
 
   useEffect(() => {
     if (loadError) toastApiError(loadError, { fallback: t('loadFailed') })

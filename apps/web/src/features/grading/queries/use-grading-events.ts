@@ -63,12 +63,12 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
   const { toastApiError } = useApiError()
   const [live, setLive] = useState(false)
   const [accessLost, setAccessLost] = useState(false)
-  const [generation, setGeneration] = useState(0)
   // The save error behind a UX-259 report: toasted only if the re-check says access is intact.
   const reportedError = useRef<unknown>(null)
 
   useEffect(() => {
-    if (!courseId || typeof EventSource === 'undefined') return
+    // A confirmed access loss keeps the stream down; the re-check that clears it re-subscribes.
+    if (!courseId || accessLost || typeof EventSource === 'undefined') return
     const source = new EventSource(courseGradingEventsUrl(courseId), { withCredentials: true })
     const invalidate = () => {
       void queryClient.invalidateQueries({ queryKey: ['grading'] })
@@ -96,7 +96,7 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
       source.close()
       setLive(false)
     }
-  }, [courseId, generation, queryClient])
+  }, [accessLost, courseId, queryClient])
 
   // Confirm a `closed`: the stream request itself is the access rule.
   useEffect(() => {
@@ -116,7 +116,6 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
         reportedError.current = null
         if (error) toastApiError(error)
         setAccessLost(false)
-        setGeneration(value => value + 1)
       } else if (response.status === 401) {
         handleBrowserUnauthenticated()
       } else {

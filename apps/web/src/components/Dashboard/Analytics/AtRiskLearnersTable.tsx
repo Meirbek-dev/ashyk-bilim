@@ -9,7 +9,8 @@ import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics'
 import { createTeacherIntervention, getTeacherInterventions } from '@services/analytics/teacher'
 import type { TeacherInterventionCreate, TeacherInterventionRow } from '@services/analytics/teacher'
 import AnalyticsDataTable from './AnalyticsDataTable'
-import type { DataTableColumnDef } from '@/components/ui/data-table'
+import type { DataTableColumnDef, DataTableFeatures } from '@/components/ui/data-table'
+import type { CellContext } from '@tanstack/react-table'
 import { InlineError } from '@/components/ui/error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,10 +37,9 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type React from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
-import type { NumberFormatOptions } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { ClipboardList, MessageSquare, Route, UserCheck } from 'lucide-react'
 import { useApiError } from '@/hooks/useApiError'
@@ -74,6 +74,117 @@ const teacherInterventionsQueryOptions = (
     enabled,
   })
 
+/** The page's analytics query, read by the action cell's intervention dialog. */
+const AtRiskQueryContext = createContext<AnalyticsQuery | undefined>(undefined)
+
+type AtRiskCellProps = CellContext<DataTableFeatures, AtRiskLearnerRow>
+
+function LearnerCell({ row }: AtRiskCellProps) {
+  const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
+  return (
+    <div>
+      <div className="text-foreground font-medium">{row.original.user_display_name}</div>
+      {courseHref && (
+        <Link href={courseHref} className="text-primary mt-0.5 block text-xs hover:underline">
+          {row.original.course_name}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function ProgressCell({ row }: AtRiskCellProps) {
+  const percent = usePercentFormat()
+  return percent(row.original.progress_pct)
+}
+
+function InactivityCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  return row.original.days_since_last_activity == null
+    ? t('atRisk.na')
+    : t('units.days', { value: row.original.days_since_last_activity })
+}
+
+function RiskCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
+  const riskRow = row.original
+  const c = riskRow.risk_components ?? {
+    inactivity: 0,
+    progress: 0,
+    failures: 0,
+    missing: 0,
+    grading: 0,
+  }
+  return (
+    <div className="space-y-1">
+      <Badge variant={riskVariant(riskRow.risk_level)}>
+        {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} ·{' '}
+        {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
+      </Badge>
+      {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
+        <div className="text-muted-foreground text-[11px]">
+          {getAnalyticsCodeLabel(t, riskRow.risk_trend)}
+          {riskRow.risk_score_delta !== null && riskRow.risk_score_delta !== undefined
+            ? ` (${format.number(riskRow.risk_score_delta, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })})`
+            : ''}
+        </div>
+      )}
+      {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
+      <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
+        {[
+          [t('atRisk.riskComponents.inactivity'), c.inactivity],
+          [t('atRisk.riskComponents.progress'), c.progress],
+          [t('atRisk.riskComponents.failures'), c.failures],
+          [t('atRisk.riskComponents.missing'), c.missing],
+          [t('atRisk.riskComponents.grading'), c.grading],
+        ]
+          .filter(([, v]) => (v as number) > 0)
+          .map(([label, v]) => `${label} ${Math.round(v as number)}`)
+          .join(' · ')}
+      </div>
+    </div>
+  )
+}
+
+function ReasonsCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  return (
+    <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
+      {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
+      {row.original.why_now && <div className="mt-1 text-[11px]">{getAnalyticsCodeLabel(t, row.original.why_now)}</div>}
+    </div>
+  )
+}
+
+function ActionCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  const query = useContext(AtRiskQueryContext)
+  const riskRow = row.original
+  const hasGradingBlock = riskRow.open_grading_blocks > 0
+  const gradingHref = riskRow.course_id ? `/dash/analytics/courses/${riskRow.course_id}` : '/dash/courses'
+  return (
+    <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
+      <span>{getAnalyticsCodeLabel(t, riskRow.recommended_action)}</span>
+      <div className="text-[11px]">
+        {riskRow.intervention_count
+          ? t('atRisk.interventionsCount', { count: riskRow.intervention_count })
+          : t('atRisk.noInterventions')}
+      </div>
+      <InterventionStateBadge row={riskRow} />
+      {hasGradingBlock && gradingHref && (
+        <Link href={gradingHref} className="text-primary block text-xs hover:underline">
+          {t('atRisk.gradeSubmissions', {
+            count: riskRow.open_grading_blocks,
+          })}{' '}
+          →
+        </Link>
+      )}
+      <LearnerInterventionDialog row={riskRow} query={query} />
+    </div>
+  )
+}
+
 export default function AtRiskLearnersTable({
   title,
   description,
@@ -83,150 +194,25 @@ export default function AtRiskLearnersTable({
   query,
 }: AtRiskLearnersTableProps) {
   const t = useTranslations('TeacherAnalytics')
-  const locale = useLocale()
-  const percent = usePercentFormat()
-  const format = useFormatter()
   const resolvedTitle = title ?? t('atRisk.defaultTitle')
   const resolvedDescription = description ?? t('atRisk.defaultDescription')
-  // The server component hands a fresh `query` object on every refresh; key
-  // the memo on its content so the columns keep their identity.
-  const queryKey = JSON.stringify(query ?? null)
-  // UX-114: `cell` functions render as components (`<Cell />`), so a new
-  // columns array on every render remounted every cell — the intervention
-  // dialog's trigger included, which dropped focus to <body> after
-  // `router.refresh()`. Memoized, the rows update in place.
-  // `t` and `percent` are re-created when `router.refresh()` re-runs the layout
-  // (new messages object) — read them through refs so the memo never invalidates.
-  const tRef = useRef(t)
-  tRef.current = t
-  const percentRef = useRef(percent)
-  percentRef.current = percent
-  const formatRef = useRef(format)
-  formatRef.current = format
-  const columns = useMemo((): DataTableColumnDef<AtRiskLearnerRow>[] => {
-    const memoQuery: AnalyticsQuery | undefined = queryKey === 'null' ? undefined : JSON.parse(queryKey)
-    const t = (key: string, values?: Record<string, string | number>) =>
-      values ? tRef.current(key, values) : tRef.current(key)
-    const percent = (value: number) => percentRef.current(value)
-    const format = { number: (v: number, o: NumberFormatOptions) => formatRef.current.number(v, o) }
-    return [
-      {
-        accessorKey: 'user_display_name',
-        header: t('atRisk.colLearner'),
-        cell: ({ row }) => {
-          const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
-          return (
-            <div>
-              <div className="text-foreground font-medium">{row.original.user_display_name}</div>
-              {courseHref && (
-                <Link href={courseHref} className="text-primary mt-0.5 block text-xs hover:underline">
-                  {row.original.course_name}
-                </Link>
-              )}
-            </div>
-          )
-        },
-      },
+  // UX-114: `cell` functions render as components (`<Cell />`). The cells are
+  // module-level components, so a new columns array (a refreshed `t` after
+  // `router.refresh()`, a new `query` object) never remounts a cell — the
+  // intervention dialog's trigger included; the rows update in place. The
+  // headers stay strings: the CSV export and the column menu read them.
+  const columns = useMemo(
+    (): DataTableColumnDef<AtRiskLearnerRow>[] => [
+      { accessorKey: 'user_display_name', header: t('atRisk.colLearner'), cell: LearnerCell },
       { accessorKey: 'course_name', header: t('atRisk.colCourse') },
-      {
-        accessorKey: 'progress_pct',
-        header: t('atRisk.colProgress'),
-        cell: ({ row }) => percent(row.original.progress_pct),
-      },
-      {
-        accessorKey: 'days_since_last_activity',
-        header: t('atRisk.colInactivity'),
-        cell: ({ row }) =>
-          row.original.days_since_last_activity == null
-            ? t('atRisk.na')
-            : t('units.days', { value: row.original.days_since_last_activity }),
-      },
-      {
-        accessorKey: 'risk_score',
-        header: t('atRisk.colRisk'),
-        cell: ({ row }) => {
-          const riskRow = row.original
-          const c = riskRow.risk_components ?? {
-            inactivity: 0,
-            progress: 0,
-            failures: 0,
-            missing: 0,
-            grading: 0,
-          }
-          return (
-            <div className="space-y-1">
-              <Badge variant={riskVariant(riskRow.risk_level)}>
-                {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} ·{' '}
-                {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
-              </Badge>
-              {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
-                <div className="text-muted-foreground text-[11px]">
-                  {getAnalyticsCodeLabel(t, riskRow.risk_trend)}
-                  {riskRow.risk_score_delta !== null && riskRow.risk_score_delta !== undefined
-                    ? ` (${format.number(riskRow.risk_score_delta, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })})`
-                    : ''}
-                </div>
-              )}
-              {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
-              <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
-                {[
-                  [t('atRisk.riskComponents.inactivity'), c.inactivity],
-                  [t('atRisk.riskComponents.progress'), c.progress],
-                  [t('atRisk.riskComponents.failures'), c.failures],
-                  [t('atRisk.riskComponents.missing'), c.missing],
-                  [t('atRisk.riskComponents.grading'), c.grading],
-                ]
-                  .filter(([, v]) => (v as number) > 0)
-                  .map(([label, v]) => `${label} ${Math.round(v as number)}`)
-                  .join(' · ')}
-              </div>
-            </div>
-          )
-        },
-      },
-      {
-        accessorKey: 'reason_codes',
-        header: t('atRisk.colReasons'),
-        cell: ({ row }) => (
-          <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
-            {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
-            {row.original.why_now && (
-              <div className="mt-1 text-[11px]">{getAnalyticsCodeLabel(t, row.original.why_now)}</div>
-            )}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'recommended_action',
-        header: t('atRisk.colAction'),
-        cell: ({ row }) => {
-          const riskRow = row.original
-          const hasGradingBlock = riskRow.open_grading_blocks > 0
-          const gradingHref = riskRow.course_id ? `/dash/analytics/courses/${riskRow.course_id}` : '/dash/courses'
-          return (
-            <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
-              <span>{getAnalyticsCodeLabel(t, riskRow.recommended_action)}</span>
-              <div className="text-[11px]">
-                {riskRow.intervention_count
-                  ? t('atRisk.interventionsCount', { count: riskRow.intervention_count })
-                  : t('atRisk.noInterventions')}
-              </div>
-              <InterventionStateBadge row={riskRow} />
-              {hasGradingBlock && gradingHref && (
-                <Link href={gradingHref} className="text-primary block text-xs hover:underline">
-                  {t('atRisk.gradeSubmissions', {
-                    count: riskRow.open_grading_blocks,
-                  })}{' '}
-                  →
-                </Link>
-              )}
-              <LearnerInterventionDialog row={riskRow} query={memoQuery} />
-            </div>
-          )
-        },
-      },
-    ]
-  }, [queryKey, locale])
+      { accessorKey: 'progress_pct', header: t('atRisk.colProgress'), cell: ProgressCell },
+      { accessorKey: 'days_since_last_activity', header: t('atRisk.colInactivity'), cell: InactivityCell },
+      { accessorKey: 'risk_score', header: t('atRisk.colRisk'), cell: RiskCell },
+      { accessorKey: 'reason_codes', header: t('atRisk.colReasons'), cell: ReasonsCell },
+      { accessorKey: 'recommended_action', header: t('atRisk.colAction'), cell: ActionCell },
+    ],
+    [t],
+  )
 
   return (
     <Card className="shadow-sm">
@@ -235,14 +221,16 @@ export default function AtRiskLearnersTable({
         <CardDescription>{resolvedDescription}</CardDescription>
       </CardHeader>
       <CardContent>
-        <AnalyticsDataTable
-          columns={columns}
-          data={rows}
-          {...(storageKey ? { storageKey } : {})}
-          {...(serverPaginated === undefined ? {} : { serverPaginated })}
-          searchPlaceholder={t('atRisk.searchPlaceholder')}
-          emptyMessage={t('atRisk.emptyMessage')}
-        />
+        <AtRiskQueryContext value={query}>
+          <AnalyticsDataTable
+            columns={columns}
+            data={rows}
+            {...(storageKey ? { storageKey } : {})}
+            {...(serverPaginated === undefined ? {} : { serverPaginated })}
+            searchPlaceholder={t('atRisk.searchPlaceholder')}
+            emptyMessage={t('atRisk.emptyMessage')}
+          />
+        </AtRiskQueryContext>
       </CardContent>
     </Card>
   )

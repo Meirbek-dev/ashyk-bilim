@@ -29,7 +29,7 @@ export function AnimatedValue({
   const startTimeRef = useRef<number | undefined>(undefined)
   const startValueRef = useRef(value)
 
-  const runAnimation = useEffectEvent(() => {
+  const runAnimation = useEffectEvent((target: number, animationMs: number) => {
     startValueRef.current = displayValue
     startTimeRef.current = performance.now()
 
@@ -37,12 +37,12 @@ export function AnimatedValue({
       if (!startTimeRef.current) return
 
       const elapsed = currentTime - startTimeRef.current
-      const progress = Math.min(elapsed / duration, 1)
+      const progress = Math.min(elapsed / animationMs, 1)
 
       // Easing function (ease-out)
       const easedProgress = 1 - (1 - progress) ** 3
 
-      const newValue = startValueRef.current + (value - startValueRef.current) * easedProgress
+      const newValue = startValueRef.current + (target - startValueRef.current) * easedProgress
       setDisplayValue(newValue)
 
       if (progress < 1) {
@@ -60,7 +60,7 @@ export function AnimatedValue({
   })
 
   useEffect(() => {
-    const cleanup = runAnimation()
+    const cleanup = runAnimation(value, duration)
     return () => {
       if (typeof cleanup === 'function') cleanup()
     }

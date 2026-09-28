@@ -255,7 +255,7 @@ export default function BuilderCanvasTab({
         setIsApplyingBulk(false)
       }
     },
-    [assessmentUuid, items, refresh, setSelectedIssueCode, tBuilder],
+    [items, refresh, setSelectedIssueCode, tBuilder],
   )
 
   const createItem = (kind: SupportedStudioItemKind) => {

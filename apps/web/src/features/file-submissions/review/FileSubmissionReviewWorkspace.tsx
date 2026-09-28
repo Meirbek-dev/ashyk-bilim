@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useEffect, useState } from 'react'
+import { useDeferredValue, useEffect, useEffectEvent, useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
@@ -238,15 +238,21 @@ export default function FileSubmissionReviewWorkspace({
     selectedUuid === initialAttemptUuid &&
     isApiError(selectedError) &&
     selectedError.status === 404
-  useEffect(() => {
-    if (!initialUnknown) return
-    toast.warning(t('unknownSubmissionParam'))
+  const [unknownParam, setUnknownParam] = useState<string | null>(null)
+  if (initialUnknown && unknownParam !== initialAttemptUuid) {
+    setUnknownParam(initialAttemptUuid ?? null)
     setSelectedUuid(null)
+  }
+  const dropUnknownParam = useEffectEvent(() => {
+    toast.warning(t('unknownSubmissionParam'))
     const next = new URLSearchParams(urlSearchParams.toString())
     next.delete('submission')
     const serialized = next.toString()
     router.replace(serialized ? `${pathname}?${serialized}` : pathname, { scroll: false })
-  }, [initialUnknown, pathname, router, t, urlSearchParams])
+  })
+  useEffect(() => {
+    if (unknownParam) dropUnknownParam()
+  }, [unknownParam])
 
   if (selected && `${selected.id}:${selected.version}` !== seenVersion) {
     setSeenVersion(`${selected.id}:${selected.version}`)
