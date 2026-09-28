@@ -1083,24 +1083,6 @@ pub fn build_detail(
             .collect(),
         AssessmentKind::Exam | AssessmentKind::CodeChallenge => Vec::new(),
     };
-    if a.kind != AssessmentKind::Quiz {
-        let late = records.iter().filter(|s| s.is_late).count();
-        let ungraded = records.iter().filter(|s| is_reviewable(s)).count();
-        if late > 0 {
-            common_failures.push(CommonFailureRow {
-                key: "late".to_owned(),
-                label: "late_submissions".to_owned(),
-                count: count_i64(late),
-            });
-        }
-        if ungraded > 0 {
-            common_failures.push(CommonFailureRow {
-                key: "ungraded".to_owned(),
-                label: "awaiting_grading".to_owned(),
-                count: count_i64(ungraded),
-            });
-        }
-    }
 
     let manual_required = a.grading_mode != ab_core::assessments::GradingMode::Auto
         || records.iter().any(|s| {
@@ -1128,6 +1110,21 @@ pub fn build_detail(
         released,
     );
     let mut item_analytics = build_workflow_items(&diagnostics);
+    // UX-261: an exam's / code challenge's common failures are its workflow
+    // rows for these two codes — the one builder, so `key` is the catalogued
+    // code (`awaiting_grading`, `late_submissions`) in every branch.
+    if a.kind != AssessmentKind::Quiz {
+        common_failures.extend(
+            item_analytics
+                .iter()
+                .filter(|i| matches!(i.item_key.as_str(), "awaiting_grading" | "late_submissions"))
+                .map(|i| CommonFailureRow {
+                    key: i.item_key.clone(),
+                    label: i.item_label.clone(),
+                    count: i.impacted_count,
+                }),
+        );
+    }
     for q in &question_breakdown {
         let population = count_i64(
             records

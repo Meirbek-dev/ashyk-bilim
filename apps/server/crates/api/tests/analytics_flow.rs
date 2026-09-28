@@ -1969,6 +1969,73 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     );
 }
 
+/// UX-261: an exam's and a code challenge's «common failures» carry the
+/// catalogued workflow codes as `key` (what the web resolves), the same
+/// two the quiz-side workflow rows use — never ad-hoc `late`/`ungraded`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Codes").await;
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    let bob = learner(&app, "bob").await;
+    let ann = learner(&app, "ann").await;
+    enrol(&pool, &course_id, bob.user_id, 50.0).await;
+    enrol(&pool, &course_id, ann.user_id, 50.0).await;
+    for kind in ["exam", "code_challenge"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter_id, "kind": kind, "title": kind }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        let id = uuid::Uuid::parse_str(created.json()["id"].as_str().unwrap()).unwrap();
+        // Bob awaits grading; Ann was released, late.
+        sqlx::query(
+            "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
+                                      final_score, is_late, submitted_at, graded_at)
+             VALUES ($1, $2, $3, 'pending', 1, NULL, false, now(), NULL),
+                    ($1, $2, $4, 'published', 1, 80, true, now(), now())",
+        )
+        .bind(id)
+        .bind(course_uuid)
+        .bind(bob.user_id.0)
+        .bind(ann.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+        let detail = app
+            .get_as(
+                &teacher,
+                &format!("/api/v2/analytics/teacher/assessments/{kind}/{id}"),
+            )
+            .await;
+        assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
+        let failures: Vec<(String, i64)> = detail.json()["common_failures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|f| {
+                (
+                    f["key"].as_str().unwrap().to_owned(),
+                    f["count"].as_i64().unwrap(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            failures,
+            [
+                ("awaiting_grading".to_owned(), 1),
+                ("late_submissions".to_owned(), 1)
+            ],
+            "{kind}: {}",
+            detail.text()
+        );
+    }
+}
+
 /// BUG-266/267: every course-detail figure counts the members
 /// `enrolled_learners` counts — after two passing learners leave, the
 /// chapter/activity drop-off and `certificates_issued` follow (cohort filter
