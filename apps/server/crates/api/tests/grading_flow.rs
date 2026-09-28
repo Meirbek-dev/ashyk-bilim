@@ -880,8 +880,8 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
     assert_eq!(walk("&sort=attempt_number").await, [b3, b2, alice_sub, b1]);
     assert_eq!(walk("").await, [alice_sub, b3, b2, b1]);
 
-    // A cursor whose row has since vanished keeps the walk going (the id
-    // comparison) instead of ending the queue with an empty page.
+    // A cursor whose row has since vanished keeps the walk going (the key
+    // travels in the cursor) instead of ending the queue with an empty page.
     let first = app
         .get_as(
             &teacher,
@@ -889,9 +889,9 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
         )
         .await;
     let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
-    assert_eq!(cursor, alice_sub);
+    assert_eq!(first.json()["items"][0]["id"], alice_sub);
     sqlx::query("DELETE FROM submissions WHERE id = $1::uuid")
-        .bind(&cursor)
+        .bind(alice_sub)
         .execute(&app.pool)
         .await
         .unwrap();
@@ -910,6 +910,67 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
         .map(|item| item["id"].as_str().unwrap())
         .collect();
     assert_eq!(ids, [b3, b2, b1]);
+}
+
+/// BUG-355: a review cursor is bound to the queue, sort and order it was
+/// minted for — another assessment's, another sort's or order's cursor and
+/// a garbage one are 422, never a silent re-key or an empty page.
+#[sqlx::test(migrations = "../../migrations")]
+async fn review_cursor_is_bound_to_its_queue_sort_and_order(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let (other, other_choice, other_essay) =
+        quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    for name in ["bob", "alice"] {
+        let who = learner(&app, name).await;
+        submit_attempt(&app, &who, &id, &choice_id, &essay_id).await;
+        submit_attempt(&app, &who, &other, &other_choice, &other_essay).await;
+    }
+    let first = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions?limit=1"),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
+    let page = async |assessment: &str, params: &str| {
+        app.get_as(
+            &teacher,
+            &format!(
+                "/api/v2/assessments/{assessment}/submissions?limit=1&cursor={cursor}{params}"
+            ),
+        )
+        .await
+    };
+    for (assessment, params) in [
+        (other.as_str(), ""),
+        (id.as_str(), "&sort=final_score"),
+        (id.as_str(), "&order=asc"),
+    ] {
+        let rejected = page(assessment, params).await;
+        assert_eq!(
+            rejected.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{assessment} {params}: {}",
+            rejected.text()
+        );
+        assert_eq!(rejected.json()["code"], "validation-failed");
+    }
+    let garbage = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions?cursor=not-a-cursor"),
+        )
+        .await;
+    assert_eq!(garbage.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let next = page(&id, "").await;
+    assert_eq!(next.status, StatusCode::OK, "{}", next.text());
+    assert_eq!(next.json()["items"].as_array().unwrap().len(), 1);
+    assert!(next.json()["next_cursor"].is_null());
 }
 
 /// BUG-174: a stored override survives any save that does not name a new

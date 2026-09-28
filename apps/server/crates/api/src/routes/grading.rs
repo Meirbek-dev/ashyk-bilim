@@ -79,7 +79,7 @@ pub async fn review_queue(
                 status: query.status.map(Into::into),
                 late_only: query.late_only,
                 search: query.search.as_deref().filter(|s| !s.trim().is_empty()),
-                cursor: query.cursor,
+                cursor: query.cursor.as_deref(),
                 sort: query.sort.unwrap_or_default(),
                 ascending: matches!(query.order, Some(SortOrder::Asc)),
                 limit: query.limit.unwrap_or(DEFAULT_REVIEW_PAGE),

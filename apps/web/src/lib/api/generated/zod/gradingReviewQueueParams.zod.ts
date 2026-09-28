@@ -18,7 +18,7 @@ export const GradingReviewQueueParams = zod.object({
     .optional(),
   late_only: zod.boolean().optional(),
   search: zod.string().nullish(),
-  cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+  cursor: zod.union([zod.string(), zod.null()]).optional(),
   sort: zod
     .union([
       zod

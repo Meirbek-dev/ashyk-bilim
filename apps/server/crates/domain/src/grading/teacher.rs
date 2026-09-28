@@ -21,6 +21,8 @@ use ab_core::id::{
 use ab_core::permission::Action;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::submissions::{NewGradingEntry, NewItemFeedback, SubmissionRow};
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -111,7 +113,8 @@ pub struct ReviewFilter<'a> {
     pub status: Option<ReviewStatus>,
     pub late_only: bool,
     pub search: Option<&'a str>,
-    pub cursor: Option<SubmissionId>,
+    /// `next_cursor` of the previous page of this queue, sort and order.
+    pub cursor: Option<&'a str>,
     pub sort: ReviewSort,
     pub ascending: bool,
     pub limit: i64,
@@ -136,7 +139,7 @@ pub struct ReviewItem {
 #[derive(Debug, Clone)]
 pub struct ReviewPage {
     pub items: Vec<ReviewItem>,
-    pub next_cursor: Option<SubmissionId>,
+    pub next_cursor: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -748,13 +751,22 @@ impl GradingService {
     ) -> Result<ReviewPage> {
         self.grader_context(actor, assessment_id).await?;
         let limit = ab_core::page_limit(filter.limit, MAX_REVIEW_PAGE)?;
+        let queue = ReviewCursorScope {
+            assessment_id,
+            sort: filter.sort.as_str(),
+            ascending: filter.ascending,
+        };
+        let cursor = filter
+            .cursor
+            .map(|c| decode_review_cursor(c, &queue))
+            .transpose()?;
         let mut rows = ab_db::submissions::list_for_review(
             &self.pool,
             assessment_id,
             filter.status.map(ReviewStatus::as_submission_status),
             filter.late_only,
             filter.search,
-            filter.cursor,
+            cursor,
             filter.sort.as_str(),
             filter.ascending,
             limit + 1,
@@ -762,7 +774,8 @@ impl GradingService {
         .await?;
         let next_cursor = if rows.len() > usize::try_from(limit).unwrap_or(usize::MAX) {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            rows.last().map(|r| r.id)
+            rows.last()
+                .map(|r| encode_review_cursor(&queue, r.sort_key, r.id))
         } else {
             None
         };
@@ -1729,6 +1742,40 @@ fn stale_version(expected: i64, actual: i64) -> Error {
         "submission changed since you loaded it",
         serde_json::json!({ "expected": expected, "actual": actual }),
     )
+}
+
+/// The queue a review cursor was minted for: base64url of the JSON array
+/// `[assessment, sort, ascending, key, id]`. One minted for another
+/// assessment, sort or order is a 422 rather than a silent re-key (BUG-355).
+struct ReviewCursorScope {
+    assessment_id: AssessmentId,
+    sort: &'static str,
+    ascending: bool,
+}
+
+fn encode_review_cursor(scope: &ReviewCursorScope, key: f64, id: SubmissionId) -> String {
+    let json = serde_json::to_vec(&(scope.assessment_id, scope.sort, scope.ascending, key, id))
+        .unwrap_or_default();
+    URL_SAFE_NO_PAD.encode(json)
+}
+
+fn decode_review_cursor(cursor: &str, scope: &ReviewCursorScope) -> Result<(f64, SubmissionId)> {
+    let invalid = || {
+        Error::validation(vec![FieldError {
+            field: "cursor".into(),
+            code: "invalid".into(),
+            message: "cursor is not from this queue, sort and order".into(),
+        }])
+    };
+    let bytes = URL_SAFE_NO_PAD
+        .decode(cursor.trim_end_matches('='))
+        .map_err(|_| invalid())?;
+    let (assessment_id, sort, ascending, key, id): (AssessmentId, String, bool, f64, SubmissionId) =
+        serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+    if assessment_id != scope.assessment_id || sort != scope.sort || ascending != scope.ascending {
+        return Err(invalid());
+    }
+    Ok((key, id))
 }
 
 /// The last learner id of the previous page.

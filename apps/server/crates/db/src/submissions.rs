@@ -757,17 +757,17 @@ pub struct ReviewRow {
     pub enrolled: bool,
     /// On the course staff (`is_course_staff`) — never a member (UX-199).
     pub staff: bool,
+    /// The signed keyset key this row sorted by — what its cursor carries.
+    pub sort_key: f64,
 }
 
 /// Non-draft submissions of an assessment, filtered and ordered for review.
 ///
 /// Optional filters: status / lateness / learner-name substring; ordered by `sort` (`submitted_at`,
 /// `final_score` — ungraded as -1 — or `attempt_number`), descending unless
-/// `ascending`; ties newest first. Keyset on (key, id): the cursor stays a
-/// submission id and its key is read back (BUG-351). A cursor whose row is
-/// gone falls back to `id < cursor` so the walk goes on rather than ending.
-/// ponytail: under a non-id sort that fallback may skip or repeat rows once;
-/// carry the key in the cursor if rows ever vanish routinely.
+/// `ascending`; ties newest first. Keyset on (key, id): `cursor` is the
+/// last row's `(sort_key, id)` (BUG-351/BUG-355 — the key travels in the
+/// cursor, so a vanished row never ends or re-keys the walk).
 #[allow(clippy::too_many_arguments)]
 pub async fn list_for_review(
     pool: &PgPool,
@@ -775,7 +775,7 @@ pub async fn list_for_review(
     status: Option<SubmissionStatus>,
     late_only: bool,
     search: Option<&str>,
-    cursor: Option<SubmissionId>,
+    cursor: Option<(f64, SubmissionId)>,
     sort: &str,
     ascending: bool,
     limit: i64,
@@ -792,7 +792,8 @@ pub async fn list_for_review(
                   EXISTS (SELECT 1 FROM trail_runs r
                           WHERE r.course_id = s.course_id AND r.user_id = s.user_id
                             AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
-                  is_course_staff(s.course_id, s.user_id) AS "staff!"
+                  is_course_staff(s.course_id, s.user_id) AS "staff!",
+                  k.key AS "sort_key!"
            FROM submissions s JOIN users u ON u.id = s.user_id
            CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text
                   WHEN 'final_score' THEN coalesce(s.final_score, -1)
@@ -802,23 +803,18 @@ pub async fn list_for_review(
              AND ($2::text IS NULL OR s.status = $2)
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
-             AND ($5::uuid IS NULL OR coalesce((k.key, s.id) < (
-                  SELECT $8::float8 * CASE $7::text
-                           WHEN 'final_score' THEN coalesce(c.final_score, -1)
-                           WHEN 'attempt_number' THEN c.attempt_number::float8
-                           ELSE coalesce(extract(epoch FROM c.submitted_at)::float8, 0) END,
-                         c.id
-                  FROM submissions c WHERE c.id = $5), s.id < $5))
+             AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))
            ORDER BY k.key DESC, s.id DESC
            LIMIT $6"#,
         assessment_id.0,
         status.map(SubmissionStatus::as_str),
         late_only,
         pattern.as_deref(),
-        cursor.map(|c| c.0),
+        cursor.map(|(_, id)| id.0),
         limit,
         sort,
-        if ascending { -1.0_f64 } else { 1.0_f64 }
+        if ascending { -1.0_f64 } else { 1.0_f64 },
+        cursor.map(|(key, _)| key)
     )
     .fetch_all(pool)
     .await?;

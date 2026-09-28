@@ -59,8 +59,9 @@ pub struct ReviewQuery {
     pub late_only: bool,
     /// Substring of the learner's username or display name.
     pub search: Option<String>,
-    /// `next_cursor` of the previous page (valid only with the same sort/order).
-    pub cursor: Option<SubmissionId>,
+    /// `next_cursor` of the previous page of this queue, sort and order
+    /// (opaque; another queue's or sort's cursor is 422).
+    pub cursor: Option<String>,
     /// Queue order (default `submitted_at`); ties newest first.
     pub sort: Option<ReviewSort>,
     /// Default `desc`.
@@ -93,7 +94,8 @@ pub struct ReviewItem {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ReviewPage {
     pub items: Vec<ReviewItem>,
-    pub next_cursor: Option<SubmissionId>,
+    /// Opaque; pass back as `cursor` with the same sort and order.
+    pub next_cursor: Option<String>,
 }
 
 impl From<domain::ReviewPage> for ReviewPage {
