@@ -1,13 +1,14 @@
 'use server'
 import { apiJson } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
-import type { AdminUserPage, UserHit } from '@/lib/api/generated/zod'
+import type { AdminUserPage, ProfileSections, PublicProfile } from '@/lib/api/generated/zod'
 
 /**
  * Public profile projection (server side). v2 has no `GET /users/{id}`:
  * other users are reachable through `GET /users/{username}` (public card,
- * readable anonymously) or the admin listing `GET /users`. `first_name`/`last_name`/`bio`/`profile` are
- * kept for the profile page which still renders the legacy shape.
+ * readable anonymously) or the admin listing `GET /users`. `first_name`/`last_name` are
+ * kept for the profile page which still renders the legacy shape; `profile` is the
+ * server's profile builder document (BUG-361).
  */
 export interface AppUserProfileData {
   avatar_key: string | null
@@ -17,12 +18,9 @@ export interface AppUserProfileData {
   first_name: string
   id: string
   last_name: string
-  profile: Record<string, unknown>
+  profile: ProfileSections
   username: string
 }
-
-/** `GET /users/{username}` (`PublicProfile`): the search card plus the bio (UX-230). */
-type PublicProfile = UserHit & { bio: string }
 
 function toProfile(user: PublicProfile | AdminUserPage['items'][number]): AppUserProfileData {
   return {
@@ -33,7 +31,7 @@ function toProfile(user: PublicProfile | AdminUserPage['items'][number]): AppUse
     last_name: '',
     bio: 'bio' in user ? user.bio : '',
     details: {},
-    profile: {},
+    profile: 'profile' in user ? user.profile : { sections: [] },
     avatar_key: 'avatar_key' in user ? (user.avatar_key ?? null) : null,
   }
 }

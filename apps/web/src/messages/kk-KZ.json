@@ -5315,6 +5315,7 @@
       "Form": {
         "errorMessageDefault": "Қате енгізу",
         "invalidEmail": "Жарамсыз электрондық пошта мекенжайы",
+        "invalidUrl": "http:// немесе https:// деп басталатын сілтемені енгізіңіз",
         "maxChars": "Кемінде {count} таңбадан аспауы керек",
         "minAmount": "Сома кемінде {min} болуы керек",
         "minChars": "Кемінде {count} таңбадан тұруы керек",
@@ -6713,6 +6714,8 @@
       },
       "SectionsPanel": {
         "addSectionButton": "Бөлім қосу",
+        "deleteSection": "Бөлімді жою",
+        "editSection": "Бөлімді өңдеу",
         "title": "Бөлімдер"
       },
       "SkillsEditor": {

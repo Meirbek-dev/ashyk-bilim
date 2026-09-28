@@ -33,6 +33,8 @@ const mockSession: Session = {
     mfa_enabled: false,
     has_password: true,
     google_linked: false,
+    profile: { sections: [] },
+    theme: null,
   },
   userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: ['user'],

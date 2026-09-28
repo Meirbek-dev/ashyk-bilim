@@ -26,6 +26,7 @@ import { useState } from 'react'
 import type { FC } from 'react'
 import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
 import Image from 'next/image'
+import type { ProfileSection, ProfileSections } from '@/lib/api/generated/zod'
 
 interface UserProfileClientProps {
   userData: UserProfileData
@@ -49,61 +50,15 @@ interface ProfileDetail {
   text: string
 }
 
-interface ProfileImage {
-  caption?: string
-  url: string
-}
-
-interface ProfileLink {
-  title: string
-  url: string
-}
-
-interface ProfileSkill {
-  level?: string
-  name: string
-}
-
-interface ProfileExperience {
-  current?: boolean
-  description?: string
-  endDate?: string
-  organization?: string
-  startDate?: string
-  title?: string
-}
-
-interface ProfileEducation {
-  current?: boolean
-  degree?: string
-  description?: string
-  endDate?: string
-  field?: string
-  institution?: string
-  startDate?: string
-}
-
-interface ProfileAffiliation {
-  description?: string
-  logoUrl?: string
-  name: string
-}
-
-interface ProfileSectionView {
-  affiliations?: ProfileAffiliation[]
-  content?: string
-  education?: ProfileEducation[]
-  experiences?: ProfileExperience[]
-  images?: ProfileImage[]
-  links?: ProfileLink[]
-  skills?: ProfileSkill[]
-  title?: string
-  type: string
-}
-
-interface UserProfileView {
-  sections?: ProfileSectionView[]
-}
+/** The server's profile builder document (`users.profile`, BUG-361). */
+type UserProfileView = ProfileSections
+type ProfileSectionView = ProfileSection
+type ProfileImage = Extract<ProfileSection, { type: 'image-gallery' }>['images'][number]
+type ProfileLink = Extract<ProfileSection, { type: 'links' }>['links'][number]
+type ProfileSkill = Extract<ProfileSection, { type: 'skills' }>['skills'][number]
+type ProfileExperience = Extract<ProfileSection, { type: 'experience' }>['experiences'][number]
+type ProfileEducation = Extract<ProfileSection, { type: 'education' }>['education'][number]
+type ProfileAffiliation = Extract<ProfileSection, { type: 'affiliation' }>['affiliations'][number]
 
 const ICON_MAP = {
   briefcase: Briefcase,
@@ -127,7 +82,7 @@ function IconComponent({ iconName }: { iconName: string }) {
 }
 
 const ImageModal: FC<{
-  image: { url: string; caption?: string }
+  image: ProfileImage
   onClose: () => void
 }> = ({ image, onClose }) => {
   return (
@@ -156,10 +111,7 @@ const ImageModal: FC<{
 
 function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const t = useTranslations('UserProfilePage')
-  const [selectedImage, setSelectedImage] = useState<{
-    url: string
-    caption?: string
-  } | null>(null)
+  const [selectedImage, setSelectedImage] = useState<ProfileImage | null>(null)
   const userCoursesQuery = useUserCourses(userData.username, {
     enabled: Boolean(userData.username),
   })
@@ -191,10 +143,10 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
         {/* Affiliation Logos */}
         <div className="absolute -top-12 right-8 flex items-center gap-4">
-          {profile.sections?.map(
+          {profile.sections.map(
             (section: ProfileSectionView) =>
               section.type === 'affiliation' &&
-              section.affiliations?.map(
+              section.affiliations.map(
                 (affiliation: ProfileAffiliation, index: number) =>
                   typeof affiliation.logoUrl === 'string' &&
                   affiliation.logoUrl.trim() !== '' && (
@@ -280,7 +232,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
               ) : null}
 
               {/* Profile sections from profile builder */}
-              {profile.sections && profile.sections.length > 0 ? (
+              {profile.sections.length > 0 ? (
                 <div>
                   {profile.sections.map((section: ProfileSectionView, index: number) => (
                     <div key={index} className="mb-8">
@@ -289,7 +241,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                       {/* Add Image Gallery section */}
                       {section.type === 'image-gallery' && (
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                          {(section.images ?? []).map((image: ProfileImage, imageIndex: number) => {
+                          {section.images.map((image: ProfileImage, imageIndex: number) => {
                             if (typeof image.url !== 'string' || !image.url.trim()) return null
                             return (
                               <div
@@ -321,7 +273,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'links' && (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          {(section.links ?? []).map((link: ProfileLink, linkIndex: number) => (
+                          {section.links.map((link: ProfileLink, linkIndex: number) => (
                             <a
                               key={linkIndex}
                               href={link.url}
@@ -338,7 +290,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'skills' && (
                         <div className="flex flex-wrap gap-2">
-                          {(section.skills ?? []).map((skill: ProfileSkill, skillIndex: number) => (
+                          {section.skills.map((skill: ProfileSkill, skillIndex: number) => (
                             <span
                               key={skillIndex}
                               className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm"
@@ -352,7 +304,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'experience' && (
                         <div className="space-y-4">
-                          {(section.experiences ?? []).map((exp: ProfileExperience, expIndex: number) => (
+                          {section.experiences.map((exp: ProfileExperience, expIndex: number) => (
                             <div key={expIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{exp.title}</h3>
                               <p className="text-muted-foreground">{exp.organization}</p>
@@ -367,7 +319,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'education' && (
                         <div className="space-y-4">
-                          {(section.education ?? []).map((edu: ProfileEducation, eduIndex: number) => (
+                          {section.education.map((edu: ProfileEducation, eduIndex: number) => (
                             <div key={eduIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{edu.institution}</h3>
                               <p className="text-muted-foreground">
@@ -384,7 +336,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'affiliation' && (
                         <div className="space-y-4">
-                          {(section.affiliations ?? []).map((affiliation: ProfileAffiliation, affIndex: number) => (
+                          {section.affiliations.map((affiliation: ProfileAffiliation, affIndex: number) => (
                             <div key={affIndex} className="border-border border-l-2 pl-4">
                               <div className="flex items-start gap-4">
                                 {typeof affiliation.logoUrl === 'string' && affiliation.logoUrl.trim() !== '' ? (

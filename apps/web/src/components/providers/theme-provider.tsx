@@ -34,16 +34,14 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME, initialMode }: ThemeProviderProps) {
-  // v2 keeps the theme client-side only (no server preference endpoint).
-  const userTheme: string | null = null
-  const [theme, setThemeState] = useState(() =>
-    getTheme(userTheme || defaultThemeName, initialMode ?? DEFAULT_THEME_MODE),
-  )
+  // The signed-in user's server theme is applied by <UserThemeSync/> under the
+  // platform SessionProvider (BUG-362); anonymous visitors keep localStorage.
+  const [theme, setThemeState] = useState(() => getTheme(defaultThemeName, initialMode ?? DEFAULT_THEME_MODE))
   const themeName = theme.name
   const mode = theme.resolvedTheme
 
   useEffect(() => {
-    const effectiveThemeName = getStoredTheme() || userTheme || defaultThemeName || DEFAULT_THEME_NAME
+    const effectiveThemeName = getStoredTheme() || defaultThemeName || DEFAULT_THEME_NAME
     const effectiveThemeMode = getStoredThemeMode() || initialMode || getSystemThemeMode()
     const effectiveTheme = getTheme(effectiveThemeName, effectiveThemeMode)
 
@@ -51,7 +49,7 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     globalThis.setTimeout(() => {
       setThemeState(effectiveTheme)
     }, 0)
-  }, [defaultThemeName, initialMode, userTheme])
+  }, [defaultThemeName, initialMode])
 
   const setTheme = useCallback(
     (nextThemeName: string) => {
@@ -93,7 +91,6 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     },
     [mode, setMode],
   )
-
 
   const contextValue: ThemeContextValue = useMemo(
     () => ({

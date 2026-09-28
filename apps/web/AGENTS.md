@@ -106,5 +106,5 @@ Python API (`apps/api`) is frozen reference material — never target it.
 Password reset (self-registration `/signup`, email verification and
 password change came back 2026-09-12 — DECISIONS.md), refresh tokens, numeric ids,
 `*_uuid` strings, multipart uploads through the API, offset pagination,
-per-user server-side theme, `/members`, `/roles/{id}` numeric role ids,
+`/members`, `/roles/{id}` numeric role ids,
 batch grading, bulk zip download of file submissions, `/trail/start`.

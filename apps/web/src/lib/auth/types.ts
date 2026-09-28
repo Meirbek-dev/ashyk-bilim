@@ -2,8 +2,9 @@ import type { SessionInfo, UserProfile } from '@/lib/api/generated/zod'
 
 /**
  * The signed-in user as the app sees it: the v2 `UserProfile`
- * (`GET /users/me`). v2 has no first/middle/last name split, no server-side
- * theme and no numeric ids — `id` is the UUID everywhere.
+ * (`GET /users/me`). v2 has no first/middle/last name split and no numeric
+ * ids — `id` is the UUID everywhere; `profile` (builder sections) and `theme`
+ * (UI theme slug) are the legacy per-user fields restored in pass 29.
  */
 export type SessionUser = UserProfile
 

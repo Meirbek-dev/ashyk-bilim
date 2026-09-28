@@ -712,7 +712,9 @@ export const getUpdateMyProfileUrl = () => {
 }
 
 /**
- * @summary Update the caller's own profile (requires `user:update:own`).
+ * @summary Update the caller's own profile (requires `user:update:own`): names,
+bio, locale, avatar, the profile builder `profile` document and the UI
+`theme`.
  */
 export const updateMyProfile = async (
   updateProfileRequest: UpdateProfileRequest,
@@ -785,7 +787,9 @@ export type UpdateMyProfileMutationError = ErrorType<Problem>
 export type UpdateMyProfileMutationVariables = { data: BodyType<UpdateProfileRequest> }
 
 /**
- * @summary Update the caller's own profile (requires `user:update:own`).
+ * @summary Update the caller's own profile (requires `user:update:own`): names,
+bio, locale, avatar, the profile builder `profile` document and the UI
+`theme`.
  */
 export const useUpdateMyProfile = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -903,8 +907,8 @@ export const getPublicProfileUrl = (username: string) => {
 }
 
 /**
- * Id, username, display name, bio and avatar — readable anonymously,
- * active users only. The profile page resolves its subject here instead of
+ * Id, username, display name, bio, avatar and the profile builder sections
+ * — readable anonymously, active users only. The profile page resolves its subject here instead of
  * scanning `/search`.
  * @summary Public profile card by username (legacy `GET /users/username/{username}`).
  */

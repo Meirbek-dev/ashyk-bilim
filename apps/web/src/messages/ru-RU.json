@@ -5312,6 +5312,7 @@
       "Form": {
         "errorMessageDefault": "Неверный ввод",
         "invalidEmail": "Неверный адрес электронной почты",
+        "invalidUrl": "Введите ссылку, начинающуюся с http:// или https://",
         "maxChars": "Должно быть не более {count, plural, one {# символа} few {# символов} other {# символов}}",
         "minAmount": "Сумма должна быть не менее {min}",
         "minChars": "Должно быть не менее {count, plural, one {# символа} few {# символов} other {# символов}}",
@@ -6698,6 +6699,8 @@
       },
       "SectionsPanel": {
         "addSectionButton": "Добавить раздел",
+        "deleteSection": "Удалить раздел",
+        "editSection": "Редактировать раздел",
         "title": "Разделы"
       },
       "SkillsEditor": {

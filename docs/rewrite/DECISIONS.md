@@ -1622,3 +1622,40 @@ Implements three more items of the owner answers above. Routes:
   count. The per-request cap applies to the whole message set sent (system
   prompt, history, user turn); the context is fitted to it. Remediation is
   admitted after its analysis, so an inline refusal leaves a `failed` run.
+
+## User profile builder and per-user theme are back (2026-09-28, gauntlet pass 29)
+
+- **`users.profile` / `users.theme` restore two legacy per-user fields the
+  rewrite dropped** (BUG-361/362; MIGRATION §5 listed `user.profile` as a loss
+  and apps/web/AGENTS.md listed the server-side theme as "not in v2"). The
+  restore audit found real data behind both: 5 users' experience / education /
+  gallery / courses sections and 79 chosen themes.
+- **The profile is a typed document, not free JSON.** `ab_domain::identity::profile`
+  is the tagged serde model of exactly the legacy builder's section kinds
+  (`image-gallery`, `text`, `links`, `skills`, `experience`, `education`,
+  `affiliation`, `courses`, `gamification`); unknown kinds or fields are 422
+  (API) or a hard ETL error naming the row (`Retype`). `normalize` trims and
+  strips controls, caps counts (20 sections × 50 items, 64 KiB), and admits
+  only `http(s)` URLs for images, links and logos. `PATCH /users/me { profile }`
+  replaces the whole document (the builder saves as one unit, as legacy did);
+  `GET /users/{username}` and `/users/by-id/{id}` expose it anonymously, the
+  theme only through `GET /users/me`.
+- **The theme is a slug the server does not resolve** (`[A-Za-z0-9-]{1,48}`,
+  `null` clears): the web keeps the registry and falls back to its default for
+  a slug it no longer ships. Legacy `default` is migrated as `NULL`.
+- **Routes:** `PATCH /users/me` gains `profile` and `theme` (`null` clears the
+  theme); `UserProfile` gains `profile` + `theme`; `PublicProfile` gains
+  `profile`. No new endpoints.
+- **Web:** the legacy `UserProfileBuilder` returns at
+  `/dash/user-account/settings/profile` (contract types, react-query mutation,
+  valibot pre-check for `http(s)` links); the public profile page renders the
+  server document. The server theme is applied and persisted by
+  `<UserThemeSync/>` under the platform/editor `SessionProvider` — the root
+  `ThemeProvider` sits above it and only ever sees the anonymous session (the
+  legacy provider's inline `useSession()` there was the same dead read).
+  Anonymous visitors keep the localStorage fast path; a signed-in user's local
+  change is written after a 1 s debounce; an unset server theme equals the app
+  default, so users who never chose one are never written.
+- **`user.details` stays dropped**: the only rows are the empty «Новая деталь»
+  placeholder the legacy builder wrote on first open; the ETL logs that reason
+  and would log a filled card with its content.

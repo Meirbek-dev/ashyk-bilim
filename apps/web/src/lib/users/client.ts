@@ -7,8 +7,9 @@ import { UserProfile } from '@/lib/api/generated/zod'
 import type {
   AdminUser,
   CoursePage,
+  ProfileSections,
+  PublicProfile,
   UpdateProfileRequest,
-  UserHit,
   UserProfile as UserProfileType,
 } from '@/lib/api/generated/zod'
 import { uploadFile } from '@/services/media/uploads'
@@ -39,13 +40,10 @@ export interface PublicUser {
   id: string
   last_name: string
   middle_name?: string
-  profile: Record<string, unknown>
+  profile: ProfileSections
   roles?: string[]
   username: string
 }
-
-/** `GET /users/{username}` / `by-id` (`PublicProfile`): the search card plus the bio (UX-230). */
-type PublicProfile = UserHit & { bio: string }
 
 function toPublicUser(user: PublicProfile | AdminUser): PublicUser {
   return {
@@ -56,7 +54,7 @@ function toPublicUser(user: PublicProfile | AdminUser): PublicUser {
     last_name: '',
     bio: 'bio' in user ? user.bio : '',
     details: {},
-    profile: {},
+    profile: 'profile' in user ? user.profile : { sections: [] },
     ...('email' in user ? { email: user.email, roles: user.roles } : {}),
     ...('avatar_key' in user ? { avatar_key: user.avatar_key, avatar_image: user.avatar_key } : {}),
   }

@@ -26,6 +26,8 @@ const session: Session = {
     mfa_enabled: false,
     has_password: true,
     google_linked: false,
+    profile: { sections: [] },
+    theme: null,
   },
   userId,
   roles: ['instructor'],

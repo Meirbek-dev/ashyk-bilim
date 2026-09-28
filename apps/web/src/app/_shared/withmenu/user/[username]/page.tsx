@@ -50,17 +50,11 @@ async function UserPage({ params }: UserPageProps) {
   const { username } = resolvedParams
 
   let userData
-  let profile
   let hasError = false
 
   try {
     userData = await getUserByUsername(username)
     if (!userData) return <ResourceNotFound type="user" />
-    profile = userData.profile
-      ? typeof userData.profile === 'string'
-        ? JSON.parse(userData.profile)
-        : userData.profile
-      : { sections: [] }
   } catch (error) {
     console.error('Error fetching user data:', error)
     hasError = true
@@ -78,7 +72,7 @@ async function UserPage({ params }: UserPageProps) {
 
   return (
     <div>
-      <UserProfileClient userData={userData} profile={profile} />
+      <UserProfileClient userData={userData} profile={userData.profile} />
     </div>
   )
 }

@@ -5300,6 +5300,7 @@
       "Form": {
         "errorMessageDefault": "Invalid input",
         "invalidEmail": "Invalid email",
+        "invalidUrl": "Enter a link starting with http:// or https://",
         "maxChars": "Must be {count, plural, one {# character} other {# characters}} or less",
         "minAmount": "Amount must be at least {min}",
         "minChars": "Must be at least {count, plural, one {# character} other {# characters}}",
@@ -6698,6 +6699,8 @@
       },
       "SectionsPanel": {
         "addSectionButton": "Add Section",
+        "deleteSection": "Delete section",
+        "editSection": "Edit section",
         "title": "Sections"
       },
       "SkillsEditor": {
