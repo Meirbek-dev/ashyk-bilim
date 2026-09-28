@@ -74,6 +74,7 @@ describe('UX-114 at-risk table', () => {
     renderTable([row])
     fireEvent.click(screen.getByText('intervention.manage'))
     fireEvent.click(await screen.findByText('atRisk.interventions.message'))
+    fireEvent.click(await screen.findByRole('button', { name: 'intervention.confirmAction' }))
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('atRisk.learnerNotEnrolled'))
     expect(toastApiError).not.toHaveBeenCalled()
   })
@@ -90,8 +91,25 @@ describe('UX-114 at-risk table', () => {
     renderTable([row])
     fireEvent.click(screen.getByText('intervention.manage'))
     fireEvent.click(await screen.findByText('atRisk.interventions.message'))
+    fireEvent.click(await screen.findByRole('button', { name: 'intervention.confirmAction' }))
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('atRisk.learnerIsStaff'))
     expect(toastApiError).not.toHaveBeenCalled()
+  })
+
+  // UX-264: a quick action logs a completed step — it asks first, nothing is POSTed on the bare click.
+  it('asks for confirmation before logging a quick action', async () => {
+    createTeacherIntervention.mockClear().mockResolvedValueOnce({})
+    renderTable([row])
+    fireEvent.click(screen.getByText('intervention.manage'))
+    fireEvent.click(await screen.findByText('atRisk.interventions.meeting'))
+    expect(await screen.findByRole('alertdialog')).toBeTruthy()
+    expect(createTeacherIntervention).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'intervention.confirmAction' }))
+    await waitFor(() => expect(createTeacherIntervention).toHaveBeenCalledTimes(1))
+    expect(createTeacherIntervention.mock.calls[0]![0]).toMatchObject({
+      intervention_type: 'meeting_scheduled',
+      status: 'planned',
+    })
   })
 
   it('shows the journal load error through the API error mapper (UX-122)', async () => {

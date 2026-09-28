@@ -14,6 +14,16 @@ import { InlineError } from '@/components/ui/error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -95,7 +105,8 @@ export default function AtRiskLearnersTable({
   formatRef.current = format
   const columns = useMemo((): DataTableColumnDef<AtRiskLearnerRow>[] => {
     const memoQuery: AnalyticsQuery | undefined = queryKey === 'null' ? undefined : JSON.parse(queryKey)
-    const t = (key: string, values?: Record<string, string | number>) => (values ? tRef.current(key, values) : tRef.current(key))
+    const t = (key: string, values?: Record<string, string | number>) =>
+      values ? tRef.current(key, values) : tRef.current(key)
     const percent = (value: number) => percentRef.current(value)
     const format = { number: (v: number, o: NumberFormatOptions) => formatRef.current.number(v, o) }
     return [
@@ -145,7 +156,8 @@ export default function AtRiskLearnersTable({
           return (
             <div className="space-y-1">
               <Badge variant={riskVariant(riskRow.risk_level)}>
-                {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} · {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
+                {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} ·{' '}
+                {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
               </Badge>
               {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
                 <div className="text-muted-foreground text-[11px]">
@@ -281,6 +293,10 @@ function LearnerInterventionDialog({
   const [open, setOpen] = useState(false)
   const [logged, setLogged] = useState(false)
   const [pendingType, setPendingType] = useState<TeacherInterventionCreate['intervention_type'] | null>(null)
+  const [confirming, setConfirming] = useState<{
+    label: string
+    payload: Parameters<typeof logIntervention>[0]
+  } | null>(null)
   const [draft, setDraft] = useState(() =>
     t('intervention.draftTemplate', {
       learner: row.user_display_name,
@@ -436,13 +452,40 @@ function LearnerInterventionDialog({
                     pendingType === action.payload.intervention_type ||
                     (action.payload.intervention_type === 'extension_granted' && draft.trim().length < 12)
                   }
-                  onClick={() => void logIntervention(action.payload)}
+                  // UX-264: saving the plan is the textarea's own action; the
+                  // «Отметить: …» records ask first — they log a completed step.
+                  onClick={() =>
+                    action.payload.intervention_type === 'extension_granted'
+                      ? void logIntervention(action.payload)
+                      : setConfirming(action)
+                  }
                 >
                   {action.icon}
                   {action.label}
                 </Button>
               ))}
             </div>
+            <AlertDialog open={confirming !== null} onOpenChange={next => !next && setConfirming(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{confirming?.label}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('intervention.confirmDescription', { learner: row.user_display_name })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel />
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (confirming) void logIntervention(confirming.payload)
+                      setConfirming(null)
+                    }}
+                  >
+                    {t('intervention.confirmAction')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
           <InterventionAuditLog
             error={audit.error}

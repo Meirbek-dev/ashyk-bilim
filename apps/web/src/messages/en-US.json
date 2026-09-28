@@ -7783,9 +7783,9 @@
       "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
       "noInterventions": "No interventions logged",
       "interventions": {
-        "message": "Message",
-        "meeting": "Meeting",
-        "recovered": "Recovered"
+        "message": "Mark: message sent",
+        "meeting": "Mark: meeting scheduled",
+        "recovered": "Mark: risk resolved"
       },
       "defaultTitle": "At-risk learners",
       "defaultDescription": "Operational learner list ranked by urgency.",
@@ -8192,6 +8192,8 @@
       "manage": "Manage intervention",
       "recommendedAction": "Recommended action",
       "draftLabel": "Support plan",
+      "confirmDescription": "This will be recorded in the support log for {learner}. Continue?",
+      "confirmAction": "Record",
       "saveDraft": "Save support plan",
       "auditLog": "Audit log",
       "loadingAudit": "Loading interventions…",
