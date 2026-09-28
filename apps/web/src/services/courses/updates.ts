@@ -8,7 +8,7 @@ import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 /** `POST courses/{id}/updates` — answers 201 with the created `CourseUpdate`. */
 export async function createCourseUpdate(body: AppPayload) {
   return apiResult(
-    `courses/${stripEntityPrefix(String(body.course_uuid ?? ''))}/updates`,
+    `courses/${stripEntityPrefix(body.course_uuid ?? '')}/updates`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

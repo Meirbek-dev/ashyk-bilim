@@ -1,6 +1,5 @@
 import { ReviewItem, Stats, TeacherSubmission } from '@/lib/api/generated/zod'
-import type { Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
-import type { ReviewItemOutput } from '@/lib/api/generated/zod'
+import type { Course, Curriculum, GradebookPage, ReviewItemOutput } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
 import type { ActivityProgressCell, CourseGradebookResponse, Submission, SubmissionStatus } from './types'
 import { normalizeSubmission } from './types'

@@ -171,17 +171,20 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     if (!issues) return []
     return issues
       .filter(issue => issue.severity !== 'warning')
-      .map(issue => ({
-        code: issue.code,
-        message: localizeIssue(issue),
-        ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
-        ...(issue.field ? { field: issue.field } : {}),
-        ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
-      }))
+      .map(issue => {
+        const mapped: ValidationIssue = { code: issue.code, message: localizeIssue(issue) }
+        if (issue.item_uuid) mapped.itemUuid = issue.item_uuid
+        if (issue.field) mapped.field = issue.field
+        if (issue.action_label) mapped.actionLabel = issue.action_label
+        return mapped
+      })
   }, [issues, localizeIssue])
 
   const readinessIssues = useMemo(
-    () => toWorkspaceReadinessIssues(readinessQuery.data).map(issue => ({ ...issue, message: localizeIssue(issue) })),
+    () =>
+      toWorkspaceReadinessIssues(readinessQuery.data).map(issue =>
+        Object.assign(issue, { message: localizeIssue(issue) }),
+      ),
     [readinessQuery.data, localizeIssue],
   )
 

@@ -32,9 +32,9 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) => ({
+              chapters: current.chapters?.map((chapter: AppChapter) => ({
                 ...chapter,
-                activities: (chapter.activities ?? []).map((activity: AppActivity) =>
+                activities: chapter.activities?.map((activity: AppActivity) =>
                   activity.activity_uuid === activityUuid ? { ...activity, ...payload } : activity,
                 ),
               })),
@@ -94,9 +94,9 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) => ({
+              chapters: current.chapters?.map((chapter: AppChapter) => ({
                 ...chapter,
-                activities: (chapter.activities ?? []).filter(
+                activities: chapter.activities?.filter(
                   (activity: AppActivity) => activity.activity_uuid !== activityUuid,
                 ),
               })),

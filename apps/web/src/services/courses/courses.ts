@@ -71,8 +71,9 @@ export async function getCourseMetadata(
   const chapters = withUnpublishedActivities
     ? curriculum.chapters.map(chapter => toAppChapter(chapter))
     : curriculum.chapters
-        .map(chapter => ({ ...chapter, activities: chapter.activities.filter(activity => activity.published) }))
-        .filter(chapter => chapter.activities.length > 0)
-        .map(chapter => toAppChapter(chapter))
+        .filter(chapter => chapter.activities.some(activity => activity.published))
+        .map(chapter =>
+          toAppChapter({ ...chapter, activities: chapter.activities.filter(activity => activity.published) }),
+        )
   return { ...toAppCourse(course), chapters }
 }

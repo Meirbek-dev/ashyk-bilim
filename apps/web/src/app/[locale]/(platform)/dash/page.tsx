@@ -36,11 +36,9 @@ async function fetchWork(role: WorkQueue['items'][number]['role']): Promise<Work
   const queue = await apiJson<WorkQueue>(`work?role=${role}&limit=50`)
   return {
     ...queue,
-    items: queue.items.map(item => ({
-      ...item,
-      due_at: unixToIso(item.due_at_unix),
-      created_at: unixToIso(item.created_at_unix),
-    })),
+    items: queue.items.map(item =>
+      Object.assign(item, { due_at: unixToIso(item.due_at_unix), created_at: unixToIso(item.created_at_unix) }),
+    ),
   }
 }
 

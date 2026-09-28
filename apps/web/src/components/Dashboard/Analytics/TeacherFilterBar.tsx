@@ -107,7 +107,7 @@ export default function TeacherFilterBar({
     params.set('bucket', nextState.bucket || 'day')
     if (nextState.course_ids) params.set('course_ids', nextState.course_ids)
     if (nextState.cohort_ids) params.set('cohort_ids', nextState.cohort_ids)
-    if (query.teacher_user_id) params.set('teacher_user_id', String(query.teacher_user_id))
+    if (query.teacher_user_id) params.set('teacher_user_id', query.teacher_user_id)
     if (sortable && nextState.sort_by) params.set('sort_by', nextState.sort_by)
     if (sortable && nextState.sort_order) params.set('sort_order', nextState.sort_order)
     if (nextState.timezone) params.set('timezone', nextState.timezone)
@@ -175,7 +175,7 @@ export default function TeacherFilterBar({
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  window: event.target.value as NonNullable<AnalyticsQuery['window']>,
+                  window: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
@@ -201,7 +201,7 @@ export default function TeacherFilterBar({
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  compare: event.target.value as NonNullable<AnalyticsQuery['compare']>,
+                  compare: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
@@ -229,7 +229,7 @@ export default function TeacherFilterBar({
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  bucket: event.target.value as NonNullable<AnalyticsQuery['bucket']>,
+                  bucket: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
@@ -360,7 +360,7 @@ export default function TeacherFilterBar({
                   onChange={event =>
                     setFormState(state => ({
                       ...state,
-                      sort_order: event.target.value as NonNullable<AnalyticsQuery['sort_order']>,
+                      sort_order: event.target.value,
                     }))
                   }
                   className="h-9 w-full text-sm"

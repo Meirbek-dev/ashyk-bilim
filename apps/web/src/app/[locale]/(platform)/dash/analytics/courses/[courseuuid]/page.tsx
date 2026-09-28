@@ -104,10 +104,12 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
         <CompletionFunnelChart
           title={t('pages.courseFunnelTitle')}
           description={t('pages.courseFunnelDesc')}
-          data={(detail.funnels.course_completion ?? []).map(step => ({
-            ...step,
-            label: getAnalyticsCodeLabel(t, step.label),
-          }))}
+          data={
+            detail.funnels.course_completion?.map(step => ({
+              ...step,
+              label: getAnalyticsCodeLabel(t, step.label),
+            })) ?? []
+          }
         />
       </div>
 

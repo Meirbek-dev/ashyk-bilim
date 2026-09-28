@@ -103,10 +103,12 @@ export default function GradeForm({
   // the editor holds teacher prose only (empty until the teacher writes,
   // which is what keeps the code on the server).
   const gradedItems: GradedItem[] = useMemo(() => {
-    return (submission?.grading_json?.items ?? []).map(item => ({
-      ...item,
-      feedback: item.feedback_code ? '' : item.feedback,
-    }))
+    return (
+      submission?.grading_json?.items?.map(item => ({
+        ...item,
+        feedback: item.feedback_code ? '' : item.feedback,
+      })) ?? []
+    )
   }, [submission?.grading_json?.items])
   const verdictByItem = useMemo(
     () =>

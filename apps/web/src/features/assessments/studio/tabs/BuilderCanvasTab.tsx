@@ -33,7 +33,12 @@ import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
-import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
+import type {
+  AssessmentItem,
+  AssessmentItemMetadata,
+  ItemBody,
+  UnifiedItemKind,
+} from '@/features/assessments/domain/items'
 import {
   classifyValidationIssue,
   dedupeIssues,
@@ -49,7 +54,6 @@ import QuestionInspectorPanel from './QuestionInspectorPanel'
 import { InlineIssueMessage } from '../components/ValidationIssues'
 import { apiJson } from '@/lib/api-client'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
-import type { ItemBody } from '@/features/assessments/domain/items'
 import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import { Badge } from '@/components/ui/badge'

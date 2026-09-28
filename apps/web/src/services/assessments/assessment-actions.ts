@@ -331,17 +331,18 @@ export async function runCodeItem(
     ...(run.compile_output !== undefined ? { compile_output: run.compile_output } : {}),
     ...(run.error_message !== undefined ? { error_message: run.error_message } : {}),
     is_retryable: run.status === 'degraded',
-    visible_results: run.cases.map(caseResult => ({
-      test_id: caseResult.test_id,
-      passed: caseResult.passed,
-      is_visible: caseResult.is_visible,
-      ...(caseResult.stdin !== undefined ? { stdin: caseResult.stdin } : {}),
-      ...(caseResult.expected !== undefined ? { expected: caseResult.expected } : {}),
-      ...(caseResult.actual !== undefined ? { actual: caseResult.actual } : {}),
-      ...(caseResult.time_seconds !== undefined && caseResult.time_seconds !== null
-        ? { time: caseResult.time_seconds }
-        : {}),
-      ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null ? { memory: caseResult.memory_kb } : {}),
-    })),
+    visible_results: run.cases.map(caseResult => {
+      const result: CodeRunTestResult = {
+        test_id: caseResult.test_id,
+        passed: caseResult.passed,
+        is_visible: caseResult.is_visible,
+      }
+      if (caseResult.stdin !== undefined) result.stdin = caseResult.stdin
+      if (caseResult.expected !== undefined) result.expected = caseResult.expected
+      if (caseResult.actual !== undefined) result.actual = caseResult.actual
+      if (caseResult.time_seconds != null) result.time = caseResult.time_seconds
+      if (caseResult.memory_kb != null) result.memory = caseResult.memory_kb
+      return result
+    }),
   }
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import type { APIError } from '@/lib/api/assertSuccess'
 import type { SearchResults } from '@/lib/api/generated/zod'
 import { useSearch } from '@/lib/api/generated/search/search'
 
@@ -16,7 +15,7 @@ export function useSearchContent(query: string, options?: { limit?: number; enab
   const normalizedQuery = query.trim()
   const limit = options?.limit ?? 20
 
-  return useSearch<SearchQueryResult, APIError>(
+  return useSearch<SearchQueryResult>(
     {
       q: normalizedQuery || '__disabled__',
       limit,

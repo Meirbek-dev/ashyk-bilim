@@ -19,7 +19,7 @@ import { isHttpUrl, useLinkPreviewLookup } from './link-preview'
 export function WebPreviewInsertDialog() {
   const { editor } = useTiptap()
   const t = useTranslations('Components.WebPreview')
-  const open = useEditorState({ editor, selector: ctx => Boolean(ctx.editor?.storage.blockWebPreview.insertOpen) })
+  const open = useEditorState({ editor, selector: ctx => ctx.editor?.storage.blockWebPreview.insertOpen })
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const lookup = useLinkPreviewLookup()

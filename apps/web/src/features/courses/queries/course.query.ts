@@ -105,11 +105,9 @@ export function courseUpdatesQueryOptions(courseUuid: string) {
       const updates = await apiJson(`${courseEndpoints.detail(courseUuid)}/updates`, {}, value =>
         z.array(CourseUpdate).parse(value),
       )
-      return updates.map(update => ({
-        ...update,
-        courseupdate_uuid: update.id,
-        creation_date: unixToIso(update.created_at_unix) ?? '',
-      }))
+      return updates.map(update =>
+        Object.assign(update, { courseupdate_uuid: update.id, creation_date: unixToIso(update.created_at_unix) ?? '' }),
+      )
     },
   })
 }

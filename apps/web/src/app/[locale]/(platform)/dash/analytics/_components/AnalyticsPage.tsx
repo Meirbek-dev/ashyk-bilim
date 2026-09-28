@@ -101,7 +101,7 @@ export async function AnalyticsPageContent({
     if (query.bucket) urlParams.set('bucket', query.bucket)
     if (query.course_ids) urlParams.set('course_ids', query.course_ids)
     if (query.cohort_ids) urlParams.set('cohort_ids', query.cohort_ids)
-    if (query.teacher_user_id) urlParams.set('teacher_user_id', String(query.teacher_user_id))
+    if (query.teacher_user_id) urlParams.set('teacher_user_id', query.teacher_user_id)
     if (query.timezone) urlParams.set('timezone', query.timezone)
     const serialized = urlParams.toString()
     redirect({

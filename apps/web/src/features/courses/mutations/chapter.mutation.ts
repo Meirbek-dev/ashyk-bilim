@@ -72,7 +72,7 @@ export function updateChapterMutationOptions(queryClient: QueryClient, structure
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
+              chapters: current.chapters?.map((chapter: AppChapter) =>
                 chapter.chapter_uuid === chapterUuid ? { ...chapter, ...payload } : chapter,
               ),
             }

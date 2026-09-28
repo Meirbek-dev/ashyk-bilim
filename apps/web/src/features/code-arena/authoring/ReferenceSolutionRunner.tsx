@@ -64,17 +64,16 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
           ...(check.score !== undefined && check.score !== null ? { score: check.score } : {}),
           ...(check.compile_output ? { compile_output: check.compile_output } : {}),
           ...(check.message ? { message: check.message } : {}),
-          details: check.cases.map(caseResult => ({
-            test_id: caseResult.test_id,
-            passed: caseResult.passed,
-            status_description: caseResult.status_description,
-            ...(caseResult.time_seconds !== undefined && caseResult.time_seconds !== null
-              ? { time: caseResult.time_seconds }
-              : {}),
-            ...(caseResult.memory_kb !== undefined && caseResult.memory_kb !== null
-              ? { memory: caseResult.memory_kb }
-              : {}),
-          })),
+          details: check.cases.map(caseResult => {
+            const detail: ValidationResultDetail = {
+              test_id: caseResult.test_id,
+              passed: caseResult.passed,
+              status_description: caseResult.status_description,
+            }
+            if (caseResult.time_seconds != null) detail.time = caseResult.time_seconds
+            if (caseResult.memory_kb != null) detail.memory = caseResult.memory_kb
+            return detail
+          }),
         }
       }
       setResults(results)

@@ -118,13 +118,13 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
 
   if (kind === 'activity') {
     return data.activities.map(activity =>
-      buildRollupRow(String(activity.id), activity.name, cellsByActivity.get(activity.id) ?? []),
+      buildRollupRow(activity.id, activity.name, cellsByActivity.get(activity.id) ?? []),
     )
   }
 
   if (kind === 'learner') {
     return data.students.map(student =>
-      buildRollupRow(String(student.id), gradebookLearnerName(student), cellsByStudent.get(student.id) ?? []),
+      buildRollupRow(student.id, gradebookLearnerName(student), cellsByStudent.get(student.id) ?? []),
     )
   }
 
