@@ -9007,13 +9007,10 @@ expression: json
             "type": "array"
           },
           "next_cursor": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/SubmissionId"
-              },
-              {
-                "type": "null"
-              }
+            "description": "Opaque; pass back as `cursor` with the same sort and order.",
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -11334,6 +11331,14 @@ expression: json
           },
           "id": {
             "$ref": "#/components/schemas/TrailRunId"
+          },
+          "progress_pct": {
+            "description": "The learner's course progress percent, the value `learner-state`'s\n`progress.progress_pct` reports; `null` until the progress\nprojection has a row for the course (UX-250).",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/TrailRunStatus"
@@ -18336,18 +18341,14 @@ expression: json
             }
           },
           {
-            "description": "`next_cursor` of the previous page (valid only with the same sort/order).",
+            "description": "`next_cursor` of the previous page of this queue, sort and order\n(opaque; another queue's or sort's cursor is 422).",
             "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubmissionId"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             }
           },
@@ -18813,6 +18814,7 @@ expression: json
         ]
       },
       "post": {
+        "description": "A repeat start within 10 minutes returns the same pending secret\n(UX-254); a start racing another to the identity provider answers\n`idempotency-in-progress` and its retry gets the winner's secret.",
         "operationId": "totp_enroll",
         "responses": {
           "200": {
@@ -18833,10 +18835,10 @@ expression: json
                 }
               }
             },
-            "description": "Already enrolled"
+            "description": "Already enrolled, or a start is in progress"
           }
         },
-        "summary": "Start TOTP enrollment (secrets are returned exactly once).",
+        "summary": "Start TOTP enrollment.",
         "tags": [
           "auth"
         ]

@@ -47,6 +47,12 @@ export const TrailRun = zod.object({
   course_total_steps: zod.int().describe('Published activities in the course.'),
   created_at_unix: zod.int(),
   id: zod.uuid(),
+  progress_pct: zod
+    .number()
+    .nullish()
+    .describe(
+      "The learner's course progress percent, the value `learner-state`'s\n`progress.progress_pct` reports; `null` until the progress\nprojection has a row for the course (UX-250).",
+    ),
   status: zod
     .enum(['in_progress', 'completed', 'paused', 'cancelled'])
     .describe('Trail run status (legacy `StatusEnum`; only `in_progress` is written today).'),

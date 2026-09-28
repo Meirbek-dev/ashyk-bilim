@@ -589,7 +589,10 @@ export const getTotpEnrollUrl = () => {
 }
 
 /**
- * @summary Start TOTP enrollment (secrets are returned exactly once).
+ * A repeat start within 10 minutes returns the same pending secret
+ * (UX-254); a start racing another to the identity provider answers
+ * `idempotency-in-progress` and its retry gets the winner's secret.
+ * @summary Start TOTP enrollment.
  */
 export const totpEnroll = async (options?: Parameters<typeof orvalMutator>[1]): Promise<TotpEnrollment> => {
   return orvalMutator<TotpEnrollment>(
@@ -627,7 +630,7 @@ export type TotpEnrollMutationResult = NonNullable<Awaited<ReturnType<typeof tot
 export type TotpEnrollMutationError = ErrorType<Problem>
 
 /**
- * @summary Start TOTP enrollment (secrets are returned exactly once).
+ * @summary Start TOTP enrollment.
  */
 export const useTotpEnroll = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
