@@ -102,8 +102,11 @@ export default function UserRolesClient() {
   })
   const status = useMutation({
     mutationFn: ({ userId, disabled }: { userId: string; disabled: boolean }) => setUserStatus(userId, { disabled }),
-    onSuccess: async () => {
-      toast.success(t('statusUpdated'))
+    onSuccess: async (_, { disabled }) => {
+      // UX-265: one toast id so «Включить» replaces a still-visible «Отключить»
+      // toast instead of stacking an identical one behind it (sonner collapses
+      // the stack, so the second was invisible); the wording names the direction.
+      toast.success(t(disabled ? 'accountDisabled' : 'accountEnabled'), { id: 'user-status' })
       await invalidateUsers()
     },
     onError: error => toastApiError(error),

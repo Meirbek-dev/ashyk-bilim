@@ -30,13 +30,14 @@ const listUsers = vi.fn()
 const listRoles = vi.fn()
 const assignRoleToUser = vi.fn()
 const createUser = vi.fn()
+const setUserStatus = vi.fn()
 vi.mock('@/services/rbac', () => ({
   listUsers: (...args: unknown[]) => listUsers(...args),
   listRoles: () => listRoles(),
   assignRoleToUser: (...args: unknown[]) => assignRoleToUser(...args),
   createUser: (...args: unknown[]) => createUser(...args),
   removeRoleFromUser: vi.fn(),
-  setUserStatus: vi.fn(),
+  setUserStatus: (...args: unknown[]) => setUserStatus(...args),
 }))
 
 const wire = {
@@ -126,6 +127,20 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     expect(within(adminRow).queryByRole('button', { name: 'disableUser' })).toBeNull()
     expect(within(teacherRow).getByRole('button', { name: 'enableUser' })).toBeInTheDocument()
     expect(screen.getByRole('table')).toBeInTheDocument()
+  })
+
+  // UX-265: enabling right after disabling stacked an identical toast behind the visible one —
+  // each direction has its own wording and the shared id replaces the previous toast.
+  it('enabling an account toasts its own message under the shared status toast id', async () => {
+    setUserStatus.mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    const { invalidate } = renderPage()
+    const teacherRow = (await screen.findByText('teacher@ashyq.local')).closest('tr')!
+    await user.click(within(teacherRow).getByRole('button', { name: 'enableUser' }))
+    await waitFor(() => expect(setUserStatus).toHaveBeenCalledWith(expect.any(String), { disabled: false }))
+    const { toast } = await import('sonner')
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('accountEnabled', { id: 'user-status' }))
+    expect(invalidate).toHaveBeenCalled()
   })
 
   it('assigning a role POSTs the slug and invalidates the admin user listing', async () => {
