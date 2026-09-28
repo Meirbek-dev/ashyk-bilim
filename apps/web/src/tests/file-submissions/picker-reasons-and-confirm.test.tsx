@@ -12,7 +12,14 @@ import type { Activity, CourseStructure } from '@components/Contexts/CourseConte
 const mocks = vi.hoisted(() => ({ getActivity: vi.fn(), submit: vi.fn(), refresh: vi.fn() }))
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+  // Keys echo back; a `type` value is appended so the rendered type label is asserted (BUG-357).
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) => (values?.type ? `${key}:${String(values.type)}` : key),
+      {
+        has: () => false,
+      },
+    ),
   useFormatter: () => ({ number: (n: number) => String(n) }),
   useLocale: () => 'ru',
 }))
@@ -73,8 +80,16 @@ describe('FileSubmissionWorkspace picker + submit confirm (UX-036)', () => {
     const png = new File(['x'], 'shot.png', { type: 'image/png' })
     const big = new File([new Uint8Array(2 * 1024 * 1024)], 'big.pdf', { type: 'application/pdf' })
     fireEvent.change(input, { target: { files: [png, big] } })
-    expect(await screen.findByText('fileTypeNotAllowed')).toBeInTheDocument()
+    expect(await screen.findByText('fileTypeNotAllowed:image/png')).toBeInTheDocument()
     expect(screen.getByText('fileTooLarge')).toBeInTheDocument()
+  })
+
+  // BUG-357 (a): the UX-236 «без расширения» label is what the row renders for an extensionless file.
+  it('renders the localized «no extension» type for an extensionless file', async () => {
+    renderWorkspace()
+    const input = (await screen.findByText('dropzoneTitle')).parentElement!.querySelector('input[type="file"]')!
+    fireEvent.change(input, { target: { files: [new File(['x'], 'Makefile')] } })
+    expect(await screen.findByText('fileTypeNotAllowed:noExtension')).toBeInTheDocument()
   })
 
   it('asks before spending a capped attempt, then submits', async () => {
