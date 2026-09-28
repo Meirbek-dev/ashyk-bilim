@@ -133,14 +133,36 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         .await;
     let second_id = second.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(second.json()["position"], 2);
+    // BUG-359: the order names every item exactly once — a subset or a
+    // duplicate is a stale tab, not a partial move.
+    for (items, code) in [
+        (serde_json::json!([second_id]), "invalid"),
+        (serde_json::json!([second_id, second_id]), "duplicate"),
+    ] {
+        let refused = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items/reorder"),
+                &serde_json::json!({ "items": items }),
+            )
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.text()
+        );
+        assert_eq!(refused.json()["field_errors"][0]["field"], "items");
+        assert_eq!(refused.json()["field_errors"][0]["code"], code);
+    }
     let reordered = app
         .post_as(
             &teacher,
             &format!("/api/v2/assessments/{id}/items/reorder"),
-            &serde_json::json!({ "items": [second_id] }),
+            &serde_json::json!({ "items": [second_id, first_id] }),
         )
         .await;
-    assert_eq!(reordered.status, StatusCode::OK);
+    assert_eq!(reordered.status, StatusCode::OK, "{}", reordered.text());
     let order: Vec<_> = reordered
         .json()
         .as_array()
@@ -160,22 +182,25 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
     // BUG-257: a reorder changes nothing that is answered or scored.
     assert_eq!(detail.json()["content_version"], 3);
 
-    // Policy is replaced wholesale and range-checked.
+    // Policy is replaced wholesale and range-checked. BUG-359: the policy
+    // shares the override's ceiling of 10 attempts.
     let mut policy = detail.json()["policy"].clone();
-    policy["max_attempts"] = serde_json::json!(0);
-    let bad = app
-        .send(
-            axum::http::Request::builder()
-                .method("PUT")
-                .uri(format!("/api/v2/assessments/{id}/policy"))
-                .header(axum::http::header::CONTENT_TYPE, "application/json")
-                .header(axum::http::header::COOKIE, &teacher.cookie)
-                .body(axum::body::Body::from(policy.to_string()))
-                .unwrap(),
-        )
-        .await;
-    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(bad.json()["field_errors"][0]["field"], "max_attempts");
+    for attempts in [0, 11] {
+        policy["max_attempts"] = serde_json::json!(attempts);
+        let bad = app
+            .send(
+                axum::http::Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/v2/assessments/{id}/policy"))
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .header(axum::http::header::COOKIE, &teacher.cookie)
+                    .body(axum::body::Body::from(policy.to_string()))
+                    .unwrap(),
+            )
+            .await;
+        assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY, "{attempts}");
+        assert_eq!(bad.json()["field_errors"][0]["field"], "max_attempts");
+    }
     policy["max_attempts"] = serde_json::json!(3);
     policy["late_policy"] =
         serde_json::json!({ "kind": "penalty", "percent_per_day": 10, "max_days": 5 });

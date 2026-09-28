@@ -211,16 +211,20 @@ impl UploadsService {
                 serde_json::json!({ "declared": row.mime, "actual": head.content_type }),
             ));
         }
+        // ARCHITECTURE §11: finalize verifies the size the intent declared
+        // (the cap was checked against it, so the object must match it).
+        // BUG-359: a mismatch is refused and the object dropped — a declared
+        // size can no longer be a foot in the door for a bigger body.
         let actual_size = i64::try_from(head.size).unwrap_or(i64::MAX);
-        if let Some((_, max_bytes, _)) = policy(&row.purpose)
-            && actual_size > max_bytes
-        {
-            // Uploaded more than declared/allowed: reject and clean up.
+        if actual_size != row.size_bytes {
             self.storage.delete(bucket, &row.key).await?;
             return Err(Error::validation(vec![FieldError {
                 field: "size_bytes".into(),
-                code: "too-large".into(),
-                message: "uploaded object exceeds the size cap".into(),
+                code: "invalid".into(),
+                message: format!(
+                    "uploaded object is {actual_size} bytes, not the declared {}",
+                    row.size_bytes
+                ),
             }]));
         }
         if !ab_db::uploads::mark_finalized(

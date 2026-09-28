@@ -18,7 +18,7 @@ pub use ab_db::assessments::{
     AccessGroupRow as AccessGroup, AccessUserRow as AccessUser, OverrideRow as Override,
 };
 
-use crate::assessments::service::{Assessment, AssessmentsService, LatePolicy, perm};
+use crate::assessments::service::{Assessment, AssessmentsService, LatePolicy, MAX_ATTEMPTS, perm};
 use crate::catalog::courses::Course;
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -101,11 +101,11 @@ pub struct OverrideInput {
 }
 
 impl OverrideInput {
-    /// Legacy ceilings: at most 10 attempts by override.
+    /// Legacy ceilings: at most [`MAX_ATTEMPTS`] attempts by override.
     fn validate(&self) -> Result<()> {
         if self
             .max_attempts_override
-            .is_some_and(|n| !(1..=10).contains(&n))
+            .is_some_and(|n| !(1..=MAX_ATTEMPTS).contains(&n))
         {
             return Err(Error::validation(vec![FieldError {
                 field: "max_attempts_override".into(),

@@ -29,6 +29,9 @@ pub const MAX_ITEMS: i64 = 200;
 /// BUG-208: per-item score ceiling (the DTO enforces it too); readiness
 /// catches legacy rows. `!(x > 0 && x <= MAX)` also rejects NaN.
 pub const MAX_ITEM_SCORE: f64 = 10_000.0;
+/// BUG-359: one attempts ceiling for the policy and per-learner overrides
+/// (the legacy capped only the override; the DB CHECK backs the override).
+pub const MAX_ATTEMPTS: i32 = 10;
 
 /// Archived and scheduled assessments are read-only; a published one with
 /// any submission cannot be edited (BUG-162). Shared with the curriculum
@@ -300,9 +303,10 @@ impl PolicyInput {
             "must be between 0 and 100",
         );
         check(
-            self.max_attempts.is_none_or(|n| n >= 1),
+            self.max_attempts
+                .is_none_or(|n| (1..=MAX_ATTEMPTS).contains(&n)),
             "max_attempts",
-            "must be at least 1 (or null for unlimited)",
+            "must be between 1 and 10 (or null for unlimited)",
         );
         check(
             self.time_limit_seconds.is_none_or(|n| n >= 1),
@@ -1460,9 +1464,10 @@ impl AssessmentsService {
         Ok(tx.commit().await?)
     }
 
-    /// Reorder: `ordered` lists item ids in the desired order; items it
-    /// omits keep their relative order after the listed ones. Positions
-    /// come out 1..n contiguous (legacy wrote client integers verbatim).
+    /// Reorder: `ordered` lists every item id exactly once in the desired
+    /// order (BUG-359: a subset or a duplicate is 422 — the studio sends the
+    /// whole list, so anything else is a stale tab). Positions come out
+    /// 1..n contiguous (legacy wrote client integers verbatim).
     pub async fn reorder_items(
         &self,
         actor: &Actor,
@@ -1484,17 +1489,25 @@ impl AssessmentsService {
                 message: format!("not items of this assessment: {}", unknown.join(", ")),
             }]));
         }
-        let mut final_order: Vec<AssessmentItemId> = Vec::with_capacity(existing.len());
-        for item in ordered {
-            if !final_order.contains(item) {
-                final_order.push(*item);
-            }
+        let distinct: std::collections::HashSet<_> = ordered.iter().collect();
+        if distinct.len() != ordered.len() {
+            return Err(Error::validation(vec![FieldError {
+                field: "items".into(),
+                code: "duplicate".into(),
+                message: "every item id must be listed once".into(),
+            }]));
         }
-        let remainder: Vec<AssessmentItemId> = existing
-            .into_iter()
-            .filter(|i| !final_order.contains(i))
-            .collect();
-        final_order.extend(remainder);
+        if distinct.len() != existing.len() {
+            return Err(Error::validation(vec![FieldError {
+                field: "items".into(),
+                code: "invalid".into(),
+                message: format!(
+                    "the order must list all {} items of this assessment",
+                    existing.len()
+                ),
+            }]));
+        }
+        let final_order = ordered.to_vec();
         let mut tx = self.pool.begin().await?;
         // BUG-231: the lifecycle gate re-runs on the locked row.
         let AssessmentDetail { assessment, .. } = Self::lock_detail(&mut tx, id).await?;

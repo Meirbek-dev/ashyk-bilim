@@ -255,6 +255,72 @@ async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
 }
 
+/// BUG-359: finalize verifies the declared size (ARCHITECTURE §11) — the
+/// cap was checked against the intent, so a body of another length is
+/// refused and the object dropped, never recorded with the "real" size.
+#[sqlx::test(migrations = "../../migrations")]
+async fn finalize_rejects_a_size_mismatch(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("sizer", "s@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &["file:create:own"]).await;
+    let payload = b"twenty-one bytes here".to_vec();
+
+    let created = app
+        .post_as(
+            &session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "avatar", "mime": "image/png", "size_bytes": 5 }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let body = created.json();
+    let id = body["id"].as_str().unwrap().to_owned();
+    let key = body["key"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(body["put_url"].as_str().unwrap())
+        .header("content-type", "image/png")
+        .header("if-none-match", "*")
+        .body(payload)
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "{}", put.status());
+
+    let finalized = app
+        .post_as(
+            &session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        finalized.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        finalized.text()
+    );
+    assert_eq!(finalized.json()["field_errors"][0]["field"], "size_bytes");
+    let storage = StorageClient::new(&StorageConfig {
+        endpoint: std::env::var("TEST_S3_ENDPOINT")
+            .unwrap_or_else(|_| "http://localhost:9002".into()),
+        access_key: "ashyq-dev".into(),
+        secret_key: SecretString::from("ashyq-dev-secret"),
+        public_bucket: "ab-public".into(),
+        private_bucket: "ab-private".into(),
+    })
+    .unwrap();
+    assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
+    let status: String = sqlx::query_scalar("SELECT status FROM uploads WHERE id = $1::uuid")
+        .bind(&id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        status, "pending",
+        "a refused finalize leaves the slot pending"
+    );
+}
+
 /// BUG-200: `file:create:own` covers the learner purposes only — platform
 /// branding needs the platform grant, thumbnails and content blocks course
 /// write access; a learner gets 403 before any presign.
