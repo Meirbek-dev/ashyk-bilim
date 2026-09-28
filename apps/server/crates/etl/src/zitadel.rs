@@ -228,8 +228,8 @@ mod tests {
             is_active: true,
             is_superuser: false,
             is_verified: false,
-            has_details: false,
-            has_profile: false,
+            details: None,
+            profile: None,
             created_at: None,
             updated_at: None,
         };

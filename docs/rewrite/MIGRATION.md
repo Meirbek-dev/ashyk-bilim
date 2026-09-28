@@ -157,9 +157,14 @@ English grader texts get their v2 `feedback_code`; tiptap `blockUser` ids are
 remapped; chapter/activity/item positions are renumbered densely (legacy mixed
 0- and 1-based `order`); the 23 retyped legacy `ASSIGNMENT` activities get the
 draft file-submission config a new activity gets (see QUESTIONS Q-2026-09-26-1).
-Documented losses: `user.profile`/`user.details` JSON (7 users; v2 profiles
-have no such sections) and the per-test breakdown of two legacy code-challenge
-grades (keyed by Judge0 test ids, not items; their final scores are kept).
+`user.profile` (5 users' builder sections) is retyped into the typed
+`users.profile` document and `user.theme` (79 non-`default` choices) into
+`users.theme` (pass 29, BUG-361/362 — both were dropped until then).
+Documented losses: `user.details` (2 users; both are the empty «Новая деталь»
+placeholder card the legacy builder wrote on first open — logged with that
+reason; a filled card would be logged with its content) and the per-test
+breakdown of two legacy code-challenge grades (keyed by Judge0 test ids, not
+items; their final scores are kept).
 
 The data/identity/object migration exit gate is green. The browser smoke list and
 Playwright remain part of P9/P11 deployment verification because the frontend

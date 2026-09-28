@@ -103,8 +103,10 @@ pub struct User {
     pub is_active: bool,
     pub is_superuser: bool,
     pub is_verified: bool,
-    pub has_details: bool,
-    pub has_profile: bool,
+    /// Legacy detail cards (`{id, label, icon, text}` keyed by id); no v2 home.
+    pub details: Option<serde_json::Value>,
+    /// The profile builder document, retyped into `users.profile` (BUG-361).
+    pub profile: Option<serde_json::Value>,
     pub created_at: Option<f64>,
     pub updated_at: Option<f64>,
 }
@@ -112,9 +114,7 @@ pub struct User {
 pub async fn users(pool: &PgPool, limit: Option<i64>) -> Result<Vec<User>> {
     fetch(pool, "user", concat!(
         "SELECT id, user_uuid, username, first_name, last_name, middle_name, email, avatar_image, bio, locale, theme, ",
-        "hashed_password, auth_provider, google_sub, is_active, is_superuser, is_verified, ",
-        "(details IS NOT NULL AND details::text NOT IN ('{}', 'null')) AS has_details, ",
-        "(profile IS NOT NULL AND profile::text NOT IN ('{}', 'null')) AS has_profile, ",
+        "hashed_password, auth_provider, google_sub, is_active, is_superuser, is_verified, details, profile, ",
         ts!("created_at"), ", ", ts!("updated_at"),
         " FROM public.\"user\" ORDER BY id"), limit).await
 }

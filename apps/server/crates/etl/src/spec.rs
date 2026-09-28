@@ -403,14 +403,14 @@ pub const JSON_FATES: &[JsonColumnFate] = &[
     fate!(
         "user",
         "details",
-        Normalize,
-        "known profile fields become user columns"
+        Drop,
+        "only empty «Новая деталь» placeholder cards exist; a filled card is logged with its content"
     ),
     fate!(
         "user",
         "profile",
-        Normalize,
-        "known profile fields become user columns"
+        Retype,
+        "profile builder sections parsed into the typed users.profile document"
     ),
 ];
 

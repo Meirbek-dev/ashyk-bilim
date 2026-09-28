@@ -1,6 +1,9 @@
 //! Users domain transforms (MIGRATION §2.1): legacy `user` → v2 `users` +
 //! `google_accounts`; the credential goes to Zitadel (§3).
 
+use ab_core::{Error, Result};
+use ab_domain::identity::profile::{ProfileSections, theme_slug};
+
 use crate::legacy;
 use crate::transform::common::{non_empty, tidy};
 
@@ -24,19 +27,63 @@ pub struct UserRow {
     pub google_sub: Option<String>,
     /// Modular-crypt hash for the Zitadel import; None for IdP-only users.
     pub password_hash: Option<String>,
+    /// The profile builder document, retyped (`{"sections": []}` when none).
+    pub profile: serde_json::Value,
+    /// UI theme slug; legacy `default`/empty is v2 `NULL`.
+    pub theme: Option<String>,
 }
 
 /// Column fates that carry nothing into v2 but should be counted.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DroppedUserData {
-    pub theme: bool,
-    pub details: bool,
-    pub profile: bool,
+    /// Why `user.details` was dropped (`None`: it was empty).
+    pub details: Option<String>,
     pub google_avatar_url: bool,
 }
 
+/// Legacy `user.profile` → the typed v2 document (MIGRATION: Retype; a
+/// parse or validation failure is a hard error naming the row).
+pub fn profile(id: i32, value: Option<&serde_json::Value>) -> Result<serde_json::Value> {
+    let mut sections = match value {
+        // Legacy wrote `{}` for "never opened the builder".
+        None | Some(serde_json::Value::Null) => ProfileSections::default(),
+        Some(v) if v.as_object().is_some_and(serde_json::Map::is_empty) => {
+            ProfileSections::default()
+        }
+        Some(v) => serde_json::from_value(v.clone())
+            .map_err(|e| Error::config(format!("user {id}: profile: {e}")))?,
+    };
+    sections
+        .normalize()
+        .map_err(|e| Error::config(format!("user {id}: profile: {e}")))?;
+    serde_json::to_value(sections).map_err(|e| Error::internal("serialize profile", e))
+}
+
+/// `user.details` has no v2 home: the empty «Новая деталь» placeholders
+/// the builder wrote on first open carry nothing; anything else is reported
+/// with its content so the loss is visible.
 #[must_use]
-pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
+pub fn details_drop_reason(value: Option<&serde_json::Value>) -> Option<String> {
+    let cards = value?.as_object()?;
+    if cards.is_empty() {
+        return None;
+    }
+    let placeholder = cards.values().all(|card| {
+        card.get("text")
+            .and_then(serde_json::Value::as_str)
+            .is_none_or(|t| t.trim().is_empty())
+    });
+    Some(if placeholder {
+        "empty «Новая деталь» placeholder card(s), no text".to_owned()
+    } else {
+        format!(
+            "legacy detail card(s) with no v2 home: {}",
+            serde_json::Value::Object(cards.clone())
+        )
+    })
+}
+
+pub fn user(u: &legacy::User) -> Result<(UserRow, DroppedUserData)> {
     // First, patronymic, last: v2 has one display name, and the legacy
     // patronymic (certificates, grading exports) must not be lost.
     let full = tidy(&format!(
@@ -66,20 +113,27 @@ pub fn user(u: &legacy::User) -> (UserRow, DroppedUserData) {
         zitadel_placeholder: format!("{ZITADEL_PENDING_PREFIX}{}", u.user_uuid),
         google_sub: non_empty(u.google_sub.as_deref()),
         password_hash: non_empty(u.hashed_password.as_deref()),
-    };
-    let dropped = DroppedUserData {
+        profile: profile(u.id, u.profile.as_ref())?,
         theme: u
             .theme
             .as_deref()
-            .is_some_and(|t| !t.is_empty() && t != "default"),
-        details: u.has_details,
-        profile: u.has_profile,
+            .map(str::trim)
+            .filter(|t| !t.is_empty() && *t != "default")
+            .map(|t| {
+                theme_slug(t)
+                    .map(str::to_owned)
+                    .map_err(|e| Error::config(format!("user {}: theme: {e}", u.id)))
+            })
+            .transpose()?,
+    };
+    let dropped = DroppedUserData {
+        details: details_drop_reason(u.details.as_ref()),
         google_avatar_url: u
             .avatar_image
             .as_deref()
             .is_some_and(|a| a.trim().starts_with("http://")),
     };
-    (row, dropped)
+    Ok((row, dropped))
 }
 
 /// Legacy `hashed_password` formats Zitadel's passwap verifies natively.
@@ -135,8 +189,10 @@ mod tests {
             is_active: false,
             is_superuser: false,
             is_verified: false,
-            has_details: false,
-            has_profile: true,
+            details: None,
+            profile: Some(serde_json::json!({"sections": [
+                {"id": "section-1", "type": "courses", "title": "Test Python"}
+            ]})),
             created_at: Some(1.0),
             updated_at: Some(2.0),
         }
@@ -144,7 +200,7 @@ mod tests {
 
     #[test]
     fn user_row_normalizes_names_locale_status() {
-        let (row, dropped) = user(&legacy_user());
+        let (row, dropped) = user(&legacy_user()).unwrap();
         assert_eq!(row.username, "ivan");
         assert_eq!(row.email, "ivan@example.com");
         assert_eq!(row.display_name, "Иван Петров");
@@ -153,22 +209,82 @@ mod tests {
         assert_eq!(row.zitadel_placeholder, "legacy:user_01TEST");
         assert_eq!(row.google_sub, None, "empty sub is no link");
         assert!(row.password_hash.is_some());
+        assert_eq!(row.theme.as_deref(), Some("cyberpunk"));
+        assert_eq!(row.profile["sections"][0]["type"], "courses");
         assert_eq!(
             dropped,
             DroppedUserData {
-                theme: true,
-                details: false,
-                profile: true,
+                details: None,
                 google_avatar_url: false
             }
         );
+    }
+
+    /// BUG-361/362: the profile document is retyped strictly, the theme is
+    /// carried unless it is the legacy default, and the empty detail
+    /// placeholders are dropped with that reason.
+    #[test]
+    fn profile_theme_and_details_fates() {
+        let mut u = legacy_user();
+        u.theme = Some("default".into());
+        u.profile = Some(serde_json::json!({"sections": [
+            {"id": "section-1768118219681", "type": "education", "title": "Раздел «Образование»",
+             "education": [{"institution": "ПГУ", "degree": "специалист", "field": "Математика",
+                            "startDate": "1993-09-01", "current": false, "description": "", "endDate": "1997-06-30"}]},
+            {"id": "section-1768119939665", "type": "image-gallery", "title": "Галерея",
+             "images": [{"url": "https://img.example.com/a.jpg?semt=ais&w=740", "caption": "аватар2"}]}
+        ]}));
+        u.details = Some(serde_json::json!({"detail-1768119143325":
+            {"id": "detail-1768119143325", "label": "Новая деталь", "icon": "", "text": ""}}));
+        let (row, dropped) = user(&u).unwrap();
+        assert_eq!(row.theme, None, "legacy default is no choice");
+        assert_eq!(row.profile["sections"].as_array().unwrap().len(), 2);
+        assert_eq!(
+            row.profile["sections"][0]["education"][0]["endDate"],
+            "1997-06-30"
+        );
+        assert!(dropped.details.unwrap().contains("Новая деталь"));
+
+        u.profile = Some(serde_json::json!({}));
+        u.details = Some(serde_json::json!({}));
+        let (row, dropped) = user(&u).unwrap();
+        assert_eq!(row.profile, serde_json::json!({"sections": []}));
+        assert_eq!(dropped.details, None);
+
+        u.details = Some(
+            serde_json::json!({"d": {"id": "d", "label": "Город", "icon": "map-pin", "text": "Павлодар"}}),
+        );
+        assert!(user(&u).unwrap().1.details.unwrap().contains("Павлодар"));
+
+        // Strict: an unknown kind or a non-http URL is a hard error naming the row.
+        u.profile =
+            Some(serde_json::json!({"sections": [{"id": "s", "type": "hero", "title": "x"}]}));
+        assert!(
+            user(&u)
+                .unwrap_err()
+                .to_string()
+                .contains("user 7: profile")
+        );
+        u.profile = Some(
+            serde_json::json!({"sections": [{"id": "s", "type": "links", "title": "x",
+            "links": [{"title": "t", "url": "ftp://x"}]}]}),
+        );
+        assert!(
+            user(&u)
+                .unwrap_err()
+                .to_string()
+                .contains("user 7: profile")
+        );
+        u.profile = None;
+        u.theme = Some("bad slug!".into());
+        assert!(user(&u).unwrap_err().to_string().contains("user 7: theme"));
     }
 
     #[test]
     fn display_name_keeps_the_patronymic() {
         let mut u = legacy_user();
         u.middle_name = Some("Сергеевич".into());
-        assert_eq!(user(&u).0.display_name, "Иван Сергеевич Петров");
+        assert_eq!(user(&u).unwrap().0.display_name, "Иван Сергеевич Петров");
     }
 
     #[test]
@@ -176,7 +292,7 @@ mod tests {
         let mut u = legacy_user();
         u.first_name = String::new();
         u.last_name = "  ".into();
-        assert_eq!(user(&u).0.display_name, "ivan");
+        assert_eq!(user(&u).unwrap().0.display_name, "ivan");
         assert_eq!(zitadel_names("", " ", "ivan"), ("ivan".into(), "—".into()));
         assert_eq!(zitadel_names("A", "", "x"), ("A".into(), "—".into()));
         assert_eq!(zitadel_names("", "B", "x"), ("—".into(), "B".into()));

@@ -18,7 +18,7 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
             Some(&user.user_uuid),
             legacy::micros(user.created_at),
         );
-        let (mut row, dropped) = transform::users::user(user);
+        let (mut row, dropped) = transform::users::user(user)?;
         if !emails.insert(row.email.to_ascii_lowercase()) {
             let original = row.email.clone();
             row.email = collision_email(&original, user.id);
@@ -43,9 +43,9 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
                 }
             });
         sqlx::query(
-            "INSERT INTO users (id, zitadel_user_id, username, email, display_name, bio, avatar_key, locale, status, created_at, updated_at) \
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE(to_timestamp($10),now()),COALESCE(to_timestamp($11),now())) \
-             ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,email=EXCLUDED.email,display_name=EXCLUDED.display_name,bio=EXCLUDED.bio,avatar_key=EXCLUDED.avatar_key,locale=EXCLUDED.locale,status=EXCLUDED.status,updated_at=EXCLUDED.updated_at",
+            "INSERT INTO users (id, zitadel_user_id, username, email, display_name, bio, avatar_key, locale, status, created_at, updated_at, profile, theme) \
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE(to_timestamp($10),now()),COALESCE(to_timestamp($11),now()),$12,$13) \
+             ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,email=EXCLUDED.email,display_name=EXCLUDED.display_name,bio=EXCLUDED.bio,avatar_key=EXCLUDED.avatar_key,locale=EXCLUDED.locale,status=EXCLUDED.status,updated_at=EXCLUDED.updated_at,profile=EXCLUDED.profile,theme=EXCLUDED.theme",
         )
         .bind(id)
         .bind(&row.zitadel_placeholder)
@@ -58,6 +58,8 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
         .bind(&row.status)
         .bind(user.created_at)
         .bind(user.updated_at)
+        .bind(&row.profile)
+        .bind(&row.theme)
         .execute(&mut *ctx.tx)
         .await?;
         if let Some(google_sub) = row.google_sub {
@@ -72,19 +74,15 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
             .execute(&mut *ctx.tx)
             .await?;
         }
-        for (name, present) in [
-            ("theme", dropped.theme),
-            ("details", dropped.details),
-            ("profile", dropped.profile),
-            ("insecure http avatar URL", dropped.google_avatar_url),
-        ] {
-            if present {
-                ctx.drop_row(
-                    "user_field",
-                    format!("{}:{name}", user.id),
-                    "legacy-only profile field",
-                );
-            }
+        if let Some(reason) = dropped.details {
+            ctx.drop_row("user_field", format!("{}:details", user.id), reason);
+        }
+        if dropped.google_avatar_url {
+            ctx.drop_row(
+                "user_field",
+                format!("{}:insecure http avatar URL", user.id),
+                "legacy-only profile field",
+            );
         }
     }
     ctx.wrote("user", users.len());
