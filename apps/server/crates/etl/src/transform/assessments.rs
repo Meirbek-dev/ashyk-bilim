@@ -159,6 +159,8 @@ pub struct AssessmentFold {
     pub policy_version: i32,
     /// Legacy settings keys that no v2 column carries (reported once).
     pub dropped_setting_keys: Vec<String>,
+    /// BUG-360: keys the legacy declared but never read (`DEAD_SETTING_KEYS`).
+    pub dead_setting_keys: Vec<String>,
     pub notes: Vec<String>,
 }
 
@@ -189,7 +191,47 @@ const KNOWN_SETTING_KEYS: &[&str] = &[
     "fullscreen_enforcement",
     "fullscreen_required",
     "violation_threshold",
+    // BUG-360: the legacy code-challenge policy mirrored the code item's
+    // body (tests, languages, limits, starter code) and held the grader's
+    // strategy and the analytics difficulty — `code_body_from_policy` /
+    // `policy_difficulty` fold them into the item; `points` is the item's
+    // `max_score`, `due_date` / `max_attempts` / `time_limit_seconds`
+    // duplicate the policy columns (`due_at` falls back to `due_date`).
+    "grading_strategy",
+    "difficulty",
+    "visible_tests",
+    "hidden_tests",
+    "allowed_languages",
+    "starter_code",
+    "memory_limit",
+    "time_limit_seconds",
+    "max_attempts",
+    "due_date",
+    "points",
 ];
+
+/// BUG-360: settings the legacy schema declared (`assessments/settings.py`)
+/// but no legacy code path read — `question_limit` was recomputed from the
+/// item count, `access_mode` / `whitelist_user_ids` were never enforced,
+/// `execution_mode` / `allow_custom_input` never reached the runner.
+const DEAD_SETTING_KEYS: &[&str] = &[
+    "question_limit",
+    "access_mode",
+    "whitelist_user_ids",
+    "execution_mode",
+    "allow_custom_input",
+];
+
+/// `null`, `[]`, `{}` and `""` carry nothing to migrate.
+fn is_empty_value(v: &Value) -> bool {
+    match v {
+        Value::Null => true,
+        Value::Array(a) => a.is_empty(),
+        Value::Object(o) => o.is_empty(),
+        Value::String(s) => s.trim().is_empty(),
+        _ => false,
+    }
+}
 
 const VALID_GRADING_MODES: [&str; 3] = ["auto", "manual", "auto_then_manual"];
 const VALID_RELEASE_MODES: [&str; 2] = ["immediate", "batch"];
@@ -269,12 +311,13 @@ pub fn fold(
         .filter(|v| (0.0..=100.0).contains(v))
         .unwrap_or(0.0);
 
-    let mut dropped_setting_keys: Vec<String> = settings
-        .keys()
-        .filter(|k| !KNOWN_SETTING_KEYS.contains(&k.as_str()))
-        .cloned()
-        .collect();
+    let (mut dead_setting_keys, mut dropped_setting_keys): (Vec<String>, Vec<String>) = settings
+        .iter()
+        .filter(|(k, v)| !KNOWN_SETTING_KEYS.contains(&k.as_str()) && !is_empty_value(v))
+        .map(|(k, _)| k.clone())
+        .partition(|k| DEAD_SETTING_KEYS.contains(&k.as_str()));
     dropped_setting_keys.sort();
+    dead_setting_keys.sort();
 
     AssessmentFold {
         kind,
@@ -336,7 +379,9 @@ pub fn fold(
                 }
             })
             .filter(|n| *n >= 1),
-        due_at: p.and_then(|p| p.due_at),
+        due_at: p
+            .and_then(|p| p.due_at)
+            .or_else(|| iso_epoch(settings.get("due_date"))),
         allow_late: p.is_none_or(|p| p.allow_late),
         late,
         required: bool_setting(&settings, &["required"]),
@@ -369,6 +414,7 @@ pub fn fold(
         attempt_penalty_percent,
         policy_version: p.map_or(1, |p| p.policy_version.max(1)),
         dropped_setting_keys,
+        dead_setting_keys,
         notes,
     }
 }
@@ -461,6 +507,51 @@ pub struct ItemMetadata {
     pub tags: Vec<String>,
     pub outcome_ids: Vec<String>,
     pub estimated_minutes: Option<i32>,
+}
+
+/// BUG-360: a code item's body with the gaps the legacy code-challenge
+/// policy `settings_json` can fill — the legacy grader took its strategy
+/// from the policy (`grading_strategy`), and the policy mirrored the body's
+/// tests (`visible_tests` + `hidden_tests`), `allowed_languages`,
+/// `starter_code`, `time_limit` (seconds) and `memory_limit` (MB). The
+/// body wins wherever it already has a value.
+#[must_use]
+pub fn code_body_from_policy(body_json: Option<&Value>, policy: Option<&Value>) -> Value {
+    let mut body = object(body_json);
+    let policy = object(policy);
+    let missing = |body: &Map<String, Value>, key: &str| body.get(key).is_none_or(is_empty_value);
+    if missing(&body, "tests") {
+        let tests: Vec<Value> = array(policy.get("visible_tests"))
+            .into_iter()
+            .chain(array(policy.get("hidden_tests")))
+            .collect();
+        if !tests.is_empty() {
+            body.insert("tests".into(), Value::Array(tests));
+        }
+    }
+    for (body_key, policy_key) in [
+        ("scoring_strategy", "grading_strategy"),
+        ("languages", "allowed_languages"),
+        ("starter_code", "starter_code"),
+        ("time_limit_seconds", "time_limit"),
+        ("memory_limit_mb", "memory_limit"),
+    ] {
+        if missing(&body, body_key)
+            && let Some(v) = policy.get(policy_key).filter(|v| !is_empty_value(v))
+        {
+            body.insert(body_key.into(), v.clone());
+        }
+    }
+    Value::Object(body)
+}
+
+/// BUG-360: the legacy code-challenge `difficulty` (analytics filter) for
+/// an item without one of its own.
+#[must_use]
+pub fn policy_difficulty(policy: Option<&Value>) -> Option<String> {
+    str_setting(&object(policy), "difficulty")
+        .map(str::to_ascii_lowercase)
+        .filter(|d| ["easy", "medium", "hard"].contains(&d.as_str()))
 }
 
 /// `metadata_json` scalars → columns (legacy `AssessmentItemMetadata`).
@@ -564,11 +655,48 @@ mod tests {
         assert_eq!(f.violation_threshold, 5);
         assert_eq!(f.policy_version, 3);
         assert_eq!(f.attempt_penalty_percent, 0.0);
-        assert_eq!(
-            f.dropped_setting_keys,
-            vec!["access_mode", "question_limit", "whitelist_user_ids"]
-        );
+        // BUG-360: `question_limit: null` / `whitelist_user_ids: []` carry
+        // nothing; `access_mode` was declared but never enforced.
+        assert!(f.dropped_setting_keys.is_empty());
+        assert_eq!(f.dead_setting_keys, vec!["access_mode"]);
         assert!(f.notes.is_empty());
+    }
+
+    #[test]
+    fn code_policy_fills_the_item_body() {
+        // BUG-360: legacy policy 43 — BEST_SUBMISSION strategy, mirrored tests.
+        let policy = serde_json::json!({"difficulty": "EASY", "allowed_languages": [71, 50], "time_limit": 5,
+            "memory_limit": 512, "grading_strategy": "BEST_SUBMISSION", "execution_mode": "COMPLETE_FEEDBACK",
+            "allow_custom_input": true, "points": 100, "due_date": null, "starter_code": {"71": "print()"},
+            "visible_tests": [{"id": "t1", "input": "", "expected_output": "Hello", "is_visible": true, "weight": 1, "description": "d", "group": "default", "time_limit_override": null}],
+            "hidden_tests": [{"id": "t2", "input": "", "expected_output": "Bye", "is_visible": false, "weight": 2}],
+            "hints": [], "reference_solution": null});
+        let bare = serde_json::json!({"kind": "CODE", "prompt": "", "languages": [], "starter_code": {}, "tests": [], "time_limit_seconds": null, "memory_limit_mb": null});
+        let merged = code_body_from_policy(Some(&bare), Some(&policy));
+        let stored = item_body("code", Some(&merged)).unwrap();
+        assert_eq!(stored["scoring_strategy"], "best_submission");
+        assert_eq!(stored["languages"], serde_json::json!([71, 50]));
+        assert_eq!(stored["starter_code"]["71"], "print()");
+        assert_eq!(stored["time_limit_seconds"], 5);
+        assert_eq!(stored["memory_limit_mb"], 512);
+        let tests = stored["tests"].as_array().unwrap();
+        assert_eq!(
+            (
+                tests.len(),
+                tests[1]["id"].as_str(),
+                tests[1]["is_visible"].as_bool()
+            ),
+            (2, Some("t2"), Some(false))
+        );
+        assert_eq!(policy_difficulty(Some(&policy)).as_deref(), Some("easy"));
+        // The body wins where it already has a value.
+        let own = serde_json::json!({"kind": "CODE", "scoring_strategy": "ALL_OR_NOTHING", "tests": [{"id": "mine"}], "languages": [62]});
+        let merged = code_body_from_policy(Some(&own), Some(&policy));
+        assert_eq!(merged["scoring_strategy"], "ALL_OR_NOTHING");
+        assert_eq!(merged["tests"][0]["id"], "mine");
+        assert_eq!(merged["languages"], serde_json::json!([62]));
+        assert_eq!(code_body_from_policy(Some(&own), None), own);
+        assert!(policy_difficulty(None).is_none());
     }
 
     #[test]

@@ -699,6 +699,9 @@ pub struct AssessmentItem {
     pub body_json: Option<serde_json::Value>,
     pub metadata_json: Option<serde_json::Value>,
     pub max_score: f64,
+    /// BUG-360: the owning assessment's policy `settings_json` (code items
+    /// take the grader strategy, mirrored tests and difficulty from it).
+    pub policy_settings: Option<serde_json::Value>,
     pub created_at: Option<f64>,
     pub updated_at: Option<f64>,
 }
@@ -706,6 +709,7 @@ pub struct AssessmentItem {
 pub async fn assessment_items(pool: &PgPool, limit: Option<i64>) -> Result<Vec<AssessmentItem>> {
     fetch(pool, "assessment_item", concat!(
         "SELECT id, item_uuid, assessment_id, (row_number() OVER (PARTITION BY assessment_id ORDER BY \"order\", id))::int AS \"order\", kind, title, body_json, metadata_json, max_score, ",
+        "(SELECT p.settings_json FROM assessment a JOIN assessment_policy p ON p.id = a.policy_id WHERE a.id = assessment_item.assessment_id) AS policy_settings, ",
         ts!("created_at"), ", ", ts!("updated_at"), " FROM assessment_item ORDER BY id"), limit).await
 }
 

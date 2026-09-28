@@ -54,6 +54,13 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
                 "unmapped settings key",
             );
         }
+        for key in &folded.dead_setting_keys {
+            ctx.drop_row(
+                "assessment_policy_field",
+                format!("{}:{key}", row.id),
+                "legacy-only setting, never read by the legacy",
+            );
+        }
         let access_mode = "all_course_learners";
         let id = ctx.idmap.mint(
             "assessment",
@@ -101,9 +108,22 @@ async fn load_items(ctx: &mut Ctx) -> Result<()> {
             ctx.drop_row("assessment_item", row.id, "unsupported item kind");
             continue;
         };
-        let body = transform::assessments::item_body(kind, row.body_json.as_ref())
+        // BUG-360: the code-challenge policy settings fill what the body lacks.
+        let body_json = if kind == "code" {
+            Some(transform::assessments::code_body_from_policy(
+                row.body_json.as_ref(),
+                row.policy_settings.as_ref(),
+            ))
+        } else {
+            row.body_json.clone()
+        };
+        let body = transform::assessments::item_body(kind, body_json.as_ref())
             .map_err(|message| Error::config(format!("assessment item {}: {message}", row.id)))?;
-        let metadata = transform::assessments::item_metadata(row.metadata_json.as_ref());
+        let mut metadata = transform::assessments::item_metadata(row.metadata_json.as_ref());
+        if kind == "code" && metadata.difficulty.is_none() {
+            metadata.difficulty =
+                transform::assessments::policy_difficulty(row.policy_settings.as_ref());
+        }
         let id = ctx.idmap.mint(
             "assessment_item",
             row.id,

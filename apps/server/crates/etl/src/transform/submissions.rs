@@ -261,8 +261,10 @@ pub struct Metadata {
     pub auto_submit_reason: Option<&'static str>,
     pub auto_submitted_at: Option<f64>,
     pub duration_seconds: Option<i32>,
-    /// Keys dropped: `latest_run` / `runs` (→ `code_runs`), plagiarism
-    /// fields (Q4: not carried), `attempt_uuid`, `idempotency_key`.
+    /// Keys dropped: plagiarism fields (Q4: not carried), `attempt_uuid`,
+    /// `idempotency_key`. `latest_run` / `runs` are not dropped: they are
+    /// the legacy mirror of `code_run` rows, which migrate as `code_runs`
+    /// + `code_run_cases` (BUG-360).
     pub dropped_keys: Vec<String>,
 }
 
@@ -295,6 +297,8 @@ pub fn metadata(raw: Option<&Value>) -> Metadata {
                     | "auto_submit_reason"
                     | "auto_submitted_at"
                     | "duration_seconds"
+                    | "latest_run"
+                    | "runs"
             )
         })
         .cloned()
@@ -632,10 +636,8 @@ mod tests {
         assert_eq!(m.violations.as_array().unwrap().len(), 1);
         assert_eq!(m.auto_submit_reason, Some("time_expired"));
         assert!(m.auto_submitted_at.is_some_and(|t| t > 1.7e9));
-        assert_eq!(
-            m.dropped_keys,
-            vec!["latest_run", "plagiarism_status", "runs"]
-        );
+        // `latest_run` / `runs` live on as `code_runs` rows (BUG-360).
+        assert_eq!(m.dropped_keys, vec!["plagiarism_status"]);
         assert_eq!(
             metadata(None),
             Metadata {
