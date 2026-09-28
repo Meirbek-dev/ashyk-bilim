@@ -238,6 +238,22 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     let relaxed = app.get(&format!("/api/v2/certificates/{sloppy}")).await;
     assert_eq!(relaxed.status, StatusCode::OK, "{}", relaxed.text());
     assert_eq!(relaxed.json()["certificate"]["verify_code"], code.as_str());
+    // BUG-357: only `-` and spaces separate groups — dots, a trailing quote
+    // or a stray non-Latin letter make it a different (unknown) code.
+    let dotted = code.replace('-', ".");
+    for junk in [
+        dotted.as_str(),
+        &format!("{code}%22"),
+        &format!("{code}%D1%91"),
+    ] {
+        let refused = app.get(&format!("/api/v2/certificates/{junk}")).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::NOT_FOUND,
+            "{junk}: {}",
+            refused.text()
+        );
+    }
     // ETL-migrated legacy codes keep their own dash layout and still verify,
     // typed as printed or compacted.
     sqlx::query("UPDATE certificate_users SET verify_code = 'F2-20260110-D4HG-027532' WHERE verify_code = $1")
@@ -289,14 +305,19 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         "verify link is locale-prefixed"
     );
     // BUG-327: the download is named by the stored code, never the typed
-    // one (a junk-suffixed, quoted or lowercase code must not reach the header).
-    let typed = format!("{}%22%D1%91", code.to_lowercase());
-    let junk = app.get(&format!("/api/v2/certificates/{typed}/pdf")).await;
-    assert_eq!(junk.status, StatusCode::OK, "{}", junk.text());
+    // one (a lowercase, dashless code must not reach the header).
+    let typed = code.to_lowercase().replace('-', "");
+    let relaxed = app.get(&format!("/api/v2/certificates/{typed}/pdf")).await;
+    assert_eq!(relaxed.status, StatusCode::OK, "{}", relaxed.text());
     assert_eq!(
-        junk.headers[axum::http::header::CONTENT_DISPOSITION],
+        relaxed.headers[axum::http::header::CONTENT_DISPOSITION],
         format!("attachment; filename=\"certificate-{code}.pdf\"")
     );
+    // BUG-357: a junk-suffixed (quoted, non-Latin) code is no code at all.
+    let junk = app
+        .get(&format!("/api/v2/certificates/{typed}%22%D1%91/pdf"))
+        .await;
+    assert_eq!(junk.status, StatusCode::NOT_FOUND, "{}", junk.text());
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE/pdf")
             .await

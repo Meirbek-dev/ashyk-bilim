@@ -61,17 +61,29 @@ pub fn new_verify_code() -> String {
     out
 }
 
-/// Canonical form of a code as typed or pasted: case-insensitive, dashes
-/// and spaces optional (`ftsb…` and `FTSB-…` name the same certificate).
+/// Canonical form of a code as typed or pasted.
+///
+/// Trimmed, case-insensitive, dashes and spaces optional (`ftsb…` and
+/// `FTSB-…` name the same certificate). BUG-357: `-` and spaces are the
+/// only separators — any other character (`.`, quotes, non-Latin letters)
+/// is not a code at all (`None`), never silently dropped.
 #[must_use]
-pub fn normalize_verify_code(raw: &str) -> String {
+pub fn normalize_verify_code(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty()
+        || !raw
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == ' ')
+    {
+        return None;
+    }
     let compact: String = raw
         .chars()
         .filter(char::is_ascii_alphanumeric)
         .map(|c| c.to_ascii_uppercase())
         .collect();
     if compact.len() != 16 {
-        return compact;
+        return Some(compact);
     }
     let mut out = String::with_capacity(19);
     for (i, ch) in compact.chars().enumerate() {
@@ -80,7 +92,7 @@ pub fn normalize_verify_code(raw: &str) -> String {
         }
         out.push(ch);
     }
-    out
+    Some(out)
 }
 
 /// Issue every configured certificate of the course to the learner when
@@ -328,12 +340,11 @@ impl CertificationsService {
 
     /// Public verification by code (no session).
     pub async fn verify(&self, verify_code: &str) -> Result<VerifiedCertificate> {
-        let certificate = ab_db::certifications::get_certificate_by_code(
-            &self.pool,
-            &normalize_verify_code(verify_code),
-        )
-        .await?
-        .ok_or_else(|| Error::not_found("certificate"))?;
+        let code =
+            normalize_verify_code(verify_code).ok_or_else(|| Error::not_found("certificate"))?;
+        let certificate = ab_db::certifications::get_certificate_by_code(&self.pool, &code)
+            .await?
+            .ok_or_else(|| Error::not_found("certificate"))?;
         let certification = self.load(certificate.certification_id).await?;
         let course = ab_db::catalog::get_course(&self.pool, certification.course_id)
             .await?
@@ -410,13 +421,28 @@ mod tests {
     #[test]
     fn codes_normalize_case_and_dashes() {
         assert_eq!(
-            normalize_verify_code(" ftsb-2abc 9xyz-defg "),
-            "FTSB-2ABC-9XYZ-DEFG"
+            normalize_verify_code(" ftsb-2abc 9xyz-defg ").as_deref(),
+            Some("FTSB-2ABC-9XYZ-DEFG")
         );
         assert_eq!(
-            normalize_verify_code("ftsb2abc9xyzdefg"),
-            "FTSB-2ABC-9XYZ-DEFG"
+            normalize_verify_code("ftsb2abc9xyzdefg").as_deref(),
+            Some("FTSB-2ABC-9XYZ-DEFG")
         );
-        assert_eq!(normalize_verify_code("short"), "SHORT");
+        assert_eq!(normalize_verify_code("short").as_deref(), Some("SHORT"));
+        // Legacy ETL layouts pass through compacted.
+        assert_eq!(
+            normalize_verify_code("cd-20260914-dvrt-411010").as_deref(),
+            Some("CD20260914DVRT411010")
+        );
+        // BUG-357: only `-` and spaces separate; anything else is not a code.
+        for junk in [
+            "CD.20260914.DVRT.411010",
+            "X68S-RTTD-T3GK-3RSV\"",
+            "X68S-RTTD-T3GK-3RSVё",
+            "",
+            "   ",
+        ] {
+            assert_eq!(normalize_verify_code(junk), None, "{junk:?}");
+        }
     }
 }
