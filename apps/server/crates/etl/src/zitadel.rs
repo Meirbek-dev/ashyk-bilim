@@ -72,6 +72,11 @@ pub async fn run_import(
         source_users: users.len(),
         ..ImportReport::default()
     };
+    // BUG-354: linking the Zitadel id is bookkeeping — `updated_at` stays.
+    let mut conn = target.acquire().await?;
+    sqlx::query("SET ab.bookkeeping = 'on'")
+        .execute(&mut *conn)
+        .await?;
 
     for user in &users {
         let target_user = targets.get(&user.id).ok_or_else(|| {
@@ -108,9 +113,10 @@ pub async fn run_import(
         sqlx::query("UPDATE users SET zitadel_user_id = $2 WHERE id = $1")
             .bind(target_user.id)
             .bind(zitadel_user_id)
-            .execute(target)
+            .execute(&mut *conn)
             .await?;
     }
+    drop(conn);
 
     let unresolved: i64 =
         sqlx::query_scalar("SELECT count(*) FROM users WHERE zitadel_user_id LIKE 'legacy:%'")

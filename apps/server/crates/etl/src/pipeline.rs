@@ -49,6 +49,10 @@ pub async fn run(options: EtlOptions) -> Result<Report> {
         .connect(options.source_url.expose_secret())
         .await?;
     let mut tx = options.target.begin().await?;
+    // BUG-354: loading is bookkeeping — `updated_at` stays the legacy value.
+    sqlx::query("SET LOCAL ab.bookkeeping = 'on'")
+        .execute(&mut *tx)
+        .await?;
     let run_id = Uuid::now_v7();
     let stored_options = serde_json::to_value(StoredOptions {
         domain: options.domain.map(|domain| domain.name().to_owned()),

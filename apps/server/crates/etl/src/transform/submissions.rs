@@ -4,8 +4,9 @@
 //! in the v2 shape, and code runs leave the metadata blob for `code_runs`.
 
 use ab_domain::grading::answers::ItemAnswer;
-use ab_domain::grading::breakdown::GradingBreakdown;
+use ab_domain::grading::breakdown::{GradingBreakdown, round2};
 use serde_json::{Map, Value};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::transform::assessments::iso_epoch;
@@ -90,20 +91,45 @@ pub fn answers(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) -> R
     }
 }
 
+/// The v2 code item (id, title) owning a legacy Judge0 test case id.
+pub type CodeTests = HashMap<String, (Uuid, String)>;
+
 /// A `GradingBreakdown` blob with `items[].item_id` re-keyed to v2 ids;
 /// items whose legacy id resolves nowhere are dropped and reported.
+///
+/// BUG-353: the legacy code grader keyed its entries by *test case* id
+/// (`test_01K…`, one entry per Judge0 test), not by item. Those fold into
+/// the one `tests-passed` item v2's `grade_code` writes (score = percent of
+/// the tests' points, max 100), the per-test entries kept verbatim under
+/// `feedback_params.tests`. Legacy-only top-level keys (a pending code
+/// submission's `{total_tests, passed_tests, test_results}`) pass through.
 #[must_use]
-pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) -> Rekeyed {
+pub fn breakdown(
+    raw: Option<&Value>,
+    resolve: impl Fn(&str) -> Option<Uuid>,
+    tests: &CodeTests,
+) -> Rekeyed {
     let src = object(raw);
     let mut unresolved = Vec::new();
     let mut items = Vec::new();
+    // (item id, title, per-test entries) in first-seen order.
+    let mut code: Vec<(Uuid, &str, Vec<Map<String, Value>>)> = Vec::new();
     for item in array(src.get("items")) {
         let Some(mut m) = item.as_object().cloned() else {
             continue;
         };
         let legacy_id = str_setting(&m, "item_id").unwrap_or("").to_owned();
         let Some(id) = resolve(&legacy_id) else {
-            unresolved.push(legacy_id);
+            if let Some((owner, title)) = tests.get(&legacy_id) {
+                m.remove("item_id");
+                m.insert("test_id".into(), Value::String(legacy_id));
+                match code.iter_mut().find(|(o, _, _)| o == owner) {
+                    Some((_, _, entries)) => entries.push(m),
+                    None => code.push((*owner, title, vec![m])),
+                }
+            } else {
+                unresolved.push(legacy_id);
+            }
             continue;
         };
         m.insert("item_id".into(), Value::String(id.to_string()));
@@ -132,12 +158,41 @@ pub fn breakdown(raw: Option<&Value>, resolve: impl Fn(&str) -> Option<Uuid>) ->
         }
         items.push(Value::Object(m));
     }
-    let value = serde_json::json!({
+    for (id, title, entries) in code {
+        let num =
+            |m: &Map<String, Value>, key: &str| m.get(key).and_then(Value::as_f64).unwrap_or(0.0);
+        let possible: f64 = entries.iter().map(|m| num(m, "max_score")).sum();
+        let earned: f64 = entries.iter().map(|m| num(m, "score")).sum();
+        let passed = entries
+            .iter()
+            .filter(|m| m.get("correct").and_then(Value::as_bool) == Some(true))
+            .count();
+        let total = entries.len();
+        items.push(serde_json::json!({
+            "item_id": id.to_string(),
+            "item_text": title,
+            "score": if possible > 0.0 { round2((earned / possible * 100.0).clamp(0.0, 100.0)) } else { 0.0 },
+            "max_score": 100.0,
+            "correct": passed == total,
+            "feedback": format!("{passed}/{total} tests passed"),
+            "feedback_code": "tests-passed",
+            "feedback_params": { "correct": passed, "total": total, "tests": entries },
+            "needs_manual_review": entries.iter().any(|m| m.get("needs_manual_review").and_then(Value::as_bool) == Some(true)),
+            "user_answer": null,
+            "correct_answer": null,
+        }));
+    }
+    let mut value = serde_json::json!({
         "items": items,
         "needs_manual_review": src.get("needs_manual_review").and_then(Value::as_bool).unwrap_or(false),
         "auto_graded": src.get("auto_graded").and_then(Value::as_bool).unwrap_or(false),
         "feedback": str_setting(&src, "feedback").unwrap_or(""),
     });
+    if let Value::Object(out) = &mut value {
+        for (k, v) in src {
+            out.entry(k).or_insert(v);
+        }
+    }
     Rekeyed { value, unresolved }
 }
 
@@ -436,7 +491,7 @@ mod tests {
             {"item_id": "q1", "item_text": "t", "score": -0.0, "max_score": 33.3, "correct": false, "feedback": "Incorrect", "needs_manual_review": false, "user_answer": ["1"], "correct_answer": ["2"]},
             {"item_id": "gone", "score": 1.0, "max_score": 1.0}
         ], "needs_manual_review": false, "auto_graded": true, "feedback": ""});
-        let r = breakdown(Some(&raw), resolver(&known));
+        let r = breakdown(Some(&raw), resolver(&known), &CodeTests::new());
         assert_eq!(r.value["items"].as_array().unwrap().len(), 1);
         assert_eq!(r.value["items"][0]["item_id"], a.to_string());
         assert_eq!(r.value["items"][0]["score"], 0.0);
@@ -456,7 +511,7 @@ mod tests {
             {"item_id": "q2", "score": 0.5, "max_score": 1.0, "feedback": "Matched 2/4 pairs"},
             {"item_id": "q3", "score": 0.0, "max_score": 1.0, "feedback": "Something else"}
         ]});
-        let r = breakdown(Some(&raw), resolver(&known));
+        let r = breakdown(Some(&raw), resolver(&known), &CodeTests::new());
         let items = &r.value["items"];
         assert_eq!(items[0]["score"], 0.6667);
         assert_eq!(items[0]["feedback_code"], "correct");
@@ -477,6 +532,59 @@ mod tests {
     }
 
     #[test]
+    fn test_keyed_code_breakdown_folds_into_its_item() {
+        // BUG-353: legacy graded each Judge0 test as an "item".
+        let code_item = Uuid::now_v7();
+        let tests = CodeTests::from([
+            ("test_a".to_owned(), (code_item, "Hello".to_owned())),
+            ("test_b".to_owned(), (code_item, "Hello".to_owned())),
+        ]);
+        let raw = serde_json::json!({"items": [
+            {"item_id": "test_a", "item_text": "greet", "score": 1.0, "max_score": 1.0, "correct": true, "feedback": "Accepted", "needs_manual_review": false, "user_answer": null, "correct_answer": null},
+            {"item_id": "test_b", "item_text": "shout", "score": 0.0, "max_score": 3.0, "correct": false, "feedback": "Wrong Answer", "needs_manual_review": false, "user_answer": null, "correct_answer": null},
+            {"item_id": "test_gone", "score": 1.0, "max_score": 1.0}
+        ], "needs_manual_review": false, "auto_graded": true, "feedback": ""});
+        let r = breakdown(Some(&raw), |_| None, &tests);
+        assert_eq!(r.unresolved, vec!["test_gone"]);
+        let items = r.value["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        let item = &items[0];
+        assert_eq!(item["item_id"], code_item.to_string());
+        assert_eq!(item["item_text"], "Hello");
+        assert_eq!(item["score"], 25.0);
+        assert_eq!(item["max_score"], 100.0);
+        assert_eq!(item["correct"], false);
+        assert_eq!(item["feedback_code"], "tests-passed");
+        assert_eq!(item["feedback_params"]["correct"], 1);
+        assert_eq!(item["feedback_params"]["total"], 2);
+        let per_test = item["feedback_params"]["tests"].as_array().unwrap();
+        assert_eq!(per_test[1]["test_id"], "test_b");
+        assert_eq!(per_test[1]["feedback"], "Wrong Answer");
+        assert!(per_test[1].get("item_id").is_none());
+        let parsed = ab_domain::grading::breakdown::GradingBreakdown::from_value(&r.value);
+        assert_eq!(
+            parsed.items[0].feedback_code.as_deref(),
+            Some("tests-passed")
+        );
+        // 100 % of the tests: the stored grade of record agrees, no override.
+        let one = serde_json::json!({"items": [{"item_id": "test_a", "score": 1.0, "max_score": 1.0, "correct": true}]});
+        let r = breakdown(Some(&one), |_| None, &tests);
+        assert_eq!(r.value["items"][0]["score"], 100.0);
+        assert!(
+            with_score_of_record(r.value, Some(100.0))
+                .get("score_override")
+                .is_none()
+        );
+        // A pending code submission keeps its legacy counters.
+        let pending = serde_json::json!({"total_tests": 1, "passed_tests": 0, "test_results": {}});
+        let r = breakdown(Some(&pending), |_| None, &tests);
+        assert_eq!(r.value["items"], serde_json::json!([]));
+        assert_eq!(r.value["passed_tests"], 0);
+        assert_eq!(r.value["total_tests"], 1);
+        assert!(r.unresolved.is_empty());
+    }
+
+    #[test]
     fn stored_raw_beyond_rounding_drift_is_the_explicit_override() {
         // BUG-329: 149 of 150 legacy items at 0.67 (capped to 0.6667) — the
         // learner's 99.83 stays the grade, stated as an adjustment.
@@ -490,9 +598,11 @@ mod tests {
             })
             .collect();
         let raw = serde_json::json!({"items": items});
-        let r = breakdown(Some(&raw), |k| {
-            known.iter().find(|(l, _)| l == k).map(|(_, u)| *u)
-        });
+        let r = breakdown(
+            Some(&raw),
+            |k| known.iter().find(|(l, _)| l == k).map(|(_, u)| *u),
+            &CodeTests::new(),
+        );
         let exam = with_score_of_record(r.value.clone(), Some(99.83));
         assert_eq!(exam["score_override"], 99.83);
         let parsed = ab_domain::grading::breakdown::GradingBreakdown::from_value(&exam);

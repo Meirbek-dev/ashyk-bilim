@@ -85,8 +85,24 @@ async fn staff_legacy_attempts_become_previews(pool: PgPool) {
     // A v2 attempt keeps the flag it was made with (a learner promoted later).
     let v2_by_contributor = attempt(&pool, assessment, course, contributor, false).await;
 
+    // BUG-354: marking is ETL bookkeeping — the legacy `updated_at` stays.
     let mut conn = pool.acquire().await.unwrap();
+    sqlx::query("SET ab.bookkeeping = 'on'")
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE submissions SET updated_at = '2025-01-02T03:04:05Z'")
+        .execute(&mut *conn)
+        .await
+        .unwrap();
     assert_eq!(mark_staff_previews(&mut conn).await.unwrap(), 2);
+    let stamped: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM submissions WHERE updated_at <> '2025-01-02T03:04:05Z'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stamped, 0, "bookkeeping must not bump updated_at");
     assert_eq!(
         mark_staff_previews(&mut conn).await.unwrap(),
         0,

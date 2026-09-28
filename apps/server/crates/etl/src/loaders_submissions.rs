@@ -6,14 +6,15 @@ use crate::{legacy, transform};
 
 pub async fn run(ctx: &mut Ctx) -> Result<()> {
     let entries = legacy::grading_entries(&ctx.source, ctx.limit).await?;
-    load_submissions(ctx, &entries).await?;
+    let tests = code_tests(&mut ctx.tx).await?;
+    load_submissions(ctx, &entries, &tests).await?;
     let previews = mark_staff_previews(&mut ctx.tx).await?;
     if previews > 0 {
         ctx.note(format!(
             "{previews} attempt(s) by course staff migrated as previews"
         ));
     }
-    load_grading(ctx, entries).await?;
+    load_grading(ctx, entries, &tests).await?;
     load_code_runs(ctx).await?;
     load_code_run_cases(ctx).await?;
     crate::loaders_auxiliary::require_empty(
@@ -64,7 +65,25 @@ async fn default_file_submission_configs(ctx: &mut Ctx) -> Result<()> {
     Ok(())
 }
 
-async fn load_submissions(ctx: &mut Ctx, entries: &[legacy::GradingEntry]) -> Result<()> {
+/// BUG-353: which v2 code item (and title) each Judge0 test case belongs
+/// to — the legacy code grader keyed breakdown entries by test id.
+async fn code_tests(conn: &mut sqlx::PgConnection) -> Result<transform::submissions::CodeTests> {
+    let rows: Vec<(String, uuid::Uuid, String)> = sqlx::query_as(
+        "SELECT t->>'id', i.id, i.title FROM assessment_items i, jsonb_array_elements(i.body->'tests') t          WHERE i.kind = 'code' AND t->>'id' IS NOT NULL",
+    )
+    .fetch_all(conn)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(test_id, item, title)| (test_id, (item, title)))
+        .collect())
+}
+
+async fn load_submissions(
+    ctx: &mut Ctx,
+    entries: &[legacy::GradingEntry],
+    tests: &transform::submissions::CodeTests,
+) -> Result<()> {
     // The latest ledger raw per submission (entries come in id order).
     let ledger_raw: std::collections::HashMap<i32, f64> = entries
         .iter()
@@ -99,9 +118,11 @@ async fn load_submissions(ctx: &mut Ctx, entries: &[legacy::GradingEntry]) -> Re
         let answers = transform::submissions::answers(row.answers_json.as_ref(), |legacy_uuid| {
             ctx.idmap.get_by_uuid("assessment_item", legacy_uuid)
         });
-        let grading = transform::submissions::breakdown(row.grading_json.as_ref(), |legacy_uuid| {
-            ctx.idmap.get_by_uuid("assessment_item", legacy_uuid)
-        });
+        let grading = transform::submissions::breakdown(
+            row.grading_json.as_ref(),
+            |legacy_uuid| ctx.idmap.get_by_uuid("assessment_item", legacy_uuid),
+            tests,
+        );
         let grading_value = transform::submissions::with_score_of_record(
             grading.value,
             row.final_score
@@ -153,7 +174,11 @@ async fn load_submissions(ctx: &mut Ctx, entries: &[legacy::GradingEntry]) -> Re
     Ok(())
 }
 
-async fn load_grading(ctx: &mut Ctx, rows: Vec<legacy::GradingEntry>) -> Result<()> {
+async fn load_grading(
+    ctx: &mut Ctx,
+    rows: Vec<legacy::GradingEntry>,
+    tests: &transform::submissions::CodeTests,
+) -> Result<()> {
     ctx.source("grading_entry", rows.len());
     let mut written = 0;
     for row in rows {
@@ -161,13 +186,17 @@ async fn load_grading(ctx: &mut Ctx, rows: Vec<legacy::GradingEntry>) -> Result<
             ctx.drop_row("grading_entry", row.id, "orphan submission");
             continue;
         };
-        let raw = transform::submissions::breakdown(row.raw_breakdown.as_ref(), |legacy_uuid| {
-            ctx.idmap.get_by_uuid("assessment_item", legacy_uuid)
-        });
+        let resolve = |legacy_uuid: &str| ctx.idmap.get_by_uuid("assessment_item", legacy_uuid);
+        let raw = transform::submissions::breakdown(row.raw_breakdown.as_ref(), resolve, tests);
         let effective =
-            transform::submissions::breakdown(row.effective_breakdown.as_ref(), |legacy_uuid| {
-                ctx.idmap.get_by_uuid("assessment_item", legacy_uuid)
-            });
+            transform::submissions::breakdown(row.effective_breakdown.as_ref(), resolve, tests);
+        for unresolved in raw.unresolved.iter().chain(effective.unresolved.iter()) {
+            ctx.drop_row(
+                "grading_entry_item",
+                format!("{}:{unresolved}", row.id),
+                "unresolved assessment item",
+            );
+        }
         let id = ctx.idmap.mint(
             "grading_entry",
             row.id,
