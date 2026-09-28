@@ -2616,6 +2616,64 @@ async fn failed_run_charges_its_paid_calls(pool: PgPool) {
     assert_eq!(failed_run_charges(&app).await, ("failed".into(), 0, 84, 14));
 }
 
+/// BUG-357 (c): `forwardedProps.thread_id` naming no thread of the caller
+/// is a 404, `language: zz` a 422 on `forwarded_props.language` — both
+/// before any run, reservation or provider call.
+#[sqlx::test(migrations = "../../migrations")]
+async fn qa_chat_rejects_an_unknown_thread_and_language(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Refused").await;
+    mount_stream_reply(&app.llm, &serde_json::json!({ "answer_markdown": "x" })).await;
+    let chat = |props: serde_json::Value| {
+        serde_json::json!({
+            "threadId": "t", "runId": "r", "protocolVersion": "1.0", "state": {},
+            "messages": [{ "id": "m1", "role": "user", "content": "What do monads do?" }],
+            "tools": [], "context": [], "forwardedProps": props,
+        })
+    };
+    let unknown = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/qa/{course_id}/chat"),
+            &chat(serde_json::json!({
+                "client_turn_id": "t-1", "language": "en",
+                "thread_id": "00000000-0000-7000-8000-000000000000",
+            })),
+        )
+        .await;
+    assert_eq!(unknown.status, StatusCode::NOT_FOUND, "{}", unknown.text());
+    assert_eq!(unknown.json()["code"], "not-found");
+    let bad_language = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/qa/{course_id}/chat"),
+            &chat(serde_json::json!({ "client_turn_id": "t-2", "language": "zz" })),
+        )
+        .await;
+    assert_eq!(
+        bad_language.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad_language.text()
+    );
+    assert_eq!(bad_language.json()["code"], "validation-failed");
+    assert!(
+        bad_language.text().contains("forwarded_props.language"),
+        "{}",
+        bad_language.text()
+    );
+    assert!(app.llm.received_requests().await.unwrap().is_empty());
+    let (runs, reservations): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM ai_runs), (SELECT count(*) FROM ai_token_reservations)",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((runs, reservations), (0, 0));
+}
+
 /// BUG-356: a request admitted (reserved) whose run then fails to be
 /// created releases its reservation at once — nothing else would, and the
 /// 15-minute lease would hold the estimate plus the output bound meanwhile.
