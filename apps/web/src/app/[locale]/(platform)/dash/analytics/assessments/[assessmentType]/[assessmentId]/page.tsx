@@ -5,7 +5,7 @@ import { getTeacherAssessmentDetail, normalizeAnalyticsQuery } from '@services/a
 import QuestionDifficultyRadar from '@components/Dashboard/Analytics/QuestionDifficultyRadar'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
+import { getAnalyticsAssessmentTypeLabel, getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import type { AssessmentType } from '@/types/analytics'
@@ -168,7 +168,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           {detail.common_failures.length ? (
             detail.common_failures.map(failure => (
               <Badge key={failure.key} variant="outline">
-                {failure.label} · {failure.count}
+                {/* UX-261: the wire `label` is the English key; `TeacherAnalytics.codes` has it. */}
+                {getAnalyticsCodeLabel(t, failure.key)} · {failure.count}
               </Badge>
             ))
           ) : (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator } from 'next-intl'
 import { getAnalyticsCodeLabel, getAnalyticsMessage, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
+import en from '@/messages/en-US.json'
 import kk from '@/messages/kk-KZ.json'
 import ru from '@/messages/ru-RU.json'
 
@@ -32,7 +33,33 @@ describe('getAnalyticsCodeLabel', () => {
   })
 })
 
-type LooseTranslator = ((key: string, values?: Record<string, string | number>) => string) & { has: (key: string) => boolean }
+type LooseTranslator = ((key: string, values?: Record<string, string | number>) => string) & {
+  has: (key: string) => boolean
+}
+
+// UX-261: the assessment detail's «Частые ошибки» printed the wire key
+// (`awaiting_grading · 1`); every workflow-item key resolves in every catalog.
+describe('assessment common-failure keys', () => {
+  const keys = [
+    'awaiting_grading',
+    'returned_for_resubmission',
+    'late_submissions',
+    'suspicious_attempts',
+    'missing_scores',
+  ]
+  it.each([
+    ['ru-RU', ru],
+    ['kk-KZ', kk],
+    ['en-US', en],
+  ])('%s translates every failure key', (locale, messages) => {
+    const t = createTranslator({ locale, messages, namespace: 'TeacherAnalytics' }) as unknown as LooseTranslator
+    for (const key of keys) {
+      const label = getAnalyticsCodeLabel(t, key)
+      expect(label, key).not.toBe(key)
+      expect(label, key).not.toMatch(/_|TeacherAnalytics/)
+    }
+  })
+})
 
 describe('getAnalyticsMessage', () => {
   const catalog: Record<string, string> = {
@@ -62,7 +89,14 @@ describe('getAnalyticsMessage', () => {
     expect(
       getAnalyticsMessage(t, {
         code: 'grading_slo_breached',
-        params: { assessment_title: 'Final Exam', course_name: 'Python', breaches: 3, awaiting: 5, oldest_hours: 80.5, target_hours: 72 },
+        params: {
+          assessment_title: 'Final Exam',
+          course_name: 'Python',
+          breaches: 3,
+          awaiting: 5,
+          oldest_hours: 80.5,
+          target_hours: 72,
+        },
       }),
     ).toEqual({ title: 'Final Exam: превышен срок проверки', body: '3 в курсе «Python», самая старая 80.5 ч' })
   })
@@ -73,14 +107,18 @@ describe('getAnalyticsMessage', () => {
     ['kk-KZ', kk, '66,7%'],
   ])('%s formats numeric params with the locale', (locale, messages, expected) => {
     const t = createTranslator({ locale, messages, namespace: 'TeacherAnalytics' }) as unknown as LooseTranslator
-    const { body } = getAnalyticsMessage(t, { code: 'assessment_failure_risk', params: { assessment_title: 'Exam', expected_pct: 66.7 } })
+    const { body } = getAnalyticsMessage(t, {
+      code: 'assessment_failure_risk',
+      params: { assessment_title: 'Exam', expected_pct: 66.7 },
+    })
     expect(body).toContain(expected)
     expect(body).not.toContain('66.7')
   })
 
   it('renders list params through codes.* before joining', () => {
     expect(
-      getAnalyticsMessage(t, { code: 'missing_event_sources', params: { sources: ['exam_attempts', 'event_log'] } }).body,
+      getAnalyticsMessage(t, { code: 'missing_event_sources', params: { sources: ['exam_attempts', 'event_log'] } })
+        .body,
     ).toBe('Нет данных: попытки экзаменов, журнал событий')
   })
 })
