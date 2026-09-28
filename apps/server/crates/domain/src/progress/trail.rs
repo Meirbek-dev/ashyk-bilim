@@ -34,6 +34,9 @@ pub struct TrailRun {
     pub course: Course,
     /// Published activities in the course.
     pub course_total_steps: i64,
+    /// The learner's `course_progress` percent — what `learner-state`
+    /// reports — or `None` before the projection wrote a row (UX-250).
+    pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
 }
 
@@ -221,6 +224,8 @@ impl TrailService {
         let steps = ab_db::progress::list_trail_steps(&self.pool, trail.id).await?;
         let course_ids: Vec<CourseId> = runs.iter().map(|r| r.course_id).collect();
         let totals = ab_db::progress::published_activity_counts(&self.pool, &course_ids).await?;
+        let pcts =
+            ab_db::progress::course_progress_pcts(&self.pool, trail.user_id, &course_ids).await?;
         let mut out = Vec::with_capacity(runs.len());
         for run in runs {
             let Some(course) = ab_db::catalog::get_course(&self.pool, run.course_id).await? else {
@@ -248,6 +253,10 @@ impl TrailService {
                     .iter()
                     .find(|t| t.course_id == run.course_id)
                     .map_or(0, |t| t.total),
+                progress_pct: pcts
+                    .iter()
+                    .find(|p| p.course_id == run.course_id)
+                    .map(|p| p.progress_pct),
                 steps: run_steps,
                 row: run,
                 course,

@@ -715,6 +715,31 @@ pub async fn delete_trail_step<'e>(
     Ok(deleted.rows_affected() > 0)
 }
 
+/// One learner's `course_progress.progress_pct` per course, in one query
+/// (UX-250: the trail run carries what `learner-state` shows).
+pub struct CourseProgressPctRow {
+    pub course_id: CourseId,
+    pub progress_pct: f64,
+}
+
+pub async fn course_progress_pcts(
+    pool: &PgPool,
+    user_id: UserId,
+    course_ids: &[CourseId],
+) -> Result<Vec<CourseProgressPctRow>> {
+    let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
+    let rows = sqlx::query_as!(
+        CourseProgressPctRow,
+        r#"SELECT course_id AS "course_id: CourseId", progress_pct
+           FROM course_progress WHERE user_id = $1 AND course_id = ANY($2)"#,
+        user_id.0,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// Published-activity counts per course (trail `course_total_steps`).
 pub struct CourseStepCountRow {
     pub course_id: CourseId,

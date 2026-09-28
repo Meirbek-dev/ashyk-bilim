@@ -31,6 +31,10 @@ pub struct TrailRun {
     pub course: Course,
     /// Published activities in the course.
     pub course_total_steps: i64,
+    /// The learner's course progress percent, the value `learner-state`'s
+    /// `progress.progress_pct` reports; `null` until the progress
+    /// projection has a row for the course (UX-250).
+    pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -69,6 +73,7 @@ impl From<domain::TrailRun> for TrailRun {
             status: r.row.status,
             course: r.course.into(),
             course_total_steps: r.course_total_steps,
+            progress_pct: r.progress_pct,
             steps: r.steps.into_iter().map(Into::into).collect(),
             created_at_unix: r.row.created_at,
             updated_at_unix: r.row.updated_at,

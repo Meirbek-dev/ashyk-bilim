@@ -193,6 +193,8 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
         "Intro"
     );
     assert_eq!(step.json()["runs"][0]["steps"][0]["complete"], true);
+    // UX-250: the run carries the learner-state percent (one query per trail).
+    assert_eq!(step.json()["runs"][0]["progress_pct"], 50.0);
     let half = app
         .get_as(
             &alice,
@@ -232,6 +234,8 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
         )
         .await;
     assert_eq!(done.json()["progress"]["progress_pct"], 100.0);
+    let trail = app.get_as(&alice, "/api/v2/trail").await;
+    assert_eq!(trail.json()["runs"][0]["progress_pct"], 100.0);
     assert_eq!(done.json()["enrollment_state"], "completed");
     assert_eq!(done.json()["next_action"]["id"], "review_completion");
     // No certification configured → the block stays inert (legacy semantics).
