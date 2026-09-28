@@ -173,6 +173,8 @@ declare global {
     course: AppCourse
     steps?: AppTrailStep[]
     course_total_steps?: number
+    /** `learner-state.progress.progress_pct` for the run; `null` until projected (UX-250). */
+    progress_pct?: number | null
     [key: string]: unknown
   }
 

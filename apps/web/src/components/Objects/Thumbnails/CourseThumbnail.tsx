@@ -435,12 +435,16 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     })
   }, [trailData, cleanCourseUuid])
 
-  // Trail `steps` are lesson-type only; completion comes from learner-state
-  // (same source as the course page). Only enrolled courses have a state.
-  // UX-250: unknown is `null` (skeleton), never «0%» — the trail's step ratio
-  // is a different metric (lesson steps only) and would jump to the real value.
-  const learnerProgress = useLearnerCourseProgress(cleanCourseUuid, isAuthenticated && Boolean(courseRun))
-  const progressPercentage = learnerProgress.isLoaded ? learnerProgress.percent : null
+  // UX-250: the run carries `progress_pct` — the same value learner-state
+  // reports — in the one `GET /trail` the page already made; `null` (no
+  // projection row yet) is what learner-state also shows as 0 %. The
+  // per-card learner-state query stays only for a completed run, whose CTA
+  // needs `next_action` / the certificate (UX-127).
+  const progressPercentage = courseRun ? Math.round(courseRun.progress_pct ?? 0) : null
+  const learnerProgress = useLearnerCourseProgress(
+    cleanCourseUuid,
+    isAuthenticated && progressPercentage !== null && progressPercentage >= 100,
+  )
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
