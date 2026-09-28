@@ -30,6 +30,9 @@ interface StaticMetadataMessages {
       userRolesDescription: string
     }
   }
+  UnauthorizedPage: {
+    title: string
+  }
 }
 
 const messagesByLocale: Record<Locale, StaticMetadataMessages> = {
