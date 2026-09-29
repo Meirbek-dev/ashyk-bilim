@@ -88,7 +88,7 @@ describe('exam entry panel grade of record', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByText('Результат доступен')).toBeInTheDocument()
-    expect(screen.getByText('Балл').parentElement).toHaveTextContent(/^Балл100%$/)
+    expect(screen.getByText('Балл').parentElement?.textContent).toMatch(/^Балл100%$/)
     expect(screen.getByText('Отлично')).toBeInTheDocument()
   })
 })

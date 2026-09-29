@@ -25,7 +25,7 @@ describe('UX-149 receipt date locale', () => {
       </NextIntlClientProvider>,
     )
     const stamp = screen.getByText(/қыр\./)
-    expect(stamp).toHaveTextContent(/2026/)
+    expect(stamp.textContent).toMatch(/2026/)
     expect(stamp.textContent).not.toMatch(/Sep/)
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import enUS from '@/messages/en-US.json'
 import kkKZ from '@/messages/kk-KZ.json'

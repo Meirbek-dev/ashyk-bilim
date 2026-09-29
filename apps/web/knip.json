@@ -12,6 +12,7 @@
     "files": "warn",
     "exports": "off",
     "types": "off",
-    "duplicates": "off"
+    "duplicates": "off",
+    "catalogReferences": "off"
   }
 }

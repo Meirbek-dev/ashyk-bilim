@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { AnalyticsCode } from '@/lib/api/generated/zod'
 import en from '@/messages/en-US.json'
 import kk from '@/messages/kk-KZ.json'

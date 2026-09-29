@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { createTranslator } from 'next-intl'
 import { getAnalyticsCodeLabel, getAnalyticsMessage, getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 import en from '@/messages/en-US.json'

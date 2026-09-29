@@ -61,7 +61,7 @@ jobs:
           RUSTFS_VOLUMES: /data
         ports: ['9000:9000']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -120,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free runner disk for the release build
         working-directory: .
@@ -129,10 +129,10 @@ jobs:
             /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
           df -h /
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Docker build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/server/Dockerfile

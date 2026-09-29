@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import type { Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire, reviewTarget } from '@/features/grading/domain/wire'
 import { localizeItemFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'

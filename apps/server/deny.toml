@@ -4,11 +4,7 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = [
-  # `paste` is unmaintained (proc-macro, compile-time only, no runtime surface).
-  # Pulled transitively; drop this ignore when the dependency chain sheds it.
-  "RUSTSEC-2024-0436",
-]
+ignore = []
 
 [licenses]
 version = 2

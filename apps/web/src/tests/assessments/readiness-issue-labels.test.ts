@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { createTranslator } from 'next-intl'
 import type { AbstractIntlMessages } from 'next-intl'
 

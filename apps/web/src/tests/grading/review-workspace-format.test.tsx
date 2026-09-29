@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { EditorStatusBar } from '@/features/content-markdown/editor/EditorStatusBar'
 import { getMarkdownPreset } from '@/features/content-markdown/presets/presets'

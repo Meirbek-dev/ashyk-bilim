@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider, useTranslations } from 'next-intl'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import ruMessages from '@/messages/ru-RU.json'
 

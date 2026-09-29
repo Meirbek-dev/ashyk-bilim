@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { calculateItemPercent, roundScoreInput, sumScores, toItemScale } from '@/features/grading/domain'
 import type { GradedItem } from '@/features/grading/domain'
 

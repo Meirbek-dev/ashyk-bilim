@@ -81,8 +81,8 @@ services:
       disable: true
 
   zitadel:
-# Pinned by digest 2026-08-16 after validated boot (session API + mgmt API smoke-tested).
-    image: ghcr.io/zitadel/zitadel@sha256:3ac6910685d48f32481f01f45e3e6215efe5a9df2c069591b481e9a101712db5
+# Pinned by digest: v4.19.2, boot + OIDC/mgmt API smoke-tested 2026-09-29.
+    image: ghcr.io/zitadel/zitadel@sha256:956a298405189a8f6cd4ec92e8828b1bd10caa7da8b139c39d251d7053e33784
     restart: unless-stopped
     profiles: [rewrite]
     command:

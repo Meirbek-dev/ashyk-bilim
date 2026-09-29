@@ -113,7 +113,7 @@ services:
     ports: !override []
 
   storage-admin:
-    image: docker.io/amazon/aws-cli:2.36.37
+    image: docker.io/amazon/aws-cli:2.37.5
     profiles: [maintenance]
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
