@@ -179,7 +179,8 @@ export function getCourseManagementContext(course: AppCourse, surface: CourseMan
     statusBadges: [
       course.public ? 'public' : 'private',
       readiness.readyToPublish ? 'ready' : 'needs-review',
-      ...(courseNeedsAttention(course) ? ['attention' as const] : []),
+      // «Есть замечания» already says it; a second «Внимание» badge only repeats it.
+      ...(readiness.readyToPublish && courseNeedsAttention(course) ? ['attention' as const] : []),
     ] as const,
   }
 }

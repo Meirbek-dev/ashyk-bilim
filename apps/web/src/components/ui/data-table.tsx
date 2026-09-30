@@ -96,6 +96,8 @@ export interface DataTableProps<TData extends RowData> {
   labels?: DataTableLabels
   toolbarContent?: React.ReactNode
   enableColumnVisibility?: boolean
+  /** Off when the page already has its own (server) search: two search boxes confuse. */
+  enableSearch?: boolean
   enableCsvExport?: boolean
   csvFileName?: string
 }
@@ -155,6 +157,7 @@ export default function DataTable<TData extends RowData>({
   labels,
   toolbarContent,
   enableColumnVisibility = false,
+  enableSearch = true,
   enableCsvExport = false,
   csvFileName = `table-${new Date().toISOString()}.csv`,
 }: DataTableProps<TData>) {
@@ -403,17 +406,19 @@ export default function DataTable<TData extends RowData>({
     <div className={cn('space-y-4', className)}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative w-full max-w-md">
-            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              value={globalFilter}
-              onChange={event => {
-                table.setGlobalFilter(event.target.value)
-              }}
-              placeholder={resolvedLabels.searchPlaceholder}
-              className="pl-9"
-            />
-          </div>
+          {enableSearch ? (
+            <div className="relative w-full max-w-md">
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                value={globalFilter}
+                onChange={event => {
+                  table.setGlobalFilter(event.target.value)
+                }}
+                placeholder={resolvedLabels.searchPlaceholder}
+                className="pl-9"
+              />
+            </div>
+          ) : null}
           {canResetSearch ? (
             <Button
               variant="ghost"

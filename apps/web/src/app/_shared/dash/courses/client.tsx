@@ -55,7 +55,7 @@ import AppLink from '@/components/ui/AppLink'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 interface ManageableCourse extends Course {
@@ -93,6 +93,7 @@ function CoursesHome({
   summaryCounts,
 }: CourseProps) {
   const t = useTranslations('DashPage.CourseManagement.Dashboard')
+  const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -423,17 +424,20 @@ function CoursesHome({
               <AppLink href={context.workspaceHref} className="text-foreground hover:text-foreground/70 font-semibold">
                 {course.name}
               </AppLink>
-              <div className="text-muted-foreground line-clamp-2 text-sm">
-                {course.description?.trim()
-                  ? extractMarkdownSummary(course.description, 140)
-                  : t('table.noDescription')}
-              </div>
-              <div className="text-muted-foreground text-xs">
-                {t('table.structureSummary', {
-                  chapters: stats.chapters,
-                  activities: stats.activities,
-                })}
-              </div>
+              {course.description?.trim() ? (
+                <div className="text-muted-foreground line-clamp-2 text-sm">
+                  {extractMarkdownSummary(course.description, 140)}
+                </div>
+              ) : null}
+              {/* The list payload may carry no chapters: «0 глав» would be a false claim. */}
+              {stats.chapters > 0 ? (
+                <div className="text-muted-foreground text-xs">
+                  {t('table.structureSummary', {
+                    chapters: stats.chapters,
+                    activities: stats.activities,
+                  })}
+                </div>
+              ) : null}
             </div>
           )
         },
@@ -463,7 +467,7 @@ function CoursesHome({
         cell: ({ row }) => (
           <div className="text-muted-foreground text-sm">
             {row.original.update_date
-              ? new Date(row.original.update_date).toLocaleDateString()
+              ? new Date(row.original.update_date).toLocaleDateString(locale)
               : t('table.unknownDate')}
           </div>
         ),
@@ -480,6 +484,7 @@ function CoursesHome({
       headerCheckboxState,
       canDeleteCourse,
       canManageCourse,
+      locale,
       removeOptimisticCourses,
       selectedCourseUuidSet,
       t,
@@ -668,6 +673,7 @@ function CoursesHome({
               columns={columns}
               data={optimisticCourses}
               enableColumnVisibility={false}
+              enableSearch={false}
               enableCsvExport
               csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
               storageKey="course-management"
