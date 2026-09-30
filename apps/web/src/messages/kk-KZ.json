@@ -8345,7 +8345,9 @@
           "form": "Форма",
           "file": "Файл"
         },
-        "exportDone": "CSV сақталды: {count} оқушы"
+        "exportDone": "CSV сақталды: {count} оқушы",
+        "noLearnersTitle": "Курста әлі оқушылар жоқ",
+        "noLearnersDescription": "Оқушылар курсқа жазылғанда осында пайда болады."
       },
       "Review": {
         "layout": {
@@ -8700,7 +8702,7 @@
           "releaseStepDescription": "Тексерістер өткен соң алдын ала қарап, жоспарлаңыз немесе жариялаңыз.",
           "validation": {
             "assessment_title_missing": "Атауы міндетті.",
-            "policy_max_attempts_invalid": "Әрекет шегі 1-ден кем болмауы керек.",
+            "policy_max_attempts_invalid": "Әрекет шегі 1-ден {max}-ге дейін болуы керек.",
             "policy_time_limit_invalid": "Уақыт шегі нөлден көп болуы керек.",
             "policy_violation_threshold_invalid": "Бұзушылық шегі 1-ден кем болмауы керек.",
             "item_title_missing": "Элемент атауы міндетті.",

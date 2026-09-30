@@ -8315,7 +8315,9 @@
           "form": "Form",
           "file": "File"
         },
-        "exportDone": "CSV saved: {count} {count, plural, one {learner} other {learners}}"
+        "exportDone": "CSV saved: {count} {count, plural, one {learner} other {learners}}",
+        "noLearnersTitle": "No learners in this course yet",
+        "noLearnersDescription": "Learners appear here once they enroll in the course."
       },
       "Review": {
         "layout": {
@@ -9251,7 +9253,7 @@
           "validation": {
             "assessment_empty": "Assessment has no items.",
             "assessment_title_missing": "Assessment title is required.",
-            "policy_max_attempts_invalid": "Attempt limit must be at least 1.",
+            "policy_max_attempts_invalid": "Attempt limit must be between 1 and {max}.",
             "policy_time_limit_invalid": "Time limit must be greater than zero.",
             "policy_violation_threshold_invalid": "Violation threshold must be at least 1.",
             "item_title_missing": "Item title is required.",

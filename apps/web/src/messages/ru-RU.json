@@ -8330,7 +8330,9 @@
           "form": "Форма",
           "file": "Файл"
         },
-        "exportDone": "CSV сохранён: {count} {count, plural, one {учащийся} few {учащихся} many {учащихся} other {учащихся}}"
+        "exportDone": "CSV сохранён: {count} {count, plural, one {учащийся} few {учащихся} many {учащихся} other {учащихся}}",
+        "noLearnersTitle": "В курсе пока нет учащихся",
+        "noLearnersDescription": "Учащиеся появятся здесь, когда запишутся на курс."
       },
       "Review": {
         "layout": {
@@ -8725,7 +8727,7 @@
           "validation": {
             "assessment_empty": "Оценка не содержит учебных задач.",
             "assessment_title_missing": "Название обязательно.",
-            "policy_max_attempts_invalid": "Лимит попыток должен быть не менее 1.",
+            "policy_max_attempts_invalid": "Лимит попыток должен быть от 1 до {max}.",
             "policy_time_limit_invalid": "Ограничение по времени должно быть больше нуля.",
             "policy_violation_threshold_invalid": "Порог нарушений должен быть не менее 1.",
             "item_title_missing": "Название элемента обязательно.",
