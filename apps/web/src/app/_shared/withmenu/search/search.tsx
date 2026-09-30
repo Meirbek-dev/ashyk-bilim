@@ -142,9 +142,9 @@ function SearchPage() {
     <div className="bg-background text-foreground min-h-screen">
       {/* Search Header */}
       <div className="border-border bg-card text-card-foreground border-b">
-        <div className="container mx-auto px-4 py-6">
+        <div className="mx-auto max-w-(--breakpoint-3xl) px-4 py-6 sm:px-6 lg:px-8">
           {/* Same left edge as the results below. */}
-          <div className="mx-auto max-w-7xl">
+          <div className="w-full">
             <h1 className="text-foreground mb-6 text-2xl font-semibold">{t('searchTitle')}</h1>
 
             {/* Search Input */}
@@ -230,7 +230,7 @@ function SearchPage() {
       </div>
 
       {/* Search Results */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-(--breakpoint-3xl) px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {hasQuery && !searchError ? (
             <div className="text-muted-foreground mb-6 text-sm" aria-live="polite">
