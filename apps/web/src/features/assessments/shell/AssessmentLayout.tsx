@@ -154,28 +154,28 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   if (vm.kind === 'TYPE_CODE_CHALLENGE') {
     return (
       <ActionBarContext.Provider value={contextValue}>
-        {/* Full-viewport fixed shell — no scroll, fills below global nav (56px) */}
-        <div className="bg-background fixed inset-x-0 top-14 bottom-0 flex flex-col">
-          {/* Compact header */}
-          <div className="flex h-11 shrink-0 items-center justify-between border-b px-4">
-            <div className="flex min-w-0 items-center gap-2">
+        {/* Full-viewport fixed shell — no scroll; the global nav is hidden during an attempt. */}
+        <div className="bg-background fixed inset-0 flex flex-col">
+          {/* The arena header names the problem; this strip only carries a time limit. */}
+          {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
+            <div className="flex h-9 shrink-0 items-center justify-between border-b px-4">
               <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {tKinds(vm.kind)}
               </span>
-              <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
+              <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
-                <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
-              ) : null}
-            </div>
-          </div>
+          ) : null}
           {/* Editor fills remaining height; pb-16 leaves space for fixed AssessmentActionBar */}
           <div className="min-h-0 flex-1 overflow-hidden pb-16">
             <AttemptContent activityUuid={vm.activityUuid} courseUuid={courseUuid} vm={vm} />
           </div>
         </div>
-        <AssessmentActionBar controls={controls} returned={returned} primaryButtonLabelKey={primaryButtonLabelKey} />
+        <AssessmentActionBar
+          controls={controls}
+          returned={returned}
+          primaryButtonLabelKey={primaryButtonLabelKey}
+          exitHref={`/course/${courseUuid.replace(/^course_/, '')}`}
+        />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
         <UnsavedDialog guard={unsavedGuard} />
@@ -236,7 +236,12 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           </section>
         </div>
 
-        <AssessmentActionBar controls={controls} returned={returned} primaryButtonLabelKey={primaryButtonLabelKey} />
+        <AssessmentActionBar
+          controls={controls}
+          returned={returned}
+          primaryButtonLabelKey={primaryButtonLabelKey}
+          exitHref={`/course/${courseUuid.replace(/^course_/, '')}`}
+        />
       </div>
 
       {/* ── Recovery dialog (driven by kind controls) ───────────────────── */}

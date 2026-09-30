@@ -300,3 +300,9 @@
     @apply px-4 pb-4;
   }
 }
+
+/* The site navbar hides during an attempt / focus mode; so does its reserved space. */
+html[data-layout-mode='active-attempt'] main,
+html[data-activity-focus='true'] main {
+  padding-top: 0 !important;
+}

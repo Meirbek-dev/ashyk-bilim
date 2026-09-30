@@ -8,6 +8,7 @@ import type { PolicyView } from '@/features/assessments/domain/policy'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import AppLink from '@/components/ui/AppLink'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
 
@@ -146,6 +147,8 @@ interface AssessmentActionBarProps {
   controls: AttemptShellRegistration
   returned: boolean
   primaryButtonLabelKey?: string | null
+  /** The course page: the site nav is hidden mid-attempt, so this is the way out (the draft autosaves). */
+  exitHref?: string
 }
 
 /**
@@ -168,9 +171,10 @@ export function resolvePrimaryButtonLabelKey(
  *
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
-export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey }: AssessmentActionBarProps) {
+export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey, exitHref }: AssessmentActionBarProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
   const tAttemptActions = useTranslations('AttemptActions')
+  const tActivity = useTranslations('ActivityPage')
   const { navigation } = controls
 
   return (
@@ -178,6 +182,12 @@ export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey 
       <div className="mx-auto flex max-w-[96rem] flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: state badge + progress counter */}
         <div className="flex flex-wrap items-center gap-2">
+          {exitHref ? (
+            <Button variant="ghost" size="sm" nativeButton={false} render={<AppLink href={exitHref} />}>
+              <ChevronLeft className="size-4" />
+              {tActivity('backToCourse')}
+            </Button>
+          ) : null}
           <SaveStateBadge
             state={returned ? 'returned' : (controls.saveState ?? 'saved')}
             status={controls.status ?? null}

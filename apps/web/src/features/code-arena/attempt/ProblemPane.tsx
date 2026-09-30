@@ -92,7 +92,7 @@ export function ProblemPane({
                   ) : null}
                   {typeof problem.points === 'number' ? (
                     <Badge variant="outline">
-                      {problem.points} {t('pointsShort')}
+                      {t('pointsShort', { count: problem.points })}
                     </Badge>
                   ) : null}
                   {problem.timeLimitSeconds ? (

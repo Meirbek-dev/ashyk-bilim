@@ -79,7 +79,9 @@ const vm = {
 } as unknown as AttemptViewModel
 
 describe('exam attempt history numbering', () => {
-  it('labels rows with the server attempt number, not the list position', () => {
+  // The history left the in-attempt view (it read as this attempt's result); the entry
+  // panel keeps it, numbered by `attempt_number` through the same AttemptHistoryList.
+  it('keeps past attempts out of the open attempt', () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
@@ -87,8 +89,7 @@ describe('exam attempt history numbering', () => {
         </NextIntlClientProvider>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('Последняя отправка')).toBeInTheDocument()
-    expect(screen.getByText('Попытка №1')).toBeInTheDocument()
-    expect(screen.queryByText('Попытка №2')).toBeNull()
+    expect(screen.queryByText('Последняя отправка')).toBeNull()
+    expect(screen.queryByText('Попытка №1')).toBeNull()
   })
 })

@@ -33,6 +33,7 @@ vi.mock('next-intl', () => ({
 
 type ApiClientModule = typeof import('@/lib/api-client')
 
+vi.mock('@components/ui/AppLink', () => ({ default: (props: React.ComponentProps<'a'>) => <a {...props} /> }))
 vi.mock('@/lib/api-client', async importOriginal => {
   const actual = await importOriginal<ApiClientModule>()
   return {
