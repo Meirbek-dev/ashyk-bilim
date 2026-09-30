@@ -313,19 +313,23 @@ impl RbacAdminService {
                 "cannot disable your own account",
             ));
         }
+        // BUG-377: read before the transaction takes its connection.
+        let roles = if disabled {
+            ab_db::identity::load_user_grants(&self.pool, user_id)
+                .await?
+                .0
+        } else {
+            Vec::new()
+        };
         let mut tx = self.pool.begin().await?;
-        if disabled {
-            let (roles, _) = ab_db::identity::load_user_grants(&self.pool, user_id).await?;
-            if roles.iter().any(|r| r == "admin")
-                && ab_db::identity::count_other_active_role_holders(&mut tx, "admin", user_id)
-                    .await?
-                    == 0
-            {
-                return Err(Error::app(
-                    ErrorCode::LastAdmin,
-                    "cannot disable the last admin",
-                ));
-            }
+        if roles.iter().any(|r| r == "admin")
+            && ab_db::identity::count_other_active_role_holders(&mut tx, "admin", user_id).await?
+                == 0
+        {
+            return Err(Error::app(
+                ErrorCode::LastAdmin,
+                "cannot disable the last admin",
+            ));
         }
         let status = if disabled { "disabled" } else { "active" };
         if !ab_db::identity::set_user_status(&mut tx, user_id, status).await? {

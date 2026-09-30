@@ -2375,3 +2375,55 @@ async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
     assert_eq!(started.json()["status"], "draft");
     assert_ne!(started.json()["id"], first.as_str());
 }
+
+/// BUG-377: a hand-in holds exactly one pool connection at a time — more
+/// concurrent submits than the pool has connections all land, where the
+/// UX-260 lock on its own connection plus pool writes inside it used to
+/// deadlock the pool (`PoolTimedOut` after the acquire timeout).
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_submits_beyond_the_pool_size_all_land(pool: PgPool) {
+    const POOL: u32 = 3;
+    let small = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(POOL)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .connect_with((*pool.connect_options()).clone())
+        .await
+        .unwrap();
+    let app = TestApp::spawn(small).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({}),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let mut drafts = Vec::new();
+    for n in 0..POOL * 3 {
+        let who = learner(&app, &format!("learner{n}")).await;
+        let draft = app
+            .post_as(
+                &who,
+                &format!("/api/v2/assessments/{id}/submissions"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        drafts.push((who, draft.json()["id"].as_str().unwrap().to_owned()));
+    }
+    let results = futures::future::join_all(
+        drafts
+            .iter()
+            .map(|(who, draft)| app.send(submit(who, draft, None, &answer))),
+    )
+    .await;
+    for res in results {
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        assert_eq!(res.json()["status"], "published");
+    }
+}

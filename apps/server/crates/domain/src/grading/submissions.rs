@@ -852,14 +852,6 @@ impl SubmissionsService {
             preview,
         } = ctx;
 
-        // UX-260: a `start` racing this hand-in waits on `lock_attempts`
-        // (BUG-239) until the row is written, so it answers the settled
-        // state — never the attempt being submitted as a draft. The lock
-        // rides its own connection; the writes below stay on the pool.
-        // ponytail: one pool connection per in-flight hand-in for the whole
-        // grade (judge0 included); queue per learner if the pool starves.
-        let mut attempts = pool.begin().await?;
-        ab_db::submissions::lock_attempts(&mut attempts, assessment.id, submission.user_id).await?;
         // BUG-256: no cap check here — the cap bars opening an attempt
         // (`start`, under `lock_attempts`, BUG-239), and an open draft may
         // always be finished, as `attempt-state` promises.
@@ -921,8 +913,19 @@ impl SubmissionsService {
         }
         let breakdown = grade.breakdown.to_value();
         let answers_value = answers_to_value(&answers);
+        // UX-260: a `start` racing this hand-in waits on `lock_attempts`
+        // (BUG-239) until the row is written, so it answers the settled
+        // state — never the attempt being submitted as a draft. BUG-377:
+        // the lock and the write share one connection, taken only now —
+        // gates and grading (Judge0 included) ran on the pool before it, so
+        // a hand-in never holds a connection while waiting for a second one
+        // (N concurrent hand-ins used to deadlock an N-connection pool). A
+        // start landing during the grade itself precedes the hand-in, as if
+        // it had been issued before the submit.
+        let mut attempts = pool.begin().await?;
+        ab_db::submissions::lock_attempts(&mut attempts, assessment.id, submission.user_id).await?;
         let written = ab_db::submissions::persist_submit(
-            pool,
+            &mut *attempts,
             submission.id,
             SubmitOutcome {
                 status: verdict.status,

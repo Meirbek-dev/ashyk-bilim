@@ -358,7 +358,11 @@ pub struct SubmitOutcome<'a> {
 /// Draft → submitted. `false` when the row is no longer a draft (a
 /// concurrent submit or the timer got there first) or no longer the draft
 /// that was graded (BUG-344).
-pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_>) -> Result<bool> {
+pub async fn persist_submit<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: SubmissionId,
+    o: SubmitOutcome<'_>,
+) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
                status = $2, answers = $3, grading = $4, auto_score = $5, final_score = $6,
@@ -386,7 +390,7 @@ pub async fn persist_submit(pool: &PgPool, id: SubmissionId, o: SubmitOutcome<'_
         o.read_draft_version,
         o.read_violation_count
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
