@@ -31,7 +31,6 @@ export default function AttemptEntryCard({
 }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const locale = useLocale()
-  const tKinds = useTranslations('Features.Assessments.Studio.kinds')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
   const formatTimeLimit = useTimeLimitLabel()
   const percent = usePercentFormat()
@@ -82,27 +81,30 @@ export default function AttemptEntryCard({
   }
 
   const Icon = isRevision ? RotateCcw : BookOpen
+  const plainReady =
+    questionCount > 0 &&
+    !isRevision &&
+    !isAwaitingRelease &&
+    typeof vm.nextAttemptCapPercent !== 'number' &&
+    !onStartNewAttempt
+  const hasAside = !plainReady || Boolean(policy.dueAt)
 
   return (
     <section className="mx-auto w-full max-w-6xl py-6">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className={cn('grid gap-6', hasAside ? 'lg:grid-cols-[minmax(0,1fr)_22rem]' : 'max-w-3xl')}>
         <div className="space-y-6">
           <div className="flex items-start gap-4">
             <div className="bg-primary/10 flex size-12 shrink-0 items-center justify-center rounded-lg">
               <Icon className="text-primary size-6" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  {tKinds(vm.kind)}
-                </span>
-                {isRevision ? (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <RotateCcw className="size-3" />
-                    {t('revision')}
-                  </Badge>
-                ) : null}
-              </div>
+              {/* The kind is already in the status strip above; only a revision needs saying. */}
+              {isRevision ? (
+                <Badge variant="secondary" className="mb-1 gap-1 text-xs">
+                  <RotateCcw className="size-3" />
+                  {t('revision')}
+                </Badge>
+              ) : null}
               <h2 className="text-2xl font-semibold tracking-tight">{vm.title}</h2>
               {vm.description ? (
                 <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">{vm.description}</p>
@@ -157,43 +159,46 @@ export default function AttemptEntryCard({
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-lg border p-4">
-            {questionCount === 0 ? (
-              <>
-                <div className="text-destructive text-sm font-semibold">{t('testNotReadyTitle')}</div>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-sm font-semibold">
-                  {isRevision ? t('revision') : isAwaitingRelease ? t('pendingGrade') : t('readyToStart')}
-                </div>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
-                </p>
-                {typeof vm.nextAttemptCapPercent === 'number' ? (
-                  <p className="text-muted-foreground mt-1 text-sm" data-testid="attempt-cap-note">
-                    {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
+          {/* A plain «ready» card only repeats the Start button below; show it when it says something. */}
+          {plainReady ? null : (
+            <div className="rounded-lg border p-4">
+              {questionCount === 0 ? (
+                <>
+                  <div className="text-destructive text-sm font-semibold">{t('testNotReadyTitle')}</div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
                   </p>
-                ) : null}
-                {onStartNewAttempt ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    disabled={startPending}
-                    onClick={onStartNewAttempt}
-                    data-testid="start-new-attempt"
-                  >
-                    <RotateCcw className="size-4" />
-                    {t('startNewAttempt')}
-                  </Button>
-                ) : null}
-              </>
-            )}
-          </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm font-semibold">
+                    {isRevision ? t('revision') : isAwaitingRelease ? t('pendingGrade') : t('readyToStart')}
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
+                  </p>
+                  {typeof vm.nextAttemptCapPercent === 'number' ? (
+                    <p className="text-muted-foreground mt-1 text-sm" data-testid="attempt-cap-note">
+                      {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
+                    </p>
+                  ) : null}
+                  {onStartNewAttempt ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      disabled={startPending}
+                      onClick={onStartNewAttempt}
+                      data-testid="start-new-attempt"
+                    >
+                      <RotateCcw className="size-4" />
+                      {t('startNewAttempt')}
+                    </Button>
+                  ) : null}
+                </>
+              )}
+            </div>
+          )}
 
           {policy.dueAt ? (
             <div className="rounded-lg border p-4">

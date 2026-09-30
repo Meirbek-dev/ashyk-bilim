@@ -30,10 +30,10 @@ const vm = {
 } as unknown as AttemptViewModel
 
 describe('attempt surface i18n (UX-010)', () => {
-  it('renders a localized kind label and time limit on the entry card', () => {
+  // The kind label lives in the status strip above the card, not on it.
+  it('renders a localized time limit and no raw kind token on the entry card', () => {
     renderRu(<AttemptEntryCard vm={vm} />)
     expect(screen.queryByText(/quiz/i)).toBeNull()
-    expect(screen.getByText('Тест')).toBeInTheDocument()
     expect(screen.getByText('50 мин')).toBeInTheDocument()
   })
 
