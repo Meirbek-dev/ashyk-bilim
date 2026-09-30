@@ -90,7 +90,7 @@ function SectionHeader({ title, type, action }: { title: string; type: 'cou' | '
   return (
     <div className="flex items-center justify-between gap-4">
       <TypeOfContentTitle title={title} type={type} />
-      {action && <div className="flex-shrink-0">{action}</div>}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   )
 }

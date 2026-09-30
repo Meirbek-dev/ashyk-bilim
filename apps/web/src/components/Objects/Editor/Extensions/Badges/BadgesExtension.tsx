@@ -215,7 +215,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
                     {colors.map(c => (
                       <button
                         key={c}
-                        className={`h-8 w-8 rounded-full ${getBadgeColor(c)} hover:ring-opacity-50 focus:ring-opacity-50 hover:ring-2 focus:ring-2 focus:outline-hidden`}
+                        className={`h-8 w-8 rounded-full ${getBadgeColor(c)} hover:ring-2 hover:ring-ring/50 focus:ring-2 focus:ring-ring/50 focus:outline-hidden`}
                         onClick={() => {
                           handleColorSelect(c)
                         }}
