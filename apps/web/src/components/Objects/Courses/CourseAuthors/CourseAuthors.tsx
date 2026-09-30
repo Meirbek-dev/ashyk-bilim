@@ -11,7 +11,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { createCourseUpdate, deleteCourseUpdate } from '@services/courses/updates'
-import { AlertTriangle, Loader2, PencilLine, Rss, TentTree } from 'lucide-react'
+import { AlertTriangle, Loader2, PencilLine, Rss } from 'lucide-react'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -317,15 +317,13 @@ function UpdatesListView({ courseUuid }: { courseUuid: string }) {
   const locale = useDateFnsLocale()
 
   // Reserve the empty-state height while loading so the card does not jump in.
-  if (!updates && isAuthenticated) return <Skeleton className="h-[8.25rem] w-full rounded-lg" />
+  if (!updates && isAuthenticated) return <Skeleton className="h-10 w-full rounded-lg" />
 
   if (!updates || updates.length === 0) {
     return (
-      <div className="border-border bg-muted/20 flex min-h-[8.25rem] flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
-        <TentTree size={28} className="text-muted-foreground mb-2" />
-        <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
-        <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
-      </div>
+      <p className="border-border text-muted-foreground rounded-lg border border-dashed px-3 py-2.5 text-xs">
+        {t('noUpdatesYet')}
+      </p>
     )
   }
 

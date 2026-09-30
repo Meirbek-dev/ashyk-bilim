@@ -20,7 +20,7 @@ interface CourseBreadcrumbsProps {
 export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
   const t = useTranslations('CourseBreadcrumbs')
   return (
-    <div className="pt-2">
+    <div className="pt-2 pb-3">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

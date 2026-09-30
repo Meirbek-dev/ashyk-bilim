@@ -162,6 +162,7 @@ function CourseClient(props: CourseClientProps) {
   }, [course?.learnings])
 
   const isEnrolled = learnerState?.enrolled ?? false
+  const hasActivities = (course?.chapters ?? []).some((chapter: AppChapter) => (chapter.activities?.length ?? 0) > 0)
 
   const [prevCourse, setPrevCourse] = useState(course)
   if (course !== prevCourse) {
@@ -233,7 +234,7 @@ function CourseClient(props: CourseClientProps) {
               <div className="w-full min-w-0 flex-1 space-y-8">
                 <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{course.name}</h1>
                 {/* CSS, not useIsMobile: the phone CTA is in the server HTML (no pop-in after hydration). */}
-                <div className="md:hidden">
+                <div className={cn('md:hidden', !hasActivities && 'hidden')}>
                   <CourseActionsMobile
                     courseuuid={courseuuid}
                     course={course}
@@ -384,7 +385,7 @@ function CourseClient(props: CourseClientProps) {
                 <div>
                   <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
                   {/* UX-008/UX-119: no chapters, or none with a published activity — say so instead of an empty box. */}
-                  {(course.chapters ?? []).every((chapter: AppChapter) => (chapter.activities?.length ?? 0) === 0) ? (
+                  {!hasActivities ? (
                     <p className="border-border text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
                       {t('noPublishedActivities')}
                     </p>
@@ -514,7 +515,8 @@ function CourseClient(props: CourseClientProps) {
                 </div>
 
                 {/* BUG-159: every AI call needs a session — anonymous visitors get no hub (and no 401 redirect). */}
-                {currentUser ? <CourseAIHub courseUuid={course.course_uuid} /> : null}
+                {/* Nothing published yet: nothing for the assistant to answer from. */}
+                {currentUser && hasActivities ? <CourseAIHub courseUuid={course.course_uuid} /> : null}
 
                 {/* Discussions */}
                 <CourseDiscussions
@@ -527,12 +529,15 @@ function CourseClient(props: CourseClientProps) {
 
               {/* Sidebar */}
               <div className="hidden w-full shrink-0 space-y-4 md:sticky md:top-20 md:block md:w-72 lg:w-80">
-                <CoursesActions
-                  courseuuid={courseuuid}
-                  course={course}
-                  trailData={trailData}
-                  learnerState={learnerState}
-                />
+                {/* No lessons: the main column already says so; no second «nothing here» card. */}
+                {hasActivities ? (
+                  <CoursesActions
+                    courseuuid={courseuuid}
+                    course={course}
+                    trailData={trailData}
+                    learnerState={learnerState}
+                  />
+                ) : null}
                 <CourseAuthors courseUuid={course.course_uuid} />
               </div>
             </div>

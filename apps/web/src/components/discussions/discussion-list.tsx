@@ -467,13 +467,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         ))}
 
         {posts.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <MessageCircle size={32} className="text-muted-foreground/50 mx-auto mb-3" />
-              <h3 className="text-foreground mb-1 font-semibold">{t('noDiscussions')}</h3>
-              <p className="text-muted-foreground text-sm">{t('noDiscussionsDesc')}</p>
-            </CardContent>
-          </Card>
+          // One quiet line: the composer above is the call to action, not a second empty card.
+          <p className="text-muted-foreground flex items-center gap-2 px-1 text-sm">
+            <MessageCircle size={16} className="shrink-0" />
+            {t('noDiscussions')}
+          </p>
         )}
       </div>
 
