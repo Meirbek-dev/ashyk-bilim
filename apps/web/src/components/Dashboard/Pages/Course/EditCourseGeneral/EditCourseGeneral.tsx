@@ -1,12 +1,11 @@
 'use client'
 
-import { AlertTriangle, ArrowDown, ArrowUp, Image as ImageIcon, ListChecks, Plus, Tag, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, ListChecks, Plus, Tag, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
 import type { CourseGeneralValues } from '@/schemas/courseSchemas'
-import { CourseEditorNotice } from '@/features/courses/editor/components/CourseEditorNotice'
 import {
   CourseEditorSection,
   CourseEditorStagedSection,
@@ -369,15 +368,9 @@ function EditCourseGeneral() {
 
         <CourseEditorSection
           title={t('thumbnail.label')}
-          description={t('thumbnail.mediaUpdatesIsolated')}
+          description={t('thumbnail.mediaActionsDescription')}
           contentClassName="gap-6"
         >
-          <CourseEditorNotice
-            icon={ImageIcon}
-            title={t('thumbnail.mediaActionsTitle')}
-            description={t('thumbnail.mediaActionsDescription')}
-          />
-
           <ThumbnailUpdate />
         </CourseEditorSection>
       </form>

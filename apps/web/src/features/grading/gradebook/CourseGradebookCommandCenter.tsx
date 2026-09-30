@@ -198,8 +198,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         onRefresh={() => void refetch()}
       />
 
-      <RollupPanel data={data} />
-
       <TeacherActionsPanel data={data} onOpenAction={openTeacherAction} onOpenActivity={openActivityReview} />
 
       {isMobile ? (
@@ -217,7 +215,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
               <TableRow>
                 <TableHead className="bg-background sticky left-0 z-10 w-64">{t('learner')}</TableHead>
                 {visibleActivities.map(activity => (
-                  <TableHead key={activity.id} className="w-44 align-bottom">
+                  <TableHead key={activity.id} className="w-32 align-bottom">
                     <button
                       type="button"
                       className="hover:text-primary focus-visible:ring-ring block w-full rounded-sm text-left outline-none focus-visible:ring-2"
@@ -316,6 +314,8 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
           </div>
         </div>
       ) : null}
+      {/* Summaries are secondary to the grid: below it and its pager. */}
+      <RollupPanel data={data} />
     </div>
   )
 }

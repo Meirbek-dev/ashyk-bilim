@@ -278,9 +278,14 @@ export default function ReviewBulkActionBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge variant="outline">{t('selectedCount', { count: submissions.length })}</Badge>
-      <Badge variant="outline">{t('hiddenCount', { count: releaseSummary.hidden })}</Badge>
-      <Badge variant="outline">{t('visibleCount', { count: releaseSummary.visible })}</Badge>
+      {/* Selection tools appear once rows are ticked — seven disabled controls are noise, not affordance. */}
+      {submissions.length > 0 ? (
+        <>
+          <Badge variant="outline">{t('selectedCount', { count: submissions.length })}</Badge>
+          <Badge variant="outline">{t('hiddenCount', { count: releaseSummary.hidden })}</Badge>
+          <Badge variant="outline">{t('visibleCount', { count: releaseSummary.visible })}</Badge>
+        </>
+      ) : null}
       {isPending ? (
         <Badge variant="warning">
           <Clock3 className="size-3" />
@@ -294,6 +299,8 @@ export default function ReviewBulkActionBar({
           {lastSummary.label}
         </Badge>
       ) : null}
+      {submissions.length > 0 ? (
+        <>
       <Button
         variant="outline"
         size="sm"
@@ -316,10 +323,6 @@ export default function ReviewBulkActionBar({
       {submissions.length > 0 && returnable.length === 0 && ungraded.length > 0 ? (
         <span className="text-muted-foreground text-xs">{t('returnNeedsSavedScore')}</span>
       ) : null}
-      <Button variant="outline" size="sm" disabled={isPending} onClick={() => setPendingAction('release-hidden')}>
-        <Send className="size-4" />
-        {t('releaseHidden')}
-      </Button>
       <CalendarDateTimePicker
         value={deadlineLocal}
         onChange={value => {
@@ -340,6 +343,12 @@ export default function ReviewBulkActionBar({
       >
         <CalendarClock className="size-4" />
         {t('extend')}
+      </Button>
+        </>
+      ) : null}
+      <Button variant="outline" size="sm" disabled={isPending} onClick={() => setPendingAction('release-hidden')}>
+        <Send className="size-4" />
+        {t('releaseHidden')}
       </Button>
       <Button variant="outline" size="sm" disabled={isPending} onClick={exportCsv}>
         <Download className="size-4" />

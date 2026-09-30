@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { SectionHeader } from '@/components/Dashboard/Courses/SectionHeader'
+import { SectionHeader, StickySaveBar } from '@/components/Dashboard/Courses/SectionHeader'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 
@@ -56,7 +56,8 @@ export function CourseEditorStagedSection({
   onDiscard,
 }: CourseEditorStagedSectionProps) {
   return (
-    <Card className={className}>
+    // overflow-visible: the sticky save bar must stick to the viewport, not the card.
+    <Card className={cn('overflow-visible', className)}>
       <CardHeader className="flex flex-col gap-3">
         <SectionHeader
           title={title}
@@ -70,6 +71,7 @@ export function CourseEditorStagedSection({
         </SectionHeader>
       </CardHeader>
       <CardContent className={cn('flex flex-col gap-4', contentClassName)}>{children}</CardContent>
+      <StickySaveBar isDirty={isDirty} isSaving={isSaving} onSave={onSave} onDiscard={onDiscard} />
     </Card>
   )
 }

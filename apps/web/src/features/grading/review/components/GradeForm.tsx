@@ -44,6 +44,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { SubmissionAIEntry } from '@/features/submission-analysis'
 import type { ReviewNavigationState } from '../types'
@@ -410,12 +411,12 @@ export default function GradeForm({
   }, [handleCtrlEnter])
 
   if (!submissionUuid) {
-    return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>
+    return <aside className="text-muted-foreground p-4 text-sm lg:col-start-2 xl:col-start-3 xl:row-start-1">{t('selectSubmission')}</aside>
   }
 
   if (isLoading && !submission) {
     return (
-      <aside className="text-muted-foreground flex items-center justify-center p-4 text-sm">
+      <aside className="text-muted-foreground flex items-center justify-center p-4 text-sm lg:col-start-2 xl:col-start-3 xl:row-start-1">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         {t('loadingSubmission')}
       </aside>
@@ -425,7 +426,7 @@ export default function GradeForm({
   // UX-193: say why (e.g. `grade-own-attempt` — a grader's own attempt).
   if (!submission) {
     return (
-      <aside className="text-muted-foreground p-4 text-sm" role="status">
+      <aside className="text-muted-foreground p-4 text-sm lg:col-start-2 xl:col-start-3 xl:row-start-1" role="status">
         {error ? handleApiError(error).message : t('formUnavailable')}
       </aside>
     )
@@ -455,7 +456,7 @@ export default function GradeForm({
       : getReleaseState(submission.status)
 
   return (
-    <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
+    <aside className="space-y-5 p-4 lg:col-start-2 xl:sticky xl:top-0 xl:col-start-3 xl:row-start-1 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
       <div>
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">{t('grade')}</h2>
@@ -595,13 +596,16 @@ export default function GradeForm({
                       {tItemGrading('invalidItemScore', { max: format.number(item.max_score) })}
                     </p>
                   ) : null}
-                  <MarkdownEditor
+                  {/* A short per-item note; the rich editor is kept for the overall feedback. */}
+                  <Textarea
                     placeholder={tItemGrading('itemFeedback')}
+                    aria-label={tItemGrading('itemFeedback')}
                     value={entry?.feedback ?? item.feedback ?? ''}
                     disabled={!editable || isSaving}
-                    preset="explanation"
-                    minHeight={96}
-                    onChange={markdown => patchItemDraft(item.item_id, 'feedback', markdown)}
+                    maxLength={8000}
+                    rows={1}
+                    className="min-h-9 text-sm [field-sizing:content]"
+                    onChange={event => patchItemDraft(item.item_id, 'feedback', event.target.value)}
                   />
                 </div>
               )

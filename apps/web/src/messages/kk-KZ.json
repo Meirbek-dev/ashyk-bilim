@@ -2740,14 +2740,14 @@
       "thumbnail": {
         "chooseFromGalleryButton": "Галереядан таңдаңыз",
         "label": "Курс мұқабасы",
-        "mediaActionsDescription": "Сурет жүктеу курс жазбасын бірден жаңартады. Тақырып, сипаттама, тегтер және басқа параметрлер сақтауға дейін жергілікті болып қалады.",
+        "mediaActionsDescription": "Сурет жүктелген бойда сақталады — ол үшін «Сақтау» батырмасы қажет емес.",
         "mediaActionsTitle": "Медиафайл әрекеттері бірден қолданылады",
         "mediaUpdatesIsolated": "Медиафайл жаңартулары жоғарғы өрістерден арнайы оқшауланған.",
         "uploadImageButton": "Кескінді жүктеу",
         "uploading": "Жүктелуде..."
       },
       "thumbnailType": "Мұқаба түрі",
-      "title": "Курсты өңдеу: {courseName}",
+      "title": "Негізгі ақпарат",
       "video": "Бейне"
     },
     "NewActivityModal": {
@@ -8307,7 +8307,7 @@
         "learner": "Білім алушы",
         "email": "Эл. пошта",
         "selectCell": "Прогресс ұяшығын таңдау",
-        "actionRequired": "Әрекет",
+        "actionRequired": "Тексеру қажет",
         "late": "Кеш",
         "attempts": "{count, plural, other {# әрекет}}",
         "pendingAttempt": "Тексеруде · {attempt}-әрекет",
@@ -9819,7 +9819,7 @@
           "learner": "Оқушы",
           "email": "Электрондық пошта",
           "selectCell": "Үлгерім ұяшығын таңдау",
-          "actionRequired": "Әрекет",
+          "actionRequired": "Тексеру қажет",
           "late": "Кешіктірілген",
           "attempts": "{count, plural, =0 {# әрекет} one {# әрекет} few {# әрекет} many {# әрекет} other {# әрекет}}",
           "refresh": "Жаңарту",

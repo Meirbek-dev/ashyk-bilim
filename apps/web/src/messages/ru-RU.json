@@ -2741,14 +2741,14 @@
       "thumbnail": {
         "chooseFromGalleryButton": "Выбрать из галереи",
         "label": "Миниатюра курса",
-        "mediaActionsDescription": "Загрузка миниатюры обновляет запись курса сразу. Заголовок, описание, теги и другие настройки являются локальными до сохранения.",
+        "mediaActionsDescription": "Изображение сохраняется сразу после загрузки — кнопка «Сохранить» для него не нужна.",
         "mediaActionsTitle": "Медиафайлы применяются немедленно",
         "mediaUpdatesIsolated": "Обновления медиафайлов намеренно отделены от сохраняемых полей выше.",
         "uploadImageButton": "Загрузить изображение",
         "uploading": "Загрузка..."
       },
       "thumbnailType": "Тип миниатюры",
-      "title": "Редактирование курса: {courseName}",
+      "title": "Основная информация",
       "video": "Видео"
     },
     "NewActivityModal": {
@@ -8292,7 +8292,7 @@
         "learner": "Студент",
         "email": "Эл. почта",
         "selectCell": "Выбрать ячейку прогресса",
-        "actionRequired": "Действие",
+        "actionRequired": "Требует проверки",
         "late": "Поздно",
         "attempts": "{count, plural, =0 {# попыток} one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
         "pendingAttempt": "На проверке · попытка {attempt}",
@@ -9809,7 +9809,7 @@
           "learner": "Студент",
           "email": "Эл. почта",
           "selectCell": "Выбрать ячейку прогресса",
-          "actionRequired": "Действие",
+          "actionRequired": "Требует проверки",
           "late": "Поздно",
           "attempts": "{count, plural, =0 {# попыток} one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
           "refresh": "Обновить",

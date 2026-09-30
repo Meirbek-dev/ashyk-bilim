@@ -34,11 +34,9 @@ export default function GradebookToolbar({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-4 border-b pb-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">{data.course_name}</p>
-        </div>
+      {/* The workspace header already names the course and the tab — no second title here. */}
+      <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <h2 className="sr-only">{t('title')}</h2>
         <div className="flex flex-wrap gap-2">
           <SummaryTile
             label={filtered ? t('summary.learnersFiltered', { total: totalStudents }) : t('summary.learners')}
@@ -123,9 +121,9 @@ function SummaryTile({
   return (
     <div
       className={cn(
-        'border-border min-w-28 rounded-md border px-3 py-2 whitespace-nowrap',
-        tone === 'amber' && 'border-amber-200 bg-amber-50/60',
-        tone === 'rose' && 'border-rose-200 bg-rose-50/60',
+        'border-border min-w-24 rounded-md border px-3 py-1.5 whitespace-nowrap',
+        tone === 'amber' && 'border-amber-500/30 bg-amber-500/10',
+        tone === 'rose' && 'border-rose-500/30 bg-rose-500/10',
       )}
     >
       <div className="text-muted-foreground text-xs">{label}</div>

@@ -20,7 +20,6 @@ import { useSession } from '@/hooks/useSession'
 import appLogoLight from '@public/app_logo_light.svg'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useLogout } from '@/lib/auth/use-logout'
-import { Separator } from '@/components/ui/separator'
 import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserAvatar from '../../Objects/UserAvatar'
@@ -164,7 +163,6 @@ function NavItem({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
                 {item.badge}
               </Badge>
             ) : null}
-            {item.isActive ? <div className="bg-primary ml-auto h-2 w-2 animate-pulse rounded-full" /> : null}
           </>
         )}
       </SidebarMenuButton>
@@ -196,6 +194,9 @@ function DashSidebar({ className }: SidebarProps) {
   // Keyboard shortcut handler - useEffectEvent so the handler is stable and reads latest toggleSidebar
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     // Check for Ctrl+B (or Cmd+B on Mac)
+    // Ctrl+B in a text field or rich-text editor means bold, not «toggle sidebar».
+    const target = event.target as HTMLElement | null
+    if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable="true"]')) return
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
       event.preventDefault()
       event.stopPropagation()
@@ -212,9 +213,6 @@ function DashSidebar({ className }: SidebarProps) {
       document.removeEventListener('keydown', handleKeyDown, true)
     }
   }, [])
-
-  const shortcutLabel =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘B' : 'Ctrl+B'
 
   if (!user) {
     return <SidebarSkeleton />
@@ -298,8 +296,6 @@ function DashSidebar({ className }: SidebarProps) {
 
       <SidebarFooter className="border-sidebar-border border-t p-4">
         <div className={`flex flex-col gap-3 ${isCollapsed ? 'items-center' : ''}`}>
-          <Separator className="bg-sidebar-border" />
-
           {/* User Profile Section */}
           <div className={`flex min-w-0 items-center gap-3 ${isCollapsed ? 'flex-col gap-2' : ''}`}>
             <div className="relative shrink-0">
@@ -321,14 +317,14 @@ function DashSidebar({ className }: SidebarProps) {
           {!isCollapsed && <LocaleSwitcher className="w-full [&>select]:flex-1" />}
 
           {/* Action Buttons */}
-          <div className={`flex gap-2 ${isCollapsed ? 'w-full flex-col' : ''}`}>
+          <div className="flex w-full flex-col gap-1">
             <SidebarMenuButton
               render={<AppLink href="/dash/user-account/settings/general" aria-label={t('ariaLabels.userSettings')} />}
               {...(isCollapsed ? { tooltip: t('tooltips.userSettings', { username: user.username }) } : {})}
               size="sm"
-              className={`hover:bg-sidebar-accent/50 flex-1 transition-all duration-200 ${
+              className={`hover:bg-sidebar-accent/50 flex items-center gap-2 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center' : ''
-              } flex items-center gap-2 ${isCollapsed ? 'justify-center' : 'justify-center'}`}
+              }`}
             >
               <Settings className="h-4 w-4" aria-hidden="true" />
               <span className={`transition-all duration-200 ${isCollapsed ? 'sr-only' : ''}`}>
@@ -341,8 +337,8 @@ function DashSidebar({ className }: SidebarProps) {
               size="sm"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex-1 transition-all duration-200 ${
-                isCollapsed ? 'w-full justify-center px-0' : 'gap-2 px-3'
+              className={`text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200 ${
+                isCollapsed ? 'w-full justify-center px-0' : 'gap-2'
               }`}
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
@@ -352,19 +348,6 @@ function DashSidebar({ className }: SidebarProps) {
             </SidebarMenuButton>
           </div>
 
-          {/* Keyboard shortcut hint */}
-          <div
-            className={`flex items-center justify-center transition-all duration-300 ${
-              isCollapsed ? 'hidden opacity-0' : 'opacity-60 hover:opacity-100'
-            }`}
-          >
-            <div className="text-sidebar-foreground/50 flex items-center gap-1 text-xs">
-              <kbd className="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm select-none">
-                <span className="font-mono">{shortcutLabel}</span>
-              </kbd>
-              <span>{t('keyboardShortcut.toToggle')}</span>
-            </div>
-          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

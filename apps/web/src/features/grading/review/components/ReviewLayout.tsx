@@ -46,9 +46,9 @@ export default function ReviewLayout({
     <div className="flex min-h-[calc(100vh-96px)] flex-col">
       <div className="border-b px-4 py-4 lg:px-6">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold">{pageTitle}</h1>
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold break-words">{pageTitle}</h1>
               <p className="text-muted-foreground text-sm">
                 {t('layout.queueDescription', {
                   count: stats?.needs_grading_count ?? 0,
@@ -90,7 +90,7 @@ function StatsGrid({
   if (!stats) return null
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div className="flex flex-wrap gap-2">
       <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
       <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
       <StatTile label={t('layout.stats.awaitingRelease')} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
@@ -138,13 +138,10 @@ function StatTile({
   }
 
   return (
-    <div className="bg-card flex items-center gap-3 rounded-md border p-3">
-      <Icon className={cn('size-5 shrink-0', colorMap[accent])} />
-      <div>
-        <p className="text-muted-foreground text-xs">{label}</p>
-        <p className="text-lg leading-tight font-semibold">{value}</p>
-        {detail ? <p className="text-muted-foreground text-[11px]">{detail}</p> : null}
-      </div>
+    <div className="bg-card flex items-center gap-2 rounded-md border px-3 py-1.5" title={detail}>
+      <Icon className={cn('size-4 shrink-0', colorMap[accent])} />
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
     </div>
   )
 }

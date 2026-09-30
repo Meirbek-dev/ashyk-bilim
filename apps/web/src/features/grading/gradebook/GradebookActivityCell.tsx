@@ -20,7 +20,7 @@ export default function GradebookActivityCell({
   onOpen: () => void
 }) {
   return (
-    <TableCell className="h-24 align-top">
+    <TableCell className="p-1 align-top">
       <ProgressCell
         cell={cell}
         actionRequiredLabel={labels.actionRequired}

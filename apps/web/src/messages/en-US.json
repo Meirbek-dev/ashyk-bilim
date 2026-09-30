@@ -2742,14 +2742,14 @@
       "thumbnail": {
         "chooseFromGalleryButton": "Choose from gallery",
         "label": "Course Thumbnail",
-        "mediaActionsDescription": "Thumbnail uploads update the live course record right away. Title, description, learnings, tags, and other general settings above stay local until you save this section.",
+        "mediaActionsDescription": "The image is saved as soon as it uploads — no need to press Save.",
         "mediaActionsTitle": "Media actions apply immediately",
         "mediaUpdatesIsolated": "Media updates are intentionally isolated from the draft fields above.",
         "uploadImageButton": "Upload Image",
         "uploading": "Uploading..."
       },
       "thumbnailType": "Thumbnail Type",
-      "title": "Edit Course: {courseName}",
+      "title": "Basics",
       "video": "Video"
     },
     "NewActivityModal": {
@@ -8277,7 +8277,7 @@
         "learner": "Learner",
         "email": "Email",
         "selectCell": "Select progress cell",
-        "actionRequired": "Action",
+        "actionRequired": "Needs review",
         "late": "Late",
         "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
         "pendingAttempt": "Awaiting grading · attempt {attempt}",
@@ -9796,7 +9796,7 @@
           "learner": "Learner",
           "email": "Email",
           "selectCell": "Select progress cell",
-          "actionRequired": "Action",
+          "actionRequired": "Needs review",
           "late": "Late",
           "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
           "refresh": "Refresh",

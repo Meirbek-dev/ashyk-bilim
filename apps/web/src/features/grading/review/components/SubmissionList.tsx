@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { getReleaseState, getSubmissionDisplayName, needsTeacherAction } from '@/features/grading/domain'
+import { getReleaseState, getSubmissionDisplayName } from '@/features/grading/domain'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -43,7 +43,7 @@ export default function SubmissionList({
   const { user } = useSession()
 
   return (
-    <aside className="bg-muted/20 border-b p-4 lg:border-r lg:border-b-0">
+    <aside className="bg-muted/20 border-b p-4 lg:sticky lg:top-0 lg:row-span-2 lg:max-h-screen lg:overflow-y-auto lg:border-r lg:border-b-0">
       <div className="space-y-3">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -146,7 +146,6 @@ export default function SubmissionList({
                       </Badge>
                       {own ? <Badge variant="secondary">{t('ownAttempt')}</Badge> : null}
                       {submission.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-                      {needsTeacherAction(submission.status) ? <Badge variant="warning">{t('action')}</Badge> : null}
                     </div>
                   </button>
                 </div>
