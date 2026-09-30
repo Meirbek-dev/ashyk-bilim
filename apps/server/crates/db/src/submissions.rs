@@ -955,6 +955,9 @@ pub async fn list_submitters(pool: &PgPool, assessment_id: AssessmentId) -> Resu
 
 /// Open timed drafts past their deadline (time limit + grace period,
 /// BUG-326) and not backing off.
+///
+/// No retry cap: the last allowed failure hands the draft in for review
+/// (BUG-379); only a failing database keeps one here, retried hourly.
 pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<SubmissionId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT s.id AS "id: SubmissionId"
@@ -963,7 +966,6 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
              AND a.time_limit_seconds IS NOT NULL
              AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now()
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
-             AND s.auto_submit_attempts < 5
            ORDER BY s.started_at
            LIMIT $1"#,
         limit

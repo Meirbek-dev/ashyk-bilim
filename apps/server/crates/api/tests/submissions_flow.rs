@@ -1895,6 +1895,98 @@ async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
     assert!(at_clock_out, "handed in when the time ran out");
 }
 
+/// BUG-379: a timed draft the sweep can never grade (its stored answers no
+/// longer fit the items) is handed in ungraded on the last allowed try —
+/// pending review, answers as stored, at the clock-out moment — never
+/// left a draft nobody can finish or see.
+#[sqlx::test(migrations = "../../migrations")]
+async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "time_limit_seconds": 60 }),
+        &[open_text_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub = uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap();
+    // Over the open-text cap (a draft stored before a lower cap): parses,
+    // never canonicalizes.
+    let stored =
+        serde_json::json!({ &items[0]: { "kind": "open_text", "text": "x".repeat(50_001) } });
+    sqlx::query(
+        "UPDATE submissions SET answers = $2, started_at = now() - interval '3 minutes'
+         WHERE id = $1",
+    )
+    .bind(sub)
+    .bind(&stored)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let runner = app.code_runner();
+    for round in 1..=5 {
+        let swept = ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10)
+            .await
+            .unwrap();
+        assert_eq!(swept, usize::from(round == 5), "round {round}");
+        sqlx::query("UPDATE submissions SET auto_submit_retry_at = now() WHERE id = $1")
+            .bind(sub)
+            .execute(&app.pool)
+            .await
+            .unwrap();
+    }
+    let (status, reason, answers, attempts, at_clock_out): (
+        String,
+        Option<String>,
+        serde_json::Value,
+        i32,
+        bool,
+    ) = sqlx::query_as(
+        "SELECT status, auto_submit_reason, answers, auto_submit_attempts,
+                submitted_at < now() - interval '90 seconds' AND final_score IS NULL
+         FROM submissions WHERE id = $1",
+    )
+    .bind(sub)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (status.as_str(), reason.as_deref(), attempts),
+        ("pending", Some("time_expired"), 4)
+    );
+    assert_eq!(answers, stored, "answers kept as stored");
+    assert!(at_clock_out, "handed in when the time ran out, ungraded");
+
+    let state = app
+        .get_as(&alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(state.json()["can_continue"], false, "{}", state.text());
+    assert_eq!(state.json()["draft_id"], serde_json::Value::Null);
+    assert_eq!(state.json()["attempts_used"], 1);
+    let queue = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions?status=needs_grading"),
+        )
+        .await;
+    assert_eq!(queue.status, StatusCode::OK, "{}", queue.text());
+    assert_eq!(queue.json()["items"][0]["id"], sub.to_string());
+}
+
 /// A user with author permissions who is no course contributor — a learner
 /// until the teacher adds them to the staff.
 async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {

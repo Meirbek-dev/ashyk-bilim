@@ -46,7 +46,8 @@ pub const SUBMIT_LIMIT: u32 = 3;
 pub const SUBMIT_WINDOW: Duration = Duration::from_secs(10);
 /// BUG-344: how many times a hand-in re-grades a draft that changed under it.
 const FINALIZE_ATTEMPTS: usize = 3;
-/// Timer backoff: 120s · 2^n capped at an hour, five attempts.
+/// Timer backoff: 120s · 2^n capped at an hour; the fifth failure hands
+/// the draft in ungraded for manual review (BUG-379).
 pub const AUTO_SUBMIT_MAX_ATTEMPTS: i32 = 5;
 /// Violation events kept per draft (the count itself is unbounded).
 const MAX_VIOLATION_EVENTS: i32 = 200;
@@ -806,7 +807,7 @@ impl SubmissionsService {
                 &self.runner,
                 self.events.as_ref(),
                 ctx,
-                answers,
+                Some(answers),
                 FinalizeOptions {
                     skip_constraints: false,
                     violation_count,
@@ -830,7 +831,9 @@ impl SubmissionsService {
 
     /// The pipeline proper. Returns (row, effective policy, item count);
     /// `None` when the draft changed while it was graded (BUG-344) — the
-    /// caller re-reads and grades it again.
+    /// caller re-reads and grades it again. `answers: None` hands the draft
+    /// in ungraded, its stored answers kept as they are, for a teacher to
+    /// score (BUG-379: the timer's last try on a draft it cannot grade).
     #[allow(
         clippy::too_many_lines,
         reason = "the submit pipeline order is the contract; kept in one place"
@@ -839,7 +842,7 @@ impl SubmissionsService {
         runner: &CodeRunner,
         events: Option<&GradingEvents>,
         ctx: Context,
-        answers: Answers,
+        answers: Option<Answers>,
         opts: FinalizeOptions,
     ) -> Result<Option<(Submission, EffectivePolicy, usize)>> {
         let pool = runner.pool();
@@ -872,15 +875,20 @@ impl SubmissionsService {
         }
         let violation_exceeded = violation_exceeded(&assessment, opts.violation_count);
 
-        let mut grade = Self::auto_grade(
-            runner,
-            &submission,
-            &assessment,
-            &items,
-            &answers,
-            opts.skip_constraints,
-        )
-        .await?;
+        let mut grade = match &answers {
+            Some(answers) => {
+                Self::auto_grade(
+                    runner,
+                    &submission,
+                    &assessment,
+                    &items,
+                    answers,
+                    opts.skip_constraints,
+                )
+                .await?
+            }
+            None => manual_review(),
+        };
         // BUG-237: a draft behind the assessment's content never publishes
         // an auto score — items it never showed would score `no-answer`.
         // `submit` refuses it earlier (409, reopen); the timer sweep, which
@@ -912,7 +920,9 @@ impl SubmissionsService {
             grade.breakdown.score_override = Some(0.0);
         }
         let breakdown = grade.breakdown.to_value();
-        let answers_value = answers_to_value(&answers);
+        let answers_value = answers
+            .as_ref()
+            .map_or_else(|| submission.answers.clone(), answers_to_value);
         // UX-260: a `start` racing this hand-in waits on `lock_attempts`
         // (BUG-239) until the row is written, so it answers the settled
         // state — never the attempt being submitted as a draft. BUG-377:
@@ -1140,29 +1150,45 @@ impl SubmissionsService {
         let ids = ab_db::submissions::list_expired_drafts(pool, limit).await?;
         let mut done = 0;
         for id in ids {
-            match Self::auto_submit_one(runner, events, id).await {
-                Ok(()) => done += 1,
-                Err(err) => {
-                    let attempts = ab_db::submissions::get_submission(pool, id)
-                        .await?
-                        .map_or(0, |s| s.auto_submit_attempts);
-                    let backoff = (120.0 * 2f64.powi(attempts)).min(3600.0);
-                    tracing::error!(%id, %err, attempts, "auto-submit failed; backing off");
-                    ab_db::submissions::record_auto_submit_failure(pool, id, backoff).await?;
+            let Err(err) = Self::auto_submit_one(runner, events, id, false).await else {
+                done += 1;
+                continue;
+            };
+            let attempts = ab_db::submissions::get_submission(pool, id)
+                .await?
+                .map_or(0, |s| s.auto_submit_attempts);
+            // BUG-379: the last try never abandons the draft — it is handed
+            // in ungraded, as stored, for a teacher to score. Should even
+            // that fail (the database), it retries hourly until it lands.
+            if attempts + 1 >= AUTO_SUBMIT_MAX_ATTEMPTS {
+                match Self::auto_submit_one(runner, events, id, true).await {
+                    Ok(()) => {
+                        tracing::error!(%id, %err, attempts,
+                            "auto-submit failed for the last time; handed in for manual review");
+                        done += 1;
+                        continue;
+                    }
+                    Err(review_err) => tracing::error!(%id, %err, %review_err, attempts,
+                        "auto-submit failed and the hand-in for manual review failed too"),
                 }
             }
+            let backoff = (120.0 * 2f64.powi(attempts)).min(3600.0);
+            tracing::error!(%id, %err, attempts, "auto-submit failed; backing off");
+            ab_db::submissions::record_auto_submit_failure(pool, id, backoff).await?;
         }
         Ok(done)
     }
 
+    /// `for_review`: hand the draft in ungraded, as stored (BUG-379).
     async fn auto_submit_one(
         runner: &CodeRunner,
         events: Option<&GradingEvents>,
         id: SubmissionId,
+        for_review: bool,
     ) -> Result<()> {
         // BUG-344: a save or violation report racing the hand-in re-grades.
         for _ in 0..FINALIZE_ATTEMPTS {
-            if Self::auto_submit_once(runner, events, id).await? {
+            if Self::auto_submit_once(runner, events, id, for_review).await? {
                 return Ok(());
             }
         }
@@ -1176,6 +1202,7 @@ impl SubmissionsService {
         runner: &CodeRunner,
         events: Option<&GradingEvents>,
         id: SubmissionId,
+        for_review: bool,
     ) -> Result<bool> {
         let pool = runner.pool();
         let submission = ab_db::submissions::get_submission(pool, id)
@@ -1213,18 +1240,22 @@ impl SubmissionsService {
         };
         let effective =
             AssessmentsService::policy_at(&assessment, row.as_ref(), preview, submitted_at);
-        let shapes: Vec<ItemShape> = items
-            .iter()
-            .map(|i| ItemShape {
-                id: i.id,
-                kind: i.kind,
-            })
-            .collect();
-        let answers = answers::canonicalize(
-            &parse_answers(&submission.answers)?,
-            Answers::new(),
-            &shapes,
-        )?;
+        let answers = if for_review {
+            None
+        } else {
+            let shapes: Vec<ItemShape> = items
+                .iter()
+                .map(|i| ItemShape {
+                    id: i.id,
+                    kind: i.kind,
+                })
+                .collect();
+            Some(answers::canonicalize(
+                &parse_answers(&submission.answers)?,
+                Answers::new(),
+                &shapes,
+            )?)
+        };
         let violation_count = submission.violation_count;
         let (assessment_id, user_id) = (submission.assessment_id, submission.user_id);
         if Self::finalize(
