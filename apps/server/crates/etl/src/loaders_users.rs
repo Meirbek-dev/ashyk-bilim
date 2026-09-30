@@ -139,11 +139,6 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
 async fn carry_role_grants(ctx: &mut Ctx) -> Result<()> {
     let legacy_grants = legacy::role_grants(&ctx.source).await?;
     ctx.source("role_permissions", legacy_grants.len());
-    let legacy_names: HashMap<String, String> = legacy::roles(&ctx.source)
-        .await?
-        .into_iter()
-        .map(|role| (role.slug, role.name))
-        .collect();
     let system = sqlx::query(
         "SELECT r.slug, r.priority, array_remove(array_agg(rp.permission), NULL) AS seed, \
          (SELECT count(*) FROM user_roles ur WHERE ur.role_id = r.id) AS holders \
@@ -190,19 +185,17 @@ async fn carry_role_grants(ctx: &mut Ctx) -> Result<()> {
             continue;
         }
         let custom = format!("{slug}-legacy-grants");
-        let name = legacy_names.get(slug).map_or(slug, String::as_str);
+        // UX-314: no display text — the web catalogs own the name and
+        // description under the role's keys (`roles.<custom>.name`, as for
+        // the seeded roles), so they read in the viewer's language; the
+        // carried grants show in the role's permission list.
         let role_id: uuid::Uuid = sqlx::query_scalar(
             "INSERT INTO roles (slug, display_name_key, description_key, display_name, description, priority, is_system) \
-             VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', $2, $3, $4, false) \
-             ON CONFLICT (slug) DO UPDATE SET display_name = EXCLUDED.display_name, description = EXCLUDED.description \
+             VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', NULL, NULL, $2, false) \
+             ON CONFLICT (slug) DO UPDATE SET display_name = NULL, description = NULL \
              RETURNING id",
         )
         .bind(&custom)
-        .bind(format!("{name} (legacy grants)"))
-        .bind(format!(
-            "Production grants of `{slug}` beyond the v2 system role, carried by the ETL (BUG-378): {}",
-            plan.carry.join(", ")
-        ))
         .bind(row.get::<i32, _>("priority") - 1)
         .fetch_one(&mut *ctx.tx)
         .await?;
@@ -357,6 +350,28 @@ mod tests {
             collision_email("a@example.com", 17),
             "a+legacy-17@example.com"
         );
+    }
+
+    /// UX-314: a `<slug>-legacy-grants` role has no display text of its
+    /// own — every catalog names and describes it for each system role that
+    /// can carry extra grants (admin's `*:*:*` covers everything).
+    #[test]
+    fn legacy_grant_roles_have_catalog_text() {
+        let messages =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../web/src/messages");
+        for locale in ["ru-RU", "kk-KZ", "en-US"] {
+            let raw = std::fs::read_to_string(messages.join(format!("{locale}.json"))).unwrap();
+            let catalog: serde_json::Value = serde_json::from_str(&raw).unwrap();
+            for slug in ["maintainer", "instructor", "moderator", "user", "guest"] {
+                let role = &catalog["roles"][format!("{slug}-legacy-grants")];
+                for key in ["name", "description"] {
+                    assert!(
+                        role[key].as_str().is_some_and(|t| !t.is_empty()),
+                        "{locale}: roles.{slug}-legacy-grants.{key}"
+                    );
+                }
+            }
+        }
     }
 
     /// BUG-378: the production instructor diff against the v2 seed.

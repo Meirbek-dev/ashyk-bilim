@@ -11425,6 +11425,26 @@
     "guest": {
       "name": "Guest",
       "description": "Limited access without an account"
+    },
+    "maintainer-legacy-grants": {
+      "name": "Maintainer: previous platform rights",
+      "description": "Rights Maintainer holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "instructor-legacy-grants": {
+      "name": "Teacher: previous platform rights",
+      "description": "Rights Teacher holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "moderator-legacy-grants": {
+      "name": "Moderator: previous platform rights",
+      "description": "Rights Moderator holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "user-legacy-grants": {
+      "name": "User: previous platform rights",
+      "description": "Rights User holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "guest-legacy-grants": {
+      "name": "Guest: previous platform rights",
+      "description": "Rights Guest holders had on the previous platform beyond the standard role; given to all of them during the migration"
     }
   }
 }
