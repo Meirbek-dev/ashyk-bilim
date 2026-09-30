@@ -13176,6 +13176,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
             }
+          },
+          {
+            "description": "Current version; stale → 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -13191,6 +13204,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale version"
           }
         },
         "summary": "Delete an activity; chapter siblings renumber to stay contiguous.",
@@ -20516,6 +20539,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/CollectionId"
             }
+          },
+          {
+            "description": "Current `version`; stale → 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -20541,6 +20577,16 @@ expression: json
               }
             },
             "description": "Unknown or inaccessible"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale version"
           }
         },
         "summary": "Delete a collection (membership rows cascade; courses stay).",
@@ -20570,7 +20616,15 @@ expression: json
                 }
               }
             },
-            "description": "Collection"
+            "description": "Collection",
+            "headers": {
+              "ETag": {
+                "description": "Quoted version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "content": {

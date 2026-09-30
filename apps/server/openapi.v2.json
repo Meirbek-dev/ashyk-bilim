@@ -73,6 +73,19 @@
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Current version; stale → 412",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -81,6 +94,16 @@
           },
           "403": {
             "description": "No write access",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale version",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7370,6 +7393,14 @@
         "responses": {
           "200": {
             "description": "Collection",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -7405,6 +7436,19 @@
             "schema": {
               "$ref": "#/components/schemas/CollectionId"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Current `version`; stale → 412",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -7423,6 +7467,16 @@
           },
           "404": {
             "description": "Unknown or inaccessible",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale version",
             "content": {
               "application/problem+json": {
                 "schema": {
