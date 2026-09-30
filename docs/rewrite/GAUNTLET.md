@@ -709,6 +709,12 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | BUG-366 | F40 (web) | Public profile uses `next/image` for gallery / affiliation-logo URLs (`UserProfileClient.tsx:254,343`); any host outside `images.remotePatterns` throws → «Что-то пошло не так!» for everyone. Real user B_Saduakas (img.freepik.com, itcube38.ru) is broken on /ru /kz /en; the server accepts any http(s) host, so any user can break their own page. The /kz crash report then fails `POST /api/log-error` → 413. | open | — | — |
 | BUG-367 | F40 (server+web) | Profile builder in two tabs: both saves toast «Профиль успешно обновлен», DB keeps only the second document — `PATCH /users/me` replaces the profile with no If-Match/version check (silent lost update). | open | — | — |
 | BUG-368 | F02 (server) | UX-254 reopened: 60 concurrent TOTP enrol starts on one account → 2–3 distinct secrets; 13/18 successful starts got a dead secret (`invalid-totp-code`). `totp_enroll` releases the lock (`identity/auth.rs:974`) before storing the pending secret (`:988`) and never re-reads the pending key after taking the lock (`:953`). | open | — | — |
+| BUG-369 | F14 (server) | First live Judge0 pass (pass 30): a program that writes a NUL byte to stdout/stderr → run and submit answer 500 and the `code_runs` row stays `running` forever (Postgres `invalid byte sequence … 0x00` in `insert_code_run_cases`). | open | — | — |
+| BUG-370 | F14 (server, deadline) | Timed code challenge whose draft prints a NUL: the auto-submit sweep fails and backs off for up to 1 h, the final run stays `running`, attempt-state `can_start:false, can_continue:false`, manual submit 403 TIME_LIMIT_EXPIRED — the learner is locked out with no grade. | open | — | — |
+| BUG-371 | F14 (server) | 3 concurrent code runs with the same Idempotency-Key → two 201s with different run ids + one 409: `replay_or_clear` clears the key of a run still `running`. | open | — | — |
+| BUG-372 | F14 (server) | 17 parallel runs (20-burst, 3 × 429) → 10 × 503 «timed out after 25s» and the Judge0 circuit breaker trips for every user for 30 s; judge0.conf `COUNT=1` (prod too) — no server-side concurrency cap/queueing in front of Judge0. | open | — | — |
+| BUG-373 | F14 (web) | A Python runtime error is labelled «Time Limit»: `'RUNTIME'.includes('TIME')` in `verdicts.ts:8,22`. | open | — | — |
+| BUG-374 | F14 (server+web) | Code challenge builder: Сложность = Сложно, save, reload → EASY; difficulty is never sent to / read from `assessment_items.difficulty`. | open | — | — |
 
 ## UX notes
 
@@ -994,3 +1000,14 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | UX-278 | F09 | Collection page on a 390 px phone: a 100-char name with one long word overflows (h1 has no word-break, scrollWidth 956). | **fixed** (`fix(collections): UX-278 …`) — root cause: the collection header is a `flex-col items-start` column, so the `h1` is sized to its min-content — with one unbroken word that is the word's full width (no `overflow-wrap`), widening the phone page. Fix: `wrap-anywhere` (+ `max-w-full`) on the `h1` and the description, which also lets min-content break inside the word. Live (390 px, 100-char word injected): scrollWidth 390 with the class vs 2462 without. Check: vitest `courses/collection-page-long-name.test.tsx`. |
 | UX-279 | F09 | `PATCH /collections/{id}` ignores a stale `If-Match` (200) — collections have no version, last writer wins across tabs (activities/assessment access return 412). | open |
 | UX-280 | F05 | UX-267 sibling: learner hitting /ru/collections/new → /ru/unauthorized still logs «Route "/[locale]/unauthorized": Next.js encountered URL data in generateMetadata()» — stack now through `loading.tsx` → `i18n/request.ts`. | open |
+| UX-281 | F14 | «Проверить решения» with an unsaved broken reference solution checks the SAVED code (3/3 «Пройден») — `ReferenceSolutionRunner.tsx:56` calls `referenceCheck(draft.uuid)`. | open |
+| UX-282 | F14 | Builder has no time/memory limit inputs, yet readiness asks the author to set «Лимиты на выполнение ресурсов». | open |
+| UX-283 | F14 | Renaming the challenge leaves the item title «Новый код-челлендж» → learner review shows «1. Новый код-челлендж». | open |
+| UX-284 | F14 | Saving a published challenge with submissions shows the raw server detail «published assessment already has submissions; unpublish first»; the PATCH is sent even when nothing changed. | open |
+| UX-285 | F14 | ru readiness panel: «Markdown safety / Problem text, sample explanations…» hardcoded English (`PublishReadinessPanel.tsx:118`). | open |
+| UX-286 | F14 | Learner results ru/kz show «Wrong Answer», «Runner Unavailable», «Accepted» (`verdictLabel` hardcoded) and Monaco's English «Search for a command to run...». | open |
+| UX-287 | F14 | Raw keys `Activities.CodeChallenges.firstFailingCasePrefix` / `…attemptNumber` (MISSING_MESSAGE), raw test id, «Язык 71» in the failing-case line and «Решения» tab. | open |
+| UX-288 | F14 | Submitting a code attempt toasts «Решение добавлено в очередь на проверку» while the attempt is already graded (66,67 %). | open |
+| UX-289 | F14 | /kz workspace: Run and Submit are both «Жіберу». | open |
+| UX-290 | F14 | Phone 390×844: side-by-side panes — title clipped to ~130 px, «Код» overlaps «Қайтару», language picker cut, Сынау/Тапсыру off-screen. | open |
+| UX-291 | F14 | 503 problem detail leaks the internal Judge0 URL («error sending request for url (http://localhost:2358/…)») to learners. | open |
