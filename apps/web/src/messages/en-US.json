@@ -9367,11 +9367,11 @@
         },
         "policyTitle": "{kind} policy",
         "Tabs": {
-          "setup": "Setup & Policies",
-          "builder": "Questions Builder",
+          "setup": "Settings",
+          "builder": "Questions",
           "access": "Access",
           "results": "Results",
-          "publish": "Review & Publish"
+          "publish": "Publish"
         },
         "Workspace": {
           "workspace": "Workspace",
