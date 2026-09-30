@@ -55,6 +55,24 @@ describe('/auth/login', () => {
     expect(loginAction).toHaveBeenCalledTimes(1)
   })
 
+  // BUG-363: the submit button unmounts with the credentials step; focus
+  // moves to the code field (every time the step opens), not to <body>.
+  it('focuses the code field when the TOTP step opens', async () => {
+    loginAction.mockResolvedValue({ ok: false, reason: 'mfa_required', code: 'mfa-required' })
+    const user = userEvent.setup()
+    render(<LoginClient />)
+    await user.type(input('login')!, 'aigerim')
+    await user.type(input('password')!, 'correct horse')
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    await waitFor(() => expect(document.activeElement).toBe(input('totpCode')))
+
+    await user.click(screen.getByRole('button', { name: 'backToPassword' }))
+    await waitFor(() => expect(input('login')).not.toBeNull())
+    await user.type(input('password')!, 'correct horse')
+    await user.click(screen.getByRole('button', { name: 'login' }))
+    await waitFor(() => expect(document.activeElement).toBe(input('totpCode')))
+  })
+
   // UX-055: a Google `?error=` banner outlived the password step and sat
   // above the one-time-code field as if the code had failed.
   it('drops the redirect error banner once the TOTP step opens', async () => {

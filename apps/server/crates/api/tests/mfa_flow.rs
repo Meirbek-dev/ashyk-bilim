@@ -29,6 +29,47 @@ fn methods_body(with_totp: bool) -> serde_json::Value {
     serde_json::json!({ "details": { "totalResult": "2" }, "authMethodTypes": methods })
 }
 
+/// TOTP registration at Zitadel: signals each call as it arrives, then
+/// answers after `delay` with a new secret per call (`S1`, `S2`, …), as
+/// Zitadel replaces the pending secret on every registration.
+struct Register {
+    calls: std::sync::atomic::AtomicUsize,
+    tx: tokio::sync::mpsc::UnboundedSender<usize>,
+    delay: std::time::Duration,
+}
+impl wiremock::Respond for Register {
+    fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
+        let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+        let _ = self.tx.send(n);
+        ResponseTemplate::new(200)
+            .set_delay(self.delay)
+            .set_body_json(serde_json::json!({
+                "details": {},
+                "uri": format!("otpauth://totp/ZITADEL:r@example.com?secret=S{n}"),
+                "secret": format!("S{n}")
+            }))
+    }
+}
+
+/// Mounts [`Register`] for `session`'s user; the receiver sees each call.
+async fn mount_register(
+    app: &TestApp,
+    session: &ab_testkit::MintedSession,
+    delay: std::time::Duration,
+) -> tokio::sync::mpsc::UnboundedReceiver<usize> {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
+        .respond_with(Register {
+            calls: 0.into(),
+            tx,
+            delay,
+        })
+        .mount(&app.zitadel)
+        .await;
+    rx
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -411,39 +452,13 @@ async fn enrolling_twice_is_a_conflict(pool: PgPool) {
 /// Only activation ends the pending enrolment: the next start registers anew.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
-    /// Signals each registration as it arrives, then answers slowly (the
-    /// second start lands meanwhile); a new secret per call, as Zitadel does.
-    struct Register {
-        calls: std::sync::atomic::AtomicUsize,
-        tx: tokio::sync::mpsc::UnboundedSender<usize>,
-    }
-    impl wiremock::Respond for Register {
-        fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
-            let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
-            let _ = self.tx.send(n);
-            ResponseTemplate::new(200)
-                .set_delay(std::time::Duration::from_secs(1))
-                .set_body_json(serde_json::json!({
-                    "details": {},
-                    "uri": format!("otpauth://totp/ZITADEL:r@example.com?secret=S{n}"),
-                    "secret": format!("S{n}")
-                }))
-        }
-    }
     let app = TestApp::spawn(pool).await;
     let user = app
         .create_user("racer", "racer@example.com", &["user"])
         .await;
     let session = app.mint_session_for(user, &[]).await;
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-    Mock::given(method("POST"))
-        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
-        .respond_with(Register {
-            calls: 0.into(),
-            tx,
-        })
-        .mount(&app.zitadel)
-        .await;
+    // Answers slowly: the second start lands while the first is at Zitadel.
+    let mut rx = mount_register(&app, &session, std::time::Duration::from_secs(1)).await;
     Mock::given(method("POST"))
         .and(path(format!("/v2/users/z-{}/totp/verify", session.user_id)))
         .respond_with(
@@ -563,4 +578,151 @@ async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(fenced, 1, "the retry ran");
+}
+
+/// BUG-368: a burst of enrolment starts registers exactly one secret. The
+/// lock used to go before the pending secret was stored, and the pending
+/// key was not re-read under it: a start in that gap re-registered at
+/// Zitadel and every secret handed out before it died.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_burst_of_enrolment_starts_registers_one_secret(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    let mut calls = mount_register(&app, &session, std::time::Duration::from_millis(20)).await;
+    let body = serde_json::json!({});
+    let starts = futures::future::join_all((0..40_u64).map(|i| {
+        let (app, session, body) = (&app, &session, &body);
+        async move {
+            tokio::time::sleep(std::time::Duration::from_millis(i)).await;
+            app.post_as(session, "/api/v2/auth/mfa/totp", body).await
+        }
+    }))
+    .await;
+    let mut secrets: Vec<String> = starts
+        .iter()
+        .filter(|res| res.status == StatusCode::OK)
+        .map(|res| res.json()["secret"].as_str().unwrap().to_owned())
+        .collect();
+    secrets.sort();
+    secrets.dedup();
+    assert_eq!(secrets, vec!["S1"]);
+    assert_eq!(calls.recv().await, Some(1));
+    assert!(calls.try_recv().is_err(), "a second secret was registered");
+}
+
+/// The pending secret survives a wrong code, and ends on a verify conflict
+/// (no enrolment at Zitadel) and on removal: each next start registers anew.
+#[sqlx::test(migrations = "../../migrations")]
+async fn pending_enrolment_outlives_a_wrong_code_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("pending", "pending@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{}", session.user_id);
+    mount_register(&app, &session, std::time::Duration::ZERO).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .and(body_partial_json(serde_json::json!({ "code": "000000" })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3, "message": "Code is invalid", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .and(body_partial_json(serde_json::json!({ "code": "111111" })))
+        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+            "code": 5, "message": "Multifactor OTP (OneTimePassword) doesn't exist", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path(format!("/v2/users/{zid}/totp")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({});
+    let secret = async || {
+        let res = app.post_as(&session, "/api/v2/auth/mfa/totp", &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        res.json()["secret"].as_str().unwrap().to_owned()
+    };
+    let verify = async |code: &str| {
+        app.post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": code }),
+        )
+        .await
+        .status
+    };
+
+    assert_eq!(secret().await, "S1");
+    assert_eq!(verify("000000").await, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        secret().await,
+        "S1",
+        "a wrong code keeps the pending secret"
+    );
+    assert_eq!(verify("111111").await, StatusCode::CONFLICT);
+    assert_eq!(secret().await, "S2", "a verify conflict ends it");
+    let removed = app.delete_as(&session, "/api/v2/auth/mfa/totp").await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT);
+    assert_eq!(secret().await, "S3", "removal ends it");
+}
+
+/// A start whose client hangs up at Zitadel still stores the secret and
+/// hands the lock back (the route is detached): the next start gets that
+/// secret, not `idempotency-in-progress` or a new one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn aborted_enrolment_start_still_stores_and_unlocks(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    let mut calls = mount_register(&app, &session, std::time::Duration::from_millis(300)).await;
+    let body = serde_json::json!({});
+    let enrol = || app.post_as(&session, "/api/v2/auth/mfa/totp", &body);
+    ab_testkit::drop_request_when(
+        enrol(),
+        async || calls.try_recv().is_ok(),
+        |res| panic!("the start finished before the hang-up: {}", res.text()),
+    )
+    .await;
+    let mut retry = enrol().await;
+    for _ in 0..50 {
+        if retry.status != StatusCode::CONFLICT {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        retry = enrol().await;
+    }
+    assert_eq!(retry.status, StatusCode::OK, "{}", retry.text());
+    assert_eq!(retry.json()["secret"], "S1");
+    assert!(calls.try_recv().is_err(), "a second secret was registered");
+}
+
+/// An unreadable pending entry is no enrolment: the start registers anew
+/// and replaces it instead of answering 500 for the whole TTL.
+#[sqlx::test(migrations = "../../migrations")]
+async fn corrupt_pending_enrolment_is_replaced(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    mount_register(&app, &session, std::time::Duration::ZERO).await;
+    let mut redis = app.sessions.redis();
+    let () = redis::AsyncCommands::set_ex(
+        &mut redis,
+        format!("totp_pending:{}", session.user_id),
+        "not json",
+        600,
+    )
+    .await
+    .unwrap();
+    let body = serde_json::json!({});
+    for _ in 0..2 {
+        let res = app.post_as(&session, "/api/v2/auth/mfa/totp", &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        assert_eq!(res.json()["secret"], "S1");
+    }
 }

@@ -947,21 +947,14 @@ impl IdentityService {
     /// every registration — a second tab would otherwise kill the first
     /// tab's QR). Two starts racing to Zitadel are serialized on a per-user
     /// lock; the loser answers `idempotency-in-progress` and its retry gets
-    /// the winner's secret.
+    /// the winner's secret. The lock is held until the pending secret is
+    /// stored, and the pending key is re-read under it (BUG-368): a start
+    /// that takes the lock after us must find our secret, not re-register
+    /// and kill it. The route is `detached()`, so the lock is always handed
+    /// back; the TTL covers a crash.
     pub async fn totp_enroll(&self, actor: &Actor) -> Result<TotpRegistration> {
-        let mut redis = self.sessions.redis();
-        let pending_key = totp_pending_key(actor);
-        let pending: Option<String> = redis
-            .get(&pending_key)
-            .await
-            .map_err(|e| Error::internal("reading pending totp enrolment", e))?;
-        if let Some(pending) = pending {
-            let (uri, secret): (String, String) = serde_json::from_str(&pending)
-                .map_err(|e| Error::internal("corrupt pending totp enrolment", e))?;
-            return Ok(TotpRegistration {
-                uri,
-                secret: SecretString::from(secret),
-            });
+        if let Some(pending) = self.pending_totp(actor).await? {
+            return Ok(pending);
         }
         let lock = format!("lock:totp:user:{}", actor.user_id);
         if !self.try_lock(&lock).await? {
@@ -970,9 +963,17 @@ impl IdentityService {
                 "a totp enrolment start is already in progress",
             ));
         }
-        let registered = self.zitadel.register_totp(&actor.zitadel_user_id).await;
+        let started = self.start_totp(actor).await;
         self.unlock(&lock).await?;
-        let mut registration = registered?;
+        started
+    }
+
+    /// The enrolment start under the per-user lock.
+    async fn start_totp(&self, actor: &Actor) -> Result<TotpRegistration> {
+        if let Some(pending) = self.pending_totp(actor).await? {
+            return Ok(pending);
+        }
+        let mut registration = self.zitadel.register_totp(&actor.zitadel_user_id).await?;
         let issuer = ab_db::platform::get_platform(&self.pool)
             .await?
             .map(|platform| platform.name)
@@ -984,11 +985,33 @@ impl IdentityService {
             secrecy::ExposeSecret::expose_secret(&registration.secret),
         ))
         .map_err(|e| Error::internal("serializing pending totp enrolment", e))?;
+        let mut redis = self.sessions.redis();
         let () = redis
-            .set_ex(&pending_key, payload, TOTP_ENROL_TTL.as_secs())
+            .set_ex(totp_pending_key(actor), payload, TOTP_ENROL_TTL.as_secs())
             .await
             .map_err(|e| Error::internal("storing pending totp enrolment", e))?;
         Ok(registration)
+    }
+
+    async fn pending_totp(&self, actor: &Actor) -> Result<Option<TotpRegistration>> {
+        let mut redis = self.sessions.redis();
+        let pending: Option<String> = redis
+            .get(totp_pending_key(actor))
+            .await
+            .map_err(|e| Error::internal("reading pending totp enrolment", e))?;
+        let Some(pending) = pending else {
+            return Ok(None);
+        };
+        // An unreadable entry is no enrolment: the start registers anew and
+        // overwrites it instead of failing for the whole TTL.
+        let Ok((uri, secret)) = serde_json::from_str::<(String, String)>(&pending) else {
+            tracing::warn!(user_id = %actor.user_id, "corrupt pending totp enrolment");
+            return Ok(None);
+        };
+        Ok(Some(TotpRegistration {
+            uri,
+            secret: SecretString::from(secret),
+        }))
     }
 
     /// Activate the enrollment with a first code.
@@ -996,10 +1019,15 @@ impl IdentityService {
         let verified = self.zitadel.verify_totp(&actor.zitadel_user_id, code).await;
         // A wrong code leaves the pending secret valid; anything else
         // (activated, no enrolment pending) ends it.
-        if !matches!(&verified, Err(err) if err.code() == ErrorCode::InvalidTotpCode) {
-            self.forget_pending_totp(actor).await?;
+        if let Err(err) = verified {
+            if err.code() != ErrorCode::InvalidTotpCode {
+                self.forget_pending_totp(actor).await?;
+            }
+            return Err(err);
         }
-        verified?;
+        // Activated at Zitadel: the session flag and audit come first and
+        // clearing the pending entry is best-effort (it expires on its own),
+        // so a Redis error there cannot answer 500 for an active TOTP.
         self.sessions.set_mfa_enabled(actor.user_id, true).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
@@ -1009,7 +1037,11 @@ impl IdentityService {
             None,
             serde_json::json!({ "method": "totp" }),
         )
-        .await
+        .await?;
+        if let Err(err) = self.forget_pending_totp(actor).await {
+            tracing::warn!(%err, user_id = %actor.user_id, "pending totp enrolment not cleared");
+        }
+        Ok(())
     }
 
     /// Remove the TOTP authenticator (idempotent).
