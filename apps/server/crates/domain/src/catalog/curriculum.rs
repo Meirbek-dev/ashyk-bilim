@@ -351,19 +351,20 @@ impl CurriculumService {
     /// whatever its lifecycle (BUG-201): a draft or archived assessment can
     /// still be published later, and its transition flips the activity
     /// `published` — so a `dynamic` row would go live with a quiz behind it.
+    /// BUG-377: read on the caller's transaction (it holds row locks).
     async fn has_attached_content(
-        &self,
+        db: &mut sqlx::PgConnection,
         activity_id: ActivityId,
         activity_type: &str,
     ) -> Result<bool> {
         Ok(match activity_type {
             "quiz" | "exam" | "code_challenge" => {
-                ab_db::assessments::get_assessment_by_activity(&self.pool, activity_id)
+                ab_db::assessments::get_assessment_by_activity(db, activity_id)
                     .await?
                     .is_some()
             }
             "file_submission" => {
-                ab_db::file_submissions::get_file_submission_by_activity(&self.pool, activity_id)
+                ab_db::file_submissions::get_file_submission_by_activity(db, activity_id)
                     .await?
                     .is_some()
             }
@@ -418,9 +419,7 @@ impl CurriculumService {
         // stays attached to its activity in every lifecycle; the type cannot
         // move away from it while the row exists.
         if type_changes
-            && self
-                .has_attached_content(activity_id, &activity.activity_type)
-                .await?
+            && Self::has_attached_content(&mut tx, activity_id, &activity.activity_type).await?
         {
             return Err(Error::conflict(
                 "the activity has an assessment attached; delete it before changing the type",
@@ -440,7 +439,7 @@ impl CurriculumService {
             None => None,
         };
         if let Some(assessment) = &assessment {
-            crate::assessments::service::ensure_editable(&self.pool, assessment).await?;
+            crate::assessments::service::ensure_editable(&mut *tx, assessment).await?;
         }
 
         if let (Some(assessment), Some(name)) = (&assessment, name) {

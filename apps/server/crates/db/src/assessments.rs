@@ -773,7 +773,10 @@ pub struct SubmissionActivity {
     pub non_draft: bool,
 }
 
-pub async fn submission_activity(pool: &PgPool, id: AssessmentId) -> Result<SubmissionActivity> {
+pub async fn submission_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+) -> Result<SubmissionActivity> {
     let row = sqlx::query!(
         r#"SELECT EXISTS (SELECT 1 FROM submissions
                           WHERE assessment_id = $1 AND NOT preview) AS "any!",
@@ -782,7 +785,7 @@ pub async fn submission_activity(pool: &PgPool, id: AssessmentId) -> Result<Subm
                       AS "non_draft!""#,
         id.0
     )
-    .fetch_one(pool)
+    .fetch_one(db)
     .await?;
     Ok(SubmissionActivity {
         any: row.any,

@@ -36,11 +36,16 @@ pub const MAX_ATTEMPTS: i32 = 10;
 /// Archived and scheduled assessments are read-only; a published one with
 /// any submission cannot be edited (BUG-162). Shared with the curriculum
 /// rename path (UX-120), which writes the title through the activity.
-pub(crate) async fn ensure_editable(pool: &PgPool, assessment: &Assessment) -> Result<()> {
+/// BUG-377: on the caller's transaction when it holds the row lock — never a
+/// second pool connection under a held one.
+pub(crate) async fn ensure_editable<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment: &Assessment,
+) -> Result<()> {
     match assessment.lifecycle {
         Lifecycle::Archived => Err(read_only("archived", "archived assessments are read-only")),
         Lifecycle::Published => {
-            let activity = ab_db::assessments::submission_activity(pool, assessment.id).await?;
+            let activity = ab_db::assessments::submission_activity(db, assessment.id).await?;
             if activity.any {
                 return Err(read_only(
                     "has_submissions",
@@ -551,17 +556,15 @@ impl AssessmentsService {
                 .is_some_and(|a| a.published))
     }
 
-    /// Legacy `_ensure_authorable`: archived is read-only; a published
-    /// assessment with any submission cannot be edited.
-    async fn ensure_editable(&self, assessment: &Assessment) -> Result<()> {
-        ensure_editable(&self.pool, assessment).await
-    }
-
     /// Legacy `ASSESSMENT_LOCKED`: content (body/kind/max score) freezes once
-    /// a published assessment has a non-draft submission.
-    async fn ensure_content_unlocked(&self, assessment: &Assessment) -> Result<()> {
+    /// a published assessment has a non-draft submission. BUG-377: on the
+    /// caller's transaction when it holds the row lock.
+    async fn ensure_content_unlocked<'e>(
+        db: impl sqlx::PgExecutor<'e>,
+        assessment: &Assessment,
+    ) -> Result<()> {
         if assessment.lifecycle == Lifecycle::Published
-            && ab_db::assessments::submission_activity(&self.pool, assessment.id)
+            && ab_db::assessments::submission_activity(db, assessment.id)
                 .await?
                 .non_draft
         {
@@ -808,7 +811,7 @@ impl AssessmentsService {
         let assessment = ab_db::assessments::lock_assessment(&mut tx, id)
             .await?
             .ok_or_else(|| Error::not_found("assessment"))?;
-        self.ensure_editable(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
         ab_db::assessments::update_assessment_details(
             &mut *tx,
             id,
@@ -845,7 +848,7 @@ impl AssessmentsService {
         policy.validate()?;
         let mut tx = self.pool.begin().await?;
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
-        self.ensure_editable(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
         // BUG-207: the readiness gate publish took, re-run on the would-be
         // policy (no policy rule blocks today — they warn — but the gate
         // stays one function).
@@ -1279,10 +1282,10 @@ impl AssessmentsService {
         metadata: ItemMetadataInput,
     ) -> Result<Item> {
         let assessment = self.load_for_author(actor, id).await?;
-        self.ensure_editable(&assessment).await?;
+        ensure_editable(&self.pool, &assessment).await?;
         // BUG-217: a new item reweights every graded attempt, like a max
         // score change does.
-        self.ensure_content_unlocked(&assessment).await?;
+        Self::ensure_content_unlocked(&self.pool, &assessment).await?;
         Self::check_kind_allowed(assessment.kind, body.kind())?;
         body.validate()?;
         if max_score < 0.0 {
@@ -1304,8 +1307,8 @@ impl AssessmentsService {
         } = Self::lock_detail(&mut tx, id).await?;
         // BUG-231: a schedule (or publish) that landed since the load above
         // makes the row read-only — the same gates, on the locked row.
-        self.ensure_editable(&assessment).await?;
-        self.ensure_content_unlocked(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
+        Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
         // BUG-264: the cap counts the items read under the row lock, so
         // parallel adds at 199 cannot each see room for one more.
         if i64::try_from(items.len()).unwrap_or(i64::MAX) >= MAX_ITEMS {
@@ -1379,7 +1382,7 @@ impl AssessmentsService {
             assessment,
             mut items,
         } = Self::lock_detail(&mut tx, row.assessment_id).await?;
-        self.ensure_editable(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
         // BUG-257: content = what the learner answers and is scored on — the
         // body (prompt, options, correct answers, tests) and the max score.
         // The editor re-sends the whole item, so compare, don't test presence;
@@ -1395,7 +1398,7 @@ impl AssessmentsService {
                     .is_some_and(|s| s.to_bits() != item.max_score.to_bits())
         });
         if content_changed {
-            self.ensure_content_unlocked(&assessment).await?;
+            Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
         }
         if let Some(body) = &changes.body {
             Self::check_kind_allowed(assessment.kind, body.kind())?;
@@ -1452,8 +1455,8 @@ impl AssessmentsService {
         let mut tx = self.pool.begin().await?;
         let AssessmentDetail { assessment, items } =
             Self::lock_detail(&mut tx, row.assessment_id).await?;
-        self.ensure_editable(&assessment).await?;
-        self.ensure_content_unlocked(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
+        Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
         // A live (or scheduled) assessment keeps at least one item: readiness
         // gated the publish, a delete must not undo it.
         if matches!(
@@ -1492,7 +1495,7 @@ impl AssessmentsService {
         // does the list check — a delete or add racing this reorder commits
         // first or waits, never lands between the check and the renumber.
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
-        self.ensure_editable(&assessment).await?;
+        ensure_editable(&mut *tx, &assessment).await?;
         let existing: Vec<AssessmentItemId> = items.iter().map(|i| i.id).collect();
         let unknown: Vec<_> = ordered
             .iter()
