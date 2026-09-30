@@ -159,30 +159,17 @@ function EditCourseAccess() {
 function CourseReadinessSummary({ readiness }: { readiness: Awaited<ReturnType<typeof getCourseReadiness>> }) {
   const t = useTranslations('DashPage.Courses.Access')
   const issueMessage = useReadinessIssueMessage()
+  // Only what stops a public course matters here; cover/details warnings live on the Publish tab.
   const blockers = readiness.issues.filter(issue => issue.severity === 'blocker')
-  const warnings = readiness.issues.filter(issue => issue.severity === 'warning')
-
-  if (readiness.ready && warnings.length === 0) {
-    return (
-      <Alert>
-        <Globe aria-hidden />
-        <AlertTitle>{t('readinessReadyTitle')}</AlertTitle>
-        <AlertDescription>{t('readinessReadyDescription')}</AlertDescription>
-      </Alert>
-    )
-  }
+  if (blockers.length === 0) return null
 
   return (
-    <Alert variant={blockers.length > 0 ? 'destructive' : 'default'}>
+    <Alert variant="destructive">
       <AlertTriangle aria-hidden />
-      <AlertTitle>
-        {blockers.length > 0
-          ? t('readinessBlockedTitle', { count: blockers.length })
-          : t('readinessWarningsTitle', { count: warnings.length })}
-      </AlertTitle>
+      <AlertTitle>{t('readinessBlockedTitle', { count: blockers.length })}</AlertTitle>
       <AlertDescription>
         <ul className="mt-2 flex list-disc flex-col gap-1 ps-5">
-          {[...blockers, ...warnings].map(issue => (
+          {blockers.map(issue => (
             <li key={`${issue.code}-${issue.activity_id ?? 'course'}`}>
               {issue.path ? (
                 <Link href={issue.path} className="underline underline-offset-4">
