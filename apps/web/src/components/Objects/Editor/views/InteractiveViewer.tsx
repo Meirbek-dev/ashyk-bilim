@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
+import { useEmbedFocusGuard } from '@components/Objects/Editor/core/useEmbedFocusGuard'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
 
@@ -28,6 +29,7 @@ export function InteractiveViewer(props: InteractiveViewerProps) {
   })
   const headings = useHeadingOutline(editor)
   const hasToc = headings.length >= 2
+  useEmbedFocusGuard()
 
   return (
     <EditorOptionsProvider options={{ isEditable: false, mode: 'interactive' }}>

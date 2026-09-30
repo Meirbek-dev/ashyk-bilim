@@ -4,6 +4,7 @@ import { CourseProvider } from '@components/Contexts/CourseContext'
 import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { Tiptap } from '@tiptap/react'
 import { useEditorInstance } from '@components/Objects/Editor/core'
+import { useEmbedFocusGuard } from '@components/Objects/Editor/core/useEmbedFocusGuard'
 import type { ActivityRef } from '@components/Objects/Editor/core/editor-types'
 import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import { EditorToolbar } from '../Toolbar/EditorToolbar'
@@ -143,6 +144,7 @@ interface AuthoringEditorProps {
 export function AuthoringEditor(props: AuthoringEditorProps) {
   const t = useTranslations('DashPage.Editor.Editor')
   const latestContentRef = useRef(props.content)
+  useEmbedFocusGuard()
 
   // v2 ids are bare UUIDs; legacy callers may still pass `course_` / `activity_` prefixes
   const courseUuid = cleanCourseUuid(props.course.course_uuid)
