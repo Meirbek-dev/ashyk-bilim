@@ -50,7 +50,7 @@ describe('code arena details', () => {
         verdict="ACCEPTED"
       />,
     )
-    expect(screen.getByText('7,8МБ')).toBeInTheDocument()
+    expect(screen.getByText('7,8 МБ')).toBeInTheDocument()
   })
 
   // UX-309: no dead (disabled, unnamed) chevrons in the header.
