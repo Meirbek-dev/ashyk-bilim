@@ -103,7 +103,9 @@ export function EditorPane({
             {...(allowedLanguages ? { allowedLanguages } : {})}
           />
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button type="button" size="icon" variant="ghost" />}>
+            <DropdownMenuTrigger
+              render={<Button type="button" size="icon" variant="ghost" aria-label={t('editorSettings')} />}
+            >
               <Settings2 className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

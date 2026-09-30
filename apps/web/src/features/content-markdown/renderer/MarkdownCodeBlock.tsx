@@ -21,7 +21,9 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
   const [highlighted, setHighlighted] = useState<string | null>(null)
 
   const lang = language ?? 'text'
-  const displayName = getLanguageDisplayName(lang)
+  const languageName = getLanguageDisplayName(lang)
+  // UX-309: plain-text blocks get a localized caption, not the English «Text».
+  const displayName = languageName === 'Text' ? t('plainText') : languageName
   const isDiff = lang === 'diff'
 
   const [prevCode, setPrevCode] = useState(code)

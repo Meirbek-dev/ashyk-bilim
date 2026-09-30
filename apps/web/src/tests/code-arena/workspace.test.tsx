@@ -72,6 +72,13 @@ describe('code arena workspace', () => {
     await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith('Решение добавлено в очередь на проверку'))
   })
 
+  it('names the editor settings menu button (UX-309)', () => {
+    renderWorkspace(vi.fn())
+    expect(
+      screen.getByRole('button', { name: ruMessages.Activities.CodeChallenges.editorSettings }),
+    ).toBeInTheDocument()
+  })
+
   it('stacks the problem above the editor on a phone (UX-290)', () => {
     mocks.mobile = true
     const { container } = renderWorkspace(vi.fn())

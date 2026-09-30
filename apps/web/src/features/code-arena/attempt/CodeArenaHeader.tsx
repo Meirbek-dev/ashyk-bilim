@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Clock, FlaskConical, List, Play, Send } from 'lucide-react'
+import { Clock, FlaskConical, List, Play, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -67,17 +67,6 @@ export function CodeArenaHeader({
             <DropdownMenuItem className="text-muted-foreground text-xs">{t('practiceModeActive')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <div className="bg-border h-4 w-px" />
-
-        <div className="flex items-center gap-0.5">
-          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
       </div>
 
       {/* Center: Title & Info */}

@@ -39,9 +39,9 @@ describe('MarkdownCodeBlock', () => {
     expect(screen.getByText('TypeScript')).toBeInTheDocument()
   })
 
-  it('shows Text as fallback when no language', () => {
+  it('shows the localized plain-text caption when no language (UX-309)', () => {
     render(<MarkdownCodeBlock code="some text" />)
-    expect(screen.getByText('Text')).toBeInTheDocument()
+    expect(screen.getByText('plainText')).toBeInTheDocument()
   })
 
   it('shows fallback pre while Shiki loads', () => {
