@@ -817,8 +817,29 @@ impl IdentityService {
         let Some(user) = ab_db::identity::find_user_for_login(&self.pool, email).await? else {
             return Err(invalid());
         };
+        // One verify per account at a time (UX-273): Zitadel accepts the same
+        // code twice when the calls overlap, which audited it twice. The
+        // route is `detached()`, so the lock is always handed back.
+        let lock = format!("lock:verify-email:user:{}", user.id);
+        if !self.try_lock(&lock).await? {
+            return Err(Error::app(
+                ErrorCode::IdempotencyInProgress,
+                "an email verification is already in progress",
+            ));
+        }
+        let verified = self.confirm_email(&user, &code, ip).await;
+        self.unlock(&lock).await?;
+        verified
+    }
+
+    async fn confirm_email(
+        &self,
+        user: &ab_db::identity::AuthUserRow,
+        code: &str,
+        ip: Option<&str>,
+    ) -> Result<()> {
         self.zitadel
-            .verify_email(&user.zitadel_user_id, &code)
+            .verify_email(&user.zitadel_user_id, code)
             .await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,

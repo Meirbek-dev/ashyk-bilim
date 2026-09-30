@@ -571,6 +571,39 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
     assert_eq!(events, vec!["account-created", "email-verified"]);
 }
 
+/// UX-273: two overlapping verifies with one code — Zitadel accepts both —
+/// verify once: the second answers `idempotency-in-progress`, one audit row.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_email_verifies_audit_once(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("twice", "twice@example.com", &["user"])
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-twice/email/verify"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(300))
+                .set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({ "email": "twice@example.com", "code": "ABC123" });
+    let verify = || app.post_json("/api/v2/auth/verify-email", &body);
+    let (first, second) = tokio::join!(verify(), async {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        verify().await
+    });
+    assert_eq!(first.status, StatusCode::NO_CONTENT, "{}", first.text());
+    assert_eq!(second.status, StatusCode::CONFLICT, "{}", second.text());
+    assert_eq!(second.json()["code"], "idempotency-in-progress");
+    let audited: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM auth_audit_log WHERE event = 'email-verified'")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(audited, 1);
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn registration_survives_an_email_outage(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
