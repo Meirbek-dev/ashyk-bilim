@@ -9,6 +9,7 @@ export class SignupPage {
 
   public readonly firstNameInput: Locator
   public readonly lastNameInput: Locator
+  public readonly organizationInput: Locator
   public readonly usernameInput: Locator
   public readonly emailInput: Locator
   public readonly passwordInput: Locator
@@ -20,6 +21,7 @@ export class SignupPage {
     this.page = page
     this.firstNameInput = page.locator('form:visible input[name=\"firstName\"]')
     this.lastNameInput = page.locator('form:visible input[name=\"lastName\"]')
+    this.organizationInput = page.locator('form:visible input[name="organization"]')
     this.usernameInput = page.locator('form:visible input[name=\"username\"]')
     this.emailInput = page.locator('form:visible input[name=\"email\"]')
     this.passwordInput = page.locator('form:visible input[name=\"password\"]')
@@ -36,12 +38,15 @@ export class SignupPage {
   public async signup(opts: {
     firstName: string
     lastName: string
+    /** Required since registration asks where the user is from. */
+    organization?: string
     username: string
     email: string
     password: string
   }): Promise<void> {
     await this.firstNameInput.fill(opts.firstName)
     await this.lastNameInput.fill(opts.lastName)
+    await this.organizationInput.fill(opts.organization ?? 'E2E University')
     await this.usernameInput.fill(opts.username)
     await this.emailInput.fill(opts.email)
     await this.passwordInput.fill(opts.password)

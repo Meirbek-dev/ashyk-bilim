@@ -105,7 +105,9 @@ export default function CourseReviewPublish({
             <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
               {isPublic ? t('publishedTitle') : readiness?.ready ? t('readyTitle') : t('notReadyTitle')}
             </h1>
-            <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-6 text-pretty">{t('description')}</p>
+            <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-6 text-pretty">
+              {isPublic ? t('publishedDescription') : t('description')}
+            </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button

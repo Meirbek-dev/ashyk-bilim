@@ -77,32 +77,12 @@ export default function WatchlistTab({ query, data, atRisk }: WatchlistTabProps)
 
   return (
     <div className="space-y-6">
-      {interventionSummary && (
-        <Card className="border-border bg-card/65 shadow-sm backdrop-blur-xs">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5 text-emerald-600" />
-              <CardTitle>{t('overview.interventionTitle')}</CardTitle>
-            </div>
-            <CardDescription>{t('overview.interventionDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {summaryCards.map(({ label, value, borderClass }) => (
-              <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
-                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{label}</div>
-                <div className="text-foreground mt-3 text-3xl font-extrabold">{value}</div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
         <Suspense fallback={<SectionFallback height="h-[360px]" />}>
           <AnalyticsRiskDistributionChart counts={data.risk_distribution} />
         </Suspense>
 
-        <div className="flex flex-col gap-4">
+        <div className="order-first flex flex-col gap-4 xl:order-none">
           <div className="flex items-center gap-2 pl-1">
             <Badge variant="outline" className="text-xs font-semibold">
               {t('overview.previewLabel')}
@@ -135,6 +115,26 @@ export default function WatchlistTab({ query, data, atRisk }: WatchlistTabProps)
           )}
         </div>
       </div>
+      {/* Tally of logged interventions: after the list, and only once there is something to count. */}
+      {interventionSummary && summaryCards.some(card => card.value > 0) && (
+        <Card className="border-border bg-card/65 shadow-sm backdrop-blur-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-emerald-600" />
+              <CardTitle>{t('overview.interventionTitle')}</CardTitle>
+            </div>
+            <CardDescription>{t('overview.interventionDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {summaryCards.map(({ label, value, borderClass }) => (
+              <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
+                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{label}</div>
+                <div className="text-foreground mt-3 text-3xl font-extrabold">{value}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

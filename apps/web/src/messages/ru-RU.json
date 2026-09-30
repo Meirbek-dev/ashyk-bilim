@@ -127,7 +127,7 @@
       "allowCustomInputDescription": "Позволить студентам тестировать код с собственными данными",
       "allowedLanguages": "Разрешённые языки",
       "allowedLanguagesDescription": "Выберите языки программирования, которые могут использовать студенты",
-      "languageServiceUnavailableDescription": "Judge0 недоступен из API. Пересоздайте сервис Judge0 и обновите страницу.",
+      "languageServiceUnavailableDescription": "Сервис проверки кода сейчас недоступен. Попробуйте обновить страницу немного позже.",
       "languageServiceUnavailableTitle": "Языки выполнения кода недоступны",
       "authRequired": "Требуется авторизация",
       "bestSubmission": "Лучшая отправка",
@@ -405,7 +405,7 @@
       "stepVerify": "4. Проверка",
       "stepReview": "5. Публикация",
       "referenceValidationFinished": "Проверка эталонного решения завершена.",
-      "validationEndpointFailed": "Эндпоинт проверки не сработал.",
+      "validationEndpointFailed": "Не удалось проверить решение. Попробуйте ещё раз.",
       "referenceValidationFailed": "Не удалось проверить эталонные решения.",
       "selectLanguagePrompt": "Выберите хотя бы один разрешенный язык на боковой панели для настройки шаблонов.",
       "starterTemplateCode": "Шаблон начального кода",
@@ -2775,10 +2775,10 @@
       "orderSaved": "Порядок сохранён",
       "savingOrder": "Применяются изменения учебного плана",
       "curriculumChangesApplyImmediately": "Изменения учебного плана применяются немедленно",
-      "curriculumInlineFeedback": "Перетаскивание, изменение порядка и создание глав сохраняются по мере работы.",
+      "curriculumInlineFeedback": "Изменения сохраняются автоматически. Перетаскивайте главы и задачи, чтобы изменить порядок.",
       "refreshAfterError": "Последнее изменение структуры не удалось сохранить. Просмотрите текущий учебный план и попробуйте снова.",
       "title": "Учебный план курса",
-      "confirmChapter": "Подтвердить",
+      "confirmChapter": "Добавить",
       "cancel": "Отмена",
       "selectItemHint": "Нажмите + Добавить активность под главой, чтобы начать",
       "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
@@ -3071,7 +3071,7 @@
       "startCourse": "Начать курс",
       "openCourse": "Открыть курс",
       "startCourseError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
-      "startLearningJourney": "Начните свой путь обучения с {totalActivities} {totalActivities, plural, one {увлекательным занятием} few {увлекательными занятиями} many {увлекательными занятиями} other {увлекательными занятиями}}",
+      "startLearningJourney": "В курсе {totalActivities, plural, one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
       "startSuccess": "Курс успешно начат",
       "startedCourseSuccess": "Курс успешно начат",
       "startingCourse": "Начинаем курс...",
@@ -3860,7 +3860,7 @@
         "openBlockers": "Открытые блокеры",
         "warnings": "Предупреждения",
         "noBlockersTitle": "Нет блокеров публикации",
-        "noBlockersDescription": "Сервер не обнаружил проверяемых проблем целостности, мешающих публикации.",
+        "noBlockersDescription": "Ничто не мешает публикации.",
         "blockerLabel": "Блокер публикации",
         "warningLabel": "Неблокирующее предупреждение",
         "resolveIssue": "Исправить",
@@ -3884,7 +3884,8 @@
           "published": "Курс опубликован."
         },
         "movePrivateConfirmTitle": "Снова сделать курс приватным?",
-        "movePrivateConfirmMessage": "Курс исчезнет из каталога, а учащиеся, которые не входят в привязанные к курсу группы, потеряют к нему доступ."
+        "movePrivateConfirmMessage": "Курс исчезнет из каталога, а учащиеся, которые не входят в привязанные к курсу группы, потеряют к нему доступ.",
+        "publishedDescription": "Курс виден учащимся в каталоге. Изменения в курсе становятся видны сразу."
       },
       "Create": {
         "actions": {
@@ -4144,7 +4145,7 @@
         "accessPolicyStagedTitle": "Политика доступа не сохраняется до нажатия кнопки «Сохранить»",
         "accessPolicyStagedDescription": "Изменения видимости остаются локальными до сохранения этого раздела.",
         "readinessReadyTitle": "Готово к публикации",
-        "readinessReadyDescription": "Сервер не обнаружил проверяемых блокеров публикации.",
+        "readinessReadyDescription": "Ничто не мешает публикации.",
         "readinessBlockedTitle": "Публикацию блокирует {count, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
         "readinessWarningsTitle": "Готово с {count, plural, one {# предупреждением} few {# предупреждениями} many {# предупреждениями} other {# предупреждения}}",
         "userGroupLinksImmediateTitle": "Привязки групп пользователей применяются немедленно",
@@ -4390,7 +4391,8 @@
         "mobileTitle": "Только для настольных ПК",
         "preview": "Предварительный просмотр",
         "save": "Сохранить",
-        "placeholder": "Начните писать или введите `/` для команд…"
+        "placeholder": "Начните писать или введите `/` для команд…",
+        "renamePage": "Переименовать страницу"
       },
       "EditorWrapper": {
         "saveError": "Ошибка: Не удалось сохранить активность.",

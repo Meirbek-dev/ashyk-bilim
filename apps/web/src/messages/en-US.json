@@ -127,7 +127,7 @@
       "allowCustomInputDescription": "Let students test their code with custom input",
       "allowedLanguages": "Allowed Languages",
       "allowedLanguagesDescription": "Select which programming languages students can use",
-      "languageServiceUnavailableDescription": "Judge0 is not reachable from the API. Recreate the Judge0 service and reload this page.",
+      "languageServiceUnavailableDescription": "The code checking service is unavailable right now. Try reloading the page a little later.",
       "languageServiceUnavailableTitle": "Code execution languages unavailable",
       "authRequired": "Authentication required",
       "bestSubmission": "Best Submission",
@@ -408,7 +408,7 @@
       "stepVerify": "4. Verify Solution",
       "stepReview": "5. Publish Review",
       "referenceValidationFinished": "Reference solution validation finished.",
-      "validationEndpointFailed": "Validation endpoint failed.",
+      "validationEndpointFailed": "Could not check the solution. Please try again.",
       "referenceValidationFailed": "Failed to validate reference solutions.",
       "selectLanguagePrompt": "Select at least one allowed language in the sidebar to configure templates.",
       "starterTemplateCode": "Starter Template Code",
@@ -2776,10 +2776,10 @@
       "orderSaved": "Order saved",
       "savingOrder": "Applying curriculum changes",
       "curriculumChangesApplyImmediately": "Curriculum changes apply immediately",
-      "curriculumInlineFeedback": "Drag, reorder, and chapter creation actions save as you work.",
+      "curriculumInlineFeedback": "Changes save automatically. Drag chapters and activities to reorder them.",
       "refreshAfterError": "The latest structure change could not be saved. Review the current curriculum and try again.",
       "title": "Course Curriculum",
-      "confirmChapter": "Confirm",
+      "confirmChapter": "Add",
       "cancel": "Cancel",
       "selectItemHint": "Click + Add Activity under a chapter to get started",
       "selectItemHintDescription": "Select an activity type and fill in the details. Changes are saved immediately.",
@@ -3059,7 +3059,7 @@
       "openCourse": "Open course",
       "startCourseError": "Failed to start the course. Please try again later.",
       "startError": "Failed to start the course. Please try again later.",
-      "startLearningJourney": "Start your learning journey with {totalActivities} exciting {totalActivities, plural, one {activity} other {activities}}",
+      "startLearningJourney": "{totalActivities, plural, one {# activity} other {# activities}} in this course",
       "startSuccess": "Successfully started the course",
       "startedCourseSuccess": "Successfully started the course",
       "startingCourse": "Starting course...",
@@ -3848,7 +3848,7 @@
         "openBlockers": "Open blockers",
         "warnings": "Warnings",
         "noBlockersTitle": "No publish blockers",
-        "noBlockersDescription": "The server found no deterministic integrity issue that prevents publishing.",
+        "noBlockersDescription": "Nothing is blocking publication.",
         "blockerLabel": "Publish blocker",
         "warningLabel": "Non-blocking warning",
         "resolveIssue": "Resolve",
@@ -3872,7 +3872,8 @@
           "published": "Course is now public."
         },
         "movePrivateConfirmTitle": "Make the course private again?",
-        "movePrivateConfirmMessage": "The course leaves the catalogue, and learners outside the groups linked to it lose access."
+        "movePrivateConfirmMessage": "The course leaves the catalogue, and learners outside the groups linked to it lose access.",
+        "publishedDescription": "Learners can find this course in the catalog. Changes you make are visible right away."
       },
       "Create": {
         "actions": {
@@ -4132,7 +4133,7 @@
         "accessPolicyStagedTitle": "Access policy is staged until you save",
         "accessPolicyStagedDescription": "Visibility changes stay local until you save this section.",
         "readinessReadyTitle": "Ready to publish",
-        "readinessReadyDescription": "The server found no deterministic publish blockers.",
+        "readinessReadyDescription": "Nothing is blocking publication.",
         "readinessBlockedTitle": "Publishing blocked by {count, plural, one {# issue} other {# issues}}",
         "readinessWarningsTitle": "Ready with {count, plural, one {# warning} other {# warnings}}",
         "userGroupLinksImmediateTitle": "User-group links apply immediately",
@@ -4378,7 +4379,8 @@
         "mobileTitle": "Desktop Only",
         "preview": "Preview",
         "save": "Save draft",
-        "placeholder": "Start writing or type `/` for commands…"
+        "placeholder": "Start writing or type `/` for commands…",
+        "renamePage": "Rename page"
       },
       "EditorWrapper": {
         "saveError": "Error: Could not save activity.",

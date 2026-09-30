@@ -127,7 +127,7 @@
       "allowCustomInputDescription": "Оқушыларға кодты өз деректерімен тексеруге мүмкіндік беріңіз",
       "allowedLanguages": "Рұқсат етілген тілдер",
       "allowedLanguagesDescription": "Студенттер пайдалана алатын бағдарламалау тілдерін таңдаңыз",
-      "languageServiceUnavailableDescription": "Judge0 API арқылы қолжетімсіз. Judge0 сервисін қайта жасап, бетті жаңартыңыз.",
+      "languageServiceUnavailableDescription": "Кодты тексеру қызметі қазір қолжетімсіз. Бетті сәл кейінірек жаңартып көріңіз.",
       "languageServiceUnavailableTitle": "Код орындау тілдері қолжетімсіз",
       "authRequired": "Авторизация қажет",
       "bestSubmission": "Ең жақсы жіберу",
@@ -404,7 +404,7 @@
       "stepVerify": "4. Тексеру",
       "stepReview": "5. Жариялау",
       "referenceValidationFinished": "Эталондық шешімді тексеру аяқталды.",
-      "validationEndpointFailed": "Тексеру сұрауы орындалмады.",
+      "validationEndpointFailed": "Шешімді тексеру мүмкін болмады. Қайталап көріңіз.",
       "referenceValidationFailed": "Эталондық шешімдерді тексеру сәтсіз аяқталды.",
       "selectLanguagePrompt": "Шаблондарды баптау үшін бүйірлік панельден кем дегенде бір рұқсат етілген тілді таңдаңыз.",
       "starterTemplateCode": "Бастапқы код шаблоны",
@@ -2774,10 +2774,10 @@
       "orderSaved": "Реті сақталды",
       "savingOrder": "Оқу жоспары өзгертулері қолданылуда",
       "curriculumChangesApplyImmediately": "Оқу жоспары өзгертулері бірден қолданылады",
-      "curriculumInlineFeedback": "Жылжыту, қайта реттеу және тарау жасау әрекеттері жұмыс барысында сақталады.",
+      "curriculumInlineFeedback": "Өзгерістер автоматты түрде сақталады. Ретін өзгерту үшін тараулар мен тапсырмаларды сүйреңіз.",
       "refreshAfterError": "Соңғы құрылым өзгертуін сақтау мүмкін болмады. Қазіргі оқу жоспарын қарап, қайта көріңіз.",
       "title": "Курстың оқу жоспары",
-      "confirmChapter": "Растау",
+      "confirmChapter": "Қосу",
       "cancel": "Болдырмау",
       "selectItemHint": "Тарау астындағы + Белсенділік қосу батырмасын басыңыз",
       "selectItemHintDescription": "Белсенділік түрін таңдап, мәліметтерді толтырыңыз. Өзгерістер бірден сақталады.",
@@ -3073,7 +3073,7 @@
       "openCourse": "Курсты ашу",
       "startCourseError": "Курсты бастау мүмкін болмады. Кейінірек қайталап көріңіз.",
       "startError": "Курсты бастау мүмкін болмады. Кейінірек қайталап көріңіз.",
-      "startLearningJourney": "{totalActivities} {totalActivities, plural, one {қызықты сабақпен} few {қызықты сабақтармен} many {қызықты сабақтармен} other {қызықты сабақтармен}} оқу сапарыңызды бастаңыз",
+      "startLearningJourney": "Курста {totalActivities} оқу тапсырмасы бар",
       "startSuccess": "Курс сәтті басталды",
       "startedCourseSuccess": "Курс сәтті басталды",
       "startingCourse": "Курс басталуда...",
@@ -3863,7 +3863,7 @@
         "openBlockers": "Ашық бұғаттаушылар",
         "warnings": "Ескертулер",
         "noBlockersTitle": "Жариялау бұғаттаушылары жоқ",
-        "noBlockersDescription": "Сервер жариялауға кедергі келтіретін нақты тұтастық мәселесін таппады.",
+        "noBlockersDescription": "Жариялауға ештеңе кедергі емес.",
         "blockerLabel": "Жариялау бұғаттаушысы",
         "warningLabel": "Бұғаттамайтын ескерту",
         "resolveIssue": "Шешу",
@@ -3887,7 +3887,8 @@
           "published": "Курс жарияланды."
         },
         "movePrivateConfirmTitle": "Курс қайтадан жабық етілсін бе?",
-        "movePrivateConfirmMessage": "Курс каталогтан жоғалады, ал курсқа байланыстырылған топтарға кірмейтін оқушылар оған қол жеткізе алмайды."
+        "movePrivateConfirmMessage": "Курс каталогтан жоғалады, ал курсқа байланыстырылған топтарға кірмейтін оқушылар оған қол жеткізе алмайды.",
+        "publishedDescription": "Курс каталогта білім алушыларға көрінеді. Курстағы өзгерістер бірден көрінеді."
       },
       "Create": {
         "actions": {
@@ -4147,7 +4148,7 @@
         "accessPolicyStagedTitle": "Қолжетімділік саясаты Сақтау басқанша сақталмайды",
         "accessPolicyStagedDescription": "Көрінерлік өзгерістері бұл бөлімді сақтағанша дейін локалды болып қалады.",
         "readinessReadyTitle": "Жариялауға дайын",
-        "readinessReadyDescription": "Сервер жариялауға кедергі келтіретін нақты мәселе таппады.",
+        "readinessReadyDescription": "Жариялауға ештеңе кедергі емес.",
         "readinessBlockedTitle": "Жариялауды {count} мәселе бұғаттап тұр",
         "readinessWarningsTitle": "{count} ескертумен дайын",
         "userGroupLinksImmediateTitle": "Пайдаланушылар тобы байланыстырулары бірден қолданылады",
@@ -4393,7 +4394,8 @@
         "mobileTitle": "Тек жұмыс үстеліне арналған",
         "preview": "Алдын ала қарау",
         "save": "Сақтау",
-        "placeholder": "Жаза бастаңыз немесе командалар үшін `/` енгізіңіз…"
+        "placeholder": "Жаза бастаңыз немесе командалар үшін `/` енгізіңіз…",
+        "renamePage": "Бетті қайта атау"
       },
       "EditorWrapper": {
         "saveError": "Қате: Белсенділікті сақтау мүмкін болмады.",

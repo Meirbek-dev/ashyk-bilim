@@ -40,7 +40,7 @@ export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps
         aria-label={t('courseContent')}
         role="navigation"
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-16">
           <ActivityOutlineContent runtime={runtime} />
         </div>
       </div>

@@ -199,7 +199,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                   </div>
 
                   {/* Chapter Info */}
-                  <div className="flex flex-1 flex-col gap-10.5 overflow-hidden">
+                  <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
                     <span className="text-foreground truncate font-medium">{chapter.name}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground text-xs">
@@ -208,17 +208,13 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                           total: chapterStats?.total ?? 0,
                         })}
                       </span>
-                      {isChapterComplete && (
-                        <Badge variant="secondary" className="bg-teal-100 text-teal-700">
-                          {t('progressCard.complete')}
-                        </Badge>
-                      )}
+                      {isChapterComplete && <Badge variant="success">{t('progressCard.complete')}</Badge>}
                     </div>
                   </div>
 
                   {/* Mini Progress + Chevron */}
                   <div className="flex items-center gap-3">
-                    <div className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-neutral-200 sm:block">
+                    <div className="bg-muted hidden h-1.5 w-16 overflow-hidden rounded-full sm:block">
                       <div
                         className={cn(
                           'h-full rounded-full transition-all',
@@ -238,7 +234,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
 
                 {/* Activities List */}
                 {isExpanded && (
-                  <div className="border-t border-border bg-muted/50">
+                  <div className="border-border bg-muted/50 border-t">
                     {chapter.activities?.map((activity: AppActivity, activityIndex: number) => {
                       const activityId = activity.activity_uuid.replace('activity_', '')
                       const courseId = (course.course_uuid || '').replace('course_', '')
@@ -264,7 +260,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                                   <Check className="size-3 text-teal-600" />
                                 </div>
                               ) : (
-                                <Circle className="size-4 text-muted-foreground/60" />
+                                <Circle className="text-muted-foreground/60 size-4" />
                               )}
                             </div>
 

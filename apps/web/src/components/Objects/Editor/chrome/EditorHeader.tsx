@@ -10,7 +10,10 @@ import appLogoLight from '@public/app_logo_light.svg'
 import { Separator } from '@/components/ui/separator'
 import { EditorSaveIndicator } from './EditorSaveIndicator'
 import type { SaveStatus } from '@/stores/courses/courseEditorStore'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
+import { useApiError } from '@/hooks/useApiError'
 
 interface EditorHeaderProps {
   courseName: string
@@ -20,6 +23,57 @@ interface EditorHeaderProps {
   saveState: SaveStatus
   onSave: () => void
   assistantSlot?: ReactNode
+}
+
+/** The page's name, renamed in place (it could only be renamed from the curriculum before). */
+function ActivityTitle({ courseUuid, activityUuid, name }: { courseUuid: string; activityUuid: string; name: string }) {
+  const t = useTranslations('DashPage.Editor.Editor')
+  const { updateActivity } = useActivityMutations(courseUuid, true)
+  const { toastApiError } = useApiError()
+  const [current, setCurrent] = useState(name)
+  const [draft, setDraft] = useState<string | null>(null)
+
+  const commit = async () => {
+    const next = draft?.trim()
+    setDraft(null)
+    if (!next || next === current) return
+    const previous = current
+    setCurrent(next)
+    try {
+      await updateActivity(activityUuid, { name: next })
+    } catch (error) {
+      setCurrent(previous)
+      toastApiError(error)
+    }
+  }
+
+  if (draft !== null) {
+    return (
+      <input
+        ref={node => node?.focus()}
+        value={draft}
+        aria-label={t('renamePage')}
+        maxLength={200}
+        onChange={event => setDraft(event.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={event => {
+          if (event.key === 'Enter') void commit()
+          if (event.key === 'Escape') setDraft(null)
+        }}
+        className="border-input focus-visible:ring-ring/50 h-7 min-w-40 rounded-md border px-2 text-sm font-medium outline-none focus-visible:ring-2"
+      />
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setDraft(current)}
+      title={t('renamePage')}
+      className="text-foreground hover:bg-muted truncate rounded-md px-1 font-medium"
+    >
+      {current}
+    </button>
+  )
 }
 
 export function EditorHeader({
@@ -60,7 +114,7 @@ export function EditorHeader({
             {courseName}
           </Link>
           <span className="text-muted-foreground/60">/</span>
-          <span className="text-foreground truncate font-medium">{activityName}</span>
+          <ActivityTitle courseUuid={courseUuid} activityUuid={activityUuid} name={activityName} />
         </nav>
       </div>
 
