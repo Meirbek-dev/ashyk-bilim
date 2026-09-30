@@ -9,7 +9,7 @@
 
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import type { UserGamificationProfile } from '@/types/gamification'
 import { useReducedMotion } from '@/hooks/use-reduced-motion'
@@ -38,6 +38,7 @@ export function LevelProgress({
   className,
 }: LevelProgressProps) {
   const tXp = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const locale = useLocale()
   const previousLevelRef = useRef(profile.level)
   const controls = useAnimationControls()
   const prefersReducedMotion = useReducedMotion()
@@ -82,8 +83,8 @@ export function LevelProgress({
       {/* UX-109: «180 ОП · 120 до уровня 4», not two bare numbers that read as «180 of 120». */}
       <div className="text-muted-foreground/80 text-center text-[10px] tabular-nums">
         {tXp('levelIndicators.compactProgress', {
-          xp: currentLevelXP.toLocaleString(),
-          remaining: remainingXP.toLocaleString(),
+          xp: currentLevelXP.toLocaleString(locale),
+          remaining: remainingXP.toLocaleString(locale),
           level: profile.level + 1,
         })}
       </div>

@@ -5,7 +5,7 @@ import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
 import type { LeaderboardEntry } from '@/types/gamification'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -24,6 +24,7 @@ interface LeaderboardProps {
  */
 export function Leaderboard({ entries, currentUserId, userRank, className }: LeaderboardProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const locale = useLocale()
   const [showFull, setShowFull] = useState(false)
 
   // Ranks are competition ranks (UX-172): tied users share one, so place the
@@ -81,7 +82,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
           {rankContext.xpToNext > 0 && (
             <p className="text-muted-foreground mt-0.5 text-xs">
               {t('leaderboard.xpToNextRank', {
-                xp: rankContext.xpToNext.toLocaleString(),
+                xp: rankContext.xpToNext.toLocaleString(locale),
                 username: rankContext.nextRankName || '',
               })}
             </p>
@@ -127,6 +128,7 @@ function LeaderboardRow({
   isTop3: boolean
   t: AppTranslator
 }) {
+  const locale = useLocale()
   return (
     <div
       className={cn(
@@ -194,7 +196,7 @@ function LeaderboardRow({
         </p>
         <p className="text-muted-foreground text-xs tabular-nums">
           {t('leaderboard.levelLabel', { level: entry.level })} ·{' '}
-          {t('leaderboard.xp', { xp: entry.total_xp.toLocaleString() })}
+          {t('leaderboard.xp', { xp: entry.total_xp.toLocaleString(locale) })}
         </p>
       </div>
 

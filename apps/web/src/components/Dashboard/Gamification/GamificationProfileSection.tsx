@@ -9,7 +9,7 @@ import type { UserGamificationProfile } from '@/types/gamification'
 import { useGamificationStore } from '@/stores/gamification'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 interface GamificationProfileSectionProps {
@@ -29,6 +29,7 @@ export function GamificationProfileSection({
   loading = false,
 }: GamificationProfileSectionProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const locale = useLocale()
   const storeProfile = useGamificationStore(s => s.profile)
   const storeIsLoading = useGamificationStore(s => s.isLoading)
   const profile = data ?? storeProfile ?? null
@@ -127,10 +128,10 @@ export function GamificationProfileSection({
               <GlowingLevelBadge level={profile.level} size="lg" animated />
               <div className="text-right text-sm">
                 <div className="font-semibold">
-                  {profile.total_xp.toLocaleString()} {t('leaderboard.stats.xp')}
+                  {profile.total_xp.toLocaleString(locale)} {t('leaderboard.stats.xp')}
                 </div>
                 <div className="text-muted-foreground text-xs">
-                  {profile.xp_to_next_level?.toLocaleString() || 0} {t('levelIndicators.xpToNext')}
+                  {profile.xp_to_next_level?.toLocaleString(locale) || 0} {t('levelIndicators.xpToNext')}
                 </div>
               </div>
             </div>
@@ -181,7 +182,7 @@ export function GamificationProfileSection({
                   {/* UX-064: the milestone distance comes from the server curve and names its level; the
                       «до следующего уровня» number above is the profile's own `xp_to_next_level`. */}
                   <p className="text-muted-foreground text-xs tabular-nums" data-testid="milestone-xp">
-                    {(xpForLevel(nextMilestone.level) - profile.total_xp).toLocaleString()}{' '}
+                    {(xpForLevel(nextMilestone.level) - profile.total_xp).toLocaleString(locale)}{' '}
                     {t('levelIndicators.xpToLevel', { level: nextMilestone.level })}
                   </p>
                 </div>
