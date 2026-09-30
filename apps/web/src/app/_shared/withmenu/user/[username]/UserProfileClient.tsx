@@ -26,6 +26,7 @@ import { useState } from 'react'
 import type { FC } from 'react'
 import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
 import NextImage from '@components/ui/NextImage'
+import AppLink from '@/components/ui/AppLink'
 import type { ProfileSection, ProfileSections } from '@/lib/api/generated/zod'
 
 interface UserProfileClientProps {
@@ -133,7 +134,8 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   })
   const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
   // Same progress label as home/courses: the cards need the viewer's trail (UX-053).
-  const { isAuthenticated } = useSession()
+  const { isAuthenticated, user: viewer } = useSession()
+  const isOwnProfile = Boolean(viewer?.username) && viewer?.username === userData.username
   const { data: trailData, isLoading: isTrailLoading } = useTrailCurrent({ enabled: isAuthenticated })
 
   return (
@@ -210,14 +212,22 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
             {/* Right column with about and related content */}
             <div className="min-w-0 flex-1">
-              <div className="mb-8">
-                <h2 className="mb-4 text-xl font-semibold">{t('aboutTitle')}</h2>
-                {userData.bio ? (
-                  <p className="text-muted-foreground">{userData.bio}</p>
-                ) : (
-                  <p className="text-muted-foreground italic">{t('noBiography')}</p>
-                )}
-              </div>
+              {/* No bio: say nothing to visitors; the owner gets a way to add one. */}
+              {userData.bio || isOwnProfile ? (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-xl font-semibold">{t('aboutTitle')}</h2>
+                  {userData.bio ? (
+                    <p className="text-muted-foreground">{userData.bio}</p>
+                  ) : (
+                    <AppLink
+                      href="/dash/user-account/settings/general"
+                      className="text-primary text-sm underline-offset-4 hover:underline"
+                    >
+                      {t('addBio')}
+                    </AppLink>
+                  )}
+                </div>
+              ) : null}
 
               {/* Courses authored by this user (catalog filtered by creator; v2 has no per-user list). */}
               {userCourses.length > 0 ? (

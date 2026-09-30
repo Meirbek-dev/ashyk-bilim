@@ -10608,7 +10608,8 @@
     "professionalInfo": "Кәсіби ақпарат",
     "profileLoadError": "Пайдаланушы профилін жүктеу сәтсіз аяқталды",
     "viewCourses": "Курстарды қарау",
-    "present": "қазіргі уақытқа дейін"
+    "present": "қазіргі уақытқа дейін",
+    "addBio": "Өзіңіз туралы жазу"
   },
   "Validation": {
     "activityDescriptionRequired": "Белсенділік сипаттамасы қажет",

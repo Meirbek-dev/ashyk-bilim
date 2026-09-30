@@ -10424,7 +10424,8 @@
     "professionalInfo": "Professional Information",
     "profileLoadError": "Failed to load user profile",
     "viewCourses": "View Courses",
-    "present": "Present"
+    "present": "Present",
+    "addBio": "Add a short bio"
   },
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",

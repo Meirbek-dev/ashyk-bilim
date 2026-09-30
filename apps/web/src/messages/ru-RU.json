@@ -10438,7 +10438,8 @@
     "professionalInfo": "Профессиональная информация",
     "profileLoadError": "Не удалось загрузить профиль пользователя",
     "viewCourses": "Просмотреть курсы",
-    "present": "по настоящее время"
+    "present": "по настоящее время",
+    "addBio": "Добавить рассказ о себе"
   },
   "Validation": {
     "activityDescriptionRequired": "Требуется описание активности",
