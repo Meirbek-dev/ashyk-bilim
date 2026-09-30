@@ -114,7 +114,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
     <NodeViewWrapper className="tldraw-node-view w-full">
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-xl border border-gray-200"
+        className="relative w-full overflow-hidden rounded-xl border border-border"
         style={{ height: `${displayHeight}px` }}
       >
         {/* iframe — only rendered in browser environments */}
@@ -129,7 +129,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
             title={t('providers.tldraw.label')}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/50">
             <Si.SiTldraw className="size-10 text-gray-300" />
             <p className="text-sm text-gray-400">{loadingLabel}</p>
           </div>
@@ -146,7 +146,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('editButton')} ${t('providers.tldraw.label')}`}
               onClick={handleEdit}
-              className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="rounded px-2 py-1 text-xs font-medium text-foreground/80 hover:bg-muted focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               {t('editButton')}
             </button>
@@ -154,7 +154,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('deleteButton')} ${t('providers.tldraw.label')}`}
               onClick={handleDelete}
-              className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="rounded px-2 py-1 text-xs font-medium text-foreground/80 hover:bg-muted focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               {t('deleteButton')}
             </button>

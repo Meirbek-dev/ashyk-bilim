@@ -81,11 +81,11 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
       <CollapsibleTrigger
         nativeButton={false}
         render={
-          <div className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-gray-50">
+          <div className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-3">
               <Settings size={15} className="text-gray-400" />
               <div>
-                <span className="text-sm font-medium text-gray-700">{t('additionalSettings')}</span>
+                <span className="text-sm font-medium text-foreground/80">{t('additionalSettings')}</span>
                 <p className="text-xs text-gray-400">{t('additionalSettingsDescription')}</p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
               {t('playbackOptions')}
             </h4>
             <div className="space-y-2">
-              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-gray-200 px-3 py-2.5 transition-colors hover:bg-gray-50">
+              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
                 <Checkbox
                   checked={videoDetails.autoplay}
                   onCheckedChange={checked => setVideoDetails({ ...videoDetails, autoplay: checked })}
@@ -171,12 +171,12 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
                 <div className="flex items-center gap-2">
                   <Play size={14} className="shrink-0 text-gray-400" />
                   <div>
-                    <span className="text-sm font-medium text-gray-700">{t('autoplay')}</span>
+                    <span className="text-sm font-medium text-foreground/80">{t('autoplay')}</span>
                     <p className="text-xs text-gray-400">{t('autoplayDescription')}</p>
                   </div>
                 </div>
               </Label>
-              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-gray-200 px-3 py-2.5 transition-colors hover:bg-gray-50">
+              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
                 <Checkbox
                   checked={videoDetails.muted}
                   onCheckedChange={checked => setVideoDetails({ ...videoDetails, muted: checked })}
@@ -184,7 +184,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
                 <div className="flex items-center gap-2">
                   <VolumeX size={14} className="shrink-0 text-gray-400" />
                   <div>
-                    <span className="text-sm font-medium text-gray-700">{t('startMuted')}</span>
+                    <span className="text-sm font-medium text-foreground/80">{t('startMuted')}</span>
                     <p className="text-xs text-gray-400">{t('startMutedDescription')}</p>
                   </div>
                 </div>

@@ -159,7 +159,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
 
         {isEditable ? (
           <div
-            className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-gray-700 shadow-sm backdrop-blur"
+            className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-foreground/80 shadow-sm backdrop-blur"
             contentEditable={false}
             style={{ pointerEvents: 'auto' }}
           >
@@ -168,7 +168,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
               type="button"
               aria-label={`${t('editButton')} ${providerLabel} ${t('embed')}`}
               onClick={handleEdit}
-              className="flex size-8 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="flex size-8 items-center justify-center rounded hover:bg-muted focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               <Pencil className="size-4" />
             </button>
@@ -196,7 +196,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             onPointerUp={handlePointerUp}
           >
             <div className="flex h-2.5 w-16 items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <GripHorizontal className="size-4 text-gray-500" />
+              <GripHorizontal className="size-4 text-muted-foreground" />
             </div>
           </div>
         ) : null}

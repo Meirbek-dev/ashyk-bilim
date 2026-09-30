@@ -35,7 +35,7 @@ const sizeButtonCn = (isActive: boolean) =>
     'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 cursor-pointer border',
     isActive
       ? 'text-white bg-blue-500 border-blue-500 hover:bg-blue-600'
-      : 'text-gray-600 bg-transparent border-gray-200 hover:bg-gray-50',
+      : 'text-muted-foreground bg-transparent border-border hover:bg-muted/50',
   )
 
 interface VideoBlockObject {

@@ -247,7 +247,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
                 onClick={() => {
                   handlePredefinedBadgeSelect(badge)
                 }}
-                className={`flex items-center space-x-2 rounded-xl px-3 py-1 text-xs ${getBadgeColor(badge.color)} subtle-shadow font-bold text-gray-600 transition-all duration-100 ease-linear hover:opacity-80`}
+                className={`flex items-center space-x-2 rounded-xl px-3 py-1 text-xs ${getBadgeColor(badge.color)} subtle-shadow font-bold text-muted-foreground transition-all duration-100 ease-linear hover:opacity-80`}
               >
                 <span className="text-xs">{badge.emoji}</span>
                 <span className="content capitalize">{badge.content}</span>

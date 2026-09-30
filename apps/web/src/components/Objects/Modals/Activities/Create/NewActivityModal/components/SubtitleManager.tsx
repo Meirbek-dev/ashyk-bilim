@@ -147,9 +147,9 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">{t('subtitles')}</span>
+          <span className="text-sm font-medium text-foreground/80">{t('subtitles')}</span>
           {subtitles.length > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 px-1.5 text-xs font-medium text-gray-600">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
               {subtitles.length}
             </span>
           )}
@@ -179,7 +179,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
           />
           <Label
             htmlFor={fileInputId}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted/50"
           >
             <Plus size={13} />
             {t('addSubtitle')}
@@ -194,8 +194,8 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
           dragOver
             ? 'border-blue-300 dark:border-blue-500/30 bg-blue-50/40 dark:bg-blue-500/15'
             : subtitles.length === 0
-              ? 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
-              : 'border-gray-200 hover:border-gray-300',
+              ? 'border-border bg-gray-50/50 hover:border-border'
+              : 'border-border hover:border-border',
           subtitles.length === 0 ? 'p-8' : 'p-3',
         )}
         onDrop={handleDrop}
@@ -211,7 +211,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
         {subtitles.length === 0 ? (
           <div className="flex flex-col items-center gap-2 text-center">
             <UploadCloud size={20} className="text-gray-300" />
-            <p className="text-sm text-gray-500">{t('noSubtitlesYet')}</p>
+            <p className="text-sm text-muted-foreground">{t('noSubtitlesYet')}</p>
             <p className="text-xs text-gray-400">{t('dragDropSubtitlesInstruction')}</p>
             <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
               <span className="flex items-center gap-1">
@@ -239,7 +239,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-2 text-xs text-gray-500"
+            className="flex items-center gap-2 text-xs text-muted-foreground"
           >
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             <span>{t('processingFiles', { count: uploadingFiles.length })}</span>
@@ -265,13 +265,13 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
                 className="group flex items-center gap-3 px-3 py-2.5"
               >
                 <Languages size={14} className="shrink-0 text-gray-300" />
-                <span className="min-w-0 flex-1 truncate text-sm text-gray-700" title={subtitle.file.name}>
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground/80" title={subtitle.file.name}>
                   {subtitle.file.name}
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
-                      <Button variant="outline" size="sm" className="h-6 gap-1 border-gray-200 px-2 text-xs">
+                      <Button variant="outline" size="sm" className="h-6 gap-1 border-border px-2 text-xs">
                         <span>
                           {getLocalizedLanguageOptions(t).find(lang => lang.code === subtitle.language)?.flag}
                         </span>

@@ -203,17 +203,17 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
         {/* Header */}
         <div className="border-b border-gray-100 pb-4">
           <div className="mb-1 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-              <FileVideo size={16} className="text-gray-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+              <FileVideo size={16} className="text-muted-foreground" />
             </div>
-            <h2 className="text-base font-semibold text-gray-900">{t('createVideoActivity')}</h2>
+            <h2 className="text-base font-semibold text-foreground">{t('createVideoActivity')}</h2>
           </div>
-          <p className="ml-[42px] text-sm text-gray-500">{t('createVideoActivityDescription')}</p>
+          <p className="ml-[42px] text-sm text-muted-foreground">{t('createVideoActivityDescription')}</p>
         </div>
 
         {/* Activity Name */}
         <div className="space-y-1.5">
-          <Label htmlFor="video-activity-name" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="video-activity-name" className="text-sm font-medium text-foreground/80">
             {t('activityName')} <span className="text-red-400">*</span>
           </Label>
           <Input
@@ -236,7 +236,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
         {/* Video Source */}
         <div className="space-y-3">
           {/* Segmented Control */}
-          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+          <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
             <button
               type="button"
               onClick={() => {
@@ -245,7 +245,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
               }}
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-150',
-                selectedView === 'file' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-gray-700',
+                selectedView === 'file' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80',
               )}
             >
               <Upload size={15} />
@@ -259,7 +259,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
               }}
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-150',
-                selectedView === 'youtube' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-gray-700',
+                selectedView === 'youtube' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80',
               )}
             >
               <SiYoutube size={15} />
@@ -288,19 +288,19 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                   aria-label={t('ariaLabel')}
                 />
                 {video ? (
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-card">
                         <FileVideo size={16} className="text-gray-400" />
                       </div>
                       <div className="min-w-0">
-                        <p className="max-w-xs truncate text-sm font-medium text-gray-800">{video.name}</p>
+                        <p className="max-w-xs truncate text-sm font-medium text-foreground">{video.name}</p>
                         <p className="text-xs text-gray-400">{formatBytes(video.size)}</p>
                       </div>
                     </div>
                     <Label
                       htmlFor={fileInputId}
-                      className="cursor-pointer text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
+                      className="cursor-pointer text-xs text-gray-400 underline underline-offset-2 hover:text-muted-foreground"
                     >
                       {t('chooseVideoFile')}
                     </Label>
@@ -309,13 +309,13 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                   <Label
                     htmlFor={fileInputId}
                     className={cn(
-                      'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50/50 px-6 py-10 text-center transition-colors hover:border-gray-300 hover:bg-gray-50',
+                      'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-gray-50/50 px-6 py-10 text-center transition-colors hover:border-border hover:bg-muted/50',
                       errors.video && 'border-red-200 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/15',
                     )}
                   >
                     <Upload size={22} className="text-gray-300" />
                     <div>
-                      <p className="text-sm font-medium text-gray-600">{t('chooseVideoFile')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('chooseVideoFile')}</p>
                       <p className="mt-0.5 text-xs text-gray-400">
                         {t('supportedFormatsAndSize', { size: MAX_VIDEO_MB })}
                       </p>

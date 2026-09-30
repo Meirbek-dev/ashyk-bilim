@@ -30,13 +30,13 @@ function InfoCalloutComponent(props: TypedNodeViewProps<InfoCalloutAttrs>) {
   const getVariantClasses = () => {
     switch (options.variant) {
       case 'filled': {
-        return 'bg-gray-300 text-gray-700'
+        return 'bg-gray-300 text-foreground/80'
       }
       case 'outlined': {
-        return 'bg-transparent border-2 border-gray-300 text-gray-500'
+        return 'bg-transparent border-2 border-border text-muted-foreground'
       }
       default: {
-        return 'bg-gray-100 text-gray-600'
+        return 'bg-muted text-muted-foreground'
       }
     }
   }

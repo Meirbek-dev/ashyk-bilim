@@ -92,7 +92,7 @@ function ManageUsers(props: ManageUsersProps) {
             <span>{t('linkedStatus')}</span>
           </div>
         ) : (
-          <div className="flex w-fit items-center space-x-1 rounded-full bg-gray-100 px-4 py-1 text-gray-800">
+          <div className="flex w-fit items-center space-x-1 rounded-full bg-muted px-4 py-1 text-foreground">
             <X size={16} />
             <span>{t('notLinkedStatus')}</span>
           </div>

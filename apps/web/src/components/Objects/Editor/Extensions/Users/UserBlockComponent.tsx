@@ -57,8 +57,8 @@ const AVAILABLE_ICONS = {
 
 function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS]
-  if (!IconElement) return <User className="h-4 w-4 text-gray-600" />
-  return <IconElement className="h-4 w-4 text-gray-600" />
+  if (!IconElement) return <User className="h-4 w-4 text-muted-foreground" />
+  return <IconElement className="h-4 w-4 text-muted-foreground" />
 }
 
 const isUserDetail = (value: unknown): value is UserDetail => {
@@ -153,7 +153,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (isEditable && !userData) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6">
+        <div className="rounded-lg border border-dashed border-border bg-muted/50 p-6">
           <form action={handleUsernameSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username">{t('usernameLabel')}</Label>
@@ -201,8 +201,8 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (!userData) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6">
-          <div className="flex items-center gap-2 text-gray-500">
+        <div className="rounded-lg border border-dashed border-border bg-muted/50 p-6">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <User className="h-5 w-5" />
             <span>{t('noUserSelected')}</span>
           </div>
@@ -238,11 +238,11 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h4 className="truncate font-semibold text-gray-900">
+                    <h4 className="truncate font-semibold text-foreground">
                       {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                     </h4>
                     {userData.username ? (
-                      <Badge variant="outline" className="truncate px-2 text-xs font-normal text-gray-500">
+                      <Badge variant="outline" className="truncate px-2 text-xs font-normal text-muted-foreground">
                         @{userData.username}
                       </Badge>
                     ) : null}
@@ -250,14 +250,14 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0 text-gray-600 hover:text-gray-900"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
                     onClick={() => userData.username && router.push(`/user/${encodeURIComponent(userData.username)}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
                 {userData.bio ? (
-                  <p className="mt-1.5 line-clamp-4 text-sm leading-normal text-gray-500">{userData.bio}</p>
+                  <p className="mt-1.5 line-clamp-4 text-sm leading-normal text-muted-foreground">{userData.bio}</p>
                 ) : null}
               </div>
             </div>
@@ -270,8 +270,8 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
               <div key={detail.id} className="flex items-center gap-2.5">
                 <IconComponent iconName={detail.icon} />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">{detail.label}</span>
-                  <span className="text-sm text-gray-700">{detail.text}</span>
+                  <span className="text-xs text-muted-foreground">{detail.label}</span>
+                  <span className="text-sm text-foreground/80">{detail.text}</span>
                 </div>
               </div>
             ))}

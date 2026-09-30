@@ -127,7 +127,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   return (
     <NodeViewWrapper className="excalidraw-node-view w-full">
       <div
-        className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
+        className="relative w-full overflow-hidden rounded-xl border border-border bg-muted/50"
         style={{ height: `${height}px` }}
       >
         {/* iframe — only rendered in browser environments */}
@@ -163,7 +163,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('editButton')} ${t('providers.excalidraw.label')}`}
               onClick={handleEdit}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {/* Pencil icon */}
               <svg

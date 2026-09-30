@@ -62,8 +62,8 @@ const FileUploadBlockInput: FC<FileUploadBlockInputProps> = ({ accept, onFileSel
         onChange={e => select(e.target.files?.[0])}
         className="hidden"
       />
-      <p className="text-sm font-medium text-gray-700">{file ? file.name : t('dropOrClick')}</p>
-      <p className="mt-1 text-xs text-gray-500">{hint}</p>
+      <p className="text-sm font-medium text-foreground/80">{file ? file.name : t('dropOrClick')}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   )
 }
@@ -73,7 +73,7 @@ const FileUploadBlockButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({ on
   return (
     <button
       className={cn(
-        'flex items-center space-x-2 rounded-lg bg-gray-200 p-2 px-3 text-gray-500 transition enabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex items-center space-x-2 rounded-lg bg-gray-200 p-2 px-3 text-muted-foreground transition enabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       onClick={onClick}
@@ -121,7 +121,7 @@ function FileUploadBlockWrapper({ children, isEmpty, ...props }: UploadBlockComp
   return (
     isEmpty && (
       <div
-        className="border-gray-150 flex items-center justify-center space-x-3 rounded-xl border-2 border-dashed bg-gray-50 px-3 py-7 text-sm text-gray-900"
+        className="border-gray-150 flex items-center justify-center space-x-3 rounded-xl border-2 border-dashed bg-muted/50 px-3 py-7 text-sm text-foreground"
         contentEditable={false}
       >
         <FileUploadBlock isEmpty {...props}>

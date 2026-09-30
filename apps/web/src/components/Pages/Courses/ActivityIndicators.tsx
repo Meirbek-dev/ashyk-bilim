@@ -86,7 +86,7 @@ function getActivityTypeIconColor(activityType: string): string {
       return 'text-cyan-500'
     }
     default: {
-      return 'text-gray-500'
+      return 'text-muted-foreground'
     }
   }
 }

@@ -90,7 +90,7 @@ async function CollectionsContent({ params }: PageProps) {
             empty={
               <div className="col-span-full flex items-center justify-center py-8">
                 <div className="text-center">
-                  <h2 className="mb-2 text-xl font-bold text-gray-600">{t('noContent')}</h2>
+                  <h2 className="mb-2 text-xl font-bold text-muted-foreground">{t('noContent')}</h2>
                   <p className="text-base text-gray-400">
                     <ProtectedText
                       text={t('noContentUserAdmin')}

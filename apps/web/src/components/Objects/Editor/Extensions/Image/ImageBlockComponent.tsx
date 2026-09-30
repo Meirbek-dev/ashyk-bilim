@@ -214,7 +214,7 @@ interface IconButtonProps {
 function IconButton({ onClick, icon: Icon, title, isActive, variant = 'default', className }: IconButtonProps) {
   const baseStyles = 'rounded-md p-1.5 transition-colors'
   const variants = {
-    default: cn('text-gray-600 hover:bg-gray-100 hover:text-gray-900', isActive && 'bg-gray-100 text-gray-900'),
+    default: cn('text-muted-foreground hover:bg-muted hover:text-foreground', isActive && 'bg-muted text-foreground'),
     overlay: 'bg-black/50 text-white hover:bg-black/70 rounded-full p-2 backdrop-blur-sm',
   }
 
@@ -260,7 +260,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
 
   if (preview) {
     return (
-      <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="relative rounded-lg border border-border bg-muted/50 p-4">
         <div className="relative mx-auto h-48 w-full overflow-hidden rounded-md">
           <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
@@ -269,7 +269,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
             type="button"
             onClick={onReset}
             disabled={isUploading}
-            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-muted/50 disabled:opacity-50"
           >
             {t('cancel')}
           </button>
@@ -306,7 +306,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors',
         isDragOver
           ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/15'
-          : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100',
+          : 'border-border bg-muted/50 hover:border-gray-400 hover:bg-muted',
         error && 'border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15',
       )}
     >
@@ -318,7 +318,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         className="hidden"
       />
 
-      <div className={cn('mb-3 rounded-full p-3', error ? 'bg-red-100' : 'bg-gray-100')}>
+      <div className={cn('mb-3 rounded-full p-3', error ? 'bg-red-100' : 'bg-muted')}>
         {error ? <AlertCircle className="h-6 w-6 text-red-500" /> : <ImageIcon className="h-6 w-6 text-gray-400" />}
       </div>
 
@@ -326,8 +326,8 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         <p className="text-sm text-red-600">{error}</p>
       ) : (
         <>
-          <p className="text-sm font-medium text-gray-700">{t('dropOrClick')}</p>
-          <p className="mt-1 text-xs text-gray-500">{t('supportedFormats')}</p>
+          <p className="text-sm font-medium text-foreground/80">{t('dropOrClick')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('supportedFormats')}</p>
         </>
       )}
     </div>
