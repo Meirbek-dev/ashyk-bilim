@@ -251,7 +251,7 @@ async function DashHome() {
 
   return (
     <div className="bg-background flex min-h-screen w-full flex-col">
-      <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
+      <DashHeader title={tGeneral('dashboard')} />
 
       <section className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
         <WorkQueueAutoRefresh />

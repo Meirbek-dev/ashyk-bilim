@@ -92,10 +92,13 @@ export default function ActivityHeader({
                 </span>
               </>
             ) : null}
-            <span className="text-muted-foreground shrink-0">/</span>
-            <span className="text-foreground max-w-xs min-w-0 truncate font-medium">
-              {runtime.activity?.title ?? runtime.course.title}
-            </span>
+            {/* The course-end page has no activity: the course crumb alone, not the course twice. */}
+            {runtime.activity ? (
+              <>
+                <span className="text-muted-foreground shrink-0">/</span>
+                <span className="text-foreground max-w-xs min-w-0 truncate font-medium">{runtime.activity.title}</span>
+              </>
+            ) : null}
           </nav>
         </div>
 

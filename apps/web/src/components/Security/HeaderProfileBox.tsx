@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@components/ui/dropdown-menu'
-import { ChevronDown, Crown, LogOut, Shield, User as UserIcon, Users } from 'lucide-react'
+import { ChevronDown, CircleUser, Crown, LogOut, Shield, User as UserIcon, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
@@ -111,7 +111,13 @@ export function HeaderProfileBox() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 nativeButton
-                render={<Button variant="ghost" className="flex h-auto items-center gap-1 p-2" />}
+                render={
+                  <Button
+                    variant="ghost"
+                    className="flex h-auto items-center gap-1 p-2"
+                    aria-label={user?.display_name?.trim() || user?.username || t('profile.userSettings')}
+                  />
+                }
               >
                 <UserAvatar size="sm" />
                 <div className="hidden flex-col text-start xl:flex">
@@ -173,6 +179,12 @@ export function HeaderProfileBox() {
                       <span>{t('profile.dashboard')}</span>
                     </DropdownMenuItem>
                   )}
+                  {user?.username ? (
+                    <DropdownMenuItem nativeButton={false} render={<Link href={`/user/${user.username}`} />}>
+                      <CircleUser data-icon="inline-start" />
+                      <span>{t('profile.publicProfile')}</span>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem nativeButton={false} render={<Link href="/dash/user-account/settings/general" />}>
                     <UserIcon data-icon="inline-start" />
                     <span>{t('profile.userSettings')}</span>

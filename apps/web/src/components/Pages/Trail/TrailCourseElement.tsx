@@ -84,7 +84,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
       {/* Thumbnail */}
       <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0" aria-label={course.name ?? ''}>
         <div
-          className="ring-border h-[76px] w-[108px] rounded-lg bg-cover bg-center ring-1 ring-inset"
+          className="ring-border h-14 w-20 rounded-lg bg-cover bg-center ring-1 ring-inset sm:h-[76px] sm:w-[108px]"
           style={{
             backgroundImage: course.thumbnail_image
               ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
@@ -102,7 +102,7 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
               {t('courseLabel')}
             </p>
             <Link href={getAbsoluteUrl(`/course/${courseid}`)}>
-              <h3 className="text-foreground hover:text-primary truncate text-base leading-snug font-semibold transition-colors">
+              <h3 className="text-foreground hover:text-primary line-clamp-2 text-base leading-snug font-semibold transition-colors">
                 {course.name}
               </h3>
             </Link>
@@ -110,10 +110,12 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
           <button
             type="button"
             onClick={() => setConfirmQuit(true)}
+            aria-label={t('quitCourseButton')}
+            title={t('quitCourseButton')}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
           >
             <X className="h-3 w-3" />
-            {t('quitCourseButton')}
+            <span className="hidden sm:inline">{t('quitCourseButton')}</span>
           </button>
         </div>
 

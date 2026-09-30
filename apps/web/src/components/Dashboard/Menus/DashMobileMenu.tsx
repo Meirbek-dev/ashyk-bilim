@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart3, BookCopy, Home, Settings, ShieldCheck, Users } from 'lucide-react'
+import { BarChart3, BookCopy, GraduationCap, Home, Settings, ShieldCheck, Users } from 'lucide-react'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import AppLink from '@/components/ui/AppLink'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,18 @@ function DashMobileMenu() {
     tooltip: string
     isActive: boolean
   }[] = [
+    // Learners have no sidebar entries besides home/settings — give them the way back to the courses.
+    ...(canSeeCourses
+      ? []
+      : [
+          {
+            href: '/courses',
+            icon: GraduationCap,
+            label: t('mobile.learning'),
+            tooltip: t('mobile.learning'),
+            isActive: false,
+          },
+        ]),
     {
       href: '/dash',
       icon: Home,

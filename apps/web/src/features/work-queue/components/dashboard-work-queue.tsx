@@ -49,7 +49,6 @@ export function DashboardWorkQueue({ sections, tools, copy }: DashboardWorkQueue
     <div className="flex flex-col gap-8" data-testid="dashboard-work-queue">
       <section aria-labelledby="dashboard-work-queue-title" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-muted-foreground text-xs font-medium">{copy.priorityLabel}</p>
           <h2
             id="dashboard-work-queue-title"
             className="font-heading text-2xl font-semibold tracking-tight text-balance"

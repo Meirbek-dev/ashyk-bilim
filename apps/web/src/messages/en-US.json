@@ -7347,7 +7347,8 @@
         }
       },
       "signOut": "Sign Out",
-      "userSettings": "User Settings"
+      "userSettings": "User Settings",
+      "publicProfile": "My profile"
     },
     "signUp": "Sign Up",
     "tooltips": {
@@ -7523,7 +7524,8 @@
       "home": "Home",
       "platform": "Platform",
       "settings": "Settings",
-      "users": "Users"
+      "users": "Users",
+      "learning": "Learning"
     },
     "platformName": "Ashyk Bilim",
     "tooltips": {
@@ -11145,8 +11147,8 @@
   },
   "DashboardWorkQueue": {
     "priorityLabel": "Priority queue",
-    "title": "Work that needs you",
-    "description": "Open the next learner, grading, or course action without hunting through sections.",
+    "title": "What to do next",
+    "description": "Assignments, reviews and courses waiting for you.",
     "browseLabel": "Browse",
     "toolsTitle": "Tools and sections",
     "toolsDescription": "Explore courses, reports, people, and settings when you are not responding to queued work.",
