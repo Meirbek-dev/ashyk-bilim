@@ -110,8 +110,10 @@ export default function AttemptResultCard({
             )}
           </div>
 
-          <p className="text-xl font-semibold">
-            {showScore ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}` : t('assessmentSubmitted')}
+          {/* The activity's name and its score — «Учебная задача отправлена» said nothing either. */}
+          <h2 className="text-xl font-semibold text-balance">{vm.title}</h2>
+          <p className={cn(showScore ? 'text-2xl font-bold tabular-nums' : 'text-muted-foreground text-sm')}>
+            {showScore ? formatPercent(pct) : t('assessmentSubmitted')}
           </p>
 
           {showLatest ? (

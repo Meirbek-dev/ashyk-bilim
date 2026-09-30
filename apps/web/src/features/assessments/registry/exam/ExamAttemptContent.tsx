@@ -35,7 +35,6 @@ import { isAnswered as isItemAnswered } from '@/features/assessments/domain/item
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
-import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
 import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
 import { useAttemptShellControls } from '@/features/assessments/shell'
 import type { AttemptShellRegistration } from '@/features/assessments/shell/AssessmentActionBar'
@@ -291,7 +290,6 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       passingScore={vm.passingScore}
       latestCompletedSubmission={latestCompletedSubmission}
       recordFeedback={recordFeedback}
-      historyItems={historyItems}
     />
   )
 }
@@ -310,7 +308,6 @@ function ExamTakingContent({
   passingScore,
   latestCompletedSubmission,
   recordFeedback,
-  historyItems,
 }: {
   title: string
   questions: AssessmentItem[]
@@ -325,7 +322,6 @@ function ExamTakingContent({
   passingScore: number | null
   latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
   recordFeedback: string | null
-  historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const tWorkspace = useTranslations('Features.ActivityWorkspace')
@@ -674,8 +670,6 @@ function ExamTakingContent({
           </AlertDescription>
         </Alert>
       ) : null}
-
-      {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
       {/* Mid-attempt only the returned-for-revision feedback matters; an older
           attempt's score reads as this attempt's result. */}

@@ -53,7 +53,7 @@ describe('AttemptResultCard vs progress projection', () => {
     render(wrap(<AttemptResultCard vm={vm} activityState={activityState} />))
     expect(screen.getByText('Пройдено')).toBeInTheDocument()
     expect(screen.queryByText('Не пройдено')).toBeNull()
-    expect(screen.getByText(/· 100%/)).toBeInTheDocument()
+    expect(screen.getByText(/^100%$/)).toBeInTheDocument()
     expect(screen.getByText('Последняя попытка: 0%')).toBeInTheDocument()
   })
 

@@ -63,7 +63,7 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     expect(screen.getByTestId(`item-score-${matchingId}`)).toHaveTextContent('2 / 3')
     expect(screen.getByTestId(`item-score-${prose}`)).toHaveTextContent('10 / 10')
     // Headline and rows share one number format.
-    expect(screen.getByText(/· 66,67%/)).toBeInTheDocument()
+    expect(screen.getByText(/^66,67%$/)).toBeInTheDocument()
     expect(screen.queryByText(/66\.67/)).toBeNull()
     // Verdicts: auto-grader codes localized, teacher prose as-is.
     expect(screen.getByTestId(`item-verdict-${itemId}`)).toHaveTextContent('Верно')
