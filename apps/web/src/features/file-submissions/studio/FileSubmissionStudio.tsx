@@ -328,7 +328,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
         </div>
       </header>
 
-      <main className="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
+      <div className="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
         <form onSubmit={save} className="space-y-5">
           <Field>
             <FieldLabel>{t('title')}</FieldLabel>
@@ -454,7 +454,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </Button>
           </section>
         </aside>
-      </main>
+      </div>
     </ActivityAIDockLayout>
   )
 }

@@ -458,7 +458,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       </AlertDialog>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-        <main className={cn('grid grid-cols-1 gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
+        <div className={cn('grid grid-cols-1 gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
           <AccessList
             title={t('students')}
             count={selectedUsers.size}
@@ -497,7 +497,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
               />
             ))}
           </AccessList>
-        </main>
+        </div>
 
         <aside className="space-y-4">
           <AudiencePreview

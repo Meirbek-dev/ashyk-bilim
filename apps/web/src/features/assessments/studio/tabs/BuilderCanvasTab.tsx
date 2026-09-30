@@ -473,7 +473,7 @@ export default function BuilderCanvasTab({
       </aside>
 
       {/* Middle Canvas */}
-      <main className="bg-muted/10 min-w-0 overflow-y-auto">
+      <div className="bg-muted/10 min-w-0 overflow-y-auto">
         {!itemState ? (
           <div className="flex h-full items-center justify-center p-8">
             <div className="max-w-sm text-center">
@@ -519,7 +519,7 @@ export default function BuilderCanvasTab({
             renderBodyEditor={renderItemBodyEditor}
           />
         )}
-      </main>
+      </div>
 
       {/* Right Inspector */}
       {itemState ? (

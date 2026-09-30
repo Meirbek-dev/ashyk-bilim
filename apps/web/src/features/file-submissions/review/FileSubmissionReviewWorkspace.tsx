@@ -518,7 +518,7 @@ export default function FileSubmissionReviewWorkspace({
         ) : null}
       </aside>
 
-      <main className="@container/review p-4 lg:p-6">
+      <div className="@container/review p-4 lg:p-6">
         {selected ? (
           // Container query, not a viewport breakpoint: the shell sidebar and
           // the submission list eat ~620px, so at 1280px the aside must stack.
@@ -681,7 +681,7 @@ export default function FileSubmissionReviewWorkspace({
             {t('selectSubmission')}
           </div>
         )}
-      </main>
+      </div>
       <AlertDialog open={pendingAttempt !== null} onOpenChange={open => (!open ? setPendingAttempt(null) : null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

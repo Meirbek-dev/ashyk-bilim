@@ -123,7 +123,7 @@ function LandingDegradedState({
   t: Awaited<ReturnType<typeof getTranslations<'LandingDegraded'>>>
 }) {
   return (
-    <main className="mx-auto flex min-h-[60dvh] w-full max-w-4xl items-center px-4 py-12 sm:px-6">
+    <div className="mx-auto flex min-h-[60dvh] w-full max-w-4xl items-center px-4 py-12 sm:px-6">
       <section aria-labelledby="landing-unavailable-title" className="w-full border-y py-10 sm:py-14">
         <AlertTriangle className="size-8 text-amber-600" aria-hidden />
         <h1 id="landing-unavailable-title" className="mt-5 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -148,6 +148,6 @@ function LandingDegradedState({
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   )
 }

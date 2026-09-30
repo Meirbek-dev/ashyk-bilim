@@ -33,7 +33,7 @@ export function AssessmentWorkspaceShell({ navItems, banner, renderView }: Asses
   return (
     <div className="bg-muted/20 grid min-h-[calc(100vh-61px)] grid-cols-1 lg:grid-cols-[232px_minmax(0,1fr)]">
       <AssessmentWorkspaceNavigator items={navItems} />
-      <main className="bg-background min-w-0 border-l" aria-label={t('mainArea')}>
+      <section className="bg-background min-w-0 border-l" aria-label={t('mainArea')}>
         <div className="bg-background/95 sticky top-[61px] z-20 flex min-h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur md:px-6">
           <div className="min-w-0">
             <p className="text-muted-foreground text-xs font-medium uppercase">{t('currentView')}</p>
@@ -47,7 +47,7 @@ export function AssessmentWorkspaceShell({ navItems, banner, renderView }: Asses
         {banner}
         <AssessmentReadinessStrip />
         <section aria-label={activeItem?.label}>{renderView(activeView)}</section>
-      </main>
+      </section>
     </div>
   )
 }

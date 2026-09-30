@@ -81,7 +81,7 @@ export default function SubmissionInspector({
   const reviewVm = buildSubmissionReviewViewModel(current)
 
   return (
-    <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
+    <div className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
       <div className="mx-auto max-w-4xl space-y-5">
         <div className="bg-card rounded-lg border p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -164,7 +164,7 @@ export default function SubmissionInspector({
           </TabsContent>
         </Tabs>
       </div>
-    </main>
+    </div>
   )
 }
 
