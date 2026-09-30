@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -355,6 +355,7 @@ interface ResultRowProps {
 
 function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const format = useFormatter()
   const diffExists = !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string'
 
   return (
@@ -381,7 +382,13 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
           {typeof result.time_ms === 'number' ? <span>{t('timeLimitValue', { value: result.time_ms })}</span> : null}
-          {typeof result.memory_kb === 'number' ? <span>{(result.memory_kb / 1024).toFixed(1)}MB</span> : null}
+          {typeof result.memory_kb === 'number' ? (
+            <span>
+              {t('memoryLimitValue', {
+                value: format.number(result.memory_kb / 1024, { maximumFractionDigits: 1 }),
+              })}
+            </span>
+          ) : null}
           {isExpanded ? (
             <ChevronUp className="text-muted-foreground size-3.5" />
           ) : (
