@@ -12,8 +12,19 @@ use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
 
 /// A "Python" that squares its input; `SYNTAX` in the source fails to
-/// compile; anything else prints 0.
+/// compile; `NUL` prints a NUL byte; anything else prints 0.
 fn fake_python(source: &str, stdin: &str) -> CaseVerdict {
+    if source.contains("NUL") {
+        return CaseVerdict::accepted("4\0\n");
+    }
+    if source.contains("BOOM") {
+        return CaseVerdict {
+            status_id: 13,
+            stdout: None,
+            stderr: None,
+            compile_output: None,
+        };
+    }
     if source.contains("SYNTAX") {
         return CaseVerdict::compile_error("SyntaxError: invalid syntax");
     }
@@ -496,6 +507,8 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     );
     assert_eq!(down.json()["code"], "code-runner-degraded");
     assert_eq!(down.json()["details"]["is_retryable"], true);
+    // UX-291: no upstream URL or transport error reaches the learner.
+    assert_eq!(down.json()["detail"], "code runner unavailable");
     assert_eq!(down.headers[header::RETRY_AFTER], "30");
     let run_id = down.json()["details"]["run_id"]
         .as_str()
@@ -505,7 +518,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
         .get_as(&alice, &format!("/api/v2/code-runs/{run_id}"))
         .await;
     assert_eq!(recorded.json()["status"], "degraded");
-    assert!(recorded.json()["error_message"].as_str().is_some());
+    assert_eq!(recorded.json()["error_message"], "code runner unavailable");
 
     // Submitting is refused (retryable) and the draft stays open …
     let draft = app
@@ -587,4 +600,233 @@ async fn degraded_runner_and_languages(pool: PgPool) {
         .collect();
     assert_eq!(ids, [71, 62]);
     assert_eq!(languages.json()[0]["monaco_language"], "python");
+}
+
+/// BUG-369: a program printing a NUL byte is a wrong answer, not a 500 —
+/// on a visible run and at submit, and no run is left `running`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    FakeJudge::mount(&app.judge0, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (id, item_id) = code_challenge(&app, &teacher, None).await;
+    let alice = learner(&app, "alice").await;
+    let nul = r"print('\0')  # NUL";
+
+    let ran = app
+        .send(run(
+            &alice,
+            &item_id,
+            None,
+            &serde_json::json!({ "language_id": 71, "source": nul }),
+        ))
+        .await;
+    assert_eq!(ran.status, StatusCode::CREATED, "{}", ran.text());
+    assert_eq!(ran.json()["status"], "wrong_answer");
+    assert_eq!(ran.json()["cases"][0]["actual"], "4\u{FFFD}");
+
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &item_id: { "kind": "code", "language": 71, "source": nul }
+            } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["final_score"], 0.0);
+    let stuck: i64 = sqlx::query_scalar("SELECT count(*) FROM code_runs WHERE status = 'running'")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(stuck, 0);
+}
+
+/// BUG-371: a key whose run is still executing answers 409 — never a
+/// second execution; an abandoned run (crash) frees the key after a while.
+#[sqlx::test(migrations = "../../migrations")]
+async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_id, item_id) = code_challenge(&app, &teacher, None).await;
+    let alice = learner(&app, "alice").await;
+    let body = serde_json::json!({ "language_id": 71, "source": SQUARE });
+
+    let first = app.send(run(&alice, &item_id, Some("k"), &body)).await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let run_id = uuid::Uuid::parse_str(first.json()["id"].as_str().unwrap()).unwrap();
+    sqlx::query("UPDATE code_runs SET status = 'running' WHERE id = $1")
+        .bind(run_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let busy = app.send(run(&alice, &item_id, Some("k"), &body)).await;
+    assert_eq!(busy.status, StatusCode::CONFLICT, "{}", busy.text());
+    assert_eq!(busy.json()["code"], "idempotency-in-progress");
+    assert_eq!(judge.submissions(), 1);
+
+    sqlx::query("UPDATE code_runs SET created_at = now() - interval '10 minutes' WHERE id = $1")
+        .bind(run_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let retried = app.send(run(&alice, &item_id, Some("k"), &body)).await;
+    assert_eq!(retried.status, StatusCode::CREATED, "{}", retried.text());
+    assert_ne!(retried.json()["id"], first.json()["id"]);
+    let old: String = sqlx::query_scalar("SELECT status FROM code_runs WHERE id = $1")
+        .bind(run_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(old, "internal_error");
+}
+
+/// A learner's draft on `id` holding one code answer; returns its id.
+async fn code_draft(
+    app: &TestApp,
+    who: &MintedSession,
+    id: &str,
+    item_id: &str,
+    language: i32,
+    source: &str,
+) -> String {
+    let draft = app
+        .post_as(
+            who,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let saved = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{sub_id}/draft"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &who.cookie)
+                .header(header::IF_MATCH, "1")
+                .body(Body::from(
+                    serde_json::json!({ "answers": {
+                        item_id: { "kind": "code", "language": language, "source": source }
+                    } })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    sub_id
+}
+
+/// BUG-370 + the grade branches: a manual submit refuses what the learner
+/// can fix (runner internal error 503, disallowed language 422); the timer
+/// sweep always finalizes — internal error / a run it cannot finish go to
+/// manual review, a compile error, a disallowed language or NUL output
+/// score what they earned.
+#[sqlx::test(migrations = "../../migrations")]
+async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    FakeJudge::mount(&app.judge0, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (id, item_id) = code_challenge(&app, &teacher, Some(60)).await;
+    let submit = |who: &MintedSession, sub: &str, language: i32, source: &str| {
+        let body = serde_json::json!({ "answers": {
+            &item_id: { "kind": "code", "language": language, "source": source }
+        } });
+        let (cookie, uri) = (
+            who.cookie.clone(),
+            format!("/api/v2/submissions/{sub}/submit"),
+        );
+        Request::builder()
+            .method("POST")
+            .uri(uri)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, cookie)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+
+    let bob = learner(&app, "bob").await;
+    let bob_sub = code_draft(&app, &bob, &id, &item_id, 71, "BOOM").await;
+    let refused = app.send(submit(&bob, &bob_sub, 71, "BOOM")).await;
+    assert_eq!(
+        refused.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.json()["details"]["is_retryable"], false);
+
+    let carol = learner(&app, "carol").await;
+    let carol_sub = code_draft(&app, &carol, &id, &item_id, 63, SQUARE).await;
+    let refused = app.send(submit(&carol, &carol_sub, 63, SQUARE)).await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.json()["code"], "language-not-allowed");
+
+    let dave = learner(&app, "dave").await;
+    let dave_sub = code_draft(&app, &dave, &id, &item_id, 71, "SYNTAX").await;
+    let erin = learner(&app, "erin").await;
+    let erin_sub = code_draft(&app, &erin, &id, &item_id, 71, r"print('\0')  # NUL").await;
+    // Frank's final run is still executing (another hand-in, or a crashed
+    // worker a moment ago): the sweep must not wait on it.
+    let frank = learner(&app, "frank").await;
+    let frank_sub = code_draft(&app, &frank, &id, &item_id, 71, SQUARE).await;
+    sqlx::query(
+        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status,
+                                language_id, source_sha256, idempotency_key, total, started_at)
+         SELECT s.assessment_id, $2, s.id, s.user_id, 'final', 'running', 71, x.h,
+                'final:' || s.id || ':' || $2::text || ':71:' || x.h, 2, now()
+         FROM submissions s, (SELECT encode(sha256(convert_to($3, 'UTF8')), 'hex') AS h) x
+         WHERE s.id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&frank_sub).unwrap())
+    .bind(uuid::Uuid::parse_str(&item_id).unwrap())
+    .bind(SQUARE)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        "UPDATE submissions SET started_at = now() - interval '3 minutes' WHERE status = 'draft'",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let swept =
+        ab_domain::grading::SubmissionsService::sweep_expired_drafts(&app.code_runner(), None, 10)
+            .await
+            .unwrap();
+    assert_eq!(swept, 5);
+    for (sub, status, score) in [
+        (&bob_sub, "pending", None),
+        (&carol_sub, "published", Some(0.0)),
+        (&dave_sub, "published", Some(0.0)),
+        (&erin_sub, "published", Some(0.0)),
+        (&frank_sub, "pending", None),
+    ] {
+        let (got, final_score): (String, Option<f64>) =
+            sqlx::query_as("SELECT status, final_score FROM submissions WHERE id = $1")
+                .bind(uuid::Uuid::parse_str(sub).unwrap())
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
+        assert_eq!((got.as_str(), final_score), (status, score), "{sub}");
+    }
 }

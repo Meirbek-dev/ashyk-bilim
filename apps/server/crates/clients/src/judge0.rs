@@ -32,7 +32,11 @@ pub struct Judge0Config {
     pub api_key: Option<SecretString>,
     pub request_timeout: Duration,
     pub poll_interval: Duration,
+    /// Budget for one batch: waiting for a slot, then for results.
     pub poll_max_wait: Duration,
+    /// Batches in flight at once (BUG-372) — size it to Judge0's workers
+    /// (`COUNT` in judge0.conf); the rest queue for a slot.
+    pub max_concurrency: usize,
 }
 
 /// One sandbox execution. Sizes are KB (Judge0's unit), times seconds.
@@ -77,12 +81,29 @@ pub struct Language {
 /// Why a run could not be executed.
 #[derive(Debug, Clone)]
 pub enum Judge0Error {
-    /// Judge0 is down, slow, or the breaker is open — retry later. Counts
+    /// Judge0 is down or the breaker is open — retry later. Counts
     /// against the breaker.
     Unavailable(String),
     /// Judge0 refused the payload (unknown language, bad limits). The
     /// service is healthy; retrying the same request will not help.
     Rejected(String),
+    /// No slot freed up, or the results did not arrive, within the budget:
+    /// Judge0 is up but saturated. Retry later; never trips the breaker
+    /// (BUG-372 — one burst must not take the runner away from everyone).
+    Busy(String),
+}
+
+impl Judge0Error {
+    /// What a user may see. The variant's text (upstream URLs, transport
+    /// errors, response bodies) is for the logs only (UX-291).
+    #[must_use]
+    pub const fn public_message(&self) -> &'static str {
+        match self {
+            Self::Unavailable(_) => "code runner unavailable",
+            Self::Rejected(_) => "code runner rejected the submission",
+            Self::Busy(_) => "code runner is busy; try again shortly",
+        }
+    }
 }
 
 impl std::fmt::Display for Judge0Error {
@@ -90,6 +111,7 @@ impl std::fmt::Display for Judge0Error {
         match self {
             Self::Unavailable(msg) => write!(f, "judge0 unavailable: {msg}"),
             Self::Rejected(msg) => write!(f, "judge0 rejected the submission: {msg}"),
+            Self::Busy(msg) => write!(f, "judge0 busy: {msg}"),
         }
     }
 }
@@ -142,6 +164,7 @@ pub struct Judge0Client {
     http: reqwest::Client,
     config: Judge0Config,
     breaker: Mutex<Breaker>,
+    slots: tokio::sync::Semaphore,
 }
 
 #[derive(Deserialize)]
@@ -178,6 +201,7 @@ impl Judge0Client {
             .map_err(|e| Error::internal("building judge0 http client", e))?;
         Ok(Self {
             http,
+            slots: tokio::sync::Semaphore::new(config.max_concurrency.max(1)),
             config,
             breaker: Mutex::new(Breaker::default()),
         })
@@ -215,6 +239,7 @@ impl Judge0Client {
         match outcome {
             Ok(()) | Err(Judge0Error::Rejected(_)) => breaker.on_success(),
             Err(Judge0Error::Unavailable(_)) => breaker.on_failure(),
+            Err(Judge0Error::Busy(_)) => {}
         }
     }
 
@@ -231,7 +256,17 @@ impl Judge0Client {
                 "circuit breaker open after repeated failures".into(),
             ));
         }
-        let outcome = self.run_batch_inner(specs).await;
+        // BUG-372: at most `max_concurrency` batches in Judge0; the rest
+        // wait for a slot inside the same budget as the poll.
+        let deadline = Instant::now() + self.config.poll_max_wait;
+        let Ok(Ok(_slot)) = tokio::time::timeout_at(deadline.into(), self.slots.acquire()).await
+        else {
+            return Err(Judge0Error::Busy(format!(
+                "no free slot within {:?}",
+                self.config.poll_max_wait
+            )));
+        };
+        let outcome = self.run_batch_inner(specs, deadline).await;
         self.record(&outcome.as_ref().map(|_| ()).map_err(Clone::clone));
         outcome
     }
@@ -239,12 +274,12 @@ impl Judge0Client {
     async fn run_batch_inner(
         &self,
         specs: &[SubmissionSpec],
+        deadline: Instant,
     ) -> std::result::Result<Vec<SubmissionResult>, Judge0Error> {
         let mut tokens = Vec::with_capacity(specs.len());
         for chunk in specs.chunks(MAX_BATCH) {
             tokens.extend(self.create_batch(chunk).await?);
         }
-        let deadline = Instant::now() + self.config.poll_max_wait;
         let mut results: Vec<Option<SubmissionResult>> = vec![None; tokens.len()];
         loop {
             let pending: Vec<(usize, &str)> = results
@@ -277,7 +312,7 @@ impl Judge0Client {
                 break;
             }
             if Instant::now() >= deadline {
-                return Err(Judge0Error::Unavailable(format!(
+                return Err(Judge0Error::Busy(format!(
                     "timed out after {:?} waiting for {} submission(s)",
                     self.config.poll_max_wait,
                     results.iter().filter(|r| r.is_none()).count()
@@ -438,13 +473,21 @@ fn encode_spec(spec: &SubmissionSpec) -> serde_json::Value {
 
 /// Judge0 base64-encodes with line feeds every 60 chars (Ruby `encode64`);
 /// strip whitespace before decoding. Undecodable text is passed through.
+/// BUG-369: this is where program output enters the platform, so it is made
+/// storable here — invalid UTF-8 and NUL (which Postgres `text` rejects)
+/// become U+FFFD; a NUL never matches expected output anyway.
 fn decode_text(value: Option<String>) -> Option<String> {
     let raw = value?;
     let compact: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
-    match base64::engine::general_purpose::STANDARD.decode(compact) {
-        Ok(bytes) => Some(String::from_utf8_lossy(&bytes).into_owned()),
-        Err(_) => Some(raw),
-    }
+    let text = match base64::engine::general_purpose::STANDARD.decode(compact) {
+        Ok(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
+        Err(_) => raw,
+    };
+    Some(if text.contains('\0') {
+        text.replace('\0', "\u{FFFD}")
+    } else {
+        text
+    })
 }
 
 fn decode(raw: RawSubmission) -> SubmissionResult {

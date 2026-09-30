@@ -271,6 +271,10 @@ pub struct Judge0Config {
     /// timeout (30s) — runs execute inside the request.
     #[serde(default = "Judge0Config::default_poll_max_wait_secs")]
     pub poll_max_wait_secs: f64,
+    /// Batches sent to Judge0 at once per process; later ones queue inside
+    /// `poll_max_wait_secs` (BUG-372). Match judge0.conf `COUNT`.
+    #[serde(default = "Judge0Config::default_max_concurrency")]
+    pub max_concurrency: usize,
     #[serde(default)]
     pub limits: Judge0Limits,
 }
@@ -284,6 +288,9 @@ impl Judge0Config {
     }
     const fn default_poll_max_wait_secs() -> f64 {
         25.0
+    }
+    const fn default_max_concurrency() -> usize {
+        2
     }
 }
 
@@ -501,6 +508,7 @@ impl Config {
                 "request_timeout_secs": j.request_timeout_secs,
                 "poll_interval_ms": j.poll_interval_ms,
                 "poll_max_wait_secs": j.poll_max_wait_secs,
+                "max_concurrency": j.max_concurrency,
                 "limits": {
                     "max_source_bytes": j.limits.max_source_bytes,
                     "max_stdin_bytes": j.limits.max_stdin_bytes,

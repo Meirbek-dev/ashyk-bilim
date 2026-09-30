@@ -17,6 +17,7 @@ fn client(server: &MockServer) -> Judge0Client {
         request_timeout: Duration::from_secs(5),
         poll_interval: Duration::from_millis(20),
         poll_max_wait: Duration::from_secs(2),
+        max_concurrency: 2,
     })
     .unwrap()
 }
@@ -113,8 +114,8 @@ async fn batch_create_then_poll_until_done_decoding_base64() {
     assert!(results[1].stdout.is_none());
 }
 
-#[tokio::test]
-async fn poll_timeout_is_unavailable() {
+/// A client whose submissions never finish: every poll says "In Queue".
+async fn stuck_judge(max_concurrency: usize) -> (MockServer, Judge0Client) {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/submissions/batch"))
@@ -136,12 +137,52 @@ async fn poll_timeout_is_unavailable() {
         request_timeout: Duration::from_secs(5),
         poll_interval: Duration::from_millis(20),
         poll_max_wait: Duration::from_millis(150),
+        max_concurrency,
     })
     .unwrap();
-    match client.run_batch(&[spec("x", "")]).await {
-        Err(Judge0Error::Unavailable(msg)) => assert!(msg.contains("timed out"), "{msg}"),
-        other => panic!("expected timeout, got {other:?}"),
+    (server, client)
+}
+
+/// BUG-372: a saturated Judge0 is `Busy` — retryable, and it never opens
+/// the breaker for everyone else.
+#[tokio::test]
+async fn poll_timeouts_are_busy_and_never_trip_the_breaker() {
+    let (_server, client) = stuck_judge(2).await;
+    for _ in 0..6 {
+        match client.run_batch(&[spec("x", "")]).await {
+            Err(Judge0Error::Busy(msg)) => assert!(msg.contains("timed out"), "{msg}"),
+            other => panic!("expected timeout, got {other:?}"),
+        }
     }
+    assert!(!client.is_degraded());
+}
+
+/// BUG-372: past `max_concurrency` a batch waits for a slot instead of
+/// piling onto Judge0, and gives up as `Busy` within the same budget.
+#[tokio::test]
+async fn batches_beyond_the_concurrency_cap_queue_for_a_slot() {
+    let (server, client) = stuck_judge(1).await;
+    let (a, b) = ([spec("a", "")], [spec("b", "")]);
+    let both: [_; 2] = tokio::join!(client.run_batch(&a), client.run_batch(&b)).into();
+    let messages: Vec<String> = both
+        .into_iter()
+        .map(|r| match r {
+            Err(Judge0Error::Busy(msg)) => msg,
+            other => panic!("expected busy, got {other:?}"),
+        })
+        .collect();
+    assert!(
+        messages.iter().any(|m| m.contains("no free slot")),
+        "{messages:?}"
+    );
+    let creates = server
+        .received_requests()
+        .await
+        .unwrap()
+        .iter()
+        .filter(|r| r.method.as_str() == "POST")
+        .count();
+    assert_eq!(creates, 1, "the queued batch never reached Judge0");
 }
 
 #[tokio::test]

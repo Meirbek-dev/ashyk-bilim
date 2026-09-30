@@ -1057,7 +1057,17 @@ impl SubmissionsService {
             item_id: item.id,
             user_id: submission.user_id,
         };
-        let outcome = runner.final_run(target, body, language_id, source).await?;
+        // BUG-370: the timer cannot show an error and must not retry for an
+        // hour: a run it cannot finish hands the attempt to a teacher.
+        let outcome = match runner.final_run(target, body, language_id, source).await {
+            Ok(outcome) => outcome,
+            Err(err) if lenient => {
+                tracing::error!(submission_id = %submission.id, %err,
+                    "final code run failed; handing the attempt to manual review");
+                return Ok(manual_review());
+            }
+            Err(err) => return Err(err),
+        };
         let cases: Vec<CaseOutcome> = match outcome {
             FinalRun::Ran(run) => {
                 if run.status == CodeRunStatus::InternalError {

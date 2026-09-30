@@ -435,6 +435,7 @@ fn build_judge0(
             request_timeout: std::time::Duration::from_secs_f64(settings.request_timeout_secs),
             poll_interval: std::time::Duration::from_millis(settings.poll_interval_ms),
             poll_max_wait: std::time::Duration::from_secs_f64(settings.poll_max_wait_secs),
+            max_concurrency: settings.max_concurrency,
         })?,
     )))
 }

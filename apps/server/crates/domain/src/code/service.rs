@@ -321,10 +321,11 @@ impl CodeRunsService {
                 "code runner is not configured",
             ));
         };
-        let languages = client
-            .languages()
-            .await
-            .map_err(|err| Error::app(ErrorCode::CodeRunnerDegraded, err.to_string()))?;
+        let languages = client.languages().await.map_err(|err| {
+            // UX-291: upstream URLs and transport errors stay in the log.
+            tracing::warn!(%err, "listing judge0 languages failed");
+            Error::app(ErrorCode::CodeRunnerDegraded, err.public_message())
+        })?;
         let list: Vec<LanguageInfo> = languages
             .into_iter()
             .filter(|l| !l.is_archived && self.runner.language_allowed(l.id))

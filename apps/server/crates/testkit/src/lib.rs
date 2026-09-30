@@ -129,6 +129,7 @@ impl TestApp {
                 request_timeout: Duration::from_secs(5),
                 poll_interval: Duration::from_millis(10),
                 poll_max_wait: Duration::from_secs(3),
+                max_concurrency: 4,
             })
             .expect("test judge0 client"),
         );

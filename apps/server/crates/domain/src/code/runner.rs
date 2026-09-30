@@ -23,6 +23,9 @@ use crate::code::{compare, sandbox};
 use crate::grading::breakdown::round2;
 
 const OUTPUT_TRUNCATION_MARKER: &str = "\n[output truncated]";
+/// A `running` run older than this was abandoned (process crash): a run
+/// finishes within Judge0's poll budget (25 s by default) plus HTTP timeouts.
+const ABANDONED_RUN_SECONDS: i64 = 120;
 
 /// One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/
 /// `stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).
@@ -311,32 +314,39 @@ impl CodeRunner {
         .await?
         else {
             // Lost a race on the idempotency key: the other request owns it.
-            return Err(Error::conflict(
-                "a code run with this Idempotency-Key is in progress",
-            ));
+            return Err(in_progress());
         };
 
         match self.run_on_judge0(&spec, tests).await {
             Ok(results) => {
                 let scored = spec.custom_input.is_none();
                 let graded = grade_cases(tests, &results, scored, self.limits.max_output_bytes);
-                ab_db::submissions::insert_code_run_cases(&self.pool, run_id, &graded.rows).await?;
-                ab_db::submissions::finish_code_run(
-                    &self.pool,
-                    run_id,
-                    graded.status,
-                    graded.passed,
-                    graded.score,
-                    graded.compile_output.as_deref(),
-                    None,
-                )
-                .await?;
+                if let Err(err) = self.record(run_id, &graded).await {
+                    // BUG-370: a run whose results could not be stored must
+                    // not stay `running` (and hold its key) forever.
+                    tracing::error!(%run_id, %err, "storing code run results failed");
+                    if let Err(again) = ab_db::submissions::finish_code_run(
+                        &self.pool,
+                        run_id,
+                        CodeRunStatus::InternalError,
+                        0,
+                        None,
+                        None,
+                        Some("the run results could not be stored"),
+                    )
+                    .await
+                    {
+                        tracing::error!(%run_id, err = %again, "marking the code run failed");
+                    }
+                    return Err(err);
+                }
             }
             Err(err) => {
                 let status = match &err {
-                    Judge0Error::Unavailable(_) => CodeRunStatus::Degraded,
+                    Judge0Error::Unavailable(_) | Judge0Error::Busy(_) => CodeRunStatus::Degraded,
                     Judge0Error::Rejected(_) => CodeRunStatus::InternalError,
                 };
+                // UX-291: the upstream detail goes to the log, not the user.
                 tracing::warn!(%run_id, %err, ?status, "code run did not execute");
                 ab_db::submissions::finish_code_run(
                     &self.pool,
@@ -345,7 +355,7 @@ impl CodeRunner {
                     0,
                     None,
                     None,
-                    Some(&err.to_string()),
+                    Some(err.public_message()),
                 )
                 .await?;
             }
@@ -355,8 +365,23 @@ impl CodeRunner {
             .ok_or_else(|| Error::not_found("code run"))
     }
 
+    async fn record(&self, run_id: CodeRunId, graded: &Graded) -> Result<()> {
+        ab_db::submissions::insert_code_run_cases(&self.pool, run_id, &graded.rows).await?;
+        ab_db::submissions::finish_code_run(
+            &self.pool,
+            run_id,
+            graded.status,
+            graded.passed,
+            graded.score,
+            graded.compile_output.as_deref(),
+            None,
+        )
+        .await
+    }
+
     /// The idempotency contract: replay a finished run, refuse a different
-    /// payload under the same key, or free the key of a failed run.
+    /// payload under the same key, answer 409 while it is still executing,
+    /// or free the key of a failed (or abandoned) run.
     async fn replay_or_clear(
         &self,
         spec: &RunSpec<'_>,
@@ -393,6 +418,25 @@ impl CodeRunner {
         ) {
             return Ok(Some(self.with_cases(existing, true).await?));
         }
+        // BUG-371: never re-execute under a key whose run is in flight.
+        if matches!(
+            existing.status,
+            CodeRunStatus::Queued | CodeRunStatus::Running
+        ) {
+            if now_unix() - existing.created_at < ABANDONED_RUN_SECONDS {
+                return Err(in_progress());
+            }
+            ab_db::submissions::finish_code_run(
+                &self.pool,
+                existing.id,
+                CodeRunStatus::InternalError,
+                0,
+                None,
+                None,
+                Some("the run was abandoned"),
+            )
+            .await?;
+        }
         ab_db::submissions::clear_idempotency_key(&self.pool, existing.id).await?;
         Ok(None)
     }
@@ -418,6 +462,19 @@ impl CodeRunner {
             .collect();
         client.run_batch(&specs).await
     }
+}
+
+fn in_progress() -> Error {
+    Error::app(
+        ErrorCode::IdempotencyInProgress,
+        "a code run with this Idempotency-Key is in progress",
+    )
+}
+
+fn now_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
 }
 
 struct Graded {
@@ -647,6 +704,15 @@ mod tests {
         assert_eq!(custom.passed, 0);
         assert_eq!(custom.score, None);
         assert!(custom.rows[0].passed);
+    }
+
+    #[test]
+    fn a_zero_weight_test_counts_as_one() {
+        let tests = [test("a", "1", 0, true), test("b", "2", 3, true)];
+        let results = [result(3, Some("1")), result(3, Some("x"))];
+        let graded = grade_cases(&tests, &results, true, 100);
+        assert_eq!(graded.rows[0].weight, 1.0);
+        assert_eq!(graded.score, Some(25.0));
     }
 
     #[test]

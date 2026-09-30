@@ -213,6 +213,19 @@ Python SDK underneath) and the attempt/orchestrator call sites:
   as a failure and the run is recorded `internal_error`, not `degraded`:
   retrying a bad payload cannot help, and it must not open the breaker for
   everyone else.
+- **Concurrency cap; saturation is not an outage** (2026-09-30, BUG-372).
+  Each process sends at most `AB__JUDGE0__MAX_CONCURRENCY` batches (default
+  2, matching judge0.conf `COUNT=2`) to Judge0; later batches wait for a
+  slot inside the same `poll_max_wait` budget. Waiting out that budget —
+  for a slot or for results — is `Busy`: the run is `degraded` (503,
+  retryable) but the breaker is untouched. Only transport errors, 5xx and
+  429 count toward it. Ceiling: dead workers behind a live Judge0 API make
+  every run wait the full budget instead of failing fast.
+- **In-flight keys answer 409** (2026-09-30, BUG-371): a key whose run is
+  still `queued`/`running` is `idempotency-in-progress`, never re-executed;
+  a run left `running` for 2 minutes is marked abandoned (`internal_error`)
+  and its key freed. The timer's final run never blocks a hand-in: any
+  error from it sends the attempt to manual review (BUG-370).
 - **Hidden tests are stored in full and masked on read.** The legacy nulled
   stdin/expected/stdout of hidden cases in `code_run_case` itself, so a
   teacher could never see what a learner's program printed on the test
