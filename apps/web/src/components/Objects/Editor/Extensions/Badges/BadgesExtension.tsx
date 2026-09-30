@@ -240,7 +240,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
         ) : null}
 
         {isEditable && showPredefinedCallouts ? (
-          <div className="soft-shadow absolute top-full left-0 z-10 mt-2 flex flex-wrap gap-2 rounded-lg bg-white/90 p-2 backdrop-blur-md">
+          <div className="soft-shadow bg-background/90 absolute top-full left-0 z-10 mt-2 flex flex-wrap gap-2 rounded-lg p-2 backdrop-blur-md">
             {predefinedBadges.map((badge, index) => (
               <button
                 key={index}

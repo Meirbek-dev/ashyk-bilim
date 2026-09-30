@@ -344,7 +344,7 @@ interface ImageToolbarProps {
 
 function ImageToolbar({ alignment, onAlignmentChange, onExpand, onRemove, t }: ImageToolbarProps) {
   return (
-    <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/95 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
+    <div className="bg-background/95 absolute top-2 right-2 flex items-center gap-1 rounded-lg p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
       {(Object.keys(ALIGNMENT_CONFIG) as Alignment[]).map(align => {
         const config = ALIGNMENT_CONFIG[align]
         return (

@@ -138,7 +138,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
         {/* Overlay toolbar — authoring mode only */}
         {isEditable && (
           <div
-            className="absolute top-2 right-2 flex gap-1 rounded-lg bg-white/90 p-1 shadow-md backdrop-blur-sm"
+            className="bg-background/90 absolute top-2 right-2 flex gap-1 rounded-lg p-1 shadow-md backdrop-blur-sm"
             style={{ pointerEvents: 'auto' }}
           >
             <button

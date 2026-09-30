@@ -54,7 +54,7 @@ const FileUploadBlockInput: FC<FileUploadBlockInputProps> = ({ accept, onFileSel
         'flex cursor-pointer flex-col items-center rounded-lg border-2 border-dashed px-6 py-4 text-center transition-colors',
         isDragOver
           ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/15'
-          : 'border-gray-300 bg-white hover:border-gray-400',
+          : 'border-border bg-card hover:border-foreground/30',
       )}
     >
       <input
