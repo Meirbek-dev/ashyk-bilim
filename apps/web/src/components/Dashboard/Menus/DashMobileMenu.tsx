@@ -94,8 +94,8 @@ function DashMobileMenu() {
 
   return (
     <div className="border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/90 fixed inset-x-0 bottom-0 z-50 border-t shadow-[0_-10px_30px_rgba(15,23,42,0.08)] supports-[backdrop-filter]:backdrop-blur">
-      <div className="mx-auto w-full max-w-screen-sm px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-        <nav className="no-scrollbar grid auto-cols-[minmax(4.5rem,1fr)] grid-flow-col gap-1 overflow-x-auto">
+      <div className="mx-auto w-full max-w-screen-sm px-1 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <nav className="no-scrollbar grid auto-cols-[minmax(0,1fr)] grid-flow-col gap-0.5 overflow-x-auto">
           {navigationItems.map(item => {
             const Icon = item.icon
 
@@ -107,7 +107,7 @@ function DashMobileMenu() {
                 aria-current={item.isActive ? 'page' : undefined}
                 title={item.tooltip}
                 className={cn(
-                  'focus-visible:ring-ring/50 flex min-h-14 min-w-[4.5rem] flex-col items-center justify-center rounded-2xl px-3 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2',
+                  'focus-visible:ring-ring/50 flex min-h-14 min-w-0 flex-col items-center justify-center rounded-2xl px-0.5 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2',
                   item.isActive
                     ? 'bg-accent text-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
@@ -121,7 +121,9 @@ function DashMobileMenu() {
                 >
                   <Icon size={18} />
                 </span>
-                <span className="mt-1 truncate text-[11px] leading-tight font-medium">{item.label}</span>
+                <span className="mt-1 max-w-full truncate text-[10px] leading-tight font-medium tracking-tight min-[400px]:text-[11px]">
+                  {item.label}
+                </span>
               </AppLink>
             )
           })}
