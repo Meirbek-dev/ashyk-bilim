@@ -6418,7 +6418,8 @@
           "revokeConfirmDescription": "The device will be signed out and asked to log in again on its next action.",
           "revokeCancel": "Cancel",
           "disableTotpConfirmTitle": "Disable two-factor authentication?",
-          "disableTotpConfirmDescription": "Signing in will no longer ask for an authenticator-app code. You can enable it again at any time."
+          "disableTotpConfirmDescription": "Signing in will no longer ask for an authenticator-app code. You can enable it again at any time.",
+          "showAllSessions": "Show all ({count})"
         }
       },
       "gamification": "Gamification Settings",

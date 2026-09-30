@@ -60,14 +60,16 @@ export default function UserSecuritySettings({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 pb-10">
-      <SessionsSection t={t} />
       {hasPassword ? <PasswordSection t={t} /> : <NoPasswordSection t={t} />}
       <TotpSection t={t} initialActive={mfaEnabled} googleLinked={googleLinked} />
+      <SessionsSection t={t} />
     </div>
   )
 }
 
 type Translator = ReturnType<typeof useTranslations<'DashPage.UserAccountSettings.UserAccount.Security'>>
+
+const SESSIONS_PREVIEW = 5
 
 function SessionsSection({ t }: { t: Translator }) {
   const format = useFormatter()
@@ -89,6 +91,10 @@ function SessionsSection({ t }: { t: Translator }) {
   })
 
   const [revokeCandidate, setRevokeCandidate] = useState<string | null>(null)
+  // This device first; a long tail of old sign-ins stays folded until asked for.
+  const [showAll, setShowAll] = useState(false)
+  const sessions = [...(sessionsQuery.data ?? [])].toSorted((a, b) => Number(b.current) - Number(a.current))
+  const visibleSessions = showAll ? sessions : sessions.slice(0, SESSIONS_PREVIEW)
   // The confirm dialog opened from a row's button that is gone once the
   // revoke lands; without a target focus would fall to <body>.
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -143,7 +149,7 @@ function SessionsSection({ t }: { t: Translator }) {
 
       {sessionsQuery.data ? (
         <ul className="divide-border divide-y rounded-md border">
-          {sessionsQuery.data.map(session => (
+          {visibleSessions.map(session => (
             <li key={session.handle} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate font-medium">
@@ -175,6 +181,11 @@ function SessionsSection({ t }: { t: Translator }) {
             </li>
           ))}
         </ul>
+      ) : null}
+      {sessions.length > SESSIONS_PREVIEW && !showAll ? (
+        <Button variant="ghost" size="sm" className="self-start" onClick={() => setShowAll(true)}>
+          {t('showAllSessions', { count: sessions.length })}
+        </Button>
       ) : null}
       <AlertDialog open={revokeCandidate !== null} onOpenChange={open => !open && setRevokeCandidate(null)}>
         <AlertDialogContent finalFocus={headingRef}>
