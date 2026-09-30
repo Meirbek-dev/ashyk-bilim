@@ -3778,7 +3778,15 @@
         "nextStepsHeading": "Next steps",
         "nextStepsDescription": "Complete these steps to get the course ready for learners.",
         "completed": "Completed",
-        "continueSetup": "Continue setup"
+        "continueSetup": "Continue setup",
+        "live": {
+          "heading": "The course is live",
+          "description": "Learners can see the course. Jump to grades, analytics or the course page.",
+          "gradebook": "Gradebook",
+          "analytics": "Analytics",
+          "learnerView": "Course page",
+          "improveHeading": "Worth improving"
+        }
       },
       "Readiness": {
         "checklist": {

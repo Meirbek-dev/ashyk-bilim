@@ -78,11 +78,12 @@ describe('UX-206 course review + overview', () => {
     await waitFor(() => expect(document.activeElement).toBe(button))
   })
 
-  it('completes the review step on a published course and hides «continue setup»', () => {
+  it('a published course leads with its live links, drops finished steps and «continue setup»', () => {
     harness.checklist = ['details', 'curriculum', 'access'].map(id => ({ id, complete: true }))
     harness.isPublic = true
     const { unmount } = render(<CourseOverview courseuuid="course-1" />)
-    expect(screen.getAllByLabelText('completed')).toHaveLength(4)
+    expect(screen.getByText('live.heading')).toBeInTheDocument()
+    expect(screen.queryAllByLabelText('completed')).toHaveLength(0)
     expect(screen.queryByText('continueSetup')).toBeNull()
     unmount()
 

@@ -3790,7 +3790,15 @@
         "nextStepsHeading": "Следующие шаги",
         "nextStepsDescription": "Выполните эти шаги, чтобы подготовить курс для учащихся.",
         "completed": "Выполнено",
-        "continueSetup": "Продолжить настройку"
+        "continueSetup": "Продолжить настройку",
+        "live": {
+          "heading": "Курс опубликован",
+          "description": "Учащиеся видят курс. Отсюда — к оценкам, аналитике и странице курса.",
+          "gradebook": "Журнал",
+          "analytics": "Аналитика",
+          "learnerView": "Страница курса",
+          "improveHeading": "Можно улучшить"
+        }
       },
       "Readiness": {
         "checklist": {

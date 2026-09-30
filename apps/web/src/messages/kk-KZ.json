@@ -3793,7 +3793,15 @@
         "nextStepsHeading": "Келесі қадамдар",
         "nextStepsDescription": "Оқушыларға курсты даярлау үшін осы қадамдарды орындаңыз.",
         "completed": "Аяқталды",
-        "continueSetup": "Баптауды жалғастыру"
+        "continueSetup": "Баптауды жалғастыру",
+        "live": {
+          "heading": "Курс жарияланды",
+          "description": "Білім алушылар курсты көреді. Осы жерден бағаларға, аналитикаға және курс бетіне өтіңіз.",
+          "gradebook": "Журнал",
+          "analytics": "Аналитика",
+          "learnerView": "Курс беті",
+          "improveHeading": "Жақсартуға болады"
+        }
       },
       "Readiness": {
         "checklist": {
