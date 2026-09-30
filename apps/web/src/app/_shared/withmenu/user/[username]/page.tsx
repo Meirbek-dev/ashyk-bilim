@@ -26,16 +26,8 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
     }
 
     return {
-      title: t('metaTitle', {
-        firstName: userData.first_name ?? '',
-        lastName: userData.last_name ?? '',
-      }),
-      description:
-        userData.bio ||
-        t('metaDescriptionFallback', {
-          firstName: userData.first_name ?? '',
-          lastName: userData.last_name ?? '',
-        }),
+      title: t('metaTitle', { name: userData.display_name }),
+      description: userData.bio || t('metaDescriptionFallback', { name: userData.display_name }),
     }
   } catch {
     return {

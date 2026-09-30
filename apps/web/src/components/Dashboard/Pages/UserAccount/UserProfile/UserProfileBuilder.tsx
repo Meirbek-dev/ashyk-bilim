@@ -2,9 +2,9 @@
 
 import { Loader2, Plus } from 'lucide-react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@components/ui/select'
-import { updateProfile } from '@/lib/users/client'
+import { saveProfileDocument } from '@/lib/users/client'
 import { useMemo, useState } from 'react'
-import { useSession } from '@/hooks/useSession'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -24,16 +24,27 @@ import { createProfileSchema } from './schema'
 import { SortableProfileSection } from './components/SortableProfileSection'
 import { SectionEditor } from './components/SectionEditor'
 
+/** One toast slot for save outcomes: a later success replaces a standing error (UX-269). */
+const SAVE_TOAST_ID = 'profile-builder-save'
+/** `profile.sections[3].links[0].url` → section 3. */
+const SECTION_FIELD = /^profile\.sections\[(\d+)\]\./u
+
+interface UserProfileBuilderProps {
+  initialProfile: ProfileData
+  /** `profile_version` from the read that produced `initialProfile` (BUG-367). */
+  initialVersion: number | null
+}
+
 /**
  * The legacy profile builder (BUG-361): sections are edited locally and
- * saved as one `PATCH /users/me { profile }`; the public profile page renders
- * the stored document.
+ * saved as one `PATCH /users/me { profile }` under `If-Match`; the public
+ * profile page renders the stored document.
  */
-function UserProfileBuilder() {
+function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuilderProps) {
   const router = useRouter()
-  const { user: me } = useSession()
   const tNotify = useTranslations('DashPage.Notifications')
   const t = useTranslations('DashPage.UserProfileBuilder')
+  const tErrors = useTranslations('Errors')
   const { toastApiError } = useApiError()
 
   const sensors = useSensors(
@@ -41,20 +52,43 @@ function UserProfileBuilder() {
     useSensor(KeyboardSensor),
   )
 
-  const [profileData, setProfileData] = useState<ProfileData>(() => ({ sections: me?.profile?.sections ?? [] }))
+  const [profileData, setProfileData] = useState<ProfileData>(initialProfile)
+  const [version, setVersion] = useState(initialVersion)
   const [selectedSection, setSelectedSection] = useState<number | null>(null)
 
   const sectionIds = useMemo(() => profileData.sections.map(s => s.id), [profileData.sections])
   const announcements = useDndAnnouncements(sectionIds)
 
   const save = useMutation({
-    mutationFn: (profile: ProfileData) => updateProfile({ profile }),
-    onSuccess: () => {
+    mutationFn: (profile: ProfileData) => saveProfileDocument(profile, version),
+    onSuccess: newVersion => {
+      setVersion(newVersion)
       router.refresh()
-      toast.success(tNotify('profileUpdateSuccess'))
+      toast.success(tNotify('profileUpdateSuccess'), { id: SAVE_TOAST_ID })
     },
     onError: error => {
-      toastApiError(error, { fallback: tNotify('profileUpdateError') })
+      if (hasErrorCode(error, 'precondition-failed')) {
+        toast.error(tNotify('profileStaleError'), { id: SAVE_TOAST_ID })
+        return
+      }
+      // UX-269: a rule only the server checks names its field — open that section.
+      const fieldError = isApiError(error) ? error.fieldErrors.find(e => SECTION_FIELD.test(e.field)) : undefined
+      const index = Number(SECTION_FIELD.exec(fieldError?.field ?? '')?.[1])
+      const section = profileData.sections[index]
+      if (!fieldError || !section) {
+        toastApiError(error, { fallback: tNotify('profileUpdateError'), toastId: SAVE_TOAST_ID })
+        return
+      }
+      setSelectedSection(index)
+      const message =
+        fieldError.code === 'invalid' && /url$/iu.test(fieldError.field)
+          ? tNotify('Form.invalidUrl')
+          : tErrors.has(`fields.${fieldError.code}`)
+            ? tErrors(`fields.${fieldError.code}`)
+            : fieldError.message
+      toast.error(t('Errors.sectionField', { section: section.title || String(index + 1), message }), {
+        id: SAVE_TOAST_ID,
+      })
     },
   })
 
@@ -89,7 +123,7 @@ function UserProfileBuilder() {
       const issue = result.issues[0]
       const sectionIndex = issue.path?.[1]?.key
       if (typeof sectionIndex === 'number') setSelectedSection(sectionIndex)
-      toast.error(issue.message)
+      toast.error(issue.message, { id: SAVE_TOAST_ID })
       return
     }
     save.mutate(profileData)
@@ -122,6 +156,7 @@ function UserProfileBuilder() {
           <div className="col-span-1 border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
             <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
             <DndContext
+              id="profile-builder-sections"
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={onDragEnd}

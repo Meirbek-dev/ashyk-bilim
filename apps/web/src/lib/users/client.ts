@@ -1,6 +1,7 @@
 'use client'
 
-import { apiJson } from '@/lib/api-client'
+import { apiJson, apiResult } from '@/lib/api-client'
+import { ifMatchHeaders, parseEntityTagVersion } from '@/lib/api/headers'
 import { getQueryClient } from '@/lib/react-query/queryClient'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { UserProfile } from '@/lib/api/generated/zod'
@@ -100,6 +101,25 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<UserPro
   )
   await invalidateMe()
   return payload
+}
+
+/**
+ * Save the profile builder document under `If-Match: "<version>"` (BUG-367):
+ * a save from a stale tab is 412 `precondition-failed`, never a silent
+ * overwrite. Resolves to the new version (`ETag`).
+ */
+export async function saveProfileDocument(profile: ProfileSections, version: number | null): Promise<number | null> {
+  const { headers } = await apiResult(
+    'users/me',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...ifMatchHeaders(version) },
+      body: JSON.stringify({ profile }),
+    },
+    result => UserProfile.parse(result),
+  )
+  await invalidateMe()
+  return parseEntityTagVersion(headers)
 }
 
 /** Upload a new avatar through the presigned pipeline and claim it on the profile. */

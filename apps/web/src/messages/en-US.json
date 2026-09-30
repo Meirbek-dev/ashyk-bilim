@@ -5420,7 +5420,8 @@
       "uploadingImage": "Uploading image...",
       "userGroupDeletedSuccess": "User group deleted.",
       "userRemovedSuccess": "User removed from organization.",
-      "profileLoadError": "Could not load the profile data"
+      "profileLoadError": "Could not load the profile data",
+      "profileStaleError": "Your profile was changed in another tab. Reload the page and make your changes again."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -6604,7 +6605,8 @@
       },
       "Errors": {
         "profileLoadFailed": "Failed to load profile data",
-        "unknownSectionType": "Unknown section type"
+        "unknownSectionType": "Unknown section type",
+        "sectionField": "Section “{section}”: {message}"
       },
       "ExperienceEditor": {
         "addExperienceButton": "Add Experience",
@@ -10340,13 +10342,14 @@
     "fetchError": "Failed to fetch user data: ",
     "generalInfo": "General Information",
     "in": "in",
-    "metaDescriptionFallback": "View {firstName} {lastName}'s profile and courses",
-    "metaTitle": "{firstName} {lastName}'s Profile",
+    "metaDescriptionFallback": "View {name}'s profile and courses",
+    "metaTitle": "{name}'s Profile",
     "metaTitleError": "User Profile",
     "noBiography": "No biography provided",
     "professionalInfo": "Professional Information",
     "profileLoadError": "Failed to load user profile",
-    "viewCourses": "View Courses"
+    "viewCourses": "View Courses",
+    "present": "Present"
   },
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",

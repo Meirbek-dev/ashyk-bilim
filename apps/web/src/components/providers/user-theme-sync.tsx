@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef } from 'react'
 import { useSession } from '@/hooks/useSession'
 import { useTheme } from '@/components/providers/theme-provider'
 import { updateProfile } from '@/lib/users/client'
-import { DEFAULT_THEME_NAME } from '@/lib/themes'
+import { DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
 
 export const THEME_SYNC_DELAY_MS = 1000
 
@@ -22,15 +22,18 @@ export function UserThemeSync() {
   const { user } = useSession()
   const { themeName, setTheme } = useTheme()
   const userId = user?.id
+  // A slug outside the registry renders as the default; that fallback is the
+  // synced state, never a choice to write over the stored one (BUG-365).
   const serverTheme = user?.theme ?? null
-  const syncedRef = useRef<string | null>(serverTheme ?? DEFAULT_THEME_NAME)
+  const syncedName = serverTheme ? getTheme(serverTheme).name : DEFAULT_THEME_NAME
+  const syncedRef = useRef<string | null>(syncedName)
   // `setTheme` changes identity with the light/dark mode; adopting must not re-run on a toggle.
   const adoptTheme = useEffectEvent((theme: string) => setTheme(theme))
 
   useEffect(() => {
-    syncedRef.current = serverTheme ?? DEFAULT_THEME_NAME
+    syncedRef.current = syncedName
     if (userId && serverTheme) adoptTheme(serverTheme)
-  }, [userId, serverTheme])
+  }, [userId, serverTheme, syncedName])
 
   useEffect(() => {
     if (!userId || themeName === syncedRef.current) return

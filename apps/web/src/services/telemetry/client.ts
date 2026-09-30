@@ -35,13 +35,30 @@ export function serializeClientError(error: unknown): Record<string, unknown> {
   }
 }
 
+const MAX_FIELD_CHARS = 2000
+
+/**
+ * Stacks, component stacks and SSR error messages run to tens of KB (the
+ * BUG-366 crash report was refused with 413); the route logs the first 1000
+ * characters, so strings are clipped before sending (two levels deep: the
+ * payload and its `error` object) — the body also stays under the 64 KiB
+ * `keepalive` ceiling.
+ */
+function clipForLog(value: unknown, depth = 0): unknown {
+  if (typeof value === 'string') return value.length > MAX_FIELD_CHARS ? `${value.slice(0, MAX_FIELD_CHARS)}…` : value
+  if (depth < 2 && value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, clipForLog(inner, depth + 1)]))
+  }
+  return value
+}
+
 export async function reportClientError(payload: Record<string, unknown>): Promise<string> {
   const origin = typeof globalThis.window !== 'undefined' ? globalThis.location.origin : undefined
   const eventId = typeof payload.eventId === 'string' ? payload.eventId : createErrorEventId()
 
   await apiJson('/api/log-error', {
     body: JSON.stringify({
-      ...payload,
+      ...(clipForLog(payload) as Record<string, unknown>),
       eventId,
       timestamp: new Date().toISOString(),
     }),

@@ -23,6 +23,9 @@ pub struct ProfileChanges {
     pub profile: Option<ProfileSections>,
     /// UI theme slug; `Some(None)` clears it back to the default (BUG-362).
     pub theme: Option<Option<String>>,
+    /// `If-Match`: the `profile_version` the client loaded; a moved version
+    /// is 412 `precondition-failed`, never a silent overwrite (BUG-367).
+    pub expected_version: Option<i32>,
 }
 
 #[derive(Clone)]
@@ -74,10 +77,14 @@ impl UsersService {
             .as_ref()
             .map(|t| t.as_deref().map(theme_slug).transpose())
             .transpose()?;
+        // Before the avatar swap, so a stale write changes nothing; the
+        // UPDATE re-checks the version for a racing writer.
+        self.check_profile_version(actor, changes.expected_version)
+            .await?;
         if let Some(upload_id) = changes.avatar_upload_id {
             self.replace_avatar(actor, upload_id).await?;
         }
-        ab_db::identity::update_profile(
+        let updated = ab_db::identity::update_profile(
             &self.pool,
             actor.user_id,
             display_name.as_deref(),
@@ -85,9 +92,30 @@ impl UsersService {
             changes.locale.as_deref(),
             profile.as_ref(),
             theme,
+            changes.expected_version,
         )
-        .await?
-        .ok_or_else(|| Error::not_found("user"))
+        .await?;
+        if let Some(row) = updated {
+            return Ok(row);
+        }
+        self.check_profile_version(actor, changes.expected_version)
+            .await?;
+        Err(Error::not_found("user"))
+    }
+
+    async fn check_profile_version(&self, actor: &Actor, expected: Option<i32>) -> Result<()> {
+        let Some(expected) = expected else {
+            return Ok(());
+        };
+        let actual = self.my_profile(actor).await?.profile_version;
+        if actual == expected {
+            return Ok(());
+        }
+        Err(Error::app_with_details(
+            ab_core::ErrorCode::PreconditionFailed,
+            "the profile changed since you loaded it",
+            serde_json::json!({ "expected": expected, "actual": actual }),
+        ))
     }
 
     /// Claim the new avatar upload (if any), swap the key and release

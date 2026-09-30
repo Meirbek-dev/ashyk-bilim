@@ -5423,7 +5423,8 @@
       "uploadingImage": "Загрузка изображения...",
       "userGroupDeletedSuccess": "Группа пользователей удалена.",
       "userRemovedSuccess": "Пользователь удален.",
-      "profileLoadError": "Не удалось загрузить данные профиля"
+      "profileLoadError": "Не удалось загрузить данные профиля",
+      "profileStaleError": "Профиль изменён в другой вкладке. Обновите страницу и внесите изменения заново."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -6604,7 +6605,8 @@
       },
       "Errors": {
         "profileLoadFailed": "Не удалось загрузить данные профиля",
-        "unknownSectionType": "Неизвестный тип раздела"
+        "unknownSectionType": "Неизвестный тип раздела",
+        "sectionField": "Раздел «{section}»: {message}"
       },
       "ExperienceEditor": {
         "addExperienceButton": "Добавить опыт",
@@ -10354,13 +10356,14 @@
     "fetchError": "Не удалось получить данные пользователя: ",
     "generalInfo": "Общая информация",
     "in": "в",
-    "metaDescriptionFallback": "Посмотреть профиль и курсы {firstName} {lastName}",
-    "metaTitle": "Профиль {firstName} {lastName}",
+    "metaDescriptionFallback": "Посмотреть профиль и курсы {name}",
+    "metaTitle": "Профиль {name}",
     "metaTitleError": "Профиль пользователя",
     "noBiography": "Биография не указана",
     "professionalInfo": "Профессиональная информация",
     "profileLoadError": "Не удалось загрузить профиль пользователя",
-    "viewCourses": "Просмотреть курсы"
+    "viewCourses": "Просмотреть курсы",
+    "present": "по настоящее время"
   },
   "Validation": {
     "activityDescriptionRequired": "Требуется описание активности",

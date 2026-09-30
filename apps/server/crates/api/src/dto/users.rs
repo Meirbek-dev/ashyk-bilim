@@ -133,7 +133,8 @@ pub struct UpdateProfileRequest {
     /// with `profile.sections[i]…` field errors.
     #[garde(skip)]
     pub profile: Option<ProfileSections>,
-    /// UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it.
+    /// UI theme registry slug (the web `theme-store.json` names, e.g.
+    /// `modern-minimal`); `null` clears it.
     #[garde(skip)]
     #[serde(default, deserialize_with = "super::double_option")]
     #[schema(value_type = Option<String>)]

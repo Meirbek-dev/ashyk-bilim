@@ -3,6 +3,9 @@ import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'
 
 import { requireSession } from '@/lib/auth/session'
+import { apiResult } from '@/lib/api-client'
+import { parseEntityTagVersion } from '@/lib/api/headers'
+import { UserProfile } from '@/lib/api/generated/zod'
 import UserProfileBuilder from '@components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -22,5 +25,7 @@ export default function UserAccountProfilePage() {
 
 async function ProfileContent() {
   await requireSession()
-  return <UserProfileBuilder />
+  // BUG-367: the document and its version (`ETag`) come from one read.
+  const { data, headers } = await apiResult('users/me', {}, value => UserProfile.parse(value))
+  return <UserProfileBuilder initialProfile={data.profile} initialVersion={parseEntityTagVersion(headers)} />
 }

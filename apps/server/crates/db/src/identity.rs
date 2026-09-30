@@ -91,6 +91,8 @@ pub struct ProfileRow {
     pub profile: serde_json::Value,
     /// UI theme slug; `None` = the web default.
     pub theme: Option<String>,
+    /// Optimistic lock on `profile`, bumped on every document write (BUG-367).
+    pub profile_version: i32,
 }
 
 /// The public profile page's subject (`GET /users/{username}`): the search
@@ -140,7 +142,8 @@ pub async fn find_public_profile_by_id(
 pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,
-        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme
+        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme,
+                  profile_version
            FROM users WHERE id = $1"#,
         user_id.0
     )
@@ -149,9 +152,13 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
     Ok(row)
 }
 
-/// Partial profile update; `None` fields keep their value (`theme`:
-/// `Some(None)` clears it). Returns the updated row (`None` if the user
-/// vanished).
+/// Partial profile update.
+///
+/// `None` fields keep their value (`theme`:
+/// `Some(None)` clears it). A `profile` write bumps `profile_version`; with
+/// `expected_version` the row only updates at that version (BUG-367).
+/// Returns the updated row (`None`: the user vanished or the version moved).
+#[allow(clippy::too_many_arguments)] // SAFETY: one optional column per argument.
 pub async fn update_profile(
     pool: &PgPool,
     user_id: UserId,
@@ -160,6 +167,7 @@ pub async fn update_profile(
     locale: Option<&str>,
     profile: Option<&serde_json::Value>,
     theme: Option<Option<&str>>,
+    expected_version: Option<i32>,
 ) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,
@@ -168,16 +176,19 @@ pub async fn update_profile(
                bio = COALESCE($3, bio),
                locale = COALESCE($4, locale),
                profile = COALESCE($5, profile),
-               theme = CASE WHEN $6 THEN $7 ELSE theme END
-           WHERE id = $1
-           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme"#,
+               theme = CASE WHEN $6 THEN $7 ELSE theme END,
+               profile_version = profile_version + CASE WHEN $5::jsonb IS NULL THEN 0 ELSE 1 END
+           WHERE id = $1 AND ($8::int4 IS NULL OR profile_version = $8)
+           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme,
+                     profile_version"#,
         user_id.0,
         display_name,
         bio,
         locale,
         profile,
         theme.is_some(),
-        theme.flatten()
+        theme.flatten(),
+        expected_version
     )
     .fetch_optional(pool)
     .await?;

@@ -4,8 +4,9 @@
 //! The section kinds are exactly the ones the legacy builder wrote; an
 //! unknown kind or field is a parse error (422 through the API, a hard error
 //! with the row id in the ETL). [`ProfileSections::normalize`] trims every
-//! string, strips control characters, caps sizes and admits only `http(s)`
-//! URLs for images, links and logos.
+//! string, strips control characters, caps sizes, admits only `http(s)`
+//! URLs for images, links and logos and `YYYY-MM-DD` dates, and rejects
+//! duplicate section ids.
 
 use ab_core::{Error, FieldError, Result, strip_controls, strip_controls_multiline, trim_blank};
 use serde::{Deserialize, Serialize};
@@ -15,7 +16,76 @@ pub const MAX_SECTIONS: usize = 20;
 pub const MAX_ITEMS_PER_SECTION: usize = 50;
 /// Serialized document cap (bytes) — a few hundred filled items.
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
-pub const MAX_THEME_LEN: usize = 48;
+/// The web theme registry (`apps/web/src/lib/theme-store.json` item names).
+///
+/// A closed set: an unknown slug would render as the default and the web
+/// would then persist that fallback (BUG-365). The
+/// `theme_slugs_mirror_the_web_registry` test keeps the two in step.
+pub const THEME_SLUGS: [&str; 63] = [
+    "modern-minimal",
+    "t3-chat",
+    "twitter",
+    "mocha-mousse",
+    "bubblegum",
+    "doom-64",
+    "catppuccin",
+    "graphite",
+    "perpetuity",
+    "kodama-grove",
+    "cosmic-night",
+    "tangerine",
+    "quantum-rose",
+    "nature",
+    "bold-tech",
+    "elegant-luxury",
+    "amber-minimal",
+    "supabase",
+    "neo-brutalism",
+    "solar-dusk",
+    "claymorphism",
+    "cyberpunk",
+    "pastel-dreams",
+    "clean-slate",
+    "caffeine",
+    "ocean-breeze",
+    "retro-arcade",
+    "midnight-bloom",
+    "candyland",
+    "northern-lights",
+    "vintage-paper",
+    "sunset-horizon",
+    "starry-night",
+    "claude",
+    "vercel",
+    "mono",
+    "violet-bloom",
+    "amethyst-haze",
+    "notebook",
+    "soft-pop",
+    "sage-garden",
+    "astro-vista",
+    "beso-colors",
+    "brownie",
+    "celestial",
+    "claude-plus",
+    "leadgen",
+    "light-green",
+    "melancholic-mint",
+    "open-profile",
+    "party-rock",
+    "portfolio",
+    "resolve",
+    "sage-garden-plus",
+    "sakura",
+    "sandstone",
+    "shadcn-default",
+    "twitter-plus",
+    "violete-eye",
+    "vtron",
+    "whatsapp",
+    "yellow",
+    "zen",
+];
 const MAX_SHORT: usize = 200;
 const MAX_DESCRIPTION: usize = 2_000;
 const MAX_CONTENT: usize = 10_000;
@@ -280,6 +350,32 @@ impl Check {
         }
     }
 
+    /// `YYYY-MM-DD` (the builder's date picker); blank is `required`.
+    fn date(&mut self, path: &str, value: &mut String) {
+        trim_blank(&strip_controls(value)).clone_into(value);
+        if value.is_empty() {
+            self.errors.push(FieldError::required(path));
+        } else if value.len() != 10 || value.parse::<jiff::civil::Date>().is_err() {
+            self.push(
+                path.to_owned(),
+                "invalid",
+                format!("{path} must be a YYYY-MM-DD date"),
+            );
+        }
+    }
+
+    /// Optional end date: blank is no date (`None`), anything else a
+    /// `YYYY-MM-DD` date.
+    fn opt_date(&mut self, path: &str, value: &mut Option<String>) {
+        if let Some(v) = value {
+            if trim_blank(v).is_empty() {
+                *value = None;
+            } else {
+                self.date(path, v);
+            }
+        }
+    }
+
     fn count(&mut self, path: &str, len: usize, max: usize) {
         if len > max {
             self.push(
@@ -314,8 +410,19 @@ impl ProfileSections {
     pub fn normalize(&mut self) -> Result<()> {
         let mut c = Check { errors: Vec::new() };
         c.count("profile.sections", self.sections.len(), MAX_SECTIONS);
+        let mut seen = std::collections::HashSet::new();
         for (i, section) in self.sections.iter_mut().enumerate() {
-            section.normalize(&mut c, &format!("profile.sections[{i}]"));
+            let path = format!("profile.sections[{i}]");
+            section.normalize(&mut c, &path);
+            // UX-271: the id keys the builder's sortable list.
+            let id = section.id();
+            if !id.is_empty() && !seen.insert(id.to_owned()) {
+                c.push(
+                    format!("{path}.id"),
+                    "duplicate",
+                    format!("{path}.id repeats an earlier section id"),
+                );
+            }
         }
         if c.errors.is_empty() {
             let bytes = serde_json::to_vec(self).map_or(usize::MAX, |v| v.len());
@@ -336,6 +443,20 @@ impl ProfileSections {
 }
 
 impl ProfileSection {
+    fn id(&self) -> &str {
+        match self {
+            Self::ImageGallery(s) => &s.id,
+            Self::Text(s) => &s.id,
+            Self::Links(s) => &s.id,
+            Self::Skills(s) => &s.id,
+            Self::Experience(s) => &s.id,
+            Self::Education(s) => &s.id,
+            Self::Affiliation(s) => &s.id,
+            Self::Courses(s) => &s.id,
+            Self::Gamification(s) => &s.id,
+        }
+    }
+
     fn normalize(&mut self, c: &mut Check, p: &str) {
         {
             let p = p.to_owned();
@@ -388,8 +509,8 @@ impl ProfileSection {
                         let q = format!("{p}.experiences[{j}]");
                         c.short(&format!("{q}.title"), &mut e.title);
                         c.short(&format!("{q}.organization"), &mut e.organization);
-                        c.short(&format!("{q}.startDate"), &mut e.start_date);
-                        c.opt_short(&format!("{q}.endDate"), &mut e.end_date);
+                        c.date(&format!("{q}.startDate"), &mut e.start_date);
+                        c.opt_date(&format!("{q}.endDate"), &mut e.end_date);
                         c.long(
                             &format!("{q}.description"),
                             &mut e.description,
@@ -409,8 +530,8 @@ impl ProfileSection {
                         c.short(&format!("{q}.institution"), &mut e.institution);
                         c.short(&format!("{q}.degree"), &mut e.degree);
                         c.short(&format!("{q}.field"), &mut e.field);
-                        c.short(&format!("{q}.startDate"), &mut e.start_date);
-                        c.opt_short(&format!("{q}.endDate"), &mut e.end_date);
+                        c.date(&format!("{q}.startDate"), &mut e.start_date);
+                        c.opt_date(&format!("{q}.endDate"), &mut e.end_date);
                         c.opt_long(&format!("{q}.description"), &mut e.description);
                     }
                 }
@@ -439,25 +560,19 @@ impl ProfileSection {
     }
 }
 
-/// A theme registry slug: `[A-Za-z0-9-]`, at most [`MAX_THEME_LEN`]. The
-/// server keeps no theme list — the web resolves an unknown slug to its
-/// default.
-pub fn theme_slug(value: &str) -> Result<&str> {
+/// One of [`THEME_SLUGS`] (BUG-365).
+pub fn theme_slug(value: &str) -> Result<&'static str> {
     let value = trim_blank(value);
-    let ok = !value.is_empty()
-        && value.len() <= MAX_THEME_LEN
-        && value
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-');
-    if ok {
-        Ok(value)
-    } else {
-        Err(Error::validation(vec![FieldError {
-            field: "theme".into(),
-            code: "invalid".into(),
-            message: format!("theme must be 1..={MAX_THEME_LEN} characters of [A-Za-z0-9-]"),
-        }]))
-    }
+    THEME_SLUGS
+        .into_iter()
+        .find(|slug| *slug == value)
+        .ok_or_else(|| {
+            Error::validation(vec![FieldError {
+                field: "theme".into(),
+                code: "invalid".into(),
+                message: "theme must be a theme registry slug".into(),
+            }])
+        })
 }
 
 #[cfg(test)]
@@ -573,10 +688,110 @@ mod tests {
     #[test]
     fn theme_slug_rules() {
         assert_eq!(theme_slug(" modern-minimal ").unwrap(), "modern-minimal");
-        assert_eq!(theme_slug("vintagePaper").unwrap(), "vintagePaper");
         assert_eq!(theme_slug("doom-64").unwrap(), "doom-64");
+        // BUG-365: legacy camelCase and unknown slugs are not registry slugs.
+        assert!(theme_slug("vintagePaper").is_err());
+        assert!(theme_slug("black").is_err());
         assert!(theme_slug("").is_err());
         assert!(theme_slug("bad slug!").is_err());
-        assert!(theme_slug(&"a".repeat(MAX_THEME_LEN + 1)).is_err());
+    }
+
+    /// One source of truth: the web registry file the theme picker reads.
+    #[test]
+    fn theme_slugs_mirror_the_web_registry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../web/src/lib/theme-store.json"
+        );
+        let registry: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let names: Vec<&str> = registry["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, THEME_SLUGS);
+    }
+
+    fn validation_fields(parsed: &mut ProfileSections) -> Vec<(String, String)> {
+        let Err(Error::Validation { field_errors }) = parsed.normalize() else {
+            panic!("expected validation errors")
+        };
+        field_errors
+            .into_iter()
+            .map(|e| (e.field, e.code))
+            .collect()
+    }
+
+    /// The remaining `normalize` branches: per-section item cap, the
+    /// serialized-size cap, blank and duplicate ids (UX-271), dates (UX-270).
+    #[test]
+    fn items_size_ids_and_dates_are_checked() {
+        let links: Vec<_> = (0..=MAX_ITEMS_PER_SECTION)
+            .map(|i| serde_json::json!({"title": format!("l{i}"), "url": "https://x.example"}))
+            .collect();
+        let mut parsed = doc(
+            serde_json::json!({"sections": [{"id": "s", "type": "links", "title": "L", "links": links}]}),
+        )
+        .unwrap();
+        assert_eq!(
+            validation_fields(&mut parsed),
+            vec![("profile.sections[0].links".into(), "too-long".into())]
+        );
+
+        let texts: Vec<_> = (0..7)
+            .map(|i| {
+                serde_json::json!({"id": format!("s{i}"), "type": "text", "title": "T",
+                                        "content": "ж".repeat(MAX_CONTENT)})
+            })
+            .collect();
+        let mut parsed = doc(serde_json::json!({"sections": texts})).unwrap();
+        assert_eq!(
+            validation_fields(&mut parsed),
+            vec![("profile".into(), "too-long".into())]
+        );
+
+        let mut parsed = doc(serde_json::json!({"sections": [
+            {"id": "  ", "type": "courses", "title": "c"},
+            {"id": "a", "type": "courses", "title": "c"},
+            {"id": " a ", "type": "courses", "title": "c"}
+        ]}))
+        .unwrap();
+        assert_eq!(
+            validation_fields(&mut parsed),
+            vec![
+                ("profile.sections[0].id".into(), "required".into()),
+                ("profile.sections[2].id".into(), "duplicate".into()),
+            ]
+        );
+
+        let exp = |start: &str, end: serde_json::Value| {
+            doc(
+                serde_json::json!({"sections": [{"id": "e", "type": "experience", "title": "E",
+                "experiences": [{"title": "t", "organization": "o", "startDate": start,
+                                 "endDate": end, "current": false, "description": ""}]}]}),
+            )
+            .unwrap()
+        };
+        let mut ok = exp("2024-09-01", serde_json::json!(""));
+        ok.normalize().unwrap();
+        let ProfileSection::Experience(e) = &ok.sections[0] else {
+            panic!("experience")
+        };
+        assert_eq!(e.experiences[0].end_date, None, "blank end date is no date");
+        for (start, end, field) in [
+            ("not-a-date", serde_json::json!(null), "startDate"),
+            ("2019-13-45", serde_json::json!(null), "startDate"),
+            ("", serde_json::json!(null), "startDate"),
+            ("2024-09-01", serde_json::json!("2024-9-1"), "endDate"),
+        ] {
+            let fields = validation_fields(&mut exp(start, end));
+            assert_eq!(
+                fields[0].0,
+                format!("profile.sections[0].experiences[0].{field}"),
+                "{start}"
+            );
+        }
     }
 }

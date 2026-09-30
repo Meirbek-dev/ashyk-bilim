@@ -3,7 +3,8 @@ use ab_domain::identity::NewAccount;
 use ab_domain::identity::users::ProfileChanges;
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 use secrecy::SecretString;
 
 use crate::detach::detached;
@@ -15,7 +16,21 @@ use crate::dto::users::{
 use crate::error::{ApiResult, Problem};
 use crate::extract::{ClientIp, CurrentActor, MaybeActor, Path, Query, ValidJson};
 use crate::routes::auth::user_agent;
+use crate::routes::curriculum::if_match;
 use crate::state::AppState;
+
+/// The own profile with an `ETag` carrying `profile_version`, echoed back as
+/// `If-Match` by the profile builder (BUG-367).
+fn me_with_etag(
+    profile: ab_domain::identity::users::Profile,
+    actor: &ab_domain::identity::Actor,
+) -> Response {
+    let etag = HeaderValue::from_str(&format!("\"{}\"", profile.profile_version))
+        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
+    let mut response = Json(UserProfile::for_actor(profile, actor)).into_response();
+    response.headers_mut().insert(header::ETAG, etag);
+    response
+}
 
 /// The caller's own profile.
 #[utoipa::path(
@@ -23,7 +38,8 @@ use crate::state::AppState;
     path = "/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Own profile", body = UserProfile),
+        (status = 200, description = "Own profile", body = UserProfile,
+         headers(("ETag" = String, description = "Quoted profile document version"))),
         (status = 401, description = "No live session", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -31,22 +47,33 @@ use crate::state::AppState;
 pub async fn my_profile(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-) -> ApiResult<Json<UserProfile>> {
+) -> ApiResult<Response> {
     let profile = state.users.my_profile(&actor).await?;
-    Ok(Json(UserProfile::for_actor(profile, &actor)))
+    Ok(me_with_etag(profile, &actor))
 }
 
 /// Update the caller's own profile (requires `user:update:own`): names,
 /// bio, locale, avatar, the profile builder `profile` document and the UI
 /// `theme`.
+///
+/// With `If-Match: "<version>"` (the `ETag` of the last read) a write from a
+/// stale tab is 412 `precondition-failed` with `details {expected, actual}`
+/// instead of silently replacing the document (BUG-367). Only a `profile`
+/// write moves the version.
 #[utoipa::path(
     patch,
     path = "/users/me",
     tag = "users",
+    params(
+        ("If-Match" = Option<i32>, Header, description = "Profile version from the last read's ETag"),
+    ),
     request_body = UpdateProfileRequest,
     responses(
-        (status = 200, description = "Updated profile", body = UserProfile),
+        (status = 200, description = "Updated profile", body = UserProfile,
+         headers(("ETag" = String, description = "Quoted new profile version"))),
         (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale profile version", body = Problem,
          content_type = "application/problem+json"),
         (status = 422, description = "Validation failed", body = Problem,
          content_type = "application/problem+json"),
@@ -55,8 +82,10 @@ pub async fn my_profile(
 pub async fn update_my_profile(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     ValidJson(request): ValidJson<UpdateProfileRequest>,
-) -> ApiResult<Json<UserProfile>> {
+) -> ApiResult<Response> {
+    let expected_version = if_match(&headers)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -71,10 +100,11 @@ pub async fn update_my_profile(
                     avatar_upload_id: request.avatar_upload_id,
                     profile: request.profile,
                     theme: request.theme,
+                    expected_version,
                 },
             )
             .await?;
-        Ok(Json(UserProfile::for_actor(profile, &actor)))
+        Ok(me_with_etag(profile, &actor))
     })
     .await
 }

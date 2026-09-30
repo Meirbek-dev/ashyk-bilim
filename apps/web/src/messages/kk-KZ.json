@@ -5435,7 +5435,8 @@
       "uploadingImage": "Сурет жүктелуде...",
       "userGroupDeletedSuccess": "Пайдаланушы тобы жойылды.",
       "userRemovedSuccess": "Пайдаланушы ұйымнан жойылды.",
-      "profileLoadError": "Профиль деректерін жүктеу мүмкін болмады"
+      "profileLoadError": "Профиль деректерін жүктеу мүмкін болмады",
+      "profileStaleError": "Профиль басқа қойындыда өзгертілді. Бетті жаңартып, өзгерістерді қайта енгізіңіз."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -6619,7 +6620,8 @@
       },
       "Errors": {
         "profileLoadFailed": "Профиль деректерін жүктеу мүмкін болмады",
-        "unknownSectionType": "Белгісіз бөлім түрі"
+        "unknownSectionType": "Белгісіз бөлім түрі",
+        "sectionField": "«{section}» бөлімі: {message}"
       },
       "ExperienceEditor": {
         "addExperienceButton": "Тәжірибе қосу",
@@ -10524,13 +10526,14 @@
     "fetchError": "Пайдаланушы деректерін алу сәтсіз аяқталды: ",
     "generalInfo": "Жалпы ақпарат",
     "in": "ішінде",
-    "metaDescriptionFallback": "{firstName} {lastName} профилін және курстарын қарау",
-    "metaTitle": "{firstName} {lastName} профилі",
+    "metaDescriptionFallback": "{name} профилін және курстарын қарау",
+    "metaTitle": "{name} профилі",
     "metaTitleError": "Пайдаланушы профилі",
     "noBiography": "Өмірбаян берілмеген",
     "professionalInfo": "Кәсіби ақпарат",
     "profileLoadError": "Пайдаланушы профилін жүктеу сәтсіз аяқталды",
-    "viewCourses": "Курстарды қарау"
+    "viewCourses": "Курстарды қарау",
+    "present": "қазіргі уақытқа дейін"
   },
   "Validation": {
     "activityDescriptionRequired": "Белсенділік сипаттамасы қажет",

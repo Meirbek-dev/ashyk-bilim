@@ -2,7 +2,7 @@
 //! `google_accounts`; the credential goes to Zitadel (§3).
 
 use ab_core::{Error, Result};
-use ab_domain::identity::profile::{ProfileSections, theme_slug};
+use ab_domain::identity::profile::{ProfileSections, THEME_SLUGS};
 
 use crate::legacy;
 use crate::transform::common::{non_empty, tidy};
@@ -29,7 +29,8 @@ pub struct UserRow {
     pub password_hash: Option<String>,
     /// The profile builder document, retyped (`{"sections": []}` when none).
     pub profile: serde_json::Value,
-    /// UI theme slug; legacy `default`/empty is v2 `NULL`.
+    /// UI theme registry slug ([`legacy_theme`]); legacy `default`, empty
+    /// or retired themes are v2 `NULL`.
     pub theme: Option<String>,
 }
 
@@ -57,6 +58,28 @@ pub fn profile(id: i32, value: Option<&serde_json::Value>) -> Result<serde_json:
         .normalize()
         .map_err(|e| Error::config(format!("user {id}: profile: {e}")))?;
     serde_json::to_value(sections).map_err(|e| Error::internal("serialize profile", e))
+}
+
+/// Legacy theme key → v2 registry slug (BUG-365). The legacy registry keyed
+/// themes camelCase or squashed (`vintagePaper`, `amethysthaze`, `doom64`),
+/// v2 kebab-case (`vintage-paper`); `black` was the shadcn neutral preset and
+/// `kodamaGrave` a typo of `kodama-grove`. `default` and the retired themes
+/// (`artDeco`, `darkmatter`, …) have no v2 slug: `None`, the app default.
+#[must_use]
+pub fn legacy_theme(key: &str) -> Option<&'static str> {
+    let squash = |s: &str| -> String {
+        s.chars()
+            .filter(|c| *c != '-')
+            .flat_map(char::to_lowercase)
+            .collect()
+    };
+    let key = match key.trim() {
+        "black" => "shadcn-default",
+        "kodamaGrave" => "kodama-grove",
+        other => other,
+    };
+    let key = squash(key);
+    THEME_SLUGS.into_iter().find(|slug| squash(slug) == key)
 }
 
 /// `user.details` has no v2 home: the empty «Новая деталь» placeholders
@@ -114,17 +137,7 @@ pub fn user(u: &legacy::User) -> Result<(UserRow, DroppedUserData)> {
         google_sub: non_empty(u.google_sub.as_deref()),
         password_hash: non_empty(u.hashed_password.as_deref()),
         profile: profile(u.id, u.profile.as_ref())?,
-        theme: u
-            .theme
-            .as_deref()
-            .map(str::trim)
-            .filter(|t| !t.is_empty() && *t != "default")
-            .map(|t| {
-                theme_slug(t)
-                    .map(str::to_owned)
-                    .map_err(|e| Error::config(format!("user {}: theme: {e}", u.id)))
-            })
-            .transpose()?,
+        theme: u.theme.as_deref().and_then(legacy_theme).map(str::to_owned),
     };
     let dropped = DroppedUserData {
         details: details_drop_reason(u.details.as_ref()),
@@ -277,7 +290,35 @@ mod tests {
         );
         u.profile = None;
         u.theme = Some("bad slug!".into());
-        assert!(user(&u).unwrap_err().to_string().contains("user 7: theme"));
+        assert_eq!(
+            user(&u).unwrap().0.theme,
+            None,
+            "unknown theme is the default"
+        );
+    }
+
+    /// BUG-365: every legacy slug found in production maps onto the v2
+    /// registry (it was copied verbatim and rendered as the fallback).
+    #[test]
+    fn legacy_theme_slugs_map_to_the_registry() {
+        for (legacy, v2) in [
+            ("vintagePaper", Some("vintage-paper")),
+            ("black", Some("shadcn-default")),
+            ("quantumRose", Some("quantum-rose")),
+            ("elegantLuxury", Some("elegant-luxury")),
+            ("amethysthaze", Some("amethyst-haze")),
+            ("doom64", Some("doom-64")),
+            ("kodamaGrave", Some("kodama-grove")),
+            ("t3chat", Some("t3-chat")),
+            ("modern-minimal", Some("modern-minimal")),
+            ("shadcn-default", Some("shadcn-default")),
+            ("cyberpunk", Some("cyberpunk")),
+            ("default", None),
+            ("artDeco", None),
+            ("", None),
+        ] {
+            assert_eq!(legacy_theme(legacy), v2, "{legacy}");
+        }
     }
 
     #[test]

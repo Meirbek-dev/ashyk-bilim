@@ -21,11 +21,11 @@ import { useSession } from '@/hooks/useSession'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import type { FC } from 'react'
 import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
-import Image from 'next/image'
+import NextImage from '@components/ui/NextImage'
 import type { ProfileSection, ProfileSections } from '@/lib/api/generated/zod'
 
 interface UserProfileClientProps {
@@ -95,7 +95,7 @@ const ImageModal: FC<{
           <X className="h-6 w-6" />
         </button>
         {image.url ? (
-          <Image
+          <NextImage
             src={image.url}
             alt={image.caption || ''}
             width={800}
@@ -109,8 +109,24 @@ const ImageModal: FC<{
   )
 }
 
+/** `YYYY-MM-DD` (builder date picker) → «сентябрь 2024 г.» in the page locale (UX-270). */
+function useProfileDateRange() {
+  const t = useTranslations('UserProfilePage')
+  const format = useFormatter()
+  const month = (value: string | null | undefined) => {
+    if (!value) return ''
+    const date = new Date(`${value}T00:00:00Z`)
+    return Number.isNaN(date.getTime())
+      ? value
+      : format.dateTime(date, { year: 'numeric', month: 'long', timeZone: 'UTC' })
+  }
+  return (item: { startDate: string; endDate?: string | null | undefined; current: boolean }) =>
+    `${month(item.startDate)} – ${item.current ? t('present') : month(item.endDate)}`
+}
+
 function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const t = useTranslations('UserProfilePage')
+  const dateRange = useProfileDateRange()
   const [selectedImage, setSelectedImage] = useState<ProfileImage | null>(null)
   const userCoursesQuery = useUserCourses(userData.username, {
     enabled: Boolean(userData.username),
@@ -151,7 +167,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                   typeof affiliation.logoUrl === 'string' &&
                   affiliation.logoUrl.trim() !== '' && (
                     <div key={index} className="border-background bg-card rounded-lg border-2 p-2 shadow-lg">
-                      <Image
+                      <NextImage
                         src={affiliation.logoUrl}
                         alt={affiliation.name}
                         width={64}
@@ -251,7 +267,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                                   setSelectedImage(image)
                                 }}
                               >
-                                <Image
+                                <NextImage
                                   src={image.url}
                                   alt={image.caption || ''}
                                   width={300}
@@ -308,9 +324,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                             <div key={expIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{exp.title}</h3>
                               <p className="text-muted-foreground">{exp.organization}</p>
-                              <p className="text-muted-foreground text-sm">
-                                {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
-                              </p>
+                              <p className="text-muted-foreground text-sm">{dateRange(exp)}</p>
                               {exp.description ? <p className="text-muted-foreground mt-2">{exp.description}</p> : null}
                             </div>
                           ))}
@@ -325,9 +339,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                               <p className="text-muted-foreground">
                                 {edu.degree} {t('in')} {edu.field}
                               </p>
-                              <p className="text-muted-foreground text-sm">
-                                {edu.startDate} - {edu.current ? 'Present' : edu.endDate}
-                              </p>
+                              <p className="text-muted-foreground text-sm">{dateRange(edu)}</p>
                               {edu.description ? <p className="text-muted-foreground mt-2">{edu.description}</p> : null}
                             </div>
                           ))}
@@ -340,7 +352,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                             <div key={affIndex} className="border-border border-l-2 pl-4">
                               <div className="flex items-start gap-4">
                                 {typeof affiliation.logoUrl === 'string' && affiliation.logoUrl.trim() !== '' ? (
-                                  <Image
+                                  <NextImage
                                     src={affiliation.logoUrl}
                                     alt={affiliation.name}
                                     width={48}

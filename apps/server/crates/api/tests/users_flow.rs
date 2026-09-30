@@ -851,12 +851,12 @@ async fn profile_sections_and_theme_round_trip(pool: PgPool) {
         .patch_as(
             &session,
             "/api/v2/users/me",
-            &serde_json::json!({ "profile": { "sections": sections }, "theme": "vintagePaper" }),
+            &serde_json::json!({ "profile": { "sections": sections }, "theme": "vintage-paper" }),
         )
         .await;
     assert_eq!(updated.status, StatusCode::OK, "{}", updated.text());
     let body = updated.json();
-    assert_eq!(body["theme"], "vintagePaper");
+    assert_eq!(body["theme"], "vintage-paper");
     assert_eq!(body["profile"]["sections"][0]["title"], "Опыт");
     assert_eq!(
         body["profile"]["sections"][0]["experiences"][0]["description"],
@@ -894,7 +894,7 @@ async fn profile_sections_and_theme_round_trip(pool: PgPool) {
             &serde_json::json!({ "bio": "hi" }),
         )
         .await;
-    assert_eq!(bio.json()["theme"], "vintagePaper");
+    assert_eq!(bio.json()["theme"], "vintage-paper");
     assert_eq!(
         bio.json()["profile"]["sections"].as_array().unwrap().len(),
         3
@@ -961,15 +961,58 @@ async fn profile_sections_and_theme_are_validated(pool: PgPool) {
     );
     assert_eq!(bad_url.json()["field_errors"][0]["code"], "invalid");
 
-    let bad_theme = app
+    // BUG-365: the theme is a closed registry set — a legacy camelCase slug
+    // would render as the default and be persisted over the user's choice.
+    for theme in ["bad slug!", "vintagePaper", "black"] {
+        let bad_theme = app
+            .patch_as(
+                &session,
+                "/api/v2/users/me",
+                &serde_json::json!({ "theme": theme }),
+            )
+            .await;
+        assert_eq!(
+            bad_theme.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{theme}"
+        );
+        assert_eq!(bad_theme.json()["field_errors"][0]["field"], "theme");
+    }
+
+    // UX-270 / UX-271: dates are `YYYY-MM-DD`, section ids are unique.
+    let bad_doc = app
         .patch_as(
             &session,
             "/api/v2/users/me",
-            &serde_json::json!({ "theme": "bad slug!" }),
+            &serde_json::json!({ "profile": { "sections": [
+                {"id": "s", "type": "experience", "title": "x",
+                 "experiences": [{"title": "t", "organization": "o", "startDate": "2019-13-45",
+                                  "endDate": "not-a-date", "current": false, "description": ""}]},
+                {"id": "s", "type": "courses", "title": "c"}
+            ] } }),
         )
         .await;
-    assert_eq!(bad_theme.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(bad_theme.json()["field_errors"][0]["field"], "theme");
+    assert_eq!(bad_doc.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let fields: Vec<(String, String)> = bad_doc.json()["field_errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| {
+            (
+                e["field"].as_str().unwrap().to_owned(),
+                e["code"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        fields,
+        [
+            ("profile.sections[0].experiences[0].startDate", "invalid"),
+            ("profile.sections[0].experiences[0].endDate", "invalid"),
+            ("profile.sections[1].id", "duplicate"),
+        ]
+        .map(|(f, c)| (f.to_owned(), c.to_owned()))
+    );
 
     let stored: (serde_json::Value, Option<String>) =
         sqlx::query_as("SELECT profile, theme FROM users WHERE id = $1")
@@ -982,4 +1025,65 @@ async fn profile_sections_and_theme_are_validated(pool: PgPool) {
         (serde_json::json!({ "sections": [] }), None),
         "nothing was stored"
     );
+}
+
+/// BUG-367: `PATCH /users/me` with `If-Match` is an optimistic lock on the
+/// profile document — the second of two tabs gets 412, not a silent
+/// overwrite; a theme write never moves the version.
+#[sqlx::test(migrations = "../../migrations")]
+async fn profile_document_write_is_version_checked(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("twotabs", "t@example.com", &["user"]).await;
+    let session = app
+        .mint_session_for(user, &["user:read:own", "user:update:own"])
+        .await;
+    let patch = |body: serde_json::Value, version: Option<i32>| {
+        let mut request = axum::http::Request::builder()
+            .method("PATCH")
+            .uri("/api/v2/users/me")
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &session.cookie);
+        if let Some(v) = version {
+            request = request.header(axum::http::header::IF_MATCH, format!("\"{v}\""));
+        }
+        app.send(
+            request
+                .body(axum::body::Body::from(body.to_string()))
+                .unwrap(),
+        )
+    };
+    let doc = |title: &str| serde_json::json!({ "profile": { "sections": [{"id": "s1", "type": "courses", "title": title}] } });
+
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.headers[axum::http::header::ETAG], "\"0\"");
+
+    // Tab 1 saves at the version both tabs loaded.
+    let first = patch(doc("Вкладка-1"), Some(0)).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.headers[axum::http::header::ETAG], "\"1\"");
+
+    // A theme change in between does not move the document version.
+    let theme = patch(serde_json::json!({ "theme": "cyberpunk" }), None).await;
+    assert_eq!(theme.headers[axum::http::header::ETAG], "\"1\"");
+
+    // Tab 2 still holds version 0: 412 with both versions, nothing stored.
+    let stale = patch(doc("Вкладка-2"), Some(0)).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["code"], "precondition-failed");
+    assert_eq!(
+        stale.json()["details"],
+        serde_json::json!({ "expected": 0, "actual": 1 })
+    );
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.json()["profile"]["sections"][0]["title"], "Вкладка-1");
+
+    // Reloaded at version 1 the write goes through.
+    let fresh = patch(doc("Вкладка-2"), Some(1)).await;
+    assert_eq!(fresh.status, StatusCode::OK, "{}", fresh.text());
+    assert_eq!(fresh.headers[axum::http::header::ETAG], "\"2\"");
 }
