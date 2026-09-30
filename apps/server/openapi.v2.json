@@ -102,6 +102,16 @@
               }
             }
           },
+          "404": {
+            "description": "Unknown, inaccessible, or already deleted",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "412": {
             "description": "Stale version",
             "content": {
