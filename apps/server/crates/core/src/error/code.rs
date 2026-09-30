@@ -83,6 +83,8 @@ error_codes! {
     CodeRunnerDegraded => ("code-runner-degraded", 503, "Code runner temporarily unavailable"),
     CompileError => ("compile-error", 422, "Source code does not compile"),
     LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
+    // Assessments
+    AssessmentReadOnly => ("assessment-read-only", 409, "Assessment can no longer be edited"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
     GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { InlineError } from '@/components/ui/error-state'
+import { useApiError } from '@/hooks/useApiError'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -63,6 +64,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const { data: settings, isLoading } = useCodeChallengeSettings(activityUuid)
   const { data: languages = [], error: languagesError } = useJudge0Languages()
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
+  const { toastApiError } = useApiError()
 
   const selectedLanguages = useMemo(
     () =>
@@ -114,7 +116,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       })
       toast.success(t('configSaved'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('configSaveFailed'))
+      // UX-284: problem+json codes (e.g. a locked assessment) are localized.
+      toastApiError(error, { fallback: t('configSaveFailed') })
     }
   }
 

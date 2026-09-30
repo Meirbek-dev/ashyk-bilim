@@ -1385,7 +1385,9 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         )
         .await;
     assert_eq!(edit.status, StatusCode::CONFLICT, "{}", edit.text());
-    assert_eq!(edit.json()["code"], "conflict");
+    // UX-284: a code the client localizes, and why.
+    assert_eq!(edit.json()["code"], "assessment-read-only");
+    assert_eq!(edit.json()["details"]["reason"], "scheduled");
     let item_edit = app
         .patch_as(
             &teacher,

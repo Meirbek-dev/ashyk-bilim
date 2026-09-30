@@ -35,6 +35,10 @@ expression: registry
     409,
     "AI run was cancelled"
   ],
+  "assessment-read-only": [
+    409,
+    "Assessment can no longer be edited"
+  ],
   "code-runner-degraded": [
     503,
     "Code runner temporarily unavailable"

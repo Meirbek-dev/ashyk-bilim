@@ -38,11 +38,12 @@ pub const MAX_ATTEMPTS: i32 = 10;
 /// rename path (UX-120), which writes the title through the activity.
 pub(crate) async fn ensure_editable(pool: &PgPool, assessment: &Assessment) -> Result<()> {
     match assessment.lifecycle {
-        Lifecycle::Archived => Err(Error::conflict("archived assessments are read-only")),
+        Lifecycle::Archived => Err(read_only("archived", "archived assessments are read-only")),
         Lifecycle::Published => {
             let activity = ab_db::assessments::submission_activity(pool, assessment.id).await?;
             if activity.any {
-                return Err(Error::conflict(
+                return Err(read_only(
+                    "has_submissions",
                     "published assessment already has submissions; unpublish first",
                 ));
             }
@@ -50,11 +51,22 @@ pub(crate) async fn ensure_editable(pool: &PgPool, assessment: &Assessment) -> R
         }
         // BUG-162: a schedule was readiness-checked at schedule time;
         // edits would bypass that gate, so it is read-only until unscheduled.
-        Lifecycle::Scheduled => Err(Error::conflict(
+        Lifecycle::Scheduled => Err(read_only(
+            "scheduled",
             "scheduled assessments are read-only; unschedule first",
         )),
         Lifecycle::Draft => Ok(()),
     }
+}
+
+/// UX-284: a code the client can localize, `details.reason` saying why
+/// (`archived`, `has_submissions`, `scheduled`).
+fn read_only(reason: &str, message: &str) -> Error {
+    Error::app_with_details(
+        ab_core::ErrorCode::AssessmentReadOnly,
+        message,
+        serde_json::json!({ "reason": reason }),
+    )
 }
 
 fn now_unix() -> i64 {
