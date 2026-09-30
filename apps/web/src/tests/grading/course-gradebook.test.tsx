@@ -322,6 +322,14 @@ describe('CourseGradebookCommandCenter', () => {
     )
   })
 
+  // UX-297: a course with no learners yet says so — not «no learners match these filters».
+  it('shows a no-learners-yet state for a course nobody has joined', () => {
+    queryState.data = { ...gradebook, students: [], cells: [] }
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+    expect(screen.getByText('noLearnersTitle')).toBeInTheDocument()
+    expect(screen.queryByText('emptyTitle')).not.toBeInTheDocument()
+  })
+
   it('updates the URL when moving between server pages', () => {
     gradebook = {
       ...gradebook,

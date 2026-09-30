@@ -39,6 +39,11 @@ interface CourseGradebookCommandCenterProps {
   courseUuid: string
 }
 
+interface EmptyKeys {
+  title: 'emptyTitle' | 'noLearnersTitle'
+  description: 'emptyDescription' | 'noLearnersDescription'
+}
+
 const ROLLUP_KINDS: GradebookRollupKind[] = ['activity_category', 'cohort', 'learner', 'activity']
 const PAGE_SIZE = 25
 
@@ -164,6 +169,12 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     router.push(`/dash/courses/${cleanCourse}/activity/${cleanActivity}/review`)
   }
 
+  // UX-297: a course nobody has joined yet is not a filter miss (the list is filtered client-side).
+  const emptyKeys: EmptyKeys =
+    data.students.length === 0
+      ? { title: 'noLearnersTitle', description: 'noLearnersDescription' }
+      : { title: 'emptyTitle', description: 'emptyDescription' }
+
   const exportCsv = async () => {
     try {
       const blob = await downloadGradebookCsv(courseUuid, locale)
@@ -194,6 +205,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
       {isMobile ? (
         <MobileGradebookList
           students={visibleStudents}
+          emptyKeys={emptyKeys}
           activities={visibleActivities}
           cellMap={cellMap}
           onOpenCell={openCell}
@@ -224,8 +236,8 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
               {visibleStudents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleActivities.length + 1} className="h-32 text-center">
-                    <div className="text-sm font-medium">{t('emptyTitle')}</div>
-                    <div className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</div>
+                    <div className="text-sm font-medium">{t(emptyKeys.title)}</div>
+                    <div className="text-muted-foreground mt-1 text-xs">{t(emptyKeys.description)}</div>
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -310,11 +322,13 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
 function MobileGradebookList({
   students,
+  emptyKeys,
   activities,
   cellMap,
   onOpenCell,
 }: {
   students: GradebookStudent[]
+  emptyKeys: EmptyKeys
   activities: GradebookActivity[]
   cellMap: Map<string, ActivityProgressCell>
   onOpenCell: (cell: ActivityProgressCell) => void
@@ -323,8 +337,8 @@ function MobileGradebookList({
   if (students.length === 0) {
     return (
       <div className="rounded-lg border p-6 text-center">
-        <p className="text-sm font-medium">{t('emptyTitle')}</p>
-        <p className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</p>
+        <p className="text-sm font-medium">{t(emptyKeys.title)}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t(emptyKeys.description)}</p>
       </div>
     )
   }
