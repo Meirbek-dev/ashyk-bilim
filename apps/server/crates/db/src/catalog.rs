@@ -753,6 +753,8 @@ pub async fn list_chapter_activity_ids(
 pub struct ActivityWrite<'a> {
     pub name: Option<&'a str>,
     pub published: Option<bool>,
+    /// `(activity_type, activity_sub_type)` — they change together; the DB CHECK enforces the pair.
+    pub type_pair: Option<(&'a str, &'a str)>,
     pub content: Option<&'a serde_json::Value>,
     pub details: Option<&'a serde_json::Value>,
     pub settings: Option<&'a serde_json::Value>,
@@ -766,11 +768,14 @@ pub struct ActivityWrite<'a> {
 /// BUG-358: every write — a rename or publish flip as much as a content
 /// save — bumps `version` and honours `expected_version`; `false` means the
 /// row is gone or the version is stale (the caller answers 412).
-pub async fn update_activity<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+/// UX-295: a write that changes nothing leaves the row alone — no version
+/// bump (an open editor tab keeps its lock), no `updated_at` touch.
+pub async fn update_activity(
+    conn: &mut sqlx::PgConnection,
     id: ActivityId,
     write: ActivityWrite<'_>,
 ) -> Result<bool> {
+    let (activity_type, activity_sub_type) = write.type_pair.unzip();
     let updated = sqlx::query!(
         r#"UPDATE activities SET
                name = COALESCE($2, name),
@@ -778,19 +783,40 @@ pub async fn update_activity<'e>(
                content = COALESCE($4, content),
                details = COALESCE($5, details),
                settings = COALESCE($6, settings),
+               activity_type = COALESCE($8, activity_type),
+               activity_sub_type = COALESCE($9, activity_sub_type),
                version = version + 1
-           WHERE id = $1 AND ($7::int IS NULL OR version = $7)"#,
+           WHERE id = $1 AND ($7::int IS NULL OR version = $7)
+             AND (name, published, content, details, settings, activity_type, activity_sub_type)
+                 IS DISTINCT FROM
+                 (COALESCE($2, name), COALESCE($3, published), COALESCE($4, content),
+                  COALESCE($5, details), COALESCE($6, settings),
+                  COALESCE($8, activity_type), COALESCE($9, activity_sub_type))"#,
         id.0,
         write.name,
         write.published,
         write.content,
         write.details,
         write.settings,
+        write.expected_version,
+        activity_type,
+        activity_sub_type
+    )
+    .execute(&mut *conn)
+    .await?;
+    if updated.rows_affected() == 1 {
+        return Ok(true);
+    }
+    // Nothing to change (or stale / gone): a no-op is fine while the row
+    // still carries the expected version.
+    let current = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM activities WHERE id = $1 AND ($2::int IS NULL OR version = $2)"#,
+        id.0,
         write.expected_version
     )
-    .execute(db)
+    .fetch_optional(conn)
     .await?;
-    Ok(updated.rows_affected() == 1)
+    Ok(current.is_some())
 }
 
 /// Delete an activity, releasing the uploads of its media blocks
@@ -848,24 +874,6 @@ pub async fn get_activity_content(
     .fetch_optional(pool)
     .await?;
     Ok(row)
-}
-
-/// Change the type pair together — the DB CHECK enforces validity.
-pub async fn set_activity_type<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    id: ActivityId,
-    activity_type: &str,
-    activity_sub_type: &str,
-) -> Result<bool> {
-    let updated = sqlx::query!(
-        "UPDATE activities SET activity_type = $2, activity_sub_type = $3 WHERE id = $1",
-        id.0,
-        activity_type,
-        activity_sub_type
-    )
-    .execute(db)
-    .await?;
-    Ok(updated.rows_affected() == 1)
 }
 
 pub async fn renumber_activities(pool: &PgPool, ordered_ids: &[ActivityId]) -> Result<()> {

@@ -834,6 +834,171 @@ async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) 
     assert_eq!(loaded.json()["name"], winner);
 }
 
+/// UX-295 + BUG-358: `activities.version` moves on every write that changes
+/// the row — the curriculum PATCH (type pair included), the assessment
+/// title sync, lifecycle transitions, the auto-publish sweep and the
+/// file-submission title/publish — and on none that changes nothing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("versions", "versions@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course = create_course(&app, &teacher, "Versions").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    app.publish_course(&course).await;
+    let version = async |activity: &str| {
+        let res = app
+            .get_as(&teacher, &format!("/api/v2/activities/{activity}"))
+            .await;
+        res.json()["version"].as_i64().unwrap()
+    };
+
+    let page = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{page}");
+    let no_ops = [
+        serde_json::json!({}),
+        serde_json::json!({ "published": false }),
+        serde_json::json!({ "name": "Page" }),
+        serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_youtube" }),
+    ];
+    for body in no_ops {
+        let res = app.patch_as(&teacher, &path, &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{body}: {}", res.text());
+        assert_eq!(res.json()["version"], 1, "{body}");
+    }
+    let retyped = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_hosted" }),
+        )
+        .await;
+    assert_eq!(retyped.json()["version"], 2, "{}", retyped.text());
+
+    // Assessments: title sync, transition, auto-publish.
+    let choice = serde_json::json!({
+        "title": "Q", "max_score": 1,
+        "body": { "kind": "choice", "prompt": "Q", "options": [
+            { "id": "a", "text": "yes", "is_correct": true },
+            { "id": "b", "text": "no", "is_correct": false } ] }
+    });
+    let mut quizzes = Vec::new();
+    for title in ["Now", "Later"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter, "kind": "quiz", "title": title }),
+            )
+            .await;
+        let id = created.json()["id"].as_str().unwrap().to_owned();
+        let activity = created.json()["activity_id"].as_str().unwrap().to_owned();
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice,
+        )
+        .await;
+        quizzes.push((id, activity));
+    }
+    let (now, now_activity) = &quizzes[0];
+    let before = version(now_activity).await;
+    app.patch_as(
+        &teacher,
+        &format!("/api/v2/assessments/{now}"),
+        &serde_json::json!({ "title": "Now v2" }),
+    )
+    .await;
+    assert_eq!(version(now_activity).await, before + 1, "title sync");
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{now}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(version(now_activity).await, before + 2, "transition");
+
+    let (later, later_activity) = &quizzes[1];
+    let in_an_hour = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        + 3600;
+    let scheduled = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{later}/lifecycle"),
+            &serde_json::json!({ "to": "scheduled", "scheduled_at_unix": in_an_hour }),
+        )
+        .await;
+    assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
+    // Scheduling keeps the activity unpublished — nothing changed.
+    let before = version(later_activity).await;
+    sqlx::query("UPDATE assessments SET scheduled_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(later).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let swept = ab_domain::assessments::AssessmentsService::publish_due(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(swept, 1);
+    assert_eq!(version(later_activity).await, before + 1, "publish_due");
+
+    // File submissions: title update + publish.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter, "title": "Essay",
+                                  "instructions": "Upload it." }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let before = version(&activity).await;
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "title": "Essay v2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(
+        version(&activity).await,
+        before + 1,
+        "file-submission title"
+    );
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(
+        version(&activity).await,
+        before + 2,
+        "file-submission publish"
+    );
+}
+
 /// BUG-168: blank names (`""` / `"   "`) are 422 `name`/`required` on
 /// create and update, and stored names are trimmed.
 #[sqlx::test(migrations = "../../migrations")]
@@ -932,7 +1097,7 @@ async fn published_quiz(
 
 /// BUG-186: a refused PATCH writes nothing. An archived quiz is read-only;
 /// renaming it together with a type change is refused (409 `conflict`)
-/// before `set_activity_type` runs — the row keeps its type and name.
+/// before the activity write runs — the row keeps its type and name.
 #[sqlx::test(migrations = "../../migrations")]
 async fn refused_activity_patch_writes_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;

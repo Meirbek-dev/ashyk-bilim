@@ -443,10 +443,6 @@ impl CurriculumService {
             crate::assessments::service::ensure_editable(&self.pool, assessment).await?;
         }
 
-        if let Some((activity_type, sub_type)) = changes.type_pair {
-            ab_db::catalog::set_activity_type(&mut *tx, activity_id, activity_type, sub_type)
-                .await?;
-        }
         if let (Some(assessment), Some(name)) = (&assessment, name) {
             ab_db::assessments::update_assessment_details(
                 &mut *tx,
@@ -467,6 +463,7 @@ impl CurriculumService {
             ab_db::catalog::ActivityWrite {
                 name,
                 published,
+                type_pair: changes.type_pair,
                 content: changes.content,
                 details: changes.details,
                 settings: changes.settings,
