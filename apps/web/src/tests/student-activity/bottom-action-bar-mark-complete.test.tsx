@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 // UX-133: «Отметить как завершенное» toasted the raw English server message
 // and a double click sent two POSTs (two «Активность выполнена» toasts).
-// BUG-221 nit: a 404 (lesson unpublished under the tab) names the cause.
+// BUG-221 nit: a 404 (lesson unpublished under the tab) names the cause;
+// UX-276: and drops the stale runtime + trail (outline, mark button).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
@@ -11,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import BottomActionBar from '@/features/student-activity/shell/BottomActionBar'
 import { runStudentActivityAction, type StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { APIError } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import ruMessages from '@/messages/ru-RU.json'
 
 vi.mock('@/features/student-activity/api/runtime', () => ({ runStudentActivityAction: vi.fn() }))
@@ -25,9 +27,9 @@ const runtime = {
   primary_action: { id: 'mark_complete', enabled: true },
 } as unknown as StudentActivityRuntime
 
-function renderBar() {
+function renderBar(client = new QueryClient()) {
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
         <BottomActionBar courseUuid="c1" runtime={runtime} />
       </NextIntlClientProvider>
@@ -56,11 +58,17 @@ describe('BottomActionBar mark complete', () => {
     vi.mocked(runStudentActivityAction).mockRejectedValue(
       new APIError({ status: 404, code: 'not-found', message: 'activity not found' }),
     )
-    fireEvent.click(renderBar())
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    fireEvent.click(renderBar(client))
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
     const [message] = vi.mocked(toast.error).mock.calls[0]!
     expect(message).not.toContain('activity not found')
     expect(message).toBe(ruMessages.ActivityPage.activityGone)
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.studentActivity.runtime('c1', 'a1') }),
+    )
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.trail.current() })
   })
 
   it('toasts the generic code for a non-404 failure', async () => {

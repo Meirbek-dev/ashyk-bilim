@@ -259,6 +259,16 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   // UX-133: `isPending` lands on the next render — a double click fired two
   // POSTs and two toasts. The ref closes the gap synchronously.
   const inFlight = useRef(false)
+  const refreshActivity = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.studentActivity.runtime(
+        cleanUuid(courseUuid, 'course_'),
+        cleanUuid(activityUuid, 'activity_'),
+      ),
+    })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+    router.refresh()
+  }
   const mutation = useMutation({
     mutationFn: (command: 'mark_complete' | 'unmark_complete') =>
       runStudentActivityAction(cleanUuid(courseUuid, 'course_'), cleanUuid(activityUuid, 'activity_'), {
@@ -266,22 +276,17 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
         payload: {},
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.studentActivity.runtime(
-          cleanUuid(courseUuid, 'course_'),
-          cleanUuid(activityUuid, 'activity_'),
-        ),
-      })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
-      router.refresh()
+      await refreshActivity()
       toast.success(t('activityCompleted'))
     },
     // UX-133: problem+json codes reach the toast (`activity not found` was raw English).
     // BUG-221 nit: a 404 here means the lesson was unpublished under the open
-    // tab — name that instead of the generic «resource not found».
-    onError: error => {
+    // tab — name that instead of the generic «resource not found», and (UX-276)
+    // drop the stale lesson, outline and mark button with it.
+    onError: async error => {
       if (isApiError(error) && error.status === 404) {
         toast.error(t('activityGone'))
+        await refreshActivity()
         return
       }
       toastApiError(error, { fallback: t('markCompleteError') })
