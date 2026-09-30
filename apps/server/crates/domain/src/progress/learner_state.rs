@@ -257,23 +257,7 @@ impl LearnerStateService {
                 (a.chapter_id, state)
             })
             .collect();
-        let mut outline = Vec::new();
-        for chapter in &chapters {
-            let acts: Vec<ActivityState> = states
-                .iter()
-                .filter(|(c, _)| *c == chapter.id)
-                .map(|(_, s)| s.clone())
-                .collect();
-            if acts.is_empty() {
-                continue;
-            }
-            outline.push(ChapterState {
-                id: chapter.id,
-                title: chapter.name.clone(),
-                index: outline.len(),
-                activities: acts,
-            });
-        }
+        let outline = build_outline(&chapters, &states);
         let flat: Vec<&ActivityState> = states.iter().map(|(_, s)| s).collect();
         let progress = progress_state(course_progress.as_ref(), &flat);
         let certificate = certificate_state(
@@ -348,6 +332,31 @@ async fn certificate_state(
             .map(|c| format!("/certificates/{}/verify", c.verify_code)),
         verify_code: issued.map(|c| c.verify_code),
     })
+}
+
+/// Chapters with at least one visible activity, re-indexed from 0.
+fn build_outline(
+    chapters: &[ab_db::catalog::ChapterRow],
+    states: &[(ChapterId, ActivityState)],
+) -> Vec<ChapterState> {
+    let mut outline = Vec::new();
+    for chapter in chapters {
+        let acts: Vec<ActivityState> = states
+            .iter()
+            .filter(|(c, _)| *c == chapter.id)
+            .map(|(_, s)| s.clone())
+            .collect();
+        if acts.is_empty() {
+            continue;
+        }
+        outline.push(ChapterState {
+            id: chapter.id,
+            title: chapter.name.clone(),
+            index: outline.len(),
+            activities: acts,
+        });
+    }
+    outline
 }
 
 fn activity_state(
