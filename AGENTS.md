@@ -17,12 +17,12 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 # Repository map
 
-- `apps/server/` — **Rust backend (the active rewrite target).** Read
+- `apps/server/` - **Rust backend (the active rewrite target).** Read
   `apps/server/AGENTS.md` before touching it; design in `docs/rewrite/ARCHITECTURE.md`;
   work queue in `docs/rewrite/EXECUTION-PLAN.md`. Rewrite work happens on the
   `rewrite` branch with direct commits.
-- `apps/api/` — legacy Python/FastAPI backend. **Feature-frozen, read-only reference**
+- `apps/api/` - legacy Python/FastAPI backend. **Feature-frozen, read-only reference**
   for porting semantics; deleted at cutover. Do not modify.
-- `apps/web/` — Next.js 16 frontend (Vite+ toolchain above). In scope for rewrite
+- `apps/web/` - Next.js 16 frontend (Vite+ toolchain above). In scope for rewrite
   adaptation (phase P9).
-- `docs/FINDINGS.md` — production/infra issues outside the rewrite scope.
+- `docs/FINDINGS.md` - production/infra issues outside the rewrite scope.

@@ -44,7 +44,7 @@ fn normalize_answer(mut answer: Map<String, Value>) -> Option<Value> {
 }
 
 /// `answers_json` came in two shapes: `{"answers": {item_uuid: answer}}`
-/// (quiz/exam) and `{"answers": [{item_uuid, answer}]}` (code challenge) —
+/// (quiz/exam) and `{"answers": [{item_uuid, answer}]}` (code challenge) -
 /// plus the bare `{}` of an untouched draft. Unparsable answers are dropped
 /// with the item id reported.
 #[must_use]
@@ -203,7 +203,7 @@ pub fn breakdown(
 /// scores rounded to the cent (150 × 0.67 over 150 × 0.6667 points), and
 /// `breakdown` caps each at its max, so the migrated items can derive less
 /// than the grade the learner was given (99.83 vs 99.333). Where they differ
-/// beyond storage drift the raw is kept as the explicit `score_override` —
+/// beyond storage drift the raw is kept as the explicit `score_override` -
 /// the review shows a stated adjustment, not a mismatch. Scored rows only
 /// (`raw` is `None` for an attempt still owed a grade); an item-less
 /// breakdown has nothing to disagree with.
@@ -593,7 +593,7 @@ mod tests {
 
     #[test]
     fn stored_raw_beyond_rounding_drift_is_the_explicit_override() {
-        // BUG-329: 149 of 150 legacy items at 0.67 (capped to 0.6667) — the
+        // BUG-329: 149 of 150 legacy items at 0.67 (capped to 0.6667) - the
         // learner's 99.83 stays the grade, stated as an adjustment.
         let known: Vec<(String, Uuid)> = (0..150)
             .map(|i| (format!("q{i}"), Uuid::now_v7()))

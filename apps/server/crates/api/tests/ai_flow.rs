@@ -710,7 +710,7 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(evals.json()["runs"]["aborted"], 1);
 
     // Usage: two finished runs, tokens from both, budget minus tokens.
-    let usage = app.get_as(&admin, "/api/v2/ai/usage/budget").await;
+    let usage = app.get_as(&admin, "/api/v2/ai/usage").await;
     assert_eq!(usage.status, StatusCode::OK, "{}", usage.text());
     let usage = usage.json();
     assert_eq!(usage["total_runs"], 3);

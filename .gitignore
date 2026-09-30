@@ -55,7 +55,7 @@ fly.toml
 backups/
 .idea
 
-# TLS certificates — managed outside source control
+# TLS certificates - managed outside source control
 certs/*.pem
 certs/*.crt
 certs/*.key

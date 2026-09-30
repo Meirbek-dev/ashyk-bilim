@@ -1,12 +1,43 @@
-# Usage:
-#   docker-compose up -d                              # start everything
-#   docker-compose run --rm migrate                   # run migrations (manual)
+# Production stack. Deploy with `bun run deploy` (extra/deploy.sh); see
+# docs/DEPLOYMENT.md. Local dev services live in docker-compose.dev.yml.
+#
+# Maintenance jobs (not started by `up`):
+#   docker compose run --rm server-migrate     # SQLx migrations
+#   docker compose run --rm storage-admin …    # bucket policy / CORS
 
 networks:
   app-net: {}
   data-net: {}
   exec-net:
     internal: true
+
+x-server-env: &server-env
+  AB__ENVIRONMENT: production
+  AB__SERVER__HOST: 0.0.0.0
+  AB__SERVER__PORT: 8000
+  AB__SERVER__CORS_ORIGINS: '["https://${NGINX_SERVER_NAME:?}"]'
+  # Browser-facing redirects and email links are absolute to the web origin.
+  AB__SERVER__WEB_URL: https://${NGINX_SERVER_NAME:?}
+  # Registration verification emails; unset = codes only in the server log.
+  AB__RESEND__API_KEY: ${AB__RESEND__API_KEY:-}
+  AB__RESEND__FROM: ${AB__RESEND__FROM:-Ashyq Bilim <noreply@${NGINX_SERVER_NAME:?}>}
+  AB__DATABASE__URL: ${AB__DATABASE__URL:?Set the ashyq database URL}
+  AB__REDIS__URL: redis://redis:6379/2
+  AB__ZITADEL__BASE_URL: http://zitadel:8080
+  AB__ZITADEL__PAT: ${AB__ZITADEL__PAT:?Set the provisioner PAT after Zitadel bootstrap}
+  AB__STORAGE__ENDPOINT: https://${NGINX_SERVER_NAME:?}
+  AB__STORAGE__ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+  AB__STORAGE__SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+  AB__STORAGE__PUBLIC_BUCKET: ab-public
+  AB__STORAGE__PRIVATE_BUCKET: ab-private
+  AB__TELEMETRY__JSON_LOGS: 'true'
+  AB__JUDGE0__BASE_URL: http://judge0-server:2358
+  # AI providers (DECISIONS "AI models"): unset keys = AI routes answer 503
+  # `ai-disabled` / draft artifacts.
+  AB__AI__OPENAI_API_KEY: ${AB__AI__OPENAI_API_KEY:-}
+  AB__AI__OPENROUTER_API_KEY: ${AB__AI__OPENROUTER_API_KEY:-}
+  AB__AI__OPENAI_MODEL: ${AB__AI__OPENAI_MODEL:-gpt-6-luna}
+  AB__AI__OPENROUTER_MODEL: ${AB__AI__OPENROUTER_MODEL:-deepseek/deepseek-v4-flash}
 
 services:
   # ---------------------------------------------------------------------------
@@ -19,9 +50,10 @@ services:
       - '80:80'
       - '443:443'
     environment:
-      NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-localhost}
+      NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:?}
     volumes:
       - ./extra/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./extra/nginx.routes.conf:/etc/nginx/snippets/routes.conf:ro
       - ./certs:/etc/nginx/certs:ro
       - /var/www/certbot:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx/app
@@ -30,8 +62,10 @@ services:
     depends_on:
       web:
         condition: service_healthy
-      api:
+      server:
         condition: service_healthy
+      rustfs:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -42,19 +76,23 @@ services:
   # Frontend — Next.js standalone server
   # ---------------------------------------------------------------------------
   web:
+    image: ashyq-web:${IMAGE_TAG:?Set IMAGE_TAG to the release commit}
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000/}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:1338/api/v1/}
-        NEXT_PUBLIC_MEDIA_URL: ${NEXT_PUBLIC_MEDIA_URL:-http://localhost:1338/}
+        NEXT_PUBLIC_SITE_URL: https://${NGINX_SERVER_NAME:?}/
+        NEXT_PUBLIC_API_URL: https://${NGINX_SERVER_NAME:?}/api/v2/
+        NEXT_PUBLIC_MEDIA_URL: https://${NGINX_SERVER_NAME:?}/
     restart: unless-stopped
     expose:
       - '3000'
     environment:
-      INTERNAL_API_URL: http://api:8000/api/v1/
+      INTERNAL_API_URL: http://server:8000/api/v2/
     env_file: .env
+    # This host cannot reach its public IP through NAT.
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     networks:
       - app-net
     healthcheck:
@@ -74,17 +112,22 @@ services:
           cpus: '2.0'
 
   # ---------------------------------------------------------------------------
-  # Backend — FastAPI
+  # Backend — Rust API server + background worker
   # ---------------------------------------------------------------------------
-  api:
+  server:
+    image: ashyq-server:${IMAGE_TAG:?}
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/server/Dockerfile
+    command: ['serve']
     restart: unless-stopped
     expose:
       - '8000'
-    volumes:
-      - app_content:/app/content
     env_file: .env
+    environment: *server-env
+    # Public S3 URLs keep their signed host while avoiding NAT loopback.
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     networks:
       - app-net
       - data-net
@@ -94,12 +137,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      zitadel:
+        condition: service_started
+      rustfs:
+        condition: service_started
+    # Liveness avoids a dependency cycle: storage uses the public nginx origin.
+    # Full readiness (/health/ready) is checked by deploy.sh after nginx.
     healthcheck:
-      test: ['CMD', 'curl', '--fail', '--silent', '--show-error', 'http://127.0.0.1:8000/api/v1/health']
-      interval: 30s
-      timeout: 10s
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8000/api/v2/health']
+      interval: 10s
+      timeout: 5s
       start_period: 30s
-      retries: 3
+      retries: 6
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -107,17 +156,17 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 1g
           cpus: '2.0'
 
-  taskiq-worker:
-    build:
-      context: ./apps/api
-    command: ['dumb-init', 'taskiq', 'worker', 'worker:broker']
+  worker:
+    image: ashyq-server:${IMAGE_TAG:?}
+    command: ['worker']
     restart: unless-stopped
-    volumes:
-      - app_content:/app/content
     env_file: .env
+    environment: *server-env
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     networks:
       - app-net
       - data-net
@@ -127,52 +176,29 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      disable: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          memory: 2g
-          cpus: '2.0'
-
-  taskiq-scheduler:
-    build:
-      context: ./apps/api
-    command: ['dumb-init', 'taskiq', 'scheduler', 'worker:scheduler', '--skip-first-run']
-    restart: unless-stopped
-    env_file: .env
-    networks:
-      - data-net
-    depends_on:
-      redis:
-        condition: service_healthy
-      taskiq-worker:
+      zitadel:
+        condition: service_started
+      rustfs:
         condition: service_started
     healthcheck:
       disable: true
+    stop_grace_period: 60s
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     deploy:
-      replicas: 1
       resources:
         limits:
-          memory: 512m
-          cpus: '0.5'
+          memory: 1g
+          cpus: '2.0'
 
-  # ---------------------------------------------------------------------------
-  # Database migration — run manually, never auto-started
-  # ---------------------------------------------------------------------------
-  migrate:
-    build:
-      context: ./apps/api
-    command: ['uv', 'run', '--no-sync', 'alembic', 'upgrade', 'head']
+  server-migrate:
+    image: ashyq-server:${IMAGE_TAG:?}
+    command: ['migrate']
+    profiles: [maintenance]
     env_file: .env
+    environment: *server-env
     networks:
       - data-net
     depends_on:
@@ -180,6 +206,90 @@ services:
         condition: service_healthy
     healthcheck:
       disable: true
+
+  # ---------------------------------------------------------------------------
+  # Identity — Zitadel, internal-only (no public route)
+  # ---------------------------------------------------------------------------
+  zitadel:
+    # Pinned by digest: v4.19.2.
+    image: ghcr.io/zitadel/zitadel@sha256:956a298405189a8f6cd4ec92e8828b1bd10caa7da8b139c39d251d7053e33784
+    restart: unless-stopped
+    command: ['start-from-init', '--masterkeyFromEnv', '--tlsMode', 'disabled']
+    environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?ZITADEL_MASTERKEY must be set (32 chars)}
+      ZITADEL_DATABASE_POSTGRES_HOST: db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${ZITADEL_DB_PASSWORD:?ZITADEL_DB_PASSWORD must be set}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_USER:-openu}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:?}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALDOMAIN: zitadel
+      ZITADEL_EXTERNALPORT: 8080
+      ZITADEL_EXTERNALSECURE: 'false'
+      # Imported user credentials are Argon2id; Zitadel rehashes them under
+      # the current policy on first successful login.
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS: argon2,bcrypt
+      ZITADEL_FIRSTINSTANCE_PATPATH: /machinekey/pat.txt
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: ${ZITADEL_PAT_EXPIRATION:?Set PAT expiry in RFC3339 format}
+    volumes:
+      - zitadel_machinekey:/machinekey
+    networks:
+      - app-net
+      - data-net
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '1.0'
+
+  # ---------------------------------------------------------------------------
+  # Object storage — RustFS (S3)
+  # ---------------------------------------------------------------------------
+  rustfs:
+    image: docker.io/rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?RUSTFS_ACCESS_KEY must be set}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY must be set}
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - rustfs_data:/data
+    networks:
+      - app-net
+      - data-net
+    labels:
+      - docker-volume-backup.stop-during-backup=true
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
+
+  storage-admin:
+    image: docker.io/amazon/aws-cli:2.37.5
+    profiles: [maintenance]
+    environment:
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs:9000
+      AWS_PAGER: ''
+    volumes:
+      - ./extra/storage-public-policy.json:/policy.json:ro
+      - ./extra/storage-cors.json:/cors.json:ro
+    networks: [data-net]
 
   # ---------------------------------------------------------------------------
   # Database
@@ -189,8 +299,6 @@ services:
       context: .
       dockerfile: extra/Dockerfile.db
     restart: unless-stopped
-    ports:
-      - '5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-openu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
@@ -249,8 +357,6 @@ services:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     expose:
       - '2358'
-    ports:
-      - '2358:2358'
     privileged: true
     restart: unless-stopped
     networks:
@@ -305,7 +411,8 @@ services:
     volumes:
       - postgres_data:/backup/postgres:ro
       - redis_data:/backup/redis:ro
-      - app_content:/backup/app_content:ro
+      - rustfs_data:/backup/rustfs:ro
+      - zitadel_machinekey:/backup/zitadel_machinekey:ro
       - judge0_box:/backup/judge0_box:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./backups:/archive
@@ -313,6 +420,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  app_content:
+  rustfs_data:
+  zitadel_machinekey:
   judge0_box:
   nginx_cache:

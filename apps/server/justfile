@@ -1,4 +1,4 @@
-# Ashyq server — the only entry point for builds/tests/tooling.
+# Ashyq server - the only entry point for builds/tests/tooling.
 # CI runs `just ci`; agents run the same recipes locally. See AGENTS.md.
 
 set dotenv-load := true
@@ -26,7 +26,7 @@ clippy:
 test:
     cargo nextest run --workspace
 
-# Unit tests only — no Postgres/Redis/Docker required (Windows sessions).
+# Unit tests only - no Postgres/Redis/Docker required (Windows sessions).
 test-unit:
     cargo nextest run --workspace --lib --bins
 
@@ -50,7 +50,7 @@ migration NAME:
 openapi:
     cargo run -p ashyq-server -- openapi > openapi.v2.json
 
-# Coverage with floor (ratchet up as phases land — never down).
+# Coverage with floor (ratchet up as phases land - never down).
 # Scaffold floor 30 → 80 after P3 (measured 88% lines, 2026-09-05).
 # The ETL crate is one-shot cutover tooling verified by rehearsal (MIGRATION.md
 # §5), not by unit tests, and main.rs is the process entrypoint; neither is

@@ -8,7 +8,7 @@ use ab_clients::zitadel::{
     NewHumanUser, PasswordSessionOutcome, PasswordSpec, SessionUser, ZitadelClient, ZitadelConfig,
 };
 use secrecy::SecretString;
-use wiremock::matchers::{body_partial_json, header_regex, method, path, query_param};
+use wiremock::matchers::{body_partial_json, header_regex, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn client(server: &MockServer) -> ZitadelClient {
@@ -93,40 +93,6 @@ async fn password_session_invalid_credentials() {
 }
 
 #[tokio::test]
-async fn create_human_user_with_hash_import() {
-    let server = MockServer::start().await;
-    // The ETL import path: hashedPassword.hash carries the modular-crypt string.
-    Mock::given(method("POST"))
-        .and(path("/v2/users/human"))
-        .and(body_partial_json(serde_json::json!({
-            "username": "meirbek",
-            "email": { "email": "m@example.com", "isVerified": true },
-            "hashedPassword": { "hash": "$argon2id$v=19$m=65536,t=3,p=4$abc$def" }
-        })))
-        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
-            "userId": "386492126625531395",
-            "details": { "sequence": "2", "changeDate": "2026-08-16T06:54:19.943975Z",
-                         "resourceOwner": "386492094732109315" }
-        })))
-        .expect(1)
-        .mount(&server)
-        .await;
-
-    let user_id = client(&server)
-        .create_human_user(&NewHumanUser {
-            username: "meirbek".into(),
-            given_name: "Meirbek".into(),
-            family_name: "User".into(),
-            email: "m@example.com".into(),
-            email_verified: true,
-            password: PasswordSpec::Hash("$argon2id$v=19$m=65536,t=3,p=4$abc$def".into()),
-        })
-        .await
-        .unwrap();
-    assert_eq!(user_id, "386492126625531395");
-}
-
-#[tokio::test]
 async fn create_user_conflict_maps_to_conflict_error() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
@@ -191,47 +157,4 @@ async fn delete_session_is_idempotent() {
         .delete_session("gone-already", &SecretString::from("tok"))
         .await
         .unwrap();
-}
-
-#[tokio::test]
-async fn exact_login_lookup_supports_import_idempotency() {
-    let server = MockServer::start().await;
-    Mock::given(method("GET"))
-        .and(path("/management/v1/global/users/_by_login_name"))
-        .and(query_param("loginName", "meirbek"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-            "user": { "id": "386492126625531395", "userName": "meirbek" }
-        })))
-        .expect(1)
-        .mount(&server)
-        .await;
-
-    assert_eq!(
-        client(&server)
-            .user_id_by_login_name("meirbek")
-            .await
-            .unwrap()
-            .as_deref(),
-        Some("386492126625531395")
-    );
-}
-
-#[tokio::test]
-async fn exact_login_lookup_returns_none_for_missing_user() {
-    let server = MockServer::start().await;
-    Mock::given(method("GET"))
-        .and(path("/management/v1/global/users/_by_login_name"))
-        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
-            "code": 5, "message": "user not found"
-        })))
-        .mount(&server)
-        .await;
-
-    assert!(
-        client(&server)
-            .user_id_by_login_name("missing")
-            .await
-            .unwrap()
-            .is_none()
-    );
 }

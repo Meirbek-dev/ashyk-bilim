@@ -2,7 +2,7 @@
 //! `assessment_policy` pair folds into one v2 row (DECISIONS 2026-09-05,
 //! P3.1) with every `settings_json` / `anti_cheat_json` / `late_policy_json`
 //! scalar as a CHECKed column; item bodies re-parse through the v2
-//! `ItemBody` enum (strict — a bad body is a hard error with the row id).
+//! `ItemBody` enum (strict - a bad body is a hard error with the row id).
 
 use ab_domain::assessments::items::ItemBody;
 use serde_json::{Map, Value};
@@ -193,7 +193,7 @@ const KNOWN_SETTING_KEYS: &[&str] = &[
     "violation_threshold",
     // BUG-360: the legacy code-challenge policy mirrored the code item's
     // body (tests, languages, limits, starter code) and held the grader's
-    // strategy and the analytics difficulty — `code_body_from_policy` /
+    // strategy and the analytics difficulty - `code_body_from_policy` /
     // `policy_difficulty` fold them into the item; `points` is the item's
     // `max_score`, `due_date` / `max_attempts` / `time_limit_seconds`
     // duplicate the policy columns (`due_at` falls back to `due_date`).
@@ -211,7 +211,7 @@ const KNOWN_SETTING_KEYS: &[&str] = &[
 ];
 
 /// BUG-360: settings the legacy schema declared (`assessments/settings.py`)
-/// but no legacy code path read — `question_limit` was recomputed from the
+/// but no legacy code path read - `question_limit` was recomputed from the
 /// item count, `access_mode` / `whitelist_user_ids` were never enforced,
 /// `execution_mode` / `allow_custom_input` never reached the runner.
 const DEAD_SETTING_KEYS: &[&str] = &[
@@ -468,7 +468,7 @@ fn lowercase_enum_fields(body: &mut Map<String, Value>) {
 
 /// Re-type a legacy `body_json` into the v2 storage form
 /// (`{schema_version, kind, …}`). Strict: a body that does not parse is an
-/// error naming the problem — never a silent skip (MIGRATION §2).
+/// error naming the problem - never a silent skip (MIGRATION §2).
 pub fn item_body(kind: &str, body_json: Option<&Value>) -> Result<Value, String> {
     let mut body = object(body_json);
     if !body.contains_key("kind") {
@@ -510,7 +510,7 @@ pub struct ItemMetadata {
 }
 
 /// BUG-360: a code item's body with the gaps the legacy code-challenge
-/// policy `settings_json` can fill — the legacy grader took its strategy
+/// policy `settings_json` can fill - the legacy grader took its strategy
 /// from the policy (`grading_strategy`), and the policy mirrored the body's
 /// tests (`visible_tests` + `hidden_tests`), `allowed_languages`,
 /// `starter_code`, `time_limit` (seconds) and `memory_limit` (MB). The
@@ -664,7 +664,7 @@ mod tests {
 
     #[test]
     fn code_policy_fills_the_item_body() {
-        // BUG-360: legacy policy 43 — BEST_SUBMISSION strategy, mirrored tests.
+        // BUG-360: legacy policy 43 - BEST_SUBMISSION strategy, mirrored tests.
         let policy = serde_json::json!({"difficulty": "EASY", "allowed_languages": [71, 50], "time_limit": 5,
             "memory_limit": 512, "grading_strategy": "BEST_SUBMISSION", "execution_mode": "COMPLETE_FEEDBACK",
             "allow_custom_input": true, "points": 100, "due_date": null, "starter_code": {"71": "print()"},

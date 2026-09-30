@@ -1,4 +1,4 @@
--- UX-170: the completion counters count first completions, not XP awards —
+-- UX-170: the completion counters count first completions, not XP awards -
 -- a completion past the daily XP cap still counts. One row per (user, kind,
 -- id) makes the bump idempotent across re-completions (leave → rejoin).
 

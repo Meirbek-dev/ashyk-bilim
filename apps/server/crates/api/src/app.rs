@@ -128,7 +128,6 @@ fn ai_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::ai::admin_run_detail))
         .routes(routes!(routes::ai::admin_evals))
         .routes(routes!(routes::ai::usage))
-        .routes(routes!(routes::ai::usage_budget))
 }
 
 fn ai_agent_routes() -> OpenApiRouter<AppState> {

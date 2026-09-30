@@ -2,8 +2,8 @@
 -- (threads, runs, events, artifacts, evidence, approvals, eval results) plus
 -- the monthly token ledger that replaces "sum every ai_run row this month".
 --
--- Run lifecycle is a state machine — queued → running → {succeeded, failed,
--- aborted} — and every transition in the domain is a guarded
+-- Run lifecycle is a state machine - queued → running → {succeeded, failed,
+-- aborted} - and every transition in the domain is a guarded
 -- `UPDATE … WHERE status = $expected` (ARCHITECTURE §12).
 
 CREATE TABLE ai_threads (

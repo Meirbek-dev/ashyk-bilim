@@ -1,6 +1,6 @@
 # Used as build context for apps/web/Dockerfile (context = repo root)
 
-# Python (api app — not needed in web image)
+# Python (api app - not needed in web image)
 apps/api
 !apps/api/package.json
 **/__pycache__

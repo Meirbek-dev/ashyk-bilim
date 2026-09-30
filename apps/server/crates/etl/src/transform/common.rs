@@ -66,7 +66,7 @@ pub fn str_setting<'a>(map: &'a Map<String, Value>, key: &str) -> Option<&'a str
     map.get(key).and_then(Value::as_str)
 }
 
-/// Renumber siblings 1..=n in `(order, id)` order — the legacy wrote
+/// Renumber siblings 1..=n in `(order, id)` order - the legacy wrote
 /// client-supplied integers verbatim, duplicates included.
 #[must_use]
 pub fn renumber<K: Ord + Clone>(mut items: Vec<(K, i32, i32)>) -> Vec<(i32, i32)> {

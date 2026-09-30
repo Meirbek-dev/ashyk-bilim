@@ -14,10 +14,10 @@
     )
 )]
 
-//! `ab-etl` — the one-shot legacy → v2 migration behind `ashyq admin etl`.
+//! `ab-etl` - the one-shot legacy → v2 migration behind `ashyq admin etl`.
 //!
 //! Pipeline shape (docs/rewrite/MIGRATION.md §2): ordered domain runners,
-//! each `extract` (plain `sqlx::query` against the legacy `openu` schema —
+//! each `extract` (plain `sqlx::query` against the legacy `openu` schema -
 //! never compile-checked, the legacy DB is not ours) → `transform` (pure
 //! functions in [`transform`], unit-tested on hand-written rows) → `load`
 //! (compile-checked upserts into the v2 schema keyed by the persistent id

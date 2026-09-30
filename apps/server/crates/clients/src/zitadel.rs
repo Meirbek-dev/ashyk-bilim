@@ -59,8 +59,7 @@ pub struct ZitadelSession {
     pub session_token: SecretString,
 }
 
-/// New human user. `PasswordSpec::Hash` is the ETL import path (argon2/bcrypt
-/// modular-crypt strings pass through Zitadel's passwap verifier).
+/// New human user.
 #[derive(Debug)]
 pub struct NewHumanUser {
     pub username: String,
@@ -84,7 +83,6 @@ pub struct CreatedHumanUser {
 #[derive(Debug)]
 pub enum PasswordSpec {
     Plain(SecretString),
-    Hash(String),
     /// IdP-only accounts (e.g. Google-linked) have no local password.
     None,
 }
@@ -521,9 +519,6 @@ impl ZitadelClient {
                     "changeRequired": false,
                 });
             }
-            PasswordSpec::Hash(hash) => {
-                body["hashedPassword"] = serde_json::json!({ "hash": hash });
-            }
             PasswordSpec::None => {}
         }
         let response = self
@@ -702,43 +697,6 @@ impl ZitadelClient {
             ErrorCode::ServiceUnavailable,
             format!("zitadel user delete failed: {}", response.status()),
         ))
-    }
-
-    /// Resolve an exact login name across the instance. This deprecated v1
-    /// endpoint remains part of the pinned Zitadel image and gives the import
-    /// command a small, deterministic idempotency check.
-    pub async fn user_id_by_login_name(&self, login_name: &str) -> Result<Option<String>> {
-        #[derive(Deserialize)]
-        struct UserEnvelope {
-            user: User,
-        }
-        #[derive(Deserialize)]
-        struct User {
-            id: String,
-        }
-
-        let mut url = reqwest::Url::parse(&self.url("/management/v1/global/users/_by_login_name"))
-            .map_err(|e| Error::internal("building zitadel user lookup URL", e))?;
-        url.query_pairs_mut().append_pair("loginName", login_name);
-        let response = self
-            .auth(self.http.get(url))
-            .send()
-            .await
-            .map_err(unavailable("user lookup"))?;
-        if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Ok(None);
-        }
-        if !response.status().is_success() {
-            return Err(Error::app(
-                ErrorCode::ServiceUnavailable,
-                format!("zitadel user lookup failed: {}", response.status()),
-            ));
-        }
-        let envelope: UserEnvelope = response
-            .json()
-            .await
-            .map_err(|e| Error::internal("zitadel user lookup response shape", e))?;
-        Ok(Some(envelope.user.id))
     }
 }
 

@@ -57,7 +57,7 @@ impl DomainReport {
         self.tables.values().map(|t| t.written).sum()
     }
 
-    /// Drops grouped by reason — the summary line the rehearsal log records.
+    /// Drops grouped by reason - the summary line the rehearsal log records.
     #[must_use]
     pub fn drops_by_reason(&self) -> BTreeMap<String, u64> {
         let mut out = BTreeMap::new();
@@ -112,7 +112,7 @@ pub struct Report {
 
 impl Report {
     /// Green = every verification check passed (a report without a
-    /// verification phase is green by construction — `--domain` smoke runs).
+    /// verification phase is green by construction - `--domain` smoke runs).
     #[must_use]
     pub fn ok(&self) -> bool {
         self.verification.as_ref().is_none_or(Verification::ok)
@@ -129,7 +129,7 @@ impl Report {
         let mut out = String::new();
         let _ = writeln!(
             out,
-            "etl run {}{} — {} ms",
+            "etl run {}{} - {} ms",
             self.run_id,
             if self.dry_run {
                 " (dry-run, rolled back)"
@@ -141,7 +141,7 @@ impl Report {
         for d in &self.domains {
             let _ = writeln!(
                 out,
-                "\n[{}] {} ms — source {} / written {} / dropped {}",
+                "\n[{}] {} ms - source {} / written {} / dropped {}",
                 d.domain,
                 d.duration_ms,
                 d.source_total(),

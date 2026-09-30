@@ -4,26 +4,26 @@ Agents append here when blocked on something only you can decide/do.
 Answer inline (any format); agents check this file each session and move
 answered items into the docs.
 
-## Q-2026-09-13-1 — Brand spelling: «Ashyk Bilim» vs «Ashyq Bilim»
+## Q-2026-09-13-1 - Brand spelling: «Ashyk Bilim» vs «Ashyq Bilim»
 
 The web `<title>` and header say **Ashyk Bilim**; the server's `DEFAULT_PLATFORM_NAME`
 (TOTP issuer, email subjects, certificate PDF) says **Ashyq Bilim**. Pick one; the
-other side is a one-line change. Not blocking — left as is until answered.
+other side is a one-line change. Not blocking - left as is until answered.
 
-## Q-2026-09-14-1 — Remediation scoring is self-reported
+## Q-2026-09-14-1 - Remediation scoring is self-reported
 
 `POST ai/remediation/sessions/{id}/complete` takes `{score}` from the learner
 (legacy contract, verbatim: 70+ passes and lifts the gate); the practice
 questions travel to the learner with their `answer`/`explanation`. The new
 learner surface (BUG-152, `RemediationGate`) therefore renders the
 micro-lecture, reveals each answer, and posts a **self-check** tally («Я
-ответил(а) верно» × questions) — it is not a graded test, and a learner can
+ответил(а) верно» × questions) - it is not a graded test, and a learner can
 tick everything. If the gate should be a real check, the server needs to
 grade: store answers without the key, accept `{answers}` on complete, score
 server-side (choice questions exact, open ones LLM/teacher). Decide whether
 that is wanted; not blocking.
 
-## Q-2026-09-26-1 — 23 legacy assignment activities with no content
+## Q-2026-09-26-1 - 23 legacy assignment activities with no content
 
 Production has 23 file-submission activities (21 published, 10 courses) that were
 retyped from the legacy `ASSIGNMENT` feature; its tables were dropped before the
@@ -39,7 +39,7 @@ not required. Not blocking.
 learners whose v2 `course_progress` is not certificate-eligible (8 under 50 %): courses grew
 after the legacy certificate was issued, and these content-less tasks count as required.
 Analytics counts a certificate holder as completed (legacy rule, `analytics/context.rs`), while
-the trail, gradebook and course page show real step progress — e.g. «VR разработка» analytics
+the trail, gradebook and course page show real step progress - e.g. «VR разработка» analytics
 41.2 % completion vs 0 eligible. Both screens match legacy. Choose: (a) keep as is, (b) analytics
 drops the certificate override (one rule: step progress), or (c) the ETL marks legacy
 certificate holders' `course_progress` completed.

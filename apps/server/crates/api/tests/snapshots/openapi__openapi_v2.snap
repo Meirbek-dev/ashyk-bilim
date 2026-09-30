@@ -132,7 +132,7 @@ expression: json
             "type": "boolean"
           },
           "version": {
-            "description": "Optimistic lock — send back as `If-Match` on the content PATCH.",
+            "description": "Optimistic lock - send back as `If-Match` on the content PATCH.",
             "format": "int32",
             "type": "integer"
           }
@@ -766,7 +766,7 @@ expression: json
         "type": "object"
       },
       "AdminUser": {
-        "description": "Admin listing row (includes email + status — platform:read gated).",
+        "description": "Admin listing row (includes email + status - platform:read gated).",
         "properties": {
           "created_at_unix": {
             "format": "int64",
@@ -919,7 +919,7 @@ expression: json
         "type": "string"
       },
       "AiSubjectId": {
-        "description": "The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter — the server looks the id up in both tables).",
+        "description": "The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter - the server looks the id up in both tables).",
         "format": "uuid",
         "type": "string"
       },
@@ -1677,7 +1677,7 @@ expression: json
             ]
           },
           "pending_attempt": {
-            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt.",
+            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any - it may be newer than the ranked attempt.",
             "format": "int32",
             "type": [
               "integer",
@@ -1685,7 +1685,7 @@ expression: json
             ]
           },
           "status": {
-            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell's rule.",
+            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) - the gradebook cell's rule.",
             "type": [
               "string",
               "null"
@@ -2293,7 +2293,7 @@ expression: json
             ]
           },
           "version": {
-            "description": "Optimistic lock — send back as `If-Match`.",
+            "description": "Optimistic lock - send back as `If-Match`.",
             "format": "int64",
             "type": "integer"
           }
@@ -3213,7 +3213,7 @@ expression: json
         "type": "object"
       },
       "CollectionHit": {
-        "description": "Collections in search results are light — no embedded courses.",
+        "description": "Collections in search results are light - no embedded courses.",
         "properties": {
           "description": {
             "type": "string"
@@ -3595,7 +3595,7 @@ expression: json
             "type": "string"
           },
           "contributor_ids": {
-            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.",
+            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.",
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
@@ -4092,7 +4092,7 @@ expression: json
             "type": "string"
           },
           "weight": {
-            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average.",
+            "description": "BUG-208: 0–100 - an unbounded weight overflows the course average.",
             "format": "double",
             "type": [
               "number",
@@ -4346,7 +4346,7 @@ expression: json
             "description": "Tagged on `kind`; must be a kind the assessment allows."
           },
           "max_score": {
-            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares.",
+            "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares.",
             "format": "double",
             "type": [
               "number",
@@ -4429,7 +4429,7 @@ expression: json
       },
       "CreateUserRequest": {
         "additionalProperties": false,
-        "description": "Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
+        "description": "Admin account creation (`POST /users`). No `Debug` - may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
         "properties": {
           "email": {
             "type": "string"
@@ -4497,7 +4497,7 @@ expression: json
             "type": "string"
           },
           "put_url": {
-            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412.",
+            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` - the URL writes the\nobject once; a replay is a 412.",
             "type": "string"
           }
         },
@@ -4730,7 +4730,7 @@ expression: json
             ]
           },
           "replies": {
-            "description": "Embedded when the list was asked for `include_replies` (replies\ncarry an empty list — one level only).",
+            "description": "Embedded when the list was asked for `include_replies` (replies\ncarry an empty list - one level only).",
             "items": {
               "$ref": "#/components/schemas/Discussion"
             },
@@ -4769,7 +4769,7 @@ expression: json
         "type": "object"
       },
       "DiscussionAuthor": {
-        "description": "The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
+        "description": "The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
         "properties": {
           "avatar_key": {
             "type": [
@@ -6058,7 +6058,7 @@ expression: json
             "type": "boolean"
           },
           "pending_attempt": {
-            "description": "The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175).",
+            "description": "The newest attempt still awaiting grading (`pending`), if any - set\neven when the grade of record is an older published attempt (BUG-175).",
             "format": "int32",
             "type": [
               "integer",
@@ -6066,7 +6066,7 @@ expression: json
             ]
           },
           "pending_attempt_id": {
-            "description": "The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).",
+            "description": "The id of that pending attempt - a submission id or a file attempt\nid, whichever the cell is about - so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).",
             "format": "uuid",
             "type": [
               "string",
@@ -6077,7 +6077,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionStatus",
-                "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+                "description": "UX-146: what that attempt waits for - `pending` (a grade) or\n`graded` (a release) - so the gradebook counts and labels the two apart."
               },
               {
                 "type": "null"
@@ -6307,7 +6307,7 @@ expression: json
             "type": "boolean"
           },
           "score_override": {
-            "description": "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+            "description": "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
             "format": "double",
             "type": [
               "number",
@@ -6697,7 +6697,7 @@ expression: json
             "$ref": "#/components/schemas/Course"
           },
           "instructor_name": {
-            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) — what the PDF prints.",
+            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
             "type": [
               "string",
               "null"
@@ -6871,7 +6871,7 @@ expression: json
         ]
       },
       "ItemBody": {
-        "description": "Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].",
+        "description": "Internally tagged on `kind` - the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].",
         "oneOf": [
           {
             "allOf": [
@@ -7553,7 +7553,7 @@ expression: json
       },
       "LoginRequest": {
         "additionalProperties": false,
-        "description": "Password login. No `Debug` derive — the password must never format.",
+        "description": "Password login. No `Debug` derive - the password must never format.",
         "properties": {
           "login": {
             "description": "Username or email.",
@@ -7563,7 +7563,7 @@ expression: json
             "type": "string"
           },
           "totp_code": {
-            "description": "Second factor — resubmit after a 401 `mfa-required`.",
+            "description": "Second factor - resubmit after a 401 `mfa-required`.",
             "type": [
               "string",
               "null"
@@ -8102,7 +8102,7 @@ expression: json
         "properties": {
           "code": {
             "$ref": "#/components/schemas/ErrorCode",
-            "description": "Stable machine code — the frontend's i18n key."
+            "description": "Stable machine code - the frontend's i18n key."
           },
           "detail": {
             "type": [
@@ -8703,7 +8703,7 @@ expression: json
         "type": "object"
       },
       "PublicProfile": {
-        "description": "`GET /users/{username}`: the public card plus the bio (no email —\nFINDINGS #16). Search keeps the lean `UserHit`.",
+        "description": "`GET /users/{username}`: the public card plus the bio (no email -\nFINDINGS #16). Search keeps the lean `UserHit`.",
         "properties": {
           "avatar_key": {
             "type": [
@@ -8745,7 +8745,7 @@ expression: json
             "type": "integer"
           },
           "needs_grading_count": {
-            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`.",
+            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) - the same count as\n`stats.needs_grading`.",
             "format": "int64",
             "type": "integer"
           },
@@ -8754,7 +8754,7 @@ expression: json
             "type": "integer"
           },
           "skipped_count": {
-            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them —\nand the caller's own attempts, never theirs to release (BUG-288).",
+            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) - left as they are; run the release again for them -\nand the caller's own attempts, never theirs to release (BUG-288).",
             "format": "int64",
             "type": "integer"
           }
@@ -9020,7 +9020,7 @@ expression: json
             ]
           },
           "parts": {
-            "description": "`[{type: \"text\", content: \"…\"}, …]` — an alternative to `content`.",
+            "description": "`[{type: \"text\", content: \"…\"}, …]` - an alternative to `content`.",
             "items": {
               "type": "object"
             },
@@ -9177,7 +9177,7 @@ expression: json
             "type": "string"
           },
           "severity": {
-            "description": "`blocker` | `warning` | `advice` — every current rule is a blocker.",
+            "description": "`blocker` | `warning` | `advice` - every current rule is a blocker.",
             "type": "string"
           }
         },
@@ -9292,7 +9292,7 @@ expression: json
       },
       "RegisterRequest": {
         "additionalProperties": false,
-        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
+        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
         "properties": {
           "email": {
             "type": "string"
@@ -9383,7 +9383,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/FileAttemptId",
-                "description": "The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+                "description": "The remediated file-submission attempt - `null` for a submission.\nExactly one of the two ids is set."
               },
               {
                 "type": "null"
@@ -9436,7 +9436,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionId",
-                "description": "The remediated assessment submission — `null` for a file attempt."
+                "description": "The remediated assessment submission - `null` for a file attempt."
               },
               {
                 "type": "null"
@@ -9529,7 +9529,7 @@ expression: json
             "type": "boolean"
           },
           "staff": {
-            "description": "The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).",
+            "description": "The learner is on the course staff - never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).",
             "type": "boolean"
           },
           "status": {
@@ -9660,7 +9660,7 @@ expression: json
             "type": "string"
           },
           "display_name": {
-            "description": "Raw display text — custom roles only; `null` on seeded roles.",
+            "description": "Raw display text - custom roles only; `null` on seeded roles.",
             "type": [
               "string",
               "null"
@@ -10800,7 +10800,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/FileAttemptId",
-                "description": "The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+                "description": "The analysed file-submission attempt - `null` for a submission.\nExactly one of the two ids is set."
               },
               {
                 "type": "null"
@@ -10840,7 +10840,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionId",
-                "description": "The analysed assessment submission — `null` for a file attempt."
+                "description": "The analysed assessment submission - `null` for a file attempt."
               },
               {
                 "type": "null"
@@ -11624,7 +11624,7 @@ expression: json
         "type": "object"
       },
       "TeacherSubmission": {
-        "description": "A submission as the grader sees it — nothing redacted.",
+        "description": "A submission as the grader sees it - nothing redacted.",
         "properties": {
           "answers": {
             "additionalProperties": {
@@ -11853,7 +11853,7 @@ expression: json
         "type": "object"
       },
       "TotpEnrollment": {
-        "description": "TOTP enrollment secrets — shown to the user exactly once.",
+        "description": "TOTP enrollment secrets - shown to the user exactly once.",
         "properties": {
           "secret": {
             "description": "Base32 secret for manual entry.",
@@ -12157,7 +12157,7 @@ expression: json
             ]
           },
           "weight": {
-            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average.",
+            "description": "BUG-208: 0–100 - an unbounded weight overflows the course average.",
             "format": "double",
             "type": [
               "number",
@@ -12361,7 +12361,7 @@ expression: json
             ]
           },
           "max_score": {
-            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares.",
+            "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares.",
             "format": "double",
             "type": [
               "number",
@@ -12585,7 +12585,7 @@ expression: json
         "type": "object"
       },
       "UserHit": {
-        "description": "Public-profile projection (no email — FINDINGS #16).",
+        "description": "Public-profile projection (no email - FINDINGS #16).",
         "properties": {
           "avatar_key": {
             "type": [
@@ -12636,7 +12636,7 @@ expression: json
             "type": "boolean"
           },
           "has_password": {
-            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188.",
+            "description": "The account has a password to change (`false`: Google-only - no\npassword can be set through the API). UX-188.",
             "type": "boolean"
           },
           "id": {
@@ -12905,7 +12905,7 @@ expression: json
             "$ref": "#/components/schemas/CertificateHolder"
           },
           "instructor_name": {
-            "description": "The name signed on the certificate — what the PDF prints.",
+            "description": "The name signed on the certificate - what the PDF prints.",
             "type": [
               "string",
               "null"
@@ -13302,7 +13302,7 @@ expression: json
         ]
       },
       "patch": {
-        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` — never a silent\noverwrite of another tab's save.",
+        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` - never a silent\noverwrite of another tab's save.",
         "operationId": "update_activity",
         "parameters": [
           {
@@ -14642,7 +14642,7 @@ expression: json
             "description": "Another learner's sessions without `platform:read`"
           }
         },
-        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff — instructors,\ncontributors — do not have it and get 403 for another learner.",
+        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff - instructors,\ncontributors - do not have it and get 403 for another learner.",
         "tags": [
           "ai"
         ]
@@ -14783,7 +14783,7 @@ expression: json
             "description": "Unknown or inaccessible submission"
           }
         },
-        "summary": "The newest remediation session on a submission — `null` when none —\nfor whoever may read the work (the grader's gate card, UX-115).",
+        "summary": "The newest remediation session on a submission - `null` when none -\nfor whoever may read the work (the grader's gate card, UX-115).",
         "tags": [
           "ai"
         ]
@@ -17849,7 +17849,7 @@ expression: json
     },
     "/api/v2/assessment-items/{id}/runs": {
       "post": {
-        "description": "Does not affect any grade — hidden tests only run at submit. Needs\nsubmit access to the assessment (authors may preview and see hidden\ndata). With an `Idempotency-Key`, a retry with the same source, input\nand language replays the finished run (200); a different payload under\nthe same key is 409. Limited to 20 runs per minute per user.",
+        "description": "Does not affect any grade - hidden tests only run at submit. Needs\nsubmit access to the assessment (authors may preview and see hidden\ndata). With an `Idempotency-Key`, a retry with the same source, input\nand language replays the finished run (200); a different payload under\nthe same key is 409. Limited to 20 runs per minute per user.",
         "operationId": "run_item",
         "parameters": [
           {
@@ -18050,7 +18050,7 @@ expression: json
             "description": "Unknown or inaccessible"
           }
         },
-        "summary": "Full assessment with items and policy. Authors always; learners only\nonce published (404 otherwise — no existence leak).",
+        "summary": "Full assessment with items and policy. Authors always; learners only\nonce published (404 otherwise - no existence leak).",
         "tags": [
           "assessments"
         ]
@@ -18230,7 +18230,7 @@ expression: json
     },
     "/api/v2/assessments/{id}/attempt-state": {
       "get": {
-        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.",
+        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) - starting and submitting still 403.",
         "operationId": "attempt_state",
         "parameters": [
           {
@@ -19626,7 +19626,7 @@ expression: json
     },
     "/api/v2/auth/register": {
       "post": {
-        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened — the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
+        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened - the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
         "operationId": "register",
         "parameters": [
           {
@@ -19642,7 +19642,7 @@ expression: json
             }
           },
           {
-            "description": "ru, kk or en — the locale of the verification link",
+            "description": "ru, kk or en - the locale of the verification link",
             "in": "header",
             "name": "Accept-Language",
             "required": false,
@@ -19999,7 +19999,7 @@ expression: json
             "description": "Unknown code"
           }
         },
-        "summary": "Public verification by code — no session needed.",
+        "summary": "Public verification by code - no session needed.",
         "tags": [
           "certifications"
         ]
@@ -20054,7 +20054,7 @@ expression: json
             "description": "Unknown code"
           }
         },
-        "summary": "The certificate as an A4-landscape PDF — public by code, like verification.",
+        "summary": "The certificate as an A4-landscape PDF - public by code, like verification.",
         "tags": [
           "certifications"
         ]
@@ -21310,7 +21310,7 @@ expression: json
             "description": "Unknown or inaccessible"
           }
         },
-        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course — the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
+        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course - the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
         "tags": [
           "courses"
         ]
@@ -21749,7 +21749,7 @@ expression: json
     },
     "/api/v2/courses/{id}/gradebook": {
       "get": {
-        "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) — assessment submissions and file-submission\nattempts alike.",
+        "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) - assessment submissions and file-submission\nattempts alike.",
         "operationId": "gradebook",
         "parameters": [
           {
@@ -21862,7 +21862,7 @@ expression: json
     },
     "/api/v2/courses/{id}/grading/events": {
       "get": {
-        "description": "Event names: `connected`, `submission.submitted`, `grade.saved`,\n`grade.published`, `submission.returned`, `closed` (grading access\nlost — e.g. the grant set inactive — the stream ends). `data` is\n`{event_id, event, payload, sent_at}` where `payload` carries\n`activity_id`, `user_id`, `status`, `final_score` and either\n`submission_id` (assessment) or `attempt_id` (file submission);\n`id` is the stream id to send back as `Last-Event-ID` on reconnect.",
+        "description": "Event names: `connected`, `submission.submitted`, `grade.saved`,\n`grade.published`, `submission.returned`, `closed` (grading access\nlost - e.g. the grant set inactive - the stream ends). `data` is\n`{event_id, event, payload, sent_at}` where `payload` carries\n`activity_id`, `user_id`, `status`, `final_score` and either\n`submission_id` (assessment) or `attempt_id` (file submission);\n`id` is the stream id to send back as `Last-Event-ID` on reconnect.",
         "operationId": "course_grading_events",
         "parameters": [
           {
@@ -23542,7 +23542,7 @@ expression: json
             "description": "Missing permission"
           }
         },
-        "summary": "Update platform settings (requires `platform:update:platform` — admins).\nBranding changes claim finalized `platform-logo` / `platform-thumbnail`\nuploads; the replaced object is released for reaping.",
+        "summary": "Update platform settings (requires `platform:update:platform` - admins).\nBranding changes claim finalized `platform-logo` / `platform-thumbnail`\nuploads; the replaced object is released for reaping.",
         "tags": [
           "platform"
         ]
@@ -25337,7 +25337,7 @@ expression: json
             "description": "Unknown or inactive user"
           }
         },
-        "summary": "Public profile card by id — same card as `GET /users/{username}`.",
+        "summary": "Public profile card by id - same card as `GET /users/{username}`.",
         "tags": [
           "users"
         ]
@@ -25641,7 +25641,7 @@ expression: json
     },
     "/api/v2/users/{username}": {
       "get": {
-        "description": "Id, username, display name, bio, avatar and the profile builder sections\n— readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio, avatar and the profile builder sections\n- readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {

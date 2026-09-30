@@ -33,7 +33,7 @@ impl ImportReport {
     #[must_use]
     pub fn render(&self) -> String {
         format!(
-            "zitadel import GREEN — source {}, created {}, existing {}, passwordless {}, unsupported hashes {}, login probe {}",
+            "zitadel import GREEN - source {}, created {}, existing {}, passwordless {}, unsupported hashes {}, login probe {}",
             self.source_users,
             self.created,
             self.already_present,
@@ -72,7 +72,7 @@ pub async fn run_import(
         source_users: users.len(),
         ..ImportReport::default()
     };
-    // BUG-354: linking the Zitadel id is bookkeeping — `updated_at` stays.
+    // BUG-354: linking the Zitadel id is bookkeeping - `updated_at` stays.
     let mut conn = target.acquire().await?;
     sqlx::query("SET ab.bookkeeping = 'on'")
         .execute(&mut *conn)

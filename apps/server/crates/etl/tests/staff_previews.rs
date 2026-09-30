@@ -85,7 +85,7 @@ async fn staff_legacy_attempts_become_previews(pool: PgPool) {
     // A v2 attempt keeps the flag it was made with (a learner promoted later).
     let v2_by_contributor = attempt(&pool, assessment, course, contributor, false).await;
 
-    // BUG-354: marking is ETL bookkeeping — the legacy `updated_at` stays.
+    // BUG-354: marking is ETL bookkeeping - the legacy `updated_at` stays.
     let mut conn = pool.acquire().await.unwrap();
     sqlx::query("SET ab.bookkeeping = 'on'")
         .execute(&mut *conn)

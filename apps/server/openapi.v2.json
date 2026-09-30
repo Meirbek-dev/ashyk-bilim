@@ -129,7 +129,7 @@
           "courses"
         ],
         "summary": "Partial update: name, publish state, content/details/settings, or the\ntype pair (both `activity_type` and `activity_sub_type` together).",
-        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` — never a silent\noverwrite of another tab's save.",
+        "description": "A `content` write (the editor autosave) requires `If-Match: \"<version>\"`;\nother fields honour it when sent. A stale version is 412\n`precondition-failed` with `details {expected, actual}` - never a silent\noverwrite of another tab's save.",
         "operationId": "update_activity",
         "parameters": [
           {
@@ -1431,7 +1431,7 @@
         "tags": [
           "ai"
         ],
-        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff — instructors,\ncontributors — do not have it and get 403 for another learner.",
+        "summary": "A learner's sessions: their own, or anyone's with the platform-scoped\n`platform:read` (platform admins). Course staff - instructors,\ncontributors - do not have it and get 403 for another learner.",
         "operationId": "student_remediation",
         "parameters": [
           {
@@ -1568,7 +1568,7 @@
         "tags": [
           "ai"
         ],
-        "summary": "The newest remediation session on a submission — `null` when none —\nfor whoever may read the work (the grader's gate card, UX-115).",
+        "summary": "The newest remediation session on a submission - `null` when none -\nfor whoever may read the work (the grader's gate card, UX-115).",
         "operationId": "latest_remediation",
         "parameters": [
           {
@@ -4676,7 +4676,7 @@
           "code"
         ],
         "summary": "Run code against an item's visible tests (or one custom input).",
-        "description": "Does not affect any grade — hidden tests only run at submit. Needs\nsubmit access to the assessment (authors may preview and see hidden\ndata). With an `Idempotency-Key`, a retry with the same source, input\nand language replays the finished run (200); a different payload under\nthe same key is 409. Limited to 20 runs per minute per user.",
+        "description": "Does not affect any grade - hidden tests only run at submit. Needs\nsubmit access to the assessment (authors may preview and see hidden\ndata). With an `Idempotency-Key`, a retry with the same source, input\nand language replays the finished run (200); a different payload under\nthe same key is 409. Limited to 20 runs per minute per user.",
         "operationId": "run_item",
         "parameters": [
           {
@@ -4842,7 +4842,7 @@
         "tags": [
           "assessments"
         ],
-        "summary": "Full assessment with items and policy. Authors always; learners only\nonce published (404 otherwise — no existence leak).",
+        "summary": "Full assessment with items and policy. Authors always; learners only\nonce published (404 otherwise - no existence leak).",
         "operationId": "get_assessment",
         "parameters": [
           {
@@ -5057,7 +5057,7 @@
           "assessments"
         ],
         "summary": "What the caller may do with this assessment right now.",
-        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.",
+        "description": "The effective policy (overrides applied) and any reasons an attempt is\nblocked. Requires course access and `assessment:submit:assigned`\n(authors preview freely); off a restricted access list it answers with\n`ACCESS_RESTRICTED` (UX-227) - starting and submitting still 403.",
         "operationId": "attempt_state",
         "parameters": [
           {
@@ -6453,7 +6453,7 @@
           "auth"
         ],
         "summary": "Self-registration: creates the account (default `user` role) and emails\na verification code.",
-        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened — the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
+        "description": "The link opens the web app under the `Accept-Language` locale (`/ru`,\n`/kz`, `/en`). No session is opened - the client logs in next. Honours\n`Idempotency-Key` (a retry replays the 201 instead of 409\n`username-taken`).",
         "operationId": "register",
         "parameters": [
           {
@@ -6471,7 +6471,7 @@
           {
             "name": "Accept-Language",
             "in": "header",
-            "description": "ru, kk or en — the locale of the verification link",
+            "description": "ru, kk or en - the locale of the verification link",
             "required": false,
             "schema": {
               "type": [
@@ -6791,7 +6791,7 @@
         "tags": [
           "certifications"
         ],
-        "summary": "Public verification by code — no session needed.",
+        "summary": "Public verification by code - no session needed.",
         "operationId": "verify_certificate",
         "parameters": [
           {
@@ -6833,7 +6833,7 @@
         "tags": [
           "certifications"
         ],
-        "summary": "The certificate as an A4-landscape PDF — public by code, like verification.",
+        "summary": "The certificate as an A4-landscape PDF - public by code, like verification.",
         "description": "Holder, course, certificate name/type, issue date, teacher, the\nverification code and the verify link (`AB__SERVER__WEB_URL` +\n`/{locale}/certificates/{code}/verify`). The page language follows\n`Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.",
         "operationId": "certificate_pdf",
         "parameters": [
@@ -8099,7 +8099,7 @@
         "tags": [
           "courses"
         ],
-        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course — the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
+        "summary": "Roster, creator first (course visibility; 404 otherwise). Public for a\npublic course - the course page names its authors to every visitor;\nanonymous visitors see active authors only.",
         "operationId": "list_contributors",
         "parameters": [
           {
@@ -8576,7 +8576,7 @@
           "grading"
         ],
         "summary": "Course gradebook: the grade-of-record attempt per (learner, activity).",
-        "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) — assessment submissions and file-submission\nattempts alike.",
+        "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) - assessment submissions and file-submission\nattempts alike.",
         "operationId": "gradebook",
         "parameters": [
           {
@@ -8689,7 +8689,7 @@
           "grading"
         ],
         "summary": "Every grade change and hand-in on a course as `text/event-stream`\n(graders).",
-        "description": "Event names: `connected`, `submission.submitted`, `grade.saved`,\n`grade.published`, `submission.returned`, `closed` (grading access\nlost — e.g. the grant set inactive — the stream ends). `data` is\n`{event_id, event, payload, sent_at}` where `payload` carries\n`activity_id`, `user_id`, `status`, `final_score` and either\n`submission_id` (assessment) or `attempt_id` (file submission);\n`id` is the stream id to send back as `Last-Event-ID` on reconnect.",
+        "description": "Event names: `connected`, `submission.submitted`, `grade.saved`,\n`grade.published`, `submission.returned`, `closed` (grading access\nlost - e.g. the grant set inactive - the stream ends). `data` is\n`{event_id, event, payload, sent_at}` where `payload` carries\n`activity_id`, `user_id`, `status`, `final_score` and either\n`submission_id` (assessment) or `attempt_id` (file submission);\n`id` is the stream id to send back as `Last-Event-ID` on reconnect.",
         "operationId": "course_grading_events",
         "parameters": [
           {
@@ -10335,7 +10335,7 @@
         "tags": [
           "platform"
         ],
-        "summary": "Update platform settings (requires `platform:update:platform` — admins).\nBranding changes claim finalized `platform-logo` / `platform-thumbnail`\nuploads; the replaced object is released for reaping.",
+        "summary": "Update platform settings (requires `platform:update:platform` - admins).\nBranding changes claim finalized `platform-logo` / `platform-thumbnail`\nuploads; the replaced object is released for reaping.",
         "operationId": "update_platform",
         "requestBody": {
           "content": {
@@ -12128,7 +12128,7 @@
         "tags": [
           "users"
         ],
-        "summary": "Public profile card by id — same card as `GET /users/{username}`.",
+        "summary": "Public profile card by id - same card as `GET /users/{username}`.",
         "description": "Editor user blocks store the user id; every reader of the page (learners,\nanonymous visitors of a public course) resolves the card here.",
         "operationId": "public_profile_by_id",
         "parameters": [
@@ -12468,7 +12468,7 @@
           "users"
         ],
         "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
-        "description": "Id, username, display name, bio, avatar and the profile builder sections\n— readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
+        "description": "Id, username, display name, bio, avatar and the profile builder sections\n- readable anonymously, active users only. The profile page resolves its subject here instead of\nscanning `/search`.",
         "operationId": "public_profile",
         "parameters": [
           {
@@ -12848,7 +12848,7 @@
           "version": {
             "type": "integer",
             "format": "int32",
-            "description": "Optimistic lock — send back as `If-Match` on the content PATCH."
+            "description": "Optimistic lock - send back as `If-Match` on the content PATCH."
           }
         }
       },
@@ -13469,7 +13469,7 @@
       },
       "AdminUser": {
         "type": "object",
-        "description": "Admin listing row (includes email + status — platform:read gated).",
+        "description": "Admin listing row (includes email + status - platform:read gated).",
         "required": [
           "id",
           "username",
@@ -13623,7 +13623,7 @@
       "AiSubjectId": {
         "type": "string",
         "format": "uuid",
-        "description": "The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter — the server looks the id up in both tables)."
+        "description": "The work an AI analysis or remediation is about: an assessment\nsubmission id *or* a file-submission attempt id (both UUIDv7, one\nroute parameter - the server looks the id up in both tables)."
       },
       "AiSubmissionAnalysisId": {
         "type": "string",
@@ -14390,14 +14390,14 @@
               "null"
             ],
             "format": "int32",
-            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any — it may be newer than the ranked attempt."
+            "description": "The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any - it may be newer than the ranked attempt."
           },
           "status": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) — the gradebook cell's rule."
+            "description": "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) - the gradebook cell's rule."
           },
           "submitted_at_unix": {
             "type": [
@@ -15009,7 +15009,7 @@
           "version": {
             "type": "integer",
             "format": "int64",
-            "description": "Optimistic lock — send back as `If-Match`."
+            "description": "Optimistic lock - send back as `If-Match`."
           }
         }
       },
@@ -15916,7 +15916,7 @@
       },
       "CollectionHit": {
         "type": "object",
-        "description": "Collections in search results are light — no embedded courses.",
+        "description": "Collections in search results are light - no embedded courses.",
         "required": [
           "id",
           "name",
@@ -16315,7 +16315,7 @@
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
-            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed."
+            "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed."
           },
           "created_at_unix": {
             "type": "integer",
@@ -16804,7 +16804,7 @@
               "null"
             ],
             "format": "double",
-            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average."
+            "description": "BUG-208: 0–100 - an unbounded weight overflows the course average."
           }
         },
         "additionalProperties": false
@@ -17056,7 +17056,7 @@
               "null"
             ],
             "format": "double",
-            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares."
+            "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares."
           },
           "metadata": {
             "oneOf": [
@@ -17131,7 +17131,7 @@
       },
       "CreateUserRequest": {
         "type": "object",
-        "description": "Admin account creation (`POST /users`). No `Debug` — may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
+        "description": "Admin account creation (`POST /users`). No `Debug` - may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
         "required": [
           "username",
           "email",
@@ -17206,7 +17206,7 @@
           },
           "put_url": {
             "type": "string",
-            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412."
+            "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` - the URL writes the\nobject once; a replay is a 412."
           }
         }
       },
@@ -17455,7 +17455,7 @@
             "items": {
               "$ref": "#/components/schemas/Discussion"
             },
-            "description": "Embedded when the list was asked for `include_replies` (replies\ncarry an empty list — one level only)."
+            "description": "Embedded when the list was asked for `include_replies` (replies\ncarry an empty list - one level only)."
           },
           "replies_count": {
             "type": "integer",
@@ -17472,7 +17472,7 @@
       },
       "DiscussionAuthor": {
         "type": "object",
-        "description": "The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
+        "description": "The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
         "required": [
           "id",
           "username",
@@ -18774,7 +18774,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175)."
+            "description": "The newest attempt still awaiting grading (`pending`), if any - set\neven when the grade of record is an older published attempt (BUG-175)."
           },
           "pending_attempt_id": {
             "type": [
@@ -18782,13 +18782,13 @@
               "null"
             ],
             "format": "uuid",
-            "description": "The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123)."
+            "description": "The id of that pending attempt - a submission id or a file attempt\nid, whichever the cell is about - so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123)."
           },
           "pending_attempt_status": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionStatus",
-                "description": "UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart."
+                "description": "UX-146: what that attempt waits for - `pending` (a grade) or\n`graded` (a release) - so the gradebook counts and labels the two apart."
               },
               {
                 "type": "null"
@@ -19015,7 +19015,7 @@
               "null"
             ],
             "format": "double",
-            "description": "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived."
+            "description": "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived."
           }
         }
       },
@@ -19409,7 +19409,7 @@
               "string",
               "null"
             ],
-            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) — what the PDF prints."
+            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints."
           }
         }
       },
@@ -19701,7 +19701,7 @@
             ]
           }
         ],
-        "description": "Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`]."
+        "description": "Internally tagged on `kind` - the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`]."
       },
       "ItemFeedbackView": {
         "type": "object",
@@ -20255,7 +20255,7 @@
       },
       "LoginRequest": {
         "type": "object",
-        "description": "Password login. No `Debug` derive — the password must never format.",
+        "description": "Password login. No `Debug` derive - the password must never format.",
         "required": [
           "login",
           "password"
@@ -20273,7 +20273,7 @@
               "string",
               "null"
             ],
-            "description": "Second factor — resubmit after a 401 `mfa-required`."
+            "description": "Second factor - resubmit after a 401 `mfa-required`."
           }
         },
         "additionalProperties": false
@@ -20811,7 +20811,7 @@
         "properties": {
           "code": {
             "$ref": "#/components/schemas/ErrorCode",
-            "description": "Stable machine code — the frontend's i18n key."
+            "description": "Stable machine code - the frontend's i18n key."
           },
           "detail": {
             "type": [
@@ -21406,7 +21406,7 @@
       },
       "PublicProfile": {
         "type": "object",
-        "description": "`GET /users/{username}`: the public card plus the bio (no email —\nFINDINGS #16). Search keeps the lean `UserHit`.",
+        "description": "`GET /users/{username}`: the public card plus the bio (no email -\nFINDINGS #16). Search keeps the lean `UserHit`.",
         "required": [
           "id",
           "username",
@@ -21456,7 +21456,7 @@
           "needs_grading_count": {
             "type": "integer",
             "format": "int64",
-            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`."
+            "description": "Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) - the same count as\n`stats.needs_grading`."
           },
           "published_count": {
             "type": "integer",
@@ -21465,7 +21465,7 @@
           "skipped_count": {
             "type": "integer",
             "format": "int64",
-            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them —\nand the caller's own attempts, never theirs to release (BUG-288)."
+            "description": "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) - left as they are; run the release again for them -\nand the caller's own attempts, never theirs to release (BUG-288)."
           }
         }
       },
@@ -21732,7 +21732,7 @@
             "items": {
               "type": "object"
             },
-            "description": "`[{type: \"text\", content: \"…\"}, …]` — an alternative to `content`."
+            "description": "`[{type: \"text\", content: \"…\"}, …]` - an alternative to `content`."
           },
           "role": {
             "type": "string"
@@ -21887,7 +21887,7 @@
           },
           "severity": {
             "type": "string",
-            "description": "`blocker` | `warning` | `advice` — every current rule is a blocker."
+            "description": "`blocker` | `warning` | `advice` - every current rule is a blocker."
           }
         }
       },
@@ -21994,7 +21994,7 @@
       },
       "RegisterRequest": {
         "type": "object",
-        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
+        "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
         "required": [
           "username",
           "email",
@@ -22098,7 +22098,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/FileAttemptId",
-                "description": "The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+                "description": "The remediated file-submission attempt - `null` for a submission.\nExactly one of the two ids is set."
               },
               {
                 "type": "null"
@@ -22151,7 +22151,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionId",
-                "description": "The remediated assessment submission — `null` for a file attempt."
+                "description": "The remediated assessment submission - `null` for a file attempt."
               },
               {
                 "type": "null"
@@ -22243,7 +22243,7 @@
           },
           "staff": {
             "type": "boolean",
-            "description": "The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199)."
+            "description": "The learner is on the course staff - never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199)."
           },
           "status": {
             "$ref": "#/components/schemas/SubmissionStatus"
@@ -22375,7 +22375,7 @@
               "string",
               "null"
             ],
-            "description": "Raw display text — custom roles only; `null` on seeded roles."
+            "description": "Raw display text - custom roles only; `null` on seeded roles."
           },
           "display_name_key": {
             "type": "string",
@@ -23512,7 +23512,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/FileAttemptId",
-                "description": "The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set."
+                "description": "The analysed file-submission attempt - `null` for a submission.\nExactly one of the two ids is set."
               },
               {
                 "type": "null"
@@ -23552,7 +23552,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SubmissionId",
-                "description": "The analysed assessment submission — `null` for a file attempt."
+                "description": "The analysed assessment submission - `null` for a file attempt."
               },
               {
                 "type": "null"
@@ -24327,7 +24327,7 @@
       },
       "TeacherSubmission": {
         "type": "object",
-        "description": "A submission as the grader sees it — nothing redacted.",
+        "description": "A submission as the grader sees it - nothing redacted.",
         "required": [
           "id",
           "assessment_id",
@@ -24556,7 +24556,7 @@
       },
       "TotpEnrollment": {
         "type": "object",
-        "description": "TOTP enrollment secrets — shown to the user exactly once.",
+        "description": "TOTP enrollment secrets - shown to the user exactly once.",
         "required": [
           "uri",
           "secret"
@@ -24864,7 +24864,7 @@
               "null"
             ],
             "format": "double",
-            "description": "BUG-208: 0–100 — an unbounded weight overflows the course average."
+            "description": "BUG-208: 0–100 - an unbounded weight overflows the course average."
           }
         },
         "additionalProperties": false
@@ -25068,7 +25068,7 @@
               "null"
             ],
             "format": "double",
-            "description": "BUG-208: at most 10 000 — an unbounded score overflows the grade shares."
+            "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares."
           },
           "metadata": {
             "oneOf": [
@@ -25288,7 +25288,7 @@
       },
       "UserHit": {
         "type": "object",
-        "description": "Public-profile projection (no email — FINDINGS #16).",
+        "description": "Public-profile projection (no email - FINDINGS #16).",
         "required": [
           "id",
           "username",
@@ -25353,7 +25353,7 @@
           },
           "has_password": {
             "type": "boolean",
-            "description": "The account has a password to change (`false`: Google-only — no\npassword can be set through the API). UX-188."
+            "description": "The account has a password to change (`false`: Google-only - no\npassword can be set through the API). UX-188."
           },
           "id": {
             "$ref": "#/components/schemas/UserId"
@@ -25618,7 +25618,7 @@
               "string",
               "null"
             ],
-            "description": "The name signed on the certificate — what the PDF prints."
+            "description": "The name signed on the certificate - what the PDF prints."
           }
         }
       },

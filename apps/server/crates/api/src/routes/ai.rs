@@ -420,15 +420,3 @@ pub async fn usage(
 ) -> ApiResult<Json<UsageSummary>> {
     Ok(Json(state.ai.usage(&actor).await?.into()))
 }
-
-/// Alias of `/ai/usage` kept for the legacy client.
-#[utoipa::path(
-    get, path = "/ai/usage/budget", tag = "ai",
-    responses((status = 200, description = "Usage", body = UsageSummary)),
-)]
-pub async fn usage_budget(
-    State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
-) -> ApiResult<Json<UsageSummary>> {
-    Ok(Json(state.ai.usage(&actor).await?.into()))
-}

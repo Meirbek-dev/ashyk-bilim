@@ -33,7 +33,7 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
 }
 
 /// BUG-328: a legacy attempt by the course's staff (creator, active
-/// non-reporter author, platform author — `is_course_staff`, the
+/// non-reporter author, platform author - `is_course_staff`, the
 /// `is_teacher_preview` set) is a preview, as a v2 staff attempt is: never
 /// queued, counted or graded. Migrated rows only (a v2 attempt keeps the
 /// flag it was made with). Idempotent.
@@ -66,7 +66,7 @@ async fn default_file_submission_configs(ctx: &mut Ctx) -> Result<()> {
 }
 
 /// BUG-353: which v2 code item (and title) each Judge0 test case belongs
-/// to — the legacy code grader keyed breakdown entries by test id.
+/// to - the legacy code grader keyed breakdown entries by test id.
 async fn code_tests(conn: &mut sqlx::PgConnection) -> Result<transform::submissions::CodeTests> {
     let rows: Vec<(String, uuid::Uuid, String)> = sqlx::query_as(
         "SELECT t->>'id', i.id, i.title FROM assessment_items i, jsonb_array_elements(i.body->'tests') t          WHERE i.kind = 'code' AND t->>'id' IS NOT NULL",

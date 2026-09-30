@@ -49,7 +49,7 @@ pub async fn run(options: EtlOptions) -> Result<Report> {
         .connect(options.source_url.expose_secret())
         .await?;
     let mut tx = options.target.begin().await?;
-    // BUG-354: loading is bookkeeping — `updated_at` stays the legacy value.
+    // BUG-354: loading is bookkeeping - `updated_at` stays the legacy value.
     sqlx::query("SET LOCAL ab.bookkeeping = 'on'")
         .execute(&mut *tx)
         .await?;

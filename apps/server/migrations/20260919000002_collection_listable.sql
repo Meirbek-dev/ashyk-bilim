@@ -1,6 +1,6 @@
 -- UX-127: one listing rule for /collections and /search. A collection is
 -- listed for a viewer when the viewer sees every course, created it, or at
--- least one attached course is visible to them — so a collection with no
+-- least one attached course is visible to them - so a collection with no
 -- visible course (UX-119) or no course at all is its creator's alone.
 CREATE FUNCTION collection_listable(p_collection uuid, p_viewer uuid, p_see_all_courses boolean)
 RETURNS boolean LANGUAGE sql STABLE AS $$

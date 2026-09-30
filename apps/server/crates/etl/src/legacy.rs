@@ -1,7 +1,7 @@
 //! Extraction from the legacy `openu` schema (apps/api/src/db/** SQLModel
 //! tables as restored from production).
 //!
-//! Plain runtime `sqlx::query_as` — the legacy database is not ours to
+//! Plain runtime `sqlx::query_as` - the legacy database is not ours to
 //! compile against. Conventions: PG enum columns are cast to `text`,
 //! timestamps come out as epoch seconds (`float8`, sub-second kept for
 //! UUIDv7 ordering), `json` columns as `serde_json::Value`. A missing table
@@ -67,7 +67,7 @@ where
     T: for<'r> FromRow<'r, PgRow> + Send + Unpin,
 {
     if !table_exists(pool, table).await? {
-        tracing::warn!(table, "legacy table missing — extracting nothing");
+        tracing::warn!(table, "legacy table missing - extracting nothing");
         return Ok(Vec::new());
     }
     let sql = match limit {
@@ -1604,11 +1604,11 @@ pub const DROPPED_TABLES: &[(&str, &str)] = &[
     ),
     (
         "activity_progress",
-        "projection — rebuilt by ProgressProjector::backfill",
+        "projection - rebuilt by ProgressProjector::backfill",
     ),
     (
         "course_progress",
-        "projection — rebuilt by ProgressProjector::backfill",
+        "projection - rebuilt by ProgressProjector::backfill",
     ),
     (
         "analytics_event",
@@ -1616,31 +1616,31 @@ pub const DROPPED_TABLES: &[(&str, &str)] = &[
     ),
     (
         "daily_teacher_metrics",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "daily_course_metrics",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "daily_course_engagement",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "daily_assessment_metrics",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "daily_user_course_progress",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "learner_risk_snapshot",
-        "rollup — rebuilt by admin analytics-rollup",
+        "rollup - rebuilt by admin analytics-rollup",
     ),
     (
         "audit_event",
-        "legacy generic audit — no v2 table; assessment audit is emitted by v2 itself",
+        "legacy generic audit - no v2 table; assessment audit is emitted by v2 itself",
     ),
     (
         "role",
@@ -1663,17 +1663,17 @@ pub const DROPPED_TABLES: &[(&str, &str)] = &[
     ("alembic_version", "legacy migration history (MIGRATION §1)"),
     (
         "submissions",
-        "Judge0's own table (shares the legacy DB) — Judge0 stays as-is",
+        "Judge0's own table (shares the legacy DB) - Judge0 stays as-is",
     ),
-    ("languages", "Judge0's own table — Judge0 stays as-is"),
-    ("clients", "Judge0's own table — Judge0 stays as-is"),
+    ("languages", "Judge0's own table - Judge0 stays as-is"),
+    ("clients", "Judge0's own table - Judge0 stays as-is"),
     (
         "schema_migrations",
-        "Judge0's own table — Judge0 stays as-is",
+        "Judge0's own table - Judge0 stays as-is",
     ),
     (
         "ar_internal_metadata",
-        "Judge0's own table — Judge0 stays as-is",
+        "Judge0's own table - Judge0 stays as-is",
     ),
 ];
 

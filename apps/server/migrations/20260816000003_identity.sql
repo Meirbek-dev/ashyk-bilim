@@ -1,4 +1,4 @@
--- Identity: users (credentials live in Zitadel — no password columns), roles,
+-- Identity: users (credentials live in Zitadel - no password columns), roles,
 -- permission grants, auth audit. Simplification vs legacy: grants are strings
 -- on role_permissions validated by the typed parser in ab-core (the legacy
 -- normalized `permissions` catalog table encoded what code already knows).
@@ -65,7 +65,7 @@ CREATE TABLE auth_audit_log (
 CREATE INDEX auth_audit_log_user_idx ON auth_audit_log (user_id, created_at DESC);
 CREATE INDEX auth_audit_log_event_idx ON auth_audit_log (event, created_at DESC);
 
--- ── System role seeds — verbatim port of SYSTEM_ROLES from
+-- ── System role seeds - verbatim port of SYSTEM_ROLES from
 --    apps/api/src/db/permission_enums.py (priorities included). ──────────────
 
 INSERT INTO roles (slug, display_name_key, description_key, priority, is_system) VALUES

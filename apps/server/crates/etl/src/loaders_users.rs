@@ -178,14 +178,14 @@ async fn carry_role_grants(ctx: &mut Ctx) -> Result<()> {
             ctx.drop_row(
                 "role_permission_revoked",
                 format!("{slug}:{grant}"),
-                format!("legacy `{slug}` lacked this seeded grant; v2 system roles are immutable, so every {slug} holds it — review"),
+                format!("legacy `{slug}` lacked this seeded grant; v2 system roles are immutable, so every {slug} holds it - review"),
             );
         }
         if plan.carry.is_empty() {
             continue;
         }
         let custom = format!("{slug}-legacy-grants");
-        // UX-314: no display text — the web catalogs own the name and
+        // UX-314: no display text - the web catalogs own the name and
         // description under the role's keys (`roles.<custom>.name`, as for
         // the seeded roles), so they read in the viewer's language; the
         // carried grants show in the role's permission list.
@@ -276,7 +276,7 @@ fn plan_role_grants(
                 let equivalent = grant.replacen("assignment", "assessment", 1);
                 if seed.contains(&equivalent) {
                     format!(
-                        "no v2 resource `assignment` (legacy code never checks it either; assignments are assessments) — `{slug}` holds {equivalent}"
+                        "no v2 resource `assignment` (legacy code never checks it either; assignments are assessments) - `{slug}` holds {equivalent}"
                     )
                 } else {
                     format!(
@@ -353,7 +353,7 @@ mod tests {
     }
 
     /// UX-314: a `<slug>-legacy-grants` role has no display text of its
-    /// own — every catalog names and describes it for each system role that
+    /// own - every catalog names and describes it for each system role that
     /// can carry extra grants (admin's `*:*:*` covers everything).
     #[test]
     fn legacy_grant_roles_have_catalog_text() {

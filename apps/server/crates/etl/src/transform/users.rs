@@ -160,16 +160,16 @@ pub fn hash_is_importable(hash: &str) -> bool {
 }
 
 /// Zitadel profile names: legacy allowed empty first/last names; Zitadel
-/// requires both (the Google path in v2 uses the same "—" fallback).
+/// requires both (the Google path in v2 uses the same "-" fallback).
 #[must_use]
 pub fn zitadel_names(first: &str, last: &str, username: &str) -> (String, String) {
     let first = tidy(first);
     let last = tidy(last);
     match (first.is_empty(), last.is_empty()) {
         (false, false) => (first, last),
-        (false, true) => (first, "—".into()),
-        (true, false) => ("—".into(), last),
-        (true, true) => (username.trim().to_owned(), "—".into()),
+        (false, true) => (first, "-".into()),
+        (true, false) => ("-".into(), last),
+        (true, true) => (username.trim().to_owned(), "-".into()),
     }
 }
 
@@ -334,9 +334,9 @@ mod tests {
         u.first_name = String::new();
         u.last_name = "  ".into();
         assert_eq!(user(&u).unwrap().0.display_name, "ivan");
-        assert_eq!(zitadel_names("", " ", "ivan"), ("ivan".into(), "—".into()));
-        assert_eq!(zitadel_names("A", "", "x"), ("A".into(), "—".into()));
-        assert_eq!(zitadel_names("", "B", "x"), ("—".into(), "B".into()));
+        assert_eq!(zitadel_names("", " ", "ivan"), ("ivan".into(), "-".into()));
+        assert_eq!(zitadel_names("A", "", "x"), ("A".into(), "-".into()));
+        assert_eq!(zitadel_names("", "B", "x"), ("-".into(), "B".into()));
     }
 
     #[test]

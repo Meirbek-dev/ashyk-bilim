@@ -1,7 +1,7 @@
 # Build context: repository root (compose: `context: ., dockerfile: apps/server/Dockerfile`).
 # cargo-chef caches the dependency layer; SQLX_OFFLINE builds against .sqlx.
 #
-# Base images come from Amazon's Docker Hub mirror (public.ecr.aws) — CI runs
+# Base images come from Amazon's Docker Hub mirror (public.ecr.aws) - CI runs
 # #24/#25 died on Docker Hub's anonymous pull rate limit on shared GitHub
 # runner IPs; the mirror serves the same official images without the limit.
 
