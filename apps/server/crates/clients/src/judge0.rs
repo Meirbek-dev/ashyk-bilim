@@ -289,14 +289,20 @@ impl Judge0Client {
         specs: &[SubmissionSpec],
         deadline: Instant,
     ) -> std::result::Result<Vec<SubmissionResult>, Judge0Error> {
-        let Ok(_mine) = tokio::time::timeout_at(deadline.into(), turn.lock()).await else {
+        // A turn or slot freed at the budget's edge leaves no time to poll
+        // even once: submitting then only spends Judge0 capacity on output
+        // nobody reads, so it counts as not acquired.
+        let usable =
+            || deadline.saturating_duration_since(Instant::now()) >= self.config.poll_interval;
+        let mine = tokio::time::timeout_at(deadline.into(), turn.lock()).await;
+        let Some(_mine) = mine.ok().filter(|_| usable()) else {
             return Err(Judge0Error::Busy(format!(
                 "the previous run of the same user did not finish within {:?}",
                 self.config.poll_max_wait
             )));
         };
-        let Ok(Ok(_slot)) = tokio::time::timeout_at(deadline.into(), self.slots.acquire()).await
-        else {
+        let slot = tokio::time::timeout_at(deadline.into(), self.slots.acquire()).await;
+        let Some(Ok(_slot)) = slot.ok().filter(|_| usable()) else {
             return Err(Judge0Error::Busy(format!(
                 "no free slot within {:?}",
                 self.config.poll_max_wait
