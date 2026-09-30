@@ -15,11 +15,11 @@ export default async function NotFound() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center">
       <DocumentTitle title={`${t('title')} - ${APP_NAME}`} />
-      <div className="flex items-center pb-20 hover:opacity-75">
+      <div className="flex items-center pb-10">
         <Image
           quality={100}
-          width={270}
-          height={98}
+          width={180}
+          height={65}
           src={appLogoFull}
           alt={tCommon('appLogoAlt')}
           style={{ height: 'auto' }}
@@ -28,8 +28,8 @@ export default async function NotFound() {
         />
         <Image
           quality={100}
-          width={270}
-          height={98}
+          width={180}
+          height={65}
           src={appLogoLightFull}
           alt={tCommon('appLogoAlt')}
           style={{ height: 'auto' }}
@@ -37,18 +37,15 @@ export default async function NotFound() {
           className="theme-logo-light"
         />
       </div>
-      <div className="space-y-6 text-center">
-        <h1 className="text-foreground text-8xl leading-none font-bold drop-shadow-md">{t('code')}</h1>
-        <p className="text-foreground pt-8 text-lg leading-normal font-medium tracking-tight">{t('message')}</p>
+      <div className="max-w-md space-y-3 px-4 text-center">
+        <p className="text-muted-foreground text-6xl leading-none font-bold tabular-nums">{t('code')}</p>
+        <h1 className="text-foreground text-2xl font-semibold">{t('title')}</h1>
+        <p className="text-muted-foreground text-pretty">{t('message')}</p>
       </div>
       <div className="flex flex-col items-center pt-8">
-        <Button
-          nativeButton={false}
-          render={<AppLink href="/" className="flex items-center gap-2" />}
-          className="group flex h-[50px] items-center rounded-lg px-6 py-2 text-xl font-bold shadow-md"
-        >
+        <Button nativeButton={false} render={<AppLink href="/" />} className="group">
           {t('button')}
-          <ArrowRight className="ml-1 tracking-tight transition-transform duration-150 ease-in-out group-hover:translate-x-0.5" />
+          <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
         </Button>
       </div>
     </div>

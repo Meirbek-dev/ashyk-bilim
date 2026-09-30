@@ -7453,9 +7453,9 @@
     "visibilityPublic": "Public Collection - Visible to everyone"
   },
   "NotFoundPage": {
-    "code": "404!",
+    "code": "404",
     "button": "Return to Homepage",
-    "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed.",
+    "message": "This page doesn't exist — it may have been removed, or the link has a typo.",
     "title": "Page not found"
   },
   "RichTextEditor": {
