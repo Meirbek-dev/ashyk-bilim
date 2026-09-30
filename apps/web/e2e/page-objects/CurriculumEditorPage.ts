@@ -174,13 +174,10 @@ export class CurriculumEditorPage {
     const match = /\/activity\/([^/]+)\//.exec(href ?? '')
     if (!match?.[1]) throw new Error(`Could not extract activity id from edit link: ${href}`)
 
-    // UX-029: both row links are locale-prefixed; the edit link goes straight
-    // to the studio instead of bouncing through `/editor/…/edit` and a bare `/dash`.
+    // UX-029: the edit link is locale-prefixed and goes straight to the studio
+    // instead of bouncing through `/editor/…/edit` and a bare `/dash`. A draft row
+    // has no learner-page link (that page serves published activities only).
     expect(href).toMatch(/^\/en\/dash\/courses\/[^/]+\/activity\/[^/]+\/studio$/)
-    await expect(activityRow.locator('a[target="_blank"]').first()).toHaveAttribute(
-      'href',
-      /^\/en\/course\/[^/]+\/activity\/[^/]+$/,
-    )
 
     await this.page.goto(href as string)
     await this.page.waitForLoadState('networkidle')
