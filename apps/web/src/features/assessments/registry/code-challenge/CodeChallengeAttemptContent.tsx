@@ -138,7 +138,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   )
 }
 
-function codeItemToSettings(
+export function codeItemToSettings(
   item: AssessmentItem,
   title?: string | null,
   description?: string | null,
@@ -148,6 +148,8 @@ function codeItemToSettings(
   const hiddenTests = item.body.tests.filter(test => !test.is_visible).map(toCodeChallengeTestCase)
   const timeLimit = item.body.time_limit_seconds ?? 5
   const memoryLimit = item.body.memory_limit_mb ?? 256
+  // UX-306: difficulty lives on the item metadata, lower-case on the wire.
+  const difficulty = item.metadata?.difficulty?.toUpperCase() as CodeChallengeSettings['difficulty']
 
   return {
     uuid: item.item_uuid,
@@ -161,6 +163,7 @@ function codeItemToSettings(
     time_limit_ms: timeLimit * 1000,
     memory_limit_kb: memoryLimit * 1024,
     grading_strategy: 'PARTIAL_CREDIT',
+    ...(difficulty ? { difficulty } : {}),
     allowed_languages: item.body.languages,
     visible_tests: visibleTests,
     hidden_tests: hiddenTests,
