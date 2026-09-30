@@ -275,6 +275,11 @@
 }
 
 /* Tailwind v4 native component definitions */
+/* Card grids: as many ≥15rem columns as fit, never a card squeezed below its content. */
+@utility grid-cards {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+
 @utility soft-shadow {
   @apply border-border border shadow-sm;
 }

@@ -154,3 +154,18 @@ describe('buildDashboardWorkQueue', () => {
     expect(labels).toEqual({ 'no-due': undefined, due: 't:groups.dueSoon', overdue: 't:groups.today' })
   })
 })
+
+describe('groupByReviewPage', () => {
+  it('folds hand-ins of one activity into one row and keeps the most urgent as representative', async () => {
+    const { groupByReviewPage } = await import('@/features/work-queue/dashboard-work-queue')
+    const groups = groupByReviewPage([
+      { href: '/dash/courses/c/activity/a/review?submission=1', priority: 'normal' as const, id: '1' },
+      { href: '/dash/courses/c/activity/a/review?submission=2', priority: 'critical' as const, id: '2' },
+      { href: '/dash/courses/c/activity/b/review?submission=3', priority: 'high' as const, id: '3' },
+    ])
+    expect(groups.map(g => [g.item.id, g.count])).toEqual([
+      ['2', 2],
+      ['3', 1],
+    ])
+  })
+})

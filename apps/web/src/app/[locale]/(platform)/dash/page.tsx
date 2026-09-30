@@ -159,6 +159,7 @@ async function DashHome() {
             { course },
           ),
           primary_action: tQueue('items.needsGrading.action'),
+          course,
         }
       }
       default: {

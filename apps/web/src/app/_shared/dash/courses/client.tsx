@@ -137,31 +137,6 @@ function CoursesHome({
     })
   }
 
-  const summaryCards = useMemo(() => {
-    return [
-      {
-        label: t('summary.total.label'),
-        value: summaryCounts.total,
-        detail: t('summary.total.detail'),
-      },
-      {
-        label: t('summary.ready.label'),
-        value: summaryCounts.ready,
-        detail: t('summary.ready.detail'),
-      },
-      {
-        label: t('summary.private.label'),
-        value: summaryCounts.private,
-        detail: t('summary.private.detail'),
-      },
-      {
-        label: t('summary.attention.label'),
-        value: summaryCounts.attention,
-        detail: t('summary.attention.detail'),
-      },
-    ]
-  }, [summaryCounts, t])
-
   const canManageCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
@@ -514,12 +489,12 @@ function CoursesHome({
   )
 
   const presets = [
-    { key: 'all', label: t('presets.all') },
+    { key: 'all', label: t('presets.all'), count: summaryCounts.total },
     { key: 'drafts', label: t('presets.drafts') },
-    { key: 'published', label: t('presets.published') },
-    { key: 'private', label: t('presets.private') },
+    { key: 'published', label: t('presets.published'), count: summaryCounts.ready },
+    { key: 'private', label: t('presets.private'), count: summaryCounts.private },
     { key: 'recent', label: t('presets.recent') },
-    { key: 'attention', label: t('presets.attention') },
+    { key: 'attention', label: t('presets.attention'), count: summaryCounts.attention },
   ]
 
   return (
@@ -554,19 +529,6 @@ function CoursesHome({
       />
 
       <section className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map(card => (
-            <div key={card.label} className="bg-card border-border/80 rounded-2xl border p-5 shadow-2xs">
-              <div className="text-muted-foreground text-[10px] leading-none font-bold tracking-[0.1em] uppercase">
-                {card.label}
-              </div>
-              <div className="text-foreground mt-2.5 text-3xl font-bold tracking-tight">{card.value}</div>
-              <div className="text-muted-foreground mt-1.5 text-xs leading-relaxed font-medium">{card.detail}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Filter Presets Panel */}
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -585,6 +547,9 @@ function CoursesHome({
                 }
               >
                 {item.label}
+                {item.count === undefined ? null : (
+                  <span className="tabular-nums opacity-70">{item.count}</span>
+                )}
               </Button>
             ))}
           </div>
@@ -642,13 +607,11 @@ function CoursesHome({
             </div>
           </div>
 
-          <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
-            {t(hasQuery ? 'resultsSummaryWithQuery' : hasPreset ? 'resultsSummaryWithPreset' : 'resultsSummary', {
-              visible: optimisticCourses.length,
-              total: totalCourses,
-              preset: presetLabel,
-            })}
-          </div>
+          {hasQuery ? (
+            <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
+              {t('resultsSummaryWithQuery', { visible: optimisticCourses.length, total: totalCourses, preset: presetLabel })}
+            </div>
+          ) : null}
         </div>
 
         {/* Content list */}
@@ -683,7 +646,7 @@ function CoursesHome({
             </div>
           </div>
         ) : viewMode === 'cards' ? (
-          <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid w-full grid-cards gap-6 pb-8">
             {optimisticCourses.map(course => (
               <div key={course.course_uuid} className="w-full">
                 <CourseThumbnail

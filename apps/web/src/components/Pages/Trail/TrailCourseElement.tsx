@@ -19,7 +19,8 @@ import { CertificatePdfDownloadButton } from '@/features/certifications/componen
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
-import { Award, ExternalLink, Loader2, X } from 'lucide-react'
+import { ArrowRight, Award, ExternalLink, Loader2, X } from 'lucide-react'
+import { buttonVariants } from '@/components/ui/button'
 import { apiJson } from '@/lib/api-client'
 import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { getAbsoluteUrl } from '@services/config/config'
@@ -138,6 +139,18 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
                 style={{ width: `${course_progress}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {!isCompleted && learnerProgress.nextActivityId && (
+          <div>
+            <Link
+              href={getAbsoluteUrl(`/course/${courseid}/activity/${learnerProgress.nextActivityId}`)}
+              className={buttonVariants({ size: 'sm' })}
+            >
+              {t('continue')}
+              <ArrowRight data-icon="inline-end" />
+            </Link>
           </div>
         )}
 

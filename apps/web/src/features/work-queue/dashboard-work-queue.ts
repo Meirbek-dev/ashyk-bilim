@@ -60,6 +60,7 @@ export interface LearnerDashboardSignal {
     due_at?: string | null
     created_at?: string | null
     groupLabel?: string
+    course?: string
   }[]
   signalAvailable: boolean
 }
@@ -210,14 +211,16 @@ function buildTeacherSection({
 
   // UX-151: every item and card is gated by its own grant (BUG-046 class) —
   // grading work lands on course routes an analytics-only grant cannot open.
+  // One row per review page: thirty hand-ins of one quiz are one task, not thirty.
   if (access.hasCoursesAccess)
-    teacherWorkItems?.forEach(item => {
+    groupByReviewPage(teacherWorkItems ?? []).forEach(({ item, count }) => {
       items.push({
         id: item.id,
         audience: 'teacher',
         title: item.title,
-        description: item.description,
-        href: item.href,
+        description:
+          count > 1 ? t('items.grouped', { count, course: item.course ?? t('items.unknownCourse') }) : item.description,
+        href: count > 1 ? item.href.replace(/[?#].*$/, '') : item.href,
         primaryActionLabel: item.primary_action,
         source: 'course-management',
         sourceLabel: t('sourceLabels.gradingQueue'),
@@ -586,13 +589,28 @@ function buildDashboardTools(access: DashboardAccess, t: WorkQueueTranslate): Da
   })
 }
 
-function sortWorkQueueItems(items: WorkQueueItem[]): WorkQueueItem[] {
-  const priorityRank = {
-    critical: 0,
-    high: 1,
-    normal: 2,
-    low: 3,
-  } satisfies Record<WorkQueueItem['priority'], number>
+const PRIORITY_RANK = {
+  critical: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+} satisfies Record<WorkQueueItem['priority'], number>
 
-  return [...items].toSorted((left, right) => priorityRank[left.priority] - priorityRank[right.priority])
+/** Groups work items by their target page (query stripped); keeps the most urgent item as the representative. */
+export function groupByReviewPage<T extends { href: string; priority: WorkQueueItem['priority'] }>(items: T[]) {
+  const groups = new Map<string, { item: T; count: number }>()
+  for (const item of items) {
+    const key = item.href.replace(/[?#].*$/, '')
+    const group = groups.get(key)
+    if (!group) groups.set(key, { item, count: 1 })
+    else {
+      group.count += 1
+      if (PRIORITY_RANK[item.priority] < PRIORITY_RANK[group.item.priority]) group.item = item
+    }
+  }
+  return [...groups.values()]
+}
+
+function sortWorkQueueItems(items: WorkQueueItem[]): WorkQueueItem[] {
+  return [...items].toSorted((left, right) => PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority])
 }

@@ -144,7 +144,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
   return (
     <div className="flex justify-center">
       <Dialog open={newActivityModal} onOpenChange={setNewActivityModal}>
-        <DialogTrigger render={<Button className="h-10" />}>
+        <DialogTrigger render={<Button variant="outline" className="border-dashed" />}>
           <Plus className="h-3.5 w-3.5" />
           {t('title')}
         </DialogTrigger>

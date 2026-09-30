@@ -59,7 +59,7 @@ function FilterButton({
 
 function LoadingState() {
   return (
-    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
+    <div className="grid w-full grid-cards gap-6">
       {[1, 2, 3, 4, 5, 6].map(i => (
         <div key={i} className="bg-card rounded-lg border p-4">
           <Skeleton className="mb-4 h-32 w-full rounded-lg" />
@@ -255,7 +255,7 @@ function SearchPage() {
                     <GraduationCap size={20} className="text-muted-foreground" />
                     {t('courses')} ({searchResults.courses.length})
                   </h2>
-                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
+                  <div className="grid w-full grid-cards gap-6">
                     {searchResults.courses.map(course => (
                       <Link
                         key={course.id}
@@ -290,7 +290,7 @@ function SearchPage() {
                     <Book size={20} className="text-muted-foreground" />
                     {t('collections')} ({searchResults.collections.length})
                   </h2>
-                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className="grid w-full grid-cards gap-6">
                     {searchResults.collections.map(collection => (
                       <Link
                         key={collection.id}
@@ -319,7 +319,7 @@ function SearchPage() {
                     <Users size={20} className="text-muted-foreground" />
                     {t('users')} ({searchResults.users.length})
                   </h2>
-                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className="grid w-full grid-cards gap-6">
                     {searchResults.users.map(user => (
                       <Link
                         key={user.id}

@@ -232,7 +232,7 @@ export default function NavBar() {
     >
       <div className="mx-auto flex h-full w-full items-center gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
         {/* ── Left: logo + desktop nav ─────────────────────────────── */}
-        <div className="flex min-w-0 items-center gap-6 lg:gap-8">
+        <div className="flex shrink-0 items-center gap-6 lg:gap-8">
           <Link
             href={getAbsoluteUrl('/')}
             aria-label={t('logoAlt')}
@@ -261,7 +261,7 @@ export default function NavBar() {
         </div>
 
         {/* ── Center: desktop search ───────────────────────────────── */}
-        <div className="hidden flex-1 justify-center lg:flex">
+        <div className="hidden min-w-0 flex-1 justify-center lg:flex">
           {/* Keyed by route: a query typed on one page must not survive into (and refire on) the next (BUG-033b). */}
           <SearchBar key={pathname} className="w-full max-w-md" />
         </div>

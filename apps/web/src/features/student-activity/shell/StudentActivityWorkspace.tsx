@@ -17,6 +17,8 @@ import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experienc
 import type { AIScope } from '@/features/ai-experience'
 
 const CONTENT_READ_TOLERANCE_PX = 24
+/** Kinds without their own title card (quizzes, exams and code render one in their entry view). */
+const LESSON_TYPES = new Set(['TYPE_DYNAMIC', 'TYPE_VIDEO', 'TYPE_DOCUMENT', 'TYPE_FILE_SUBMISSION'])
 
 interface StudentActivityWorkspaceProps {
   activity: Activity | null
@@ -53,7 +55,8 @@ export default function StudentActivityWorkspace({
   const contentFrameClassName = useMemo(() => {
     switch (activityType) {
       case 'TYPE_DYNAMIC': {
-        return 'mx-auto w-full max-w-[112rem]'
+        // A comfortable reading measure; long lines on wide screens are hard to follow.
+        return 'mx-auto w-full max-w-5xl'
       }
       case 'TYPE_VIDEO':
       case 'TYPE_DOCUMENT':
@@ -185,6 +188,18 @@ export default function StudentActivityWorkspace({
             focusModeActive ? 'pb-10 pt-6' : 'pb-24 pt-4',
           )}
         >
+          {!isLocked && !isAttemptActive && runtime.activity && LESSON_TYPES.has(activityType) ? (
+            <h1
+              className={cn(
+                'mt-2 mb-4 text-2xl font-bold tracking-tight text-balance sm:text-3xl',
+                // Lines up with the rich-text viewer's own inset.
+                activityType === 'TYPE_DYNAMIC' && 'px-1 sm:px-2 xl:px-4',
+              )}
+            >
+              {runtime.activity.title}
+            </h1>
+          ) : null}
+
           {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}

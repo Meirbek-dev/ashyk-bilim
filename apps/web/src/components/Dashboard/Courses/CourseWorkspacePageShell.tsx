@@ -21,7 +21,6 @@ import {
   Globe,
   LayoutDashboard,
   LayoutGrid,
-  ShieldCheck,
   Users,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
@@ -160,18 +159,6 @@ function CourseWorkspaceChrome({
         }
         actions={
           <div className="flex shrink-0 items-center gap-2">
-            {activeStage !== 'review' ? (
-              <Button
-                size="sm"
-                nativeButton={false}
-                variant="ghost"
-                render={<AppLink href={buildCourseWorkspacePath(courseuuid, 'review')} />}
-                className="h-9 gap-2 px-3 text-xs font-semibold"
-              >
-                <ShieldCheck className="size-4" />
-                <span>{t('tabs.publish')}</span>
-              </Button>
-            ) : null}
             <Button
               size="sm"
               nativeButton={false}
@@ -185,7 +172,7 @@ function CourseWorkspaceChrome({
           </div>
         }
       >
-        <div className="flex h-12 items-end gap-0 overflow-x-auto">
+        <div className="flex h-12 items-end gap-0 overflow-x-auto [scrollbar-width:none]">
           {visibleStages.map(stage => {
             const Icon = stage.icon
             const isActive = stage.key === activeStage
@@ -195,13 +182,13 @@ function CourseWorkspaceChrome({
                 href={buildCourseWorkspacePath(courseuuid, stage.key)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'relative flex h-full shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all duration-200',
+                  'relative flex h-full shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-all duration-200 xl:px-4',
                   isActive
                     ? 'border-primary text-foreground dark:border-primary dark:text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
                 )}
               >
-                <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
+                <Icon className={cn('hidden size-4 shrink-0 xl:block', isActive && 'text-primary')} />
                 <span className="whitespace-nowrap">{stage.label}</span>
                 {mounted && stage.key === 'review' && readiness && !readiness.ready && blockerCount > 0 ? (
                   <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">

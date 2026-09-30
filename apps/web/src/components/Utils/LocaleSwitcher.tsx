@@ -11,6 +11,8 @@ import { locales } from '@/i18n/config'
 import { useTransition } from 'react'
 import { cn } from '@/lib/utils'
 
+const ENDONYMS: Record<string, string> = { 'ru-RU': 'Русский', 'kk-KZ': 'Қазақша', 'en-US': 'English' }
+
 interface LocaleSwitcherProps {
   className?: string
   isMobile?: boolean
@@ -24,10 +26,8 @@ export function LocaleSwitcher({ className, isMobile }: LocaleSwitcherProps) {
   const t = useTranslations('Components.LocaleSwitcher')
   const { user: viewer } = useSession()
 
-  const localeItems = locales.map(locale => ({
-    value: locale,
-    label: t(locale),
-  }))
+  // Each language is listed in its own name so a reader can always find theirs.
+  const localeItems = locales.map(locale => ({ value: locale, label: ENDONYMS[locale] ?? t(locale) }))
 
   const handleLocaleChange = (newLocale: Locale) => {
     startTransition(async () => {
@@ -47,7 +47,7 @@ export function LocaleSwitcher({ className, isMobile }: LocaleSwitcherProps) {
 
   return (
     <div className={cn('flex items-center gap-2', isMobile && 'w-full', className)}>
-      <Languages size={20} strokeWidth={1.5} />
+      <Languages size={20} strokeWidth={1.5} aria-hidden className={cn('shrink-0', !isMobile && 'hidden xl:block')} />
       <NativeSelect
         value={currentLocale}
         onChange={event => handleLocaleChange(event.target.value as Locale)}

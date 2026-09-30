@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Separator } from '@/components/ui/separator'
-import { LmsStatusBadge } from '@/features/lms-status'
+import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { cn } from '@/lib/utils'
 
 import type { DashboardToolItem, WorkQueueAudience, WorkQueueItem, WorkQueueSection } from '../types'
@@ -170,8 +170,9 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
         </div>
         <div className="min-w-0">
           <p className="text-muted-foreground text-sm/relaxed text-pretty">{item.description}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <LmsStatusBadge status={item.status} />
+          <div className="mt-2 flex flex-wrap items-center gap-2 empty:hidden">
+            {/* «Готово» on a to-do row reads as «done»: only exceptional states get a badge. */}
+            {item.status === LmsStatuses.READY ? null : <LmsStatusBadge status={item.status} />}
             {item.metric ? (
               <Badge variant="secondary" className="font-mono tabular-nums">
                 {item.metric}

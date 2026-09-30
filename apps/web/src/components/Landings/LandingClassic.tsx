@@ -76,7 +76,7 @@ function EmptyCoursesState({ t }: EmptyStateProps) {
 // Collection Grid Component
 function CollectionGrid({ collections }: GridProps) {
   return (
-    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid w-full grid-cards gap-6">
       {collections.map((collection: AppCollection) => (
         <CollectionThumbnail key={collection.collection_uuid} collection={collection} />
       ))}

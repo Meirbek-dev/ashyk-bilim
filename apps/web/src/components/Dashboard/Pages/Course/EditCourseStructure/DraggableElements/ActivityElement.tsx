@@ -277,7 +277,7 @@ function ActivityElement({
       data-activity-element={activity.activity_uuid}
       data-activity-type={activity.activity_type}
       className={cn(
-        'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
+        'group/activity mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
         isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
       )}
     >
@@ -355,8 +355,8 @@ function ActivityElement({
                 <Button
                   ref={pencilRef}
                   size="icon-sm"
-                  variant="outline"
-                  className="shrink-0"
+                  variant="ghost"
+                  className="shrink-0 opacity-0 group-hover/activity:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
                   onClick={handleStartEdit}
                   aria-label={t('editButton')}
                 >
@@ -504,9 +504,13 @@ function ActivityTypeBadge({ activityType }: { activityType: ActivityType }) {
   if (!config) return null
   const { Icon, translationKey, colorClass } = config
   return (
-    <div className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1', colorClass)}>
-      <Icon className="h-3.5 w-3.5" />
-      <span className="text-xs font-medium">{t(`ActivityTypes.${translationKey}`)}</span>
+    <div
+      className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-1.5 py-1 xl:px-2.5', colorClass)}
+      title={t(`ActivityTypes.${translationKey}`)}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {/* The name needs the room on narrower screens; the icon + tooltip still say the kind. */}
+      <span className="sr-only text-xs font-medium xl:not-sr-only">{t(`ActivityTypes.${translationKey}`)}</span>
     </div>
   )
 }

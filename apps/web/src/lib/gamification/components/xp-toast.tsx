@@ -38,8 +38,7 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
 
   const getSourceLabel = (sourceKey: string): string => {
     const labelKey = `xpSources.${sourceKey}`
-    const translated = t(labelKey)
-    return translated === labelKey ? sourceKey.replace(/_/g, ' ') : translated
+    return t.has(labelKey) ? t(labelKey) : sourceKey.replace(/_/g, ' ')
   }
 
   const sourceLabel = getSourceLabel(notification.source)

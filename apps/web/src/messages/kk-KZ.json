@@ -3632,9 +3632,9 @@
         },
         "guidedSetup": "Жаңа курс",
         "header": {
-          "description": "Курстар каталогын басқаруға ыңғайлы кестеде қарап шығыңыз, өмірлік цикл күйі бойынша сүзгілеңіз және жаңа не бар курс жұмыс кеңістігіне бірден өтіңіз.",
+          "description": "Курстарыңызды құру, жариялау және өңдеу.",
           "label": "Курстарды басқару",
-          "title": "Курс жұмыс кеңістіктерін басқару"
+          "title": "Курстар"
         },
         "pagination": {
           "next": "Келесі",
@@ -3668,7 +3668,7 @@
         },
         "search": {
           "clear": "Тазалау",
-          "placeholder": "Ұйым бойынша курстарды іздеу",
+          "placeholder": "Атауы бойынша іздеу",
           "submit": "Іздеу"
         },
         "sort": {
@@ -4100,7 +4100,7 @@
           "certificate": "Сертификат",
           "content": "Мазмұн",
           "details": "Мәліметтер",
-          "publish": "Тексеру және жариялау",
+          "publish": "Жариялау",
           "settings": "Баптаулар",
           "gradebook": "Баға кітабы",
           "overview": "Шолу",
@@ -6329,7 +6329,12 @@
           "streak_bonus_30_days": "30 күндік серия бонусы",
           "streak_bonus_7_days": "7 күндік серия бонусы",
           "unknown": "Белгісіз көз: {source}",
-          "video_completion": "Бейне қаралды"
+          "video_completion": "Бейне қаралды",
+          "streak_bonus": "Серия бонусы",
+          "admin_award": "Әкімші марапаты",
+          "code_challenge_completion": "Код есебі шешілді",
+          "code_challenge_perfect": "Қатесіз код",
+          "code_challenge_first_solve": "Есептің алғашқы шешімі"
         }
       },
       "UserAccount": {
@@ -10530,7 +10535,8 @@
     "quitCourseCancel": "Қалу",
     "quitCourseDone": "Сіз «{course}» курсынан шықтыңыз",
     "quitCourseAlreadyLeft": "Сіз бұл курстан шығып қойғансыз",
-    "quitCourseFailed": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз."
+    "quitCourseFailed": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз.",
+    "continue": "Жалғастыру"
   },
   "TrailPage": {
     "metaDescription": "Трейл арқылы прогрессіңізді тексеріңіз және курстарыңызды оңай шарлаңыз.",
@@ -10812,7 +10818,8 @@
       "MB": "{value} МБ",
       "GB": "{value} ГБ"
     },
-    "blocked": "Тапсыру қазір қолжетімсіз."
+    "blocked": "Тапсыру қазір қолжетімсіз.",
+    "taskInstructions": "Тапсырма"
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Тапсырылған файлдарды жүктеу",
@@ -11375,7 +11382,8 @@
         "title": "Жариялау: {activity}",
         "description": "{course} курсындағы баға сақталды, бірақ білім алушыға әлі көрінбейді.",
         "action": "Тексеру және жариялау"
-      }
+      },
+      "grouped": "«{course}»: {count} жұмыс тексеруді күтуде."
     },
     "sections": {
       "learner": {

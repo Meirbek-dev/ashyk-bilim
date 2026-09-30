@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useRef } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -46,7 +46,6 @@ export default function BottomActionBar({
   runtime,
 }: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout()
-  const outlineProgress = useMemo(() => getOutlineProgress(runtime), [runtime])
   // Once complete the primary CTA *is* "next" — a second next chevron beside it is a duplicate.
   const nextIsPrimary = !bottomBarAction && runtime.primary_action.id === 'next_activity'
 
@@ -56,7 +55,6 @@ export default function BottomActionBar({
   // Reduced shadow size and spread to make it visually less "tall"
   return (
     <div className="bottom-action-bar border-border/70 bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-      <ProgressFill percent={outlineProgress} />
       {/* Reduced min-height from min-h-16 to min-h-14, and vertical padding from py-2 to py-1.5 */}
       <div className="mx-auto grid min-h-12 max-w-[96rem] grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2 px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,20rem)_minmax(0,1fr)] sm:gap-3 sm:px-4">
         <NavChevron courseUuid={courseUuid} item={runtime.previous ?? null} side="prev" />
@@ -188,32 +186,10 @@ function NavChevron({
 }) {
   const t = useTranslations('ActivityPage')
   const label = side === 'prev' ? t('previous') : t('next')
-  const unavailableLabel = side === 'prev' ? t('noPreviousActivity') : t('noNextActivity')
   const Icon = side === 'prev' ? ChevronLeft : ChevronRight
 
-  if (!item) {
-    return (
-      <Button
-        variant="ghost"
-        disabled
-        className={cn('h-9 min-w-0 px-0 sm:h-10 sm:w-full sm:px-2', side === 'prev' ? 'justify-start' : 'justify-end')}
-        aria-label={unavailableLabel}
-        title={unavailableLabel}
-      >
-        {side === 'prev' ? <Icon className="size-4" /> : null}
-        <span
-          className={cn(
-            'hidden min-w-0 flex-col sm:flex',
-            side === 'prev' ? 'items-start text-left' : 'items-end text-right',
-          )}
-        >
-          <span className="text-[10px] leading-none font-medium">{label}</span>
-          <span className="text-muted-foreground mt-0.5 max-w-36 truncate text-[11px]">{unavailableLabel}</span>
-        </span>
-        {side === 'next' ? <Icon className="size-4" /> : null}
-      </Button>
-    )
-  }
+  // Nothing before the first / after the last activity: leave the slot empty.
+  if (!item) return <div />
 
   const href = `/course/${cleanUuid(courseUuid, 'course_')}/activity/${cleanUuid(item.uuid, 'activity_')}`
 
@@ -301,24 +277,6 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
     mutation.mutate(command)
   }
   return { isPending: mutation.isPending, run }
-}
-
-function ProgressFill({ percent }: { percent: number }) {
-  if (percent <= 0) return null
-
-  return (
-    <div className="bg-border/40 absolute inset-x-0 top-0 h-[2px]" aria-hidden>
-      <div className="bg-primary h-full transition-[width] duration-500" style={{ width: `${percent}%` }} />
-    </div>
-  )
-}
-
-function getOutlineProgress(runtime: StudentActivityRuntime) {
-  const items = (runtime.outline ?? []).flatMap(chapter => chapter.activities ?? [])
-  if (items.length === 0) return 0
-
-  const complete = items.filter(item => item.complete || item.state === 'complete' || item.state === 'passed').length
-  return Math.round((complete / items.length) * 100)
 }
 
 function getPrimaryActionText(actionId: RuntimeActionId, t: (key: string) => string): string {

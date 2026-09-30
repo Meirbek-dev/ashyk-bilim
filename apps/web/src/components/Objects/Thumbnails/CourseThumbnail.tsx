@@ -490,7 +490,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     <Card
       role="article"
       aria-labelledby={titleId}
-      className="group bg-card focus-visible:ring-primary/60 relative flex h-full w-full max-w-sm min-w-[260px] flex-col overflow-hidden rounded-lg border p-0 shadow-sm transition-shadow duration-200 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="group bg-card focus-visible:ring-primary/60 relative flex h-full w-full flex-col overflow-hidden rounded-lg border p-0 shadow-sm transition-shadow duration-200 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       tabIndex={0}
     >
       <AdminMenu course={course} onDelete={handleDelete} />

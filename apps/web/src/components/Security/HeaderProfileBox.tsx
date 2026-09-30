@@ -15,7 +15,7 @@ import { useLogout } from '@/lib/auth/use-logout'
 import { getAbsoluteUrl } from '@services/config/config'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { RoleSlugs } from '@/types/permissions'
-import { Button } from '@components/ui/button'
+import { Button, buttonVariants } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import type { Session } from '@/lib/auth/types'
 import { useTranslations } from 'next-intl'
@@ -98,10 +98,8 @@ export function HeaderProfileBox() {
         <div className="text-foreground flex grow rounded-lg p-1.5 px-2 text-sm font-bold">
           <ul className="flex items-center gap-3">
             <li>
-              <Link href={getAbsoluteUrl('/login')}>
-                <Button variant="ghost" size="sm">
-                  {t('login')}
-                </Button>
+              <Link href={getAbsoluteUrl('/login')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                {t('login')}
               </Link>
             </li>
           </ul>
@@ -116,7 +114,7 @@ export function HeaderProfileBox() {
                 render={<Button variant="ghost" className="flex h-auto items-center gap-1 p-2" />}
               >
                 <UserAvatar size="sm" />
-                <div className="flex flex-col text-start">
+                <div className="hidden flex-col text-start xl:flex">
                   <div className="flex items-center gap-2">
                     <p className="text-foreground text-sm font-semibold">
                       {user?.display_name?.trim() || user?.username}

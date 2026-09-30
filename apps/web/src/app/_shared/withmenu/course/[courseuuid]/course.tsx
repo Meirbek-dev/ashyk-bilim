@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
+  Code2,
   ListChecks,
   File,
   FileArchive,
@@ -35,7 +36,6 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { useMemo, useState } from 'react'
 // Import existing components and utilities
 import NextImage from '@components/ui/NextImage'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
@@ -134,7 +134,6 @@ function CourseClient(props: CourseClientProps) {
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
   const { courseuuid, initialDiscussions = [], trailData } = props
-  const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
   // The server-rendered outline seeds the query; a lesson published meanwhile
   // shows up on focus / every 30 s (UX-080, UX-104).
@@ -231,15 +230,17 @@ function CourseClient(props: CourseClientProps) {
             {/* Two-column layout */}
             <div className="flex flex-col gap-10 md:flex-row md:items-start">
               {/* Main content */}
-              <div className="w-full min-w-0 space-y-10 md:w-3/4">
-                {isMobile && (
+              <div className="w-full min-w-0 flex-1 space-y-8">
+                <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{course.name}</h1>
+                {/* CSS, not useIsMobile: the phone CTA is in the server HTML (no pop-in after hydration). */}
+                <div className="md:hidden">
                   <CourseActionsMobile
                     courseuuid={courseuuid}
                     course={course}
                     trailData={trailData}
                     learnerState={learnerState}
                   />
-                )}
+                </div>
 
                 {/* Thumbnail */}
                 {(() => {
@@ -312,18 +313,7 @@ function CourseClient(props: CourseClientProps) {
                     )
                   }
 
-                  return (
-                    <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-xl border">
-                      <NextImage
-                        src="/empty_thumbnail.avif"
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 75vw"
-                        loading="eager"
-                      />
-                    </div>
-                  )
+                  return null
                 })()}
 
                 {/* Progress indicators (learner-state is hydrated server-side, so this renders with the page) */}
@@ -500,6 +490,7 @@ function CourseClient(props: CourseClientProps) {
                                           )}
                                           {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
                                           {activity.activity_type === 'TYPE_CUSTOM' && <ListChecks size={11} />}
+                                          {activity.activity_type === 'TYPE_CODE_CHALLENGE' && <Code2 size={11} />}
                                           <span className="text-xs">
                                             {getActivityTypeLabel(activity.activity_type ?? '')}
                                           </span>
@@ -535,7 +526,7 @@ function CourseClient(props: CourseClientProps) {
               </div>
 
               {/* Sidebar */}
-              <div className="hidden w-full shrink-0 space-y-4 md:block md:w-1/4">
+              <div className="hidden w-full shrink-0 space-y-4 md:sticky md:top-20 md:block md:w-72 lg:w-80">
                 <CoursesActions
                   courseuuid={courseuuid}
                   course={course}

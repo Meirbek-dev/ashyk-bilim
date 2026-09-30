@@ -1,8 +1,6 @@
 import { ArrowRight, BookOpen, CheckCircle2, PlayCircle, Trophy, Loader2 } from 'lucide-react'
-import { useSession } from '@/hooks/useSession'
 import CourseProgress from '../CourseProgress/CourseProgress'
 import { Card, CardContent } from '@/components/ui/card'
-import UserAvatar from '@components/Objects/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
@@ -21,7 +19,6 @@ interface CourseActionsProps {
 }
 
 function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseActionsProps) {
-  const { user: currentUser } = useSession()
   const t = useTranslations('Courses.CoursesActions')
   const {
     action,
@@ -34,7 +31,6 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   } = useCourseCta({ courseuuid, course, trailData, learnerState })
 
   const renderActionButton = (action: CourseCta) => {
-    const isAuthenticated = Boolean(currentUser)
     const icon =
       action === 'start' ? (
         <PlayCircle className="size-5" />
@@ -46,15 +42,10 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     const label = t(CTA_LABEL[action])
 
     return (
-      <div className="flex items-center gap-3">
-        {isAuthenticated ? (
-          <UserAvatar size="xs" variant="outline" use_with_session />
-        ) : (
-          <UserAvatar size="xs" variant="outline" predefined_avatar="empty" />
-        )}
-        <span className="flex-1">{label}</span>
+      <>
         {icon}
-      </div>
+        <span className="truncate">{label}</span>
+      </>
     )
   }
 
@@ -105,7 +96,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
         onClick={() => setIsProgressOpen(true)}
         variant="ghost"
         className={cn(
-          'group flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-xs',
+          'group flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left whitespace-normal transition-all hover:shadow-xs',
           isCompleted
             ? 'border-green-500/20 bg-green-500/5 hover:border-green-500/30 hover:bg-green-500/10'
             : 'border-border/60 bg-muted/20 hover:border-border/80 hover:bg-muted/40',

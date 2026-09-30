@@ -447,6 +447,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   if (status === 'submitted' && activeAttempt) {
     return (
       <div className="space-y-6">
+        <TaskInstructions instructions={data.instructions} />
         <FileSubmissionReceipt attempt={activeAttempt} />
         <SubmissionHistory attempts={data.attempts} />
       </div>
@@ -482,6 +483,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
 
     return (
       <div className="space-y-6">
+        {canRevise ? null : <TaskInstructions instructions={data.instructions} />}
         {showResult ? (
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
@@ -561,6 +563,18 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       {confirmDialog}
       <SubmissionHistory attempts={data.attempts} />
     </div>
+  )
+}
+
+/** The assignment text stays one click away after hand-in (collapsed: the result is the focus). */
+function TaskInstructions({ instructions }: { instructions: string }) {
+  const t = useTranslations('FileSubmission')
+  if (!instructions) return null
+  return (
+    <details className="border-border group rounded-lg border px-4 py-3">
+      <summary className="cursor-pointer text-sm font-medium select-none">{t('taskInstructions')}</summary>
+      <MarkdownContent content={instructions} mode="taskDescription" className="text-foreground/90 mt-3" />
+    </details>
   )
 }
 
