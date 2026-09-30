@@ -172,7 +172,8 @@ function CourseWorkspaceChrome({
           </div>
         }
       >
-        <div className="flex h-12 [scrollbar-width:none] items-end gap-0 overflow-x-auto">
+        {/* Phones scroll the row; wider screens wrap it rather than hide the last tabs. */}
+        <div className="flex h-12 [scrollbar-width:none] items-end gap-0 overflow-x-auto md:h-auto md:flex-wrap md:overflow-visible">
           {visibleStages.map(stage => {
             const Icon = stage.icon
             const isActive = stage.key === activeStage
@@ -182,7 +183,7 @@ function CourseWorkspaceChrome({
                 href={buildCourseWorkspacePath(courseuuid, stage.key)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'relative flex h-full shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-all duration-200 xl:px-4',
+                  'relative flex h-12 shrink-0 items-center gap-2 border-b-2 px-2 py-3 text-sm font-medium transition-all duration-200 lg:px-3 xl:px-4',
                   isActive
                     ? 'border-primary text-foreground dark:border-primary dark:text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
