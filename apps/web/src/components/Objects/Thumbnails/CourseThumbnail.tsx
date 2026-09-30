@@ -42,6 +42,7 @@ import { Card, CardContent, CardFooter } from '@components/ui/card'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { CTA_LABEL } from '@components/Objects/Courses/CourseActions/useCourseActions'
 import NextImage from '@components/ui/NextImage'
+import CoursePlaceholder from './CoursePlaceholder'
 import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import Link from '@components/ui/AppLink'
@@ -89,6 +90,8 @@ const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').r
 
 interface CourseImageProps {
   thumbnailUrl: string
+  /** Course id: picks the generated cover's colour (same as on the trail). */
+  seed: string
   courseName: string
   updateDate: string
   locale: string
@@ -100,6 +103,7 @@ interface CourseImageProps {
 
 const CourseImage: FC<CourseImageProps> = ({
   thumbnailUrl,
+  seed,
   courseName,
   updateDate,
   locale,
@@ -114,14 +118,18 @@ const CourseImage: FC<CourseImageProps> = ({
     aria-label={t('openCourse', { course: courseName })}
   >
     <div className="bg-muted relative aspect-video w-full overflow-hidden">
-      <NextImage
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-        src={thumbnailUrl}
-        alt={courseName}
-        fill
-        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-        priority={priority}
-      />
+      {thumbnailUrl ? (
+        <NextImage
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          src={thumbnailUrl}
+          alt={courseName}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          priority={priority}
+        />
+      ) : (
+        <CoursePlaceholder seed={seed} title={courseName} />
+      )}
 
       <div
         className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent"
@@ -449,7 +457,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
       ? getCourseThumbnailMediaDirectory(course.course_uuid || '', course.thumbnail_image)
-      : '/empty_thumbnail.avif'
+      : ''
   }, [course.thumbnail_image, course.course_uuid])
 
   const courseUrl = useMemo(
@@ -497,6 +505,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
       <CourseImage
         thumbnailUrl={thumbnailUrl}
+        seed={cleanCourseUuid}
         courseName={course.name || ''}
         updateDate={course.update_date || ''}
         locale={locale}

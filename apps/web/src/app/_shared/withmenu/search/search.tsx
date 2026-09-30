@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getAbsoluteUrl } from '@services/config/config'
 import UserAvatar from '@components/Objects/UserAvatar'
 import NextImage from '@components/ui/NextImage'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { Skeleton } from '@components/ui/skeleton'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
@@ -263,14 +264,19 @@ function SearchPage() {
                         href={getAbsoluteUrl(`/course/${course.id}`)}
                         className="group bg-card text-card-foreground overflow-hidden rounded-lg border shadow-sm transition-shadow hover:shadow-md"
                       >
+                        {/* The real cover when the course has one (it always showed the placeholder). */}
                         <div className="relative aspect-video w-full overflow-hidden">
-                          <NextImage
-                            src="/empty_thumbnail.avif"
-                            alt={course.name}
-                            fill
-                            className="object-cover"
-                            sizes="100vw"
-                          />
+                          {getContentUrl(course.thumbnail_key) ? (
+                            <NextImage
+                              src={getContentUrl(course.thumbnail_key) ?? ''}
+                              alt={course.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, 25vw"
+                            />
+                          ) : (
+                            <CoursePlaceholder seed={course.id} title={course.name} />
+                          )}
                         </div>
                         <div className="p-4">
                           <h3 className="text-foreground mb-1 text-sm font-medium">{course.name}</h3>

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useApiError } from '@/hooks/useApiError'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
 import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
@@ -84,13 +85,15 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
       {/* Thumbnail */}
       <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0" aria-label={course.name ?? ''}>
         <div
-          className="ring-border h-14 w-20 rounded-lg bg-cover bg-center ring-1 ring-inset sm:h-[76px] sm:w-[108px]"
-          style={{
-            backgroundImage: course.thumbnail_image
-              ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
-              : `url('/empty_thumbnail.avif')`,
-          }}
-        />
+          className="ring-border relative h-14 w-20 overflow-hidden rounded-lg bg-cover bg-center ring-1 ring-inset sm:h-[76px] sm:w-[108px]"
+          style={
+            course.thumbnail_image
+              ? { backgroundImage: `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})` }
+              : undefined
+          }
+        >
+          {course.thumbnail_image ? null : <CoursePlaceholder seed={courseid} title={course.name ?? ''} compact />}
+        </div>
       </Link>
 
       {/* Content */}

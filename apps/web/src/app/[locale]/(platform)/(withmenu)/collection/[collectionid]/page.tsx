@@ -5,6 +5,7 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import AppLink from '@/components/ui/AppLink'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { Layers } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
@@ -115,14 +116,16 @@ async function CollectionContent(props: PageProps) {
             className="group border-border bg-card text-card-foreground hover:border-foreground/20 flex flex-col overflow-hidden rounded-lg border shadow-xs transition-colors"
           >
             <div className="border-border/50 bg-muted relative aspect-[16/9] w-full overflow-hidden border-b">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage: course.thumbnail_image
-                    ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
-                    : `url('/empty_thumbnail.avif')`,
-                }}
-              />
+              {course.thumbnail_image ? (
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`,
+                  }}
+                />
+              ) : (
+                <CoursePlaceholder seed={course.course_uuid.replace('course_', '')} title={course.name ?? ''} />
+              )}
             </div>
 
             <div className="flex flex-1 flex-col p-4">
