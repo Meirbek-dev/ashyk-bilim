@@ -139,7 +139,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const { data: trailData, isLoading: isTrailLoading } = useTrailCurrent({ enabled: isAuthenticated })
 
   return (
-    <div className="text-foreground container mx-auto px-4 py-8">
+    <div className="text-foreground mx-auto max-w-(--breakpoint-3xl) px-4 py-8 sm:px-6 lg:px-8">
       {/* Banner */}
       <div className="bg-muted relative mb-0 h-32 w-full overflow-hidden rounded-t-xl">
         {/* Optional banner content */}
