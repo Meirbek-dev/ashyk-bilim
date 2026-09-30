@@ -27,6 +27,7 @@ vi.mock('@/lib/api/generated/assessments/assessments', () => ({
 
 import { isApiError } from '@/lib/api/assertSuccess'
 import {
+  getCodeChallengeSettings,
   getJudge0Languages,
   getSubmissions,
   runTests,
@@ -222,6 +223,33 @@ describe('getSubmissions', () => {
 })
 
 describe('saveCodeChallengeSettings', () => {
+  beforeEach(() => {
+    mocks.apiJson.mockReset()
+    mocks.getActivityAssessment.mockReset()
+  })
+
+  it('persists difficulty on the code item metadata and reads it back (BUG-374)', async () => {
+    const stored = wireAssessment()
+    stored.items[0]!.metadata = { tags: ['x'], outcome_ids: [], difficulty: 'hard' } as never
+    mocks.getActivityAssessment.mockResolvedValue(stored)
+    mocks.apiJson.mockResolvedValue({})
+
+    expect((await getCodeChallengeSettings('activity_two-sum'))?.difficulty).toBe('HARD')
+
+    await saveCodeChallengeSettings('activity_two-sum', { difficulty: 'MEDIUM' })
+    const body = JSON.parse(String(mocks.apiJson.mock.calls[0]?.[1]?.body))
+    expect(body.metadata).toMatchObject({ difficulty: 'medium', tags: ['x'] })
+  })
+
+  it('sends no PATCH when nothing changed (UX-284)', async () => {
+    mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
+    const loaded = await getCodeChallengeSettings('activity_two-sum')
+
+    await saveCodeChallengeSettings('activity_two-sum', { ...loaded })
+
+    expect(mocks.apiJson).not.toHaveBeenCalled()
+  })
+
   it('falls back to the assessment title when the new code item title is blank', async () => {
     const fresh = wireAssessment()
     fresh.items[0]!.title = ''

@@ -1,6 +1,6 @@
 import { apiJson } from '@/lib/api-client'
 import { APIError, isApiError } from '@/lib/api/assertSuccess'
-import type { AssessmentItem, ItemBody } from '@/features/assessments/domain/items'
+import type { AssessmentItem, AssessmentItemMetadata, ItemBody } from '@/features/assessments/domain/items'
 import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import { unixToIso } from '@/lib/api/contract'
@@ -118,6 +118,7 @@ interface CodeAssessmentItem {
   title: string
   max_score: number
   body: CodeAssessmentItemBody
+  metadata?: AssessmentItemMetadata
 }
 
 interface CodeAssessmentRead {
@@ -301,9 +302,13 @@ function toCodeChallengeSettings(
     : typeof settings.reference_solution === 'string'
       ? { solution: settings.reference_solution }
       : undefined
-  const difficulty: NonNullable<CodeChallengeSettings['difficulty']> = isDifficulty(settings.difficulty)
-    ? settings.difficulty
-    : 'EASY'
+  // BUG-374: difficulty lives on the code item's metadata (lower-case on the wire).
+  const storedDifficulty = codeItem?.metadata?.difficulty?.toUpperCase()
+  const difficulty: NonNullable<CodeChallengeSettings['difficulty']> = isDifficulty(storedDifficulty)
+    ? storedDifficulty
+    : isDifficulty(settings.difficulty)
+      ? settings.difficulty
+      : 'EASY'
   const executionMode: NonNullable<CodeChallengeSettings['execution_mode']> = isExecutionMode(settings.execution_mode)
     ? settings.execution_mode
     : 'COMPLETE_FEEDBACK'
@@ -382,17 +387,36 @@ function toCodeItemBody(
   }
 }
 
-async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<CodeChallengeSettings>) {
-  const codeItem = getCodeAssessmentItem(assessment)
+function codeItemPayload(
+  assessment: CodeAssessmentRead,
+  codeItem: CodeAssessmentItem | null,
+  settings: Partial<CodeChallengeSettings>,
+) {
   const body = toCodeItemBody(assessment, codeItem, settings)
-  const payload = {
+  const metadata = codeItem?.metadata ?? { tags: [], outcome_ids: [] }
+  return {
     // The server creates a new challenge's code item with title ""; PATCH rejects a blank title.
     title: codeItem?.title?.trim() || assessment.title,
     body: itemBodyToWire(body as ItemBody),
     max_score: typeof settings.points === 'number' ? settings.points : (codeItem?.max_score ?? 100),
+    // PATCH replaces the whole metadata block: keep the rest, set difficulty.
+    metadata: {
+      ...metadata,
+      difficulty: isDifficulty(settings.difficulty)
+        ? (settings.difficulty.toLowerCase() as NonNullable<AssessmentItemMetadata['difficulty']>)
+        : (metadata.difficulty ?? null),
+    },
   }
+}
+
+async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<CodeChallengeSettings>) {
+  const codeItem = getCodeAssessmentItem(assessment)
+  const payload = codeItemPayload(assessment, codeItem, settings)
 
   if (codeItem) {
+    // UX-284: an unchanged item is not PATCHed (a locked assessment would 409).
+    const stored = codeItemPayload(assessment, codeItem, toCodeChallengeSettings(assessment, codeItem))
+    if (JSON.stringify(stored) === JSON.stringify(payload)) return
     await apiJson(`assessment-items/${codeItem.item_uuid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -443,7 +467,7 @@ export async function saveCodeChallengeSettings(
   // has a real v2 home here, so that's all that's patched at the assessment
   // level. Difficulty/execution_mode/hints/max_submissions/allow_custom_input
   // have nowhere to persist — see report under "Blocked".
-  if (settings.title !== undefined) {
+  if (settings.title !== undefined && settings.title !== assessment.title) {
     await apiJson(`assessments/${assessment.assessment_uuid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
