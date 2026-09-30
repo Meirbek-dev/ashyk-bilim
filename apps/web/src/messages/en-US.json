@@ -11189,41 +11189,41 @@
     "items": {
       "unknownCourse": "Course",
       "returned": {
-        "title": "Revise {activity}",
+        "title": "{activity}",
         "description": "{course}: feedback requires a new submission.",
         "action": "Revise work"
       },
       "waiting": {
-        "title": "Waiting for feedback on {activity}",
+        "title": "{activity}",
         "description": "{course}: your work was received.",
         "action": "View receipt"
       },
       "feedback": {
-        "title": "Review feedback for {activity}",
+        "title": "{activity}",
         "description": "{course}: a grading decision is available.",
         "action": "View feedback"
       },
       "overdue": {
-        "title": "Finish overdue work: {activity}",
+        "title": "{activity}",
         "description": "{course}: this work is past its due date."
       },
       "inProgress": {
-        "title": "Continue {activity}",
+        "title": "{activity}",
         "description": "{course}: finish your in-progress work.",
         "action": "Continue"
       },
       "needsGrading": {
-        "title": "Grade {activity}",
+        "title": "{activity}",
         "description": "A learner submission in {course} is ready for review.",
         "action": "Grade submission"
       },
       "slaBreach": {
-        "title": "Grade overdue review: {activity}",
+        "title": "{activity}",
         "description": "A learner in {course} has waited beyond the review target.",
         "action": "Grade submission"
       },
       "awaitingRelease": {
-        "title": "Release {activity}",
+        "title": "{activity}",
         "description": "A grade in {course} is saved but not visible to the learner.",
         "action": "Review and release"
       },
@@ -11231,9 +11231,9 @@
     },
     "sections": {
       "learner": {
-        "title": "Learner Work",
-        "description": "Assignments and course actions that need the learner next.",
-        "emptyTitle": "No learner work is queued",
+        "title": "Your work",
+        "description": "What is waiting for you in your courses.",
+        "emptyTitle": "All caught up",
         "emptyDescription": "You are caught up. Browse a course when you are ready to continue learning.",
         "unavailable": {
           "title": "Check learning work",

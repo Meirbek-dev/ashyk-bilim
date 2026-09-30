@@ -153,12 +153,14 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
       )}
       data-testid={`work-queue-item-${item.id}`}
     >
-      <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(10rem,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-5">
-        <div className="min-w-0">
-          <h4 className="text-sm font-semibold text-pretty">{item.title}</h4>
-          <p className="text-muted-foreground mt-1 text-xs">{item.sourceLabel}</p>
+      {/* One column: what (title), why (description), then the small print — the button carries the verb. */}
+      <div className="min-w-0">
+        <h4 className="text-sm font-semibold text-pretty wrap-anywhere">{item.title}</h4>
+        <p className="text-muted-foreground mt-0.5 text-sm text-pretty">{item.description}</p>
+        <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span>{item.sourceLabel}</span>
           {timestamp ? (
-            <time className="text-muted-foreground mt-1 flex items-center gap-1 text-xs" dateTime={timestamp}>
+            <time className="flex items-center gap-1" dateTime={timestamp}>
               <CalendarClock className="size-3.5" aria-hidden />
               {/* Chromium ships no kk ICU data («2026 M09 11» vs Node's «2026 ж. 11 қыр.»); keep the server text. */}
               <span suppressHydrationWarning>
@@ -166,18 +168,13 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
               </span>
             </time>
           ) : null}
-        </div>
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-sm/relaxed text-pretty">{item.description}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 empty:hidden">
-            {/* «Готово» on a to-do row reads as «done»: only exceptional states get a badge. */}
-            {item.status === LmsStatuses.READY ? null : <LmsStatusBadge status={item.status} />}
-            {item.metric ? (
-              <Badge variant="secondary" className="font-mono tabular-nums">
-                {item.metric}
-              </Badge>
-            ) : null}
-          </div>
+          {/* «Готово» on a to-do row reads as «done»: only exceptional states get a badge. */}
+          {item.status === LmsStatuses.READY ? null : <LmsStatusBadge status={item.status} />}
+          {item.metric ? (
+            <Badge variant="secondary" className="font-mono tabular-nums">
+              {item.metric}
+            </Badge>
+          ) : null}
         </div>
       </div>
       <Button nativeButton={false} render={<AppLink href={item.href} />} className="w-full sm:w-auto">

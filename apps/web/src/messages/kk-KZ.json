@@ -11373,41 +11373,41 @@
     "items": {
       "unknownCourse": "Курс",
       "returned": {
-        "title": "Қайта өңдеу: {activity}",
+        "title": "{activity}",
         "description": "{course}: кері байланысқа сай жаңа жұмыс жіберу қажет.",
         "action": "Қайта өңдеу"
       },
       "waiting": {
-        "title": "Кері байланыс күтілуде: {activity}",
+        "title": "{activity}",
         "description": "{course}: жұмысыңыз қабылданды.",
         "action": "Қабылдау жазбасын ашу"
       },
       "feedback": {
-        "title": "Кері байланысты қарау: {activity}",
+        "title": "{activity}",
         "description": "{course}: бағалау шешімі қолжетімді.",
         "action": "Кері байланысты қарау"
       },
       "overdue": {
-        "title": "Мерзімі өткен жұмысты аяқтау: {activity}",
+        "title": "{activity}",
         "description": "{course}: бұл жұмыстың мерзімі өтіп кетті."
       },
       "inProgress": {
-        "title": "Жалғастыру: {activity}",
+        "title": "{activity}",
         "description": "{course}: басталған жұмысты аяқтаңыз.",
         "action": "Жалғастыру"
       },
       "needsGrading": {
-        "title": "Бағалау: {activity}",
+        "title": "{activity}",
         "description": "{course} курсындағы білім алушы жұмысы тексеруге дайын.",
         "action": "Жұмысты бағалау"
       },
       "slaBreach": {
-        "title": "Кешіккен тексеруді орындау: {activity}",
+        "title": "{activity}",
         "description": "{course} курсындағы білім алушы мақсатты мерзімнен ұзақ күтті.",
         "action": "Жұмысты бағалау"
       },
       "awaitingRelease": {
-        "title": "Жариялау: {activity}",
+        "title": "{activity}",
         "description": "{course} курсындағы баға сақталды, бірақ білім алушыға әлі көрінбейді.",
         "action": "Тексеру және жариялау"
       },
@@ -11415,9 +11415,9 @@
     },
     "sections": {
       "learner": {
-        "title": "Білім алушының жұмысы",
-        "description": "Білім алушыны келесі кезекте күтетін тапсырмалар мен курс әрекеттері.",
-        "emptyTitle": "Кезекте жұмыс жоқ",
+        "title": "Сіздің тапсырмаларыңыз",
+        "description": "Курстарда сізді не күтіп тұр.",
+        "emptyTitle": "Барлығы орындалды",
         "emptyDescription": "Барлығы орындалды. Оқуды жалғастыруға дайын болғанда курсты ашыңыз.",
         "unavailable": {
           "title": "Оқу тапсырмаларын тексеру",

@@ -11203,41 +11203,41 @@
     "items": {
       "unknownCourse": "Курс",
       "returned": {
-        "title": "Доработать: {activity}",
+        "title": "{activity}",
         "description": "{course}: по отзыву требуется новая отправка.",
         "action": "Доработать"
       },
       "waiting": {
-        "title": "Ожидание отзыва: {activity}",
+        "title": "{activity}",
         "description": "{course}: работа получена.",
         "action": "Открыть подтверждение"
       },
       "feedback": {
-        "title": "Посмотреть отзыв: {activity}",
+        "title": "{activity}",
         "description": "{course}: решение по оценке опубликовано.",
         "action": "Посмотреть отзыв"
       },
       "overdue": {
-        "title": "Завершить просроченную работу: {activity}",
+        "title": "{activity}",
         "description": "{course}: срок выполнения уже прошёл."
       },
       "inProgress": {
-        "title": "Продолжить: {activity}",
+        "title": "{activity}",
         "description": "{course}: завершите начатую работу.",
         "action": "Продолжить"
       },
       "needsGrading": {
-        "title": "Оценить: {activity}",
+        "title": "{activity}",
         "description": "Работа учащегося в курсе «{course}» готова к проверке.",
         "action": "Оценить работу"
       },
       "slaBreach": {
-        "title": "Проверить просроченную работу: {activity}",
+        "title": "{activity}",
         "description": "Учащийся в курсе «{course}» ждёт дольше целевого срока.",
         "action": "Оценить работу"
       },
       "awaitingRelease": {
-        "title": "Опубликовать: {activity}",
+        "title": "{activity}",
         "description": "Оценка в курсе «{course}» сохранена, но ещё не видна учащемуся.",
         "action": "Проверить и опубликовать"
       },
@@ -11245,9 +11245,9 @@
     },
     "sections": {
       "learner": {
-        "title": "Работа учащегося",
-        "description": "Задания и действия по курсам, которые ждут учащегося дальше.",
-        "emptyTitle": "Нет работы в очереди",
+        "title": "Ваши задания",
+        "description": "Что ждёт вас в курсах.",
+        "emptyTitle": "Всё сделано",
         "emptyDescription": "Всё выполнено. Откройте курс, когда будете готовы продолжить обучение.",
         "unavailable": {
           "title": "Проверить учебные задания",
