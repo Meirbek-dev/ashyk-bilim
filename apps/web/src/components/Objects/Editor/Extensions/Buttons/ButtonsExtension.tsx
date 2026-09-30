@@ -240,7 +240,7 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
             {colors.map(c => (
               <button
                 key={c}
-                className={`h-6 w-6 rounded-full ${getButtonColor(c)} hover:ring-2 hover:ring-ring/50 focus:ring-2 focus:ring-ring/50 focus:outline-hidden`}
+                className={`h-6 w-6 rounded-full ${getButtonColor(c)} hover:ring-ring/50 focus:ring-ring/50 hover:ring-2 focus:ring-2 focus:outline-hidden`}
                 onClick={() => {
                   handleColorSelect(c)
                 }}

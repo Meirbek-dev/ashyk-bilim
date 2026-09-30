@@ -88,7 +88,9 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
           className="ring-border relative h-14 w-20 overflow-hidden rounded-lg bg-cover bg-center ring-1 ring-inset sm:h-[76px] sm:w-[108px]"
           style={
             course.thumbnail_image
-              ? { backgroundImage: `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})` }
+              ? {
+                  backgroundImage: `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`,
+                }
               : undefined
           }
         >

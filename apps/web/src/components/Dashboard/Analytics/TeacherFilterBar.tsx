@@ -145,240 +145,240 @@ export default function TeacherFilterBar({
             <span className="text-muted-foreground truncate font-normal">{filterSummary}</span>
             <ChevronDown className="text-muted-foreground ml-auto size-4 transition-transform group-open:rotate-180" />
           </summary>
-        {/* Filters Selectors Grid */}
-        <form
-          onSubmit={event => {
-            event.preventDefault()
-            applyFilters()
-          }}
-          className="grid grid-cols-2 gap-3 border-t p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
-        >
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-windowSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.windowSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-windowSelect"
-              value={formState.window}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  window: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              {windows.map(windowValue => (
-                <NativeSelectOption key={windowValue} value={windowValue}>
-                  {t('filters.windowPrefix', { window: t(`filters.windows.${windowValue}`) })}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+          {/* Filters Selectors Grid */}
+          <form
+            onSubmit={event => {
+              event.preventDefault()
+              applyFilters()
+            }}
+            className="grid grid-cols-2 gap-3 border-t p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+          >
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-windowSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.windowSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-windowSelect"
+                value={formState.window}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    window: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                {windows.map(windowValue => (
+                  <NativeSelectOption key={windowValue} value={windowValue}>
+                    {t('filters.windowPrefix', { window: t(`filters.windows.${windowValue}`) })}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-compareSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.compareSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-compareSelect"
-              value={formState.compare}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  compare: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              {compareOptions.map(compareValue => (
-                <NativeSelectOption key={compareValue} value={compareValue}>
-                  {t('filters.comparePrefix', {
-                    compare: getAnalyticsCompareLabel(t, compareValue),
-                  })}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-compareSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.compareSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-compareSelect"
+                value={formState.compare}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    compare: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                {compareOptions.map(compareValue => (
+                  <NativeSelectOption key={compareValue} value={compareValue}>
+                    {t('filters.comparePrefix', {
+                      compare: getAnalyticsCompareLabel(t, compareValue),
+                    })}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-bucketSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.bucketSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-bucketSelect"
-              value={formState.bucket}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  bucket: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              {bucketOptions.map(bucketValue => (
-                <NativeSelectOption key={bucketValue} value={bucketValue}>
-                  {t('filters.bucketPrefix', {
-                    bucket: getAnalyticsBucketLabel(t, bucketValue),
-                  })}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-bucketSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.bucketSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-bucketSelect"
+                value={formState.bucket}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    bucket: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                {bucketOptions.map(bucketValue => (
+                  <NativeSelectOption key={bucketValue} value={bucketValue}>
+                    {t('filters.bucketPrefix', {
+                      bucket: getAnalyticsBucketLabel(t, bucketValue),
+                    })}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-courseSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.courseSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-courseSelect"
-              value={formState.course_ids}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  course_ids: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              <NativeSelectOption value="">{t('filters.allCourses')}</NativeSelectOption>
-              {courseOptions.map(option => (
-                <NativeSelectOption key={option.value} value={option.value}>
-                  {option.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-courseSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.courseSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-courseSelect"
+                value={formState.course_ids}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    course_ids: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                <NativeSelectOption value="">{t('filters.allCourses')}</NativeSelectOption>
+                {courseOptions.map(option => (
+                  <NativeSelectOption key={option.value} value={option.value}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-cohortSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.cohortSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-cohortSelect"
-              value={formState.cohort_ids}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  cohort_ids: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              <NativeSelectOption value="">{t('filters.allCohorts')}</NativeSelectOption>
-              {cohortOptions.map(option => (
-                <NativeSelectOption key={option.value} value={option.value}>
-                  {option.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-cohortSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.cohortSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-cohortSelect"
+                value={formState.cohort_ids}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    cohort_ids: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                <NativeSelectOption value="">{t('filters.allCohorts')}</NativeSelectOption>
+                {cohortOptions.map(option => (
+                  <NativeSelectOption key={option.value} value={option.value}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          <div className="space-y-1">
-            <Label
-              htmlFor="analytics-filter-timezoneSelect"
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-            >
-              {t('filters.timezoneSelect')}
-            </Label>
-            <NativeSelect
-              id="analytics-filter-timezoneSelect"
-              value={formState.timezone}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  timezone: event.target.value,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              {COMMON_TIMEZONES.map(tz => (
-                <NativeSelectOption key={tz} value={tz}>
-                  {tz}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+            <div className="space-y-1">
+              <Label
+                htmlFor="analytics-filter-timezoneSelect"
+                className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >
+                {t('filters.timezoneSelect')}
+              </Label>
+              <NativeSelect
+                id="analytics-filter-timezoneSelect"
+                value={formState.timezone}
+                onChange={event =>
+                  setFormState(state => ({
+                    ...state,
+                    timezone: event.target.value,
+                  }))
+                }
+                className="h-9 w-full text-sm"
+              >
+                {COMMON_TIMEZONES.map(tz => (
+                  <NativeSelectOption key={tz} value={tz}>
+                    {tz}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
 
-          {sortable && (
-            <>
-              <div className="space-y-1">
-                <Label
-                  htmlFor="analytics-filter-sortBySelect"
-                  className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-                >
-                  {t('filters.sortBySelect')}
-                </Label>
-                <NativeSelect
-                  id="analytics-filter-sortBySelect"
-                  value={formState.sort_by}
-                  onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
-                  className="h-9 w-full text-sm"
-                >
-                  {sortOptions.map(option => (
-                    <NativeSelectOption key={option.value || 'default'} value={option.value}>
-                      {option.label}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </div>
+            {sortable && (
+              <>
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="analytics-filter-sortBySelect"
+                    className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+                  >
+                    {t('filters.sortBySelect')}
+                  </Label>
+                  <NativeSelect
+                    id="analytics-filter-sortBySelect"
+                    value={formState.sort_by}
+                    onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
+                    className="h-9 w-full text-sm"
+                  >
+                    {sortOptions.map(option => (
+                      <NativeSelectOption key={option.value || 'default'} value={option.value}>
+                        {option.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </div>
 
-              <div className="space-y-1">
-                <Label
-                  htmlFor="analytics-filter-sortOrderSelect"
-                  className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-                >
-                  {t('filters.sortOrderSelect')}
-                </Label>
-                <NativeSelect
-                  id="analytics-filter-sortOrderSelect"
-                  value={formState.sort_order}
-                  onChange={event =>
-                    setFormState(state => ({
-                      ...state,
-                      sort_order: event.target.value,
-                    }))
-                  }
-                  className="h-9 w-full text-sm"
-                >
-                  <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
-                  <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
-                </NativeSelect>
-              </div>
-            </>
-          )}
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="analytics-filter-sortOrderSelect"
+                    className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+                  >
+                    {t('filters.sortOrderSelect')}
+                  </Label>
+                  <NativeSelect
+                    id="analytics-filter-sortOrderSelect"
+                    value={formState.sort_order}
+                    onChange={event =>
+                      setFormState(state => ({
+                        ...state,
+                        sort_order: event.target.value,
+                      }))
+                    }
+                    className="h-9 w-full text-sm"
+                  >
+                    <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
+                    <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
+                  </NativeSelect>
+                </div>
+              </>
+            )}
 
-          <div className="col-span-full flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 px-4"
-              onClick={() => startTransition(() => router.push(resetHref, { scroll: false }))}
-            >
-              {t('filters.reset')}
-            </Button>
-            <Button type="submit" variant="default" size="sm" className="h-9 px-5" disabled={isPending}>
-              {t('filters.applyFilters')}
-            </Button>
-          </div>
-        </form>
-        {children}
+            <div className="col-span-full flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => startTransition(() => router.push(resetHref, { scroll: false }))}
+              >
+                {t('filters.reset')}
+              </Button>
+              <Button type="submit" variant="default" size="sm" className="h-9 px-5" disabled={isPending}>
+                {t('filters.applyFilters')}
+              </Button>
+            </div>
+          </form>
+          {children}
         </details>
       </div>
     </section>

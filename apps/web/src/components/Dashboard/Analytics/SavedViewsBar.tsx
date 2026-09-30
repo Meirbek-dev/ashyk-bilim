@@ -96,47 +96,47 @@ export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
   return (
     // Rendered inside the folded filter panel: saving a view is a filter action.
     <div className="flex flex-col gap-3 border-t p-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-          {views.map(view => (
-            <div key={view.id} className="inline-flex items-center">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-r-none"
-                onClick={() => router.push(savedViewHref(view))}
-              >
-                <Search className="h-3.5 w-3.5" />
-                {view.name}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-l-none border-l-0 px-2"
-                aria-label={t('savedViewsBar.deleteView', { name: view.name })}
-                onClick={() => handleDelete(view)}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))}
-          {!views.length ? (
-            <span className="text-muted-foreground text-sm">{t('savedViewsBar.noSavedViews')}</span>
-          ) : null}
-        </div>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Input
-            value={name}
-            onChange={event => setName(event.target.value)}
-            placeholder={t('savedViewsBar.namePlaceholder')}
-            className="sm:w-[220px]"
-          />
-          <Button type="button" onClick={handleSave} disabled={isSaving}>
-            <Save className="h-4 w-4" />
-            {t('savedViewsBar.save')}
-          </Button>
-        </div>
+      <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+        {views.map(view => (
+          <div key={view.id} className="inline-flex items-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-r-none"
+              onClick={() => router.push(savedViewHref(view))}
+            >
+              <Search className="h-3.5 w-3.5" />
+              {view.name}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-l-none border-l-0 px-2"
+              aria-label={t('savedViewsBar.deleteView', { name: view.name })}
+              onClick={() => handleDelete(view)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+        {!views.length ? (
+          <span className="text-muted-foreground text-sm">{t('savedViewsBar.noSavedViews')}</span>
+        ) : null}
+      </div>
+      <div className="flex w-full gap-2 sm:w-auto">
+        <Input
+          value={name}
+          onChange={event => setName(event.target.value)}
+          placeholder={t('savedViewsBar.namePlaceholder')}
+          className="sm:w-[220px]"
+        />
+        <Button type="button" onClick={handleSave} disabled={isSaving}>
+          <Save className="h-4 w-4" />
+          {t('savedViewsBar.save')}
+        </Button>
+      </div>
     </div>
   )
 }
