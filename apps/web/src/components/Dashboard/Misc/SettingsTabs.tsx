@@ -82,7 +82,7 @@ export default function SettingsTabs({
   return (
     <Tabs value={value} className={className}>
       {/* UX-177: on a phone the tab row scrolls inside its own box instead of widening the page. */}
-      <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto overflow-y-hidden rounded-none border-b-0 bg-transparent p-0">
+      <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto overflow-y-hidden [scrollbar-width:none] rounded-none border-b-0 bg-transparent p-0">
         {tabs.map(tab => render(tab))}
       </TabsList>
     </Tabs>

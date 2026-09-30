@@ -1,3 +1,4 @@
+import { defaultTimeZone } from '@/i18n/config'
 import { Suspense } from 'react'
 import { getTranslations } from 'next-intl/server'
 
@@ -49,7 +50,7 @@ const analyticsQueueQuery = {
   page: 1,
   page_size: 3,
   sort_order: 'desc',
-  timezone: 'UTC',
+  timezone: defaultTimeZone,
 } as const
 
 // The layout's Suspense is already revealed on client navigations, so the

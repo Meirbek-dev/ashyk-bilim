@@ -30,3 +30,16 @@ export function useIsMobile() {
 }
 
 export { MOBILE_BREAKPOINT }
+
+/** `matchMedia(query).matches`, live; `false` on the server. */
+export function useMediaQuery(query: string) {
+  return React.useSyncExternalStore(
+    callback => {
+      const list = globalThis.matchMedia(query)
+      list.addEventListener('change', callback)
+      return () => list.removeEventListener('change', callback)
+    },
+    () => globalThis.matchMedia(query).matches,
+    () => false,
+  )
+}

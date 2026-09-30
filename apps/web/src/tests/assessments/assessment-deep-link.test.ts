@@ -50,7 +50,7 @@ describe('/assessments/[uuid]', () => {
     expect(redirectWithLocale).toHaveBeenCalledWith({ href: '/course/c1/activity/act1', locale: 'ru' })
     await forward(props('s1'))
     expect(redirectWithLocale).toHaveBeenLastCalledWith({
-      href: '/editor/course/c1/activity/act1?tab=review&submission=s1',
+      href: '/dash/courses/c1/activity/act1/review?submission=s1',
       locale: 'ru',
     })
   })

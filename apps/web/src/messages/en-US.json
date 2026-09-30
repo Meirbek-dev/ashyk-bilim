@@ -7876,7 +7876,7 @@
     },
     "pages": {
       "assessmentsTitle": "Assessment Performance",
-      "shellTitle": "Teacher Analytics & Operations",
+      "shellTitle": "Analytics",
       "overviewDisabledTitle": "Analytics unavailable",
       "overviewDisabledDesc": "This organization has analytics disabled or the current session cannot access analytics data.",
       "overviewLoadError": "The analytics service could not be loaded.",

@@ -35,7 +35,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
  *
  * Redirect target:
  *  - Student: /course/{courseUuid}/activity/{activityUuid}
- *  - Teacher (review param): /editor/course/{courseUuid}/activity/{activityUuid}?tab=review&submission={submissionUuid}
+ *  - Teacher (review param): /dash/courses/{courseUuid}/activity/{activityUuid}/review?submission={submissionUuid}
  * Fallback (no course): notFound()
  *
  * The session read and the fetch run inside the page's own `<Suspense>`
@@ -76,11 +76,11 @@ async function AssessmentForward(props: Props) {
     const cleanCourse = assessment.course_uuid.replace(/^course_/, '')
     const cleanActivity = assessment.activity_uuid.replace(/^activity_/, '')
 
-    // Teacher review deep-link: ?review={submissionUuid} → editor review tab
+    // Teacher review deep-link: ?review={submissionUuid} → the grading review page
     if (reviewSubmissionUuid) {
       const cleanSubmission = reviewSubmissionUuid.replace(/^submission_/, '')
       return redirectWithLocale({
-        href: `/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`,
+        href: `/dash/courses/${cleanCourse}/activity/${cleanActivity}/review?submission=${cleanSubmission}`,
         locale,
       })
     }

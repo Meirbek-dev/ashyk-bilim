@@ -252,7 +252,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       className="bg-background min-h-screen"
     >
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
-        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+        <div className="flex flex-col gap-3 px-4 py-3 lg:px-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <div className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
               <Link
@@ -297,6 +297,8 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {t('save')}
             </Button>
+            {/* Published: the badge beside the title says so — no dead «Опубликовано» button. */}
+            {isPublished ? null : (
             <Button
               size="sm"
               onClick={() => {
@@ -324,6 +326,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               )}
               {isPublished ? t('published') : t('publish')}
             </Button>
+            )}
           </div>
         </div>
       </header>

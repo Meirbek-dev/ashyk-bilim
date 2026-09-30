@@ -33,6 +33,7 @@ import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useApiError } from '@/hooks/useApiError'
+import { useMediaQuery } from '@/hooks/use-mobile'
 
 import type {
   AssessmentItem,
@@ -139,7 +140,10 @@ export default function BuilderCanvasTab({
   const [isCreating, startCreateTransition] = useTransition()
   const [isDuplicating, startDuplicateTransition] = useTransition()
   const [isDeleting, startDeleteTransition] = useTransition()
-  const [inspectorOpen, setInspectorOpen] = useState(true)
+  // The inspector is a third column: open by default only where the editor keeps enough width.
+  const isWide = useMediaQuery('(min-width: 1536px)')
+  const [inspectorChoice, setInspectorOpen] = useState<boolean | null>(null)
+  const inspectorOpen = inspectorChoice ?? isWide
   const [bulkPoints, setBulkPoints] = useState('1')
   const [bulkDifficulty, setBulkDifficulty] = useState<BulkDifficulty>('medium')
   const [bulkTags, setBulkTags] = useState('')
@@ -333,7 +337,7 @@ export default function BuilderCanvasTab({
   )
 
   return (
-    <div className="grid h-[calc(100vh-168px)] min-h-[620px] grid-cols-1 overflow-hidden lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(34rem,1fr)_19rem]">
+    <div className="grid h-[calc(100vh-168px)] min-h-[620px] grid-cols-1 overflow-hidden lg:grid-cols-[16rem_minmax(0,1fr)_auto] 2xl:grid-cols-[20rem_minmax(0,1fr)_auto]">
       {/* Left Outline Sidebar */}
       <aside className="bg-card/70 flex min-h-0 flex-col border-r">
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
@@ -522,14 +526,17 @@ export default function BuilderCanvasTab({
       </div>
 
       {/* Right Inspector */}
+      {/* One grid cell: the panel renders a toggle strip and the aside as siblings. */}
       {itemState ? (
-        <QuestionInspectorPanel
-          item={itemState}
-          isEditable={isEditable}
-          isOpen={inspectorOpen}
-          onToggle={() => setInspectorOpen(v => !v)}
-          onChange={onItemChange}
-        />
+        <div className="flex min-h-0">
+          <QuestionInspectorPanel
+            item={itemState}
+            isEditable={isEditable}
+            isOpen={inspectorOpen}
+            onToggle={() => setInspectorOpen(!inspectorOpen)}
+            onChange={onItemChange}
+          />
+        </div>
       ) : null}
     </div>
   )
@@ -934,9 +941,9 @@ function ItemCanvas({
   return (
     <div className="mx-auto w-full max-w-4xl space-y-5 px-4 py-5 md:px-6">
       {/* Canvas Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-xs">
               {kindLabel}
             </Badge>
@@ -958,6 +965,8 @@ function ItemCanvas({
             </p>
           ) : null}
         </div>
+        {/* Read-only (published) items: no dead Duplicate/Delete buttons. */}
+        {isEditable ? (
         <div className="flex shrink-0 gap-2">
           <Button
             type="button"
@@ -974,6 +983,7 @@ function ItemCanvas({
             {t('delete')}
           </Button>
         </div>
+        ) : null}
       </div>
 
       {/* Item Metadata */}

@@ -1,3 +1,4 @@
+import { defaultTimeZone } from '@/i18n/config'
 import type { AnalyticsQuery, AssessmentType, SavedAnalyticsViewCreate } from '@/types/analytics'
 import { createIdempotencyKey } from '@/lib/api/headers'
 import {
@@ -86,7 +87,7 @@ export function normalizeAnalyticsQuery(
     course_ids: courseIds,
     cohort_ids: cohortIds,
     ...(teacherUserId ? { teacher_user_id: teacherUserId } : {}),
-    timezone: timezone || 'UTC',
+    timezone: timezone || defaultTimeZone,
     sort_by: sortBy,
     bucket_start: bucketStart,
   }

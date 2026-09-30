@@ -1,14 +1,13 @@
 'use client'
 
+import { defaultTimeZone } from '@/i18n/config'
 import { getAnalyticsBucketLabel, getAnalyticsCompareLabel, getAnalyticsSortLabel } from '@/lib/analytics/labels'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { AnalyticsFilterOption, AnalyticsQuery } from '@/types/analytics'
 import { usePathname, useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { Filter, Globe2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 // Common IANA timezone identifiers for the select. These cover almost all deployed users.
@@ -50,7 +49,7 @@ const EMPTY_SORT_KEYS: readonly string[] = []
 export default function TeacherFilterBar({
   path,
   query,
-  courseCount,
+  courseCount: _courseCount,
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
   sortKeys = EMPTY_SORT_KEYS,
@@ -66,7 +65,7 @@ export default function TeacherFilterBar({
     bucket: query.bucket || 'day',
     course_ids: query.course_ids || '',
     cohort_ids: query.cohort_ids || '',
-    timezone: query.timezone || 'UTC',
+    timezone: query.timezone || defaultTimeZone,
     sort_by: query.sort_by || '',
     sort_order: query.sort_order || 'desc',
   })
@@ -89,7 +88,7 @@ export default function TeacherFilterBar({
       bucket: query.bucket || 'day',
       course_ids: query.course_ids || '',
       cohort_ids: query.cohort_ids || '',
-      timezone: query.timezone || 'UTC',
+      timezone: query.timezone || defaultTimeZone,
       sort_by: query.sort_by || '',
       sort_order: query.sort_order || 'desc',
     })
@@ -127,41 +126,16 @@ export default function TeacherFilterBar({
   return (
     <section
       aria-label={t('filters.sectionAriaLabel')}
-      className="border-border/60 mb-6 flex w-full flex-col gap-4 border-b pb-6"
+      className="mb-4 flex w-full flex-col gap-4"
     >
       <div className="w-full space-y-4">
-        {/* Active badges bar */}
-        <div className="bg-muted/30 border-border/40 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-muted-foreground flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
-            <Filter className="text-primary h-3.5 w-3.5" />
-            {t('filters.label')}
-          </div>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-semibold">
-            <Badge variant="outline" className="bg-background">
-              {t('filters.scopedCourses', { count: courseCount })}
-            </Badge>
-            <Badge variant="outline" className="bg-background">
-              {t('filters.buckets', {
-                bucket: getAnalyticsBucketLabel(t, query.bucket || 'day'),
-              })}
-            </Badge>
-            <Badge variant="outline" className="bg-background">
-              {getAnalyticsCompareLabel(t, query.compare || 'previous_period')}
-            </Badge>
-            <Badge variant="outline" className="bg-background">
-              <Globe2 className="mr-1 h-3 w-3" />
-              {query.timezone || 'UTC'}
-            </Badge>
-          </div>
-        </div>
-
         {/* Filters Selectors Grid */}
         <form
           onSubmit={event => {
             event.preventDefault()
             applyFilters()
           }}
-          className="bg-card grid grid-cols-1 gap-4 rounded-2xl border p-5 shadow-2xs sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          className="bg-card grid grid-cols-2 gap-3 rounded-xl border p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
         >
           <div className="space-y-1">
             <Label
@@ -373,7 +347,7 @@ export default function TeacherFilterBar({
             </>
           )}
 
-          <div className="flex justify-end gap-2 pt-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
+          <div className="col-span-full flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"

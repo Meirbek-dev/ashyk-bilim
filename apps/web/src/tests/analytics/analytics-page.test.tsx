@@ -44,7 +44,7 @@ describe('shared analytics page loader', () => {
     })
 
     expect(mocks.redirect).toHaveBeenCalledWith({
-      href: '/dash/analytics/overview?window=7d&compare=previous_period&bucket=day&course_ids=42&timezone=UTC',
+      href: '/dash/analytics/overview?window=7d&compare=previous_period&bucket=day&course_ids=42&timezone=Asia%2FAlmaty',
       locale: 'en',
     })
     expect(result).toBeNull()

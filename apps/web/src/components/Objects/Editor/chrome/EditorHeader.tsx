@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { useTheme } from '@/components/providers/theme-provider'
 import appLogoDark from '@public/app_logo.svg'
 import appLogoLight from '@public/app_logo_light.svg'
-import UserAvatar from '../../UserAvatar'
 import { Separator } from '@/components/ui/separator'
 import { EditorSaveIndicator } from './EditorSaveIndicator'
 import type { SaveStatus } from '@/stores/courses/courseEditorStore'
@@ -53,10 +52,10 @@ export function EditorHeader({
         </Link>
         <Separator orientation="vertical" className="h-4" />
         <nav className="flex min-w-0 items-center gap-1 truncate text-sm">
+          {/* Back to the course's curriculum — where the author came from. */}
           <Link
-            target="_blank"
-            href={`/course/${courseUuid}`}
-            className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+            href={`/dash/courses/${courseUuid}/curriculum`}
+            className="text-muted-foreground hover:text-foreground truncate font-medium transition-colors"
           >
             {courseName}
           </Link>
@@ -87,9 +86,6 @@ export function EditorHeader({
           <Eye className="size-4" />
         </Link>
 
-        <Separator orientation="vertical" className="mx-0.5 h-4" />
-
-        <UserAvatar size="lg" variant="outline" use_with_session />
       </div>
     </div>
   )

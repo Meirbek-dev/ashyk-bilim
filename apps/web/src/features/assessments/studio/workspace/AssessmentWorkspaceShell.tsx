@@ -31,14 +31,13 @@ export function AssessmentWorkspaceShell({ navItems, banner, renderView }: Asses
   const activeItem = navItems.find(item => item.id === activeView)
 
   return (
-    <div className="bg-muted/20 grid min-h-[calc(100vh-61px)] grid-cols-1 lg:grid-cols-[232px_minmax(0,1fr)]">
+    // The section rail is a column only on very wide screens; below that it is a tab row, so the builder keeps its width.
+    <div className="bg-muted/20 grid min-h-[calc(100vh-61px)] grid-cols-1 2xl:grid-cols-[232px_minmax(0,1fr)]">
       <AssessmentWorkspaceNavigator items={navItems} />
-      <section className="bg-background min-w-0 border-l" aria-label={t('mainArea')}>
-        <div className="bg-background/95 sticky top-[61px] z-20 flex min-h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur md:px-6">
-          <div className="min-w-0">
-            <p className="text-muted-foreground text-xs font-medium uppercase">{t('currentView')}</p>
-            <h2 className="truncate text-sm font-semibold">{activeItem?.label}</h2>
-          </div>
+      <section className="bg-background min-w-0 2xl:border-l" aria-label={t('mainArea')}>
+        <div className="bg-background/95 sticky top-0 z-20 flex min-h-10 items-center justify-between gap-3 border-b px-4 backdrop-blur md:px-6">
+          <h2 className="sr-only">{activeItem?.label}</h2>
+          <span />
           <AssessmentSaveLedger />
         </div>
         <div aria-live="polite" className="sr-only">
@@ -57,12 +56,12 @@ function AssessmentWorkspaceNavigator({ items }: { items: AssessmentWorkspaceNav
   const t = useTranslations('Features.Assessments.Studio.Workspace')
 
   return (
-    <aside className="bg-background border-b lg:border-b-0" aria-label={t('navigator')}>
-      <div className="sticky top-[61px] space-y-3 p-3">
-        <div className="px-2">
+    <aside className="bg-background border-b 2xl:border-b-0" aria-label={t('navigator')}>
+      <div className="space-y-3 px-3 py-2 2xl:sticky 2xl:top-0 2xl:py-3">
+        <div className="hidden px-2 2xl:block">
           <p className="text-muted-foreground text-xs font-medium uppercase">{t('workspace')}</p>
         </div>
-        <nav className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+        <nav className="flex gap-1 overflow-x-auto [scrollbar-width:none] 2xl:flex-col 2xl:overflow-visible">
           {items.map(({ id, label, icon: Icon, issueCount }) => (
             <button
               key={id}
@@ -70,7 +69,7 @@ function AssessmentWorkspaceNavigator({ items }: { items: AssessmentWorkspaceNav
               aria-current={activeView === id ? 'page' : undefined}
               onClick={() => setActiveView(id)}
               className={cn(
-                'flex h-10 shrink-0 items-center gap-2 rounded-md px-3 text-left text-sm font-medium transition-colors lg:w-full',
+                'flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-left text-sm font-medium transition-colors 2xl:h-10 2xl:w-full',
                 activeView === id
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-background hover:text-foreground',
@@ -149,6 +148,8 @@ function AssessmentReadinessStrip() {
     useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.Workspace')
   const blockers = readinessIssues.filter(issue => issue.severity === 'blocker')
+  // Nothing to fix: no banner (the review tab still reports readiness).
+  if (readinessIssues.length === 0) return null
 
   return (
     <div className="bg-muted/20 border-b px-4 py-3 md:px-6" aria-label={t('readinessRail')}>
