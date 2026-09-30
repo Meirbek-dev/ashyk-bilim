@@ -66,6 +66,16 @@ impl UsergroupsService {
         Self { pool }
     }
 
+    /// `usergroup:create` or `usergroup:manage` — the superset of
+    /// `can_write` and of creating one.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_writer(actor: &Actor) -> Result<()> {
+        if actor.has(perm(Action::Manage)) {
+            return Ok(());
+        }
+        actor.require(perm(Action::Create))
+    }
+
     /// The write rule, exposed on the wire as `Usergroup.can_write`:
     /// `usergroup:manage:platform`, or the creator holding
     /// `usergroup:create:platform`.

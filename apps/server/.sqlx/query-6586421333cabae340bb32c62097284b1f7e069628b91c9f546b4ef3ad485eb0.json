@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM activities WHERE id = $1 FOR UPDATE",
+  "query": "SELECT id FROM activities WHERE id = $1 AND ($2::int IS NULL OR version = $2) FOR UPDATE",
   "describe": {
     "columns": [
       {
@@ -17,12 +17,13 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Int4"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "7e210501e907b6cba529eb4f5cb4f22fec9fc9657e09f7e6a5e0d3ad30ee3fa4"
+  "hash": "6586421333cabae340bb32c62097284b1f7e069628b91c9f546b4ef3ad485eb0"
 }

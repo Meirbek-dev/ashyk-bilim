@@ -30,8 +30,11 @@ use crate::state::AppState;
 pub async fn create_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateCourseRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Course>)> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::CoursesService::require_create(&actor)?;
+    let request = ValidJson::<CreateCourseRequest>::parse(&body)?;
     let course = state
         .courses
         .create(
@@ -164,8 +167,11 @@ pub async fn add_contributor(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<AddContributorRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Contributor>)> {
+    // UX-311: permission before the body.
+    state.courses.require_roster_manager(&actor, id).await?;
+    let request = ValidJson::<AddContributorRequest>::parse(&body)?;
     let target = match (request.user_id, request.username) {
         (Some(user_id), None) => Target::UserId(user_id),
         (None, Some(username)) => Target::Username(username),
@@ -217,8 +223,11 @@ pub async fn update_contributor(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(CourseId, UserId)>,
-    ValidJson(request): ValidJson<UpdateContributorRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Contributor>> {
+    // UX-311: permission before the body.
+    state.courses.require_roster_manager(&actor, id).await?;
+    let request = ValidJson::<UpdateContributorRequest>::parse(&body)?;
     // Roster write → member re-projection outlive the connection (BUG-291).
     detached(async move {
         let row = state
@@ -333,8 +342,11 @@ pub async fn update_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<UpdateCourseRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Course>> {
+    // UX-311: permission before the body.
+    state.courses.require_writable(&actor, id).await?;
+    let request = ValidJson::<UpdateCourseRequest>::parse(&body)?;
     let course = state
         .courses
         .update(
@@ -377,8 +389,11 @@ pub async fn course_lifecycle(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<CourseLifecycleRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Course>> {
+    // UX-311: permission before the body.
+    state.courses.require_writable(&actor, id).await?;
+    let request = ValidJson::<CourseLifecycleRequest>::parse(&body)?;
     let course = ab_domain::catalog::readiness::set_course_public(
         &state.assessments,
         &actor,
@@ -453,8 +468,11 @@ pub async fn create_course_update(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<CreateCourseUpdateRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<CourseUpdate>)> {
+    // UX-311: permission before the body.
+    state.courses.require_writable(&actor, id).await?;
+    let request = ValidJson::<CreateCourseUpdateRequest>::parse(&body)?;
     let update = state
         .courses
         .create_update(&actor, id, &request.title, &request.content)
@@ -479,8 +497,11 @@ pub async fn edit_course_update(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseUpdateId>,
-    ValidJson(request): ValidJson<EditCourseUpdateRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<CourseUpdate>> {
+    // UX-311: permission before the body.
+    state.courses.require_writable_update(&actor, id).await?;
+    let request = ValidJson::<EditCourseUpdateRequest>::parse(&body)?;
     let update = state
         .courses
         .edit_update(

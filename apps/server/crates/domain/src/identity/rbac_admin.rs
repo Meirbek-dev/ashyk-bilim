@@ -58,6 +58,18 @@ impl RbacAdminService {
         Self { pool, sessions }
     }
 
+    /// `role:manage:platform`.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_manage_roles(actor: &Actor) -> Result<()> {
+        actor.require(MANAGE_ROLES)
+    }
+
+    /// `platform:manage:platform` — account creation and status
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_manage_platform(actor: &Actor) -> Result<()> {
+        actor.require(MANAGE_PLATFORM)
+    }
+
     pub async fn list_roles(&self, actor: &Actor) -> Result<Vec<RoleWithGrants>> {
         actor.require(Permission {
             resource: ResourceType::Role,

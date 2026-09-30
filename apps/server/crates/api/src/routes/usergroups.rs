@@ -25,8 +25,11 @@ use crate::state::AppState;
 pub async fn create_usergroup(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateUsergroupRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Usergroup>)> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<CreateUsergroupRequest>::parse(&body)?;
     let group = state
         .usergroups
         .create(
@@ -102,8 +105,11 @@ pub async fn update_usergroup(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-    ValidJson(request): ValidJson<UpdateUsergroupRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Usergroup>> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<UpdateUsergroupRequest>::parse(&body)?;
     let group = state
         .usergroups
         .update(
@@ -163,8 +169,11 @@ pub async fn add_usergroup_members(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-    ValidJson(request): ValidJson<UsergroupMembersRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<UsergroupMembersRequest>::parse(&body)?;
     detached(async move {
         Ok(state
             .usergroups
@@ -186,8 +195,11 @@ pub async fn remove_usergroup_members(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-    ValidJson(request): ValidJson<UsergroupMembersRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<UsergroupMembersRequest>::parse(&body)?;
     detached(async move {
         Ok(state
             .usergroups
@@ -223,8 +235,11 @@ pub async fn add_usergroup_courses(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-    ValidJson(request): ValidJson<UsergroupCoursesRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<UsergroupCoursesRequest>::parse(&body)?;
     state
         .usergroups
         .add_courses(&actor, id, &request.course_ids)
@@ -243,8 +258,11 @@ pub async fn remove_usergroup_courses(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-    ValidJson(request): ValidJson<UsergroupCoursesRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    let request = ValidJson::<UsergroupCoursesRequest>::parse(&body)?;
     state
         .usergroups
         .remove_courses(&actor, id, &request.course_ids)

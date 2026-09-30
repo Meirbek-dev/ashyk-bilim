@@ -35,6 +35,8 @@ pub async fn create_collection(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::CollectionsService::require_create(&actor)?;
     let request = ValidJson::<CreateCollectionRequest>::parse(&body)?;
     idempotent(
         state.pool.clone(),
@@ -92,7 +94,8 @@ pub async fn list_collections(
     tag = "collections",
     params(("id" = CollectionId, Path, description = "Collection id")),
     responses(
-        (status = 200, description = "Collection", body = Collection),
+        (status = 200, description = "Collection", body = Collection,
+         headers(("ETag" = String, description = "Quoted version"))),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -101,8 +104,16 @@ pub async fn get_collection(
     State(state): State<AppState>,
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CollectionId>,
-) -> ApiResult<Json<Collection>> {
-    Ok(Json(state.collections.get(&actor, id).await?.into()))
+) -> ApiResult<Response> {
+    Ok(with_etag(state.collections.get(&actor, id).await?.into()))
+}
+
+/// The collection JSON with an `ETag` carrying its version (the `If-Match`
+/// of its update and delete).
+fn with_etag(collection: Collection) -> Response {
+    let etag = HeaderValue::from_str(&format!("\"{}\"", collection.version))
+        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
+    ([(header::ETAG, etag)], Json(collection)).into_response()
 }
 
 /// Partial update; `courses` replaces the whole membership when present.
@@ -131,10 +142,13 @@ pub async fn update_collection(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CollectionId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<UpdateCollectionRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::CollectionsService::require_some_write(&actor)?;
+    let request = ValidJson::<UpdateCollectionRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
-    let collection: Collection = state
+    let collection = state
         .collections
         .update(
             &actor,
@@ -147,11 +161,8 @@ pub async fn update_collection(
                 expected_version,
             },
         )
-        .await?
-        .into();
-    let etag = HeaderValue::from_str(&format!("\"{}\"", collection.version))
-        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
-    Ok(([(header::ETAG, etag)], Json(collection)).into_response())
+        .await?;
+    Ok(with_etag(collection.into()))
 }
 
 /// Delete a collection (membership rows cascade; courses stay).
@@ -159,12 +170,17 @@ pub async fn update_collection(
     delete,
     path = "/collections/{id}",
     tag = "collections",
-    params(("id" = CollectionId, Path, description = "Collection id")),
+    params(
+        ("id" = CollectionId, Path, description = "Collection id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
+    ),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No delete access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -172,7 +188,12 @@ pub async fn delete_collection(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CollectionId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
-    state.collections.delete(&actor, id).await?;
+    let expected_version = if_match(&headers)?;
+    state
+        .collections
+        .delete(&actor, id, expected_version)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }

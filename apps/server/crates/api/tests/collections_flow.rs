@@ -494,4 +494,36 @@ async fn stale_if_match_is_refused(pool: PgPool) {
         .await;
     assert_eq!(unguarded.status, StatusCode::OK, "{}", unguarded.text());
     assert_eq!(unguarded.json()["version"], loaded + 2);
+
+    // UX-313: the read carries the version as `ETag`, and a delete from a
+    // stale tab is 412 with the collection kept; the current one deletes.
+    let read = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(read.headers["etag"], format!("\"{}\"", loaded + 2));
+    let delete = |version: i64| {
+        app.send(
+            axum::http::Request::builder()
+                .method("DELETE")
+                .uri(format!("/api/v2/collections/{id}"))
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+    };
+    let stale = delete(loaded).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["details"]["actual"], loaded + 2);
+    let kept = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(kept.status, StatusCode::OK);
+    let current = delete(loaded + 2).await;
+    assert_eq!(current.status, StatusCode::NO_CONTENT, "{}", current.text());
 }

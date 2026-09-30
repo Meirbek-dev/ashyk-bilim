@@ -44,6 +44,12 @@ impl PlatformService {
         Self { pool }
     }
 
+    /// `platform:update:platform`.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_update(actor: &Actor) -> Result<()> {
+        actor.require(UPDATE)
+    }
+
     /// The singleton row (seeded by migration — absence is a deploy bug).
     pub async fn get(&self) -> Result<Platform> {
         ab_db::platform::get_platform(&self.pool)

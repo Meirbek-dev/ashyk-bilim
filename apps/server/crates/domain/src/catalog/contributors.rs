@@ -29,6 +29,12 @@ pub enum Target {
 }
 
 impl CoursesService {
+    /// The roster gate on its own.
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_roster_manager(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
+        self.manageable(actor, course_id).await.map(drop)
+    }
+
     /// Visible course (404) + roster-management rights (403).
     async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.get(actor, course_id).await?;

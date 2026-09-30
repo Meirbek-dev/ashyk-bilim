@@ -158,10 +158,20 @@ pub async fn update_collection(
     Ok(true)
 }
 
-pub async fn delete_collection(pool: &PgPool, id: CollectionId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM collections WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
+/// With `expected_version` it only deletes while the row is at that
+/// version (UX-313, the update's `If-Match`).
+pub async fn delete_collection(
+    pool: &PgPool,
+    id: CollectionId,
+    expected_version: Option<i32>,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM collections WHERE id = $1 AND ($2::int IS NULL OR version = $2)",
+        id.0,
+        expected_version
+    )
+    .execute(pool)
+    .await?;
     Ok(deleted.rows_affected() == 1)
 }
 

@@ -284,3 +284,89 @@ async fn every_mutating_operation_is_classified_and_gated(pool: PgPool) {
         );
     }
 }
+
+/// UX-311 (UX-301 sibling): these writes check the caller's permission
+/// before they read the body, so a learner gets 403 (404 for a resource
+/// they cannot see) whatever they send —
+/// never a 422 that validates the body (or lists the accepted fields) for
+/// someone who may not write here at all.
+const GATED_BEFORE_BODY: &[(&str, &str)] = &[
+    ("PATCH", "/api/v2/platform"),
+    ("POST", "/api/v2/usergroups"),
+    ("PATCH", "/api/v2/usergroups/{id}"),
+    ("POST", "/api/v2/usergroups/{id}/members"),
+    ("DELETE", "/api/v2/usergroups/{id}/members"),
+    ("POST", "/api/v2/usergroups/{id}/courses"),
+    ("DELETE", "/api/v2/usergroups/{id}/courses"),
+    ("POST", "/api/v2/courses"),
+    ("POST", "/api/v2/courses/{id}/contributors"),
+    ("PATCH", "/api/v2/courses/{id}/contributors/{user_id}"),
+    ("PATCH", "/api/v2/courses/{id}"),
+    ("POST", "/api/v2/courses/{id}/lifecycle"),
+    ("POST", "/api/v2/courses/{id}/updates"),
+    ("PATCH", "/api/v2/course-updates/{id}"),
+    ("POST", "/api/v2/collections"),
+    ("PATCH", "/api/v2/collections/{id}"),
+    ("POST", "/api/v2/assessments"),
+    ("PATCH", "/api/v2/assessments/{id}"),
+    ("PUT", "/api/v2/assessments/{id}/policy"),
+    ("POST", "/api/v2/assessments/{id}/lifecycle"),
+    ("POST", "/api/v2/assessments/{id}/duplicate"),
+    ("POST", "/api/v2/assessments/{id}/items"),
+    ("PATCH", "/api/v2/assessment-items/{id}"),
+    ("POST", "/api/v2/assessments/{id}/items/reorder"),
+    ("PUT", "/api/v2/assessments/{id}/access"),
+    ("POST", "/api/v2/assessments/{id}/overrides/{user_id}"),
+    ("PUT", "/api/v2/assessments/{id}/overrides/{user_id}"),
+    ("POST", "/api/v2/users/{user_id}/roles"),
+    ("POST", "/api/v2/rbac/roles"),
+    ("PATCH", "/api/v2/rbac/roles/{slug}"),
+    ("PUT", "/api/v2/rbac/roles/{slug}/permissions"),
+    ("POST", "/api/v2/users"),
+    ("PATCH", "/api/v2/users/{user_id}/status"),
+    ("POST", "/api/v2/gamification/xp"),
+    ("PUT", "/api/v2/gamification/config"),
+];
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_is_refused_before_the_body_is_read(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    // The seeded learner role's own grants.
+    let grants: Vec<String> = sqlx::query_scalar(
+        "SELECT rp.permission FROM role_permissions rp JOIN roles r ON r.id = rp.role_id \
+         WHERE r.slug = 'user'",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    let grants: Vec<&str> = grants.iter().map(String::as_str).collect();
+    let learner = app.mint_session(&grants).await;
+    for (method, path) in GATED_BEFORE_BODY {
+        for body in [r#"{"__bogus": 1, "name": ""}"#, "not json"] {
+            let res = app
+                .send(
+                    Request::builder()
+                        .method(*method)
+                        .uri(concretize(path))
+                        .header(header::COOKIE, &learner.cookie)
+                        .header(header::CONTENT_TYPE, "application/json")
+                        .body(Body::from(body))
+                        .unwrap(),
+                )
+                .await;
+            // 404: the probe ids name nothing, and an invisible resource
+            // reads as unknown — still decided before the body.
+            assert!(
+                matches!(res.status, StatusCode::FORBIDDEN | StatusCode::NOT_FOUND),
+                "{method} {path} with {body}: {} {}",
+                res.status,
+                res.text()
+            );
+            assert!(
+                !res.text().contains("expected"),
+                "{method} {path}: {}",
+                res.text()
+            );
+        }
+    }
+}

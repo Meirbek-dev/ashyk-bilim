@@ -132,8 +132,11 @@ pub async fn create_user(
     CurrentActor(actor): CurrentActor,
     headers: HeaderMap,
     ClientIp(ip): ClientIp,
-    ValidJson(request): ValidJson<CreateUserRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AdminUser>)> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_platform(&actor)?;
+    let request = ValidJson::<CreateUserRequest>::parse(&body)?;
     // Zitadel create → `users` row → roles as one unit (BUG-213).
     detached(async move {
         let user = state
@@ -214,8 +217,11 @@ pub async fn set_user_status(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(user_id): Path<UserId>,
-    ValidJson(request): ValidJson<SetUserStatusRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_platform(&actor)?;
+    let request = ValidJson::<SetUserStatusRequest>::parse(&body)?;
     // Commit → revoke_all → audit outlive the connection (BUG-214).
     detached(async move {
         state

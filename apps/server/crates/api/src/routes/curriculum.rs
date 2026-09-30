@@ -319,10 +319,15 @@ pub async fn update_activity(
     delete,
     path = "/activities/{id}",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(
+        ("id" = ActivityId, Path, description = "Activity id"),
+        ("If-Match" = Option<i32>, Header, description = "Current version; stale → 412"),
+    ),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -330,9 +335,14 @@ pub async fn delete_activity(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    let expected_version = if_match(&headers)?;
     detached(async move {
-        state.curriculum.delete_activity(&actor, id).await?;
+        state
+            .curriculum
+            .delete_activity(&actor, id, expected_version)
+            .await?;
         Ok(StatusCode::NO_CONTENT)
     })
     .await

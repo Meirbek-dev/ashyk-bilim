@@ -62,6 +62,21 @@ pub async fn insert_course(
     Ok(CourseId(id))
 }
 
+/// Whether the user authors any course (`CourseRow::is_author` somewhere):
+/// the creator, or an active author other than a reporter.
+pub async fn authors_any_course(pool: &PgPool, user_id: UserId) -> Result<bool> {
+    let authors = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1)
+               OR EXISTS (SELECT 1 FROM resource_authors
+                          WHERE user_id = $1 AND status = 'active' AND authorship <> 'reporter')
+               AS "authors!""#,
+        user_id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(authors)
+}
+
 pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>> {
     let row = sqlx::query_as!(
         CourseRow,
@@ -821,12 +836,23 @@ pub async fn update_activity(
 
 /// Delete an activity, releasing the uploads of its media blocks
 /// (BUG-209/243 — see [`delete_course`]; lock order activity → uploads).
-pub async fn delete_activity(pool: &PgPool, id: ActivityId, grace_secs: f64) -> Result<bool> {
+///
+/// `false` when the activity is gone or, with `expected_version` (UX-313),
+/// no longer at that version — nothing is deleted then.
+pub async fn delete_activity(
+    pool: &PgPool,
+    id: ActivityId,
+    expected_version: Option<i32>,
+    grace_secs: f64,
+) -> Result<bool> {
     let mut tx = pool.begin().await?;
-    let Some(locked) =
-        sqlx::query_scalar!("SELECT id FROM activities WHERE id = $1 FOR UPDATE", id.0)
-            .fetch_optional(&mut *tx)
-            .await?
+    let Some(locked) = sqlx::query_scalar!(
+        "SELECT id FROM activities WHERE id = $1 AND ($2::int IS NULL OR version = $2) FOR UPDATE",
+        id.0,
+        expected_version
+    )
+    .fetch_optional(&mut *tx)
+    .await?
     else {
         return Ok(false);
     };

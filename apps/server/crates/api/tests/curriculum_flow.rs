@@ -762,6 +762,29 @@ async fn content_writes_are_version_locked(pool: PgPool) {
     assert_eq!(rename.status, StatusCode::OK, "{}", rename.text());
     assert_eq!(rename.json()["version"], 3);
     assert_eq!(rename.headers[header::ETAG], "\"3\"");
+
+    // UX-313: a delete honours `If-Match` too — the stale tab's is 412 and
+    // the activity stays; the current version deletes it.
+    let delete = |version: &str| {
+        Request::builder()
+            .method("DELETE")
+            .uri(&path)
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, version)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let stale = app.send(delete("\"2\"")).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["details"]["actual"], 3);
+    assert_eq!(app.get_as(&teacher, &path).await.status, StatusCode::OK);
+    let gone = app.send(delete("\"3\"")).await;
+    assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.text());
 }
 
 /// BUG-358: a metadata PATCH honours `If-Match` under the row lock — two

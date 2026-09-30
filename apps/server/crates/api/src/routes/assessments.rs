@@ -47,8 +47,11 @@ fn access_with_etag(view: ab_domain::assessments::access::AccessView) -> Respons
 pub async fn create_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateAssessmentRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AssessmentDetail>)> {
+    // UX-311: permission before the body.
+    state.assessments.require_some_authoring(&actor).await?;
+    let request = ValidJson::<CreateAssessmentRequest>::parse(&body)?;
     let detail = state
         .assessments
         .create(
@@ -139,8 +142,11 @@ pub async fn update_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<UpdateAssessmentRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<AssessmentDetail>> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<UpdateAssessmentRequest>::parse(&body)?;
     let detail = state
         .assessments
         .update(
@@ -172,8 +178,11 @@ pub async fn set_policy(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<Policy>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<AssessmentDetail>> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<Policy>::parse(&body)?;
     // Detached (BUG-313): the post-commit lateness settle outlives a hang-up.
     detached(async move {
         let detail = state
@@ -207,8 +216,11 @@ pub async fn lifecycle(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<LifecycleRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<AssessmentDetail>> {
+    // UX-311: permission before the body.
+    state.assessments.require_publishable(&actor, id).await?;
+    let request = ValidJson::<LifecycleRequest>::parse(&body)?;
     // BUG-232: the projection and audit row after the commit must not die
     // with the socket.
     detached(async move {
@@ -244,8 +256,11 @@ pub async fn duplicate_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<DuplicateRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AssessmentDetail>)> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<DuplicateRequest>::parse(&body)?;
     let detail = state
         .assessments
         .duplicate(&actor, id, request.title.as_deref(), request.chapter_id)
@@ -304,8 +319,11 @@ pub async fn create_item(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<CreateItemRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AssessmentItem>)> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<CreateItemRequest>::parse(&body)?;
     let item = state
         .assessments
         .add_item(
@@ -336,8 +354,14 @@ pub async fn update_item(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentItemId>,
-    ValidJson(request): ValidJson<UpdateItemRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<AssessmentItem>> {
+    // UX-311: permission before the body.
+    state
+        .assessments
+        .require_authorable_item(&actor, id)
+        .await?;
+    let request = ValidJson::<UpdateItemRequest>::parse(&body)?;
     let item = state
         .assessments
         .update_item(
@@ -388,8 +412,11 @@ pub async fn reorder_items(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-    ValidJson(request): ValidJson<ReorderItemsRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Vec<AssessmentItem>>> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<ReorderItemsRequest>::parse(&body)?;
     let items = state
         .assessments
         .reorder_items(&actor, id, &request.items)
@@ -444,8 +471,11 @@ pub async fn set_access(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<crate::dto::assessments::SetAccessRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<crate::dto::assessments::SetAccessRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     // BUG-322: the re-aggregation after the commit must outlive the socket.
     let view = detached(async move {
@@ -502,8 +532,11 @@ pub async fn create_override(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
-    ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<crate::dto::assessments::StudentOverride>)> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<crate::dto::assessments::OverrideRequest>::parse(&body)?;
     // Detached (BUG-313): the settle outlives a hang-up.
     detached(async move {
         let row = state
@@ -529,8 +562,11 @@ pub async fn update_override(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
-    ValidJson(request): ValidJson<crate::dto::assessments::OverrideRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<crate::dto::assessments::StudentOverride>> {
+    // UX-311: permission before the body.
+    state.assessments.require_authorable(&actor, id).await?;
+    let request = ValidJson::<crate::dto::assessments::OverrideRequest>::parse(&body)?;
     // Detached (BUG-313): the settle outlives a hang-up.
     detached(async move {
         let row = state

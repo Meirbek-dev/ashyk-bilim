@@ -500,11 +500,31 @@ impl CurriculumService {
         self.activity_detail(actor, activity_id).await
     }
 
-    pub async fn delete_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<()> {
+    /// `expected_version` (`If-Match`, UX-313): an activity another tab
+    /// changed meanwhile is 412, not deleted.
+    pub async fn delete_activity(
+        &self,
+        actor: &Actor,
+        activity_id: ActivityId,
+        expected_version: Option<i32>,
+    ) -> Result<()> {
         let activity = self.writable_activity(actor, activity_id).await?;
         // BUG-209: block uploads under it are released with the cascade.
-        ab_db::catalog::delete_activity(&self.pool, activity_id, UNREFERENCED_GRACE.as_secs_f64())
-            .await?;
+        if !ab_db::catalog::delete_activity(
+            &self.pool,
+            activity_id,
+            expected_version,
+            UNREFERENCED_GRACE.as_secs_f64(),
+        )
+        .await?
+            && let Some(expected) = expected_version
+        {
+            return Err(Error::app_with_details(
+                ErrorCode::PreconditionFailed,
+                "activity changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": activity.version }),
+            ));
+        }
         let remaining =
             ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
         ab_db::catalog::renumber_activities(&self.pool, &remaining).await?;

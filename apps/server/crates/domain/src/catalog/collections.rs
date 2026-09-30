@@ -70,6 +70,21 @@ impl CollectionsService {
                 && actor.has(perm(Action::Delete, Scope::Own)))
     }
 
+    /// `collection:create:platform`.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_create(actor: &Actor) -> Result<()> {
+        actor.require(perm(Action::Create, Scope::Platform))
+    }
+
+    /// `collection:update` at some scope — the superset of `require_write`
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_some_write(actor: &Actor) -> Result<()> {
+        if actor.has(perm(Action::Update, Scope::Own)) {
+            return Ok(());
+        }
+        actor.require(perm(Action::Update, Scope::Platform))
+    }
+
     fn require_write(actor: &Actor, collection: &Collection) -> Result<()> {
         if actor.has(perm(Action::Update, Scope::Platform)) {
             return Ok(());
@@ -242,12 +257,27 @@ impl CollectionsService {
         self.get(actor, id).await
     }
 
-    pub async fn delete(&self, actor: &Actor, id: CollectionId) -> Result<()> {
+    /// `expected_version` (`If-Match`, UX-313): a collection another tab
+    /// changed meanwhile is 412, not deleted.
+    pub async fn delete(
+        &self,
+        actor: &Actor,
+        id: CollectionId,
+        expected_version: Option<i32>,
+    ) -> Result<()> {
         let collection = self.load(actor, id).await?;
         if !Self::can_delete(actor, &collection) {
             return Err(Error::forbidden("no delete access to this collection"));
         }
-        ab_db::collections::delete_collection(&self.pool, id).await?;
+        if !ab_db::collections::delete_collection(&self.pool, id, expected_version).await?
+            && let Some(expected) = expected_version
+        {
+            return Err(Error::app_with_details(
+                ErrorCode::PreconditionFailed,
+                "collection changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": collection.version }),
+            ));
+        }
         Ok(())
     }
 }

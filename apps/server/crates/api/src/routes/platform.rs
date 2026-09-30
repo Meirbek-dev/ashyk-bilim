@@ -38,8 +38,11 @@ pub async fn get_platform(State(state): State<AppState>) -> ApiResult<Json<Platf
 pub async fn update_platform(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<UpdatePlatformRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Platform>> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::PlatformService::require_update(&actor)?;
+    let request = ValidJson::<UpdatePlatformRequest>::parse(&body)?;
     let platform = state
         .platform
         .update(

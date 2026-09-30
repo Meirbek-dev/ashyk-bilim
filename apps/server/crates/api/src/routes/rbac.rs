@@ -50,8 +50,11 @@ pub async fn assign_role(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(user_id): Path<UserId>,
-    ValidJson(request): ValidJson<AssignRoleRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<AssignRoleRequest>::parse(&body)?;
     // Grant → propagate → audit outlive the connection (BUG-214).
     detached(async move {
         state
@@ -111,8 +114,11 @@ pub async fn unassign_role(
 pub async fn create_role(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateRoleRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<CreateRoleRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -148,8 +154,11 @@ pub async fn update_role(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(slug): Path<String>,
-    ValidJson(request): ValidJson<UpdateRoleRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<UpdateRoleRequest>::parse(&body)?;
     state
         .rbac
         .update_role(
@@ -206,8 +215,11 @@ pub async fn set_role_permissions(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(slug): Path<String>,
-    ValidJson(request): ValidJson<SetRolePermissionsRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<SetRolePermissionsRequest>::parse(&body)?;
     detached(async move {
         state
             .rbac

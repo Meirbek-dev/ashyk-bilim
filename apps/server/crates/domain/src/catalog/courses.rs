@@ -122,6 +122,24 @@ impl CoursesService {
         Self { pool }
     }
 
+    /// `course:create:platform`.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_create(actor: &Actor) -> Result<()> {
+        actor.require(perm(Action::Create, Scope::Platform))
+    }
+
+    /// The course's write gate on its own: visible (404) + `require_write`
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_writable(&self, actor: &Actor, id: CourseId) -> Result<()> {
+        let course = self.get(actor, id).await?;
+        Self::require_write(actor, &course)
+    }
+
+    /// [`Self::require_writable`] for an announcement's course.
+    pub async fn require_writable_update(&self, actor: &Actor, id: CourseUpdateId) -> Result<()> {
+        self.writable_update(actor, id).await.map(drop)
+    }
+
     /// Write access: platform-wide updaters, or an author (the creator or an
     /// active maintainer / contributor — authorship is the `:own` scope).
     /// Shared with the curriculum service (chapters/activities inherit it).

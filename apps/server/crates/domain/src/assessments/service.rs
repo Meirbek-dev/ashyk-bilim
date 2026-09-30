@@ -489,6 +489,39 @@ impl AssessmentsService {
 
     // ── Gates ───────────────────────────────────────────────────────────
 
+    /// Authoring or publishing rights on some course — a platform grant or
+    /// authorship anywhere; the superset of `require_scoped` for `Author`
+    /// and `Publish`.
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_some_authoring(&self, actor: &Actor) -> Result<()> {
+        if actor.has(perm(Action::Author, Scope::Platform))
+            || actor.has(perm(Action::Publish, Scope::Platform))
+            || ab_db::catalog::authors_any_course(&self.pool, actor.user_id).await?
+        {
+            return Ok(());
+        }
+        Err(Error::forbidden("no authoring access to any course"))
+    }
+
+    /// An assessment's author gate on its own.
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_authorable(&self, actor: &Actor, id: AssessmentId) -> Result<()> {
+        self.load_for_author(actor, id).await.map(drop)
+    }
+
+    /// [`Self::require_authorable`] for an item's assessment.
+    pub async fn require_authorable_item(&self, actor: &Actor, id: AssessmentItemId) -> Result<()> {
+        self.item_for_author(actor, id).await.map(drop)
+    }
+
+    /// The lifecycle gate of [`Self::transition`] on its own.
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_publishable(&self, actor: &Actor, id: AssessmentId) -> Result<()> {
+        let assessment = self.load(id).await?;
+        let course = self.courses.get(actor, assessment.course_id).await?;
+        Self::require_scoped(actor, &course, Action::Publish, "publish")
+    }
+
     pub(crate) fn require_scoped(
         actor: &Actor,
         course: &Course,
