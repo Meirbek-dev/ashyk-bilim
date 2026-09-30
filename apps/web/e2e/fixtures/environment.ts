@@ -13,9 +13,10 @@ import { getEnv } from '../env'
 export const JUDGE0_SKIP_REASON = 'Judge0 not reachable (code/languages 503) — code arena needs the executor'
 
 /** True when the executor answered `GET code/languages` with 2xx. */
-export async function probeJudge0(apiUrl: string): Promise<boolean> {
+export async function probeJudge0(apiUrl: string, cookie: string): Promise<boolean> {
   try {
-    const res = await fetch(`${apiUrl}/code/languages`)
+    // `code/languages` needs a session: an anonymous probe gets 401 even with Judge0 up.
+    const res = await fetch(`${apiUrl}/code/languages`, { headers: { Cookie: cookie } })
     return res.ok
   } catch {
     return false

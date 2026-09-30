@@ -67,7 +67,8 @@ export class AdminUsersPage {
     // Select role
     const roleCombo = dialog.getByRole('combobox').nth(1)
     await roleCombo.click()
-    await this.page.getByRole('option', { name: new RegExp(escapeRegExp(roleName), 'i') }).click()
+    // Exact: migrated data adds «Teacher: previous platform rights» (BUG-378).
+    await this.page.getByRole('option', { name: roleName, exact: true }).click()
 
     // Confirm
     await dialog.getByRole('button', { name: /assign role|save|confirm/i }).click()

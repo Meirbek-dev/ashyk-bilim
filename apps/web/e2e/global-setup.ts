@@ -173,7 +173,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   await captureStorageState(studentEmail, studentPassword, STORAGE_STATE.student)
 
   // 4. Infrastructure probes — recorded for the specs that need the service.
-  const judge0 = await probeJudge0(API_URL)
+  const judge0 = await probeJudge0(API_URL, await loginViaApi(teacherEmail, teacherPassword))
   setEnv('E2E_JUDGE0', String(judge0))
   if (!judge0) console.log('[setup] Judge0 not reachable (code/languages) — code-challenge tests will be skipped.')
 
