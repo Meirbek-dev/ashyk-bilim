@@ -1,5 +1,6 @@
 import AssessmentStudioWorkspace from '@/features/assessments/studio/AssessmentStudioWorkspace'
 import FileSubmissionStudio from '@/features/file-submissions/studio/FileSubmissionStudio'
+import MediaActivityStudio from '@components/Dashboard/Courses/MediaActivityStudio'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
 import { getActivity } from '@services/courses/activities'
@@ -79,6 +80,8 @@ async function PlatformAssessmentStudioContent({ params }: PlatformAssessmentStu
       <AssessmentStudioWorkspace courseUuid={courseuuid} activityUuid={activityid} />
     ) : activity.activity_type === 'TYPE_FILE_SUBMISSION' ? (
       <FileSubmissionStudio courseUuid={courseuuid} activityUuid={activityid} />
+    ) : activity.activity_type === 'TYPE_VIDEO' || activity.activity_type === 'TYPE_DOCUMENT' ? (
+      <MediaActivityStudio activity={activity} courseUuid={courseuuid} />
     ) : activity.activity_type === 'TYPE_DYNAMIC' ? (
       <div className="bg-background min-h-screen">
         <EditorWrapper

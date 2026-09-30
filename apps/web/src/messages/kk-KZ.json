@@ -2249,7 +2249,7 @@
       "activityNamePlaceholder": "Белсенділік атауын енгізіңіз...",
       "addSubtitle": "Субтитр қосу",
       "additionalSettings": "Қосымша параметрлер",
-      "additionalSettingsDescription": "Уақыт, ойнату опциялары және субтитрлер",
+      "additionalSettingsDescription": "Уақыт және ойнату опциялары",
       "ariaLabel": "Белсенділік үшін жүктеу үшін бейне файлын таңдаңыз",
       "ariaUploadSubtitleFile": "Субтитр файлын жүктеу",
       "autoplay": "Автоойнату",
@@ -2641,7 +2641,8 @@
       "cancel": "Болдырмау",
       "unpublishConfirmTitle": "«{name}» жариялаудан алынсын ба?",
       "unpublishConfirmMessage": "Қайта жарияламайынша, оқушылар бұл әрекетке және ондағы тапсырған жұмыстарына қол жеткізе алмайды.",
-      "unpublishedToast": "Әрекет жариялаудан алынды — оқушылар оны енді көрмейді."
+      "unpublishedToast": "Әрекет жариялаудан алынды — оқушылар оны енді көрмейді.",
+      "previewDraftTooltip": "Білім алушы беті жарияланғаннан кейін ашылады"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Тарау атауы",
@@ -10118,6 +10119,18 @@
       "correctAnswer": "Дұрыс жауап",
       "violationThresholdForfeited": "Бұзушылық шегіне жетті ({count}): әрекет жойылып, нөл балмен жіберілді.",
       "startNewAttempt": "Жаңа әрекетті бастау"
+    },
+    "MediaStudio": {
+      "source": "Дереккөз",
+      "youtubeUrl": "YouTube сілтемесі",
+      "currentFile": "Файл",
+      "replaceFile": "Файлды ауыстыру",
+      "uploading": "Жүктелуде… {percent}%",
+      "fileTooLarge": "Файл {size} МБ-тан үлкен",
+      "save": "Сақтау",
+      "saved": "Сақталды",
+      "openLearnerView": "Білім алушы ретінде ашу",
+      "preview": "Алдын ала қарау"
     }
   },
   "Themes": {

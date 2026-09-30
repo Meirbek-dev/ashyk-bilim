@@ -2250,7 +2250,7 @@
       "activityNamePlaceholder": "Enter activity name...",
       "addSubtitle": "Add Subtitle",
       "additionalSettings": "Additional Settings",
-      "additionalSettingsDescription": "Timing, playback options, and subtitles",
+      "additionalSettingsDescription": "Timing and playback options",
       "ariaLabel": "Choose video file to upload for activity",
       "ariaUploadSubtitleFile": "Upload subtitle file",
       "autoplay": "Autoplay",
@@ -2642,7 +2642,8 @@
       "cancel": "Cancel",
       "unpublishConfirmTitle": "Unpublish \"{name}\"?",
       "unpublishConfirmMessage": "Learners will lose access to this activity and their submitted work in it until you publish it again.",
-      "unpublishedToast": "Activity unpublished — learners no longer see it."
+      "unpublishedToast": "Activity unpublished — learners no longer see it.",
+      "previewDraftTooltip": "The learner page opens once this is published"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Chapter name",
@@ -9934,6 +9935,18 @@
       "correctAnswer": "Correct answer",
       "violationThresholdForfeited": "Violation threshold reached ({count}): the attempt is forfeited and handed in with a zero score.",
       "startNewAttempt": "Start a new attempt"
+    },
+    "MediaStudio": {
+      "source": "Source",
+      "youtubeUrl": "YouTube link",
+      "currentFile": "File",
+      "replaceFile": "Replace file",
+      "uploading": "Uploading… {percent}%",
+      "fileTooLarge": "The file is larger than {size} MB",
+      "save": "Save",
+      "saved": "Saved",
+      "openLearnerView": "Open as a learner",
+      "preview": "Preview"
     }
   },
   "Themes": {

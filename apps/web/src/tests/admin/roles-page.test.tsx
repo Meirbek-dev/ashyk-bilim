@@ -81,7 +81,7 @@ describe('/dash/admin/roles (v2 Role wire)', () => {
     renderPage()
     const adminRow = (await screen.findByText('Administrator')).closest('tr')!
     expect(within(adminRow).getByText('Full access')).toBeInTheDocument()
-    expect(within(adminRow).getByText('systemRoleReadOnly')).toBeInTheDocument()
+    expect(within(adminRow).getByRole('img', { name: 'systemRoleReadOnly' })).toBeInTheDocument()
     expect(within(adminRow).queryByRole('button')).toBeNull()
 
     // Custom roles show their raw text, not the (uncatalogued) key.

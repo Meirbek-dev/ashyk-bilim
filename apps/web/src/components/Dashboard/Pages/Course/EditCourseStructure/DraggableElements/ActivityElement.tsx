@@ -374,26 +374,42 @@ function ActivityElement({
           {/* Open content editor */}
           <ActivityEditButton activity={activity} course_uuid={course_uuid} />
 
-          {/* Preview */}
-          <ToolTip content={t('previewTooltip')} side="top">
-            <Button
-              size="icon"
-              variant="outline"
-              className={ACTION_ICON_BUTTON_CLASS}
-              nativeButton={false}
-              aria-label={t('previewTooltip')}
-              render={
-                <AppLink
-                  href={`/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+          {/* Preview: the learner page only serves published activities, so a draft has nothing to open yet. */}
+          {!activity.published ? (
+            <ToolTip content={t('previewDraftTooltip')} side="top">
+              <span className="inline-flex">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className={ACTION_ICON_BUTTON_CLASS}
+                  disabled
+                  aria-label={t('previewDraftTooltip')}
                 >
                   <Eye className="h-4 w-4" />
-                  <span className="sr-only">{t('previewTooltip')}</span>
-                </AppLink>
-              }
-            />
-          </ToolTip>
+                </Button>
+              </span>
+            </ToolTip>
+          ) : (
+            <ToolTip content={t('previewTooltip')} side="top">
+              <Button
+                size="icon"
+                variant="outline"
+                className={ACTION_ICON_BUTTON_CLASS}
+                nativeButton={false}
+                aria-label={t('previewTooltip')}
+                render={
+                  <AppLink
+                    href={`/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">{t('previewTooltip')}</span>
+                  </AppLink>
+                }
+              />
+            </ToolTip>
+          )}
 
           {/* Publish toggle — UX-120: an archived assessment publishes only after «Восстановить» in the studio (409
               otherwise); UX-124: a scheduled one publishes itself (409 `activity-not-ready` until then). */}
@@ -544,7 +560,9 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
     activity.activity_type === 'TYPE_EXAM' ||
     activity.activity_type === 'TYPE_CUSTOM' ||
     activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
-    activity.activity_type === 'TYPE_FILE_SUBMISSION'
+    activity.activity_type === 'TYPE_FILE_SUBMISSION' ||
+    activity.activity_type === 'TYPE_VIDEO' ||
+    activity.activity_type === 'TYPE_DOCUMENT'
   ) {
     // In-app editor: locale-prefixed, same tab (an `<a target=_blank>` lost
     // the locale and opened a second copy of the workspace).

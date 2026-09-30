@@ -16,7 +16,6 @@ import { toast } from 'sonner'
 
 import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
-import type { SubtitleFile } from './components/SubtitleManager'
 import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 const SUPPORTED_VIDEO_FILES = constructAcceptValue(['mp4', 'mkv', 'webm', 'mov', 'avi', 'flv'])
@@ -27,7 +26,6 @@ interface VideoDetails {
   endTime: number | null
   autoplay: boolean
   muted: boolean
-  subtitles?: SubtitleFile[]
   [key: string]: unknown
 }
 
@@ -53,7 +51,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     endTime: null,
     autoplay: false,
     muted: false,
-    subtitles: [],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -200,17 +197,6 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     <div className="mx-auto max-w-2xl">
       {/* UX-238: validateForm marks every field inline (trimmed name included), as the other create dialogs do. */}
       <form action={handleSubmit} noValidate className="space-y-5">
-        {/* Header */}
-        <div className="border-b border-gray-100 pb-4">
-          <div className="mb-1 flex items-center gap-2.5">
-            <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-lg">
-              <FileVideo size={16} className="text-muted-foreground" />
-            </div>
-            <h2 className="text-foreground text-base font-semibold">{t('createVideoActivity')}</h2>
-          </div>
-          <p className="text-muted-foreground ml-[42px] text-sm">{t('createVideoActivityDescription')}</p>
-        </div>
-
         {/* Activity Name */}
         <div className="space-y-1.5">
           <Label htmlFor="video-activity-name" className="text-foreground/80 text-sm font-medium">

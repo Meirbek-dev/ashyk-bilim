@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, ChevronDown, Clock, Languages, Play, Settings, VolumeX } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Clock, Play, Settings, VolumeX } from 'lucide-react'
 import { motion } from 'motion/react'
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -8,15 +8,12 @@ import { Checkbox } from '@components/ui/checkbox'
 import { Label } from '@components/ui/label'
 import { cn } from '@/lib/utils'
 import { TimeInput } from './TimeInput'
-import { SubtitleManager } from './SubtitleManager'
-import type { SubtitleFile } from './SubtitleManager'
 
 interface VideoDetails {
   startTime: number
   endTime: number | null
   autoplay: boolean
   muted: boolean
-  subtitles?: SubtitleFile[]
   [key: string]: unknown
 }
 
@@ -34,11 +31,6 @@ const formatTime = (seconds: number): string => {
 
 export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSettingsFormProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const subtitles = videoDetails.subtitles || []
-
-  const setSubtitles = (newSubtitles: SubtitleFile[]) => {
-    setVideoDetails({ ...videoDetails, subtitles: newSubtitles })
-  }
 
   const convertToSeconds = (minutes: number, seconds: number) => minutes * 60 + seconds
 
@@ -71,7 +63,6 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
     Boolean(videoDetails.endTime),
     videoDetails.autoplay,
     videoDetails.muted,
-    subtitles.length > 0,
   ].filter(Boolean).length
 
   const hasTimingErrors = Boolean(videoDetails.endTime && videoDetails.endTime <= videoDetails.startTime)
@@ -192,16 +183,8 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
             </div>
           </div>
 
-          <Separator />
-
-          {/* Subtitles */}
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-              <Languages size={13} />
-              {t('subtitlesAndCaptions')}
-            </h4>
-            <SubtitleManager subtitles={subtitles} setSubtitles={setSubtitles} t={t} />
-          </div>
+          {/* No subtitle picker: there is no upload policy for caption files, so the
+              picked File never reached storage and the learner player got nothing. */}
         </div>
       </CollapsibleContent>
     </Collapsible>

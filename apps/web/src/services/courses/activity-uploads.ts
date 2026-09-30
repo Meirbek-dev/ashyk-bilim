@@ -1,7 +1,7 @@
 import { apiJson } from '@/lib/api-client'
 import { clientApiError } from '@/lib/api/assertSuccess'
 import { Block } from '@/lib/api/generated/zod'
-import { createActivity } from '@services/courses/activities'
+import { createActivity, updateActivity } from '@services/courses/activities'
 import { uploadFile } from '@services/media/uploads'
 import type { UploadPurpose } from '@services/media/uploads'
 
@@ -78,4 +78,32 @@ export async function createFileActivity(
   )
 
   return activity
+}
+
+/**
+ * Swap the file of an existing video / PDF activity: upload, point `content` at
+ * the new key (optimistic lock on `version`), then claim the upload as a block.
+ */
+export async function replaceActivityFile(
+  activity: { activity_uuid: string; version?: unknown },
+  file: File,
+  type: 'video' | 'documentpdf',
+  onProgress?: (progress: UploadProgress) => void,
+) {
+  const kind = FILE_ACTIVITY_KINDS[type]!
+  const upload = await uploadFile(file, kind.purpose, {
+    onProgress: progress => onProgress?.({ percentage: progress.percentage }),
+  })
+  const content = { filename: upload.key, upload_id: upload.id, file_name: file.name }
+  const updated = await updateActivity({ content, version: activity.version }, activity.activity_uuid)
+  await apiJson(
+    `activities/${updated.activity_uuid}/blocks`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ block_type: kind.blockType, upload_id: upload.id, file_name: file.name }),
+    },
+    (body: unknown) => Block.parse(body),
+  )
+  return { ...updated, content }
 }

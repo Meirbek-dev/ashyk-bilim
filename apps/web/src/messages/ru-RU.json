@@ -2249,7 +2249,7 @@
       "activityNamePlaceholder": "Введите название активности...",
       "addSubtitle": "Добавить субтитры",
       "additionalSettings": "Дополнительные настройки",
-      "additionalSettingsDescription": "Время, опции воспроизведения и субтитры",
+      "additionalSettingsDescription": "Время и опции воспроизведения",
       "ariaLabel": "Выберите видеофайл для загрузки активности",
       "ariaUploadSubtitleFile": "Загрузить файл субтитров",
       "autoplay": "Автовоспроизведение",
@@ -2641,7 +2641,8 @@
       "cancel": "Отмена",
       "unpublishConfirmTitle": "Снять «{name}» с публикации?",
       "unpublishConfirmMessage": "Учащиеся потеряют доступ к этой активности и своим сданным работам в ней, пока вы не опубликуете её снова.",
-      "unpublishedToast": "Активность снята с публикации — учащиеся её больше не видят."
+      "unpublishedToast": "Активность снята с публикации — учащиеся её больше не видят.",
+      "previewDraftTooltip": "Страница учащегося откроется после публикации"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Название главы",
@@ -9947,6 +9948,18 @@
       "correctAnswer": "Правильный ответ",
       "violationThresholdForfeited": "Порог нарушений достигнут ({count}): попытка аннулирована и отправлена с нулевым баллом.",
       "startNewAttempt": "Начать новую попытку"
+    },
+    "MediaStudio": {
+      "source": "Источник",
+      "youtubeUrl": "Ссылка на YouTube",
+      "currentFile": "Файл",
+      "replaceFile": "Заменить файл",
+      "uploading": "Загрузка… {percent}%",
+      "fileTooLarge": "Файл больше {size} МБ",
+      "save": "Сохранить",
+      "saved": "Сохранено",
+      "openLearnerView": "Открыть как учащийся",
+      "preview": "Предпросмотр"
     }
   },
   "Themes": {
