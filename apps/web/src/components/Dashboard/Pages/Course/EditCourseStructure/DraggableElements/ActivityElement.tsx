@@ -277,7 +277,7 @@ function ActivityElement({
       data-activity-element={activity.activity_uuid}
       data-activity-type={activity.activity_type}
       className={cn(
-        'group/activity mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
+        'group/activity mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-card p-3 transition-all duration-200',
         isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
       )}
     >
@@ -298,7 +298,7 @@ function ActivityElement({
       <ActivityTypeBadge activityType={activity.activity_type} />
 
       {/* Name */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         {isEditing ? (
           <div className="flex items-center gap-1.5">
             <Input
@@ -338,8 +338,8 @@ function ActivityElement({
             </ToolTip>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-foreground max-w-full truncate text-sm font-medium">{activity.name}</span>
             {/* UX-124: a scheduled assessment publishes itself — the badge explains why there is no toggle. */}
             {isScheduled && !activity.published ? (
               <ToolTip content={t('scheduledHint')} side="top">
@@ -370,7 +370,7 @@ function ActivityElement({
 
       {/* Action icons */}
       {!isEditing && (
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {/* Open content editor */}
           <ActivityEditButton activity={activity} course_uuid={course_uuid} />
 
