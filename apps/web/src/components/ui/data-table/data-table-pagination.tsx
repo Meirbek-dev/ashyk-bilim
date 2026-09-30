@@ -63,6 +63,9 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
     [onPaginationChange, table],
   )
 
+  // One short page: a pager with «Page 1 of 1» and a page-size picker is only noise.
+  if (selectedCount === 0 && pageCount >= 0 && pageCount <= 1 && totalCount <= Math.min(...pageSizeOptions)) return null
+
   return (
     <div
       className={cn(

@@ -53,9 +53,15 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger
         render={
-          <Button type="button" variant="destructive" size="sm">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            aria-label={t('deleteButton')}
+            title={t('deleteButton')}
+          >
             <X className="size-3.5" />
-            {t('deleteButton')}
+            <span className="hidden xl:inline">{t('deleteButton')}</span>
           </Button>
         }
       />
@@ -146,12 +152,7 @@ function UserGroups() {
     {
       accessorKey: 'member_count',
       header: t('membersHeader'),
-      cell: ({ row }) => <span className="tabular-nums">{row.original.member_count}</span>,
-    },
-    {
-      id: 'manageUsers',
-      header: t('manageUsersHeader'),
-      enableSorting: false,
+      // The member count opens the member manager: one column instead of a count plus a wide button.
       cell: ({ row }) =>
         canWrite(row.original) ? (
           <Modal
@@ -165,14 +166,21 @@ function UserGroups() {
             dialogTitle={t('manageUsersModalTitle')}
             dialogDescription={t('manageUsersModalDescription')}
             dialogTrigger={
-              <Button variant="outline" size="sm" onClick={() => handleOpenModal('manage', row.original)} type="button">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenModal('manage', row.original)}
+                type="button"
+                aria-label={`${t('manageUsersButton')}: ${row.original.member_count}`}
+                title={t('manageUsersButton')}
+              >
                 <Users className="size-3.5" />
-                {t('manageUsersButton')}
+                <span className="tabular-nums">{row.original.member_count}</span>
               </Button>
             }
           />
         ) : (
-          <span className="text-muted-foreground text-xs">{t('readOnlyGroup')}</span>
+          <span className="tabular-nums">{row.original.member_count}</span>
         ),
     },
     {
@@ -193,9 +201,11 @@ function UserGroups() {
                   size="sm"
                   onClick={() => handleOpenModal('edit', row.original)}
                   type="button"
+                  aria-label={t('editButton')}
+                  title={t('editButton')}
                 >
                   <Pencil className="size-3.5" />
-                  {t('editButton')}
+                  <span className="hidden xl:inline">{t('editButton')}</span>
                 </Button>
               }
               minHeight="sm"
@@ -217,7 +227,9 @@ function UserGroups() {
             />
             <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
           </div>
-        ) : null,
+        ) : (
+          <span className="text-muted-foreground text-xs">{t('readOnlyGroup')}</span>
+        ),
     },
   ]
 
