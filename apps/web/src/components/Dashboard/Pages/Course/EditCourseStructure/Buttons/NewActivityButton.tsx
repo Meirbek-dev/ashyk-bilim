@@ -19,6 +19,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from '@/i18n/navigation'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
@@ -34,17 +35,19 @@ function NewActivityButton(props: NewActivityButtonProps) {
   const t = useTranslations('CourseEdit.NewActivityModal')
   const tNotify = useTranslations('DashPage.Notifications')
   const { toastApiError } = useApiError()
+  const router = useRouter()
 
   const closeNewActivityModal = async () => {
     setNewActivityModal(false)
   }
 
-  const submitActivity = async (activity: AppPayload) => {
+  const createActivity = async (activity: AppPayload) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
-      await activityMutations.createActivity(activity as ActivityCreateValues, props.chapterId)
+      const created = await activityMutations.createActivity(activity as ActivityCreateValues, props.chapterId)
       toast.success(tNotify('activityCreatedSuccess'))
       setNewActivityModal(false)
+      return created
     } catch (error: unknown) {
       toastApiError(error, undefined, tNotify('activityCreateFailed'))
       throw error
@@ -138,7 +141,12 @@ function NewActivityButton(props: NewActivityButtonProps) {
       activity_sub_type: 'SUBTYPE_DYNAMIC_PAGE',
     }
 
-    await submitActivity(activityPayload)
+    const created = await createActivity(activityPayload)
+    // «Create and open»: straight into the editor instead of leaving the author to find the new row.
+    if (created?.id) {
+      const courseId = course.courseStructure.course_uuid.replace(/^course_/, '')
+      router.push(`/dash/courses/${courseId}/activity/${String(created.id).replace(/^activity_/, '')}/studio`)
+    }
   }
 
   return (
@@ -157,7 +165,9 @@ function NewActivityButton(props: NewActivityButtonProps) {
             closeModal={closeNewActivityModal}
             submitFileActivity={submitFileActivity}
             submitExternalVideo={submitExternalVideo}
-            submitActivity={submitActivity}
+            submitActivity={async activity => {
+              await createActivity(activity)
+            }}
             createAndOpenActivity={createAndOpenActivity}
             chapterId={props.chapterId}
             course={{

@@ -1791,7 +1791,7 @@
       "codeChallengeDesc": "Create a programming exercise with automated testing",
       "document": "Document",
       "documentDesc": "Upload a PDF or document for students to read",
-      "dynamicPage": "Dynamic Page",
+      "dynamicPage": "Page",
       "dynamicPageDesc": "Rich interactive content with text, media, and exercises",
       "exams": "Exam",
       "examsDesc": "Build an exam with limited attempts and proctoring",
@@ -2757,7 +2757,7 @@
       "description": "Create a new activity for this chapter.",
       "quickCreate": {
         "codeChallengeName": "New Code Challenge",
-        "dynamicPageName": "New Dynamic Page"
+        "dynamicPageName": "New page"
       },
       "title": "Add Activity"
     },
