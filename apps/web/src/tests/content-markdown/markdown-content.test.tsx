@@ -152,6 +152,12 @@ describe('MarkdownContent', () => {
     expect(container.querySelector('[aria-label="Copy code"]')).not.toBeInTheDocument()
   })
 
+  it('renders a one-line fence without a language as a block (UX-320)', () => {
+    const { container } = render(<MarkdownContent content={'```\nnpm install\n```'} />)
+    expect(container.querySelector('[aria-label="copyCode"]')).toBeInTheDocument()
+    expect(container.querySelector('code.bg-muted')).not.toBeInTheDocument()
+  })
+
   // ── Streaming ────────────────────────────────────────────────────────────────
 
   it('sets aria-live when streaming=true', () => {
