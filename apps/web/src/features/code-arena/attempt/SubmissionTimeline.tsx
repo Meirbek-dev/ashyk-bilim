@@ -1,12 +1,13 @@
 'use client'
 
 import { RotateCcw } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import type { CodeSubmission, Judge0Language } from '../domain'
 
 interface SubmissionTimelineProps {
@@ -17,6 +18,7 @@ interface SubmissionTimelineProps {
 
 export function SubmissionTimeline({ submissions, languages, onRestoreSubmission }: SubmissionTimelineProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const locale = useLocale()
 
   return (
     <ScrollArea className="h-full">
@@ -43,7 +45,7 @@ export function SubmissionTimeline({ submissions, languages, onRestoreSubmission
                   <div className="text-muted-foreground mt-1 text-xs">
                     {submission.submitted_at_unix === null
                       ? t('unknownTime')
-                      : fromUnix(submission.submitted_at_unix).toLocaleString()}
+                      : formatDate(fromUnix(submission.submitted_at_unix), locale, DATE_TIME_OPTIONS)}
                     {/* UX-287: the language's name; the id only while Judge0's list is unavailable. */}
                     {submission.language_id
                       ? ` · ${languages.find(language => language.id === submission.language_id)?.name ?? t('languageIdFallback', { id: submission.language_id })}`
