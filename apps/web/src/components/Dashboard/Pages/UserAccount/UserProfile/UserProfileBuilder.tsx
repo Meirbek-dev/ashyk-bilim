@@ -18,7 +18,7 @@ import { Button } from '@components/ui/button'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 
-import { createEmptySection, getSectionTypesConfig } from './types'
+import { createEmptySection, getSectionTypesConfig, sectionMeta } from './types'
 import type { ProfileData, ProfileSection, SectionKind } from './types'
 import { createProfileSchema } from './schema'
 import { SortableProfileSection } from './components/SortableProfileSection'
@@ -28,6 +28,8 @@ import { SectionEditor } from './components/SectionEditor'
 const SAVE_TOAST_ID = 'profile-builder-save'
 /** `profile.sections[3].links[0].url` → section 3. */
 const SECTION_FIELD = /^profile\.sections\[(\d+)\]\./u
+/** Characters of a section title a toast quotes (UX-305). */
+const SECTION_NAME_MAX = 40
 
 interface UserProfileBuilderProps {
   initialProfile: ProfileData
@@ -59,6 +61,23 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
   const sectionIds = useMemo(() => profileData.sections.map(s => s.id), [profileData.sections])
   const announcements = useDndAnnouncements(sectionIds)
 
+  /**
+   * UX-305: the toast wraps the name in «Раздел «…»», which a default title
+   * («Раздел «Ссылки»») already is — name that one by its kind — and a long
+   * title is clipped so the toast stays one line.
+   */
+  const sectionName = (section: ProfileSection) => {
+    const kind = sectionMeta(t, section.type).label
+    const title = section.title.trim()
+    if (!title || title === t('EmptySections.defaultTitle', { sectionName: kind })) return kind
+    const chars = [...title]
+    if (chars.length <= SECTION_NAME_MAX) return title
+    return `${chars
+      .slice(0, SECTION_NAME_MAX - 1)
+      .join('')
+      .trimEnd()}…`
+  }
+
   const save = useMutation({
     mutationFn: (profile: ProfileData) => saveProfileDocument(profile, version),
     onSuccess: newVersion => {
@@ -86,7 +105,7 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
           : tErrors.has(`fields.${fieldError.code}`)
             ? tErrors(`fields.${fieldError.code}`)
             : fieldError.message
-      toast.error(t('Errors.sectionField', { section: section.title || String(index + 1), message }), {
+      toast.error(t('Errors.sectionField', { section: sectionName(section), message }), {
         id: SAVE_TOAST_ID,
       })
     },

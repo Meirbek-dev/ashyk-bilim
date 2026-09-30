@@ -134,6 +134,34 @@ describe('UserProfileBuilder (BUG-361)', () => {
     expect(screen.getByDisplayValue('https:///x')).toBeTruthy()
   })
 
+  it('names a default-titled section by its kind and clips a long title in the toast (UX-305)', async () => {
+    const defaultTitle = `EmptySections.defaultTitle ${JSON.stringify({ sectionName: 'SectionTypes.links.label' })}`
+    for (const [title, shown] of [
+      [defaultTitle, 'SectionTypes.links.label'],
+      ['Я'.repeat(250), `${'Я'.repeat(39)}…`],
+    ] as const) {
+      vi.clearAllMocks()
+      profile = { sections: [{ id: 'section-1', type: 'links', title, links: [{ title: 'x', url: 'https:///x' }] }] }
+      saveProfileDocument.mockRejectedValueOnce(
+        new APIError({
+          status: 422,
+          code: 'validation-failed',
+          message: 'Validation failed',
+          fieldErrors: [{ field: 'profile.sections[0].links[0].url', code: 'invalid', message: 'bad' }],
+        }),
+      )
+      const { unmount } = renderBuilder()
+      fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith(
+          `Errors.sectionField ${JSON.stringify({ section: shown, message: 'Form.invalidUrl' })}`,
+          SAVE_TOAST,
+        ),
+      )
+      unmount()
+    }
+  })
+
   it('reports a save from a stale tab instead of overwriting (BUG-367)', async () => {
     saveProfileDocument.mockRejectedValueOnce(
       new APIError({ status: 412, code: 'precondition-failed', message: 'Precondition failed' }),
