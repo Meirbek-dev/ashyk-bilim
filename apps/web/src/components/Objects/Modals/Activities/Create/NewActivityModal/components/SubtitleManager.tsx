@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { cn, generateUUID } from '@/lib/utils'
 import { constructAcceptValue } from '@/lib/constants'
 import { toast } from 'sonner'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 const SUPPORTED_SUBTITLE_FILES = constructAcceptValue(['srt', 'vtt'])
 
@@ -35,6 +36,7 @@ const getLocalizedLanguageOptions = (t: AppTranslator) => [
 ]
 
 export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerProps) {
+  const formatBytes = useFormatBytes()
   const [dragOver, setDragOver] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
 
@@ -294,7 +296,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <span className="text-xs text-gray-400 tabular-nums">{(subtitle.file.size / 1024).toFixed(0)} KB</span>
+                <span className="text-xs text-gray-400 tabular-nums">{formatBytes(subtitle.file.size)}</span>
                 <Button
                   variant="ghost"
                   size="sm"

@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
 import type { SubtitleFile } from './components/SubtitleManager'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 const SUPPORTED_VIDEO_FILES = constructAcceptValue(['mp4', 'mkv', 'webm', 'mov', 'avi', 'flv'])
 const MAX_VIDEO_MB = uploadMaxMb('block-video')
@@ -41,6 +42,7 @@ interface ExternalVideoObject {
 
 function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) {
   const t = useTranslations('Components.VideoModal')
+  const formatBytes = useFormatBytes()
   const [video, setVideo] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [name, setName] = useState('')
@@ -293,7 +295,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                       </div>
                       <div className="min-w-0">
                         <p className="max-w-xs truncate text-sm font-medium text-gray-800">{video.name}</p>
-                        <p className="text-xs text-gray-400">{(video.size / (1024 * 1024)).toFixed(1)} MB</p>
+                        <p className="text-xs text-gray-400">{formatBytes(video.size)}</p>
                       </div>
                     </div>
                     <Label

@@ -6,7 +6,10 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({ submitExternalVideo: vi.fn() }))
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ number: (n: number) => String(n) }),
+}))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import VideoModal from '@/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal'
