@@ -16,6 +16,7 @@ import { getAbsoluteUrl } from '@services/config/config'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { RoleSlugs } from '@/types/permissions'
 import { Button, buttonVariants } from '@components/ui/button'
+import { cn } from '@/lib/utils'
 import { Badge } from '@components/ui/badge'
 import type { Session } from '@/lib/auth/types'
 import { useTranslations } from 'next-intl'
@@ -45,7 +46,8 @@ const SYSTEM_ROLE_PRIORITY: string[] = [
 ]
 const SYSTEM_ROLE_SLUGS = new Set<string>(SYSTEM_ROLE_PRIORITY)
 
-export function HeaderProfileBox() {
+/** `showName`: always show name + email (the phone menu); the top bar shows them from xl up only. */
+export function HeaderProfileBox({ showName = false }: { showName?: boolean }) {
   const { isAuthenticated, session, user } = useSession()
   const { canAccessDashboard } = useNavigationPermissions()
   const t = useTranslations('Header')
@@ -120,7 +122,7 @@ export function HeaderProfileBox() {
                 }
               >
                 <UserAvatar size="sm" />
-                <div className="hidden flex-col text-start xl:flex">
+                <div className={cn('flex-col text-start', showName ? 'flex' : 'hidden xl:flex')}>
                   <div className="flex items-center gap-2">
                     <p className="text-foreground text-sm font-semibold">
                       {user?.display_name?.trim() || user?.username}

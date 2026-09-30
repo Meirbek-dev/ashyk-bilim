@@ -59,10 +59,10 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 
   return (
     <Card className={cn('py-2', className)}>
-      <div className="px-6 md:p-8">
+      <div className="px-4 sm:px-6 md:p-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
-          {/* Left: Avatar & Level */}
-          <div className="flex shrink-0 flex-col items-center gap-3">
+          {/* Left: Avatar & Level — on phones the card shrinks to name + level progress, so courses stay above the fold */}
+          <div className="hidden shrink-0 flex-col items-center gap-3 md:flex">
             <div className="relative">
               <GamifiedUserAvatar
                 size="3xl"
@@ -153,7 +153,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
             </div>
 
             {/* Daily XP Progress */}
-            <div className="space-y-1.5">
+            <div className="hidden space-y-1.5 sm:block">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5 text-sky-500" />
@@ -182,7 +182,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-3 pt-1">
+            <div className="hidden grid-cols-3 gap-3 pt-1 sm:grid">
               <StatCard
                 icon={Trophy}
                 label={t('stats.totalXP')}

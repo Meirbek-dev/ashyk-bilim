@@ -296,7 +296,7 @@ export default function NavBar() {
               )}
             />
 
-            <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-sm">
+            <SheetContent side="right" initialFocus={false} className="flex w-full flex-col gap-0 p-0 sm:max-w-sm">
               <SheetHeader className="border-border/60 border-b px-6 py-4">
                 <SheetTitle className="sr-only">{t('navigation')}</SheetTitle>
                 <Image
@@ -310,15 +310,7 @@ export default function NavBar() {
               </SheetHeader>
 
               <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
-                <section className="space-y-2">
-                  <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
-                    {t('search')}
-                  </Label>
-                  <SearchBar key={pathname} isMobile className="w-full" />
-                </section>
-
-                <Separator />
-
+                {/* Navigation first: the search's suggestion panel used to cover it as soon as the sheet opened. */}
                 <section className="space-y-2">
                   <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                     {t('navigation')}
@@ -328,6 +320,15 @@ export default function NavBar() {
                       <MobileNavLink key={def.type} def={def} label={tLinks(def.type)} onNavigate={closeMenu} />
                     ))}
                   </nav>
+                </section>
+
+                <Separator />
+
+                <section className="space-y-2">
+                  <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+                    {t('search')}
+                  </Label>
+                  <SearchBar key={pathname} isMobile className="w-full" />
                 </section>
 
                 <section className="space-y-2 sm:hidden">
@@ -347,7 +348,7 @@ export default function NavBar() {
                   {t('account')}
                 </Label>
                 <div className="border-border/60 bg-background flex items-center justify-center rounded-lg border p-3">
-                  <HeaderProfileBox />
+                  <HeaderProfileBox showName />
                 </div>
               </div>
             </SheetContent>
