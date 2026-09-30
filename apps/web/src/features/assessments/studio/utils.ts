@@ -351,6 +351,9 @@ export function fromChoiceAuthorValue(
   }
 }
 
+/** Server cap on `max_attempts` (`ab_domain::assessments::MAX_ATTEMPTS`). */
+export const MAX_ATTEMPTS = 10
+
 export function getAssessmentEditorIssues(
   mode: StudioMode,
   state: AssessmentEditorState,
@@ -366,10 +369,11 @@ export function getAssessmentEditorIssues(
   }
 
   if (mode === 'exam') {
-    if (state.maxAttempts && Number(state.maxAttempts) < 1) {
+    const attempts = Number(state.maxAttempts)
+    if (state.maxAttempts && (attempts < 1 || attempts > MAX_ATTEMPTS)) {
       issues.push({
         code: 'policy.max_attempts_invalid',
-        message: t('validation.policy_max_attempts_invalid'),
+        message: t('validation.policy_max_attempts_invalid', { max: MAX_ATTEMPTS }),
         field: 'maxAttempts',
       })
     }

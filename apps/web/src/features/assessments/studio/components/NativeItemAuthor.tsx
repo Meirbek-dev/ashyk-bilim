@@ -159,10 +159,10 @@ export function NativeItemAuthor({
         await refresh()
       } catch (error) {
         setAssessmentSaveState('error')
-        toast.error(error instanceof Error ? error.message : t('failedToSaveSettings'))
+        toastApiError(error, { fallback: t('failedToSaveSettings') })
       }
     },
-    [assessment, mode, refresh, t],
+    [assessment, mode, refresh, t, toastApiError],
   )
 
   const saveItem = useCallback(
@@ -184,12 +184,10 @@ export function NativeItemAuthor({
         await refresh()
       } catch (error) {
         setItemSaveState('error')
-        toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }) })
       }
     },
-    [displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t, toastApiError],
   )
 
   useEffect(() => {
@@ -197,14 +195,14 @@ export function NativeItemAuthor({
     const serialized = serializeAssessmentState(assessmentState)
     if (serialized === lastSavedAssessmentRef.current) return
     setAssessmentSaveState('dirty')
-    // UX-120: a blank title is flagged inline (`assessment.title_missing`);
-    // the server would only 422 it, so nothing is PATCHed until it is back.
-    if (!assessmentState.title.trim()) return
+    // UX-120/UX-292: a blank title or an out-of-range policy value is flagged inline;
+    // the server would only 422 it, so nothing is PATCHed until it is fixed.
+    if (getAssessmentEditorIssues(mode, assessmentState, t).length > 0) return
     const timeout = setTimeout(() => {
       void saveAssessment(assessmentState)
     }, 900)
     return () => clearTimeout(timeout)
-  }, [assessmentState, isEditable, saveAssessment])
+  }, [assessmentState, isEditable, mode, saveAssessment, t])
 
   useEffect(() => {
     if (!isEditable || !itemState) return
@@ -255,10 +253,12 @@ export function NativeItemAuthor({
         await refresh()
       } catch (error) {
         setLocalOrderedUuids(previousOrder)
-        toast.error(error instanceof Error ? error.message : t('reorderFailed'))
+        toastApiError(error, { fallback: t('reorderFailed') })
+        // UX-293: a refused move means this tab's list is stale — refetch it, or every later move 422s.
+        await refresh()
       }
     },
-    [assessment.assessment_uuid, localOrderedUuids, refresh, t],
+    [assessment.assessment_uuid, localOrderedUuids, refresh, t, toastApiError],
   )
 
   const updateItemMetadata = useCallback(
@@ -271,13 +271,11 @@ export function NativeItemAuthor({
         })
         await refresh()
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }) })
         throw error
       }
     },
-    [displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t, toastApiError],
   )
 
   const queryClient = useQueryClient()

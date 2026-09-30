@@ -21,7 +21,7 @@ import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useQuery, queryOptions } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
@@ -71,6 +71,7 @@ const LIVE = { refetchOnWindowFocus: true, refetchInterval: 30_000, refetchInter
 export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
   const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const { toastApiError } = useApiError()
   const locale = useLocale()
   // UX-137: one percent format on this tab (locale decimals, ≤ 2 digits).
   const formatPercent = usePercentFormat()
@@ -139,7 +140,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       try {
         saveBlob(await exportGradesCSV(assessmentUuid, locale), `assessment-${assessmentUuid}-results.csv`)
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('exportFailed'))
+        toastApiError(error, { fallback: t('exportFailed') })
       }
     })
   }

@@ -32,6 +32,7 @@ import { useTranslations } from 'next-intl'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import type {
   AssessmentItem,
@@ -133,6 +134,7 @@ export default function BuilderCanvasTab({
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
   const tDnd = useTranslations('Common.DragAndDrop')
+  const { toastApiError } = useApiError()
   const announcements = useDndAnnouncements(items.map(item => item.item_uuid))
   const [isCreating, startCreateTransition] = useTransition()
   const [isDuplicating, startDuplicateTransition] = useTransition()
@@ -250,12 +252,12 @@ export default function BuilderCanvasTab({
         setSelectedIssueCode(null)
       } catch (error) {
         console.error('Failed to apply assessment item bulk patch', error)
-        toast.error(error instanceof Error ? error.message : tBuilder('bulkFailed'))
+        toastApiError(error, { fallback: tBuilder('bulkFailed') })
       } finally {
         setIsApplyingBulk(false)
       }
     },
-    [items, refresh, setSelectedIssueCode, tBuilder],
+    [items, refresh, setSelectedIssueCode, tBuilder, toastApiError],
   )
 
   const createItem = (kind: SupportedStudioItemKind) => {
@@ -277,7 +279,7 @@ export default function BuilderCanvasTab({
         }
       } catch (error) {
         console.error('Failed to create assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('createFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('createFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }
@@ -302,7 +304,7 @@ export default function BuilderCanvasTab({
         }
       } catch (error) {
         console.error('Failed to duplicate assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }
@@ -318,7 +320,7 @@ export default function BuilderCanvasTab({
         await onItemDeleted()
       } catch (error) {
         console.error('Failed to delete assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }

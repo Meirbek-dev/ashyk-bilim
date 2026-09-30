@@ -52,7 +52,7 @@ export default function ReviewBulkActionBar({
   const t = useTranslations('Features.Grading.Review.bulkActions')
   const format = useFormatter()
   const locale = useLocale()
-  const { handleApiError } = useApiError()
+  const { handleApiError, toastApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
   const [deadlineLocal, setDeadlineLocal] = useState('')
   const [reason, setReason] = useState('')
@@ -256,7 +256,7 @@ export default function ReviewBulkActionBar({
         setAuditNote('')
         await onRefresh()
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('toasts.releaseFailed'))
+        toastApiError(error, { fallback: t('toasts.releaseFailed') })
       }
     })
   }

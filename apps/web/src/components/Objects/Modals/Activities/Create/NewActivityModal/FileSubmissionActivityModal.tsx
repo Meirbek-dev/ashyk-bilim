@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -84,6 +85,7 @@ const MIME_PRESETS: { id: string; labelKey: MimeCategoryKey; mimes: string[] }[]
 export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: AppActivityModalProps) {
   const t = useTranslations('Components.NewFileSubmissionModal')
   const tMime = useTranslations('FileSubmission.mimeCategories')
+  const { toastApiError } = useApiError()
   const queryClient = useQueryClient()
   const [title, setTitle] = useState('')
   const [instructions, setInstructions] = useState('')
@@ -145,7 +147,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       }
       closeModal()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('createError'))
+      toastApiError(error, { fallback: t('createError') })
     } finally {
       setIsSubmitting(false)
     }

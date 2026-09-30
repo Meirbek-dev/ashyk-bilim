@@ -48,4 +48,15 @@ describe('studio settings title', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('validation.assessment_title_missing')
     expect(screen.getByLabelText('titleLabel')).toHaveAttribute('aria-invalid', 'true')
   })
+
+  // UX-292: above the server cap (10) the attempts field is flagged inline and carries `max`.
+  it('flags an attempt limit above the server cap inline', () => {
+    const over = { ...state, title: 'Quiz', maxAttempts: '11' }
+    const issues = getAssessmentEditorIssues('exam', over, ((key: string) => key) as never).map(classifyValidationIssue)
+    render(<GeneralSettingsTab state={over} saveState="dirty" disabled={false} issues={issues} onChange={() => {}} />)
+    const input = screen.getByLabelText('attemptLimitLabel')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAttribute('max', '10')
+    expect(screen.getByRole('alert')).toHaveTextContent('validation.policy_max_attempts_invalid')
+  })
 })

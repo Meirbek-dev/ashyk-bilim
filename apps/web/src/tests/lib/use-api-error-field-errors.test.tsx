@@ -39,4 +39,12 @@ describe('useApiError with a form', () => {
     result.current.toastApiError(invalidName())
     expect(toast.error).toHaveBeenCalled()
   })
+
+  // UX-292/293: an unbound 422 names what failed (the caller's fallback), never the English title.
+  it('toasts the caller fallback for a 422 with nothing to highlight', () => {
+    vi.mocked(toast.error).mockClear()
+    const { result } = renderHook(() => useApiError())
+    result.current.toastApiError(invalidName(), { fallback: 'reorder failed' })
+    expect(toast.error).toHaveBeenCalledWith('reorder failed', {})
+  })
 })

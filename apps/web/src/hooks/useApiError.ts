@@ -96,6 +96,13 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
             : t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(retryAfter / 60)) })
       }
 
+      // UX-292/293: the generic 422 copy says «check the highlighted fields» — with no form to
+      // highlight them in, the caller's localized fallback names what failed instead.
+      const bound = Boolean(options.setError) && processed.fieldErrors.some(err => err.field)
+      if (processed.code === 'validation-failed' && !bound && options.fallback !== undefined) {
+        processed.description = options.fallback
+      }
+
       // Bind validation errors to RHF if setError is provided
       if (options.setError && processed.fieldErrors.length > 0) {
         processed.fieldErrors.forEach(err => {

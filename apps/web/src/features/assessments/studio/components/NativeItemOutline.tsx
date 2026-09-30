@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import { apiJson } from '@/lib/api-client'
 import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
@@ -53,6 +54,7 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
     validationIssues,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const { toastApiError } = useApiError()
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.CHOICE}`),
@@ -82,9 +84,7 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
           setSelectedItemUuid(created.id)
         }
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }) })
       }
     })
   }
