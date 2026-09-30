@@ -12,6 +12,7 @@ import {
   themes,
 } from '@/lib/themes'
 import type { Theme, ThemeMode } from '@/lib/themes'
+import { useSessionBroadcastListener } from '@/components/providers/session-provider'
 import type { ReactNode } from 'react'
 
 interface ThemeContextValue {
@@ -59,6 +60,15 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     },
     [mode],
   )
+
+  // UX-318: `logout()` resets the page (BUG-380); the state goes too, or the
+  // next light/dark toggle re-applies the signed-out account's theme.
+  const resetOnLogout = useCallback(() => {
+    const nextTheme = getTheme(DEFAULT_THEME_NAME, mode)
+    setThemeState(nextTheme)
+    applyTheme(nextTheme)
+  }, [mode])
+  useSessionBroadcastListener(resetOnLogout)
 
   const setMode = useCallback(
     (nextMode: ThemeMode) => {

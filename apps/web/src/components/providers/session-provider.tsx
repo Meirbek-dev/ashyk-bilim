@@ -64,7 +64,7 @@ const sameGrants = (a: Pick<Session, 'roles' | 'permissions'>, b: Pick<SessionIn
 
 // ── Cross-tab broadcast listener ──────────────────────────────────────────────
 
-function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () => void) {
+export function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh?: () => void) {
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return
 
@@ -74,7 +74,7 @@ function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () 
         onLogout()
       }
       if (event.data.type === 'session_refresh') {
-        onSessionRefresh()
+        onSessionRefresh?.()
       }
     }
 
