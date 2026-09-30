@@ -274,6 +274,8 @@ function EditCourseGeneral() {
               <FieldContent>
                 <Input
                   {...form.register('name')}
+                  // In the server HTML too: `register` only fills the field once hydrated.
+                  defaultValue={serverValues.name}
                   id="name"
                   placeholder={t('name.placeholder')}
                   className="text-lg"
