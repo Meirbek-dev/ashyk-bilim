@@ -14,6 +14,8 @@ pub struct CollectionRow {
     pub description: String,
     pub public: bool,
     pub creator_id: Option<UserId>,
+    /// Optimistic-lock version (`If-Match` on update, UX-279).
+    pub version: i32,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -49,7 +51,7 @@ pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<Co
     let row = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId",
+                  creator_id AS "creator_id: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections WHERE id = $1"#,
@@ -96,7 +98,7 @@ pub async fn list_collections(
     let rows = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId",
+                  creator_id AS "creator_id: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections
@@ -118,6 +120,9 @@ pub async fn list_collections(
 
 /// Update the fields and, when given, replace the membership — one
 /// transaction, so a failure leaves nothing half-written (BUG-192).
+///
+/// Every write bumps `version`; with `expected_version` it only lands while
+/// the row still carries it (UX-279). `false` = gone or stale (nothing written).
 pub async fn update_collection(
     pool: &PgPool,
     id: CollectionId,
@@ -125,26 +130,32 @@ pub async fn update_collection(
     description: Option<&str>,
     public: Option<bool>,
     course_ids: Option<&[CourseId]>,
-) -> Result<()> {
+    expected_version: Option<i32>,
+) -> Result<bool> {
     let mut tx = pool.begin().await?;
-    sqlx::query!(
+    let updated = sqlx::query!(
         r#"UPDATE collections SET
                name = COALESCE($2, name),
                description = COALESCE($3, description),
-               public = COALESCE($4, public)
-           WHERE id = $1"#,
+               public = COALESCE($4, public),
+               version = version + 1
+           WHERE id = $1 AND ($5::int IS NULL OR version = $5)"#,
         id.0,
         name,
         description,
-        public
+        public,
+        expected_version
     )
     .execute(&mut *tx)
     .await?;
+    if updated.rows_affected() != 1 {
+        return Ok(false);
+    }
     if let Some(course_ids) = course_ids {
         set_collection_courses(&mut tx, id, course_ids).await?;
     }
     tx.commit().await?;
-    Ok(())
+    Ok(true)
 }
 
 pub async fn delete_collection(pool: &PgPool, id: CollectionId) -> Result<bool> {

@@ -1,8 +1,9 @@
 use ab_core::id::CollectionId;
+use ab_domain::catalog::collections::CollectionChanges;
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
-use axum::response::Response;
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
 
 use crate::dto::collections::{
     Collection, CollectionListQuery, CollectionPage, CreateCollectionRequest,
@@ -10,6 +11,7 @@ use crate::dto::collections::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent};
+use crate::routes::curriculum::if_match;
 use crate::state::AppState;
 
 /// Create a collection (requires `collection:create:platform`); every
@@ -108,13 +110,19 @@ pub async fn get_collection(
     patch,
     path = "/collections/{id}",
     tag = "collections",
-    params(("id" = CollectionId, Path, description = "Collection id")),
+    params(
+        ("id" = CollectionId, Path, description = "Collection id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
+    ),
     request_body = UpdateCollectionRequest,
     responses(
-        (status = 200, description = "Updated", body = Collection),
+        (status = 200, description = "Updated", body = Collection,
+         headers(("ETag" = String, description = "Quoted new version"))),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown, inaccessible, or an attached course is unreadable", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -122,20 +130,28 @@ pub async fn update_collection(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CollectionId>,
+    headers: HeaderMap,
     ValidJson(request): ValidJson<UpdateCollectionRequest>,
-) -> ApiResult<Json<Collection>> {
-    let collection = state
+) -> ApiResult<Response> {
+    let expected_version = if_match(&headers)?;
+    let collection: Collection = state
         .collections
         .update(
             &actor,
             id,
-            request.name.as_deref(),
-            request.description.as_deref(),
-            request.public,
-            request.courses,
+            CollectionChanges {
+                name: request.name.as_deref(),
+                description: request.description.as_deref(),
+                public: request.public,
+                course_ids: request.courses,
+                expected_version,
+            },
         )
-        .await?;
-    Ok(Json(collection.into()))
+        .await?
+        .into();
+    let etag = HeaderValue::from_str(&format!("\"{}\"", collection.version))
+        .unwrap_or_else(|_| HeaderValue::from_static("\"0\""));
+    Ok(([(header::ETAG, etag)], Json(collection)).into_response())
 }
 
 /// Delete a collection (membership rows cascade; courses stay).

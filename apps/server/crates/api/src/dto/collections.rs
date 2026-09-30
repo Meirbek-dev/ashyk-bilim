@@ -11,6 +11,8 @@ pub struct Collection {
     pub description: String,
     pub public: bool,
     pub creator_id: Option<UserId>,
+    /// Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).
+    pub version: i32,
     /// Member courses visible to the caller, in collection order.
     pub courses: Vec<Course>,
     /// The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).
@@ -27,6 +29,7 @@ impl From<ab_domain::catalog::collections::CollectionWithCourses> for Collection
             description: c.collection.description,
             public: c.collection.public,
             creator_id: c.collection.creator_id,
+            version: c.collection.version,
             courses: c.courses.into_iter().map(Into::into).collect(),
             can_delete: c.can_delete,
             created_at_unix: c.collection.created_at,

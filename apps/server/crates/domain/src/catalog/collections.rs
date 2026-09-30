@@ -6,7 +6,7 @@
 
 use ab_core::id::{CollectionId, CourseId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, Result};
+use ab_core::{Error, ErrorCode, Result};
 use sqlx::PgPool;
 
 pub use ab_db::collections::CollectionRow as Collection;
@@ -21,6 +21,16 @@ const fn perm(action: Action, scope: Scope) -> Permission {
         action,
         scope: Some(scope),
     }
+}
+
+/// A `PATCH /collections/{id}`: `None` fields stay; `course_ids` replaces the
+/// whole membership; `expected_version` is the `If-Match` guard (UX-279).
+pub struct CollectionChanges<'a> {
+    pub name: Option<&'a str>,
+    pub description: Option<&'a str>,
+    pub public: Option<bool>,
+    pub course_ids: Option<Vec<CourseId>>,
+    pub expected_version: Option<i32>,
 }
 
 /// A collection with its member courses (filtered to the viewer).
@@ -194,28 +204,41 @@ impl CollectionsService {
         &self,
         actor: &Actor,
         id: CollectionId,
-        name: Option<&str>,
-        description: Option<&str>,
-        public: Option<bool>,
-        course_ids: Option<Vec<CourseId>>,
+        changes: CollectionChanges<'_>,
     ) -> Result<CollectionWithCourses> {
         let collection = self.load(actor, id).await?;
         Self::require_write(actor, &collection)?;
         // BUG-192: everything is validated before the first write, and the
         // fields + membership land in one transaction.
-        let name = name.map(|n| ab_core::required_str("name", n)).transpose()?;
-        if let Some(course_ids) = &course_ids {
+        let name = changes
+            .name
+            .map(|n| ab_core::required_str("name", n))
+            .transpose()?;
+        if let Some(course_ids) = &changes.course_ids {
             self.check_courses_readable(actor, course_ids).await?;
         }
-        ab_db::collections::update_collection(
+        let updated = ab_db::collections::update_collection(
             &self.pool,
             id,
             name,
-            description,
-            public,
-            course_ids.as_deref(),
+            changes.description,
+            changes.public,
+            changes.course_ids.as_deref(),
+            changes.expected_version,
         )
         .await?;
+        if !updated {
+            // Unguarded → the row was deleted meanwhile; guarded → UX-279:
+            // another tab saved first.
+            let Some(expected) = changes.expected_version else {
+                return Err(Error::not_found("collection"));
+            };
+            return Err(Error::app_with_details(
+                ErrorCode::PreconditionFailed,
+                "collection changed since you loaded it",
+                serde_json::json!({ "expected": expected, "actual": collection.version }),
+            ));
+        }
         self.get(actor, id).await
     }
 

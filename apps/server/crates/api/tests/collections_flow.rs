@@ -432,3 +432,66 @@ async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
         anon_page.text()
     );
 }
+
+/// UX-279: collections carry a version; `PATCH` bumps it and answers the new
+/// one as `ETag`, a stale `If-Match` is 412 with nothing written, and a
+/// `PATCH` without `If-Match` still lands (last writer wins by choice).
+#[sqlx::test(migrations = "../../migrations")]
+async fn stale_if_match_is_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Tabbed", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let loaded = created.json()["version"].as_i64().unwrap();
+    let patch = |version: i64, name: &str| {
+        app.send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/collections/{id}"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "name": name }).to_string(),
+                ))
+                .unwrap(),
+        )
+    };
+
+    let first = patch(loaded, "Tab one").await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["version"], loaded + 1);
+    assert_eq!(first.headers["etag"], format!("\"{}\"", loaded + 1));
+
+    // The second tab still holds the loaded version.
+    let stale = patch(loaded, "Tab two").await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["code"], "precondition-failed");
+    let after = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(after.json()["name"], "Tab one");
+    assert_eq!(after.json()["version"], loaded + 1);
+
+    let unguarded = app
+        .patch_as(
+            &owner,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "name": "No header" }),
+        )
+        .await;
+    assert_eq!(unguarded.status, StatusCode::OK, "{}", unguarded.text());
+    assert_eq!(unguarded.json()["version"], loaded + 2);
+}

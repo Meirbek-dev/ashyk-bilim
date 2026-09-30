@@ -140,7 +140,7 @@ pub async fn search_collections(
     let rows = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId",
+                  creator_id AS "creator_id: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections
