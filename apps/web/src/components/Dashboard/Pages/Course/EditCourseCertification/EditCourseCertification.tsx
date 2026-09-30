@@ -391,9 +391,9 @@ function EditCourseCertification() {
 
         {isEnabled && (
           <div className="space-y-8">
-            <div className="grid gap-8 lg:grid-cols-5">
+            <div className="grid gap-8 xl:grid-cols-5">
               {/* Configuration */}
-              <div className="space-y-8 lg:col-span-3">
+              <div className="space-y-8 xl:col-span-3">
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -480,7 +480,7 @@ function EditCourseCertification() {
                         <RadioGroup
                           value={field.value}
                           onValueChange={field.onChange}
-                          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+                          className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
                         >
                           {CERTIFICATE_PATTERNS.map(pattern => {
                             const Icon = pattern.icon
@@ -530,7 +530,7 @@ function EditCourseCertification() {
               </div>
 
               {/* Preview */}
-              <div className="lg:col-span-2">
+              <div className="w-full max-w-md xl:col-span-2 xl:max-w-none">
                 <div className="sticky top-6">
                   <Card>
                     <CardHeader>
