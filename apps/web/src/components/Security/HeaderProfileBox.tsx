@@ -154,7 +154,7 @@ export function HeaderProfileBox({ showName = false }: { showName?: boolean }) {
                           }
                         />
                         <TooltipContent side="bottom" sideOffset={15} className="max-w-56">
-                          {customRole.description || `Custom role: ${customRole.name}`}
+                          {customRole.description || customRole.name}
                         </TooltipContent>
                       </Tooltip>
                     ))}

@@ -1,7 +1,6 @@
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useTheme } from '@/components/providers/theme-provider'
-import AppLink from '@components/ui/AppLink'
 
 interface AuthLogoProps {
   width?: number
@@ -13,8 +12,7 @@ function AuthLogo({ width = 180 }: AuthLogoProps) {
   const src = resolvedTheme === 'dark' ? '/app_logo_light_full.svg' : '/app_logo_full.svg'
 
   return (
-    // The logo is the way back to the site from the auth screens.
-    <AppLink href="/" className="m-4 block w-44">
+    <div className="m-4 w-44">
       <Image
         src={src}
         alt={t('appLogoAlt')}
@@ -23,7 +21,7 @@ function AuthLogo({ width = 180 }: AuthLogoProps) {
         priority
         style={{ width: '100%', height: 'auto' }}
       />
-    </AppLink>
+    </div>
   )
 }
 
