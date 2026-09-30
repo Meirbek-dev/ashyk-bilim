@@ -712,6 +712,10 @@ export const getUpdateMyProfileUrl = () => {
 }
 
 /**
+ * With `If-Match: "<version>"` (the `ETag` of the last read) a write from a
+ * stale tab is 412 `precondition-failed` with `details {expected, actual}`
+ * instead of silently replacing the document (BUG-367). Only a `profile`
+ * write moves the version.
  * @summary Update the caller's own profile (requires `user:update:own`): names,
 bio, locale, avatar, the profile builder `profile` document and the UI
 `theme`.

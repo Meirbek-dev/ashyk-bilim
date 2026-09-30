@@ -183,7 +183,10 @@ export const UpdateMyProfileBody = zod
         zod.null(),
       ])
       .optional(),
-    theme: zod.string().nullish().describe('UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it.'),
+    theme: zod
+      .string()
+      .nullish()
+      .describe('UI theme registry slug (the web `theme-store.json` names, e.g.\n`modern-minimal`); `null` clears it.'),
   })
   .describe('Partial update; omitted fields are unchanged.')
 

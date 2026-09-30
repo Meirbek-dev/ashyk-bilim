@@ -41,6 +41,7 @@ export const ErrorCode = zod
     'code-runner-degraded',
     'compile-error',
     'language-not-allowed',
+    'assessment-read-only',
     'grade-not-released',
     'grade-own-attempt',
     'ai-disabled',

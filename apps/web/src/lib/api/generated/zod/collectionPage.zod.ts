@@ -63,6 +63,7 @@ export const CollectionPage = zod
         name: zod.string(),
         public: zod.boolean(),
         updated_at_unix: zod.int(),
+        version: zod.int().describe('Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).'),
       }),
     ),
     next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),

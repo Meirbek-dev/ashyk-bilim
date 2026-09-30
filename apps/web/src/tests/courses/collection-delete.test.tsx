@@ -32,6 +32,7 @@ const wire = (can_delete: boolean): Collection =>
     can_delete,
     created_at_unix: 0,
     updated_at_unix: 0,
+    version: 1,
   }) as Collection
 
 function renderCard(can_delete: boolean) {

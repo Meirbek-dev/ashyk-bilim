@@ -7448,6 +7448,19 @@
             "schema": {
               "$ref": "#/components/schemas/CollectionId"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Current `version`; stale → 412",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "requestBody": {
@@ -7463,6 +7476,14 @@
         "responses": {
           "200": {
             "description": "Updated",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted new version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -7483,6 +7504,16 @@
           },
           "404": {
             "description": "Unknown, inaccessible, or an attached course is unreadable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale version",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7628,7 +7659,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "`updated` (default) or `name`",
+            "description": "`updated` (default), `name`, or `progress` (caller's in-progress courses first)",
             "required": false,
             "schema": {
               "type": "string"
@@ -12081,6 +12112,14 @@
         "responses": {
           "200": {
             "description": "Own profile",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted profile document version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -12106,7 +12145,23 @@
           "users"
         ],
         "summary": "Update the caller's own profile (requires `user:update:own`): names,\nbio, locale, avatar, the profile builder `profile` document and the UI\n`theme`.",
+        "description": "With `If-Match: \"<version>\"` (the `ETag` of the last read) a write from a\nstale tab is 412 `precondition-failed` with `details {expected, actual}`\ninstead of silently replacing the document (BUG-367). Only a `profile`\nwrite moves the version.",
         "operationId": "update_my_profile",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Profile version from the last read's ETag",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -12120,6 +12175,14 @@
         "responses": {
           "200": {
             "description": "Updated profile",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted new profile version"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -12130,6 +12193,16 @@
           },
           "403": {
             "description": "Missing permission",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Stale profile version",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15717,6 +15790,7 @@
           "name",
           "description",
           "public",
+          "version",
           "courses",
           "can_delete",
           "created_at_unix",
@@ -15763,6 +15837,11 @@
           "updated_at_unix": {
             "type": "integer",
             "format": "int64"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279)."
           }
         }
       },
@@ -17624,6 +17703,7 @@
           "code-runner-degraded",
           "compile-error",
           "language-not-allowed",
+          "assessment-read-only",
           "grade-not-released",
           "grade-own-attempt",
           "ai-disabled",
@@ -25037,7 +25117,7 @@
               "string",
               "null"
             ],
-            "description": "UI theme slug (`[A-Za-z0-9-]{1,48}`); `null` clears it."
+            "description": "UI theme registry slug (the web `theme-store.json` names, e.g.\n`modern-minimal`); `null` clears it."
           }
         },
         "additionalProperties": false

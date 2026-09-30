@@ -60,6 +60,7 @@ export const Collection = zod.object({
   name: zod.string(),
   public: zod.boolean(),
   updated_at_unix: zod.int(),
+  version: zod.int().describe('Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).'),
 })
 
 export type Collection = zod.input<typeof Collection>
