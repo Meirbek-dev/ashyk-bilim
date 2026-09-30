@@ -4081,7 +4081,7 @@
           "attention": "Attention",
           "draft": "Draft",
           "live": "Live",
-          "needsReview": "Needs review",
+          "needsReview": "Has issues",
           "private": "Private",
           "public": "Public",
           "ready": "Ready",
