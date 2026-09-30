@@ -173,6 +173,25 @@ itself.
 
 ## 6. Cutover runbook (window ≤ 2 days; expected actual: ~2–4 hours)
 
+Production bootstrap notes (2026-09-30):
+
+- Before the first Zitadel start, create the `zitadel_machinekey` volume and
+  give its root directory to UID/GID 1000 with mode 0700. An empty Docker volume
+  belongs to root; otherwise bootstrap commits its instance but cannot write
+  `pat.txt`, and retries fail with `Instance.Domain.AlreadyExists`.
+- Keep the existing Google redirect URI in `AB__GOOGLE__REDIRECT_URI` until the
+  Google console is updated. Nginx accepts the previously registered
+  `/api/v1/auth/google/callback` and forwards it to the v2 handler.
+- The production overlays resolve the public hostname through `host-gateway`
+  inside web/server/worker: this host cannot reach its public IP through NAT.
+  This preserves the HTTPS hostname required by signed S3 URLs.
+- Certificate renewal uses the shared `/var/www/certbot` webroot. Install
+  `extra/renew-certificate.sh` as an executable Certbot deploy hook; the existing
+  host `certbot.timer` renews and reloads nginx. HTTP-01 paths bypass redirects.
+- After the initial data import, `extra/deploy.sh` builds the checked-out Rust
+  and web release, runs SQLx migrations, and reloads nginx. Pull the desired
+  source revision explicitly before running it; it retains previous images.
+
 ```
 T-7d   Announce maintenance window to users (all sessions will be logged out).
 T-1d   Final rehearsal on fresh backup. Freeze legacy deploys entirely.

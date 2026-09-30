@@ -23,6 +23,7 @@ services:
     volumes:
       - ./extra/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./certs:/etc/nginx/certs:ro
+      - /var/www/certbot:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx/app
     networks:
       - app-net

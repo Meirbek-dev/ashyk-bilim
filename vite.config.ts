@@ -9,6 +9,7 @@ export default defineConfig({
       '@hooks': fileURLToPath(new URL('apps/web/src/hooks', import.meta.url)),
       '@services': fileURLToPath(new URL('apps/web/src/services', import.meta.url)),
       '@styles': fileURLToPath(new URL('apps/web/src/styles', import.meta.url)),
+      '@public': fileURLToPath(new URL('apps/web/public', import.meta.url)),
     },
   },
   test: {

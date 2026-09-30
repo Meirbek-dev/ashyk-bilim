@@ -158,8 +158,8 @@ Legend: `todo` · `in-progress` · `done <sha>` · `blocked(<reason>)`
 
 | #    | Slice                                                                   | Status |
 | ---- | ----------------------------------------------------------------------- | ------ |
-| 11.1 | nginx v2 template + web image switch + compose final                    | todo   |
-| 11.2 | Execute runbook (owner present), 24h monitoring                         | todo   |
+| 11.1 | nginx v2 template + web image switch + compose final                    | in-progress — 2026-09-30 production deployment |
+| 11.2 | Execute runbook (owner present), 24h monitoring                         | in-progress — 2026-09-30 owner requested cutover |
 | 11.3 | Decommission legacy (T+30d) + FINDINGS follow-ups that became unblocked | todo   |
 
 ## Session log

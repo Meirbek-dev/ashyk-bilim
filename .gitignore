@@ -78,3 +78,4 @@ temp-restore
 
 reports
 .vitest/
+/tmp/

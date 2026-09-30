@@ -78,6 +78,12 @@ map $http_x_forwarded_proto $is_forwarded_https {
   default 0;
 }
 
+# HTTP-01 validation must remain reachable before the HTTPS redirect.
+map $uri $https_already_handled {
+  default $is_forwarded_https;
+  ~^/\.well-known/acme-challenge/ 1;
+}
+
 resolver 127.0.0.11 valid=10s;
 
 # ---------------------------------------------------------------------------
@@ -135,7 +141,7 @@ server {
     root /var/www/certbot;
   }
 
-  if ($is_forwarded_https = 0) {
+  if ($https_already_handled = 0) {
     return 301 https://$host$request_uri;
   }
 

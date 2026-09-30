@@ -25,6 +25,8 @@ services:
 
   web:
     image: ashyq-web:${REWRITE_IMAGE_TAG:?Set REWRITE_IMAGE_TAG to the release commit}
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     build:
       args:
         NEXT_PUBLIC_SITE_URL: https://${NGINX_SERVER_NAME:?}/
@@ -35,6 +37,9 @@ services:
 
   server:
     image: ashyq-server:${REWRITE_IMAGE_TAG:?Set REWRITE_IMAGE_TAG to the release commit}
+    # Public S3 URLs keep their signed host while avoiding NAT loopback.
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     profiles: !override []
     environment: &production
       AB__ENVIRONMENT: production
@@ -80,6 +85,8 @@ services:
 
   worker:
     image: ashyq-server:${REWRITE_IMAGE_TAG:?}
+    extra_hosts:
+      - '${NGINX_SERVER_NAME:?}:host-gateway'
     profiles: !override []
     environment: *production
     depends_on:
@@ -123,6 +130,7 @@ services:
       AWS_PAGER: ''
     volumes:
       - ./extra/storage-public-policy.json:/policy.json:ro
+      - ./extra/storage-cors.json:/cors.json:ro
     networks: [data-net]
 
   db:
