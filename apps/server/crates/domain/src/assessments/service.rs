@@ -1474,9 +1474,14 @@ impl AssessmentsService {
         id: AssessmentId,
         ordered: &[AssessmentItemId],
     ) -> Result<Vec<Item>> {
-        let assessment = self.load_for_author(actor, id).await?;
+        self.load_for_author(actor, id).await?;
+        let mut tx = self.pool.begin().await?;
+        // BUG-231: the lifecycle gate re-runs on the locked row. BUG-375: so
+        // does the list check — a delete or add racing this reorder commits
+        // first or waits, never lands between the check and the renumber.
+        let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
         self.ensure_editable(&assessment).await?;
-        let existing = ab_db::assessments::list_item_ids(&self.pool, id).await?;
+        let existing: Vec<AssessmentItemId> = items.iter().map(|i| i.id).collect();
         let unknown: Vec<_> = ordered
             .iter()
             .filter(|i| !existing.contains(i))
@@ -1507,13 +1512,8 @@ impl AssessmentsService {
                 ),
             }]));
         }
-        let final_order = ordered.to_vec();
-        let mut tx = self.pool.begin().await?;
-        // BUG-231: the lifecycle gate re-runs on the locked row.
-        let AssessmentDetail { assessment, .. } = Self::lock_detail(&mut tx, id).await?;
-        self.ensure_editable(&assessment).await?;
         // BUG-257: order is presentation, not content — no content bump.
-        ab_db::assessments::renumber_items(&mut tx, &final_order).await?;
+        ab_db::assessments::renumber_items(&mut tx, ordered).await?;
         tx.commit().await?;
         Ok(self.detail(id).await?.items)
     }

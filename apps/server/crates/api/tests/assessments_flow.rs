@@ -2415,3 +2415,75 @@ async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
         .await;
     assert_eq!(detail.json()["title"], "Timed", "{}", detail.text());
 }
+
+/// BUG-375: the reorder list is checked under the assessment row lock — a
+/// delete that commits while the reorder waits on it makes the (now stale)
+/// full list 422, never a renumber with a gap.
+#[sqlx::test(migrations = "../../migrations")]
+async fn reorder_checks_the_list_under_the_lock(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = scaffold(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Order" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let mut items = Vec::new();
+    for prompt in ["Q1", "Q2", "Q3"] {
+        let item = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/assessments/{id}/items"),
+                &choice_item(prompt),
+            )
+            .await;
+        items.push(item.json()["id"].as_str().unwrap().to_owned());
+    }
+    let reversed: Vec<_> = items.iter().rev().cloned().collect();
+
+    let waiting = || {
+        let pool = app.pool.clone();
+        async move || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+                >= 1
+        }
+    };
+    let mut holder = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM assessments WHERE id = $1::uuid FOR UPDATE")
+        .bind(&id)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let (reorder_path, body) = (
+        format!("/api/v2/assessments/{id}/items/reorder"),
+        serde_json::json!({ "items": reversed }),
+    );
+    let reorder = app.post_as(&teacher, &reorder_path, &body);
+    let delete = async {
+        wait_until("reorder queued on the row lock", waiting()).await;
+        sqlx::query("DELETE FROM assessment_items WHERE id = $1::uuid")
+            .bind(&items[2])
+            .execute(&mut *holder)
+            .await
+            .unwrap();
+        holder.commit().await.unwrap();
+    };
+    let (reordered, ()) = tokio::join!(reorder, delete);
+    assert_eq!(
+        reordered.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        reordered.text()
+    );
+    assert_eq!(reordered.json()["field_errors"][0]["code"], "unknown");
+}

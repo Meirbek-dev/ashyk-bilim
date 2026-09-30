@@ -691,20 +691,6 @@ pub async fn delete_item<'e>(db: impl sqlx::PgExecutor<'e>, id: AssessmentItemId
     Ok(deleted.rows_affected() == 1)
 }
 
-pub async fn list_item_ids<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    assessment_id: AssessmentId,
-) -> Result<Vec<AssessmentItemId>> {
-    let ids = sqlx::query_scalar!(
-        r#"SELECT id AS "id: AssessmentItemId" FROM assessment_items
-           WHERE assessment_id = $1 ORDER BY position, id"#,
-        assessment_id.0
-    )
-    .fetch_all(db)
-    .await?;
-    Ok(ids)
-}
-
 /// Rewrite positions 1..n — call inside the caller's transaction.
 pub async fn renumber_items(
     conn: &mut sqlx::PgConnection,
