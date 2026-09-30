@@ -44,7 +44,7 @@ export class ActivityStudioPage {
     this.questionTypeSelect = page.getByRole('combobox', { name: /question type|type/i }).first()
 
     this.saveButton = page.getByRole('button', { name: /save/i }).first()
-    this.savedBadge = page.getByText(/activity saved/i).first()
+    this.savedBadge = page.getByText(/^saved$|activity saved/i).first()
     this.toast = page.locator('[data-sonner-toast]').first()
   }
 
@@ -70,7 +70,7 @@ export class ActivityStudioPage {
     // onChange flips the indicator to "Saving..." synchronously, the debounced
     // PATCH lands ~1.5s later.
     await expect(this.page.getByText(/^saving/i).first()).toBeVisible({ timeout: 5000 })
-    await expect(this.page.getByText(/activity saved/i).first()).toBeVisible({ timeout: 15_000 })
+    await expect(this.page.getByText(/^saved$|activity saved/i).first()).toBeVisible({ timeout: 15_000 })
   }
 
   /**

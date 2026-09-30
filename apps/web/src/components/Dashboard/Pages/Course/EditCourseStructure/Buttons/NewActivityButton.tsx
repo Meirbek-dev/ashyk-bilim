@@ -19,7 +19,6 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@/i18n/navigation'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
@@ -35,7 +34,6 @@ function NewActivityButton(props: NewActivityButtonProps) {
   const t = useTranslations('CourseEdit.NewActivityModal')
   const tNotify = useTranslations('DashPage.Notifications')
   const { toastApiError } = useApiError()
-  const router = useRouter()
 
   const closeNewActivityModal = async () => {
     setNewActivityModal(false)
@@ -141,12 +139,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       activity_sub_type: 'SUBTYPE_DYNAMIC_PAGE',
     }
 
-    const created = await createActivity(activityPayload)
-    // «Create and open»: straight into the editor instead of leaving the author to find the new row.
-    if (created?.id) {
-      const courseId = course.courseStructure.course_uuid.replace(/^course_/, '')
-      router.push(`/dash/courses/${courseId}/activity/${created.id.replace(/^activity_/, '')}/studio`)
-    }
+    await createActivity(activityPayload)
   }
 
   return (

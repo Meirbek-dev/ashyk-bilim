@@ -89,8 +89,10 @@ export class CurriculumEditorPage {
         .evaluateAll(els => els.map(el => el.getAttribute('data-activity-element')))
     const before = new Set(await rowIds())
 
+    // The dynamic page type is labelled «Page» in the picker.
+    const typeLabel = activityType === 'Dynamic' ? '^Page' : activityType
     await dialog
-      .getByRole('button', { name: new RegExp(activityType, 'i') })
+      .getByRole('button', { name: new RegExp(typeLabel, 'i') })
       .first()
       .click()
 
