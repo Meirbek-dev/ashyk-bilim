@@ -15,10 +15,10 @@ vi.mock('@/stores/gamification', () => ({
   useGamificationStore: (selector: (s: unknown) => unknown) =>
     selector({ profile: null, refetch: null, dashboard: null }),
 }))
+const certificate: { data: unknown } = { data: null }
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
-  useUserCertificateByCourse: () => ({ data: null, isPending: false, error: null }),
+  useUserCertificateByCourse: () => ({ data: certificate.data, isPending: false, error: null }),
 }))
-vi.mock('@/features/certifications/utils/pdfmeCertificate', () => ({}))
 vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
   default: () => null,
 }))
@@ -144,5 +144,26 @@ describe('CourseEndView (BUG-165)', () => {
     renderView(state())
     expect(screen.getByText('Назад к курсу')).toBeInTheDocument()
     expect(screen.queryByText('Вернуться к курсу')).toBeNull()
+  })
+
+  // BUG-383: the course-end download was an in-browser pdfme copy without the
+  // holder's name; it is the server PDF (same as the trail and verify page) now.
+  it('completed with a certificate → the server PDF download', () => {
+    certificate.data = {
+      data: [
+        {
+          certificate_user: { user_certification_uuid: 'AB-CODE', created_at: '2026-09-30T00:00:00Z' },
+          certification: { config: { certification_name: 'Cert', certification_type: 'completion' } },
+          course: { name: 'Course' },
+          instructor_name: null,
+        },
+      ],
+    }
+    try {
+      renderView(state())
+      expect(screen.getByTestId('certificate-pdf-download')).toBeInTheDocument()
+    } finally {
+      certificate.data = null
+    }
   })
 })

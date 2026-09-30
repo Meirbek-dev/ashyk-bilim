@@ -1,21 +1,16 @@
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
-import {
-  downloadPdfBlob,
-  generateCertificatePdfBlob,
-  sanitizePdfFileName,
-} from '@/features/certifications/utils/pdfmeCertificate'
-import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
+import { ArrowLeft, BookOpen, Loader2, Shield, Target, Trophy } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getUserDisplayName } from '@services/media/avatar'
 import { useSession } from '@/hooks/useSession'
-import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
 import { useGamificationStore } from '@/stores/gamification'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { useQuery } from '@tanstack/react-query'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 // Gamification imports
 import { LevelProgress } from '@/lib/gamification'
 import NextImage from '@components/ui/NextImage'
@@ -33,8 +28,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   const locale = useLocale()
   const { user } = useSession()
   const t = useTranslations('Certificates.CourseEndView')
-  const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
-  const [dialogAlertMessage, setDialogAlertMessage] = useState('')
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const gamificationRefetch = useGamificationStore(s => s.refetch)
@@ -173,81 +166,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }
   }, [isCourseCompleted])
 
-  const getCertificationTypeLabel = (type: string | undefined) => {
-    switch (type) {
-      case 'completion': {
-        return t('certificationTypes.completion')
-      }
-      case 'achievement': {
-        return t('certificationTypes.achievement')
-      }
-      case 'assessment': {
-        return t('certificationTypes.assessment')
-      }
-      case 'participation': {
-        return t('certificationTypes.participation')
-      }
-      case 'mastery': {
-        return t('certificationTypes.mastery')
-      }
-      case 'professional': {
-        return t('certificationTypes.professional')
-      }
-      case 'continuing': {
-        return t('certificationTypes.continuing')
-      }
-      case 'workshop': {
-        return t('certificationTypes.workshop')
-      }
-      case 'specialization': {
-        return t('certificationTypes.specialization')
-      }
-      default: {
-        return t('certificationTypes.completion')
-      }
-    }
-  }
-
-  const downloadCertificate = async () => {
-    if (!userCertificate) return
-
-    try {
-      const certificateId = userCertificate.certificate_user.user_certification_uuid
-      const certificationName =
-        userCertificate.certification.config.certification_name || userCertificate.course.name || ''
-      const blob = await generateCertificatePdfBlob({
-        awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        certificateId,
-        certificationDescription:
-          userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
-        certificationName,
-        certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
-        instructor: userCertificate.instructor_name ?? null,
-        labels: {
-          authenticityGuaranteed: t('verifyCertificate'),
-          awarded: t('labelAwarded'),
-          badgeCheckIcon: t('badgeCheckIcon'),
-          certificate: t('certificate'),
-          certificateId: t('certificateId'),
-          instructor: t('instructor'),
-          verificationNote: t('certificateCanBeVerified'),
-        },
-        pattern: userCertificate.certification.config.certificate_pattern ?? '',
-        verificationUrl: qrCodeLink,
-      })
-
-      downloadPdfBlob(blob, `${sanitizePdfFileName(certificationName)}_Certificate.pdf`)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      setDialogAlertMessage(t('errorGeneratingPDF'))
-      setDialogAlertOpen(true)
-    }
-  }
-
   const progressInfo = learnerState
     ? {
         completed: learnerState.progress.completed_required_count,
@@ -262,7 +180,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
         <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
@@ -361,13 +278,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 </div>
               </div>
               <div className="flex justify-center space-x-4">
-                <button
-                  onClick={downloadCertificate}
-                  className="inline-flex items-center space-x-2 rounded-full bg-green-600 px-6 py-3 text-white transition duration-200 hover:bg-green-700"
-                >
-                  <Download className="h-5 w-5" />
-                  <span>{t('downloadCertificate')}</span>
-                </button>
+                {/* The server PDF names the holder; the old in-browser pdfme copy did not. */}
+                <CertificatePdfDownloadButton
+                  verifyCode={userCertificate.certificate_user.user_certification_uuid}
+                  size="default"
+                  variant="default"
+                  className="rounded-full bg-green-600 px-6 py-3 text-white hover:bg-green-700"
+                />
                 <AppLink
                   href={getAbsoluteUrl(
                     `/certificates/${userCertificate.certificate_user.user_certification_uuid}/verify`,
@@ -419,7 +336,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
       <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (

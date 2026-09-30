@@ -42,7 +42,6 @@ vi.mock('@/stores/gamification', () => ({
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useUserCertificateByCourse: () => ({ data: null, isPending: false, error: null }),
 }))
-vi.mock('@/features/certifications/utils/pdfmeCertificate', () => ({}))
 vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
   default: () => null,
 }))
