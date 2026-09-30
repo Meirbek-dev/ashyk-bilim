@@ -11,6 +11,8 @@ import { isApiError } from '@/lib/api/assertSuccess'
 import type { QaForwardedProps } from '@/lib/api/generated/zod'
 import type { AICitation } from '@/features/ai-experience'
 
+import { qaThreadQueryOptions } from './use-ask-question'
+
 interface CourseQAChatOptions {
   activityUuid?: string | null
   courseUuid: string
@@ -132,10 +134,12 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         if (protocolError) throw new Error(protocolError)
         const nextThreadUuid = runResultThreadId(response.result) ?? threadUuid
         if (nextThreadUuid) onThread(nextThreadUuid)
+        // UX-299: the optimistic question + answer stay until the saved thread is in the cache —
+        // dropping them first flashed the empty state while the thread loaded.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),
           ...(nextThreadUuid
-            ? [queryClient.invalidateQueries({ queryKey: ['course-qa-thread', courseUuid, nextThreadUuid] })]
+            ? [queryClient.fetchQuery(qaThreadQueryOptions(courseUuid, nextThreadUuid)).catch(() => undefined)]
             : []),
         ])
         setSnapshot(initialSnapshot)

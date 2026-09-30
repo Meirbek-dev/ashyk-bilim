@@ -75,6 +75,41 @@ describe('course Q&A on the v2 wire', () => {
     expect(onThread).toHaveBeenCalledWith(THREAD_ID)
   })
 
+  // UX-299: the question + answer stay on screen until the saved thread is loaded.
+  it('keeps the asked turn until the new thread is in the cache', async () => {
+    mocks.runAgent.mockResolvedValue({ result: { thread_id: THREAD_ID } })
+    let resolveThread!: (value: unknown) => void
+    mocks.apiJson.mockImplementationOnce(
+      (_path: string, _init: unknown, parse: (value: unknown) => unknown) =>
+        new Promise(resolve => {
+          resolveThread = value => resolve(parse(value))
+        }),
+    )
+    const { result } = renderHook(
+      () => useCourseQAChat({ activityUuid: null, courseUuid: COURSE_ID, onThread: vi.fn(), threadUuid: null }),
+      { wrapper },
+    )
+
+    let submission!: Promise<void>
+    act(() => {
+      submission = result.current.submit('What is a closure?')
+    })
+    await waitFor(() =>
+      expect(mocks.apiJson).toHaveBeenCalledWith(
+        `ai/qa/${COURSE_ID}/threads/${THREAD_ID}`,
+        undefined,
+        expect.any(Function),
+      ),
+    )
+    expect(result.current.pendingQuestion).toBe('What is a closure?')
+
+    await act(async () => {
+      resolveThread([wireMessage('user', []), wireMessage('assistant', [])])
+      await submission
+    })
+    expect(result.current.pendingQuestion).toBeNull()
+  })
+
   it('reads citations from AG-UI 1.0 text content parts', async () => {
     let resolveRun!: (value: { result: { thread_id: string } }) => void
     mocks.runAgent.mockImplementation(

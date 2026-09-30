@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 export type ActivityAIMode =
   | 'ask'
@@ -14,7 +14,6 @@ export type ActivityAIMode =
   | 'remediation'
 
 export function useActivityAIUrlState(defaultMode: ActivityAIMode = 'ask') {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const open = searchParams.get('ai') === 'open'
@@ -23,9 +22,12 @@ export function useActivityAIUrlState(defaultMode: ActivityAIMode = 'ask') {
 
   const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams])
 
+  // UX-299: panel state lives in the URL only for sharing/reload — the native History API
+  // updates `useSearchParams` at once; `router.replace` re-rendered the activity page on the
+  // server first (2–10 s before the panel opened or a new Q&A thread was selected).
   function replace(nextParams: URLSearchParams) {
     const query = nextParams.toString()
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    globalThis.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname)
   }
 
   function setOpen(nextOpen: boolean) {
