@@ -77,19 +77,29 @@ export function EditorPane({
             size="sm"
             onClick={() => onCodeChange(starterCode)}
             disabled={readOnly || !starterCode}
+            aria-label={t('resetCode')}
           >
             <RotateCcw className="size-4" />
-            {t('resetCode')}
+            {/* UX-290: icon-only on a phone so the toolbar fits. */}
+            <span className="hidden sm:inline">{t('resetCode')}</span>
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={handleFormat} disabled={readOnly}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleFormat}
+            disabled={readOnly}
+            aria-label={t('formatCode')}
+          >
             <AlignLeft className="size-4" />
-            {t('formatCode')}
+            <span className="hidden sm:inline">{t('formatCode')}</span>
           </Button>
           <LanguageSelector
             languages={languages}
             selectedId={languageId}
             onSelect={onLanguageChange}
             disabled={readOnly}
+            className="w-36 sm:w-[200px]"
             {...(allowedLanguages ? { allowedLanguages } : {})}
           />
           <DropdownMenu>

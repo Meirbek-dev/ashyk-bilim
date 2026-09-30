@@ -41,6 +41,7 @@ import { ResultsDock } from './ResultsDock'
 import { CodeArenaHeader } from './CodeArenaHeader'
 import { HintDrawer } from './HintDrawer'
 import { useApiError } from '@/hooks/useApiError'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 /** What the attempt shell needs to drive the arena's submit button. */
 export interface CodeChallengeSubmitControl {
@@ -57,7 +58,8 @@ interface CodeArenaWorkspaceProps {
   initialCode: string
   disabled?: boolean
   onAnswerChange: (answer: Extract<ItemAnswer, { kind: 'CODE' }>) => void
-  onSubmit: () => Promise<void> | void
+  /** Resolves with the handed-in attempt (its status says whether it is already graded). */
+  onSubmit: () => Promise<{ status: string } | void> | void
   onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void
 }
 
@@ -89,6 +91,7 @@ export function CodeArenaWorkspace({
   const [runError, setRunError] = useState<unknown>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { preferences, setPreferences, monacoOptions } = useEditorPreferences()
+  const isMobile = useIsMobile()
   const { handleApiError, toastApiError } = useApiError()
   const languagesQuery = useJudge0Languages()
   const submissionsQuery = useCodeChallengeSubmissions(problem.activityUuid)
@@ -226,14 +229,15 @@ export function CodeArenaWorkspace({
     setIsSubmitting(true)
     try {
       updateAnswer(languageId, code)
-      await onSubmit()
-      toast.success(t('submissionQueued'))
-    } catch (error) {
-      toastApiError(error, { fallback: t('submissionFailed') })
+      const submitted = await onSubmit()
+      // UX-288: an auto-graded attempt is not «queued» — its result card says the rest.
+      if (submitted?.status === 'PENDING') toast.success(t('submissionQueued'))
+    } catch {
+      // The submission hook already toasted the localized failure.
     } finally {
       setIsSubmitting(false)
     }
-  }, [code, languageId, onSubmit, t, toastApiError, updateAnswer])
+  }, [code, languageId, onSubmit, t, updateAnswer])
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
@@ -306,12 +310,18 @@ export function CodeArenaWorkspace({
         />
       ) : null}
 
-      <ResizablePanelGroup id="code-arena-main-layout" orientation="horizontal" className="min-h-0 flex-1">
+      {/* UX-290: a phone stacks the problem above the editor instead of squeezing them side by side. */}
+      <ResizablePanelGroup
+        id="code-arena-main-layout"
+        orientation={isMobile ? 'vertical' : 'horizontal'}
+        className="min-h-0 flex-1"
+      >
         <ResizablePanel defaultSize={34} minSize={24} className={cn('min-w-0')}>
           <ProblemPane
             problem={problem}
             settings={settings}
             submissions={submissions}
+            languages={languages}
             activeTab={problemTab}
             onTabChange={tab => {
               if (tab === 'hints') {

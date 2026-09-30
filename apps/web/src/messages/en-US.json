@@ -279,7 +279,10 @@
         "runtimeError": "Runtime Error",
         "timeLimitExceeded": "Time Limit Exceeded",
         "unknown": "Unknown",
-        "wrongAnswer": "Wrong Answer"
+        "wrongAnswer": "Wrong Answer",
+        "runnerUnavailable": "Runner Unavailable",
+        "running": "Running",
+        "ready": "Ready"
       },
       "assertionDescriptionPlaceholder": "Explain why this case matters...",
       "stdinPlaceholder": "Console inputs feed here",
@@ -472,6 +475,10 @@
         "limits": {
           "label": "Execution Limits & Thresholds",
           "detail": "Specify execution time limits (seconds) and memory usage limits (MB) to prevent infinite loops and resource exhaustions."
+        },
+        "markdown": {
+          "label": "Markdown safety",
+          "detail": "Problem text, sample explanations, and hints pass Markdown safety checks."
         }
       },
       "referenceVerificationSuite": "Reference Verification Suite",
@@ -533,6 +540,15 @@
         "graded": "Graded",
         "published": "Scored",
         "returned": "Returned for revision"
+      },
+      "attemptNumber": "Attempt #{number}",
+      "markdownField": {
+        "problem": "Problem statement",
+        "inputSpec": "Input format",
+        "outputSpec": "Output format",
+        "visibleTest": "Sample {number} description",
+        "hiddenTest": "Hidden test {number} description",
+        "hint": "Hint {number}"
       }
     },
     "DocumentPdf": {
@@ -6935,7 +6951,8 @@
       "course-not-ready": "Resolve every readiness blocker before publishing the course.",
       "unsupported-media-type": "This file type is not allowed here.",
       "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later.",
-      "grade-own-attempt": "You cannot grade your own attempt."
+      "grade-own-attempt": "You cannot grade your own attempt.",
+      "assessment-read-only": "This assessment can no longer be edited: it is archived, scheduled, or already has submissions."
     },
     "fields": {
       "required": "This field is required.",

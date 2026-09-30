@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useApiError } from '@/hooks/useApiError'
 import { cn } from '@/lib/utils'
 import type { CodeResultTab, CodeVerdict, TestCaseResult } from '../domain'
-import { firstFailingResult, verdictLabel, verdictTone } from '../domain'
+import { caseVerdict, firstFailingResult, verdictLabelKey, verdictTone } from '../domain'
 import { CodeDiffViewer } from '../review/CodeDiffViewer'
 
 interface ResultsDockProps {
@@ -180,7 +180,7 @@ export function ResultsDock({
                           )}
                           title={t('hiddenCaseTitle', {
                             number: idx + 1,
-                            status: result.passed ? t('passed') : result.status_description,
+                            status: result.passed ? t('passed') : t(verdictLabelKey(caseVerdict(result))),
                           })}
                         >
                           {idx + 1}
@@ -223,6 +223,7 @@ function VerdictBanner({
 }) {
   const t = useTranslations('Activities.CodeChallenges')
   const firstFail = firstFailingResult(results)
+  const firstFailNumber = firstFail && results ? results.indexOf(firstFail) + 1 : 0
   const Icon =
     verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle
   const isRunning = verdict === 'RUNNING'
@@ -241,7 +242,7 @@ function VerdictBanner({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Icon className={cn('size-5', isRunning && 'animate-spin')} />
-          <div className="font-semibold">{verdictLabel(verdict)}</div>
+          <div className="font-semibold">{t(verdictLabelKey(verdict))}</div>
         </div>
         <Badge variant={verdictTone(verdict)}>
           {results
@@ -254,7 +255,11 @@ function VerdictBanner({
       {firstFail ? (
         <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
           <span>
-            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
+            {/* UX-287: the case number the rows show, not the raw test id. */}
+            {t('firstFailingCase', {
+              caseId: t('caseNumber', { number: firstFailNumber }),
+              description: t(verdictLabelKey(caseVerdict(firstFail))),
+            })}
           </span>
           <Button
             type="button"
@@ -371,7 +376,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           )}
           <span className="truncate text-xs font-semibold">{t('caseNumber', { number: index + 1 })}</span>
           <Badge variant={result.passed ? 'success' : 'destructive'} className="px-1 py-0 text-[10px]">
-            {result.passed ? t('passed') : result.status_description}
+            {result.passed ? t('passed') : t(verdictLabelKey(caseVerdict(result)))}
           </Badge>
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">

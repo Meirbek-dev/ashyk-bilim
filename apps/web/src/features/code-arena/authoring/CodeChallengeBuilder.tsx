@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { ProblemStatementEditor } from './ProblemStatementEditor'
 import { TestSuiteBuilder } from './TestSuiteBuilder'
 import { ReferenceSolutionRunner } from './ReferenceSolutionRunner'
-import { PublishReadinessPanel } from './PublishReadinessPanel'
+import { PublishReadinessPanel, buildReadiness, useMarkdownIssueText } from './PublishReadinessPanel'
 
 interface CodeChallengeBuilderProps {
   activityUuid: string
@@ -74,7 +74,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     [draft.allowed_languages, languages],
   )
 
-  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
+  const markdownIssueText = useMarkdownIssueText()
+  const readiness = useMemo(() => buildReadiness(draft, t, markdownIssueText), [draft, t, markdownIssueText])
   const blockersCount = readiness.items.filter(item => !item.ok).length
   const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft])
 
@@ -102,10 +103,17 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     setDraft(current => ({ ...current, ...patch }))
   }
 
-  const save = async () => {
+  /** Persists the draft; `false` once the failure has been toasted. An unchanged draft sends nothing (UX-284). */
+  const persist = async () => {
     if (firstMarkdownIssue) {
-      toast.error(`${firstMarkdownIssue.field}: ${firstMarkdownIssue.issue.message}`)
-      return
+      toast.error(markdownIssueText(firstMarkdownIssue))
+      return false
+    }
+    // UX-282: out-of-range limits would make Judge0 refuse every run.
+    const limits = readiness.items.find(item => item.id === 'limits')
+    if (limits && !limits.ok) {
+      toast.error(limits.detail)
+      return false
     }
 
     try {
@@ -114,11 +122,16 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         visible_tests: (draft.visible_tests ?? []).map(test => Object.assign(test, { is_visible: true })),
         hidden_tests: (draft.hidden_tests ?? []).map(test => Object.assign(test, { is_visible: false })),
       })
-      toast.success(t('configSaved'))
+      return true
     } catch (error) {
       // UX-284: problem+json codes (e.g. a locked assessment) are localized.
       toastApiError(error, { fallback: t('configSaveFailed') })
+      return false
     }
+  }
+
+  const save = async () => {
+    if (await persist()) toast.success(t('configSaved'))
   }
 
   if (isLoading) {
@@ -327,7 +340,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         </TabsContent>
 
         <TabsContent value="verify" className="min-h-0 flex-1 overflow-hidden">
-          <ReferenceSolutionRunner draft={draft} languages={languages} />
+          {/* UX-281: the server checks the stored solutions, so verifying saves the draft first. */}
+          <ReferenceSolutionRunner draft={draft} languages={languages} onBeforeValidate={persist} />
         </TabsContent>
 
         <TabsContent value="review" className="min-h-0 flex-1 overflow-hidden">
@@ -336,45 +350,4 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       </Tabs>
     </div>
   )
-}
-
-function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
-  const visible = settings.visible_tests ?? []
-  const hidden = settings.hidden_tests ?? []
-  const referenceSolutions = settings.reference_solutions ?? {}
-  const starterCode = settings.starter_code ?? {}
-  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings)
-
-  const items = [
-    {
-      label: t('readiness.problem.label'),
-      ok: Boolean((settings.prompt ?? '').trim() && (settings.title ?? '').trim()),
-    },
-    {
-      label: t('readiness.languages.label'),
-      ok:
-        settings.allowed_languages.length > 0 &&
-        settings.allowed_languages.every(id => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
-    },
-    {
-      label: t('readiness.visible.label'),
-      ok: visible.some(test => test.input.trim() || test.expected_output.trim()),
-    },
-    {
-      label: t('readiness.hidden.label'),
-      ok: hidden.length > 0,
-    },
-    {
-      label: t('readiness.limits.label'),
-      ok: Boolean(settings.time_limit && settings.memory_limit),
-    },
-    {
-      label: 'Markdown safety',
-      ok: !markdownIssue,
-    },
-  ]
-  return {
-    items,
-    blockers: items.filter(item => !item.ok),
-  }
 }

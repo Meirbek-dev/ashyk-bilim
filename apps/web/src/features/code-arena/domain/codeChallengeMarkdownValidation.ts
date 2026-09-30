@@ -2,7 +2,10 @@ import type { MarkdownEditorPreset, MarkdownValidationIssue } from '@/features/c
 import { getMarkdownSaveGate } from '@/features/content-markdown'
 
 export interface CodeChallengeMarkdownIssue {
-  field: string
+  /** Catalog key under `Activities.CodeChallenges.markdownField` (UX-285). */
+  field: 'problem' | 'inputSpec' | 'outputSpec' | 'visibleTest' | 'hiddenTest' | 'hint'
+  /** 1-based test / hint number for the list fields. */
+  number?: number
   preset: MarkdownEditorPreset
   issue: MarkdownValidationIssue
 }
@@ -27,30 +30,20 @@ export interface MarkdownValidatedCodeChallenge {
 export function getCodeChallengeMarkdownIssues(settings: MarkdownValidatedCodeChallenge): CodeChallengeMarkdownIssue[] {
   const issues: CodeChallengeMarkdownIssue[] = []
 
-  collectMarkdownIssues(issues, 'Problem statement', settings.prompt ?? '', 'codeProblemStatement')
-  collectMarkdownIssues(issues, 'Input specification', settings.input_spec ?? '', 'codeInputSpec')
-  collectMarkdownIssues(issues, 'Output specification', settings.output_spec ?? '', 'codeOutputSpec')
+  collectMarkdownIssues(issues, 'problem', settings.prompt ?? '', 'codeProblemStatement')
+  collectMarkdownIssues(issues, 'inputSpec', settings.input_spec ?? '', 'codeInputSpec')
+  collectMarkdownIssues(issues, 'outputSpec', settings.output_spec ?? '', 'codeOutputSpec')
 
   for (const [index, test] of (settings.visible_tests ?? []).entries()) {
-    collectMarkdownIssues(
-      issues,
-      `Visible test ${index + 1} description`,
-      test.description ?? '',
-      'codeExampleExplanation',
-    )
+    collectMarkdownIssues(issues, 'visibleTest', test.description ?? '', 'codeExampleExplanation', index + 1)
   }
 
   for (const [index, test] of (settings.hidden_tests ?? []).entries()) {
-    collectMarkdownIssues(
-      issues,
-      `Hidden test ${index + 1} description`,
-      test.description ?? '',
-      'codeExampleExplanation',
-    )
+    collectMarkdownIssues(issues, 'hiddenTest', test.description ?? '', 'codeExampleExplanation', index + 1)
   }
 
   for (const [index, hint] of (settings.hints ?? []).entries()) {
-    collectMarkdownIssues(issues, `Hint ${index + 1}`, hint.content ?? '', 'codeHint')
+    collectMarkdownIssues(issues, 'hint', hint.content ?? '', 'codeHint', index + 1)
   }
 
   return issues
@@ -64,10 +57,11 @@ export function getFirstBlockingCodeChallengeMarkdownIssue(
 
 function collectMarkdownIssues(
   target: CodeChallengeMarkdownIssue[],
-  field: string,
+  field: CodeChallengeMarkdownIssue['field'],
   markdown: string,
   preset: MarkdownEditorPreset,
+  number?: number,
 ) {
   const gate = getMarkdownSaveGate(markdown, preset)
-  target.push(...gate.errors.map(issue => ({ field, preset, issue })))
+  target.push(...gate.errors.map(issue => ({ field, preset, issue, ...(number === undefined ? {} : { number }) })))
 }

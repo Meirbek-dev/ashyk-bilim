@@ -265,4 +265,17 @@ describe('saveCodeChallengeSettings', () => {
     const body = JSON.parse(String(mocks.apiJson.mock.calls[0]?.[1]?.body))
     expect(body).toMatchObject({ title: 'Two Sum', max_score: 10 })
   })
+
+  it('renames the code item with the challenge (UX-283)', async () => {
+    const stored = wireAssessment()
+    stored.items[0]!.title = 'Новый код-челлендж'
+    mocks.getActivityAssessment.mockResolvedValue(stored)
+    mocks.apiJson.mockResolvedValue({})
+    const loaded = await getCodeChallengeSettings('activity_two-sum')
+
+    await saveCodeChallengeSettings('activity_two-sum', { ...loaded, title: 'Палиндром' })
+
+    const itemPatch = mocks.apiJson.mock.calls.find(([path]) => path === `assessment-items/${ITEM_ID}`)
+    expect(JSON.parse(String(itemPatch?.[1]?.body))).toMatchObject({ title: 'Палиндром' })
+  })
 })

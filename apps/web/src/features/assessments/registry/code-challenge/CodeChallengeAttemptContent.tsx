@@ -106,9 +106,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     return () => clearTimeout(timeout)
   }, [saveDraft, saveState, submissionStatus, vm?.canSaveDraft])
 
-  const handleCanonicalSubmit = useCallback(async () => {
-    await submitAssessment()
-  }, [submitAssessment])
+  const handleCanonicalSubmit = useCallback(() => submitAssessment(), [submitAssessment])
 
   if (submissionState.isLoading) {
     return <CodeItemLoading />

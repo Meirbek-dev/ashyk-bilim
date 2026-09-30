@@ -39,6 +39,7 @@ export type CodeVerdict =
   | 'COMPILE_ERROR'
   | 'RUNTIME_ERROR'
   | 'TIME_LIMIT'
+  | 'INTERNAL_ERROR'
   | 'DEGRADED'
   | 'RUNNING'
   | 'IDLE'

@@ -7,14 +7,15 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { fromUnix } from '@/lib/api/contract'
-import type { CodeSubmission } from '../domain'
+import type { CodeSubmission, Judge0Language } from '../domain'
 
 interface SubmissionTimelineProps {
   submissions: CodeSubmission[]
+  languages: Judge0Language[]
   onRestoreSubmission?: (submission: CodeSubmission) => void
 }
 
-export function SubmissionTimeline({ submissions, onRestoreSubmission }: SubmissionTimelineProps) {
+export function SubmissionTimeline({ submissions, languages, onRestoreSubmission }: SubmissionTimelineProps) {
   const t = useTranslations('Activities.CodeChallenges')
 
   return (
@@ -43,7 +44,10 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
                     {submission.submitted_at_unix === null
                       ? t('unknownTime')
                       : fromUnix(submission.submitted_at_unix).toLocaleString()}
-                    {submission.language_id ? ` - ${t('languageIdFallback', { id: submission.language_id })}` : ''}
+                    {/* UX-287: the language's name; the id only while Judge0's list is unavailable. */}
+                    {submission.language_id
+                      ? ` · ${languages.find(language => language.id === submission.language_id)?.name ?? t('languageIdFallback', { id: submission.language_id })}`
+                      : ''}
                   </div>
                 </div>
                 {onRestoreSubmission ? (

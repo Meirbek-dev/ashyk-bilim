@@ -395,8 +395,9 @@ function codeItemPayload(
   const body = toCodeItemBody(assessment, codeItem, settings)
   const metadata = codeItem?.metadata ?? { tags: [], outcome_ids: [] }
   return {
-    // The server creates a new challenge's code item with title ""; PATCH rejects a blank title.
-    title: codeItem?.title?.trim() || assessment.title,
+    // UX-283: the challenge's one item carries the challenge's title (the
+    // learner review lists it). The server creates it with title ""; PATCH rejects a blank title.
+    title: settings.title?.trim() || codeItem?.title?.trim() || assessment.title,
     body: itemBodyToWire(body as ItemBody),
     max_score: typeof settings.points === 'number' ? settings.points : (codeItem?.max_score ?? 100),
     // PATCH replaces the whole metadata block: keep the rest, set difficulty.
@@ -686,11 +687,9 @@ function toTestCaseResult(
   }
 }
 
+/** BUG-373: exact run status → Judge0 status id, never a substring match. */
+const JUDGE0_STATUS_ID: Record<string, number> = { COMPILE_ERROR: 6, TIME_LIMIT: 5, RUNTIME_ERROR: 11 }
+
 function runStatusCode(status: string, passed: number, total: number) {
-  const normalized = status.toUpperCase()
-  if (normalized.includes('COMPILE')) return 6
-  if (normalized.includes('TIMEOUT') || normalized.includes('TIME_LIMIT')) return 5
-  if (normalized.includes('RUNTIME')) return 11
-  if (total > 0 && passed < total) return 4
-  return 3
+  return JUDGE0_STATUS_ID[status.toUpperCase()] ?? (total > 0 && passed < total ? 4 : 3)
 }

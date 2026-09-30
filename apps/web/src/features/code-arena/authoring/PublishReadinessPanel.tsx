@@ -1,13 +1,14 @@
 'use client'
 
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 import { cn } from '@/lib/utils'
 import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain'
+import type { CodeChallengeMarkdownIssue } from '../domain'
 
 interface PublishReadinessPanelProps {
   draft: CodeChallengeSettings
@@ -15,7 +16,8 @@ interface PublishReadinessPanelProps {
 
 export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
   const t = useTranslations('Activities.CodeChallenges')
-  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
+  const markdownIssueText = useMarkdownIssueText()
+  const readiness = useMemo(() => buildReadiness(draft, t, markdownIssueText), [draft, t, markdownIssueText])
   const blockersCount = readiness.items.filter(item => !item.ok).length
 
   return (
@@ -46,7 +48,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
           <div className="grid gap-3">
             {readiness.items.map(item => (
               <div
-                key={item.label}
+                key={item.id}
                 className={cn(
                   'flex items-start gap-3 rounded-lg border p-4 transition-all duration-200',
                   item.ok ? 'border-emerald-500/10 bg-emerald-500/[0.01]' : 'border-amber-500/25 bg-amber-500/[0.01]',
@@ -79,7 +81,35 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
   )
 }
 
-function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
+/** Judge0's sandbox caps (MAX_CPU_TIME_LIMIT 15 s; memory up to 2 GB). */
+export const CODE_LIMITS = {
+  timeSeconds: { min: 1, max: 15 },
+  memoryMb: { min: 32, max: 2048 },
+} as const
+
+const within = (value: number | undefined, range: { min: number; max: number }) =>
+  typeof value === 'number' && value >= range.min && value <= range.max
+
+/** UX-285: «Problem statement: Raw HTML …» in the page language. */
+export function useMarkdownIssueText() {
+  const t = useTranslations('Activities.CodeChallenges')
+  const tMarkdown = useTranslations('MarkdownEditor')
+  return useCallback(
+    (issue: CodeChallengeMarkdownIssue) => {
+      const field = t(`markdownField.${issue.field}`, { number: issue.number ?? 0 })
+      const key = `issues.${issue.issue.code}`
+      const message = tMarkdown.has(key) ? tMarkdown(key, issue.issue.params ?? {}) : issue.issue.message
+      return `${field}: ${message}`
+    },
+    [t, tMarkdown],
+  )
+}
+
+export function buildReadiness(
+  settings: CodeChallengeSettings,
+  t: AppTranslator,
+  markdownIssueText: (issue: CodeChallengeMarkdownIssue) => string,
+) {
   const visible = settings.visible_tests ?? []
   const hidden = settings.hidden_tests ?? []
   const referenceSolutions = settings.reference_solutions ?? {}
@@ -88,11 +118,13 @@ function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
 
   const items = [
     {
+      id: 'problem',
       label: t('readiness.problem.label'),
       ok: Boolean((settings.prompt ?? '').trim() && (settings.title ?? '').trim()),
       detail: t('readiness.problem.detail'),
     },
     {
+      id: 'languages',
       label: t('readiness.languages.label'),
       ok:
         (settings.allowed_languages ?? []).length > 0 &&
@@ -100,29 +132,30 @@ function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
       detail: t('readiness.languages.detail'),
     },
     {
+      id: 'visible',
       label: t('readiness.visible.label'),
       ok: visible.some(test => test.input.trim() || test.expected_output.trim()),
       detail: t('readiness.visible.detail'),
     },
     {
+      id: 'hidden',
       label: t('readiness.hidden.label'),
       ok: hidden.length > 0,
       detail: t('readiness.hidden.detail'),
     },
     {
+      // UX-282: the «Описание» tab has the two inputs this item asks for.
+      id: 'limits',
       label: t('readiness.limits.label'),
-      ok: Boolean(settings.time_limit && settings.memory_limit),
+      ok: within(settings.time_limit, CODE_LIMITS.timeSeconds) && within(settings.memory_limit, CODE_LIMITS.memoryMb),
       detail: t('readiness.limits.detail'),
     },
     {
-      label: 'Markdown safety',
+      id: 'markdown',
+      label: t('readiness.markdown.label'),
       ok: !markdownIssue,
-      detail: markdownIssue
-        ? `${markdownIssue.field}: ${markdownIssue.issue.message}`
-        : 'Problem text, sample explanations, and hints pass Markdown safety checks.',
+      detail: markdownIssue ? markdownIssueText(markdownIssue) : t('readiness.markdown.detail'),
     },
   ]
-  return {
-    items,
-  }
+  return { items }
 }
