@@ -2288,49 +2288,72 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
         assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
         uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap()
     };
-    let lock = async |sub: uuid::Uuid| {
+    // The hand-in re-reads the draft, grades it, then takes `lock_attempts`
+    // (an advisory lock) right before its guarded UPDATE. The test holds that
+    // lock: an advisory lock is one lock object, so its waiters are served
+    // strictly in order — unlike a row lock, whose waiters race again for
+    // each new tuple version (which made the row-lock version flaky in CI).
+    let hold = async |sub: uuid::Uuid| {
+        let (assessment, user): (uuid::Uuid, uuid::Uuid) =
+            sqlx::query_as("SELECT assessment_id, user_id FROM submissions WHERE id = $1")
+                .bind(sub)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
         let mut holder = app.pool.begin().await.unwrap();
-        sqlx::query("SELECT id FROM submissions WHERE id = $1 FOR UPDATE")
-            .bind(sub)
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('attempt:' || $1 || $2, 0))")
+            .bind(assessment.to_string())
+            .bind(user.to_string())
             .execute(&mut *holder)
             .await
             .unwrap();
         holder
     };
-    // Three rounds: each time the hand-in's final UPDATE queues behind the
-    // held row lock, bump `draft_version` under it, release, lock again.
+    let waiting = async |n: i64| {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM pg_stat_activity
+             WHERE datname = current_database() AND wait_event_type = 'Lock'
+               AND query LIKE 'SELECT pg_advisory_xact_lock(%'",
+        )
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+            >= n
+    };
+    // Three rounds: once the hand-in waits on the held lock (it has read the
+    // draft), bump `draft_version`; queue the next round's lock behind it,
+    // then release — the hand-in's write misses the moved version, and its
+    // retry lines up behind the new holder.
     let keep_changing = async |sub: uuid::Uuid, holder: sqlx::Transaction<'_, sqlx::Postgres>| {
-        let mut held = Some(holder);
-        for _ in 0..3 {
-            let mut holder = match held.take() {
-                Some(holder) => holder,
-                None => lock(sub).await,
-            };
-            wait_until(
-                "the hand-in's final UPDATE never queued on the row lock",
-                async || {
-                    sqlx::query_scalar::<_, bool>(
-                        "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
-                     WHERE datname = current_database() AND wait_event_type = 'Lock'
-                       AND query LIKE 'UPDATE submissions SET%status = $2%')",
-                    )
-                    .fetch_one(&app.pool)
-                    .await
-                    .unwrap()
-                },
-            )
+        let mut holder = holder;
+        for round in 0..3 {
+            wait_until("the hand-in never waited on lock_attempts", async || {
+                waiting(1).await
+            })
             .await;
             sqlx::query("UPDATE submissions SET draft_version = draft_version + 1 WHERE id = $1")
                 .bind(sub)
-                .execute(&mut *holder)
+                .execute(&app.pool)
                 .await
                 .unwrap();
-            holder.commit().await.unwrap();
+            if round == 2 {
+                holder.commit().await.unwrap();
+                break;
+            }
+            let current = holder;
+            let (next, ()) = tokio::join!(hold(sub), async {
+                wait_until("the next round's lock never queued", async || {
+                    waiting(2).await
+                })
+                .await;
+                current.commit().await.unwrap();
+            });
+            holder = next;
         }
     };
 
     let first = start().await;
-    let holder = lock(first).await;
+    let holder = hold(first).await;
     let (given_up, ()) = tokio::join!(
         app.send(submit(&alice, &first.to_string(), None, &answer)),
         keep_changing(first, holder)
@@ -2376,7 +2399,7 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
         .execute(&app.pool)
         .await
         .unwrap();
-    let holder = lock(third).await;
+    let holder = hold(third).await;
     let runner = app.code_runner();
     let sweep = tokio::spawn(async move {
         ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10).await
