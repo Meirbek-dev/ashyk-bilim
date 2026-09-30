@@ -17,5 +17,7 @@ describe('size units (UX-321)', () => {
   ])('%s spaces every size from its unit', (_locale, messages) => {
     expect(strings(messages).filter(s => /[0-9}](МБ|MB|КБ|KB)(?![A-Za-zА-Яа-я])/.test(s))).toEqual([])
     expect(messages.CourseEdit.General.Thumbnail.errors.fileTooLarge).toContain('({fileSize})')
+    // UX-323: a duration placeholder is spaced from its unit too («2 с», «18 мс»).
+    expect(strings(messages).filter(s => /\{value\}(мс|с|ms|s)(?![A-Za-zА-Яа-я])/.test(s))).toEqual([])
   })
 })
