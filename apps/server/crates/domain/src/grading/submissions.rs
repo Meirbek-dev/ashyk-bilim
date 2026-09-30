@@ -316,6 +316,10 @@ struct FinalizeOptions {
     auto_submit_reason: Option<AutoSubmitReason>,
     /// The hand-in moment lateness is judged at; `None` is now (BUG-315).
     submitted_at: Option<i64>,
+    /// When the manual submit arrived (BUG-381): the gates and lateness are
+    /// judged at arrival, so a hand-in that re-grades or waits for Judge0
+    /// past the due date is still on time. `None` is now.
+    arrived_at: Option<i64>,
 }
 
 #[derive(Clone)]
@@ -686,6 +690,7 @@ impl SubmissionsService {
             ctx.submission.user_id,
             ctx.submission.started_at,
             0,
+            now_unix(),
         )
         .await?;
         if let Some(gate) = gates.first() {
@@ -752,6 +757,7 @@ impl SubmissionsService {
         reported_violations: i32,
         expected_draft_version: Option<i64>,
     ) -> Result<StudentSubmission> {
+        let arrived_at = now_unix();
         let mut limited = false;
         // BUG-344: a save or violation report landing while this submit
         // grades leaves the row alone (`finalize` → `None`); grade the draft
@@ -813,6 +819,7 @@ impl SubmissionsService {
                     violation_count,
                     auto_submit_reason: None,
                     submitted_at: None,
+                    arrived_at: Some(arrived_at),
                 },
             )
             .await?
@@ -846,7 +853,7 @@ impl SubmissionsService {
         opts: FinalizeOptions,
     ) -> Result<Option<(Submission, EffectivePolicy, usize)>> {
         let pool = runner.pool();
-        let now = now_unix();
+        let now = opts.arrived_at.unwrap_or_else(now_unix);
         let Context {
             submission,
             assessment,
@@ -867,6 +874,7 @@ impl SubmissionsService {
                 submission.user_id,
                 submission.started_at,
                 SUBMIT_GRACE_SECONDS,
+                now,
             )
             .await?;
             if let Some(gate) = gates.first() {
@@ -1029,8 +1037,9 @@ impl SubmissionsService {
     /// Kind-dispatched auto grade. Code challenges run their tests on Judge0
     /// here (a `final` run, replayed if the submit is retried). `lenient` is
     /// the timer path: it cannot show the learner an error, so a compile
-    /// error scores what it earned (nothing) and an unavailable runner
-    /// hands the attempt to a human instead of blocking the deadline.
+    /// error scores what it earned (nothing) and a run it cannot finish
+    /// hands the attempt to a human. On both paths a busy or unreachable
+    /// runner (`Degraded`) hands it to a human too (BUG-381).
     async fn auto_grade(
         runner: &CodeRunner,
         submission: &Submission,
@@ -1114,14 +1123,12 @@ impl SubmissionsService {
                     .collect()
             }
             FinalRun::Degraded(message) => {
-                if lenient {
-                    return Ok(manual_review());
-                }
-                return Err(Error::app_with_details(
-                    ErrorCode::CodeRunnerDegraded,
-                    message,
-                    serde_json::json!({ "is_retryable": true, "item_id": item.id }),
-                ));
+                // BUG-381: a busy or unreachable runner is never the
+                // learner's fault, and a 503 on a deadline rush turned into
+                // PAST_DUE on the retry — the hand-in lands for review.
+                tracing::warn!(submission_id = %submission.id, %message,
+                    "final code run degraded; handing the attempt to manual review");
+                return Ok(manual_review());
             }
             FinalRun::LanguageNotAllowed { allowed } => {
                 if !lenient {
@@ -1274,6 +1281,7 @@ impl SubmissionsService {
                 violation_count,
                 auto_submit_reason: Some(AutoSubmitReason::TimeExpired),
                 submitted_at: Some(submitted_at),
+                arrived_at: None,
             },
         )
         .await?

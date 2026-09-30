@@ -71,6 +71,7 @@ struct State {
     batches: usize,
     submissions: usize,
     down: bool,
+    busy: bool,
 }
 
 #[derive(Clone)]
@@ -115,6 +116,12 @@ impl FakeJudge {
     /// Simulate an outage: every create answers 503.
     pub fn set_down(&self, down: bool) {
         self.state.lock().unwrap().down = down;
+    }
+
+    /// Simulate saturation: submissions are accepted but stay «In Queue»,
+    /// so the client gives up as `Busy` after its poll budget.
+    pub fn set_busy(&self, busy: bool) {
+        self.state.lock().unwrap().busy = busy;
     }
 
     /// Batch-create calls received.
@@ -215,6 +222,12 @@ impl Respond for FetchResponder {
         let submissions: Vec<serde_json::Value> = tokens
             .split(',')
             .filter_map(|t| state.results.get(t).cloned())
+            .map(|mut r| {
+                if state.busy {
+                    r["status"] = serde_json::json!({ "id": 1, "description": "In Queue" });
+                }
+                r
+            })
             .collect();
         drop(state);
         ResponseTemplate::new(200).set_body_json(serde_json::json!({ "submissions": submissions }))

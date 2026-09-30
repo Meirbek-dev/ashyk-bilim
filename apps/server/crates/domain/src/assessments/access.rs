@@ -40,7 +40,12 @@ pub(crate) fn cap_bars_new_attempt(
 /// for `attempt-state` and the submit pipeline (BUG-278). A staff preview
 /// (UX-182) has none: whatever attempt-state offers a preview, submit
 /// finishes. `started_at` is the open draft's; `grace` the network
-/// slack past the timer deadline (limit + grace period, BUG-326).
+/// slack past the timer deadline (limit + grace period, BUG-326); `now`
+/// the moment judged — a submit's arrival (BUG-381).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the gate inputs; `now` is the caller's clock (BUG-381: a submit judges at arrival)"
+)]
 pub(crate) async fn attempt_gates(
     pool: &sqlx::PgPool,
     preview: bool,
@@ -49,12 +54,12 @@ pub(crate) async fn attempt_gates(
     user_id: UserId,
     started_at: Option<i64>,
     grace: i64,
+    now: i64,
 ) -> Result<Vec<DisabledReason>> {
     let mut reasons = Vec::new();
     if preview {
         return Ok(reasons);
     }
-    let now = now_unix();
     if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
         reasons.push(DisabledReason::PastDue);
     }
@@ -746,6 +751,7 @@ impl AssessmentsService {
             actor.user_id,
             draft.as_ref().and_then(|d| d.started_at),
             0,
+            now_unix(),
         )
         .await?;
         // A preview's policy has no cap (`effective_policy_for`).

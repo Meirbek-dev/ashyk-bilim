@@ -481,6 +481,57 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
     assert_eq!(results[1]["ok"], false);
 }
 
+/// BUG-381: a deadline rush on a saturated runner. The submit arrives
+/// before `due_at` (no late hand-ins), Judge0 answers «busy» only after the
+/// due date has passed — the attempt is on time (judged at arrival) and
+/// lands for manual review: 200 `pending`, counted in the teacher's stats.
+#[sqlx::test(migrations = "../../migrations")]
+async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (id, item_id) = code_challenge(&app, &teacher, None).await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    // The test runner's poll budget is 3 s: the busy answer comes after it.
+    sqlx::query(
+        "UPDATE assessments SET allow_late = false, due_at = now() + interval '2 seconds' WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&id).unwrap())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    judge.set_busy(true);
+    let handed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+            } }),
+        )
+        .await;
+    assert_eq!(handed.status, StatusCode::OK, "{}", handed.text());
+    assert_eq!(handed.json()["status"], "pending");
+    assert_eq!(handed.json()["is_late"], false);
+    let stats = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/submissions/stats"),
+        )
+        .await;
+    assert_eq!(stats.status, StatusCode::OK, "{}", stats.text());
+    assert_eq!(stats.json()["total"], 1);
+    assert_eq!(stats.json()["needs_grading"], 1);
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn degraded_runner_and_languages(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -520,7 +571,8 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     assert_eq!(recorded.json()["status"], "degraded");
     assert_eq!(recorded.json()["error_message"], "code runner unavailable");
 
-    // Submitting is refused (retryable) and the draft stays open …
+    // BUG-381: an on-time hand-in is never lost to the runner — it lands
+    // for manual review instead of a 503 the learner retries past the due.
     let draft = app
         .post_as(
             &alice,
@@ -528,38 +580,36 @@ async fn degraded_runner_and_languages(pool: PgPool) {
             &serde_json::json!({}),
         )
         .await;
-    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
-    let refused = app
+    let handed = draft.json()["id"].as_str().unwrap().to_owned();
+    let accepted = app
         .post_as(
             &alice,
-            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &format!("/api/v2/submissions/{handed}/submit"),
             &serde_json::json!({ "answers": {
                 &item_id: { "kind": "code", "language": 71, "source": SQUARE }
             } }),
         )
         .await;
-    assert_eq!(
-        refused.status,
-        StatusCode::SERVICE_UNAVAILABLE,
-        "{}",
-        refused.text()
-    );
-    assert_eq!(refused.json()["code"], "code-runner-degraded");
-    assert_eq!(
-        app.get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
-            .await
-            .json()["status"],
-        "draft"
-    );
+    assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.text());
+    assert_eq!(accepted.json()["status"], "pending");
 
-    // … but the timer cannot wait: the expired draft goes to manual review.
+    // … and the timer cannot wait either: the expired draft goes to review.
+    let bob = learner(&app, "bob").await;
+    let draft = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
     let saved = app
         .send(
             Request::builder()
                 .method("PATCH")
                 .uri(format!("/api/v2/submissions/{sub_id}/draft"))
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::COOKIE, &alice.cookie)
+                .header(header::COOKIE, &bob.cookie)
                 .header(header::IF_MATCH, "1")
                 .body(Body::from(
                     serde_json::json!({ "answers": {
@@ -582,7 +632,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
             .unwrap();
     assert_eq!(swept, 1);
     let mine = app
-        .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+        .get_as(&bob, &format!("/api/v2/submissions/{sub_id}"))
         .await;
     assert_eq!(mine.json()["status"], "pending");
     assert_eq!(mine.json()["release_state"], "hidden");
