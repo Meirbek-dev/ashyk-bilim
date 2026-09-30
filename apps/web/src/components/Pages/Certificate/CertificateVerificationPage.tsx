@@ -281,6 +281,16 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificationDetails')}</h2>
 
               <div className="space-y-4">
+                {/* UX-300: whose certificate this is — the name the API verifies. */}
+                {certificateData.holder ? (
+                  <div>
+                    <Label className="text-foreground mb-1 block text-sm font-medium">{t('certificateHolder')}</Label>
+                    <div className="bg-muted rounded-lg p-3">
+                      <span className="text-foreground font-medium">{certificateData.holder.display_name}</span>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div>
                   <Label className="text-foreground mb-1 block text-sm font-medium">{t('certificateId')}</Label>
                   <div className="bg-muted rounded-lg p-3">

@@ -25,6 +25,7 @@ vi.mock('@/features/certifications/hooks/useCertifications', () => ({
         certification: { config: { certification_name: 'Rust 101' } },
         course: { name: 'Rust 101', course_uuid: 'course_x', thumbnail_image: null, description: null },
         instructor_name: null,
+        holder: { display_name: 'Айгерим Сапарова' },
       },
     },
   }),
@@ -41,5 +42,16 @@ describe('certificate verify page on a phone (UX-179)', () => {
     expect(badge).toHaveTextContent(ruMessages.Certificates.CertificateVerificationPage.certificateVerified)
     expect(badge.className).toContain('max-w-full')
     expect(badge.parentElement?.className).toContain('flex-wrap')
+  })
+
+  // UX-300: a verifier sees whose certificate it is.
+  it('names the holder', async () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages}>
+        <CertificateVerificationPage certificateUuid="ABCD-EFGH-IJKL-MNOP" />
+      </NextIntlClientProvider>,
+    )
+    expect(await screen.findByText('Айгерим Сапарова')).toBeInTheDocument()
+    expect(screen.getByText(ruMessages.Certificates.CertificateVerificationPage.certificateHolder)).toBeInTheDocument()
   })
 })
