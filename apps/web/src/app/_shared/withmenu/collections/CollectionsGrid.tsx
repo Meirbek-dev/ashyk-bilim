@@ -30,9 +30,7 @@ export default function CollectionsGrid({ initialCollections, empty }: Collectio
   return (
     <>
       {collections.map(collection => (
-        <div key={collection.collection_uuid} className="p-3">
-          <CollectionThumbnail collection={collection} />
-        </div>
+        <CollectionThumbnail key={collection.collection_uuid} collection={collection} />
       ))}
     </>
   )

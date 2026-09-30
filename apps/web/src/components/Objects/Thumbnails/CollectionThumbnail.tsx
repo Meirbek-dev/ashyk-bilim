@@ -23,6 +23,7 @@ import { Badge } from '@components/ui/badge'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -46,8 +47,12 @@ function CollectionMosaic({ courses }: { courses: AppCourse[] | number[] | undef
     .filter((c): c is typeof c & { thumbnail_image: string } => typeof c.thumbnail_image === 'string')
     .map(c => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image))
 
+  // No course images: the first course's generated cover, as on course cards.
   if (courseImages.length === 0) {
-    return (
+    const first = courseList[0]
+    return first ? (
+      <CoursePlaceholder seed={first.course_uuid.replace('course_', '')} title={first.name ?? ''} />
+    ) : (
       <div className="bg-muted flex h-full w-full items-center justify-center">
         <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
@@ -127,7 +132,7 @@ function CollectionThumbnail({ collection }: PropsType) {
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
             href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
-            className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
+            className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold wrap-anywhere transition-colors"
           >
             {collection.name}
           </Link>

@@ -84,7 +84,7 @@ async function CollectionsContent({ params }: PageProps) {
             </Link>
           </PermissionGuard>
         </div>
-        <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4">
+        <div className="grid-cards grid w-full gap-6">
           <CollectionsGrid
             initialCollections={collections}
             empty={
