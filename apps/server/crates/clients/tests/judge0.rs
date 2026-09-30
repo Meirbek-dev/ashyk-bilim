@@ -247,6 +247,42 @@ async fn breaker_opens_after_five_failures_and_skips_the_network() {
     }
 }
 
+/// UX-316: a batch queued for the slot while the breaker opened fails fast
+/// once it gets the slot — no connect to the Judge0 that just tripped it.
+#[tokio::test]
+async fn a_queued_batch_rechecks_the_breaker_after_its_slot() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/submissions/batch"))
+        .respond_with(
+            ResponseTemplate::new(503)
+                .set_body_string("down")
+                .set_delay(Duration::from_millis(30)),
+        )
+        .expect(5)
+        .mount(&server)
+        .await;
+    let client = Judge0Client::new(Judge0Config {
+        base_url: server.uri(),
+        api_key: None,
+        request_timeout: Duration::from_secs(5),
+        poll_interval: Duration::from_millis(20),
+        poll_max_wait: Duration::from_secs(5),
+        max_concurrency: 1,
+    })
+    .unwrap();
+    let batch = [spec("x", "")];
+    let owners = ["u1", "u2", "u3", "u4", "u5", "u6"];
+    // All six pass the breaker at once, then queue for the one slot.
+    let results =
+        futures::future::join_all(owners.iter().map(|o| client.run_batch(o, &batch))).await;
+    match &results[5] {
+        Err(Judge0Error::Unavailable(msg)) => assert!(msg.contains("circuit"), "{msg}"),
+        other => panic!("expected the open circuit, got {other:?}"),
+    }
+    // The mock's expect(5) proves the sixth never reached Judge0.
+}
+
 #[tokio::test]
 async fn payload_rejections_do_not_trip_the_breaker() {
     let server = MockServer::start().await;

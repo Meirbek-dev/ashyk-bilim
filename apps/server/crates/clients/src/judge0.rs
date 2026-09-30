@@ -302,6 +302,13 @@ impl Judge0Client {
                 self.config.poll_max_wait
             )));
         };
+        // UX-316: the breaker may have opened while this batch waited —
+        // fail fast instead of spending a refused connect on a dead Judge0.
+        if self.is_degraded() {
+            return Err(Judge0Error::Unavailable(
+                "circuit breaker open after repeated failures".into(),
+            ));
+        }
         let outcome = self.run_batch_inner(specs, deadline).await;
         self.record(&outcome.as_ref().map(|_| ()).map_err(Clone::clone));
         outcome
