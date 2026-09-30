@@ -190,8 +190,12 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     can_update: false,
     staff_preview: state.permissions.denial_reason === 'staff_preview',
   }
+  const flat = state.outline.flatMap(chapter =>
+    chapter.activities.map((activity, index) => ({ activity, chapter, index })),
+  )
   if (activityId === 'end') {
     // The sidebar ticks come from learner-state, not a hard-coded «done» (UX-079).
+    const last = flat.at(-1)
     return {
       activity: null,
       content: null,
@@ -199,7 +203,8 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
       outline,
       permissions,
       policy: null,
-      previous: null,
+      // UX-277: «Предыдущая» on the course end is the last lesson.
+      previous: last ? toNavItem(last.activity) : null,
       next: null,
       primary_action: { id: 'back_to_course', enabled: true },
       progress: {
@@ -211,9 +216,6 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
       },
     }
   }
-  const flat = state.outline.flatMap(chapter =>
-    chapter.activities.map((activity, index) => ({ activity, chapter, index })),
-  )
   const currentIndex = flat.findIndex(item => item.activity.id === activityId)
   const currentEntry = currentIndex !== -1 ? flat[currentIndex] : undefined
   if (!currentEntry) return null

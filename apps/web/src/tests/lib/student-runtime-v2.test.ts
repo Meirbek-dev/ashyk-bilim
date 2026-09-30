@@ -88,6 +88,8 @@ describe('learner runtime v2 adapter', () => {
     expect(runtime.activity).toBeNull()
     expect(runtime.primary_action).toEqual({ id: 'back_to_course', enabled: true })
     expect(runtime.progress).toMatchObject({ state: 'course_end', complete: false })
+    // UX-277: the end page links back to the last lesson.
+    expect(runtime.previous).toMatchObject({ id: activityId })
     expect(runtime.outline?.[0]?.activities?.[0]).toMatchObject({
       id: activityId,
       complete: false,
