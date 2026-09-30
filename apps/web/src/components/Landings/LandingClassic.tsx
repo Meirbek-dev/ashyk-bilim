@@ -14,6 +14,7 @@ import { getTranslations } from 'next-intl/server'
 import CourseGridClient from './CourseGridClient'
 import AppLink from '@/components/ui/AppLink'
 import { cn } from '@/lib/utils'
+import { buttonVariants } from '@/components/ui/button'
 
 // Types
 interface LandingClassicProps {
@@ -117,6 +118,24 @@ async function LandingClassic({
       <div className="min-h-screen w-full">
         <GeneralWrapper>
           <div className="space-y-12">
+            {/* Visitors get one line about the platform and the two ways in. */}
+            {isAuthenticated ? null : (
+              <section className="bg-muted/40 flex flex-col gap-4 rounded-2xl border px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                <div className="space-y-1">
+                  <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{t('Welcome.title')}</h1>
+                  <p className="text-muted-foreground">{t('Welcome.description')}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <AppLink href="/signup" className={buttonVariants({ size: 'lg' })}>
+                    {t('Welcome.signup')}
+                  </AppLink>
+                  <AppLink href="/login" className={buttonVariants({ size: 'lg', variant: 'outline' })}>
+                    {t('Welcome.login')}
+                  </AppLink>
+                </div>
+              </section>
+            )}
+
             {gamificationProfile && (
               <section>
                 <HeroSection profile={gamificationProfile} {...(userRank === undefined ? {} : { userRank })} />

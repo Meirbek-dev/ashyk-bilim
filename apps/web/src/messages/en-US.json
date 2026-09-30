@@ -7374,6 +7374,12 @@
       "noContentDescription": "Create courses to start sharing learning content with your students",
       "noContentUserAdmin": "Create courses to add content",
       "title": "Courses"
+    },
+    "Welcome": {
+      "title": "Learn online with Ashyk Bilim",
+      "description": "Courses, assignments and certificates in one place.",
+      "signup": "Sign up",
+      "login": "Log in"
     }
   },
   "Hooks": {
