@@ -8,7 +8,8 @@
 //! is not used — the domain compares outputs itself so match modes are ours.
 //! Fixtures in `tests/judge0.rs` pin the shapes.
 
-use std::sync::{Mutex, PoisonError};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use ab_core::{Error, Result};
@@ -165,6 +166,10 @@ pub struct Judge0Client {
     config: Judge0Config,
     breaker: Mutex<Breaker>,
     slots: tokio::sync::Semaphore,
+    /// UX-308: one batch per owner in the slot queue; an owner's next
+    /// batch waits for their previous one, so a burst never queues ahead
+    /// of everyone else. Entries live while someone holds or awaits them.
+    turns: Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
 }
 
 #[derive(Deserialize)]
@@ -204,6 +209,7 @@ impl Judge0Client {
             slots: tokio::sync::Semaphore::new(config.max_concurrency.max(1)),
             config,
             breaker: Mutex::new(Breaker::default()),
+            turns: Mutex::new(HashMap::new()),
         })
     }
 
@@ -244,8 +250,10 @@ impl Judge0Client {
     }
 
     /// Execute every spec and wait for all results (same order as `specs`).
+    /// `owner` (the user) gets one batch in flight at a time (UX-308).
     pub async fn run_batch(
         &self,
+        owner: &str,
         specs: &[SubmissionSpec],
     ) -> std::result::Result<Vec<SubmissionResult>, Judge0Error> {
         if specs.is_empty() {
@@ -259,6 +267,34 @@ impl Judge0Client {
         // BUG-372: at most `max_concurrency` batches in Judge0; the rest
         // wait for a slot inside the same budget as the poll.
         let deadline = Instant::now() + self.config.poll_max_wait;
+        let turn = Arc::clone(
+            self.turns
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .entry(owner.to_owned())
+                .or_default(),
+        );
+        let outcome = self.run_in_turn(&turn, specs, deadline).await;
+        drop(turn);
+        let mut turns = self.turns.lock().unwrap_or_else(PoisonError::into_inner);
+        if turns.get(owner).is_some_and(|t| Arc::strong_count(t) == 1) {
+            turns.remove(owner);
+        }
+        outcome
+    }
+
+    async fn run_in_turn(
+        &self,
+        turn: &tokio::sync::Mutex<()>,
+        specs: &[SubmissionSpec],
+        deadline: Instant,
+    ) -> std::result::Result<Vec<SubmissionResult>, Judge0Error> {
+        let Ok(_mine) = tokio::time::timeout_at(deadline.into(), turn.lock()).await else {
+            return Err(Judge0Error::Busy(format!(
+                "the previous run of the same user did not finish within {:?}",
+                self.config.poll_max_wait
+            )));
+        };
         let Ok(Ok(_slot)) = tokio::time::timeout_at(deadline.into(), self.slots.acquire()).await
         else {
             return Err(Judge0Error::Busy(format!(

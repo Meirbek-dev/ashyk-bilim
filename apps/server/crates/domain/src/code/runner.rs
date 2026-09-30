@@ -460,7 +460,7 @@ impl CodeRunner {
             .iter()
             .map(|t| sandbox::spec(spec.language_id, spec.source, &t.input, limits))
             .collect();
-        client.run_batch(&specs).await
+        client.run_batch(&spec.user_id.to_string(), &specs).await
     }
 }
 

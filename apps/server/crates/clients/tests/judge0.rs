@@ -6,6 +6,7 @@
 use std::time::Duration;
 
 use ab_clients::judge0::{Judge0Client, Judge0Config, Judge0Error, SubmissionSpec};
+use base64::Engine as _;
 use secrecy::SecretString;
 use wiremock::matchers::{body_partial_json, header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -96,7 +97,7 @@ async fn batch_create_then_poll_until_done_decoding_base64() {
         .await;
 
     let results = client(&server)
-        .run_batch(&[spec("print(1)", "2"), spec("print(1)", "3")])
+        .run_batch("u", &[spec("print(1)", "2"), spec("print(1)", "3")])
         .await
         .unwrap();
     assert_eq!(results.len(), 2);
@@ -149,7 +150,7 @@ async fn stuck_judge(max_concurrency: usize) -> (MockServer, Judge0Client) {
 async fn poll_timeouts_are_busy_and_never_trip_the_breaker() {
     let (_server, client) = stuck_judge(2).await;
     for _ in 0..6 {
-        match client.run_batch(&[spec("x", "")]).await {
+        match client.run_batch("u", &[spec("x", "")]).await {
             Err(Judge0Error::Busy(msg)) => assert!(msg.contains("timed out"), "{msg}"),
             other => panic!("expected timeout, got {other:?}"),
         }
@@ -163,7 +164,7 @@ async fn poll_timeouts_are_busy_and_never_trip_the_breaker() {
 async fn batches_beyond_the_concurrency_cap_queue_for_a_slot() {
     let (server, client) = stuck_judge(1).await;
     let (a, b) = ([spec("a", "")], [spec("b", "")]);
-    let both: [_; 2] = tokio::join!(client.run_batch(&a), client.run_batch(&b)).into();
+    let both: [_; 2] = tokio::join!(client.run_batch("a", &a), client.run_batch("b", &b)).into();
     let messages: Vec<String> = both
         .into_iter()
         .map(|r| match r {
@@ -185,6 +186,43 @@ async fn batches_beyond_the_concurrency_cap_queue_for_a_slot() {
     assert_eq!(creates, 1, "the queued batch never reached Judge0");
 }
 
+/// UX-308: one owner's burst waits for their own previous batch, not in
+/// the slot queue — another owner's batch still reaches Judge0.
+#[tokio::test]
+async fn one_owners_burst_does_not_queue_ahead_of_others() {
+    let (server, client) = stuck_judge(2).await;
+    let (a1, a2, b) = ([spec("a1", "")], [spec("a2", "")], [spec("b", "")]);
+    let (r1, r2, r3) = tokio::join!(
+        client.run_batch("alice", &a1),
+        client.run_batch("alice", &a2),
+        client.run_batch("bob", &b)
+    );
+    match r2 {
+        Err(Judge0Error::Busy(msg)) => assert!(msg.contains("previous run"), "{msg}"),
+        other => panic!("expected alice's second batch to wait, got {other:?}"),
+    }
+    assert!(matches!(r1, Err(Judge0Error::Busy(_))));
+    assert!(matches!(r3, Err(Judge0Error::Busy(_))));
+    let sources: Vec<String> = server
+        .received_requests()
+        .await
+        .unwrap()
+        .iter()
+        .filter(|r| r.method.as_str() == "POST")
+        .map(|r| String::from_utf8_lossy(&r.body).into_owned())
+        .collect();
+    let b64 = |s: &str| base64::engine::general_purpose::STANDARD.encode(s);
+    assert_eq!(sources.len(), 2, "{sources:?}");
+    assert!(
+        sources.iter().any(|s| s.contains(&b64("b"))),
+        "bob never ran"
+    );
+    assert!(
+        !sources.iter().any(|s| s.contains(&b64("a2"))),
+        "alice ran twice at once"
+    );
+}
+
 #[tokio::test]
 async fn breaker_opens_after_five_failures_and_skips_the_network() {
     let server = MockServer::start().await;
@@ -197,13 +235,13 @@ async fn breaker_opens_after_five_failures_and_skips_the_network() {
     let client = client(&server);
     for _ in 0..5 {
         assert!(matches!(
-            client.run_batch(&[spec("x", "")]).await,
+            client.run_batch("u", &[spec("x", "")]).await,
             Err(Judge0Error::Unavailable(_))
         ));
     }
     assert!(client.is_degraded());
     // Sixth call: refused locally (the mock's expect(5) proves no request).
-    match client.run_batch(&[spec("x", "")]).await {
+    match client.run_batch("u", &[spec("x", "")]).await {
         Err(Judge0Error::Unavailable(msg)) => assert!(msg.contains("circuit"), "{msg}"),
         other => panic!("expected open circuit, got {other:?}"),
     }
@@ -222,7 +260,7 @@ async fn payload_rejections_do_not_trip_the_breaker() {
         .await;
     let client = client(&server);
     for _ in 0..6 {
-        match client.run_batch(&[spec("x", "")]).await {
+        match client.run_batch("u", &[spec("x", "")]).await {
             Err(Judge0Error::Rejected(msg)) => assert!(msg.contains("999"), "{msg}"),
             other => panic!("expected rejection, got {other:?}"),
         }
