@@ -11,13 +11,7 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/executing-plans/SKILL.md",
-      "computedHash": "78a07800ee99a5861ae10be59d79fad085fdca10444e8aaeb2691597e357cff8"
-    },
-    "fix-errors": {
-      "source": "microsoft/vscode",
-      "sourceType": "github",
-      "skillPath": ".github/skills/fix-errors/SKILL.md",
-      "computedHash": "356d24d2637dd0db3a783381929755dcf7ae563564cd62032bbc0a6d69eb404c"
+      "computedHash": "94e9cac359a40652ba8986bd418911bf0331e3aad9c3233740f39594d0d56340"
     },
     "frontend-design": {
       "source": "anthropics/skills",
