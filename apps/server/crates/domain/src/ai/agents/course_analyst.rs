@@ -282,7 +282,7 @@ impl AiService {
         }))
     }
 
-    async fn writable_analysis(
+    pub(crate) async fn writable_analysis(
         &self,
         actor: &Actor,
         id: AiCourseAnalysisId,

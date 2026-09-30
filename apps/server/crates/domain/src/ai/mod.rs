@@ -147,4 +147,67 @@ impl AiService {
     ) -> Result<crate::catalog::courses::Course> {
         self.courses.get(actor, course_id).await
     }
+
+    // UX-311: each write route's access gate on its own — the handlers
+    // check it before they read the body, and the entry points still do.
+
+    /// A course the caller can see (Q&A, study companion).
+    pub async fn require_visible_course(
+        &self,
+        actor: &Actor,
+        course_id: ab_core::id::CourseId,
+    ) -> Result<()> {
+        self.visible_course(actor, course_id).await.map(drop)
+    }
+
+    /// A course the caller may update (course analysis, lecture authoring).
+    pub async fn require_course_updater(
+        &self,
+        actor: &Actor,
+        course_id: ab_core::id::CourseId,
+    ) -> Result<()> {
+        let course = self.visible_course(actor, course_id).await?;
+        policy::require_course_update(actor, &course)
+    }
+
+    /// A submission or file attempt the caller may analyse or remediate.
+    pub async fn require_subject(&self, actor: &Actor, id: ab_core::id::AiSubjectId) -> Result<()> {
+        self.accessible_subject(actor, id).await.map(drop)
+    }
+
+    /// A course analysis whose course the caller may update.
+    pub async fn require_writable_analysis(
+        &self,
+        actor: &Actor,
+        id: ab_core::id::AiCourseAnalysisId,
+    ) -> Result<()> {
+        self.writable_analysis(actor, id).await.map(drop)
+    }
+
+    /// A lecture review whose course the caller may update.
+    pub async fn require_writable_review(
+        &self,
+        actor: &Actor,
+        id: ab_core::id::AiLectureReviewId,
+    ) -> Result<()> {
+        let review = ab_db::ai::get_lecture_review(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("lecture review"))?;
+        self.require_course_updater(actor, review.course_id).await
+    }
+
+    /// A remediation session the caller is the learner of.
+    pub async fn require_remediation_learner(
+        &self,
+        actor: &Actor,
+        id: ab_core::id::AiRemediationSessionId,
+    ) -> Result<()> {
+        let session = self.accessible_remediation(actor, id).await?;
+        if session.student_user_id != actor.user_id {
+            return Err(Error::forbidden(
+                "only the learner of this session can complete it",
+            ));
+        }
+        Ok(())
+    }
 }

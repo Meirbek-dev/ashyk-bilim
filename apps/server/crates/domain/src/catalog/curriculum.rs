@@ -182,7 +182,9 @@ impl CurriculumService {
             .ok_or_else(|| Error::not_found("chapter"))
     }
 
-    async fn writable_chapter(&self, actor: &Actor, chapter_id: ChapterId) -> Result<Chapter> {
+    /// The chapter's write gate (404 unknown/invisible, 403 read-only).
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn writable_chapter(&self, actor: &Actor, chapter_id: ChapterId) -> Result<Chapter> {
         let chapter = ab_db::catalog::get_chapter(&self.pool, chapter_id)
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
@@ -257,6 +259,8 @@ impl CurriculumService {
         activity_type: &str,
         activity_sub_type: &str,
     ) -> Result<Activity> {
+        // UX-311: permission before the payload's pair check.
+        let chapter = self.writable_chapter(actor, chapter_id).await?;
         if !valid_pair(activity_type, activity_sub_type) {
             return Err(Error::validation(vec![FieldError {
                 field: "activity_sub_type".into(),
@@ -265,7 +269,6 @@ impl CurriculumService {
             }]));
         }
         let name = ab_core::required_str("name", name)?;
-        let chapter = self.writable_chapter(actor, chapter_id).await?;
         let id = ab_db::catalog::insert_activity(
             &self.pool,
             chapter_id,
@@ -281,7 +284,13 @@ impl CurriculumService {
             .ok_or_else(|| Error::not_found("activity"))
     }
 
-    async fn writable_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Activity> {
+    /// The activity's write gate (404 unknown/invisible, 403 read-only).
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn writable_activity(
+        &self,
+        actor: &Actor,
+        activity_id: ActivityId,
+    ) -> Result<Activity> {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -517,13 +526,18 @@ impl CurriculumService {
             UNREFERENCED_GRACE.as_secs_f64(),
         )
         .await?
-            && let Some(expected) = expected_version
         {
-            return Err(Error::app_with_details(
-                ErrorCode::PreconditionFailed,
-                "activity changed since you loaded it",
-                serde_json::json!({ "expected": expected, "actual": activity.version }),
-            ));
+            // UX-317: nothing deleted — a concurrent delete won (404), or
+            // the row moved past the caller's `If-Match` (412, its version now).
+            let current = ab_db::catalog::get_activity(&self.pool, activity_id).await?;
+            return Err(match (current, expected_version) {
+                (Some(current), Some(expected)) => Error::app_with_details(
+                    ErrorCode::PreconditionFailed,
+                    "activity changed since you loaded it",
+                    serde_json::json!({ "expected": expected, "actual": current.version }),
+                ),
+                _ => Error::not_found("activity"),
+            });
         }
         let remaining =
             ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
@@ -583,6 +597,8 @@ impl CurriculumService {
         upload_id: Uuid,
         file_name: Option<&str>,
     ) -> Result<Block> {
+        // UX-311: permission before the payload's type check.
+        self.writable_activity(actor, activity_id).await?;
         let Some(required_purpose) = purpose_for_block(block_type) else {
             return Err(Error::validation(vec![FieldError {
                 field: "block_type".into(),
@@ -590,7 +606,6 @@ impl CurriculumService {
                 message: format!("'{block_type}' is not a creatable block type"),
             }]));
         };
-        self.writable_activity(actor, activity_id).await?;
 
         let upload = ab_db::uploads::get_upload(&self.pool, upload_id)
             .await?

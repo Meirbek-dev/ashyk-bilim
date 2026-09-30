@@ -204,9 +204,11 @@ pub async fn stream_run(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AiRunId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<RunStreamRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Sse<impl Stream<Item = Result<Event, Infallible>>>> {
+    // UX-311: permission before the body.
     let run = state.ai.stream_access(&actor, id).await?;
+    let request = ValidJson::<RunStreamRequest>::parse(&body)?;
     let Some(slot) = state.ai_events.acquire_slot(actor.user_id).await? else {
         return Err(Error::app_with_details(
             ErrorCode::RateLimited,

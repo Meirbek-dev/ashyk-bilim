@@ -29,8 +29,11 @@ use crate::state::AppState;
 pub async fn create_certification(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateCertificationRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Certification>)> {
+    // UX-311: permission before the body.
+    state.certifications.require_some_create(&actor).await?;
+    let request = ValidJson::<CreateCertificationRequest>::parse(&body)?;
     let created = state
         .certifications
         .create(&actor, request.course_id, &request.config)
@@ -63,8 +66,11 @@ pub async fn update_certification(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CertificationId>,
-    ValidJson(request): ValidJson<UpdateCertificationRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Certification>> {
+    // UX-311: permission before the body.
+    state.certifications.require_updatable(&actor, id).await?;
+    let request = ValidJson::<UpdateCertificationRequest>::parse(&body)?;
     Ok(Json(
         state
             .certifications

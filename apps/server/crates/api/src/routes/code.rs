@@ -48,8 +48,11 @@ pub async fn run_item(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentItemId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<RunRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<CodeRun>)> {
+    // UX-311: permission before the body.
+    state.code_runs.require_runnable(&actor, id).await?;
+    let request = ValidJson::<RunRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {

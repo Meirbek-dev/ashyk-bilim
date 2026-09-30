@@ -30,8 +30,11 @@ use crate::state::AppState;
 pub async fn create_upload(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateUploadRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<CreatedUpload>> {
+    // UX-311: permission before the body.
+    ab_domain::files::uploads::UploadsService::require_create(&actor)?;
+    let request = ValidJson::<CreateUploadRequest>::parse(&body)?;
     let created = state
         .uploads
         .create(&actor, &request.purpose, &request.mime, request.size_bytes)

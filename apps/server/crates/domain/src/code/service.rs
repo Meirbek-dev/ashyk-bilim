@@ -116,15 +116,17 @@ impl CodeRunsService {
         Ok(())
     }
 
-    /// Run the learner's code on the item's visible tests, or on one custom
-    /// input (unscored). Needs submit access to the assessment; authors
-    /// previewing see hidden-test data, learners never do.
-    pub async fn run_item(
+    /// The item, its assessment and whether the caller is its author —
+    /// submit access to the assessment (404 unknown/invisible).
+    async fn runnable(
         &self,
         actor: &Actor,
         item_id: AssessmentItemId,
-        input: RunInput<'_>,
-    ) -> Result<CodeRun> {
+    ) -> Result<(
+        ab_db::assessments::ItemRow,
+        ab_db::assessments::AssessmentRow,
+        bool,
+    )> {
         let item_row = ab_db::assessments::get_item(self.runner.pool(), item_id)
             .await?
             .ok_or_else(|| Error::not_found("assessment item"))?;
@@ -138,6 +140,25 @@ impl CodeRunsService {
             .assessments
             .require_submit_access(actor, &assessment, &course)
             .await?;
+        Ok((item_row, assessment, teacher))
+    }
+
+    /// UX-311: [`Self::run_item`]'s access gate on its own, before the body
+    /// is read.
+    pub async fn require_runnable(&self, actor: &Actor, item_id: AssessmentItemId) -> Result<()> {
+        self.runnable(actor, item_id).await.map(drop)
+    }
+
+    /// Run the learner's code on the item's visible tests, or on one custom
+    /// input (unscored). Needs submit access to the assessment; authors
+    /// previewing see hidden-test data, learners never do.
+    pub async fn run_item(
+        &self,
+        actor: &Actor,
+        item_id: AssessmentItemId,
+        input: RunInput<'_>,
+    ) -> Result<CodeRun> {
+        let (item_row, assessment, teacher) = self.runnable(actor, item_id).await?;
         let item = Item::try_from(item_row)?;
         let body = Self::code_body(&item)?;
         self.require_language(body, input.language_id)?;

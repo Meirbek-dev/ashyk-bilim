@@ -69,6 +69,8 @@ pub async fn create_discussion(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state.discussions.postable_course(&actor, id).await?;
     let request = ValidJson::<CreateDiscussionRequest>::parse(&body)?;
     idempotent(
         state.pool.clone(),
@@ -103,8 +105,11 @@ pub async fn update_discussion(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<DiscussionId>,
-    ValidJson(request): ValidJson<UpdateDiscussionRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Discussion>> {
+    // UX-311: permission before the body.
+    state.discussions.require_editable(&actor, id).await?;
+    let request = ValidJson::<UpdateDiscussionRequest>::parse(&body)?;
     let updated = state
         .discussions
         .update(&actor, id, request.content.as_deref(), request.status)

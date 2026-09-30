@@ -150,6 +150,28 @@ impl DiscussionsService {
         Ok(course)
     }
 
+    /// UX-311: [`Self::create`]'s gate on its own, before the body is read.
+    pub async fn postable_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
+        let course = self.readable_course(actor, course_id).await?;
+        if actor.has(perm(Action::Create, Scope::Platform))
+            || actor.has(perm(Action::Create, Scope::Own))
+        {
+            return Ok(course);
+        }
+        Err(Error::forbidden("missing permission discussion:create"))
+    }
+
+    /// UX-311: [`Self::update`]'s edit gate on its own (the moderator-only
+    /// status change still needs the body).
+    pub async fn require_editable(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
+        let (row, course) = self.load(actor, id).await?;
+        let abilities = Abilities::of(actor, &course);
+        if abilities.update_any || (row.user_id == Some(actor.user_id) && abilities.update_own) {
+            return Ok(());
+        }
+        Err(Error::forbidden("you cannot edit this discussion"))
+    }
+
     async fn load(&self, actor: &Actor, id: DiscussionId) -> Result<(DiscussionRow, Course)> {
         let row = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
@@ -243,12 +265,7 @@ impl DiscussionsService {
         parent_id: Option<DiscussionId>,
         content: &str,
     ) -> Result<Discussion> {
-        let course = self.readable_course(actor, course_id).await?;
-        if !(actor.has(perm(Action::Create, Scope::Platform))
-            || actor.has(perm(Action::Create, Scope::Own)))
-        {
-            return Err(Error::forbidden("missing permission discussion:create"));
-        }
+        let course = self.postable_course(actor, course_id).await?;
         validate_content(content)?;
         if let Some(parent_id) = parent_id {
             let parent = ab_db::discussions::get_discussion(&self.pool, parent_id, actor.user_id)

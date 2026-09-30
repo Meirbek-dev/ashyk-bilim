@@ -310,9 +310,15 @@ pub async fn save_view(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Query(query): Query<AnalyticsQuery>,
-    ValidJson(request): ValidJson<SaveViewRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<SavedView>)> {
     let filters = filters(query)?;
+    // UX-311: permission before the body.
+    state
+        .analytics
+        .resolve_scope(&actor, &filters, Action::Read)
+        .await?;
+    let request = ValidJson::<SaveViewRequest>::parse(&body)?;
     let saved = state
         .analytics
         .save_view(

@@ -360,6 +360,12 @@ impl SubmissionsService {
 
     // ── Reads ───────────────────────────────────────────────────────────
 
+    /// UX-311: the attempt writes' gate on its own (the caller's own
+    /// submission, else 404), before the handler reads the body.
+    pub async fn require_owned(&self, actor: &Actor, id: SubmissionId) -> Result<()> {
+        self.owned(actor, id).await.map(drop)
+    }
+
     async fn owned(&self, actor: &Actor, id: SubmissionId) -> Result<Submission> {
         let submission = ab_db::submissions::get_submission(&self.pool, id)
             .await?

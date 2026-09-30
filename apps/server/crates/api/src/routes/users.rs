@@ -83,8 +83,11 @@ pub async fn update_my_profile(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<UpdateProfileRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    ab_domain::identity::UsersService::require_update_own(&actor)?;
+    let request = ValidJson::<UpdateProfileRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.

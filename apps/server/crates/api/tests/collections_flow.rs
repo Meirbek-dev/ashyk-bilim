@@ -527,3 +527,45 @@ async fn stale_if_match_is_refused(pool: PgPool) {
     let current = delete(loaded + 2).await;
     assert_eq!(current.status, StatusCode::NO_CONTENT, "{}", current.text());
 }
+
+/// UX-317: a delete that loses the race to another delete is 404 — the row
+/// is gone — never a 412 claiming the version moved (`expected == actual`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Raced", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let version = created.json()["version"].as_i64().unwrap();
+
+    // The winner's uncommitted DELETE: invisible to the loser's read, but
+    // it holds the row until it commits.
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM collections WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let loser = app.send(
+        axum::http::Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/v2/collections/{id}"))
+            .header(axum::http::header::COOKIE, &owner.cookie)
+            .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+            .body(axum::body::Body::empty())
+            .unwrap(),
+    );
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (lost, ()) = tokio::join!(loser, commit);
+    assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
+}

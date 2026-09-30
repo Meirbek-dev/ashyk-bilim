@@ -787,6 +787,46 @@ async fn content_writes_are_version_locked(pool: PgPool) {
     assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.text());
 }
 
+/// UX-317: an activity delete that loses the race to another delete is
+/// 404 — never a 412 whose `expected` equals its `actual`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Raced").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+    let version = app.get_as(&teacher, &path).await.json()["version"]
+        .as_i64()
+        .unwrap();
+
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&activity).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let loser = app.send(
+        Request::builder()
+            .method("DELETE")
+            .uri(&path)
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, format!("\"{version}\""))
+            .body(Body::empty())
+            .unwrap(),
+    );
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (lost, ()) = tokio::join!(loser, commit);
+    assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
+}
+
 /// BUG-358: a metadata PATCH honours `If-Match` under the row lock — two
 /// renames racing with the same version end 200 + 412, never 200 + 200.
 #[sqlx::test(migrations = "../../migrations")]

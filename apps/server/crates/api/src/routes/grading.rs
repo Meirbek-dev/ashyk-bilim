@@ -200,8 +200,11 @@ pub async fn save_grade(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<SubmissionId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<GradeRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<TeacherSubmission>> {
+    // UX-311: permission before the body.
+    state.grading.require_gradable(&actor, id).await?;
+    let request = ValidJson::<GradeRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     let input = GradeInput {
         action: request.action.into(),
@@ -294,6 +297,8 @@ pub async fn extend_deadline(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state.grading.require_grader(&actor, id).await?;
     let request = ValidJson::<DeadlineExtensionRequest>::parse(&body)?;
     idempotent(
         state.pool.clone(),

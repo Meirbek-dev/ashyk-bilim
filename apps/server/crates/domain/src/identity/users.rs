@@ -34,6 +34,15 @@ pub struct UsersService {
 }
 
 impl UsersService {
+    /// `user:update:own` — UX-311: the handler checks it before the body.
+    pub fn require_update_own(actor: &Actor) -> Result<()> {
+        actor.require(Permission {
+            resource: ResourceType::User,
+            action: Action::Update,
+            scope: Some(Scope::Own),
+        })
+    }
+
     #[must_use]
     pub const fn new(pool: PgPool) -> Self {
         Self { pool }
@@ -50,11 +59,7 @@ impl UsersService {
         actor: &Actor,
         changes: ProfileChanges,
     ) -> Result<Profile> {
-        actor.require(Permission {
-            resource: ResourceType::User,
-            action: Action::Update,
-            scope: Some(Scope::Own),
-        })?;
+        Self::require_update_own(actor)?;
         let display_name = changes
             .display_name
             .as_deref()

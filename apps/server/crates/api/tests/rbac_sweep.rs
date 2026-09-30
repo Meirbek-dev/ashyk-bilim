@@ -285,48 +285,19 @@ async fn every_mutating_operation_is_classified_and_gated(pool: PgPool) {
     }
 }
 
-/// UX-311 (UX-301 sibling): these writes check the caller's permission
-/// before they read the body, so a learner gets 403 (404 for a resource
-/// they cannot see) whatever they send —
+/// UX-311 (UX-301 sibling): a write checks the caller's permission — and
+/// the existence of the resource it names — before it reads the body, so a
+/// learner gets 403 (404 for a resource they cannot see) whatever they send:
 /// never a 422 that validates the body (or lists the accepted fields) for
-/// someone who may not write here at all.
-const GATED_BEFORE_BODY: &[(&str, &str)] = &[
-    ("PATCH", "/api/v2/platform"),
-    ("POST", "/api/v2/usergroups"),
-    ("PATCH", "/api/v2/usergroups/{id}"),
-    ("POST", "/api/v2/usergroups/{id}/members"),
-    ("DELETE", "/api/v2/usergroups/{id}/members"),
-    ("POST", "/api/v2/usergroups/{id}/courses"),
-    ("DELETE", "/api/v2/usergroups/{id}/courses"),
-    ("POST", "/api/v2/courses"),
-    ("POST", "/api/v2/courses/{id}/contributors"),
-    ("PATCH", "/api/v2/courses/{id}/contributors/{user_id}"),
-    ("PATCH", "/api/v2/courses/{id}"),
-    ("POST", "/api/v2/courses/{id}/lifecycle"),
-    ("POST", "/api/v2/courses/{id}/updates"),
-    ("PATCH", "/api/v2/course-updates/{id}"),
-    ("POST", "/api/v2/collections"),
-    ("PATCH", "/api/v2/collections/{id}"),
-    ("POST", "/api/v2/assessments"),
-    ("PATCH", "/api/v2/assessments/{id}"),
-    ("PUT", "/api/v2/assessments/{id}/policy"),
-    ("POST", "/api/v2/assessments/{id}/lifecycle"),
-    ("POST", "/api/v2/assessments/{id}/duplicate"),
-    ("POST", "/api/v2/assessments/{id}/items"),
-    ("PATCH", "/api/v2/assessment-items/{id}"),
-    ("POST", "/api/v2/assessments/{id}/items/reorder"),
-    ("PUT", "/api/v2/assessments/{id}/access"),
-    ("POST", "/api/v2/assessments/{id}/overrides/{user_id}"),
-    ("PUT", "/api/v2/assessments/{id}/overrides/{user_id}"),
-    ("POST", "/api/v2/users/{user_id}/roles"),
-    ("POST", "/api/v2/rbac/roles"),
-    ("PATCH", "/api/v2/rbac/roles/{slug}"),
-    ("PUT", "/api/v2/rbac/roles/{slug}/permissions"),
-    ("POST", "/api/v2/users"),
-    ("PATCH", "/api/v2/users/{user_id}/status"),
-    ("POST", "/api/v2/gamification/xp"),
-    ("PUT", "/api/v2/gamification/config"),
-];
+/// someone who may not write there at all. Every mutating operation with a
+/// request body is probed straight from the OpenAPI document, so a new
+/// route is covered the day it lands.
+///
+/// The exceptions are the writes a learner may make (their own profile,
+/// uploads) and the public / self-service auth routes, whose body IS theirs
+/// to get wrong.
+const LEARNER_MAY_WRITE: &[(&str, &str)] =
+    &[("PATCH", "/api/v2/users/me"), ("POST", "/api/v2/uploads")];
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_learner_is_refused_before_the_body_is_read(pool: PgPool) {
@@ -341,32 +312,53 @@ async fn a_learner_is_refused_before_the_body_is_read(pool: PgPool) {
     .unwrap();
     let grants: Vec<&str> = grants.iter().map(String::as_str).collect();
     let learner = app.mint_session(&grants).await;
-    for (method, path) in GATED_BEFORE_BODY {
-        for body in [r#"{"__bogus": 1, "name": ""}"#, "not json"] {
-            let res = app
-                .send(
-                    Request::builder()
-                        .method(*method)
-                        .uri(concretize(path))
-                        .header(header::COOKIE, &learner.cookie)
-                        .header(header::CONTENT_TYPE, "application/json")
-                        .body(Body::from(body))
-                        .unwrap(),
-                )
-                .await;
-            // 404: the probe ids name nothing, and an invisible resource
-            // reads as unknown — still decided before the body.
-            assert!(
-                matches!(res.status, StatusCode::FORBIDDEN | StatusCode::NOT_FOUND),
-                "{method} {path} with {body}: {} {}",
-                res.status,
-                res.text()
-            );
-            assert!(
-                !res.text().contains("expected"),
-                "{method} {path}: {}",
-                res.text()
-            );
+    let doc = serde_json::to_value(ab_api::openapi_doc()).unwrap();
+    let mut probed = 0;
+    let mut failures = Vec::new();
+    for (path, ops) in doc["paths"].as_object().expect("openapi paths") {
+        for (method, op) in ops.as_object().expect("operations") {
+            let method = method.to_uppercase();
+            let entry = (method.as_str(), path.as_str());
+            if !MUTATING.contains(&method.to_lowercase().as_str())
+                || op.get("requestBody").is_none()
+                || PUBLIC.contains(&entry)
+                || AUTH_ONLY.contains(&entry)
+                || LEARNER_MAY_WRITE.contains(&entry)
+            {
+                continue;
+            }
+            probed += 1;
+            for body in [r#"{"__bogus": 1, "name": ""}"#, "not json"] {
+                let res = app
+                    .send(
+                        Request::builder()
+                            .method(method.as_str())
+                            .uri(concretize(path))
+                            .header(header::COOKIE, &learner.cookie)
+                            .header(header::CONTENT_TYPE, "application/json")
+                            .body(Body::from(body))
+                            .unwrap(),
+                    )
+                    .await;
+                // 404: the probe ids name nothing, and an unknown resource
+                // is decided before the body too.
+                if res.status == StatusCode::UNPROCESSABLE_ENTITY
+                    || res.status.is_success()
+                    || res.text().contains("expected")
+                {
+                    failures.push(format!(
+                        "{method} {path} with {body}: {} {}",
+                        res.status,
+                        res.text()
+                    ));
+                }
+            }
         }
     }
+    assert!(
+        failures.is_empty(),
+        "writes that read the body before the permission check:\n{}",
+        failures.join("\n")
+    );
+    assert!(probed > 60, "only {probed} body-taking writes found");
 }

@@ -703,6 +703,17 @@ impl GradingService {
         Ok((assessment, course))
     }
 
+    /// UX-311: the grading gate of an assessment-level write on its own,
+    /// before the handler reads the body.
+    pub async fn require_grader(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<()> {
+        self.grader_context(actor, assessment_id).await.map(drop)
+    }
+
+    /// UX-311: [`Self::save_grade`]'s gate on its own, before the body.
+    pub async fn require_gradable(&self, actor: &Actor, id: SubmissionId) -> Result<()> {
+        self.gradable_submission(actor, id).await.map(drop)
+    }
+
     async fn load_submission(&self, id: SubmissionId) -> Result<SubmissionRow> {
         ab_db::submissions::get_submission(&self.pool, id)
             .await?

@@ -67,8 +67,11 @@ pub async fn qa_chat(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<QaChatRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Sse<impl Stream<Item = Result<Event, Infallible>>>> {
+    // UX-311: permission before the body.
+    state.ai.require_visible_course(&actor, course_id).await?;
+    let request = ValidJson::<QaChatRequest>::parse(&body)?;
     let Some(question) = request.latest_user_question() else {
         return Err(Error::validation(vec![FieldError {
             field: "messages".into(),
@@ -246,8 +249,11 @@ pub async fn study_ask(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<StudyRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<serde_json::Value>> {
+    // UX-311: permission before the body.
+    state.ai.require_visible_course(&actor, course_id).await?;
+    let request = ValidJson::<StudyRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -277,8 +283,11 @@ pub async fn study_ask_queue(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<StudyRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
+    // UX-311: permission before the body.
+    state.ai.require_visible_course(&actor, course_id).await?;
+    let request = ValidJson::<StudyRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -316,8 +325,11 @@ pub async fn analyze_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(submission_id): Path<AiSubjectId>,
-    ValidJson(request): ValidJson<LanguageRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<SubmissionAnalysis>> {
+    // UX-311: permission before the body.
+    state.ai.require_subject(&actor, submission_id).await?;
+    let request = ValidJson::<LanguageRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -343,8 +355,11 @@ pub async fn queue_submission_analysis(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(submission_id): Path<AiSubjectId>,
-    ValidJson(request): ValidJson<LanguageRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
+    // UX-311: permission before the body.
+    state.ai.require_subject(&actor, submission_id).await?;
+    let request = ValidJson::<LanguageRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -392,8 +407,11 @@ pub async fn analyze_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<LanguageRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<CourseAnalysis>> {
+    // UX-311: permission before the body.
+    state.ai.require_course_updater(&actor, course_id).await?;
+    let request = ValidJson::<LanguageRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -418,8 +436,11 @@ pub async fn queue_course_analysis(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<LanguageRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
+    // UX-311: permission before the body.
+    state.ai.require_course_updater(&actor, course_id).await?;
+    let request = ValidJson::<LanguageRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -478,8 +499,14 @@ pub async fn review_course_finding(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(analysis_id): Path<AiCourseAnalysisId>,
-    ValidJson(request): ValidJson<FindingReviewRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<CourseAnalysis>> {
+    // UX-311: permission before the body.
+    state
+        .ai
+        .require_writable_analysis(&actor, analysis_id)
+        .await?;
+    let request = ValidJson::<FindingReviewRequest>::parse(&body)?;
     Ok(Json(
         state
             .ai
@@ -511,8 +538,11 @@ pub async fn critique_lecture(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<LectureReviewRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<LectureReview>> {
+    // UX-311: permission before the body.
+    state.ai.require_course_updater(&actor, course_id).await?;
+    let request = ValidJson::<LectureReviewRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -537,8 +567,11 @@ pub async fn queue_lecture_review(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(course_id): Path<CourseId>,
-    ValidJson(request): ValidJson<LectureReviewRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
+    // UX-311: permission before the body.
+    state.ai.require_course_updater(&actor, course_id).await?;
+    let request = ValidJson::<LectureReviewRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -575,8 +608,11 @@ pub async fn dismiss_lecture_suggestion(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(review_id): Path<AiLectureReviewId>,
-    ValidJson(request): ValidJson<DismissSuggestionRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<LectureReview>> {
+    // UX-311: permission before the body.
+    state.ai.require_writable_review(&actor, review_id).await?;
+    let request = ValidJson::<DismissSuggestionRequest>::parse(&body)?;
     Ok(Json(
         state
             .ai
@@ -603,8 +639,11 @@ pub async fn generate_remediation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(submission_id): Path<AiSubjectId>,
-    ValidJson(request): ValidJson<RemediationRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<RemediationSession>> {
+    // UX-311: permission before the body.
+    state.ai.require_subject(&actor, submission_id).await?;
+    let request = ValidJson::<RemediationRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -630,8 +669,11 @@ pub async fn queue_remediation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(submission_id): Path<AiSubjectId>,
-    ValidJson(request): ValidJson<RemediationRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<RunStatus>)> {
+    // UX-311: permission before the body.
+    state.ai.require_subject(&actor, submission_id).await?;
+    let request = ValidJson::<RemediationRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -705,8 +747,14 @@ pub async fn complete_remediation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(session_id): Path<AiRemediationSessionId>,
-    ValidJson(request): ValidJson<RemediationCompletionRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<RemediationSession>> {
+    // UX-311: permission before the body.
+    state
+        .ai
+        .require_remediation_learner(&actor, session_id)
+        .await?;
+    let request = ValidJson::<RemediationCompletionRequest>::parse(&body)?;
     Ok(Json(
         state
             .ai

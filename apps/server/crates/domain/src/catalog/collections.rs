@@ -269,15 +269,21 @@ impl CollectionsService {
         if !Self::can_delete(actor, &collection) {
             return Err(Error::forbidden("no delete access to this collection"));
         }
-        if !ab_db::collections::delete_collection(&self.pool, id, expected_version).await?
-            && let Some(expected) = expected_version
-        {
-            return Err(Error::app_with_details(
+        if ab_db::collections::delete_collection(&self.pool, id, expected_version).await? {
+            return Ok(());
+        }
+        // UX-317: nothing deleted — a concurrent delete won (404), or the
+        // row moved past the caller's `If-Match` (412 with its version now).
+        match (
+            ab_db::collections::get_collection(&self.pool, id).await?,
+            expected_version,
+        ) {
+            (Some(current), Some(expected)) => Err(Error::app_with_details(
                 ErrorCode::PreconditionFailed,
                 "collection changed since you loaded it",
-                serde_json::json!({ "expected": expected, "actual": collection.version }),
-            ));
+                serde_json::json!({ "expected": expected, "actual": current.version }),
+            )),
+            _ => Err(Error::not_found("collection")),
         }
-        Ok(())
     }
 }

@@ -124,6 +124,15 @@ pub struct UploadsService {
 }
 
 impl UploadsService {
+    /// `file:create:own` — UX-311: the handler checks it before the body.
+    pub fn require_create(actor: &Actor) -> Result<()> {
+        actor.require(Permission {
+            resource: ResourceType::File,
+            action: Action::Create,
+            scope: Some(Scope::Own),
+        })
+    }
+
     #[must_use]
     pub const fn new(pool: PgPool, storage: Arc<StorageClient>) -> Self {
         Self { pool, storage }
@@ -137,11 +146,7 @@ impl UploadsService {
         mime: &str,
         size_bytes: i64,
     ) -> Result<CreatedUpload> {
-        actor.require(Permission {
-            resource: ResourceType::File,
-            action: Action::Create,
-            scope: Some(Scope::Own),
-        })?;
+        Self::require_create(actor)?;
         let Some((bucket, max_bytes, allowed)) = policy(purpose) else {
             return Err(Error::validation(vec![FieldError {
                 field: "purpose".into(),

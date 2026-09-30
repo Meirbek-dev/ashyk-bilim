@@ -338,6 +338,50 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("file submission"))
     }
 
+    // UX-311: each write's access gate on its own — the handlers check it
+    // before they read the body, and the methods still do.
+
+    /// [`Self::update`]'s gate: authoring on the course.
+    pub async fn require_authorable(&self, actor: &Actor, id: FileSubmissionId) -> Result<()> {
+        let row = self.load(id).await?;
+        self.scoped(actor, &row, Action::Author, "authoring")
+            .await
+            .map(drop)
+    }
+
+    /// [`Self::save_draft`] / [`Self::submit`]'s gate: submit access.
+    pub async fn require_submittable(&self, actor: &Actor, id: FileSubmissionId) -> Result<()> {
+        let row = self.load(id).await?;
+        self.require_submit_access(actor, &row).await.map(drop)
+    }
+
+    /// [`Self::grade`]'s gate: grading on the attempt's course (a stranger
+    /// gets the unknown-id 404, UX-134).
+    pub async fn require_gradable(&self, actor: &Actor, id: FileAttemptId) -> Result<()> {
+        self.gradable(actor, id).await.map(drop)
+    }
+
+    async fn gradable(
+        &self,
+        actor: &Actor,
+        id: FileAttemptId,
+    ) -> Result<(AttemptRow, FileSubmissionRow)> {
+        let attempt = ab_db::file_submissions::get_attempt(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("attempt"))?;
+        let row = self.load(attempt.file_submission_id).await?;
+        self.scoped(actor, &row, Action::Grade, "grading")
+            .await
+            .map_err(|err| match err {
+                Error::App {
+                    code: ErrorCode::Forbidden,
+                    ..
+                } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
+                other => other,
+            })?;
+        Ok((attempt, row))
+    }
+
     /// Visible course (404 otherwise) + the given scoped action.
     async fn scoped(
         &self,
@@ -1264,21 +1308,9 @@ impl FileSubmissionsService {
         id: FileAttemptId,
         input: FileGradeInput,
     ) -> Result<Attempt> {
-        let attempt = ab_db::file_submissions::get_attempt(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("attempt"))?;
-        let row = self.load(attempt.file_submission_id).await?;
         // UX-134: a stranger gets the unknown-id 404, not a 403 that
         // confirms another learner's attempt id (the owner keeps the 403).
-        self.scoped(actor, &row, Action::Grade, "grading")
-            .await
-            .map_err(|err| match err {
-                Error::App {
-                    code: ErrorCode::Forbidden,
-                    ..
-                } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
-                other => other,
-            })?;
+        let (attempt, row) = self.gradable(actor, id).await?;
         if attempt.user_id == actor.user_id && !attempt.preview {
             return Err(crate::grading::teacher::own_attempt());
         }

@@ -188,8 +188,11 @@ pub async fn save_draft(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<SubmissionId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<SaveDraftRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state.submissions.require_owned(&actor, id).await?;
+    let request = ValidJson::<SaveDraftRequest>::parse(&body)?;
     let expected = require_if_match(&headers)?;
     // Detached (BUG-313 sweep): the projection after the save outlives a
     // hang-up.
@@ -221,8 +224,11 @@ pub async fn report_violation(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<SubmissionId>,
-    ValidJson(request): ValidJson<ViolationRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<ViolationState>> {
+    // UX-311: permission before the body.
+    state.submissions.require_owned(&actor, id).await?;
+    let request = ValidJson::<ViolationRequest>::parse(&body)?;
     Ok(Json(
         state
             .submissions
@@ -266,6 +272,8 @@ pub async fn submit_submission(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: the caller's own submission (404 otherwise) before the body.
+    state.submissions.require_owned(&actor, id).await?;
     let expected = if_match(&headers)?;
     let request: SubmitRequest = if body.is_empty() {
         SubmitRequest::default()

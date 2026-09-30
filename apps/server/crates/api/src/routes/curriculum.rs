@@ -86,8 +86,11 @@ pub async fn create_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    ValidJson(request): ValidJson<CreateChapterRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Chapter>)> {
+    // UX-311: permission before the body.
+    state.courses.require_writable(&actor, id).await?;
+    let request = ValidJson::<CreateChapterRequest>::parse(&body)?;
     let chapter = state
         .curriculum
         .add_chapter(
@@ -117,8 +120,11 @@ pub async fn update_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
-    ValidJson(request): ValidJson<UpdateChapterRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Chapter>> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_chapter(&actor, id).await?;
+    let request = ValidJson::<UpdateChapterRequest>::parse(&body)?;
     let chapter = state
         .curriculum
         .update_chapter(
@@ -173,8 +179,11 @@ pub async fn move_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
-    ValidJson(request): ValidJson<MoveChapterRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_chapter(&actor, id).await?;
+    let request = ValidJson::<MoveChapterRequest>::parse(&body)?;
     state
         .curriculum
         .move_chapter(&actor, id, request.position)
@@ -201,8 +210,11 @@ pub async fn create_activity(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
-    ValidJson(request): ValidJson<CreateActivityRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Activity>)> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_chapter(&actor, id).await?;
+    let request = ValidJson::<CreateActivityRequest>::parse(&body)?;
     let activity = state
         .curriculum
         .add_activity(
@@ -270,8 +282,11 @@ pub async fn update_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<UpdateActivityRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_activity(&actor, id).await?;
+    let request = ValidJson::<UpdateActivityRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     if request.content.is_some() && expected_version.is_none() {
         return Err(Error::validation(vec![FieldError {
@@ -327,6 +342,8 @@ pub async fn update_activity(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
+        (status = 404, description = "Unknown, inaccessible, or already deleted", body = Problem,
+         content_type = "application/problem+json"),
         (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -368,8 +385,11 @@ pub async fn move_activity(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
-    ValidJson(request): ValidJson<MoveActivityRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_activity(&actor, id).await?;
+    let request = ValidJson::<MoveActivityRequest>::parse(&body)?;
     // Detached (BUG-313 sweep): work after the first commit outlives a
     // hang-up.
     detached(async move {
@@ -404,8 +424,11 @@ pub async fn create_block(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
-    ValidJson(request): ValidJson<CreateBlockRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<Block>)> {
+    // UX-311: permission before the body.
+    state.curriculum.writable_activity(&actor, id).await?;
+    let request = ValidJson::<CreateBlockRequest>::parse(&body)?;
     detached(async move {
         let block = state
             .curriculum

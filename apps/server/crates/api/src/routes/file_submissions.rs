@@ -48,8 +48,11 @@ fn refs(files: Vec<FileRefRequest>) -> Vec<FileRef> {
 pub async fn create_file_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<CreateFileSubmissionRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<FileSubmission>)> {
+    // UX-311: permission before the body.
+    state.assessments.require_some_authoring(&actor).await?;
+    let request = ValidJson::<CreateFileSubmissionRequest>::parse(&body)?;
     let created = state
         .file_submissions
         .create(
@@ -108,8 +111,14 @@ pub async fn update_file_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
-    ValidJson(request): ValidJson<ConfigPatch>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<FileSubmission>> {
+    // UX-311: permission before the body.
+    state
+        .file_submissions
+        .require_authorable(&actor, id)
+        .await?;
+    let request = ValidJson::<ConfigPatch>::parse(&body)?;
     // BUG-322: the lateness re-price after the commit must outlive the socket.
     detached(async move {
         Ok(Json(
@@ -225,8 +234,14 @@ pub async fn save_draft(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<DraftRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Attempt>> {
+    // UX-311: permission before the body.
+    state
+        .file_submissions
+        .require_submittable(&actor, id)
+        .await?;
+    let request = ValidJson::<DraftRequest>::parse(&body)?;
     let expected = if_match(&headers)?;
     // BUG-241: a hang-up mid-save must not cut the attach short.
     detached(async move {
@@ -269,6 +284,11 @@ pub async fn submit(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state
+        .file_submissions
+        .require_submittable(&actor, id)
+        .await?;
     let expected = if_match(&headers)?;
     let request = if body.is_empty() {
         SubmitRequest::default()
@@ -408,8 +428,11 @@ pub async fn grade_attempt(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileAttemptId>,
     headers: HeaderMap,
-    ValidJson(request): ValidJson<FileGradeRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<Attempt>> {
+    // UX-311: permission before the body.
+    state.file_submissions.require_gradable(&actor, id).await?;
+    let request = ValidJson::<FileGradeRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     // Detached (BUG-314): the progress projection and the SSE event outlive
     // a hang-up.

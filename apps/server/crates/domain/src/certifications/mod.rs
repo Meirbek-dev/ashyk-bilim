@@ -187,6 +187,25 @@ impl CertificationsService {
         Ok(course)
     }
 
+    /// UX-311: the create handler's gate before it reads the body (which
+    /// names the course) — a platform grant or authorship of some course.
+    pub async fn require_some_create(&self, actor: &Actor) -> Result<()> {
+        if actor.has(perm(Action::Create, Scope::Platform))
+            || ab_db::catalog::authors_any_course(&self.pool, actor.user_id).await?
+        {
+            return Ok(());
+        }
+        Err(Error::forbidden("missing permission certificate:create"))
+    }
+
+    /// UX-311: [`Self::update`]'s gate on its own, before the body is read.
+    pub async fn require_updatable(&self, actor: &Actor, id: CertificationId) -> Result<()> {
+        let row = self.load(id).await?;
+        self.scoped_course(actor, row.course_id, Action::Update)
+            .await
+            .map(drop)
+    }
+
     async fn load(&self, id: CertificationId) -> Result<CertificationRow> {
         ab_db::certifications::get_certification(&self.pool, id)
             .await?
