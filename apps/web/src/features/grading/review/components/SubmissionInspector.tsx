@@ -324,7 +324,7 @@ function RubricSummary({ rubric }: { rubric: string }) {
   if (criteria.length === 0) return null
 
   return (
-    <div className="mt-3 rounded-md border border-sky-200 bg-sky-50/70 p-3 text-sm text-sky-950">
+    <div className="mt-3 rounded-md border border-sky-200 dark:border-sky-500/30 bg-sky-50/70 dark:bg-sky-500/15 p-3 text-sm text-sky-950 dark:text-sky-300">
       <div className="mb-2 font-medium">{t('submissionInspector.rubricGuidance')}</div>
       <ul className="space-y-1 text-xs">
         {criteria.map(criterion => (

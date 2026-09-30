@@ -338,7 +338,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
                 className={cn(
                   'relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200',
                   'hover:bg-blue-500/5 hover:border-blue-500',
-                  isDragging ? 'border-blue-500 bg-blue-500/5' : 'border-gray-200 bg-white',
+                  isDragging ? 'border-blue-500 bg-blue-500/5' : 'border-border bg-card',
                 )}
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragEnter}
@@ -383,7 +383,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
               </motion.div>
 
               {error ? (
-                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-500">
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-500/15 p-3 text-sm font-medium text-red-500">
                   <AlertCircle size={16} />
                   {error}
                 </div>

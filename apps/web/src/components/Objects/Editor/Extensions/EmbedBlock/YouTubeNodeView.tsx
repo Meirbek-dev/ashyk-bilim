@@ -67,7 +67,7 @@ function YouTubeNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
             type="button"
             aria-label={`${t('deleteButton')} ${t('providers.youtube.label')}`}
             onClick={deleteNode}
-            className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50"
+            className="flex size-8 items-center justify-center rounded text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15"
           >
             <Trash2 className="size-4" />
           </button>

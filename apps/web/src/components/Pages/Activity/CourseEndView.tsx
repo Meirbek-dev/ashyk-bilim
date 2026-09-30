@@ -180,7 +180,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
+        <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-card p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
               <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
@@ -250,7 +250,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <span className="ml-3 text-gray-600">{t('loadingCertificate')}</span>
             </div>
           ) : certificateError ? (
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+            <div className="rounded-lg border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/15 p-6">
               <p className="text-yellow-800">{certificateError}</p>
             </div>
           ) : userCertificate ? (
@@ -336,7 +336,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
+      <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-card p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (
             <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">

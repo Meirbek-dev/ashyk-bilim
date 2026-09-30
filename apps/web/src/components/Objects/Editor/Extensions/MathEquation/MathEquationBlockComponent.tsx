@@ -189,7 +189,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
             <span className="font-medium">{t('title')}</span>
           </div>
 
-          <div className="soft-shadow rounded-md bg-white p-4">
+          <div className="soft-shadow rounded-md bg-card p-4">
             <span
               dangerouslySetInnerHTML={{
                 __html: isEditable
@@ -227,7 +227,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                   </button>
 
                   {showTemplates ? (
-                    <div className="border-border absolute left-0 z-10 mt-1 max-h-80 w-64 overflow-y-auto rounded-[8px] border bg-white shadow-lg">
+                    <div className="border-border absolute left-0 z-10 mt-1 max-h-80 w-64 overflow-y-auto rounded-[8px] border bg-card shadow-lg">
                       <div className="border-b p-2 text-xs text-zinc-500">{t('selectTemplate')}</div>
                       {mathTemplates.map((template, index) => (
                         <button
@@ -261,7 +261,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                   </button>
 
                   {showSymbols ? (
-                    <div className="border-border absolute left-0 z-10 mt-1 w-64 overflow-hidden rounded-[8px] border bg-white shadow-lg">
+                    <div className="border-border absolute left-0 z-10 mt-1 w-64 overflow-hidden rounded-[8px] border bg-card shadow-lg">
                       <div className="border-b p-2 text-xs text-zinc-500">{t('insertSymbol')}</div>
                       <div className="flex flex-wrap p-2">
                         {mathSymbols.map((symbol, index) => (
@@ -294,7 +294,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                   </button>
 
                   {showHelp ? (
-                    <div className="border-border absolute left-0 z-10 mt-1 w-72 overflow-hidden rounded-[8px] border bg-white shadow-lg">
+                    <div className="border-border absolute left-0 z-10 mt-1 w-72 overflow-hidden rounded-[8px] border bg-card shadow-lg">
                       <div className="border-b p-2 text-xs font-medium text-zinc-700">{t('quickReference')}</div>
                       <div className="space-y-2 p-3 text-xs">
                         <div>
@@ -348,7 +348,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                 </div>
               </div>
 
-              <div className="text-muted-foreground border-border focus-within:border-border [&>input]:text-foreground [&>input::placeholder]:text-muted-foreground flex h-[45px] items-center justify-between rounded-lg border bg-white px-[5px] pl-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200/40 [&>input]:w-full [&>input]:border-none [&>input]:bg-transparent [&>input]:font-sans [&>input]:text-sm [&>input]:outline-none">
+              <div className="text-muted-foreground border-border focus-within:border-border [&>input]:text-foreground [&>input::placeholder]:text-muted-foreground flex h-[45px] items-center justify-between rounded-lg border bg-card px-[5px] pl-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200/40 [&>input]:w-full [&>input]:border-none [&>input]:bg-transparent [&>input]:font-sans [&>input]:text-sm [&>input]:outline-none">
                 <input
                   ref={inputRef}
                   value={equation}

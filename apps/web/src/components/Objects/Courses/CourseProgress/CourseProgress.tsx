@@ -254,7 +254,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                             className={cn(
                               'group flex items-center gap-3 px-4 py-3 transition-colors',
                               activityIndex !== (chapter.activities?.length || 0) - 1 && 'border-b border-neutral-100',
-                              isDone ? 'hover:bg-teal-50/50' : 'hover:bg-white',
+                              isDone ? 'hover:bg-teal-50/50 dark:hover:bg-teal-500/15' : 'hover:bg-white',
                             )}
                           >
                             {/* Status Indicator */}

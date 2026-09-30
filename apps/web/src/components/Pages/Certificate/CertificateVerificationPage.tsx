@@ -81,16 +81,16 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
   const getVerificationStatusColor = () => {
     switch (verificationStatus) {
       case 'valid': {
-        return 'text-green-600 bg-green-50 border-green-200'
+        return 'text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-500/15 border-green-200 dark:border-green-500/30'
       }
       case 'invalid': {
-        return 'text-red-600 bg-red-50 border-red-200'
+        return 'text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/30'
       }
       case 'loading': {
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+        return 'text-yellow-600 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-500/15 border-yellow-200 dark:border-yellow-500/30'
       }
       default: {
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+        return 'text-yellow-600 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-500/15 border-yellow-200 dark:border-yellow-500/30'
       }
     }
   }

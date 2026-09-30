@@ -45,7 +45,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
     if (this.state.hasError) {
       return (
         <div
-          className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 p-6 text-center"
+          className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-6 text-center"
           role="alert"
         >
           <div>

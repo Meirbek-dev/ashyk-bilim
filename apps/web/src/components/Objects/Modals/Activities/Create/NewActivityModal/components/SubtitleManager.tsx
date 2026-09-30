@@ -179,7 +179,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
           />
           <Label
             htmlFor={fileInputId}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             <Plus size={13} />
             {t('addSubtitle')}
@@ -192,7 +192,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
         className={cn(
           'relative rounded-lg border-2 border-dashed transition-colors duration-150',
           dragOver
-            ? 'border-blue-300 bg-blue-50/40'
+            ? 'border-blue-300 dark:border-blue-500/30 bg-blue-50/40 dark:bg-blue-500/15'
             : subtitles.length === 0
               ? 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
               : 'border-gray-200 hover:border-gray-300',
@@ -203,7 +203,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
         onDragLeave={handleDragLeave}
       >
         {dragOver && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-blue-50/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-blue-50/80 dark:bg-blue-500/15">
             <p className="text-sm font-medium text-blue-600">{t('dropSubtitleFilesHere')}</p>
           </div>
         )}
@@ -254,7 +254,7 @@ export function SubtitleManager({ subtitles, setSubtitles, t }: SubtitleManagerP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white"
+            className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card"
           >
             {subtitles.map(subtitle => (
               <motion.div

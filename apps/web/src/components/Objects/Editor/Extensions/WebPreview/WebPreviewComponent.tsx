@@ -108,7 +108,7 @@ function AlignmentControls({
             className={`flex items-center justify-center rounded-full border p-1.5 text-gray-600 transition-colors duration-150 focus:ring-2 focus:ring-blue-300 focus:outline-none ${
               alignment === opt.value
                 ? 'border-gray-600 bg-gray-600 text-white hover:bg-gray-700'
-                : 'border-gray-200 bg-white hover:bg-gray-100'
+                : 'border-border bg-card hover:bg-muted'
             }`}
           >
             {opt.label}
@@ -269,13 +269,13 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
       />
       <div className={`flex w-full ${alignmentClass}`}>
         {/* CardWrapper */}
-        <div className="soft-shadow relative my-2 max-w-[420px] min-w-[260px] rounded-xl bg-white px-6 pt-6 pb-4">
+        <div className="soft-shadow relative my-2 max-w-[420px] min-w-[260px] rounded-xl bg-card px-6 pt-6 pb-4">
           {/* PreviewCard */}
           {/* Floating edit and delete buttons (only if not editing and isEditable) */}
           {isEditable && !editing ? (
             <div className="absolute -top-3 -right-3 z-20 flex flex-col gap-2">
               <button
-                className="flex items-center justify-center rounded-md border border-yellow-200 bg-yellow-50 p-1.5 text-yellow-700 shadow-md hover:bg-yellow-100"
+                className="flex items-center justify-center rounded-md border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/15 p-1.5 text-yellow-700 dark:text-yellow-300 shadow-md hover:bg-yellow-100"
                 onClick={handleEdit}
                 title={t('editUrl')}
                 type="button"
@@ -283,7 +283,7 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                 <Edit2 size={16} />
               </button>
               <button
-                className="flex items-center justify-center rounded-md border border-red-200 bg-red-50 p-1.5 text-red-700 shadow-md hover:bg-red-100"
+                className="flex items-center justify-center rounded-md border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-1.5 text-red-700 dark:text-red-300 shadow-md hover:bg-red-100"
                 onClick={handleDelete}
                 title={t('deleteCard')}
                 type="button"

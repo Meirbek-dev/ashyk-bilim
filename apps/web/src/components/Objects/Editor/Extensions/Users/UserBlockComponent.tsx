@@ -193,7 +193,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (error) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg bg-red-50 p-4 text-red-500">{error}</div>
+        <div className="rounded-lg bg-red-50 dark:bg-red-500/15 p-4 text-red-500">{error}</div>
       </NodeViewWrapper>
     )
   }
@@ -215,7 +215,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
 
   return (
     <NodeViewWrapper className="block-user">
-      <div className="soft-shadow overflow-hidden rounded-lg bg-white">
+      <div className="soft-shadow overflow-hidden rounded-lg bg-card">
         <div className="relative">
           <div className="absolute inset-0 h-28 rounded-t-lg bg-linear-to-b from-gray-100/30 to-transparent" />
 

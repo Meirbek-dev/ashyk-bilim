@@ -269,7 +269,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
             type="button"
             onClick={onReset}
             disabled={isUploading}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             {t('cancel')}
           </button>
@@ -305,9 +305,9 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
       className={cn(
         'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors',
         isDragOver
-          ? 'border-blue-400 bg-blue-50'
+          ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/15'
           : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100',
-        error && 'border-red-300 bg-red-50',
+        error && 'border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15',
       )}
     >
       <input
@@ -375,7 +375,7 @@ function ResizeHandle({ onResizeStart, isResizing }: ResizeHandleProps) {
       onMouseDown={onResizeStart}
       onTouchStart={onResizeStart}
       className={cn(
-        'absolute right-0 top-1/2 z-10 flex h-12 w-4 -translate-y-1/2 translate-x-1/2 cursor-ew-resize items-center justify-center rounded-full bg-white opacity-0 shadow-md transition-opacity group-hover:opacity-100',
+        'absolute right-0 top-1/2 z-10 flex h-12 w-4 -translate-y-1/2 translate-x-1/2 cursor-ew-resize items-center justify-center rounded-full bg-card opacity-0 shadow-md transition-opacity group-hover:opacity-100',
         isResizing && 'opacity-100 ring-2 ring-blue-400',
       )}
     >

@@ -187,7 +187,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('deleteButton')} ${t('providers.excalidraw.label')}`}
               onClick={handleDelete}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/15 hover:text-red-600 dark:hover:text-red-300"
             >
               {/* Trash icon */}
               <svg

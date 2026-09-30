@@ -81,7 +81,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
       <CollapsibleTrigger
         nativeButton={false}
         render={
-          <div className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50">
+          <div className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-gray-50">
             <div className="flex items-center gap-3">
               <Settings size={15} className="text-gray-400" />
               <div>
@@ -91,7 +91,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
             </div>
             <div className="flex items-center gap-2">
               {settingsCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-50 px-1.5 text-xs font-medium text-blue-600">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/15 px-1.5 text-xs font-medium text-blue-600 dark:text-blue-300">
                   {settingsCount}
                 </span>
               )}
@@ -105,7 +105,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
       />
 
       <CollapsibleContent className="overflow-hidden">
-        <div className="mt-2 space-y-5 rounded-lg border border-gray-200 bg-white p-5">
+        <div className="mt-2 space-y-5 rounded-lg border border-border bg-card p-5">
           {/* Timing Controls */}
           <div className="space-y-3">
             <h4 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
@@ -139,7 +139,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2"
+                className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-3 py-2"
               >
                 <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
                 <div>

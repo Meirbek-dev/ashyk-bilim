@@ -235,7 +235,7 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
         />
       ) : null}
       {isEditable && showColorPicker ? (
-        <div ref={colorPickerRef} className="soft-shadow absolute mt-2 rounded-md bg-white p-2">
+        <div ref={colorPickerRef} className="soft-shadow absolute mt-2 rounded-md bg-card p-2">
           <div className="flex flex-wrap gap-2">
             {colors.map(c => (
               <button
