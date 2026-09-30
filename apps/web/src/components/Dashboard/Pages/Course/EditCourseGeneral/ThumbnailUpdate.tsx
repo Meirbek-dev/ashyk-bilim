@@ -22,6 +22,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import type React from 'react'
 import { compressImage } from '@/lib/image-compression'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // the server's `course-thumbnail` upload policy
 const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9
@@ -46,6 +47,7 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
   const course = useCourse()
   const { updateThumbnail } = useCoursesMutations(course.courseStructure.course_uuid, true)
   const t = useTranslations('CourseEdit.General.Thumbnail')
+  const formatBytes = useFormatBytes()
 
   const [localUrl, setLocalUrl] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -72,12 +74,12 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
         return false
       }
       if (file.size > MAX_FILE_SIZE) {
-        showError(t('errors.fileTooLarge', { fileSize: (file.size / 1024 / 1024).toFixed(2) }))
+        showError(t('errors.fileTooLarge', { fileSize: formatBytes(file.size) }))
         return false
       }
       return true
     },
-    [showError, t],
+    [formatBytes, showError, t],
   )
 
   const validateImageAspectRatio = useCallback(
