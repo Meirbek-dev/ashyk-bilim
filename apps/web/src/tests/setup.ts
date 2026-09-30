@@ -9,6 +9,10 @@ if (typeof process === 'undefined') {
   ;(globalThis as Record<string, unknown>).process = { env: { NODE_ENV: 'test' } }
 }
 
+// BUG-337: getPublicConfig() needs these; CI has no `.env`, so the suite brings its own.
+process.env.NEXT_PUBLIC_SITE_URL ??= 'http://localhost:3000/'
+process.env.NEXT_PUBLIC_API_URL ??= 'http://localhost:8000/api/v2/'
+
 // Mock elementFromPoint for JSDOM which is missing it
 if (typeof document !== 'undefined') {
   document.elementFromPoint = () => null

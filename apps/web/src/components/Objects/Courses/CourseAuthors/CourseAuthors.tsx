@@ -17,16 +17,20 @@ import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { useCourseUpdates } from '@/features/courses/hooks/useCourseQueries'
+import { useContributors } from '@/features/courses/hooks/useContributors'
+import type { Contributor } from '@/lib/api/generated/zod'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
 import { useQueryClient } from '@tanstack/react-query'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useSession } from '@/hooks/useSession'
+import { useApiError } from '@/hooks/useApiError'
 import { format, formatDistanceToNow } from 'date-fns'
 import { Controller, useForm } from 'react-hook-form'
 import { Textarea } from '@components/ui/textarea'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { Skeleton } from '@components/ui/skeleton'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
@@ -37,30 +41,22 @@ import * as v from 'valibot'
 const getCourseUpdatesQueryKey = (courseUuid?: string | null) =>
   courseUuid ? queryKeys.courses.updates(courseUuid) : (['courses', 'updates', 'disabled'] as const)
 
-interface Author {
-  user: {
-    id: number
-    user_uuid: string
-    avatar_image: string
-    first_name: string
-    middle_name?: string
-    last_name: string
-    username: string
-  }
-  authorship: 'CREATOR' | 'CONTRIBUTOR' | 'MAINTAINER' | 'REPORTER'
-  authorship_status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-}
+/** An active roster row (`GET /courses/{id}/contributors`), creator first. */
+type Author = Contributor
 
 interface CourseAuthorsProps {
-  authors: Author[]
   courseUuid: string
 }
+
+const ROLE_PRIORITY: Record<string, number> = { creator: 0, maintainer: 1, contributor: 2, reporter: 3 }
 
 function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: boolean }) {
   const t = useTranslations('Courses.CourseAuthors')
   const displayedAvatars = authors.slice(0, 3)
   const displayedNames = authors.slice(0, 2)
   const remainingCount = Math.max(0, authors.length - 3)
+  const nameOf = (author: Author) => author.display_name || `@${author.username || t('unknownAuthor')}`
+  const [first] = authors
 
   // Consistent sizes for both avatars and badge
   const avatarSize = isMobile ? 72 : 86
@@ -72,19 +68,15 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
       {/* Avatars row */}
       <div className="relative flex justify-center -space-x-6">
         {displayedAvatars.map((author, index) => (
-          <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
+          <div key={author.user_id} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
             <div className="ring-background">
               <UserAvatar
                 size={isMobile ? 'xl' : '2xl'}
                 variant="outline"
-                avatar_url={
-                  author.user.avatar_image && author.user.user_uuid
-                    ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
-                    : ''
-                }
-                {...(!author.user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                avatar_url={author.avatar_key ? getUserAvatarMediaDirectory(author.user_id, author.avatar_key) : ''}
+                {...(author.avatar_key ? {} : { predefined_avatar: 'empty' })}
                 showProfilePopup
-                userId={author.user.id}
+                userId={author.user_id}
               />
             </div>
           </div>
@@ -108,21 +100,13 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
       {/* Names row - improved display logic */}
       <div className="mt-2 text-center">
         <div className="text-foreground text-sm font-medium">
-          {authors.length === 1 ? (
-            <span>
-              {authors[0]?.user?.first_name && authors[0]?.user?.last_name
-                ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
-                    .filter(Boolean)
-                    .join(' ')
-                : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
-            </span>
+          {authors.length === 1 && first ? (
+            <span>{nameOf(first)}</span>
           ) : (
             <>
               {displayedNames.map((author, index) => (
-                <span key={author.user.user_uuid}>
-                  {author.user.first_name && author.user.last_name
-                    ? [author.user.first_name, author.user.middle_name, author.user.last_name].filter(Boolean).join(' ')
-                    : `@${author.user.username}`}
+                <span key={author.user_id}>
+                  {nameOf(author)}
                   {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
                 </span>
               ))}
@@ -134,11 +118,11 @@ function MultipleAuthors({ authors, isMobile }: { authors: Author[]; isMobile: b
         </div>
         <div className="text-muted-foreground mt-0.5 text-xs">
           {authors.length === 1 ? (
-            <span>@{authors[0]?.user?.username || t('unknownAuthor')}</span>
+            <span>@{first?.username || t('unknownAuthor')}</span>
           ) : (
             displayedNames.map((author, index) => (
-              <span key={author.user.user_uuid}>
-                @{author.user?.username || t('unknownAuthor')}
+              <span key={author.user_id}>
+                @{author.username || t('unknownAuthor')}
                 {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
               </span>
             ))
@@ -229,6 +213,7 @@ function NewUpdateForm({
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const validationSchema = createUpdateFormSchema(t)
+  const { toastApiError } = useApiError<UpdateFormInputValues>()
 
   const form = useForm<UpdateFormInputValues, unknown, UpdateFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -244,17 +229,19 @@ function NewUpdateForm({
       content: values.content,
       course_uuid: courseUuid,
     }
-    const res = await createCourseUpdate(body)
-    if (res.status === 200) {
-      toast.success(t('updateAddedSuccess'))
-      setSelectedView('list')
-      form.reset()
-      void queryClient.invalidateQueries({
-        queryKey: getCourseUpdatesQueryKey(courseUuid),
-      })
-    } else {
-      toast.error(t('updateAddFailed'))
+    // POST answers 201; failures throw an APIError (UX-242: not a `status === 200` check).
+    try {
+      await createCourseUpdate(body)
+    } catch (error) {
+      toastApiError(error, { setError: form.setError, fallback: t('updateAddFailed') })
+      return
     }
+    toast.success(t('updateAddedSuccess'))
+    setSelectedView('list')
+    form.reset()
+    void queryClient.invalidateQueries({
+      queryKey: getCourseUpdatesQueryKey(courseUuid),
+    })
   }
 
   return (
@@ -312,11 +299,11 @@ function NewUpdateForm({
 }
 
 interface CourseUpdatePayload {
-  id: number
+  id: string
   title: string
   content: string
   creation_date: string
-  courseupdate_uuid: number
+  courseupdate_uuid: string
 }
 
 function UpdatesListView({ courseUuid }: { courseUuid: string }) {
@@ -329,22 +316,17 @@ function UpdatesListView({ courseUuid }: { courseUuid: string }) {
   const t = useTranslations('Courses.CourseAuthors')
   const locale = useDateFnsLocale()
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    queueMicrotask(() => setMounted(true))
-  }, [])
+  // Reserve the empty-state height while loading so the card does not jump in.
+  if (!updates && isAuthenticated) return <Skeleton className="h-[8.25rem] w-full rounded-lg" />
 
-  if (!mounted || !updates || updates.length === 0) {
-    if (mounted && (!updates || updates.length === 0)) {
-      return (
-        <div className="border-border bg-muted/20 flex flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
-          <TentTree size={28} className="text-muted-foreground mb-2" />
-          <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
-          <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
-        </div>
-      )
-    }
-    return null // Return nothing while mounting if no data yet to match server
+  if (!updates || updates.length === 0) {
+    return (
+      <div className="border-border bg-muted/20 flex min-h-[8.25rem] flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
+        <TentTree size={28} className="text-muted-foreground mb-2" />
+        <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
+      </div>
+    )
   }
 
   return (
@@ -390,23 +372,23 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
   const t = useTranslations('Courses.CourseAuthors')
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const { toastApiError } = useApiError()
 
   function handleDelete() {
     startTransition(async () => {
       const toast_loading = toast.loading(t('deletingUpdate'))
-      const res = await deleteCourseUpdate(courseUuid, update.courseupdate_uuid)
-
-      if (res.status === 200) {
-        toast.dismiss(toast_loading)
-        toast.success(t('updateDeletedSuccess'))
-        void queryClient.invalidateQueries({
-          queryKey: getCourseUpdatesQueryKey(courseUuid),
-        })
-        setIsOpen(false)
-      } else {
-        toast.dismiss(toast_loading)
-        toast.error(t('updateDeleteFailed'))
+      // DELETE answers 204; failures throw an APIError (UX-242).
+      try {
+        await deleteCourseUpdate(courseUuid, update.courseupdate_uuid)
+      } catch (error) {
+        toastApiError(error, { fallback: t('updateDeleteFailed'), toastId: toast_loading })
+        return
       }
+      toast.success(t('updateDeletedSuccess'), { id: toast_loading })
+      void queryClient.invalidateQueries({
+        queryKey: getCourseUpdatesQueryKey(courseUuid),
+      })
+      setIsOpen(false)
     })
   }
 
@@ -416,7 +398,7 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
         render={
           <Button
             type="button"
-            id="delete-update-button"
+            aria-label={t('deleteUpdate')}
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-150"
@@ -446,7 +428,7 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
             {isPending ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
-                {t('deleting')}
+                {t('deletingUpdate')}
               </div>
             ) : (
               t('deleteUpdate')
@@ -458,27 +440,18 @@ function DeleteUpdateButton({ courseUuid, update }: { courseUuid: string; update
   )
 }
 
-function CourseAuthors({ authors, courseUuid }: CourseAuthorsProps) {
+function CourseAuthors({ courseUuid }: CourseAuthorsProps) {
   const isMobile = useIsMobile()
-
-  // Filter active authors and sort by role priority
-  const sortedAuthors = [...authors]
-    .filter(author => author.authorship_status === 'ACTIVE')
-    .toSorted((a, b) => {
-      const rolePriority: Record<string, number> = {
-        CREATOR: 0,
-        MAINTAINER: 1,
-        CONTRIBUTOR: 2,
-        REPORTER: 3,
-      }
-      const aPriority = rolePriority[a.authorship] ?? 999
-      const bPriority = rolePriority[b.authorship] ?? 999
-      return aPriority - bPriority
-    })
+  // The roster is public for a visible course (anonymous visitors get active authors only);
+  // shown creator first, then maintainers, contributors, reporters.
+  const { data: roster } = useContributors(courseUuid)
+  const sortedAuthors = (roster ?? [])
+    .filter(row => row.status === 'active')
+    .toSorted((a, b) => (ROLE_PRIORITY[a.role] ?? 999) - (ROLE_PRIORITY[b.role] ?? 999))
 
   return (
     <div className="antialiased">
-      <MultipleAuthors authors={sortedAuthors} isMobile={isMobile} />
+      {sortedAuthors.length > 0 && <MultipleAuthors authors={sortedAuthors} isMobile={isMobile} />}
       <UpdatesSection courseUuid={courseUuid} />
     </div>
   )

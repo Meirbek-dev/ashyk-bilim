@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { getAnalyticsCodeLabel, getAnalyticsMessage } from '@/lib/analytics/labels'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnomalyItem } from '@/types/analytics'
@@ -12,6 +13,7 @@ interface AnomalyPanelProps {
 
 export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
   const t = useTranslations('Components.AnomalyPanel')
+  const tA = useTranslations('TeacherAnalytics')
 
   return (
     <Card className="shadow-sm">
@@ -34,11 +36,13 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
                 {t(`severity.${item.severity}`)}
               </Badge>
               <span className="text-muted-foreground text-xs tracking-wider uppercase">
-                {item.type.replaceAll('_', ' ')}
+                {getAnalyticsCodeLabel(tA, item.kind)}
               </span>
             </div>
-            <div className="text-foreground text-sm font-medium">{item.title}</div>
-            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{item.detail}</div>
+            <div className="text-foreground text-sm font-medium">{getAnalyticsMessage(tA, item).title}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">
+              {getAnalyticsMessage(tA, item).body}
+            </div>
           </div>
         ))}
         {!anomalies.length ? (

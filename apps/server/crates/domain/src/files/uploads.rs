@@ -1,0 +1,338 @@
+//! Direct-to-storage uploads (ARCHITECTURE §11): the API hands out presigned
+//! PUT URLs, verifies the object on finalize, and the reaper deletes what
+//! nobody claimed. File bytes never transit Axum.
+//!
+//! Purpose policy ports the legacy `file_validation.py` caps.
+
+use std::sync::Arc;
+use std::time::Duration;
+
+use ab_clients::storage::{Bucket, StorageClient};
+use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::{Error, ErrorCode, FieldError, Result};
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use crate::identity::Actor;
+
+/// How long a presigned PUT (and the pending row) stays claimable.
+pub const CLAIM_WINDOW: Duration = Duration::from_hours(1);
+/// Grace period for finalized-but-unreferenced objects.
+pub const UNREFERENCED_GRACE: Duration = Duration::from_hours(24);
+const PRESIGN_PUT_TTL: Duration = Duration::from_mins(15);
+const PRESIGN_GET_TTL: Duration = Duration::from_mins(5);
+
+const MB: i64 = 1024 * 1024;
+
+/// Legacy `file_validation.py` image allowlist — no SVG (scriptable) and no
+/// `image/*` prefix: the public bucket is served on the web origin.
+const IMAGES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+];
+const VIDEOS: &[&str] = &[
+    "video/mp4",
+    "video/webm",
+    "video/x-matroska",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/x-flv",
+];
+
+/// (bucket, max bytes, allowed content types — exact match; empty = any).
+fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
+    match purpose {
+        "avatar" => Some((Bucket::Public, 5 * MB, IMAGES)),
+        "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail" => {
+            Some((Bucket::Public, 10 * MB, IMAGES))
+        }
+        "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
+        "block-video" => Some((Bucket::Public, 500 * MB, VIDEOS)),
+        "file-submission" => Some((Bucket::Private, 100 * MB, &[])),
+        _ => None,
+    }
+}
+
+/// BUG-200: `file:create:own` alone only covers the learner-facing purposes.
+/// Platform branding needs the platform grant; course thumbnails and
+/// content blocks need course write access (the curriculum gate is
+/// `course:update:own` as author or `course:update:platform`) — otherwise
+/// any learner could park a 500 MB video on the public bucket for the
+/// reap grace and serve it from `/content/…`.
+fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
+    let course_update = |scope| Permission {
+        resource: ResourceType::Course,
+        action: Action::Update,
+        scope: Some(scope),
+    };
+    let granted = match purpose {
+        "platform-logo" | "platform-thumbnail" => actor.has(Permission {
+            resource: ResourceType::Platform,
+            action: Action::Update,
+            scope: Some(Scope::Platform),
+        }),
+        "course-thumbnail" | "block-image" | "block-pdf" | "block-video" => {
+            actor.has(course_update(Scope::Own)) || actor.has(course_update(Scope::Platform))
+        }
+        _ => true,
+    };
+    if granted {
+        Ok(())
+    } else {
+        Err(Error::forbidden(format!(
+            "'{purpose}' uploads need authoring rights"
+        )))
+    }
+}
+
+const fn bucket_name(bucket: Bucket) -> &'static str {
+    match bucket {
+        Bucket::Public => "public",
+        Bucket::Private => "private",
+    }
+}
+
+fn bucket_from_name(name: &str) -> Bucket {
+    if name == "public" {
+        Bucket::Public
+    } else {
+        Bucket::Private
+    }
+}
+
+#[derive(Debug)]
+pub struct CreatedUpload {
+    pub id: Uuid,
+    pub key: String,
+    pub put_url: String,
+}
+
+#[derive(Debug)]
+pub struct FinalizedUpload {
+    pub id: Uuid,
+    pub key: String,
+    pub size_bytes: i64,
+}
+
+#[derive(Clone)]
+pub struct UploadsService {
+    pool: PgPool,
+    storage: Arc<StorageClient>,
+}
+
+impl UploadsService {
+    /// `file:create:own` — UX-311: the handler checks it before the body.
+    pub fn require_create(actor: &Actor) -> Result<()> {
+        actor.require(Permission {
+            resource: ResourceType::File,
+            action: Action::Create,
+            scope: Some(Scope::Own),
+        })
+    }
+
+    #[must_use]
+    pub const fn new(pool: PgPool, storage: Arc<StorageClient>) -> Self {
+        Self { pool, storage }
+    }
+
+    /// Validate against the purpose policy and hand out a presigned PUT.
+    pub async fn create(
+        &self,
+        actor: &Actor,
+        purpose: &str,
+        mime: &str,
+        size_bytes: i64,
+    ) -> Result<CreatedUpload> {
+        Self::require_create(actor)?;
+        let Some((bucket, max_bytes, allowed)) = policy(purpose) else {
+            return Err(Error::validation(vec![FieldError {
+                field: "purpose".into(),
+                code: "invalid".into(),
+                message: format!("unknown upload purpose '{purpose}'"),
+            }]));
+        };
+        require_purpose_grant(actor, purpose)?;
+        if size_bytes > max_bytes {
+            return Err(Error::validation(vec![FieldError {
+                field: "size_bytes".into(),
+                code: "too-large".into(),
+                message: format!("{purpose} uploads are capped at {max_bytes} bytes"),
+            }]));
+        }
+        if !allowed.is_empty() && !allowed.contains(&mime) {
+            return Err(Error::app(
+                ErrorCode::UnsupportedMediaType,
+                format!("{purpose} does not accept '{mime}'"),
+            ));
+        }
+
+        let key = format!("{purpose}/{}", Uuid::now_v7().simple());
+        // The PUT is pinned to the declared type; finalize re-checks it.
+        let put_url = self
+            .storage
+            .presign_put(bucket, &key, mime, PRESIGN_PUT_TTL)?;
+        let id = ab_db::uploads::insert_upload(
+            &self.pool,
+            ab_db::uploads::NewUpload {
+                created_by: actor.user_id,
+                purpose,
+                bucket: bucket_name(bucket),
+                key: &key,
+                mime,
+                size_bytes,
+                claim_window_secs: CLAIM_WINDOW.as_secs_f64(),
+            },
+        )
+        .await?;
+        Ok(CreatedUpload { id, key, put_url })
+    }
+
+    /// Verify the object landed and finalize the ledger row.
+    pub async fn finalize(&self, actor: &Actor, id: Uuid) -> Result<FinalizedUpload> {
+        let row = ab_db::uploads::get_upload(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if row.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        if row.status != "pending" {
+            return Err(Error::conflict("upload is already finalized"));
+        }
+        let bucket = bucket_from_name(&row.bucket);
+        let Some(head) = self.storage.head(bucket, &row.key).await? else {
+            return Err(Error::conflict("no object received for this upload"));
+        };
+        // The stored type must be exactly what was declared (and allowed):
+        // the public bucket is served on the web origin, so a `text/html`
+        // object behind an `image/png` slot would be stored XSS.
+        if head.content_type.as_deref() != Some(row.mime.as_str()) {
+            self.storage.delete(bucket, &row.key).await?;
+            return Err(Error::app_with_details(
+                ErrorCode::UnsupportedMediaType,
+                "stored object's content type does not match the declared one",
+                serde_json::json!({ "declared": row.mime, "actual": head.content_type }),
+            ));
+        }
+        // ARCHITECTURE §11: finalize verifies the size the intent declared
+        // (the cap was checked against it, so the object must match it).
+        // BUG-359: a mismatch is refused and the object dropped — a declared
+        // size can no longer be a foot in the door for a bigger body.
+        let actual_size = i64::try_from(head.size).unwrap_or(i64::MAX);
+        if actual_size != row.size_bytes {
+            self.storage.delete(bucket, &row.key).await?;
+            return Err(Error::validation(vec![FieldError {
+                field: "size_bytes".into(),
+                code: "invalid".into(),
+                message: format!(
+                    "uploaded object is {actual_size} bytes, not the declared {}",
+                    row.size_bytes
+                ),
+            }]));
+        }
+        if !ab_db::uploads::mark_finalized(
+            &self.pool,
+            id,
+            actual_size,
+            UNREFERENCED_GRACE.as_secs_f64(),
+        )
+        .await?
+        {
+            return Err(Error::conflict("upload is already finalized"));
+        }
+        Ok(FinalizedUpload {
+            id,
+            key: row.key,
+            size_bytes: actual_size,
+        })
+    }
+
+    /// Short-lived download URL for a finalized upload the actor may access.
+    pub async fn download_url(&self, actor: &Actor, id: Uuid) -> Result<String> {
+        let row = ab_db::uploads::get_upload(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if row.status != "finalized" {
+            return Err(Error::app(ErrorCode::Conflict, "upload is not finalized"));
+        }
+        // v1 access rule: owner only; resource-scoped access (e.g. teachers
+        // downloading submissions) arrives with the file-submission slice.
+        if row.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        self.storage.presign_get(
+            bucket_from_name(&row.bucket),
+            &row.key,
+            None,
+            PRESIGN_GET_TTL,
+        )
+    }
+}
+
+/// Claim a finalized upload the actor owns for `field` (which names the
+/// request field in the validation error) and return its storage key.
+/// Same mechanics as block media, avatars and platform branding.
+pub async fn claim_upload(
+    conn: &mut sqlx::PgConnection,
+    actor: &Actor,
+    upload_id: Uuid,
+    required_purpose: &str,
+    field: &str,
+) -> Result<String> {
+    let upload = ab_db::uploads::get_upload(&mut *conn, upload_id)
+        .await?
+        .ok_or_else(|| Error::not_found("upload"))?;
+    if upload.created_by != actor.user_id {
+        return Err(Error::forbidden("not your upload"));
+    }
+    if upload.purpose != required_purpose {
+        return Err(Error::validation(vec![FieldError {
+            field: field.into(),
+            code: "wrong-purpose".into(),
+            message: format!(
+                "expected a '{required_purpose}' upload, got '{}'",
+                upload.purpose
+            ),
+        }]));
+    }
+    if !ab_db::uploads::add_reference(conn, upload_id).await? {
+        return Err(Error::conflict("upload is not finalized"));
+    }
+    Ok(upload.key)
+}
+
+/// Reap expired pending/unreferenced uploads without orphaning objects.
+///
+/// Each row is locked, its object deleted, then the row: a claim racing the sweep waits on the lock and then
+/// finds no row, and a failed object delete rolls back so the row is retried on
+/// the next sweep (object deletes are idempotent) — no orphaned objects.
+pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64> {
+    let mut deleted = 0;
+    let mut failures_in_a_row = 0;
+    for candidate in ab_db::uploads::expired(pool, 500).await? {
+        let mut tx = pool.begin().await?;
+        let Some(upload) = ab_db::uploads::lock_expired(&mut tx, candidate.id).await? else {
+            continue;
+        };
+        if let Err(err) = storage
+            .delete(bucket_from_name(&upload.bucket), &upload.key)
+            .await
+        {
+            tracing::warn!(key = %upload.key, %err, "object deletion failed; row kept for the next sweep");
+            // Storage is likely down: end the sweep instead of holding a row lock
+            // through every candidate's retries; the next sweep starts over.
+            failures_in_a_row += 1;
+            if failures_in_a_row >= 3 {
+                break;
+            }
+            continue;
+        }
+        ab_db::uploads::delete(&mut tx, upload.id).await?;
+        tx.commit().await?;
+        deleted += 1;
+        failures_in_a_row = 0;
+    }
+    Ok(deleted)
+}

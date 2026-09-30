@@ -3,7 +3,7 @@
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { runCustomTest, runTests, saveCodeChallengeSettings, submitCode } from '@/services/courses/code-challenges'
+import { runCustomTest, runTests, saveCodeChallengeSettings } from '@/services/courses/code-challenges'
 
 export function runCustomTestMutationOptions(activityUuid: string) {
   return mutationOptions({
@@ -16,18 +16,6 @@ export function runCodeChallengeTestsMutationOptions(activityUuid: string) {
   return mutationOptions({
     mutationFn: (variables: { sourceCode: string; languageId: number }) =>
       runTests(activityUuid, variables.sourceCode, variables.languageId),
-  })
-}
-
-export function submitCodeChallengeMutationOptions(activityUuid: string, queryClient: QueryClient) {
-  return mutationOptions({
-    mutationFn: (variables: { sourceCode: string; languageId: number }) =>
-      submitCode(activityUuid, variables.sourceCode, variables.languageId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.codeChallenges.submissions(activityUuid),
-      })
-    },
   })
 }
 

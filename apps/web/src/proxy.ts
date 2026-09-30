@@ -14,7 +14,7 @@ export const config = {
      * untouched. Root files such as /favicon.ico are excluded, while dotted
      * dynamic route segments remain matchable.
      */
-    '/((?!api|trpc|_next|_vercel|fonts|umami|examples|\\.well-known|[\\w-]+\\.\\w+).*)',
+    '/((?!api|content|trpc|_next|_vercel|fonts|umami|examples|\\.well-known|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
   ],
 }
@@ -96,12 +96,6 @@ export function proxy(req: NextRequest) {
       return withRequestId(NextResponse.redirect(new URL(pathnameWithoutLocale, req.url)), requestId)
     }
     return withRequestId(NextResponse.next(), requestId)
-  }
-
-  if (pathname === '/redirect_from_auth') {
-    const redirectUrl = new URL('/', req.nextUrl.origin)
-    redirectUrl.search = req.nextUrl.search
-    return withRequestId(NextResponse.redirect(redirectUrl), requestId)
   }
 
   if (pathname === '/sitemap.xml') {

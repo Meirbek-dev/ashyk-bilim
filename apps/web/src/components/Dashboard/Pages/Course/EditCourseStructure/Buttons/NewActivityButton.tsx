@@ -13,6 +13,7 @@ import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { apiJson } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
+import { useApiError } from '@/hooks/useApiError'
 import { useTranslations } from 'next-intl'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
@@ -22,7 +23,7 @@ import { courseKeys } from '@/hooks/courses/courseKeys'
 import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
 interface NewActivityButtonProps {
-  chapterId: number
+  chapterId: string
 }
 
 function NewActivityButton(props: NewActivityButtonProps) {
@@ -32,6 +33,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
   const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true)
   const t = useTranslations('CourseEdit.NewActivityModal')
   const tNotify = useTranslations('DashPage.Notifications')
+  const { toastApiError } = useApiError()
 
   const closeNewActivityModal = async () => {
     setNewActivityModal(false)
@@ -44,8 +46,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       toast.success(tNotify('activityCreatedSuccess'))
       setNewActivityModal(false)
     } catch (error: unknown) {
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
       throw error
     } finally {
       toast.dismiss(toast_loading)
@@ -76,12 +77,11 @@ function NewActivityButton(props: NewActivityButtonProps) {
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
       toast.dismiss(toast_loading)
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
     }
   }
 
-  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppPayload, chapterId: number) => {
+  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppPayload, chapterId: string) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
       await activityMutations.createExternalVideo(
@@ -92,8 +92,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       setNewActivityModal(false)
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
-      const err = error as Error | AppApiError
-      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
+      toastApiError(error, undefined, tNotify('activityCreateFailed'))
     } finally {
       toast.dismiss(toast_loading)
     }
@@ -103,25 +102,17 @@ function NewActivityButton(props: NewActivityButtonProps) {
     if (kind === 'codechallenge') {
       const toast_loading = toast.loading(tNotify('creatingActivity'))
       try {
-        const courseId = course.courseStructure.id
+        // v2 `CreateAssessmentRequest` is `{chapter_id, kind, title, description?, grading_type?}`
+        // (`additionalProperties: false`); the policy starts from the kind's preset.
         await apiJson('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: 'CODE_CHALLENGE',
-            title: t('quickCreate.codeChallengeName'),
-            description: '',
-            course_id: courseId,
+            kind: 'code_challenge',
             chapter_id: props.chapterId,
-            grading_type: 'PERCENTAGE',
-            policy: {
-              settings_json: {
-                difficulty: 'MEDIUM',
-                grading_strategy: 'PARTIAL_CREDIT',
-                execution_mode: 'COMPLETE_FEEDBACK',
-                allow_custom_input: true,
-              },
-            },
+            title: t('quickCreate.codeChallengeName'),
+            description: null,
+            grading_type: 'percentage',
           }),
         })
         // Invalidate course structure queries so the new activity appears on the page
@@ -132,7 +123,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
         toast.success(tNotify('activityCreatedSuccess'))
         setNewActivityModal(false)
       } catch (error: unknown) {
-        toast.error(error instanceof Error ? error.message : tNotify('uploadFailed'))
+        toastApiError(error, undefined, tNotify('activityCreateFailed'))
         throw error
       } finally {
         toast.dismiss(toast_loading)

@@ -22,7 +22,8 @@ export function CourseEditorNotice({
   className,
 }: CourseEditorNoticeProps) {
   return (
-    <Alert variant={tone} className={cn(tone === 'default' && 'border-border bg-muted/40', className)}>
+    // Static guidance, not an announcement: no permanent live region (UX-051).
+    <Alert role="note" variant={tone} className={cn(tone === 'default' && 'border-border bg-muted/40', className)}>
       {Icon ? <Icon className="size-4" aria-hidden /> : null}
       <AlertTitle>{title}</AlertTitle>
       {description ? <AlertDescription>{description}</AlertDescription> : null}

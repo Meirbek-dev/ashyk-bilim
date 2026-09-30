@@ -1,11 +1,14 @@
 'use client'
 
+import type { Discussion } from '@services/courses/discussions'
+
 // Import Lucide icons
 import {
   ArrowRight,
   Check,
   ChevronDown,
   ClipboardList,
+  ListChecks,
   File,
   FileArchive,
   ImageIcon,
@@ -21,13 +24,13 @@ import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAutho
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
+import CourseThumbnailVideo from '@components/Pages/Courses/CourseThumbnailVideo'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useSession } from '@/hooks/useSession'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 // Import the new discussions component
 import CourseDiscussions from '@/components/discussions'
 import { getAbsoluteUrl } from '@services/config/config'
-import { useRouter } from 'next/navigation'
 // Import UI components
 import { useMemo, useState } from 'react'
 // Import existing components and utilities
@@ -39,14 +42,18 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
-import { useQuery } from '@tanstack/react-query'
-import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  courseDiscussionsQueryOptions,
+  learnerCourseStructureQueryOptions,
+} from '@/features/courses/queries/course.query'
+import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 
 interface CourseClientProps {
   course: AppCourse
   courseuuid: string
   current_activity?: string
-  initialDiscussions?: AppDiscussionPost[]
+  initialDiscussions?: Discussion[]
   trailData?: AppTrailData | null | undefined
 }
 
@@ -58,7 +65,7 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
   // Already an array
   if (Array.isArray(input)) {
     return input
-      .map(item => {
+      .map((item): LearningItem | null => {
         if (typeof item === 'string') {
           const s = item.trim()
           if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null
@@ -71,7 +78,11 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
           const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
           if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
             return null
-          return { text: learningText }
+          return {
+            text: learningText,
+            ...(typeof record.id === 'string' ? { id: record.id } : {}),
+            ...(typeof record.emoji === 'string' && record.emoji ? { emoji: record.emoji } : {}),
+          }
         }
         return null
       })
@@ -118,18 +129,32 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
 
 function CourseClient(props: CourseClientProps) {
   const t = useTranslations('CoursePage')
+  const tActivityType = useTranslations('ActivityPage.activityTypes')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
-  const { courseuuid, course, initialDiscussions = [], trailData } = props
+  const { courseuuid, initialDiscussions = [], trailData } = props
   const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
-  const router = useRouter()
+  // The server-rendered outline seeds the query; a lesson published meanwhile
+  // shows up on focus / every 30 s (UX-080, UX-104).
+  const { data: course } = useQuery({
+    ...learnerCourseStructureQueryOptions<AppCourse>(courseuuid),
+    initialData: props.course,
+  })
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data
+  const progress = useMemo(() => learnerCourseProgress(learnerState), [learnerState])
 
+  // Server-rendered posts seed the query; it then polls while the page is open (UX-062).
+  const queryClient = useQueryClient()
+  const discussionsQuery = useQuery({
+    ...courseDiscussionsQueryOptions(courseuuid),
+    initialData: initialDiscussions,
+    enabled: Boolean(currentUser),
+  })
   const mutateDiscussions = () => {
-    router.refresh()
+    void queryClient.invalidateQueries({ queryKey: courseDiscussionsQueryOptions(courseuuid).queryKey })
   }
 
   // Normalizes various formats of `course.learnings` into an array that the UI can render
@@ -174,17 +199,20 @@ function CourseClient(props: CourseClientProps) {
       case 'TYPE_EXAM': {
         return t('exam')
       }
+      case 'TYPE_CUSTOM': {
+        return t('quiz')
+      }
+      case 'TYPE_CODE_CHALLENGE': {
+        return tActivityType('codeChallenge')
+      }
       default: {
         return t('learningMaterial')
       }
     }
   }
 
-  const isActivityDone = (activity: AppActivity) => {
-    return learnerState?.outline
-      .flatMap(chapter => chapter.activities)
-      .some(item => item.id === Number(activity.id) && item.complete)
-  }
+  const isActivityDone = (activity: AppActivity) =>
+    progress.completedIds.has(activity.activity_uuid.replace('activity_', ''))
 
   const isActivityCurrent = (activity: AppActivity) => {
     const activity_uuid = activity.activity_uuid.replace('activity_', '')
@@ -205,7 +233,12 @@ function CourseClient(props: CourseClientProps) {
               {/* Main content */}
               <div className="w-full min-w-0 space-y-10 md:w-3/4">
                 {isMobile && (
-                  <CourseActionsMobile courseuuid={courseuuid} course={course as never} trailData={trailData} />
+                  <CourseActionsMobile
+                    courseuuid={courseuuid}
+                    course={course}
+                    trailData={trailData}
+                    learnerState={learnerState}
+                  />
                 )}
 
                 {/* Thumbnail */}
@@ -256,14 +289,8 @@ function CourseClient(props: CourseClientProps) {
                     return (
                       <div className="border-border relative w-full overflow-hidden rounded-xl border">
                         {course.thumbnail_type === 'both' && mediaSwitcher}
-                        <video
+                        <CourseThumbnailVideo
                           src={getCourseThumbnailMediaDirectory(course?.course_uuid, course?.thumbnail_video)}
-                          className="h-auto w-full bg-black object-contain"
-                          controls
-                          autoPlay
-                          muted
-                          preload="metadata"
-                          playsInline
                         />
                       </div>
                     )
@@ -299,9 +326,14 @@ function CourseClient(props: CourseClientProps) {
                   )
                 })()}
 
-                {/* Progress indicators */}
+                {/* Progress indicators (learner-state is hydrated server-side, so this renders with the page) */}
                 {isEnrolled && (
-                  <ActivityIndicators course_uuid={props.course.course_uuid} course={course} trailData={trailData} />
+                  <ActivityIndicators
+                    course_uuid={props.course.course_uuid}
+                    course={course}
+                    completedActivityIds={progress.completedIds}
+                    optionalActivityIds={progress.optionalIds}
+                  />
                 )}
 
                 {/* Course description */}
@@ -361,130 +393,141 @@ function CourseClient(props: CourseClientProps) {
                 {/* Course chapters */}
                 <div>
                   <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
-                  <div className="border-border overflow-hidden rounded-xl border">
-                    {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
-                      const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
-                      const isExpanded = expandedChapters[chapterKey] ?? idx === 0
-                      return (
-                        <Collapsible
-                          key={chapter.chapter_uuid || `chapter-${chapter.name}`}
-                          open={isExpanded}
-                          onOpenChange={open => {
-                            setExpandedChapters(prev => ({
-                              ...prev,
-                              [chapterKey]: open,
-                            }))
-                          }}
-                        >
-                          <CollapsibleTrigger
-                            nativeButton={false}
-                            render={
-                              <div
+                  {/* UX-008/UX-119: no chapters, or none with a published activity — say so instead of an empty box. */}
+                  {(course.chapters ?? []).every((chapter: AppChapter) => (chapter.activities?.length ?? 0) === 0) ? (
+                    <p className="border-border text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+                      {t('noPublishedActivities')}
+                    </p>
+                  ) : (
+                    <div className="border-border overflow-hidden rounded-xl border">
+                      {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
+                        const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
+                        const isExpanded = expandedChapters[chapterKey] ?? idx === 0
+                        return (
+                          <Collapsible
+                            key={chapter.chapter_uuid || `chapter-${chapter.name}`}
+                            open={isExpanded}
+                            onOpenChange={open => {
+                              setExpandedChapters(prev => ({
+                                ...prev,
+                                [chapterKey]: open,
+                              }))
+                            }}
+                          >
+                            <CollapsibleTrigger
+                              nativeButton={false}
+                              render={
+                                <div
+                                  className={cn(
+                                    'flex w-full cursor-pointer items-center px-5 py-4 transition-colors hover:bg-muted/40',
+                                    idx > 0 && 'border-t border-border',
+                                  )}
+                                />
+                              }
+                            >
+                              <span className="text-muted-foreground mr-4 w-5 shrink-0 text-center font-mono text-xs tabular-nums">
+                                {idx + 1}
+                              </span>
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <h3 className="truncate text-sm font-semibold">{chapter.name}</h3>
+                                <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                                  <Layers size={11} />
+                                  {t('activitiesCount', {
+                                    count: chapter.activities?.length ?? 0,
+                                  })}
+                                </span>
+                              </div>
+                              <ChevronDown
+                                size={16}
                                 className={cn(
-                                  'flex w-full cursor-pointer items-center px-5 py-4 transition-colors hover:bg-muted/40',
-                                  idx > 0 && 'border-t border-border',
+                                  'ml-3 shrink-0 text-muted-foreground transition-transform duration-200',
+                                  isExpanded && 'rotate-180',
                                 )}
                               />
-                            }
-                          >
-                            <span className="text-muted-foreground mr-4 w-5 shrink-0 text-center font-mono text-xs tabular-nums">
-                              {idx + 1}
-                            </span>
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <h3 className="truncate text-sm font-semibold">{chapter.name}</h3>
-                              <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                                <Layers size={11} />
-                                {t('activitiesCount', {
-                                  count: chapter.activities?.length ?? 0,
-                                })}
-                              </span>
-                            </div>
-                            <ChevronDown
-                              size={16}
-                              className={cn(
-                                'ml-3 shrink-0 text-muted-foreground transition-transform duration-200',
-                                isExpanded && 'rotate-180',
-                              )}
-                            />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="border-border border-t">
-                              {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
-                                const done = isActivityDone(activity)
-                                const current = isActivityCurrent(activity)
-                                return (
-                                  <Link
-                                    key={activity.activity_uuid}
-                                    id={`activity-${activity.activity_uuid}`}
-                                    href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
-                                    rel="noopener noreferrer"
-                                    className={cn(
-                                      'group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30',
-                                      actIdx > 0 && 'border-t border-border/60',
-                                    )}
-                                  >
-                                    {/* Completion indicator */}
-                                    <div className="shrink-0">
-                                      {done ? (
-                                        <div className="bg-primary/15 flex h-5 w-5 items-center justify-center rounded-full">
-                                          <Check size={10} className="text-primary stroke-3" />
-                                        </div>
-                                      ) : (
-                                        <div className="border-border h-5 w-5 rounded-full border-2" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="border-border border-t">
+                                {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
+                                  const done = isActivityDone(activity)
+                                  const current = isActivityCurrent(activity)
+                                  return (
+                                    <Link
+                                      key={activity.activity_uuid}
+                                      id={`activity-${activity.activity_uuid}`}
+                                      href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
+                                      rel="noopener noreferrer"
+                                      className={cn(
+                                        'group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30',
+                                        actIdx > 0 && 'border-t border-border/60',
                                       )}
-                                    </div>
-                                    {/* Activity info */}
-                                    <div className="flex min-w-0 flex-1 flex-col">
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={cn(
-                                            'truncate text-sm font-medium',
-                                            done ? 'text-muted-foreground' : 'text-foreground',
-                                          )}
-                                        >
-                                          {activity.name}
-                                        </span>
-                                        {current && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="bg-primary/10 text-primary shrink-0 animate-pulse text-xs"
-                                          >
-                                            {t('current')}
-                                          </Badge>
+                                    >
+                                      {/* Completion indicator */}
+                                      <div className="shrink-0">
+                                        {done ? (
+                                          <div className="bg-primary/15 flex h-5 w-5 items-center justify-center rounded-full">
+                                            <Check size={10} className="text-primary stroke-3" />
+                                          </div>
+                                        ) : (
+                                          <div className="border-border h-5 w-5 rounded-full border-2" />
                                         )}
                                       </div>
-                                      <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                                        {activity.activity_type === 'TYPE_DYNAMIC' && <StickyNote size={11} />}
-                                        {activity.activity_type === 'TYPE_VIDEO' && <Video size={11} />}
-                                        {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
-                                        {activity.activity_type === 'TYPE_FILE_SUBMISSION' && <FileArchive size={11} />}
-                                        {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
-                                        <span className="text-xs">
-                                          {getActivityTypeLabel(activity.activity_type ?? '')}
-                                        </span>
+                                      {/* Activity info */}
+                                      <div className="flex min-w-0 flex-1 flex-col">
+                                        <div className="flex items-center gap-2">
+                                          <span
+                                            className={cn(
+                                              'truncate text-sm font-medium',
+                                              done ? 'text-muted-foreground' : 'text-foreground',
+                                            )}
+                                          >
+                                            {activity.name}
+                                          </span>
+                                          {current && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="bg-primary/10 text-primary shrink-0 animate-pulse text-xs"
+                                            >
+                                              {t('current')}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
+                                          {activity.activity_type === 'TYPE_DYNAMIC' && <StickyNote size={11} />}
+                                          {activity.activity_type === 'TYPE_VIDEO' && <Video size={11} />}
+                                          {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
+                                          {activity.activity_type === 'TYPE_FILE_SUBMISSION' && (
+                                            <FileArchive size={11} />
+                                          )}
+                                          {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
+                                          {activity.activity_type === 'TYPE_CUSTOM' && <ListChecks size={11} />}
+                                          <span className="text-xs">
+                                            {getActivityTypeLabel(activity.activity_type ?? '')}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    {/* Arrow */}
-                                    <ArrowRight
-                                      size={13}
-                                      className="group-hover:text-muted-foreground shrink-0 text-transparent transition-all duration-150 group-hover:translate-x-0.5"
-                                    />
-                                  </Link>
-                                )
-                              })}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )
-                    })}
-                  </div>
+                                      {/* Arrow */}
+                                      <ArrowRight
+                                        size={13}
+                                        className="group-hover:text-muted-foreground shrink-0 text-transparent transition-all duration-150 group-hover:translate-x-0.5"
+                                      />
+                                    </Link>
+                                  )
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
-                <CourseAIHub courseUuid={course.course_uuid} />
+                {/* BUG-159: every AI call needs a session — anonymous visitors get no hub (and no 401 redirect). */}
+                {currentUser ? <CourseAIHub courseUuid={course.course_uuid} /> : null}
 
                 {/* Discussions */}
                 <CourseDiscussions
-                  initialPosts={initialDiscussions as never}
+                  initialPosts={discussionsQuery.data}
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}
@@ -493,8 +536,13 @@ function CourseClient(props: CourseClientProps) {
 
               {/* Sidebar */}
               <div className="hidden w-full shrink-0 space-y-4 md:block md:w-1/4">
-                <CoursesActions courseuuid={courseuuid} course={course} trailData={trailData} />
-                <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
+                <CoursesActions
+                  courseuuid={courseuuid}
+                  course={course}
+                  trailData={trailData}
+                  learnerState={learnerState}
+                />
+                <CourseAuthors courseUuid={course.course_uuid} />
               </div>
             </div>
           </GeneralWrapper>

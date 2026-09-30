@@ -1,3 +1,4 @@
+import { localePrefixes } from '@/i18n/config'
 import { getPathInfo, isAuthRoute } from './routes'
 
 function containsUnsafeCharacters(value: string): boolean {
@@ -10,10 +11,18 @@ function containsUnsafeCharacters(value: string): boolean {
   return false
 }
 
-export function normalizeReturnTo(returnTo: string | null | undefined): string {
-  if (!returnTo) return '/'
+/**
+ * Sanitizes a redirect target down to a safe same-origin path: must start
+ * with a single `/`, no control characters, no protocol-relative `//`, no
+ * encoded-slash tricks, and it must parse to the same (fake) origin it was
+ * resolved against — anything else collapses to `/`. Unlike
+ * `normalizeReturnTo`, this does NOT exclude auth routes, because not every
+ * caller wants that: a post-logout redirect legitimately targets `/login`.
+ */
+export function normalizeInternalPath(path: string | null | undefined): string {
+  if (!path) return '/'
 
-  const trimmed = returnTo.trim()
+  const trimmed = path.trim()
   if (!trimmed || containsUnsafeCharacters(trimmed)) return '/'
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return '/'
   if (/^\/%2f/i.test(trimmed)) return '/'
@@ -27,8 +36,18 @@ export function normalizeReturnTo(returnTo: string | null | undefined): string {
 
   if (parsed.origin !== 'http://local.invalid') return '/'
 
-  const normalizedPath = `${parsed.pathname}${parsed.search}` || '/'
-  return isAuthRoute(parsed.pathname) ? '/' : normalizedPath
+  return `${parsed.pathname}${parsed.search}` || '/'
+}
+
+/**
+ * Sanitizes a post-LOGIN `returnTo` target: same safety checks as
+ * `normalizeInternalPath`, plus auth routes are rejected (mapped to `/`) so
+ * a crafted `?returnTo=/login` can't bounce the user straight back to the
+ * login page in a loop.
+ */
+export function normalizeReturnTo(returnTo: string | null | undefined): string {
+  const normalized = normalizeInternalPath(returnTo)
+  return isAuthRoute(normalized) ? '/' : normalized
 }
 
 export function buildReturnTo(pathname: string | null | undefined, search?: string | null): string {
@@ -43,7 +62,15 @@ export function buildLoginRedirect(returnTo?: string | null): string {
   return `${loginPath}?returnTo=${encodeURIComponent(resolved)}`
 }
 
-export function getPostAuthRedirect(returnTo: string | null | undefined): string {
+/**
+ * Post-login destination: the sanitized `returnTo`, prefixed with the active
+ * locale when it carries none (`/` → `/ru`). Never an unprefixed path: the
+ * client router keeps the action's redirect URL as-is, so anything the
+ * middleware has to rewrite ends up as a stale address bar (BUG-023).
+ */
+export function getPostAuthRedirect(returnTo: string | null | undefined, locale?: string | null): string {
   const normalized = normalizeReturnTo(returnTo)
-  return normalized === '/' ? '/redirect_from_auth' : normalized
+  const prefix = locale && locale in localePrefixes ? localePrefixes[locale as keyof typeof localePrefixes] : ''
+  if (!prefix || getPathInfo(normalized).locale) return normalized
+  return normalized === '/' ? prefix : `${prefix}${normalized}`
 }

@@ -8,41 +8,62 @@ import {
   CheckCircle2,
   Clock,
   FileArchive,
-  FileCode2,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  FileVideo,
   LoaderCircle,
+  Lock,
   Paperclip,
+  RotateCcw,
   Send,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ErrorState } from '@/components/ui/error-state'
+import Link from '@components/ui/AppLink'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { useSession } from '@/hooks/useSession'
+import { Actions, Resources, Scopes } from '@/types/permissions'
 import { cn } from '@/lib/utils'
 import {
   getFileSubmissionByActivity,
   saveFileSubmissionDraft,
   startFileSubmissionDraft,
   submitFileSubmission,
-  uploadSubmissionFileWithProgress,
+  uploadSubmissionFile,
 } from '@/features/file-submissions/services/file-submissions'
 import type {
+  FileSubmissionActivity,
   FileSubmissionAttempt,
   FileSubmissionAttemptFile,
 } from '@/features/file-submissions/services/file-submissions'
+import { fromUnix } from '@/lib/api/contract'
+import { refreshLearnerCourseState } from '@/features/learner-course/api'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import FileUploadSlot from './FileUploadSlot'
 import type { PendingFileSlot } from './FileUploadSlot'
 import FileSubmissionReceipt from './FileSubmissionReceipt'
 import FileSubmissionResult from './FileSubmissionResult'
 import { MarkdownContent } from '@/features/content-markdown'
+import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { REMEDIATION_REQUIRED, RemediationGate, useRemediationGate } from '@/features/remediation'
+import { disabledReasonOf } from '@/features/assessments/domain/disabled-reason'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,152 +74,44 @@ interface FileSubmissionWorkspaceProps {
 
 const queryKey = (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const
 
-function fileSubmissionQueryOptions(activityUuid: string) {
+export function fileSubmissionQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKey(activityUuid),
     queryFn: () => getFileSubmissionByActivity(activityUuid),
     enabled: Boolean(activityUuid),
+    // UX-068: a hand-in waiting on the teacher (submitted, graded, or returned
+    // and then re-graded) polls for the release while the tab is visible.
+    // BUG-158: a released result keeps following the server too (a gate assigned meanwhile).
+    // UX-115: so does an open draft — the deadline closing under it flips
+    // `disabled_reasons` to the blocked card without a save attempt.
+    refetchOnWindowFocus: 'always',
+    refetchInterval: query => {
+      const status = query.state.data?.current_attempt?.status
+      return isAwaitingTeacher(status) ? 10_000 : status === 'published' || status === 'draft' ? 15_000 : false
+    },
   })
 }
+
+const isAwaitingTeacher = (status: string | undefined) =>
+  status === 'submitted' || status === 'graded' || status === 'returned'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function isAllowedFile(file: File, allowedMimes: string[], maxMb?: number | null): boolean {
-  if (maxMb && file.size > maxMb * 1024 * 1024) return false
-  if (allowedMimes.length === 0) return true
-  return allowedMimes.some(mime => {
-    if (mime.endsWith('/*')) return file.type.startsWith(mime.slice(0, -1))
-    return file.type === mime
-  })
-}
-
-function formatDueDate(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-// ── File category detection ───────────────────────────────────────────────────
-
-/** Groups raw MIME types into human-readable category labels with icons. */
-interface FileCategory {
-  label: string
-  icon: React.ElementType
-}
-
-const MIME_CATEGORY_MAP: { prefix: string; category: FileCategory }[] = [
-  { prefix: 'image/', category: { label: 'Изображения', icon: FileImage } },
-  { prefix: 'video/', category: { label: 'Видео', icon: FileVideo } },
-  { prefix: 'audio/', category: { label: 'Аудио', icon: FileVideo } },
-  {
-    prefix: 'text/x-python',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  {
-    prefix: 'text/javascript',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  {
-    prefix: 'text/typescript',
-    category: { label: 'Код', icon: FileCode2 },
-  },
-  { prefix: 'text/x-c', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/x-java', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/css', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/html', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'application/xml', category: { label: 'Код', icon: FileCode2 } },
-  { prefix: 'text/plain', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'text/markdown', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'application/json', category: { label: 'Текст', icon: FileText } },
-  { prefix: 'application/pdf', category: { label: 'Документы', icon: FileText } },
-  {
-    prefix: 'application/msword',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.wordprocessingml',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.oasis.opendocument.text',
-    category: { label: 'Документы', icon: FileText },
-  },
-  { prefix: 'application/rtf', category: { label: 'Документы', icon: FileText } },
-  { prefix: 'application/epub', category: { label: 'Документы', icon: FileText } },
-  {
-    prefix: 'application/x-mobipocket',
-    category: { label: 'Документы', icon: FileText },
-  },
-  {
-    prefix: 'text/csv',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.ms-excel',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.spreadsheetml',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.oasis.opendocument.spreadsheet',
-    category: { label: 'Таблицы', icon: FileSpreadsheet },
-  },
-  {
-    prefix: 'application/vnd.ms-powerpoint',
-    category: { label: 'Презентации', icon: FileText },
-  },
-  {
-    prefix: 'application/vnd.openxmlformats-officedocument.presentationml',
-    category: { label: 'Презентации', icon: FileText },
-  },
-  { prefix: 'application/zip', category: { label: 'Архивы', icon: FileArchive } },
-  {
-    prefix: 'application/x-zip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-rar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/vnd.rar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-7z',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-tar',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/gzip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-  {
-    prefix: 'application/x-gzip',
-    category: { label: 'Архивы', icon: FileArchive },
-  },
-]
-
-function getMimeCategories(mimes: string[]): FileCategory[] {
-  if (mimes.length === 0) return [{ label: 'Any file', icon: FileArchive }]
-  const seen = new Set<string>()
-  const result: FileCategory[] = []
-  for (const mime of mimes) {
-    const match = MIME_CATEGORY_MAP.find(m => mime.startsWith(m.prefix) || mime === m.prefix)
-    if (match && !seen.has(match.category.label)) {
-      seen.add(match.category.label)
-      result.push(match.category)
-    }
-  }
-  // Fallback: if nothing matched show a generic label
-  if (result.length === 0) return [{ label: 'Any file', icon: FileArchive }]
-  return result
+/** Why the picker refuses a file (size, then type), null when it is fine. */
+export function fileRejection(
+  file: File,
+  allowedMimes: string[],
+  maxMb: number | null | undefined,
+): { key: 'fileTooLarge'; size: number } | { key: 'fileTypeNotAllowed'; type: string | null } | null {
+  if (maxMb && file.size > maxMb * 1024 * 1024) return { key: 'fileTooLarge', size: maxMb }
+  if (allowedMimes.length === 0) return null
+  const allowed = allowedMimes.some(mime =>
+    mime.endsWith('/*') ? file.type.startsWith(mime.slice(0, -1)) : file.type === mime,
+  )
+  // UX-236: the MIME type, else the extension; null (shown as «без расширения») when there is none.
+  const dot = file.name.lastIndexOf('.')
+  const ext = dot > 0 ? file.name.slice(dot + 1) : ''
+  return allowed ? null : { key: 'fileTypeNotAllowed', type: file.type || ext || null }
 }
 
 // ── Status badge config ───────────────────────────────────────────────────────
@@ -206,17 +119,17 @@ function getMimeCategories(mimes: string[]): FileCategory[] {
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
 
 const STATUS_BADGE: Record<string, BadgeVariant> = {
-  DRAFT: 'secondary',
-  SUBMITTED: 'default',
-  GRADED: 'secondary',
-  PUBLISHED: 'default',
-  RETURNED: 'destructive',
+  draft: 'secondary',
+  submitted: 'default',
+  graded: 'secondary',
+  published: 'default',
+  returned: 'destructive',
 }
 
 const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
-  PUBLISHED: 'default',
-  DRAFT: 'secondary',
-  ARCHIVED: 'outline',
+  published: 'default',
+  draft: 'secondary',
+  archived: 'outline',
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -227,20 +140,28 @@ const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
  * Student-facing file submission surface. State machine driven by the current
  * attempt status:
  *
- *  - PREFLIGHT / no attempt → file upload zone + start draft
- *  - DRAFT / RETURNED      → file list, upload zone, save/submit actions
- *  - SUBMITTED             → immutable receipt (FileSubmissionReceipt)
- *  - GRADED                → "Awaiting grade release" holding state
- *  - PUBLISHED             → grade + feedback (FileSubmissionResult)
+ *  - no attempt        → file upload zone + start draft
+ *  - draft / returned  → file list, upload zone, save/submit actions
+ *  - submitted         → immutable receipt (FileSubmissionReceipt)
+ *  - graded            → "Awaiting grade release" holding state
+ *  - published         → grade + feedback (FileSubmissionResult)
  *
- * Files are uploaded using XHR so per-byte progress events are available.
+ * Files go through the presigned upload pipeline (`uploadFile`), which reports
+ * per-byte progress from the storage PUT.
  */
-export default function FileSubmissionWorkspace({ activity }: FileSubmissionWorkspaceProps) {
+export default function FileSubmissionWorkspace({ activity, course }: FileSubmissionWorkspaceProps) {
   const t = useTranslations('FileSubmission')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const tCommon = useTranslations('Common')
   const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? ''
+  const { can } = useSession()
+  const canEditCourse =
+    can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.APP)
   const queryClient = useQueryClient()
+  const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [slots, setSlots] = useState<PendingFileSlot[]>([])
+  const [confirmSubmit, setConfirmSubmit] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const { handleApiError, toastApiError } = useApiError()
 
@@ -252,14 +173,28 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   const status = activeAttempt?.status ?? null
   const attachedFiles = activeAttempt?.files ?? []
   const maxFiles = data?.max_files ?? 1
-  const totalSelected = attachedFiles.length + slots.length
+  // Rejected slots are shown with their reason but never count or upload.
+  const pendingSlots = useMemo(() => slots.filter(slot => slot.status !== 'rejected'), [slots])
+  const totalSelected = attachedFiles.length + pendingSlots.length
 
-  const canEdit = !status || status === 'DRAFT' || status === 'RETURNED'
+  const canEdit = !status || status === 'draft' || status === 'returned'
+  // BUG-140/152/167: an unpassed gate-mode remediation blocks the next attempt
+  // and the submit of an open draft server-side — the page follows it live.
+  const { session: remediationGate } = useRemediationGate(activityUuid, { poll: true })
+  // BUG-166: the server's blocked reasons (quiz vocabulary) plus the gate the
+  // sessions query saw first; non-empty replaces the editor with the blocked card.
+  const blockedReasons = useMemo(() => {
+    const reasons = data?.disabled_reasons ?? []
+    return remediationGate && !reasons.includes(REMEDIATION_REQUIRED) ? [...reasons, REMEDIATION_REQUIRED] : reasons
+  }, [data?.disabled_reasons, remediationGate])
 
-  // Invalidate trail XP when grade is published so the progress bar updates
+  // The teacher published under the open page (the poll saw it): trail XP,
+  // the header chip and the outline follow the projection (UX-097).
   useEffect(() => {
-    if (status === 'PUBLISHED') {
+    if (status === 'published') {
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      queryClient.invalidateQueries({ queryKey: ['learner-course'] })
+      queryClient.invalidateQueries({ queryKey: ['student-activity'] })
     }
   }, [status, queryClient])
 
@@ -271,18 +206,21 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       const available = Math.max(maxFiles - totalSelected, 0)
       const accepted = [...fileList].slice(0, available)
       const rejected = [...fileList].slice(available)
-      const valid = accepted.filter(f => isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
-      const invalid = accepted.filter(f => !isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
       if (rejected.length) toast.error(t('maxFilesAllowed', { count: maxFiles }))
-      if (invalid.length) toast.error(t('invalidFiles'))
+      // Each refused file stays in the list with its own reason (UX-036).
       setSlots(prev => [
         ...prev,
-        ...valid.map(f => ({
-          id: `${f.name}-${f.size}-${f.lastModified}-${crypto.randomUUID()}`,
-          file: f,
-          status: 'queued' as const,
-          progress: 0,
-        })),
+        ...accepted.map((f): PendingFileSlot => {
+          const why = fileRejection(f, data.allowed_mime_types, data.max_file_size_mb)
+          const slot: PendingFileSlot = {
+            id: `${f.name}-${f.size}-${f.lastModified}-${crypto.randomUUID()}`,
+            file: f,
+            status: why ? 'rejected' : 'queued',
+            progress: 0,
+          }
+          if (why) slot.error = 'type' in why ? t(why.key, { type: why.type ?? t('noExtension') }) : t(why.key, why)
+          return slot
+        }),
       ])
     },
     [data, maxFiles, t, totalSelected, setSlots],
@@ -295,29 +233,28 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       if (!data) throw new Error(t('notAvailable'))
       setIsUploading(true)
 
+      // BUG-335: the attempt is read fresh at send time (a refetch or another tab may
+      // have bumped its version during the upload), never from the render closure.
       // Ensure draft exists
-      if (!activeAttempt) {
-        await startFileSubmissionDraft(data.file_submission_uuid)
-      }
+      const started = activeAttempt ? null : await startFileSubmissionDraft(data.id)
 
       // Upload pending slots
       const uploaded: PendingFileSlot[] = []
 
       const uploadSlot = async (slot: PendingFileSlot) => {
-        if (slot.upload_uuid) {
+        if (slot.upload_id) {
           uploaded.push(slot)
           return
         }
         let errorMsg = ''
         setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'uploading', progress: 0 } : s)))
         try {
-          const result = await uploadSubmissionFileWithProgress(slot.file, (loaded, total) => {
-            const pct = total > 0 ? Math.round((loaded / total) * 100) : 0
-            setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, progress: pct } : s)))
+          const result = await uploadSubmissionFile(slot.file, ({ percentage }) => {
+            setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, progress: percentage } : s)))
           })
           const done = {
             ...slot,
-            upload_uuid: result.upload_uuid,
+            upload_id: result.id,
             status: 'saved' as const,
             progress: 100,
           }
@@ -330,52 +267,152 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         }
       }
 
-      for (const slot of slots) {
+      for (const slot of pendingSlots) {
         await uploadSlot(slot)
       }
 
-      const files = [
-        ...attachedFiles.map((f: FileSubmissionAttemptFile) => ({
-          upload_uuid: f.upload_uuid,
-          display_name: f.filename,
-        })),
-        ...uploaded.map(s => ({
-          upload_uuid: s.upload_uuid!,
-          display_name: s.file.name,
-        })),
-      ]
-      const version = activeAttempt?.version ?? null
-      return submit
-        ? submitFileSubmission(data.file_submission_uuid, files, version)
-        : saveFileSubmissionDraft(data.file_submission_uuid, files, version)
+      // The attached list comes from the same fresh attempt as the version, so a
+      // retry keeps what another tab attached meanwhile.
+      const send = (attempt: FileSubmissionAttempt | null) => {
+        const files = [
+          ...(attempt?.files ?? []).map((f: FileSubmissionAttemptFile) => ({
+            upload_id: f.upload_id,
+            display_name: f.filename,
+          })),
+          ...uploaded.map(s => ({
+            upload_id: s.upload_id!,
+            display_name: s.file.name,
+          })),
+        ]
+        const version = attempt?.version ?? null
+        return submit ? submitFileSubmission(data.id, files, version) : saveFileSubmissionDraft(data.id, files, version)
+      }
+      const cached = queryClient.getQueryData<FileSubmissionActivity>(queryKey(activityUuid))?.current_attempt ?? null
+      try {
+        return await send(started && (!cached || cached.version < started.version) ? started : cached)
+      } catch (error) {
+        if (!hasErrorCode(error, 'precondition-failed')) throw error
+        // Stale anyway (a write landed between the read and the send): refetch, retry once.
+        const latest = await queryClient.fetchQuery({
+          queryKey: queryKey(activityUuid),
+          queryFn: () => getFileSubmissionByActivity(activityUuid),
+          staleTime: 0,
+        })
+        return send(latest.current_attempt ?? null)
+      }
     },
     onSuccess: async (_attempt, { submit }) => {
       setSlots([])
       setIsUploading(false)
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
       toast.success(submit ? t('submittedToast') : t('draftSavedToast'))
+      // The header badge follows the learner-state projection (UX-089): a draft is «in progress» too.
+      await refreshLearnerCourseState(queryClient, router)
     },
-    onError: err => {
+    onError: async err => {
       setIsUploading(false)
+      const reason = disabledReasonOf(err)
+      if (reason) {
+        // UX-103: the window closed under the open draft (PAST_DUE, …) —
+        // refetch so the blocked state replaces the form, and say why.
+        toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+        ])
+        await refreshLearnerCourseState(queryClient, router)
+        return
+      }
       toastApiError(err, { fallback: t('saveFailed') })
     },
   })
 
+  // A capped submission spends an attempt: confirm first (UX-036).
+  const requestSubmit = () => {
+    if (data?.max_attempts) setConfirmSubmit(true)
+    else saveMutation.mutate({ submit: true })
+  }
+  const confirmDialog = data ? (
+    <AlertDialog open={confirmSubmit} onOpenChange={setConfirmSubmit}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('confirmSubmitTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('confirmSubmitDescription', {
+              number: activeAttempt?.attempt_number ?? data.attempts.length + 1,
+              max: data.max_attempts ?? 0,
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setConfirmSubmit(false)
+              saveMutation.mutate({ submit: true })
+            }}
+          >
+            {t('confirmSubmitAction')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null
+
   const startMutation = useMutation({
     mutationFn: async () => {
       if (!data) throw new Error(t('notAvailable'))
-      return startFileSubmissionDraft(data.file_submission_uuid)
+      return startFileSubmissionDraft(data.id)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+      // UX-100: the header chip read the previous result until a reload.
+      await refreshLearnerCourseState(queryClient, router)
       inputRef.current?.click()
     },
-    onError: err => {
+    onError: async err => {
+      if (disabledReasonOf(err)) {
+        // BUG-158: the gate landed while the result was open — show it instead of «no permission».
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+        ])
+        return
+      }
       toastApiError(err, { fallback: t('startDraftFailed') })
     },
   })
 
   // ── Loading ───────────────────────────────────────────────────────────────
+
+  // A published activity whose submission config was never created: the
+  // contract answers 404, which is "not set up yet", not a failure.
+  if (isError && hasErrorCode(queryError, 'not-found')) {
+    return (
+      <Empty className="min-h-52 border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FileArchive />
+          </EmptyMedia>
+          <EmptyTitle>{t('notConfiguredTitle')}</EmptyTitle>
+          <EmptyDescription>{t('notConfiguredDescription')}</EmptyDescription>
+        </EmptyHeader>
+        {canEditCourse ? (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/dash/courses/${course.course_uuid.replace(/^course_/, '')}/activity/${activityUuid}/studio`}
+              />
+            }
+          >
+            {t('openStudio')}
+          </Button>
+        ) : null}
+      </Empty>
+    )
+  }
 
   if (isError) {
     const processed = handleApiError(queryError, { fallback: t('notAvailable') })
@@ -407,7 +444,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: submitted → receipt ─────────────────────────────────────────────
 
-  if (status === 'SUBMITTED' && activeAttempt) {
+  if (status === 'submitted' && activeAttempt) {
     return (
       <div className="space-y-6">
         <FileSubmissionReceipt attempt={activeAttempt} />
@@ -418,7 +455,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: graded (not yet published) → waiting ────────────────────────────
 
-  if (status === 'GRADED') {
+  if (status === 'graded') {
     return (
       <div className="flex min-h-52 flex-col items-center justify-center gap-3">
         <Clock className="text-muted-foreground size-8" />
@@ -429,9 +466,10 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── State: published → result ─────────────────────────────────────────────
 
-  if ((status === 'PUBLISHED' || status === 'RETURNED') && activeAttempt) {
-    const showResult = status === 'PUBLISHED' || (status === 'RETURNED' && activeAttempt.final_score !== null)
-    const canRevise = status === 'RETURNED'
+  if ((status === 'published' || status === 'returned') && activeAttempt) {
+    const showResult =
+      status === 'published' || (status === 'returned' && typeof activeAttempt.final_score === 'number')
+    const canRevise = status === 'returned'
     const handleRevise = canRevise
       ? async () => {
           await queryClient.invalidateQueries({
@@ -439,13 +477,29 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           })
         }
       : undefined
+    // UX-089: attempts left after a released grade → the learner may open the next one.
+    const attemptsLeft = status === 'published' && (!data.max_attempts || data.attempts.length < data.max_attempts)
 
     return (
       <div className="space-y-6">
         {showResult ? (
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
-        {canRevise ? (
+        {blockedReasons.length > 0 ? (
+          <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
+        ) : attemptsLeft ? (
+          <div className="mx-auto max-w-2xl">
+            <Button variant="outline" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
+              {startMutation.isPending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <RotateCcw className="size-4" />
+              )}
+              {t('newAttempt', { number: data.attempts.length + 1, max: data.max_attempts ?? 0 })}
+            </Button>
+          </div>
+        ) : null}
+        {canRevise && blockedReasons.length === 0 ? (
           <DraftEditor
             {...{
               data,
@@ -456,6 +510,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
               inputRef,
               saveMutation,
               startMutation,
+              requestSubmit,
               maxFiles,
               totalSelected,
               isUploading,
@@ -464,6 +519,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
             }}
           />
         ) : null}
+        {confirmDialog}
         <SubmissionHistory attempts={data.attempts} />
       </div>
     )
@@ -479,25 +535,55 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         maxFiles={maxFiles}
         lifecycle={data.lifecycle}
         attempt={activeAttempt}
-        {...(data.due_at !== undefined ? { dueAt: data.due_at } : {})}
-        {...(data.max_file_size_mb !== undefined ? { maxFileSizeMb: data.max_file_size_mb } : {})}
+        dueAt={data.due_at_unix ?? null}
+        maxFileSizeMb={data.max_file_size_mb ?? null}
       />
-      <DraftEditor
-        data={data}
-        attachedFiles={attachedFiles}
-        slots={slots}
-        setSlots={setSlots}
-        addFiles={addFiles}
-        inputRef={inputRef}
-        saveMutation={saveMutation}
-        startMutation={startMutation}
-        maxFiles={maxFiles}
-        totalSelected={totalSelected}
-        isUploading={isUploading}
-        canEdit={canEdit}
-        activeAttempt={activeAttempt}
-      />
+      {blockedReasons.length > 0 ? (
+        <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
+      ) : (
+        <DraftEditor
+          data={data}
+          attachedFiles={attachedFiles}
+          slots={slots}
+          setSlots={setSlots}
+          addFiles={addFiles}
+          inputRef={inputRef}
+          saveMutation={saveMutation}
+          startMutation={startMutation}
+          requestSubmit={requestSubmit}
+          maxFiles={maxFiles}
+          totalSelected={totalSelected}
+          isUploading={isUploading}
+          canEdit={canEdit}
+          activeAttempt={activeAttempt}
+        />
+      )}
+      {confirmDialog}
       <SubmissionHistory attempts={data.attempts} />
+    </div>
+  )
+}
+
+// ── Blocked ────────────────────────────────────────────────────────────────────
+
+/** The quiz's blocked card (AttemptEntryCard): the gate with «Пройти исправление», or the localized reason. */
+function Blocked({ reasons, activityUuid }: { reasons: string[]; activityUuid: string }) {
+  const t = useTranslations('FileSubmission')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const known = reasons.find(reason => tReasons.has(reason))
+  return (
+    <div
+      className="mx-auto flex max-w-2xl flex-col items-center gap-4 py-8 text-center"
+      data-testid="file-submission-blocked"
+    >
+      <div className="bg-destructive/10 flex size-14 items-center justify-center rounded-lg">
+        <Lock className="text-destructive size-7" />
+      </div>
+      {reasons.includes(REMEDIATION_REQUIRED) ? (
+        <RemediationGate activityId={activityUuid} />
+      ) : (
+        <p className="text-muted-foreground max-w-md text-sm">{known ? tReasons(known as never) : t('blocked')}</p>
+      )}
     </div>
   )
 }
@@ -514,22 +600,26 @@ function Header({
   attempt,
 }: {
   instructions: string
-  dueAt?: string | null
+  dueAt: number | null
   allowedMimes: string[]
   maxFiles: number
-  maxFileSizeMb?: number | null
+  maxFileSizeMb: number | null
   lifecycle: string
   attempt: FileSubmissionAttempt | null
 }) {
   const t = useTranslations('FileSubmission')
+  const tMime = useTranslations('FileSubmission.mimeCategories')
+  const tLifecycle = useTranslations('Features.Assessments.Studio.lifecycle')
+  const locale = useLocale()
   const categories = useMemo(() => getMimeCategories(allowedMimes), [allowedMimes])
+  const lifecycleKey = lifecycle.toLowerCase()
 
   return (
     <div className="space-y-4">
       {/* ── Status strip ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant={LIFECYCLE_BADGE[lifecycle] ?? 'secondary'} className="capitalize">
-          {lifecycle.toLowerCase()}
+        <Badge variant={LIFECYCLE_BADGE[lifecycleKey] ?? 'secondary'}>
+          {tLifecycle.has(lifecycleKey) ? tLifecycle(lifecycleKey) : lifecycleKey}
         </Badge>
         {attempt ? <StatusBadge status={attempt.status} /> : null}
         {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
@@ -546,7 +636,9 @@ function Header({
         {dueAt ? (
           <div className="flex items-center gap-1.5 text-sm">
             <CalendarClock className="text-muted-foreground size-3.5 shrink-0" />
-            <span className="font-medium">{t('due', { date: formatDueDate(dueAt) })}</span>
+            <span className="font-medium">
+              {t('due', { date: formatDate(fromUnix(dueAt), locale, DATE_TIME_LONG_OPTIONS) })}
+            </span>
           </div>
         ) : null}
 
@@ -576,13 +668,13 @@ function Header({
             <div className="bg-border hidden h-4 w-px sm:block" />
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-muted-foreground text-xs font-medium">{t('allowedTypes')}:</span>
-              {categories.map(({ label, icon: Icon }) => (
+              {categories.map(({ key, icon: Icon }) => (
                 <span
-                  key={label}
+                  key={key}
                   className="bg-background border-border text-foreground/70 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium shadow-sm"
                 >
                   <Icon className="size-3 shrink-0" />
-                  {label}
+                  {tMime(key)}
                 </span>
               ))}
             </div>
@@ -604,6 +696,7 @@ function DraftEditor({
   inputRef,
   saveMutation,
   startMutation,
+  requestSubmit,
   maxFiles,
   totalSelected,
   isUploading,
@@ -618,6 +711,7 @@ function DraftEditor({
   inputRef: React.RefObject<HTMLInputElement | null>
   saveMutation: ReturnType<typeof useMutation<unknown, Error, { submit: boolean }>>
   startMutation: ReturnType<typeof useMutation<unknown, Error, void>>
+  requestSubmit: () => void
   maxFiles: number
   totalSelected: number
   isUploading: boolean
@@ -626,7 +720,8 @@ function DraftEditor({
 }) {
   const t = useTranslations('FileSubmission')
   const busy = saveMutation.isPending || startMutation.isPending || isUploading
-  const canSubmit = canEdit && (attachedFiles.length > 0 || slots.length > 0) && !busy
+  const hasPending = slots.some(slot => slot.status !== 'rejected')
+  const canSubmit = canEdit && (attachedFiles.length > 0 || hasPending) && !busy
 
   return (
     <>
@@ -687,7 +782,7 @@ function DraftEditor({
       {attachedFiles.length > 0 ? (
         <div className="border-border rounded-md border">
           {attachedFiles.map(file => (
-            <div key={file.attempt_file_uuid} className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0">
+            <div key={file.id} className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0">
               <CheckCircle2 className="text-primary size-4 shrink-0" />
               <span className="min-w-0 truncate">{file.filename}</span>
             </div>
@@ -718,13 +813,13 @@ function DraftEditor({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            disabled={!canEdit || slots.length === 0 || busy}
+            disabled={!canEdit || !hasPending || busy}
             onClick={() => saveMutation.mutate({ submit: false })}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
             {t('saveDraft')}
           </Button>
-          <Button disabled={!canSubmit} onClick={() => saveMutation.mutate({ submit: true })}>
+          <Button disabled={!canSubmit} onClick={requestSubmit}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
             {t('submitFiles')}
           </Button>
@@ -736,35 +831,68 @@ function DraftEditor({
 
 // ── SubmissionHistory ──────────────────────────────────────────────────────────
 
+/** A released result (published, or returned with a score / feedback) opens from its history row (UX-129). */
+function hasResult(attempt: FileSubmissionAttempt) {
+  return (
+    attempt.status === 'published' ||
+    (attempt.status === 'returned' && (typeof attempt.final_score === 'number' || Boolean(attempt.feedback)))
+  )
+}
+
 function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) {
   const t = useTranslations('FileSubmission')
+  const locale = useLocale()
+  const formatPercent = usePercentFormat()
+  const [openId, setOpenId] = useState<string | null>(null)
   if (attempts.length === 0) return null
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-semibold">{t('submissionHistory')}</h3>
-      <div className="divide-border border-border rounded-md border">
-        {attempts.map(attempt => (
-          <div key={attempt.attempt_uuid} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
-            <div>
-              <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
-              <p className="text-muted-foreground text-xs">
-                {attempt.submitted_at
-                  ? new Intl.DateTimeFormat(undefined, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }).format(new Date(attempt.submitted_at))
-                  : t('draft')}{' '}
-                / {t('fileCount', { count: attempt.files.length })}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {attempt.final_score !== null && attempt.final_score !== undefined ? (
-                <Badge variant="outline">{attempt.final_score}%</Badge>
+      <div className="divide-border border-border divide-y rounded-md border">
+        {attempts.map(attempt => {
+          const row = (
+            <>
+              <div>
+                <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
+                <p className="text-muted-foreground text-xs">
+                  {attempt.submitted_at_unix
+                    ? formatDate(fromUnix(attempt.submitted_at_unix), locale, DATE_TIME_LONG_OPTIONS)
+                    : t('draft')}{' '}
+                  / {t('fileCount', { count: attempt.files.length })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {attempt.final_score !== null && attempt.final_score !== undefined ? (
+                  <Badge variant="outline">{formatPercent(attempt.final_score)}</Badge>
+                ) : null}
+                <StatusBadge status={attempt.status} />
+              </div>
+            </>
+          )
+          const rowClass = 'flex flex-wrap items-center justify-between gap-3 p-3 text-sm'
+          if (!hasResult(attempt)) {
+            return (
+              <div key={attempt.id} className={rowClass}>
+                {row}
+              </div>
+            )
+          }
+          const open = openId === attempt.id
+          return (
+            <details
+              key={attempt.id}
+              open={open}
+              onToggle={event => setOpenId(event.currentTarget.open ? attempt.id : open ? null : openId)}
+            >
+              <summary className={cn(rowClass, 'hover:bg-muted/40 cursor-pointer list-none')}>{row}</summary>
+              {open ? (
+                <div className="p-3 pt-0">
+                  <FileSubmissionResult attempt={attempt} />
+                </div>
               ) : null}
-              <StatusBadge status={attempt.status} />
-            </div>
-          </div>
-        ))}
+            </details>
+          )
+        })}
       </div>
     </section>
   )

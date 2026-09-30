@@ -9,31 +9,36 @@ import { Textarea } from '@/components/ui/textarea'
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
 import { normalizeFormItem } from '@/features/assessments/items/form'
 import { getItemKindModule } from '@/features/assessments/items/registry'
+import { matchingColumns } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items'
 import { MarkdownContent } from '@/features/content-markdown'
+
+function choiceItemKind(body: Extract<AssessmentItem['body'], { kind: 'CHOICE' }>) {
+  if (body.multiple) return 'CHOICE_MULTIPLE' as const
+  return body.variant === 'TRUE_FALSE' ? ('TRUE_FALSE' as const) : ('CHOICE_SINGLE' as const)
+}
 
 export function CanonicalAttemptItem({
   item,
   answer,
   disabled,
-  assessmentUuid: _assessmentUuid,
   onChange,
 }: {
   item: AssessmentItem
   answer: ItemAnswer | undefined
   disabled: boolean
-  assessmentUuid: string
   onChange: (answer: ItemAnswer) => void
 }) {
   const { body } = item
   const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const choiceKind = choiceItemKind(body)
+    const choiceModule = getItemKindModule(choiceKind)
     const ChoiceAttempt = choiceModule.Attempt
     const choiceItem = {
       id: item.item_uuid,
-      kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
+      kind: choiceKind,
       prompt: body.prompt,
       points: item.max_score,
       options: body.options.map(option => ({
@@ -131,7 +136,7 @@ export function CanonicalAttemptItem({
   }
 
   if (body.kind === 'MATCHING') {
-    const rightOptions = body.pairs.map(pair => pair.right)
+    const columns = matchingColumns(body)
     const currentMatches = new Map<string, string>(
       answer?.kind === 'MATCHING' ? answer.matches.map(pair => [pair.left, pair.right]) : [],
     )
@@ -154,22 +159,23 @@ export function CanonicalAttemptItem({
     return (
       <div className="space-y-3">
         {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
-        {body.pairs.map((pair, pairIndex) => (
+        {columns.left.map(option => (
           <div
-            key={`${pair.left}-${pairIndex}`}
+            key={option.id}
             className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
           >
-            <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
+            <span className="min-w-0 flex-1 text-sm font-medium">{option.text}</span>
             <NativeSelect
-              value={currentMatches.get(pair.left) ?? ''}
+              value={currentMatches.get(option.id) ?? ''}
               disabled={disabled}
-              onChange={event => updateMatch(pair.left, event.target.value)}
+              onChange={event => updateMatch(option.id, event.target.value)}
+              aria-label={t('Matching.matchForLabel', { term: option.text })}
               className="sm:max-w-xs"
             >
               <NativeSelectOption value="">{t('Matching.selectMatch')}</NativeSelectOption>
-              {rightOptions.map(option => (
-                <NativeSelectOption key={option} value={option}>
-                  {option}
+              {columns.right.map(choice => (
+                <NativeSelectOption key={choice.id} value={choice.id}>
+                  {choice.text}
                 </NativeSelectOption>
               ))}
             </NativeSelect>
@@ -260,11 +266,12 @@ export function CanonicalReviewAnswer({
   const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const choiceKind = choiceItemKind(body)
+    const choiceModule = getItemKindModule(choiceKind)
     const { ReviewDetail } = choiceModule
     const reviewItem: ChoiceAttemptItem = {
       id: item.item_uuid,
-      kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
+      kind: choiceKind,
       prompt: body.prompt,
       points: item.max_score,
       options: body.options.map(option => ({

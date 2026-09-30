@@ -22,14 +22,15 @@ import {
   LayoutDashboard,
   LayoutGrid,
   ShieldCheck,
+  Users,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
 import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { CourseProvider, useCourse } from '@components/Contexts/CourseContext'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
-import { getAbsoluteUrl } from '@services/config/config'
-import { CourseStatusBadge } from './courseWorkflowUi'
+import { CourseStatusBadge, courseReadinessQueryOptions } from './courseWorkflowUi'
+import { useQuery } from '@tanstack/react-query'
 import { useDirtyGuard } from '@/hooks/useDirtyGuard'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,11 @@ function CourseWorkspaceChrome({
 }: Omit<CourseWorkspacePageShellProps, 'initialCourse'>) {
   const t = useTranslations('DashPage.CourseManagement.Workspace')
   const course = useCourse()
-  const { readiness } = course
+  // Same server verdict the review tab renders — the client-side checklist
+  // (`getCourseReadinessSummary`) disagreed with it ("needs review" vs "ready").
+  const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
+  const readiness = readinessQuery.data
+  const blockerCount = readiness?.issues.filter(issue => issue.severity === 'blocker').length ?? 0
   const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
   const dirtyGuard = useDirtyGuard({
     interceptInAppNavigation: true,
@@ -94,7 +99,13 @@ function CourseWorkspaceChrome({
       key: 'access',
       label: t('tabs.settings'),
       icon: Globe,
-      capability: 'canManageSettings',
+      capability: 'canManageAccess',
+    },
+    {
+      key: 'collaboration',
+      label: t('tabs.collaboration'),
+      icon: Users,
+      capability: 'canManageCollaboration',
     },
     {
       key: 'certificate',
@@ -143,7 +154,7 @@ function CourseWorkspaceChrome({
         badge={
           <div className="ml-1 flex flex-wrap items-center gap-1.5">
             <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
-            <CourseStatusBadge status={readiness.readyToPublish ? 'ready' : 'needs-review'} />
+            {readiness ? <CourseStatusBadge status={readiness.ready ? 'ready' : 'needs-review'} /> : null}
             {dirtyGuard.hasDrafts ? <CourseStatusBadge status="unsaved" /> : null}
           </div>
         }
@@ -165,7 +176,7 @@ function CourseWorkspaceChrome({
               size="sm"
               nativeButton={false}
               variant="outline"
-              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} aria-label={t('previewButton')} />}
+              render={<AppLink href={`/course/${courseuuid}?preview=learner`} aria-label={t('previewButton')} />}
               className="h-9 gap-2 px-3 text-xs font-semibold"
             >
               <Eye className="size-4" />
@@ -192,9 +203,9 @@ function CourseWorkspaceChrome({
               >
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
                 <span className="whitespace-nowrap">{stage.label}</span>
-                {mounted && stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
+                {mounted && stage.key === 'review' && readiness && !readiness.ready && blockerCount > 0 ? (
                   <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
-                    {readiness.issues.length}
+                    {blockerCount}
                   </span>
                 ) : null}
               </AppLink>
@@ -203,10 +214,10 @@ function CourseWorkspaceChrome({
         </div>
       </DashHeader>
 
-      <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">
+      <section className="min-w-0 flex-1 px-4 py-8 lg:px-8">
         <ConflictAlert />
         {children}
-      </main>
+      </section>
     </div>
   )
 }

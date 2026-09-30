@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
 import type { QuestionDifficultyRow } from '@/types/analytics'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 interface QuestionDifficultyRadarProps {
   title: string
@@ -14,6 +14,7 @@ interface QuestionDifficultyRadarProps {
 
 export default function QuestionDifficultyRadar({ title, description, data }: QuestionDifficultyRadarProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   const MAX = 8
   const radarData = data.slice(0, MAX).map(row => ({
     label: row.question_label,
@@ -42,7 +43,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
             discrimination: {
               label: t('radar.discrimination'),
               color: 'var(--chart-4)',
-              valueFormatter: value => Number(value ?? 0).toFixed(2),
+              valueFormatter: value => format.number(Number(value ?? 0), { maximumFractionDigits: 2 }),
             },
           }}
         >

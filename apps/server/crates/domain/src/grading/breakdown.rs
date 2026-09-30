@@ -1,0 +1,187 @@
+//! The grading breakdown stored on submissions and grading entries
+//! (legacy `GradingBreakdown`).
+
+use ab_core::id::AssessmentItemId;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct GradedItem {
+    pub item_id: AssessmentItemId,
+    #[serde(default)]
+    pub item_text: String,
+    pub score: f64,
+    pub max_score: f64,
+    /// `None` = not auto-gradeable.
+    #[serde(default)]
+    pub correct: Option<bool>,
+    /// English text (compatibility); the auto-grader also sets a code.
+    #[serde(default)]
+    pub feedback: String,
+    /// Auto-grader verdict for the client to localize (`no-answer`,
+    /// `correct`, `partially-correct`, …); `None` for teacher prose.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feedback_code: Option<String>,
+    /// Placeholders for `feedback_code` (`{correct, total}`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feedback_params: Option<serde_json::Value>,
+    #[serde(default)]
+    pub needs_manual_review: bool,
+    #[serde(default)]
+    pub user_answer: serde_json::Value,
+    #[serde(default)]
+    pub correct_answer: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct GradingBreakdown {
+    #[serde(default)]
+    pub items: Vec<GradedItem>,
+    #[serde(default)]
+    pub needs_manual_review: bool,
+    #[serde(default)]
+    pub auto_graded: bool,
+    /// Teacher's overall comment.
+    #[serde(default)]
+    pub feedback: String,
+    /// BUG-205: the teacher's explicit raw override — the score of record
+    /// regardless of whether it equals the item-derived one. `None` = derived.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_override: Option<f64>,
+}
+
+impl GradingBreakdown {
+    #[must_use]
+    pub fn to_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or_default()
+    }
+
+    /// Tolerant of the empty `{}` default and of legacy-shaped blobs.
+    #[must_use]
+    pub fn from_value(value: &serde_json::Value) -> Self {
+        serde_json::from_value(value.clone()).unwrap_or_default()
+    }
+
+    /// The earned share of the items' points in percent, unrounded (0
+    /// without points) — the item-derived raw before `round2`.
+    #[must_use]
+    pub fn item_percent(&self) -> f64 {
+        let possible: f64 = self.items.iter().map(|i| i.max_score).sum();
+        let earned: f64 = self.items.iter().map(|i| i.score).sum();
+        if possible > 0.0 {
+            earned / possible * 100.0
+        } else {
+            0.0
+        }
+    }
+
+    /// BUG-329: a stored raw is a manual adjustment only when it differs
+    /// from the item-derived percent by a hundredth or more — a smaller gap
+    /// is the drift of 2-decimal storage, not a grader's decision.
+    #[must_use]
+    pub fn differs_from_items(&self, raw: f64) -> bool {
+        (raw - self.item_percent()).abs() >= 0.01
+    }
+}
+
+/// Python's `round(x, 2)`: half-to-even, to the cent.
+///
+/// Rust's `f64::round` is half-away-from-zero, and scores must match the
+/// legacy. `-0.0` comes out as `0` (the `+ 0.0`), so a grade never echoes a
+/// minus sign.
+#[must_use]
+pub fn round2(x: f64) -> f64 {
+    let scaled = x * 100.0;
+    let floor = scaled.floor();
+    let diff = scaled - floor;
+    let rounded = if (diff - 0.5).abs() < 1e-9 {
+        // Exactly halfway: round to the even neighbour.
+        if floor.rem_euclid(2.0) == 0.0 {
+            floor
+        } else {
+            floor + 1.0
+        }
+    } else {
+        scaled.round()
+    };
+    rounded / 100.0 + 0.0
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn round2_is_half_even_like_python() {
+        assert_eq!(round2(0.125), 0.12);
+        assert_eq!(round2(0.135), 0.14);
+        assert_eq!(round2(2.5), 2.5);
+        assert_eq!(round2(66.666_66), 66.67);
+        assert_eq!(round2(-0.125), -0.12);
+        assert!(round2(-0.0).is_sign_positive());
+    }
+
+    #[test]
+    fn breakdown_round_trips_and_tolerates_empty() {
+        assert_eq!(
+            GradingBreakdown::from_value(&serde_json::json!({})),
+            GradingBreakdown::default()
+        );
+        let b = GradingBreakdown {
+            items: vec![GradedItem {
+                item_id: AssessmentItemId::new(),
+                item_text: "q".into(),
+                score: 1.5,
+                max_score: 2.0,
+                correct: Some(false),
+                feedback: String::new(),
+                feedback_code: None,
+                feedback_params: None,
+                needs_manual_review: false,
+                user_answer: serde_json::json!(["a"]),
+                correct_answer: serde_json::json!(["b"]),
+            }],
+            needs_manual_review: false,
+            score_override: None,
+            auto_graded: true,
+            feedback: String::new(),
+        };
+        assert_eq!(GradingBreakdown::from_value(&b.to_value()), b);
+        assert!((b.item_percent() - 75.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn rounding_drift_is_not_an_adjustment() {
+        let item = |score: f64| GradedItem {
+            item_id: AssessmentItemId::new(),
+            item_text: String::new(),
+            score,
+            max_score: 100.0 / 3.0,
+            correct: None,
+            feedback: String::new(),
+            feedback_code: None,
+            feedback_params: None,
+            needs_manual_review: false,
+            user_answer: serde_json::Value::Null,
+            correct_answer: serde_json::Value::Null,
+        };
+        let b = GradingBreakdown {
+            items: vec![item(100.0 / 3.0), item(0.0), item(0.0)],
+            ..GradingBreakdown::default()
+        };
+        // 33.333…: the stored 33.33 / 33.34 are rounding, 33.35 is a choice.
+        assert!(!b.differs_from_items(33.33));
+        assert!(!b.differs_from_items(33.34));
+        assert!(b.differs_from_items(33.35));
+        // BUG-329's migrated Java exam: 99.83 stored over 99.333 of items.
+        let exam = GradingBreakdown {
+            items: std::iter::repeat_n(item(100.0 / 3.0), 149)
+                .chain([item(0.0)])
+                .collect(),
+            ..GradingBreakdown::default()
+        };
+        assert!(exam.differs_from_items(99.83));
+        assert!(!exam.differs_from_items(99.33));
+    }
+}

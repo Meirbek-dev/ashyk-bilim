@@ -13,7 +13,7 @@
  */
 
 import { testAsTeacher as test, expect } from '../fixtures'
-import { getEnv } from '../env'
+import { getEnv, setEnv } from '../env'
 import { USERS } from '../fixtures/test-data'
 
 test.describe.serial('Teacher – Grading Loop', () => {
@@ -35,7 +35,8 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('teacher can navigate to the course gradebook', async ({ page, gradebookPage }) => {
     await gradebookPage.goto(courseUuid)
-    await expect(page.getByRole('heading', { name: /gradebook|grades/i }).first()).toBeVisible({
+    // v2 titles the gradebook stage "Course progress"
+    await expect(page.getByRole('heading', { name: /course progress|gradebook|grades/i }).first()).toBeVisible({
       timeout: 15_000,
     })
   })
@@ -50,25 +51,41 @@ test.describe.serial('Teacher – Grading Loop', () => {
     })
   })
 
+  // Q-2026-09-12-2 #3: «Export» downloads the server's CSV (UTF-8 BOM, header
+  // localized by Accept-Language), not a client-side rendering of the table.
+  test('teacher can export the gradebook as the server CSV', async ({ page, gradebookPage }) => {
+    await gradebookPage.goto(courseUuid)
+    const downloadPromise = page.waitForEvent('download', { timeout: 15_000 })
+    await page
+      .getByRole('button', { name: /export/i })
+      .first()
+      .click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toBe(`gradebook-${courseUuid}.csv`)
+    const stream = await download.createReadStream()
+    const chunks: Buffer[] = []
+    for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+    const text = Buffer.concat(chunks).toString('utf8')
+    expect(text.startsWith('\uFEFF')).toBe(true)
+    expect(text.replace(/^\uFEFF/, '').split(/\r?\n/)[0]).toMatch(/^Learner,Email,/)
+  })
+
   // ── 2. Grade file submission ──────────────────────────────────────────────
 
   /**
    * BUG PROTOCOL: If the submission list on the review page is empty despite the
    * student having submitted, this is a bug. The test MUST fail — do not skip.
    */
-  test('teacher can open the file submission review page', async ({ page, gradebookPage }) => {
+  test('teacher can open the file submission review page', async ({ gradebookPage, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first')
     }
     await gradebookPage.gotoActivityReview(courseUuid, fileSubmissionActivityId)
 
-    // The submission list should show at least one submission
-    await expect(
-      page
-        .locator('[data-submission-item], .submission-item, [role="listitem"], li')
-        .filter({ hasText: new RegExp(USERS.student.firstName, 'i') })
-        .first(),
-    ).toBeVisible({ timeout: 15_000 })
+    // The queue (v2: learner buttons "<name> Attempt N · …") should show the student's attempt
+    await expect(gradingReviewPage.submissionItem(new RegExp(USERS.student.firstName, 'i'))).toBeVisible({
+      timeout: 15_000,
+    })
   })
 
   test('teacher can select the student submission and see the uploaded file', async ({ page, gradingReviewPage }) => {
@@ -105,7 +122,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     }
     await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
     await gradingReviewPage.selectSubmission(USERS.student.firstName)
-    await gradingReviewPage.assertGradedStatus()
+    await gradingReviewPage.assertGradedStatus(USERS.student.firstName)
   })
 
   // ── 3. Grade the exam submission ──────────────────────────────────────────
@@ -126,29 +143,26 @@ test.describe.serial('Teacher – Grading Loop', () => {
     }
     await gradingReviewPage.goto(courseUuid, examActivityId)
 
-    // If there's a student submission, select it
-    const submissionItem = page
-      .locator('[data-submission-item], .submission-item, [role="listitem"], li')
-      .filter({ hasText: new RegExp(USERS.student.firstName, 'i') })
-      .first()
+    // The student's auto-graded attempt must be in the queue (BUG PROTOCOL: if
+    // it is missing despite the learner submitting, this fails — do not skip)
+    // The assessment queue labels entries by display name or "@username"
+    const learner = new RegExp(`${USERS.student.firstName}|@${USERS.student.email.split('@')[0]}`, 'i')
+    await gradingReviewPage.selectSubmission(learner)
+    // The workspace mirrors the selection into `?submission=`; spec 07 reuses it.
+    await expect(page).toHaveURL(/[?&]submission=/)
+    const submissionUuid = new URL(page.url()).searchParams.get('submission')
+    if (submissionUuid) setEnv('E2E_SUBMISSION_UUID', submissionUuid)
 
-    if (await submissionItem.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await submissionItem.click()
-      // Exam may be auto-graded; just publish/release the grade
-      const releaseBtn = page.getByRole('button', { name: /publish|release|approve/i }).first()
-      await expect(releaseBtn).toBeVisible({ timeout: 8000 })
-      await releaseBtn.click()
+    // Exam is auto-graded; release ("Publish grade") it to the learner. The
+    // grade save is a server action (no `/api/v2` response to watch), so the
+    // outcome is judged from the UI: the queue entry flips to "Released".
+    await expect(gradingReviewPage.publishButton).toBeVisible({ timeout: 8000 })
+    await expect(gradingReviewPage.publishButton).toBeEnabled({ timeout: 8000 })
+    await gradingReviewPage.publishButton.click()
 
-      await expect(
-        page
-          .locator('[data-sonner-toast]')
-          .first()
-          .or(page.getByText(/released|published|graded/i).first()),
-      ).toBeVisible({ timeout: 10_000 })
-    } else {
-      // BUG: No student submission found despite student completing the exam
-      await expect(submissionItem).toBeVisible({ timeout: 1 }) // intentional fail
-    }
+    await expect(gradingReviewPage.submissionItem(learner).getByText(/released|published/i)).toBeVisible({
+      timeout: 15_000,
+    })
   })
 })
 
@@ -159,18 +173,17 @@ test.describe.serial('Teacher – Grading Loop', () => {
 import { testAsStudent as studentTest } from '../fixtures'
 
 studentTest.describe.serial('Student – Certificate After Grading', () => {
-  test('certificate download button appears after teacher grades all work', async ({ coursePlayerPage }) => {
+  // `studentTest`, not `test`: the block must run with the learner's storage state
+  studentTest('certificate download button appears after teacher grades all work', async ({ coursePlayerPage }) => {
     const courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
     if (!courseUuid) {
-      test.skip(true, 'Course UUID not set')
+      studentTest.skip(true, 'Course UUID not set')
       return
     }
 
-    await coursePlayerPage.gotoCourseLanding(courseUuid)
-
     // After all required activities are completed and graded, the certificate
-    // download should be visible. This is the single source of truth for
-    // "course completion".
-    await coursePlayerPage.assertCertificateAvailable()
+    // download should be visible (v2: on the Progress page course card). This
+    // is the single source of truth for "course completion".
+    await coursePlayerPage.assertCertificateAvailable(courseUuid)
   })
 })

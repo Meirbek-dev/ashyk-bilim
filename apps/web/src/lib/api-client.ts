@@ -1,16 +1,17 @@
 /**
- * Unified API fetch client.
+ * Unified API fetch client for the v2 contract (`/api/v2`, ARCHITECTURE §6–7).
  *
- * Server-side: forwards only auth cookies from the incoming request so the
- * backend receives auth cookies automatically.
+ * Server-side: forwards the `ab_session` cookie from the incoming request so
+ * the backend authenticates the render.
  *
- * Client-side: uses credentials:"include" so cookies are sent automatically.
- * A 401 is treated as an auth refresh opportunity first; the refresh bridge
- * will redirect to login if the refresh cookie is also invalid or missing.
+ * Client-side: uses credentials:"include" so the BFF session cookie is sent
+ * automatically. Sessions are server-side records with a sliding idle
+ * timeout — there is no refresh token and nothing to rotate: a 401 outside
+ * the auth pages simply sends the browser to the login page.
  */
 
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
-import { fetch as transportFetch, ofetch } from 'ofetch'
+import { ofetch } from 'ofetch'
 import type { FetchOptions, FetchResponse, MappedResponseType, ResponseType } from 'ofetch'
 import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
@@ -21,6 +22,8 @@ type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   baseUrl?: string
   /** Override the default request timeout. Use false for no client-side timeout. */
   timeoutMs?: number | false
+  /** Retries on 5xx/429 for idempotent methods (default 1 for GET/HEAD/OPTIONS). Pass 0 for a probe whose failure is the answer. */
+  retry?: 0 | 1
   next?:
     | {
         tags?: string[] | undefined
@@ -75,7 +78,6 @@ const RETRYABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 /** Prevents multiple concurrent 401 responses from racing to redirect. */
 let authRedirectPending = false
-let authRefreshPromise: Promise<boolean> | null = null
 
 let serverRequestCounter = 0
 const serverProcessId = typeof globalThis.window === 'undefined' ? Math.random().toString(36).slice(2) : ''
@@ -100,6 +102,12 @@ function createFrontendRequestId(): string {
 }
 
 function randomHex(byteCount: number): string | null {
+  // Browser only. `crypto.getRandomValues` exists on the server too, but calling
+  // it during render is a dynamic API: under Cache Components it makes the route
+  // unprerenderable (`blocking-prerender-crypto`). Server-side callers fall
+  // through to the process-prefix + counter path below, same as
+  // `createFrontendRequestId`.
+  if (typeof globalThis.window === 'undefined') return null
   if (typeof globalThis.crypto?.getRandomValues !== 'function') return null
 
   const bytes = new Uint8Array(byteCount)
@@ -249,43 +257,24 @@ export function getBrowserReturnTo(): string {
   return `${pathname}${search}` || '/'
 }
 
-export async function refreshBrowserSession(returnTo: string): Promise<boolean> {
-  authRefreshPromise ??= transportFetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      'x-auth-refresh': 'fetch',
-    },
-    credentials: 'include',
-    cache: 'no-store',
-    redirect: 'manual',
-  })
-    .then(response => response.ok)
-    .catch(() => false)
-    .finally(() => {
-      authRefreshPromise = null
-    })
-
-  return authRefreshPromise
-}
-
-export function redirectBrowserToLogin(returnTo: string): void {
+export function redirectBrowserToLogin(returnTo: string, code?: unknown): void {
   if (authRedirectPending) return
   authRedirectPending = true
-  globalThis.location.assign(buildLoginRedirect(returnTo))
+  const target = buildLoginRedirect(returnTo)
+  // UX-220: the login page says why (`?error=` is rendered from Errors.codes).
+  globalThis.location.assign(code === 'session-expired' ? `${target}&error=session-expired` : target)
 }
 
-export async function recoverBrowserSessionFrom401(returnTo = getBrowserReturnTo()): Promise<boolean> {
+/**
+ * Browser-side reaction to a 401: the BFF session is gone (expired, revoked,
+ * or never existed), so send the user to the login page with a return path.
+ * No-op on the server and on the auth pages themselves.
+ */
+export function handleBrowserUnauthenticated(returnTo = getBrowserReturnTo(), code?: unknown): void {
   if (typeof globalThis.window === 'undefined' || isAuthRoute(globalThis.location.pathname)) {
-    return false
+    return
   }
-
-  const refreshed = await refreshBrowserSession(returnTo)
-  if (!refreshed) {
-    redirectBrowserToLogin(returnTo)
-  }
-
-  return refreshed
+  redirectBrowserToLogin(returnTo, code)
 }
 
 type ApiTransportOptions<R extends ResponseType = 'json'> = FetchOptions<R> & {
@@ -330,7 +319,7 @@ function buildApiTransportOptions<R extends ResponseType>(
     headers,
     ignoreResponseError: false,
     responseType,
-    retry: isRetryableMethod(method) ? 1 : 0,
+    retry: fetchInit.retry ?? (isRetryableMethod(method) ? 1 : 0),
     retryDelay,
     retryStatusCodes: RETRY_STATUS_CODES,
     ...(combinedSignal ? { signal: combinedSignal.signal } : callerSignal ? { signal: callerSignal } : {}),
@@ -396,19 +385,39 @@ async function rawTransportFetch(path: string, init: ApiFetchInit = {}): Promise
   }
 }
 
-async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promise<Response> {
+/**
+ * Perform a request and return the raw `Response` (errors are NOT thrown for
+ * non-2xx statuses). A browser-side 401 triggers the login redirect.
+ */
+export async function apiFetchRaw(path: string, init: ApiFetchInit = {}): Promise<Response> {
   const isServer = typeof globalThis.window === 'undefined'
-
-  let response = await rawTransportFetch(path, init)
+  const response = await rawTransportFetch(path, init)
 
   if (!isServer && response.status === 401) {
-    const refreshed = await recoverBrowserSessionFrom401()
-    if (refreshed) {
-      response = await rawTransportFetch(path, init)
-    }
+    const code = await errorCode(response)
+    if (!isCredentialCheckCode(code)) handleBrowserUnauthenticated(undefined, code)
   }
 
   return response
+}
+
+/**
+ * A 401 that re-checks a credential while signed in (`POST /auth/password`
+ * with the wrong current password) is a form error, not a lost session.
+ */
+const CREDENTIAL_CHECK_CODES = new Set(['invalid-credentials', 'mfa-required', 'invalid-totp-code'])
+
+export function isCredentialCheckCode(code: unknown): boolean {
+  return typeof code === 'string' && CREDENTIAL_CHECK_CODES.has(code)
+}
+
+async function errorCode(response: Response): Promise<unknown> {
+  try {
+    const body = (await response.clone().json()) as { code?: unknown }
+    return body?.code
+  } catch {
+    return undefined
+  }
 }
 
 export async function apiBody<T = unknown, R extends ResponseType = 'json'>(
@@ -451,11 +460,23 @@ export async function apiJson<T = unknown>(
   return parse ? parse(data) : (data as T)
 }
 
+export interface ApiResultEnvelope<T> {
+  data: T
+  headers: Record<string, string>
+  requestId: string | null
+  status: number
+  statusText: string
+}
+
+/**
+ * Like `apiJson`, but also returns the response headers — needed wherever the
+ * contract answers with an `ETag` version (draft saves, grade saves).
+ */
 export async function apiResult<T = unknown>(
   path: string,
   init: ApiFetchInit = {},
   parse?: (data: unknown) => T,
-): Promise<{ data: T; headers: Record<string, string>; requestId: string | null; status: number; statusText: string }> {
+): Promise<ApiResultEnvelope<T>> {
   const response = await apiFetchRaw(path, init)
   if (!response.ok) {
     throw await parseApiError(response, path)

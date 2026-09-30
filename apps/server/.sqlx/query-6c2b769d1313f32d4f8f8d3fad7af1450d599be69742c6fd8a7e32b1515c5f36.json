@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO etl_drop_log (run_id, domain, entity, legacy_key, reason)\n                   SELECT $1, $2, e, k, r FROM UNNEST($3::text[], $4::text[], $5::text[]) AS t(e, k, r)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c2b769d1313f32d4f8f8d3fad7af1450d599be69742c6fd8a7e32b1515c5f36"
+}

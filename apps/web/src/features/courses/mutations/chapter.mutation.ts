@@ -72,8 +72,8 @@ export function updateChapterMutationOptions(queryClient: QueryClient, structure
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
-                chapter.chapter_uuid === chapterUuid ? Object.assign(chapter, payload) : chapter,
+              chapters: current.chapters?.map((chapter: AppChapter) =>
+                chapter.chapter_uuid === chapterUuid ? { ...chapter, ...payload } : chapter,
               ),
             }
           : current,

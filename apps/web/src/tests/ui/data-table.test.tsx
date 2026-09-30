@@ -127,5 +127,8 @@ describe('DataTable', () => {
     expect(within(table).getByText('Katherine')).toBeInTheDocument()
     expect(screen.queryByText('Rows per page')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument()
+    // Without a server total the table must not claim "1–3 of 3" under the caller's own count.
+    expect(screen.queryByText(/of 3/)).not.toBeInTheDocument()
+    expect(screen.getByText('3 rows')).toBeInTheDocument()
   })
 })

@@ -2,13 +2,12 @@
 
 import { useCallback, useRef, useState } from 'react'
 
-import { CodeChallengeEditor } from '@/components/features/courses/code-challenges'
-import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { CodeChallengeSubmitControl } from '@/features/code-arena/attempt'
 import { CodeSubmissionReview } from '@/features/code-arena/review'
-import type { ItemAttemptProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
+import type { ItemKindModule, ItemReviewDetailProps } from '../registry'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
-import { UnsupportedItemAuthor } from '../unsupported'
+import { UnsupportedItemAttempt, UnsupportedItemAuthor } from '../unsupported'
 
 export interface CodeItemSettings {
   uuid?: string
@@ -45,33 +44,6 @@ export interface CodeAttemptItem {
   settings: CodeItemSettings
   initialCode?: string
   initialLanguageId: number
-  onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void
-  onSubmit?: () => Promise<void> | void
-}
-
-export function CodeItemAttempt({
-  item,
-  answer,
-  disabled,
-  onAnswerChange,
-}: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined>) {
-  const initialCode = answer?.source ?? item.initialCode
-
-  return (
-    <div className="bg-card h-full overflow-hidden">
-      <CodeChallengeEditor
-        activityUuid={item.activityUuid}
-        settings={item.settings}
-        initialLanguageId={answer?.language ?? item.initialLanguageId}
-        {...(initialCode === undefined ? {} : { initialCode })}
-        {...(answer === undefined || answer === null ? {} : { answer })}
-        {...(onAnswerChange === undefined ? {} : { onAnswerChange })}
-        {...(item.onSubmit === undefined ? {} : { onSubmit: item.onSubmit })}
-        {...(disabled === undefined ? {} : { disabled })}
-        {...(item.onSubmitControlChange === undefined ? {} : { onSubmitControlChange: item.onSubmitControlChange })}
-      />
-    </div>
-  )
 }
 
 export function CodeItemLoading() {
@@ -123,14 +95,18 @@ export function CodeItemReviewDetail({
   return <CodeSubmissionReview answer={answer} starterTemplate={starterTemplate} />
 }
 
-export const codeModule: ItemKindModule<
+type CodeItemKindModule = ItemKindModule<
   unknown,
   CodeAttemptItem,
   Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined
-> = {
+>
+
+export const codeModule: CodeItemKindModule = {
   kind: 'CODE',
   label: 'Code',
   Author: UnsupportedItemAuthor,
-  Attempt: CodeItemAttempt,
+  // Code items are attempted through the arena (`CodeChallengeAttemptContent`)
+  // or inline in `CanonicalItemAttempt`; nothing renders this slot.
+  Attempt: UnsupportedItemAttempt as CodeItemKindModule['Attempt'],
   ReviewDetail: CodeItemReviewDetail,
 }

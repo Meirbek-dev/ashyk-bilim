@@ -1,5 +1,6 @@
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { getPageParam } from '@/lib/search-params'
+import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import type { Metadata } from 'next'
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
 
   return {
     title: `${General.home} - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
+    description: General.appDescription,
     robots: {
       index: true,
       follow: true,
@@ -64,7 +65,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
     },
     openGraph: {
       title: `${General.home} - ${APP_NAME}`,
-      description: APP_DESCRIPTION,
+      description: General.appDescription,
       type: 'website',
       images: [
         {
@@ -97,9 +98,5 @@ async function LandingContentWrapper({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const resolvedParams = await searchParams
-  const pageParam = resolvedParams?.page
-  const page = typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) || 1 : 1
-
-  return <LandingContent page={page} />
+  return <LandingContent page={getPageParam(await searchParams)} />
 }

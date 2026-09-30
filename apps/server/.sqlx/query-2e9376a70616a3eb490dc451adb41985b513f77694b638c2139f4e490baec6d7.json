@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)\n           VALUES ($1, $2, $3, $4, 'null'::jsonb)\n           ON CONFLICT (user_id, key) DO UPDATE\n               SET request_hash = EXCLUDED.request_hash, created_at = now()\n             WHERE idempotency_keys.status_code = $4\n               AND idempotency_keys.created_at < now() - make_interval(secs => $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int4",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2e9376a70616a3eb490dc451adb41985b513f77694b638c2139f4e490baec6d7"
+}

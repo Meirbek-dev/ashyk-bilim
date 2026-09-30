@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE gamification_profiles SET learning_streak = $2,\n                       longest_learning_streak = GREATEST(longest_learning_streak, $2),\n                       last_learning_at = now()\n                   WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "588359e6c2e235f827f3eae50a71b6e6c541dbcc8f563656e5c271e64d32d035"
+}

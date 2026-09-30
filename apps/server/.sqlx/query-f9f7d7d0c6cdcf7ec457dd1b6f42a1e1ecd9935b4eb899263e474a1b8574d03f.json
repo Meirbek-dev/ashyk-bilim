@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"total!\",\n                  count(*) FILTER (WHERE public) AS \"ready!\",\n                  count(*) FILTER (WHERE NOT public) AS \"private!\",\n                  count(*) FILTER (WHERE\n                     (public AND NOT EXISTS (SELECT 1 FROM activities a\n                                             WHERE a.course_id = courses.id AND a.published))\n                     OR (NOT public AND created_at < now() - interval '30 days')) AS \"attention!\"\n           FROM courses\n           WHERE $1 OR creator_id = $2\n              OR EXISTS (SELECT 1 FROM resource_authors ra\n                         WHERE ra.course_id = courses.id AND ra.user_id = $2\n                           AND ra.status = 'active' AND ra.authorship <> 'reporter')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "ready!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "private!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "attention!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "f9f7d7d0c6cdcf7ec457dd1b6f42a1e1ecd9935b4eb899263e474a1b8574d03f"
+}

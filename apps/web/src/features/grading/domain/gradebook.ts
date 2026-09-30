@@ -43,7 +43,7 @@ export const GRADEBOOK_SAVED_FILTERS: GradebookSavedFilterId[] = [
   'not_started',
 ]
 
-export function gradebookCellKey(userId: number, activityId: number) {
+export function gradebookCellKey(userId: string, activityId: string) {
   return `${userId}:${activityId}`
 }
 
@@ -55,7 +55,7 @@ export function gradebookActivityKind(activity: GradebookActivity) {
   return activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
 }
 
-export function emptyGradebookCell(userId: number, activityId: number): ActivityProgressCell {
+export function emptyGradebookCell(userId: string, activityId: string): ActivityProgressCell {
   return {
     user_id: userId,
     activity_id: activityId,
@@ -98,23 +98,33 @@ export function filterGradebookStudents(
 }
 
 export function buildGradebookRollups(data: CourseGradebookResponse, kind: GradebookRollupKind): GradebookRollupRow[] {
-  const cellsByActivity = new Map<number, ActivityProgressCell[]>()
-  const cellsByStudent = new Map<number, ActivityProgressCell[]>()
+  const cellsByActivity = new Map<string, ActivityProgressCell[]>()
+  const cellsByStudent = new Map<string, ActivityProgressCell[]>()
 
-  for (const cell of data.cells) {
+  // The API only returns cells a learner touched; a missing student×activity cell is «not started».
+  const returned = new Set(data.cells.map(cell => gradebookCellKey(cell.user_id, cell.activity_id)))
+  const cells = [...data.cells]
+  for (const student of data.students) {
+    for (const activity of data.activities) {
+      if (!returned.has(gradebookCellKey(student.id, activity.id)))
+        cells.push(emptyGradebookCell(student.id, activity.id))
+    }
+  }
+
+  for (const cell of cells) {
     cellsByActivity.set(cell.activity_id, [...(cellsByActivity.get(cell.activity_id) ?? []), cell])
     cellsByStudent.set(cell.user_id, [...(cellsByStudent.get(cell.user_id) ?? []), cell])
   }
 
   if (kind === 'activity') {
     return data.activities.map(activity =>
-      buildRollupRow(String(activity.id), activity.name, cellsByActivity.get(activity.id) ?? []),
+      buildRollupRow(activity.id, activity.name, cellsByActivity.get(activity.id) ?? []),
     )
   }
 
   if (kind === 'learner') {
     return data.students.map(student =>
-      buildRollupRow(String(student.id), gradebookLearnerName(student), cellsByStudent.get(student.id) ?? []),
+      buildRollupRow(student.id, gradebookLearnerName(student), cellsByStudent.get(student.id) ?? []),
     )
   }
 
@@ -145,7 +155,8 @@ function buildRollupRow(id: string, label: string, cells: ActivityProgressCell[]
     id,
     label,
     completed: cells.filter(cell => isActivityProgressComplete(cell.state)).length,
-    needsGrading: cells.filter(activityProgressNeedsTeacherAction).length,
+    // UX-215: the toolbar tile's «На проверке» — owed a grade; a scored row awaiting release is counted apart.
+    needsGrading: cells.filter(cell => activityProgressNeedsTeacherAction(cell) && !cell.awaiting_release).length,
     overdue: cells.filter(cell => isActivityProgressOverdue(cell)).length,
     returned: cells.filter(cell => cell.state === 'RETURNED').length,
     failed: cells.filter(cell => cell.state === 'FAILED' || cell.passed === false).length,

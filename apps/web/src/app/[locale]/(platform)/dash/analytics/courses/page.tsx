@@ -4,21 +4,31 @@ import CourseHealthTable from '@components/Dashboard/Analytics/CourseHealthTable
 import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
+import { COURSE_SORT_KEYS } from '@/lib/analytics/labels'
+import { analyticsPageMetadata } from '../_components/metadata'
+import { AnalyticsBoundary } from '../_components/AnalyticsPage'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { ChevronRight, LayoutDashboard } from 'lucide-react'
 
+export const generateMetadata = () => analyticsPageMetadata('pages.courseRankingTitle')
+
 export default function PlatformAnalyticsCoursesPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsCoursesPageInner(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const query = normalizeAnalyticsQuery(await props.searchParams)
-  const t = await getTranslations('TeacherAnalytics')
+  const query = normalizeAnalyticsQuery(await props.searchParams, COURSE_SORT_KEYS)
+  const [t, tErrors] = await Promise.all([getTranslations('TeacherAnalytics'), getTranslations('Errors')])
 
   let courseList: Awaited<ReturnType<typeof getTeacherCourseList>>
   try {
@@ -27,7 +37,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
     return (
       <AnalyticsEmptyState
         title={t('pages.coursesUnavailableTitle')}
-        description={error instanceof Error ? error.message : t('pages.coursesLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.coursesLoadError'))}
       />
     )
   }
@@ -67,7 +77,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
         </div>
       </header>
 
-      <main className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
+      <section className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
         <Card className="bg-card text-card-foreground border-border rounded-xl shadow-xs">
           <CardContent className="pt-6">
             <TeacherFilterBar
@@ -76,6 +86,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
               courseCount={courseList.total ?? 0}
               courseOptions={courseList.course_options ?? []}
               cohortOptions={courseList.cohort_options ?? []}
+              sortKeys={COURSE_SORT_KEYS}
             />
           </CardContent>
         </Card>
@@ -124,7 +135,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
             </Button>
           </div>
         ) : null}
-      </main>
+      </section>
     </div>
   )
 }

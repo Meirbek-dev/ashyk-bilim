@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter'
@@ -12,7 +12,9 @@ const navigationMocks = vi.hoisted(() => ({
 }))
 const gradingQueryMocks = vi.hoisted(() => ({
   courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
-  courseGradebookExportUrl: vi.fn(() => '/api/grading/courses/course_gradebook/gradebook/export'),
+  downloadGradebookCsv: vi.fn(),
+  live: false,
+  toastApiError: vi.fn(),
 }))
 const mobileMocks = vi.hoisted(() => ({ isMobile: false }))
 
@@ -30,8 +32,22 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
-  courseGradebookExportUrl: gradingQueryMocks.courseGradebookExportUrl,
   courseGradebookQueryOptions: gradingQueryMocks.courseGradebookQueryOptions,
+  downloadGradebookCsv: gradingQueryMocks.downloadGradebookCsv,
+}))
+
+vi.mock('@/features/grading/queries/use-grading-events', () => ({
+  useCourseGradingEvents: () => ({ live: gradingQueryMocks.live, accessLost: false }),
+}))
+
+vi.mock('@/hooks/useApiError', () => ({
+  useApiError: () => ({
+    toastApiError: gradingQueryMocks.toastApiError,
+    // UX-258: the localized problem mapping, not the wire `detail`.
+    handleApiError: (error: unknown, options?: { fallback?: string }) => ({
+      message: `localized:${(error as { status?: number }).status ?? 'unknown'}:${options?.fallback ?? ''}`,
+    }),
+  }),
 }))
 
 vi.mock('@/features/assessments/registry', () => ({
@@ -57,6 +73,10 @@ vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
 }))
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'ru-RU',
+  useFormatter: () => ({
+    number: (value: number, options?: Intl.NumberFormatOptions) => value.toLocaleString('ru-RU', options),
+  }),
   useTranslations: () => (key: string, values?: Record<string, string | number>) =>
     values?.count === undefined ? key : `${key}:${values.count}`,
 }))
@@ -74,21 +94,21 @@ vi.mock('@/hooks/use-mobile', () => ({
 function baseGradebook(): CourseGradebookResponse {
   return {
     course_uuid: 'course_gradebook',
-    course_id: 1,
+    course_id: 'course_gradebook',
     course_name: 'Course',
     students: [
       {
-        id: 10,
-        user_uuid: 'user_student_one',
+        id: 'user_student_one',
         username: 'student.one',
+        display_name: 'Student One',
         first_name: 'Student',
         last_name: 'One',
         email: 'student.one@example.com',
       },
       {
-        id: 11,
-        user_uuid: 'user_student_two',
+        id: 'user_student_two',
         username: 'student.two',
+        display_name: 'Student Two',
         first_name: 'Student',
         last_name: 'Two',
         email: 'student.two@example.com',
@@ -96,26 +116,24 @@ function baseGradebook(): CourseGradebookResponse {
     ],
     activities: [
       {
-        id: 1,
+        id: 'activity_manual_assessment',
         activity_uuid: 'activity_manual_assessment',
         name: 'ManualAssessment',
         activity_type: 'TYPE_FILE_SUBMISSION',
         assessment_type: 'EXAM',
-        order: 1,
       },
       {
-        id: 2,
+        id: 'activity_quiz',
         activity_uuid: 'activity_quiz',
         name: 'Quiz',
         activity_type: 'TYPE_DYNAMIC',
         assessment_type: 'QUIZ',
-        order: 2,
       },
     ],
     cells: [
       {
-        user_id: 10,
-        activity_id: 1,
+        user_id: 'user_student_one',
+        activity_id: 'activity_manual_assessment',
         state: 'NEEDS_GRADING',
         score: null,
         passed: null,
@@ -124,14 +142,13 @@ function baseGradebook(): CourseGradebookResponse {
         attempt_count: 2,
         latest_submission_uuid: 'submission_manual_assessment',
         latest_submission_status: 'PENDING',
-        submitted_at: '2026-01-02T10:00:00Z',
         due_at: '2026-01-01T10:00:00Z',
       },
       {
-        user_id: 10,
-        activity_id: 2,
+        user_id: 'user_student_one',
+        activity_id: 'activity_quiz',
         state: 'PASSED',
-        score: 88,
+        score: 90.25,
         passed: true,
         is_late: false,
         teacher_action_required: false,
@@ -140,16 +157,16 @@ function baseGradebook(): CourseGradebookResponse {
         latest_submission_status: 'PUBLISHED',
       },
       {
-        user_id: 11,
-        activity_id: 1,
+        user_id: 'user_student_two',
+        activity_id: 'activity_manual_assessment',
         state: 'NOT_STARTED',
         is_late: false,
         teacher_action_required: false,
         attempt_count: 0,
       },
       {
-        user_id: 11,
-        activity_id: 2,
+        user_id: 'user_student_two',
+        activity_id: 'activity_quiz',
         state: 'RETURNED',
         score: 45,
         passed: false,
@@ -162,20 +179,18 @@ function baseGradebook(): CourseGradebookResponse {
     ],
     teacher_actions: [
       {
-        action_type: 'GRADE_SUBMISSION',
-        user_id: 10,
-        activity_id: 1,
+        user_id: 'user_student_one',
+        activity_id: 'activity_manual_assessment',
         submission_uuid: 'submission_manual_assessment',
         student_name: 'Student One',
         activity_name: 'ManualAssessment',
-        submitted_at: '2026-01-02T10:00:00Z',
-        is_late: true,
       },
     ],
     summary: {
       student_count: 2,
       activity_count: 2,
       needs_grading_count: 1,
+      awaiting_release_count: 0,
       overdue_count: 1,
       not_started_count: 1,
       completed_count: 1,
@@ -196,7 +211,6 @@ describe('CourseGradebookCommandCenter', () => {
     navigationMocks.replace.mockClear()
     navigationMocks.searchParams = new URLSearchParams()
     gradingQueryMocks.courseGradebookQueryOptions.mockClear()
-    gradingQueryMocks.courseGradebookExportUrl.mockClear()
     mobileMocks.isMobile = false
   })
 
@@ -212,6 +226,66 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('Quiz')).toBeInTheDocument()
     expect(within(table).getByText('states.passed')).toBeInTheDocument()
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
+    // UX-105: the cell shows the score the review list and the CSV show, not a rounded «90%».
+    expect(within(table).getByText('90,25%')).toBeInTheDocument()
+  })
+
+  // Gauntlet F26: file-submission columns render the same cells as
+  // assessments; «Экспорт» downloads the server's CSV (Q-2026-09-12-2 #3).
+  it('renders file-submission columns as regular cells and downloads the server CSV', async () => {
+    gradebook.activities.push({
+      id: 'activity_upload',
+      activity_uuid: 'activity_upload',
+      name: 'Project Upload',
+      activity_type: 'TYPE_FILE_SUBMISSION',
+      assessment_type: 'file_submission',
+    })
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:gradebook')
+    const revokeObjectURL = vi.fn()
+    Object.assign(URL, { createObjectURL, revokeObjectURL })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const csv = new Blob(['\uFEFFСтудент,Email,Project Upload'], { type: 'text/csv;charset=utf-8' })
+    gradingQueryMocks.downloadGradebookCsv.mockResolvedValue(csv)
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('Project Upload')).toBeInTheDocument()
+    expect(within(table).getAllByText('activityTypes.file').length).toBeGreaterThan(0)
+    expect(within(table).queryByText('states.untracked')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'export' }))
+    expect(gradingQueryMocks.downloadGradebookCsv).toHaveBeenCalledWith('course_gradebook', 'ru-RU')
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+    expect(createObjectURL).toHaveBeenCalledWith(csv)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:gradebook')
+    click.mockRestore()
+  })
+
+  // Gauntlet F27: the course stream drives refreshes; polling stays as the fallback.
+  it('tells the gradebook query whether the grading stream is live', () => {
+    gradingQueryMocks.live = true
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenLastCalledWith(
+      'course_gradebook',
+      expect.objectContaining({ page: 1 }),
+      { live: true },
+    )
+    gradingQueryMocks.live = false
+  })
+
+  // Gauntlet: the implicit "needs grading" default showed an empty table
+  // when nothing needed review.
+  it('defaults to "all" when nothing needs grading and no filter is in the URL', () => {
+    gradebook.summary.needs_grading_count = 0
+    for (const cell of gradebook.cells) {
+      if (cell.state === 'NEEDS_GRADING') Object.assign(cell, { state: 'PASSED', teacher_action_required: false })
+    }
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('Student One')).toBeInTheDocument()
+    expect(within(table).getByText('Student Two')).toBeInTheDocument()
   })
 
   it('requests a server-paginated gradebook using URL filters', () => {
@@ -221,13 +295,17 @@ describe('CourseGradebookCommandCenter', () => {
 
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith('course_gradebook', {
-      activityType: 'TYPE_DYNAMIC',
-      page: 2,
-      pageSize: 25,
-      savedFilter: 'returned',
-      search: 'student',
-    })
+    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith(
+      'course_gradebook',
+      {
+        activityType: 'TYPE_DYNAMIC',
+        page: 2,
+        pageSize: 25,
+        savedFilter: 'returned',
+        search: 'student',
+      },
+      { live: false },
+    )
   })
 
   it('filters learners by saved progress filters', () => {
@@ -242,6 +320,14 @@ describe('CourseGradebookCommandCenter', () => {
       '/dash/courses/course_gradebook/gradebook?filter=not_started',
       { scroll: false },
     )
+  })
+
+  // UX-297: a course with no learners yet says so — not «no learners match these filters».
+  it('shows a no-learners-yet state for a course nobody has joined', () => {
+    queryState.data = { ...gradebook, students: [], cells: [] }
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+    expect(screen.getByText('noLearnersTitle')).toBeInTheDocument()
+    expect(screen.queryByText('emptyTitle')).not.toBeInTheDocument()
   })
 
   it('updates the URL when moving between server pages', () => {
@@ -301,9 +387,22 @@ describe('CourseGradebookCommandCenter', () => {
     expect(screen.getByText('rollups.title')).toBeInTheDocument()
   })
 
-  it('shows the API error instead of staying in a loading state', () => {
+  it('labels the learners tile as filtered while a filter narrows the rows', () => {
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.not_started' }))
+    expect(screen.getByText('summary.learnersFiltered')).toBeInTheDocument()
+    expect(screen.queryByText('summary.learners')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }))
+    expect(screen.getByText('summary.learners')).toBeInTheDocument()
+    expect(screen.queryByText('summary.learnersFiltered')).not.toBeInTheDocument()
+  })
+
+  // UX-258: a 403 «no gradebook access to this course» reads localized, not the raw wire detail.
+  it('shows the localized API error instead of staying in a loading state', () => {
     queryState = {
-      error: new Error('Internal Server Error'),
+      error: Object.assign(new Error('no gradebook access to this course'), { status: 403 }),
       isError: true,
       isLoading: false,
       refetch: vi.fn(),
@@ -311,7 +410,8 @@ describe('CourseGradebookCommandCenter', () => {
 
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Internal Server Error')
+    expect(screen.getByRole('alert')).toHaveTextContent('localized:403:loadError')
+    expect(screen.getByRole('alert')).not.toHaveTextContent('no gradebook access')
     expect(screen.queryByText('loading')).not.toBeInTheDocument()
   })
 
@@ -325,7 +425,7 @@ describe('CourseGradebookCommandCenter', () => {
     gradebook = {
       ...gradebook,
       cells: gradebook.cells.map(cell =>
-        cell.user_id === 11 && cell.activity_id === 2
+        cell.user_id === 'user_student_two' && cell.activity_id === 'activity_quiz'
           ? {
               ...cell,
               state: 'NEEDS_GRADING',
@@ -339,13 +439,11 @@ describe('CourseGradebookCommandCenter', () => {
       teacher_actions: [
         ...gradebook.teacher_actions,
         {
-          action_type: 'GRADE_SUBMISSION',
-          user_id: 11,
-          activity_id: 2,
+          user_id: 'user_student_two',
+          activity_id: 'activity_quiz',
           submission_uuid: 'submission_resubmitted',
           student_name: 'Student Two',
           activity_name: 'Quiz',
-          is_late: false,
         },
       ],
       summary: {

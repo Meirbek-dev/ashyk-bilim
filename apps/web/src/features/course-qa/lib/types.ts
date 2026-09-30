@@ -1,18 +1,11 @@
-export interface QAMessage {
-  message_uuid: string
-  thread_id?: number
-  role: 'user' | 'assistant' | string
-  content: string
-  confidence?: string | null
-  citations_json?: { citations?: unknown[] }
-  message_metadata?: Record<string, unknown>
-  created_at: string
+import type { QaMessage, QaThreadSummary as WireQaThreadSummary } from '@/lib/api/generated/zod'
+
+/** What the panel renders of a v2 `QaMessage` (pending turns are built client-side). */
+export type QAMessage = Pick<QaMessage, 'id' | 'role' | 'content' | 'created_at_unix'> & {
+  confidence?: string | null | undefined
+  /** `{citations: […]}` on assistant turns; the server emits `[]` on user turns (contract defect). */
+  citations?: unknown
+  metadata?: Record<string, unknown> | undefined
 }
 
-export interface QAThreadSummary {
-  thread_uuid: string
-  title?: string | null
-  last_message_preview: string
-  message_count: number
-  updated_at: string
-}
+export type QAThreadSummary = WireQaThreadSummary

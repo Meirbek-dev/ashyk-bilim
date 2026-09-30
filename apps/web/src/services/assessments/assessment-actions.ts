@@ -1,7 +1,9 @@
-'use server'
-
 /**
  * Client-side assessment API functions for the new unified endpoints.
+ * Plain functions, NOT server actions: `GradeForm` needs the problem+json code
+ * and the `StaleGradeError` class of a 412, neither of which survives the
+ * server-action boundary (GAUNTLET BUG-035, UX-242). No `cacheTag()` consumer
+ * reads `submissions`/`overrides`, so nothing is revalidated.
  *
  * These wrap the canonical /assessments/{uuid}/... REST routes introduced
  * in the World-Class LMS plan Phases 1–5.
@@ -9,7 +11,11 @@
 
 import { apiJson } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
-import { revalidateTag } from 'next/cache'
+import { ifMatchHeaders, idempotencyHeaders } from '@/lib/api/headers'
+import { toUnix } from '@/lib/api/contract'
+import { teacherSubmissionFromWire } from '@/features/grading/domain/wire'
+import type { Submission } from '@/features/grading/domain'
+import { runItem } from '@/lib/api/generated/code/code'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -93,7 +99,7 @@ export interface StudentPolicyOverride {
 }
 
 export interface StudentPolicyOverrideCreate {
-  user_id: number
+  user_id: string
   max_attempts_override?: number | null
   due_at_override?: string | null
   waive_late_penalty?: boolean
@@ -125,10 +131,11 @@ export interface ItemGradeEntry {
 }
 
 export interface GradingDraftSave {
+  /** Only the items the teacher edited (BUG-174): the server keeps the rest. */
   item_grades: ItemGradeEntry[]
   overall_feedback?: string | null
   status?: 'save' | 'publish' | 'return' | null
-  override_score?: boolean
+  /** A manual override; `null` drops a stored one (the items decide again); omitted keeps it. */
   final_score?: number | null
   override_reason?: string | null
 }
@@ -186,6 +193,12 @@ export async function getAttemptState(assessmentUuid: string): Promise<AttemptPr
 
 // ── Policy preset ─────────────────────────────────────────────────────────────
 
+/**
+ * BLOCKED: v2 has no `policy-preset` route (only `PUT assessments/{id}/policy`,
+ * which replaces the whole policy block rather than looking one up by kind).
+ * Left pointed at the legacy path — it 404s and this resolves to `null`, same
+ * graceful-degrade the caller already handles. See report under "Blocked".
+ */
 export async function getPolicyPreset(kind: string): Promise<PolicyPreset | null> {
   try {
     return await apiJson<PolicyPreset>(`assessments/policy-preset/${encodeURIComponent(kind)}`, {
@@ -214,12 +227,20 @@ export async function createStudentPolicyOverride(
   assessmentUuid: string,
   payload: StudentPolicyOverrideCreate,
 ): Promise<StudentPolicyOverride> {
-  const response = await apiJson<StudentPolicyOverride>(`assessments/${assessmentUuid}/overrides`, {
+  // v2's create route takes the student as a path segment (`POST
+  // assessments/{id}/overrides/{user_id}`), and the body is the override
+  // block only — `_unix` timestamps, no `user_id` field.
+  const { user_id: userId, due_at_override, expires_at, ...rest } = payload
+  const body = {
+    ...rest,
+    ...(due_at_override !== undefined ? { due_at_override_unix: toUnix(due_at_override) } : {}),
+    ...(expires_at !== undefined ? { expires_at_unix: toUnix(expires_at) } : {}),
+  }
+  const response = await apiJson<StudentPolicyOverride>(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   })
-  revalidateTag('overrides', 'max')
   return response
 }
 
@@ -233,7 +254,6 @@ export async function updateStudentPolicyOverride(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  revalidateTag('overrides', 'max')
   return response
 }
 
@@ -241,7 +261,6 @@ export async function deleteStudentPolicyOverride(assessmentUuid: string, userId
   await apiJson<void>(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'DELETE',
   })
-  revalidateTag('overrides', 'max')
 }
 
 // ── Item-level grading ────────────────────────────────────────────────────────
@@ -252,20 +271,28 @@ export async function saveGradingDraft(
   payload: GradingDraftSave,
   /** Optimistic-concurrency version from the last-fetched submission */
   version?: number,
-): Promise<unknown> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (version !== undefined) {
-    headers['If-Match'] = String(version)
+): Promise<Submission> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...ifMatchHeaders(version) }
+  // v2's grade save (`PATCH submissions/{id}/grade`, no assessment prefix) takes
+  // `{action, feedback?, final_score?, item_grades?}` (additionalProperties:
+  // false) — translate the item-level draft shape onto that wire contract.
+  const body = {
+    action: payload.status ?? 'save',
+    ...(payload.overall_feedback ? { feedback: payload.overall_feedback } : {}),
+    ...(payload.final_score === undefined ? {} : { final_score: payload.final_score }),
+    item_grades: payload.item_grades.map(item => ({
+      item_id: item.item_uuid,
+      score: item.score,
+      ...(item.feedback ? { feedback: item.feedback } : {}),
+    })),
   }
   try {
-    const response = await apiJson(`assessments/${assessmentUuid}/submissions/${submissionUuid}/grade`, {
+    const response = await apiJson(`submissions/${submissionUuid}/grade`, {
       method: 'PATCH',
       headers,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
-
-    revalidateTag('submissions', 'max')
-    return response
+    return teacherSubmissionFromWire(response)
   } catch (error) {
     if (isApiError(error) && error.status === 412) {
       const { StaleGradeError } = await import('@/services/grading/errors')
@@ -285,14 +312,37 @@ export async function saveGradingDraft(
  * Does NOT affect the final grade — stored in draft metadata only.
  */
 export async function runCodeItem(
-  assessmentUuid: string,
+  /** Unused: v2's run route is scoped by item id only. Kept for call-site compatibility. */
+  _assessmentUuid: string,
   itemUuid: string,
   payload: CodeRunRequest,
 ): Promise<CodeRunResponse> {
-  const response = await apiJson<CodeRunResponse>(`assessments/${assessmentUuid}/items/${itemUuid}/runs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  return response
+  const run = await runItem(
+    itemUuid,
+    { language_id: payload.language, source: payload.source, custom_input: payload.custom_input ?? null },
+    payload.idempotency_key ? { headers: idempotencyHeaders(payload.idempotency_key) } : undefined,
+  )
+  return {
+    run_id: run.id,
+    status: run.status,
+    passed: run.passed,
+    total: run.total,
+    score: run.score ?? null,
+    ...(run.compile_output !== undefined ? { compile_output: run.compile_output } : {}),
+    ...(run.error_message !== undefined ? { error_message: run.error_message } : {}),
+    is_retryable: run.status === 'degraded',
+    visible_results: run.cases.map(caseResult => {
+      const result: CodeRunTestResult = {
+        test_id: caseResult.test_id,
+        passed: caseResult.passed,
+        is_visible: caseResult.is_visible,
+      }
+      if (caseResult.stdin !== undefined) result.stdin = caseResult.stdin
+      if (caseResult.expected !== undefined) result.expected = caseResult.expected
+      if (caseResult.actual !== undefined) result.actual = caseResult.actual
+      if (caseResult.time_seconds != null) result.time = caseResult.time_seconds
+      if (caseResult.memory_kb != null) result.memory = caseResult.memory_kb
+      return result
+    }),
+  }
 }

@@ -4,7 +4,19 @@ export const queryKeys = {
     linkPreview: (url: string) => ['activities', 'link-preview', url] as const,
   },
   assessments: {
+    attemptState: (assessmentUuid: string | null | undefined) =>
+      ['assessments', 'attempt-state', assessmentUuid || 'missing'] as const,
+    mySubmissions: (assessmentUuid: string | null | undefined) =>
+      ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     activity: (activityUuid: string) => ['assessments', 'activity', activityUuid] as const,
+    // Each consumer caches its own shape under the `activity` prefix, so the
+    // raw-wire key never carries a projection and a prefix invalidation of
+    // `activity(id)` still refreshes all of them.
+    studio: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'studio'] as const,
+    review: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'review'] as const,
+    access: (assessmentUuid: string) => ['assessments', 'access', assessmentUuid] as const,
+    overrides: (assessmentUuid: string) => ['assessments', 'overrides', assessmentUuid] as const,
+    activityAssessmentId: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'id'] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
@@ -17,8 +29,6 @@ export const queryKeys = {
   codeChallenges: {
     languages: () => ['code-challenges', 'languages'] as const,
     settings: (activityUuid: string) => ['code-challenges', 'settings', activityUuid] as const,
-    submission: (activityUuid: string, submissionUuid: string) =>
-      ['code-challenges', 'submission', activityUuid, submissionUuid] as const,
     submissions: (activityUuid: string) => ['code-challenges', 'submissions', activityUuid] as const,
   },
   certifications: {
@@ -26,14 +36,20 @@ export const queryKeys = {
     detail: (certificateUuid: string) => ['certifications', 'detail', certificateUuid] as const,
     userAll: () => ['certifications', 'user-all'] as const,
   },
+  collections: {
+    list: () => ['collections', 'list'] as const,
+  },
   courses: {
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
+    readiness: (courseUuid: string) => ['courses', courseUuid, 'readiness'] as const,
+    learners: (courseUuid: string) => ['courses', 'learners', courseUuid] as const,
+    usergroups: (courseUuid: string) => ['courses', 'usergroups', courseUuid] as const,
     metadata: (courseUuid: string) => ['courses', 'metadata', courseUuid] as const,
     updates: (courseUuid: string) => ['courses', 'updates', courseUuid] as const,
   },
   discussions: {
-    list: (courseUuid: string, includeReplies = false, limit = 50, offset = 0) =>
-      ['courses', 'discussions', courseUuid, { includeReplies, limit, offset }] as const,
+    list: (courseUuid: string, includeReplies = false) =>
+      ['courses', 'discussions', courseUuid, { includeReplies }] as const,
     replies: (courseUuid: string, discussionUuid: string, limit = 50, offset = 0) =>
       ['courses', 'discussion-replies', courseUuid, discussionUuid, { limit, offset }] as const,
   },
@@ -59,6 +75,7 @@ export const queryKeys = {
       sortBy: string
       sortDir: 'asc' | 'desc'
       status: string
+      lateOnly?: boolean
     }) => ['grading', 'submissions', params] as const,
   },
   landing: {
@@ -66,6 +83,7 @@ export const queryKeys = {
   },
   search: {
     content: (query: string, page: number, limit: number) => ['search', 'content', { query, page, limit }] as const,
+    people: (query: string) => ['search', 'people', query] as const,
   },
   studentActivity: {
     runtime: (courseUuid: string, activityUuid: string) =>
@@ -74,7 +92,6 @@ export const queryKeys = {
   platform: {
     config: () => ['platform', 'config'] as const,
     courses: () => ['platform', 'courses'] as const,
-    permissions: () => ['platform', 'permissions'] as const,
   },
   trail: {
     current: () => ['trail', 'current'] as const,
@@ -85,15 +102,16 @@ export const queryKeys = {
     resource: (resourceId: string) => ['user-groups', 'resource', resourceId] as const,
     users: (userGroupId: string | number) => ['user-groups', 'users', userGroupId] as const,
   },
+  auth: {
+    session: () => ['auth', 'session'] as const,
+    sessions: () => ['auth', 'sessions'] as const,
+  },
   users: {
-    allMembers: () => ['users', 'members', 'all'] as const,
-    basicList: (limit = 100) => ['users', 'basic-list', { limit }] as const,
-    byId: (userId: number) => ['users', 'detail', userId] as const,
+    me: () => ['users', 'me'] as const,
+    adminAll: () => ['users', 'admin'] as const,
+    admin: (params: { q?: string }) => [...queryKeys.users.adminAll(), params] as const,
+    byId: (userId: string) => ['users', 'detail', userId] as const,
     byUsername: (username: string) => ['users', 'username', username] as const,
-    courses: (userId: number) => ['users', 'courses', userId] as const,
-    members: (page: number, perPage: number) => ['users', 'members', { page, perPage }] as const,
-    roleAuditLog: (page: number, pageSize: number) => ['users', 'role-audit-log', { page, pageSize }] as const,
-    roleAssignments: () => ['users', 'role-assignments'] as const,
     roles: () => ['users', 'roles'] as const,
   },
 }

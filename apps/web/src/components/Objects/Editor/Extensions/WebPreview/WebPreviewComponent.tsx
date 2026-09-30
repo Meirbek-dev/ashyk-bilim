@@ -1,13 +1,9 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, Edit2, Globe, Save, Trash, X } from 'lucide-react'
 import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getYouTubeVideoId } from '@/lib/utils'
-import { queryKeys } from '@/lib/react-query/queryKeys'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
-import { getUrlPreview } from '@services/courses/activities'
-import type { UrlPreviewResponse } from '@services/courses/activities'
 import { Checkbox } from '@components/ui/checkbox'
 import NextImage from '@components/ui/NextImage'
 import { NodeViewWrapper } from '@tiptap/react'
@@ -15,9 +11,9 @@ import { Button } from '@components/ui/button'
 import { Label } from '@components/ui/label'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import type { WebPreviewAttrs } from './WebPreview'
+import { isHttpUrl, previewHostname, useLinkPreviewLookup } from './link-preview'
 
 type WebPreviewProps = TypedNodeViewProps<WebPreviewAttrs> & {
   deleteNode?: () => void
@@ -37,16 +33,45 @@ function PreviewImage({ src, alt }: { src: string; alt: string }) {
   )
 }
 
-function FaviconDisplay({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) {
+function FaviconDisplay({
+  favicon,
+  siteName,
+  url,
+  faviconAlt,
+}: {
+  favicon?: string
+  siteName?: string | null
+  url: string
+  faviconAlt: string
+}) {
   return (
-    <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
+    <div className="mt-0 flex items-center gap-2 border-t border-gray-100 pt-2">
       {favicon ? (
-        <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
+        <div className="relative h-[18px] w-[18px] shrink-0 overflow-hidden rounded bg-gray-100">
           <NextImage src={favicon} alt={faviconAlt} fill className="object-cover" />
         </div>
       ) : null}
+      {siteName ? <span className="shrink-0 text-xs font-medium text-gray-600">{siteName}</span> : null}
       <span className="truncate text-xs text-gray-500">{url}</span>
     </div>
+  )
+}
+
+/** The card body: an anchor for a real http(s) link, a plain block otherwise. */
+function CardLink({ href, children }: { href: string | undefined; children: React.ReactNode }) {
+  const className = 'no-underline hover:no-underline focus:no-underline active:no-underline'
+  const style = { textDecoration: 'none', borderBottom: 'none' } as const
+  if (!isHttpUrl(href)) {
+    return (
+      <div className={className} style={style}>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className} style={style}>
+      {children}
+    </a>
   )
 }
 
@@ -54,15 +79,6 @@ const getAlignmentClass = (alignment: string) => {
   if (alignment === 'center') return 'justify-center'
   if (alignment === 'right') return 'justify-end'
   return 'justify-start'
-}
-
-function urlPreviewQueryOptions(url: string) {
-  return queryOptions({
-    queryKey: queryKeys.activities.linkPreview(url),
-    queryFn: () => getUrlPreview(url),
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
-  })
 }
 
 function AlignmentControls({
@@ -110,9 +126,8 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   const t = useTranslations('Components.WebPreview')
   const [inputUrl, setInputUrl] = useState(node.attrs.url || '')
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState(!node.attrs.url)
+  const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const queryClient = useQueryClient()
   const editorContext = useEditorProvider()
   const isEditable = editorContext?.isEditable ?? true
 
@@ -123,74 +138,25 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
     favicon: node.attrs.favicon,
     og_type: node.attrs.og_type,
     og_url: node.attrs.og_url,
+    site_name: node.attrs.site_name,
     url: node.attrs.url,
   }
   const previewUrl = previewData.url ?? undefined
 
   const alignment = node.attrs.alignment || 'left'
   const hasPreview = Boolean(previewData.title)
+  // A saved link whose page gave nothing renders the fallback card, not an empty block.
+  const showCard = Boolean(previewUrl) && !editing
 
   const [buttonLabel, setButtonLabel] = useState(node.attrs.buttonLabel || t('visitSite'))
   const [showButton, setShowButton] = useState(node.attrs.showButton)
   const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup)
   const [popupOpen, setPopupOpen] = useState(false)
-  const [modalOpen, setModalOpen] = useState(!node.attrs.url)
-  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview)
-  const previewQuery = useQuery({
-    ...urlPreviewQueryOptions(node.attrs.url || ''),
-    enabled: shouldAutoFetchPreview,
-  })
-
-  const applyPreviewData = useCallback(
-    (url: string, data: UrlPreviewResponse) => {
-      const hasMinimalMetadata = !(data.title || data.description || data.og_image)
-
-      if (hasMinimalMetadata) {
-        toast.error(t('metadataIncomplete'), {
-          duration: 4000,
-        })
-      }
-
-      updateAttributes({ ...data, url })
-      setEditing(false)
-      setError(null)
-    },
-    [t, updateAttributes],
-  )
-
-  const fetchPreviewMutation = useMutation({
-    mutationFn: async (url: string) => queryClient.fetchQuery(urlPreviewQueryOptions(url)),
-    onSuccess: (data, url) => {
-      if (!data) {
-        throw new Error(t('errorFetchingPreview'))
-      }
-
-      applyPreviewData(url, data)
-    },
-    onError: (fetchError: unknown) => {
-      setError(fetchError instanceof Error ? fetchError.message : t('errorFetchingPreview'))
-    },
-  })
-
-  const loading = previewQuery.isFetching || fetchPreviewMutation.isPending
-
-  useEffect(() => {
-    if (!shouldAutoFetchPreview) return
-
-    const url = node.attrs.url
-    if (previewQuery.data && url) {
-      queueMicrotask(() => {
-        applyPreviewData(url, previewQuery.data)
-      })
-      return
-    }
-
-    if (previewQuery.error) {
-      queueMicrotask(() => {
-        setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'))
-      })
-    }
-  }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t])
+  const [modalOpen, setModalOpen] = useState(false)
+  // A stored block is never resolved again on load (learner or editor): the
+  // lookup runs once, when the author confirms a new URL in the dialog.
+  const lookup = useLinkPreviewLookup()
+  const loading = lookup.isPending
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -217,15 +183,6 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
     setOpenInPopup(node.attrs.openInPopup)
   }
 
-  useEffect(() => {
-    if (!node.attrs.url) {
-      queueMicrotask(() => {
-        setEditing(true)
-        setModalOpen(true)
-      })
-    }
-  }, [node.attrs.url])
-
   function handleAlignmentChange(value: string) {
     updateAttributes({ alignment: value })
   }
@@ -237,21 +194,17 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
   }
 
   const handleSaveEdit = () => {
-    if (inputUrl && inputUrl !== node.attrs.url) {
-      setError(null)
-      void fetchPreviewMutation.mutateAsync(inputUrl)
-    } else {
-      setEditing(false)
-      setModalOpen(false)
+    if (inputUrl && !isHttpUrl(inputUrl)) {
+      // The server would answer 422 on `url`; say so inline without a request.
+      setError(t('urlMustBeHttp'))
+      return
     }
-    updateAttributes({ buttonLabel, showButton, openInPopup })
-    setModalOpen(false)
-  }
-
-  const handleCancelEdit = () => {
+    if (inputUrl && inputUrl !== node.attrs.url) {
+      lookup.mutate(inputUrl, { onSuccess: attrs => updateAttributes(attrs) })
+    }
     setEditing(false)
-    setInputUrl(node.attrs.url || '')
     setError(null)
+    updateAttributes({ buttonLabel, showButton, openInPopup })
     setModalOpen(false)
   }
 
@@ -267,8 +220,18 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
         favicon: null,
         og_type: null,
         og_url: null,
+        site_name: null,
       })
     }
+  }
+
+  const handleCancelEdit = () => {
+    setEditing(false)
+    setInputUrl(node.attrs.url || '')
+    setError(null)
+    setModalOpen(false)
+    // A block without a URL has nothing to show: cancelling removes it rather than leaving an empty card.
+    if (!node.attrs.url) handleDelete()
   }
 
   const alignmentClass = getAlignmentClass(node.attrs.alignment || 'left')
@@ -447,38 +410,53 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
               </form>
             }
           />
+          {!previewUrl && isEditable && !editing ? (
+            <button type="button" className="text-sm text-gray-500 hover:text-gray-700" onClick={handleEdit}>
+              {t('enterWebsiteUrl')}
+            </button>
+          ) : null}
           {/* Only show preview card when not editing */}
-          {hasPreview && !editing ? (
+          {showCard ? (
             <>
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="no-underline hover:no-underline focus:no-underline active:no-underline"
-                style={{ textDecoration: 'none', borderBottom: 'none' }}
-              >
+              <CardLink href={previewUrl}>
                 {previewData.og_image ? <PreviewImage src={previewData.og_image} alt={t('previewImageAlt')} /> : null}
-                <div className="pt-4 pb-2">
-                  <span
-                    className="text-foreground mb-1.5 text-lg leading-tight font-semibold no-underline hover:no-underline focus:no-underline active:no-underline"
-                    style={{ textDecoration: 'none', borderBottom: 'none' }}
-                  >
-                    {previewData.title}
-                  </span>
-                  <span
-                    className="mb-3 block text-sm leading-snug text-gray-700 no-underline hover:no-underline focus:no-underline active:no-underline"
-                    style={{ textDecoration: 'none', borderBottom: 'none' }}
-                  >
-                    {previewData.description}
-                  </span>
-                </div>
-              </a>
+                {hasPreview ? (
+                  <div className="pt-4 pb-2">
+                    <span
+                      className="text-foreground mb-1.5 text-lg leading-tight font-semibold no-underline hover:no-underline focus:no-underline active:no-underline"
+                      style={{ textDecoration: 'none', borderBottom: 'none' }}
+                    >
+                      {previewData.title}
+                    </span>
+                    <span
+                      className="mb-3 block text-sm leading-snug text-gray-700 no-underline hover:no-underline focus:no-underline active:no-underline"
+                      style={{ textDecoration: 'none', borderBottom: 'none' }}
+                    >
+                      {previewData.description}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="pt-4 pb-2" data-testid="web-preview-fallback">
+                    <span className="text-foreground mb-1.5 flex items-center gap-2 text-lg leading-tight font-semibold">
+                      <Globe className="size-4 shrink-0 text-gray-500" aria-hidden="true" />
+                      {previewHostname(previewUrl ?? '')}
+                    </span>
+                    <span className="mb-1 block text-sm font-medium text-gray-700">{t('previewUnavailable')}</span>
+                    {isHttpUrl(previewUrl) ? (
+                      <span className="mb-3 block text-xs leading-snug text-gray-500">
+                        {t('previewUnavailableHint')}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+              </CardLink>
               <FaviconDisplay
                 {...(previewData.favicon ? { favicon: previewData.favicon } : {})}
+                siteName={previewData.site_name}
                 url={previewUrl ?? ''}
                 faviconAlt={t('faviconAlt')}
               />
-              {showButton && previewData.url ? (
+              {showButton && isHttpUrl(previewData.url) ? (
                 openInPopup ? (
                   <button
                     type="button"

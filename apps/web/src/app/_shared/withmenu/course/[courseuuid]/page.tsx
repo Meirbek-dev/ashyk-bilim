@@ -14,10 +14,8 @@ interface MetadataProps {
   params: Promise<{ courseuuid: string }>
 }
 
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only (matches the learner-state outline).
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
@@ -75,13 +73,7 @@ async function CoursePage(params: { params: Promise<{ courseuuid: string }> }) {
     // Prefetch data that CourseClient fetches client-side so the page renders
     // without loading spinners and avoids a client-side waterfall.
     await Promise.all([
-      queryClient.prefetchQuery(
-        courseDiscussionsQueryOptions(course_meta.course_uuid, {
-          includeReplies: true,
-          limit: 50,
-          offset: 0,
-        }),
-      ),
+      queryClient.prefetchQuery(courseDiscussionsQueryOptions(course_meta.course_uuid)),
       queryClient.prefetchQuery(trailCurrentQueryOptions()),
       queryClient.prefetchQuery(learnerCourseStateQueryOptions(course_meta.course_uuid)),
     ])

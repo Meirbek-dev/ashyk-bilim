@@ -1,8 +1,8 @@
 import CertificateVerificationPage from '@components/Pages/Certificate/CertificateVerificationPage'
-import { getCertificateByUuid } from '@services/courses/certifications'
+import { getCertificateByCode } from '@services/courses/certifications'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
-import type React from 'react'
+import { Suspense } from 'react'
 
 interface CertificateVerifyPageProps {
   params: Promise<{
@@ -15,15 +15,19 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
   const t = await getTranslations('Certificates.CertificateVerifyPage')
 
   try {
-    const result = await getCertificateByUuid(uuid)
+    const result = await getCertificateByCode(uuid)
 
     if (result.data) {
       const certificateData = result.data
-      const certificationName = certificateData.certification.config.certification_name
+      const rawName = certificateData.certification.config.certification_name
       const courseName = certificateData.course.name ?? ''
+      // The PDF's rule: no certification name → the course name (UX-225).
+      const certificationName = (typeof rawName === 'string' && rawName.trim()) || courseName
+      // UX-225: a migrated certification is often named like its course — name it once.
+      const single = certificationName.trim() === courseName.trim() ? t('titleSingle', { name: courseName }) : null
 
       return {
-        title: t('title', { certificationName, courseName }),
+        title: single ?? t('title', { certificationName, courseName }),
         description: t('description', { certificationName, courseName }),
         keywords: t('keywords', { certificationName, courseName }),
         robots: {
@@ -37,7 +41,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
           },
         },
         openGraph: {
-          title: t('openGraph.title', { certificationName, courseName }),
+          title: single ?? t('openGraph.title', { certificationName, courseName }),
           description: t('openGraph.description', {
             certificationName,
             courseName,
@@ -61,9 +65,19 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
   }
 }
 
-const PlatformCertificateVerifyPage: React.FC<CertificateVerifyPageProps> = async ({ params }) => {
+async function CertificateVerify({ params }: CertificateVerifyPageProps) {
   const { uuid } = await params
   return <CertificateVerificationPage certificateUuid={uuid} />
 }
 
-export default PlatformCertificateVerifyPage
+// The code comes from the URL and the metadata reads a live verification, so
+// the page renders per request; the boundary keeps Cache Components' dev
+// notices (uncached data in generateMetadata, URL data outside <Suspense>) off
+// the console.
+export default function PlatformCertificateVerifyPage(props: CertificateVerifyPageProps) {
+  return (
+    <Suspense fallback={null}>
+      <CertificateVerify {...props} />
+    </Suspense>
+  )
+}

@@ -4,7 +4,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { createCollection } from '@services/courses/collections'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
+import { apiJson } from '@/lib/api-client'
+import { Collection } from '@/lib/api/generated/zod'
+import { useApiError } from '@/hooks/useApiError'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getAbsoluteUrl } from '@services/config/config'
@@ -40,8 +43,11 @@ function NewCollection() {
   const [isPending, startTransition] = useTransition()
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
+  const { toastApiError } = useApiError()
   const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
   const [isPublic, setIsPublic] = useState(true)
+  // Inline field error on submit, cleared as the field changes (UX-051 / BUG-013).
+  const [fieldError, setFieldError] = useState<'name' | 'description' | 'courses' | null>(null)
 
   const filteredCourses = useMemo(() => {
     if (!courses || !searchQuery.trim()) return courses || []
@@ -58,44 +64,60 @@ function NewCollection() {
 
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value)
+    setFieldError(null)
   }
 
   const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(event.target.value)
+    setFieldError(null)
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!name.trim()) {
-      toast.error(t('toast.missingName'))
+      setFieldError('name')
+      document.getElementById('collection-name')?.focus()
       return
     }
 
     if (!description.trim()) {
-      toast.error(t('toast.missingDescription'))
+      setFieldError('description')
+      document.getElementById('collection-description')?.focus()
       return
     }
 
     if (selectedCourses.length === 0) {
-      toast.error(t('toast.noCoursesSelected'))
+      // Inline like the other two required fields (UX-081).
+      setFieldError('courses')
+      document.getElementById('collection-courses-error')?.scrollIntoView({ block: 'nearest' })
       return
     }
 
     startTransition(() => setIsSubmitting(true))
     try {
-      const collection = {
-        name: name.trim(),
-        description: description.trim(),
-        courses: selectedCourses,
-        public: isPublic,
-      }
-      await createCollection(collection)
+      // Straight to the API (not the server action): a thrown problem+json is
+      // stripped to a generic error across the action boundary, so a 403
+      // could not be told apart from a crash (BUG-027).
+      await apiJson(
+        'collections',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim(),
+            public: isPublic,
+            courses: selectedCourses.map(id => stripEntityPrefix(String(id))),
+          }),
+        },
+        value => Collection.parse(value),
+      )
       await revalidateTags(['collections'])
       toast.success(t('toast.success'))
       startTransition(() => router.push(getAbsoluteUrl('/collections')))
-    } catch {
-      toast.error(t('toast.failure'))
+    } catch (error) {
+      toastApiError(error, { fallback: t('toast.failure') })
     } finally {
       startTransition(() => setIsSubmitting(false))
     }
@@ -103,12 +125,14 @@ function NewCollection() {
 
   const toggleCourse = (courseId: number) => {
     setSelectedCourses(prev => (prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]))
+    setFieldError(null)
   }
 
   const selectAll = () => {
     if (filteredCourses.length === 0) return
     const allIds = filteredCourses.map((c: CourseListItem) => c.id)
     setSelectedCourses(allIds)
+    setFieldError(null)
   }
 
   const deselectAll = () => {
@@ -167,7 +191,14 @@ function NewCollection() {
                   onChange={handleNameChange}
                   maxLength={100}
                   className="h-10"
+                  aria-invalid={fieldError === 'name' || undefined}
+                  aria-describedby={fieldError === 'name' ? 'collection-name-error' : undefined}
                 />
+                {fieldError === 'name' ? (
+                  <p id="collection-name-error" role="alert" className="text-destructive text-xs">
+                    {t('toast.missingName')}
+                  </p>
+                ) : null}
                 <p className="text-muted-foreground text-xs">{t('nameChars', { current: name.length, max: 100 })}</p>
               </div>
 
@@ -212,7 +243,14 @@ function NewCollection() {
                 rows={4}
                 maxLength={500}
                 className="resize-none"
+                aria-invalid={fieldError === 'description' || undefined}
+                aria-describedby={fieldError === 'description' ? 'collection-description-error' : undefined}
               />
+              {fieldError === 'description' ? (
+                <p id="collection-description-error" role="alert" className="text-destructive text-xs">
+                  {t('toast.missingDescription')}
+                </p>
+              ) : null}
               <p className="text-muted-foreground text-xs">
                 {t('descriptionChars', { current: description.length, max: 500 })}
               </p>
@@ -229,6 +267,11 @@ function NewCollection() {
                   {t('selectCoursesLabel')} <span className="text-red-500">*</span>
                 </CardTitle>
                 <CardDescription>{t('selectCoursesDescription')}</CardDescription>
+                {fieldError === 'courses' ? (
+                  <p id="collection-courses-error" role="alert" className="text-destructive mt-1 text-xs">
+                    {t('toast.noCoursesSelected')}
+                  </p>
+                ) : null}
               </div>
               {selectedCourses.length > 0 && (
                 <Badge variant="secondary" className="ml-auto">
@@ -295,10 +338,11 @@ function NewCollection() {
                     ) : (
                       filteredCourses.map((course: CourseListItem) => {
                         const isSelected = selectedCourses.includes(course.id)
+                        // A <label> wires the row text to the checkbox; the old div onClick
+                        // toggled a second time on a checkbox click and cancelled it (BUG-014).
                         return (
-                          <div
+                          <label
                             key={course.id}
-                            onClick={() => toggleCourse(course.id)}
                             className={`group hover:border-primary hover:bg-accent relative flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-all ${
                               isSelected ? 'border-primary bg-accent' : ''
                             }`}
@@ -338,7 +382,7 @@ function NewCollection() {
                                 </p>
                               )}
                             </div>
-                          </div>
+                          </label>
                         )
                       })
                     )}

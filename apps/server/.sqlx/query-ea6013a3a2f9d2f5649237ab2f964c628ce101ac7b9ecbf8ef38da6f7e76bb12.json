@@ -1,0 +1,162 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ItemFeedbackId\",\n                  grading_entry_id AS \"grading_entry_id: GradingEntryId\",\n                  submission_id AS \"submission_id: SubmissionId\",\n                  item_id AS \"item_id: AssessmentItemId\", item_ref, comment, score, max_score,\n                  annotation_type AS \"annotation_type: AnnotationType\", annotation_key,\n                  graded_by AS \"graded_by: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM item_feedback WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ItemFeedbackId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "grading_entry_id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "grading_entry_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "item_id: AssessmentItemId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "item_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "item_ref",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "item_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "comment",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "comment"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "max_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "max_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "annotation_type: AnnotationType",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "annotation_type"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "annotation_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "annotation_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "graded_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "graded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "ea6013a3a2f9d2f5649237ab2f964c628ce101ac7b9ecbf8ef38da6f7e76bb12"
+}

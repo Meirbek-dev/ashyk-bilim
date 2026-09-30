@@ -1,0 +1,271 @@
+//! Usergroups (cohorts): named member sets linkable to courses.
+//!
+//! Gates: read/list = `usergroup:read:platform`; create =
+//! `usergroup:create:platform`; update/delete/membership = creator with
+//! `usergroup:create:platform`, or `usergroup:manage:platform`. Linking a
+//! course additionally needs write access on that course (BUG-156). Legacy
+//! seeds give instructors create+read only, so in practice creators manage
+//! their own groups and admins (wildcard) manage everything.
+
+use ab_core::id::{CourseId, UserId, UsergroupId};
+use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::{Error, FieldError, Result};
+use sqlx::PgPool;
+
+pub use ab_db::usergroups::{MemberRow as Member, UsergroupRow as Usergroup};
+
+use crate::catalog::courses::CoursesService;
+use crate::identity::Actor;
+
+const fn perm(action: Action) -> Permission {
+    Permission {
+        resource: ResourceType::Usergroup,
+        action,
+        scope: Some(Scope::Platform),
+    }
+}
+
+/// 422 `<field>`/`unknown` for every requested id that does not exist —
+/// the FK would otherwise surface as a 500 (BUG-109).
+pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
+    field: &str,
+    what: &str,
+    requested: &[T],
+    known: &[T],
+) -> Result<()> {
+    let errors: Vec<FieldError> = requested
+        .iter()
+        .filter(|id| !known.contains(id))
+        .map(|id| FieldError {
+            field: field.into(),
+            code: "unknown".into(),
+            message: format!("{what} {id} does not exist"),
+        })
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::validation(errors))
+    }
+}
+
+/// Trimmed name without control characters, or 422 `name`/`required` when
+/// blank (BUG-142, UX-163).
+fn trimmed_name(name: &str) -> Result<String> {
+    ab_core::required_text("name", name)
+}
+
+#[derive(Clone)]
+pub struct UsergroupsService {
+    pool: PgPool,
+}
+
+impl UsergroupsService {
+    #[must_use]
+    pub const fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    /// `usergroup:create` or `usergroup:manage` — the superset of
+    /// `can_write` and of creating one.
+    /// UX-311: the write handlers check it before reading the body.
+    pub fn require_writer(actor: &Actor) -> Result<()> {
+        if actor.has(perm(Action::Manage)) {
+            return Ok(());
+        }
+        actor.require(perm(Action::Create))
+    }
+
+    /// The write rule, exposed on the wire as `Usergroup.can_write`:
+    /// `usergroup:manage:platform`, or the creator holding
+    /// `usergroup:create:platform`.
+    #[must_use]
+    pub fn can_write(actor: &Actor, group: &Usergroup) -> bool {
+        actor.has(perm(Action::Manage))
+            || (group.creator_id == Some(actor.user_id) && actor.has(perm(Action::Create)))
+    }
+
+    async fn writable(&self, actor: &Actor, id: UsergroupId) -> Result<Usergroup> {
+        let group = ab_db::usergroups::get_usergroup(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("usergroup"))?;
+        if Self::can_write(actor, &group) {
+            Ok(group)
+        } else {
+            Err(Error::forbidden("no write access to this usergroup"))
+        }
+    }
+
+    pub async fn create(&self, actor: &Actor, name: &str, description: &str) -> Result<Usergroup> {
+        actor.require(perm(Action::Create))?;
+        let name = trimmed_name(name)?;
+        // UX-165: the description is shown to members like the name.
+        let description = ab_core::strip_controls_multiline(description);
+        let id =
+            ab_db::usergroups::insert_usergroup(&self.pool, &name, &description, actor.user_id)
+                .await?;
+        ab_db::usergroups::get_usergroup(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("usergroup"))
+    }
+
+    pub async fn get(&self, actor: &Actor, id: UsergroupId) -> Result<Usergroup> {
+        actor.require(perm(Action::Read))?;
+        ab_db::usergroups::get_usergroup(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("usergroup"))
+    }
+
+    pub async fn list(
+        &self,
+        actor: &Actor,
+        cursor: Option<UsergroupId>,
+        limit: i64,
+    ) -> Result<(Vec<Usergroup>, Option<UsergroupId>)> {
+        actor.require(perm(Action::Read))?;
+        let limit = ab_core::page_limit(limit, 100)?;
+        let mut rows = ab_db::usergroups::list_usergroups(&self.pool, cursor, limit + 1).await?;
+        let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
+            rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            rows.last().map(|g| g.id)
+        } else {
+            None
+        };
+        Ok((rows, next))
+    }
+
+    pub async fn update(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+        name: Option<&str>,
+        description: Option<&str>,
+    ) -> Result<Usergroup> {
+        self.writable(actor, id).await?;
+        let name = name.map(trimmed_name).transpose()?;
+        let description = description.map(ab_core::strip_controls_multiline);
+        ab_db::usergroups::update_usergroup(
+            &self.pool,
+            id,
+            name.as_deref(),
+            description.as_deref(),
+        )
+        .await?;
+        ab_db::usergroups::get_usergroup(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("usergroup"))
+    }
+
+    pub async fn delete(&self, actor: &Actor, id: UsergroupId) -> Result<()> {
+        self.writable(actor, id).await?;
+        // BUG-318: the allowlist rows cascade away with the group — collect
+        // the courses first.
+        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
+        ab_db::usergroups::delete_usergroup(&self.pool, id).await?;
+        Self::reaggregate(&self.pool, courses).await;
+        Ok(())
+    }
+
+    pub async fn members(&self, actor: &Actor, id: UsergroupId) -> Result<Vec<Member>> {
+        self.get(actor, id).await?;
+        ab_db::usergroups::list_members(&self.pool, id).await
+    }
+
+    pub async fn add_members(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+        user_ids: &[UserId],
+    ) -> Result<()> {
+        self.writable(actor, id).await?;
+        let known: Vec<UserId> = ab_db::identity::list_user_summaries(&self.pool, user_ids)
+            .await?
+            .into_iter()
+            .map(|u| u.id)
+            .collect();
+        reject_unknown("user_ids", "user", user_ids, &known)?;
+        ab_db::usergroups::add_members(&self.pool, id, user_ids).await?;
+        self.after_membership_change(id).await
+    }
+
+    pub async fn remove_members(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+        user_ids: &[UserId],
+    ) -> Result<()> {
+        self.writable(actor, id).await?;
+        ab_db::usergroups::remove_members(&self.pool, id, user_ids).await?;
+        self.after_membership_change(id).await
+    }
+
+    /// BUG-318: a group on an assessment's allowlist decides who must take
+    /// it — re-aggregate every course it is linked to or allowlisted in.
+    async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
+        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
+        Self::reaggregate(&self.pool, courses).await;
+        Ok(())
+    }
+
+    async fn reaggregate(pool: &PgPool, course_ids: Vec<CourseId>) {
+        let projector = crate::progress::ProgressProjector::new(pool.clone());
+        for course_id in course_ids {
+            projector.after_course_change(course_id).await;
+        }
+    }
+
+    pub async fn linked_course_ids(&self, actor: &Actor, id: UsergroupId) -> Result<Vec<CourseId>> {
+        self.get(actor, id).await?;
+        ab_db::usergroups::list_course_ids(&self.pool, id).await
+    }
+
+    pub async fn add_courses(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+        course_ids: &[CourseId],
+    ) -> Result<()> {
+        self.writable(actor, id).await?;
+        // BUG-156: linking grants every member read access to the course, so
+        // the linker needs write access on it — invisible 404, visible 403.
+        let courses = CoursesService::new(self.pool.clone());
+        let mut known = Vec::with_capacity(course_ids.len());
+        for &course_id in course_ids {
+            if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
+                courses.require_read(actor, &course).await?;
+                CoursesService::require_write(actor, &course)?;
+                known.push(course_id);
+            }
+        }
+        reject_unknown("course_ids", "course", course_ids, &known)?;
+        ab_db::usergroups::add_courses(&self.pool, id, course_ids).await
+    }
+
+    pub async fn remove_courses(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+        course_ids: &[CourseId],
+    ) -> Result<()> {
+        self.writable(actor, id).await?;
+        // UX-114: like `add_courses`, a course the actor cannot read is 404
+        // (an unknown id stays an idempotent no-op).
+        let courses = CoursesService::new(self.pool.clone());
+        for &course_id in course_ids {
+            if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
+                courses.require_read(actor, &course).await?;
+            }
+        }
+        ab_db::usergroups::remove_courses(&self.pool, id, course_ids).await
+    }
+
+    /// Groups linked to a course (course-settings view).
+    pub async fn for_course(&self, actor: &Actor, course_id: CourseId) -> Result<Vec<Usergroup>> {
+        actor.require(perm(Action::Read))?;
+        // UX-106: a course the actor cannot read is 404, like every course read.
+        CoursesService::new(self.pool.clone())
+            .get(actor, course_id)
+            .await?;
+        ab_db::usergroups::list_for_course(&self.pool, course_id).await
+    }
+}

@@ -3,6 +3,7 @@ import AnalyticsShell from '@components/Dashboard/Analytics/AnalyticsShell'
 import { getAdminAnalyticsOverview, getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher'
 import { Loader2 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { redirect } from '@/i18n/navigation'
@@ -26,9 +27,16 @@ interface SharedAnalyticsPageProps extends AnalyticsPageProps {
   activeTab: ActiveTab
   renderTab: (data: AnalyticsTabData) => ReactNode
   requireAdmin?: boolean
+  /** `sort_by` keys the tab's listing honours (only the watchlist sorts, through `learners/at-risk`). */
+  sortKeys?: readonly string[]
 }
 
-export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
+/**
+ * The page's own boundary around its data work: the layout's `<Suspense>`
+ * is already revealed on client navigations, so without one Next reports
+ * uncached data outside `<Suspense>` (UX-241, the /dash e1b8539 pattern).
+ */
+export function AnalyticsBoundary({ children }: { children: ReactNode }) {
   return (
     <Suspense
       fallback={
@@ -37,8 +45,16 @@ export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
         </div>
       }
     >
-      <AnalyticsPageContent {...props} />
+      {children}
     </Suspense>
+  )
+}
+
+export default function AnalyticsPage(props: SharedAnalyticsPageProps) {
+  return (
+    <AnalyticsBoundary>
+      <AnalyticsPageContent {...props} />
+    </AnalyticsBoundary>
   )
 }
 
@@ -48,10 +64,14 @@ export async function AnalyticsPageContent({
   activeTab,
   renderTab,
   requireAdmin = false,
+  sortKeys,
 }: SharedAnalyticsPageProps) {
   const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams])
-  const query = normalizeAnalyticsQuery(resolvedSearchParams)
-  const t = await getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' })
+  const query = normalizeAnalyticsQuery(resolvedSearchParams, sortKeys)
+  const [t, tErrors] = await Promise.all([
+    getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' }),
+    getTranslations({ locale: resolvedParams.locale, namespace: 'Errors' }),
+  ])
 
   let overview: TeacherOverviewResponse
   let adminData: AdminAnalyticsResponse | null
@@ -69,7 +89,7 @@ export async function AnalyticsPageContent({
     return (
       <AnalyticsEmptyState
         title={t('pages.overviewDisabledTitle')}
-        description={error instanceof Error ? error.message : t('pages.overviewLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.overviewLoadError'))}
       />
     )
   }
@@ -81,7 +101,7 @@ export async function AnalyticsPageContent({
     if (query.bucket) urlParams.set('bucket', query.bucket)
     if (query.course_ids) urlParams.set('course_ids', query.course_ids)
     if (query.cohort_ids) urlParams.set('cohort_ids', query.cohort_ids)
-    if (query.teacher_user_id) urlParams.set('teacher_user_id', String(query.teacher_user_id))
+    if (query.teacher_user_id) urlParams.set('teacher_user_id', query.teacher_user_id)
     if (query.timezone) urlParams.set('timezone', query.timezone)
     const serialized = urlParams.toString()
     redirect({
@@ -92,7 +112,7 @@ export async function AnalyticsPageContent({
   }
 
   return (
-    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab={activeTab}>
+    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab={activeTab} sortKeys={sortKeys}>
       {renderTab({ query, overview, adminData })}
     </AnalyticsShell>
   )

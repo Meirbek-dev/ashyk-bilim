@@ -1,0 +1,237 @@
+//! Collection queries. Visibility mirrors courses: public OR own OR
+//! `collection:read:all`; membership is replaced wholesale on update
+//! (legacy semantics), ordered by position.
+
+use ab_core::Result;
+use ab_core::id::{CollectionId, CourseId, UserId};
+use sqlx::PgPool;
+
+use crate::catalog::CourseRow;
+
+pub struct CollectionRow {
+    pub id: CollectionId,
+    pub name: String,
+    pub description: String,
+    pub public: bool,
+    pub creator_id: Option<UserId>,
+    /// Optimistic-lock version (`If-Match` on update, UX-279).
+    pub version: i32,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// Insert the collection and its membership in one transaction.
+pub async fn insert_collection(
+    pool: &PgPool,
+    name: &str,
+    description: &str,
+    public: bool,
+    creator_id: UserId,
+    course_ids: &[CourseId],
+) -> Result<CollectionId> {
+    let mut tx = pool.begin().await?;
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO collections (name, description, public, creator_id)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id"#,
+        name,
+        description,
+        public,
+        creator_id.0
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    let id = CollectionId(id);
+    set_collection_courses(&mut tx, id, course_ids).await?;
+    tx.commit().await?;
+    Ok(id)
+}
+
+pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<CollectionRow>> {
+    let row = sqlx::query_as!(
+        CollectionRow,
+        r#"SELECT id AS "id: CollectionId", name, description, public,
+                  creator_id AS "creator_id: UserId", version,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM collections WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// SQL `collection_listable` for one collection: the same rule the list
+/// and search apply, so a direct read cannot show what they hide (UX-131).
+pub async fn collection_listable(
+    pool: &PgPool,
+    id: CollectionId,
+    viewer: UserId,
+    see_all_courses: bool,
+) -> Result<bool> {
+    let listable = sqlx::query_scalar!(
+        r#"SELECT collection_listable($1, $2, $3) AS "listable!""#,
+        id.0,
+        viewer.0,
+        see_all_courses
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(listable)
+}
+
+/// Newest-first page of collections visible to `viewer`.
+///
+/// A collection with no course visible to the viewer — all invisible
+/// (UX-119) or none attached (UX-127) — is omitted unless the viewer created
+/// it or `see_all_courses`: SQL `collection_listable`, shared with
+/// [`crate::search::search_collections`].
+pub async fn list_collections(
+    pool: &PgPool,
+    viewer: Option<UserId>,
+    see_all: bool,
+    see_all_courses: bool,
+    cursor: Option<CollectionId>,
+    limit: i64,
+) -> Result<Vec<CollectionRow>> {
+    let rows = sqlx::query_as!(
+        CollectionRow,
+        r#"SELECT id AS "id: CollectionId", name, description, public,
+                  creator_id AS "creator_id: UserId", version,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM collections
+           WHERE (public OR $1 OR creator_id = $2)
+             AND ($3::uuid IS NULL OR id < $3)
+             AND collection_listable(id, $2, $5)
+           ORDER BY id DESC
+           LIMIT $4"#,
+        see_all,
+        viewer.map(|v| v.0),
+        cursor.map(|c| c.0),
+        limit,
+        see_all_courses
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Update the fields and, when given, replace the membership — one
+/// transaction, so a failure leaves nothing half-written (BUG-192).
+///
+/// Every write bumps `version`; with `expected_version` it only lands while
+/// the row still carries it (UX-279). `false` = gone or stale (nothing written).
+pub async fn update_collection(
+    pool: &PgPool,
+    id: CollectionId,
+    name: Option<&str>,
+    description: Option<&str>,
+    public: Option<bool>,
+    course_ids: Option<&[CourseId]>,
+    expected_version: Option<i32>,
+) -> Result<bool> {
+    let mut tx = pool.begin().await?;
+    let updated = sqlx::query!(
+        r#"UPDATE collections SET
+               name = COALESCE($2, name),
+               description = COALESCE($3, description),
+               public = COALESCE($4, public),
+               version = version + 1
+           WHERE id = $1 AND ($5::int IS NULL OR version = $5)"#,
+        id.0,
+        name,
+        description,
+        public,
+        expected_version
+    )
+    .execute(&mut *tx)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Ok(false);
+    }
+    if let Some(course_ids) = course_ids {
+        set_collection_courses(&mut tx, id, course_ids).await?;
+    }
+    tx.commit().await?;
+    Ok(true)
+}
+
+/// With `expected_version` it only deletes while the row is at that
+/// version (UX-313, the update's `If-Match`).
+pub async fn delete_collection(
+    pool: &PgPool,
+    id: CollectionId,
+    expected_version: Option<i32>,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM collections WHERE id = $1 AND ($2::int IS NULL OR version = $2)",
+        id.0,
+        expected_version
+    )
+    .execute(pool)
+    .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+/// Replace the whole membership (legacy update semantics), positions 1..n.
+async fn set_collection_courses(
+    conn: &mut sqlx::PgConnection,
+    id: CollectionId,
+    course_ids: &[CourseId],
+) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM collection_courses WHERE collection_id = $1",
+        id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    for (index, course_id) in course_ids.iter().enumerate() {
+        let position = i32::try_from(index).unwrap_or(i32::MAX).saturating_add(1);
+        sqlx::query!(
+            r#"INSERT INTO collection_courses (collection_id, course_id, position)
+               VALUES ($1, $2, $3)
+               ON CONFLICT (collection_id, course_id) DO NOTHING"#,
+            id.0,
+            course_id.0,
+            position
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
+    Ok(())
+}
+
+/// Member courses visible to `viewer`, in collection order.
+pub async fn list_collection_courses(
+    pool: &PgPool,
+    id: CollectionId,
+    viewer: Option<UserId>,
+    see_all: bool,
+) -> Result<Vec<CourseRow>> {
+    let rows = sqlx::query_as!(
+        CourseRow,
+        r#"SELECT c.id AS "id: CourseId", c.name, c.description, c.about, c.tags,
+                  c.public, c.open_to_contributors,
+                  c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,
+                  c.creator_id AS "creator_id: UserId",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = c.id AND ra.status = 'active'
+                          AND ra.authorship <> 'reporter')
+                      AS "contributor_ids!: Vec<UserId>",
+                  (extract(epoch FROM c.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM c.updated_at))::bigint AS "updated_at!"
+           FROM collection_courses cc
+           JOIN courses c ON c.id = cc.course_id
+           WHERE cc.collection_id = $1
+             AND course_visible(c, $3, $2)
+           ORDER BY cc.position, c.id"#,
+        id.0,
+        see_all,
+        viewer.map(|v| v.0)
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}

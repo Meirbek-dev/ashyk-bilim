@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ErrorState, InlineError } from '@/components/ui/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 import { CourseAnalysisEntry } from '@/features/course-analysis/components/course-analysis-entry'
 import { useActivityAIUrlState, useAIScopeCapabilities } from '@/features/ai-experience'
 import type { ActivityAIMode, AIScope } from '@/features/ai-experience'
@@ -32,11 +33,17 @@ export function resolveCourseAISurfaceRoute(
 }
 
 export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIHubProps) {
-  const t = useTranslations('AiExperience.courseAIHub')
-
   if (variant === 'panel') {
     return <CourseAIHubPanel courseUuid={courseUuid} {...(scope ? { scope } : {})} />
   }
+  return <CourseAIHubInline courseUuid={courseUuid} />
+}
+
+function CourseAIHubInline({ courseUuid }: Pick<CourseAIHubProps, 'courseUuid'>) {
+  const t = useTranslations('AiExperience.courseAIHub')
+  // UX-099: the course review is a staff mode — the same capability the studio panel routes on.
+  const capabilities = useAIScopeCapabilities({ courseUuid, surface: 'course-page' })
+  const canReview = (capabilities.data?.modes ?? []).includes('analyze')
 
   return (
     <section className="flex flex-col gap-5">
@@ -57,7 +64,7 @@ export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIH
         </div>
       </div>
       <Tabs defaultValue="study" className="w-full">
-        <TabsList className="grid min-h-12 w-full grid-cols-3">
+        <TabsList className={cn('grid min-h-12 w-full', canReview ? 'grid-cols-3' : 'grid-cols-2')}>
           <TabsTrigger value="study">
             <GraduationCapIcon data-icon="inline-start" aria-hidden="true" />
             {t('tabStudy')}
@@ -66,10 +73,12 @@ export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIH
             <MessageCircleQuestionIcon data-icon="inline-start" aria-hidden="true" />
             {t('tabQA')}
           </TabsTrigger>
-          <TabsTrigger value="review">
-            <BookOpenCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {t('tabReview')}
-          </TabsTrigger>
+          {canReview ? (
+            <TabsTrigger value="review">
+              <BookOpenCheckIcon data-icon="inline-start" aria-hidden="true" />
+              {t('tabReview')}
+            </TabsTrigger>
+          ) : null}
         </TabsList>
         <TabsContent value="study" className="mt-4">
           <StudyCompanionPanel courseUuid={courseUuid} />
@@ -77,9 +86,11 @@ export function CourseAIHub({ courseUuid, scope, variant = 'inline' }: CourseAIH
         <TabsContent value="questions" className="mt-4">
           <QAPanel courseUuid={courseUuid} />
         </TabsContent>
-        <TabsContent value="review" className="mt-4">
-          <CourseAnalysisEntry courseUuid={courseUuid} />
-        </TabsContent>
+        {canReview ? (
+          <TabsContent value="review" className="mt-4">
+            <CourseAnalysisEntry courseUuid={courseUuid} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </section>
   )

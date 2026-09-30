@@ -30,8 +30,9 @@ export const LIFECYCLE_ALLOWED_TRANSITIONS: Record<AssessmentLifecycle, Assessme
   ARCHIVED: [],
 }
 
+/** BUG-171: the server keeps a scheduled assessment read-only (BUG-162) — unschedule to edit. */
 export function isAssessmentEditable(lifecycle: AssessmentLifecycle): boolean {
-  return lifecycle === 'DRAFT' || lifecycle === 'SCHEDULED'
+  return lifecycle === 'DRAFT'
 }
 
 export function canPublish(lifecycle: AssessmentLifecycle): boolean {

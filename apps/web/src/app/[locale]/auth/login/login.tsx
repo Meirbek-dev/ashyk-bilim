@@ -1,100 +1,215 @@
 'use client'
 
-import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@components/ui/field'
 import { AuthErrorBanner, AuthSubmitButton } from '@components/auth/AuthForm'
 import { getAbsoluteUrl, getPublicAPIUrl } from '@services/config/config'
 import { loginAction } from '@/app/actions/auth'
+import type { AuthActionResult, LoginFailureReason } from '@/app/actions/auth'
 import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
 import PasswordInput from '@components/ui/custom/password-input'
 import { SiGoogle } from '@icons-pack/react-simple-icons'
 import { Separator } from '@components/ui/separator'
-import { useActionState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@components/ui/button'
 import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'
 import { Input } from '@components/ui/input'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import * as v from 'valibot'
 
 /** Validates returnTo, rejecting open-redirect attempts. */
-function getSafeReturnTo(raw: string | null): string {
-  return getPostAuthRedirect(normalizeReturnTo(raw))
+function getSafeReturnTo(raw: string | null, locale: string): string {
+  return getPostAuthRedirect(normalizeReturnTo(raw), locale)
 }
+
+/**
+ * Implicit submission needs a `keypress`; some automation and IME paths only
+ * deliver `keydown`, which leaves Enter dead in the field. Submit on keydown
+ * instead (BUG-023a).
+ */
+function submitOnEnter(event: KeyboardEvent<HTMLFormElement>) {
+  if (event.key !== 'Enter' || event.defaultPrevented || !(event.target instanceof HTMLInputElement)) return
+  event.preventDefault()
+  event.currentTarget.requestSubmit()
+}
+
+type LoginStep = 'credentials' | 'totp'
 
 interface LoginState {
+  step: LoginStep
+  /** Credentials kept across the TOTP step so the second submit can resend them. */
+  login: string
+  password: string
   error: string | null
-  fieldErrors: { email?: string; password?: string }
+  fieldErrors: { login?: string; password?: string; totpCode?: string }
 }
 
+const INITIAL_STATE: LoginState = { step: 'credentials', login: '', password: '', error: null, fieldErrors: {} }
+
+/**
+ * Login against the v2 BFF: password (+ optional TOTP second step) or Google.
+ *
+ * Failures come back as contract error codes (`invalid-credentials`,
+ * `mfa-required`, `invalid-totp-code`, `account-disabled`, `rate-limited`);
+ * Google failures land here as `?error=<code>` from the backend redirect.
+ */
 function LoginClient() {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Auth.Login')
+  const errorsT = useTranslations('Errors')
   const searchParams = useSearchParams()
+  const locale = useLocale()
   const [isPendingGoogle, startGoogleTransition] = useTransition()
+  // Controlled: the form action resets uncontrolled fields, and swapping a
+  // `defaultValue` after mount trips Base UI's uncontrolled-field warning.
+  const [login, setLogin] = useState('')
 
-  const schema = v.object({
-    email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
-    password: v.pipe(
+  const messageForCode = (code: string | null | undefined): string | null => {
+    if (!code) return null
+    if (code === 'google-cancelled') return t('googleCancelled')
+    const key = `codes.${code}`
+    return errorsT.has(key) ? errorsT(key) : null
+  }
+
+  const messageForFailure = (result: AuthActionResult): string => {
+    const reason: LoginFailureReason = result.reason ?? 'login_failed'
+    switch (reason) {
+      case 'invalid_credentials':
+        return t('wrongCredentials')
+      case 'invalid_totp_code':
+        return t('invalidTotpCode')
+      case 'account_disabled':
+        return t('accountDisabled')
+      case 'rate_limited':
+        // UX-083: `Retry-After` is the live window TTL — say when to come back.
+        return result.retryAfterSeconds
+          ? t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(result.retryAfterSeconds / 60)) })
+          : t('rateLimited')
+      case 'service_unavailable':
+        return t('serviceUnavailable')
+      case 'mfa_required':
+        return t('totpHint')
+      default:
+        return messageForCode(result.code) ?? t('wrongCredentials')
+    }
+  }
+
+  const credentialsSchema = v.object({
+    login: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required'))),
+    password: v.pipe(v.string(), v.minLength(1, validationT('required'))),
+  })
+
+  const totpSchema = v.object({
+    totpCode: v.pipe(
       v.string(),
+      v.trim(),
       v.minLength(1, validationT('required')),
-      v.minLength(8, validationT('passwordMinLength', { length: 8 })),
+      v.regex(/^\d{6,8}$/u, t('invalidTotpCode')),
     ),
   })
 
   const [state, action, isPending] = useActionState(
-    async (_prev: LoginState, formData: FormData): Promise<LoginState> => {
-      const result = v.safeParse(schema, {
-        email: formData.get('email'),
+    async (prev: LoginState, formData: FormData): Promise<LoginState> => {
+      const returnTo = searchParams.get('returnTo')
+
+      if (prev.step === 'totp') {
+        // «Back to login» is a form intent: the URL alone cannot reset
+        // `useActionState`, so the same component would keep the TOTP step.
+        if (formData.get('intent') === 'back') return { ...INITIAL_STATE, login: prev.login }
+        const parsed = v.safeParse(totpSchema, { totpCode: formData.get('totpCode') })
+        if (!parsed.success) {
+          const flat = v.flatten(parsed.issues)
+          return { ...prev, error: null, fieldErrors: { totpCode: flat.nested?.totpCode?.[0] ?? '' } }
+        }
+        const result = await loginAction({
+          login: prev.login,
+          password: prev.password,
+          totpCode: parsed.output.totpCode,
+          returnTo,
+          locale,
+        })
+        if (!result.ok) {
+          if (result.reason === 'invalid_totp_code' || result.reason === 'mfa_required') {
+            return { ...prev, error: null, fieldErrors: { totpCode: t('invalidTotpCode') } }
+          }
+          return { ...INITIAL_STATE, error: messageForFailure(result) }
+        }
+        return { ...prev, error: null, fieldErrors: {} }
+      }
+
+      const parsed = v.safeParse(credentialsSchema, {
+        login: formData.get('login'),
         password: formData.get('password'),
       })
 
-      if (!result.success) {
-        const flat = v.flatten(result.issues)
-        const emailError = flat.nested?.email?.[0]
+      if (!parsed.success) {
+        const flat = v.flatten(parsed.issues)
+        const loginError = flat.nested?.login?.[0]
         const passwordError = flat.nested?.password?.[0]
         return {
-          error: null,
+          ...INITIAL_STATE,
+          login: String(formData.get('login') ?? ''),
           fieldErrors: {
-            ...(emailError ? { email: emailError } : {}),
+            ...(loginError ? { login: loginError } : {}),
             ...(passwordError ? { password: passwordError } : {}),
           },
         }
       }
 
-      const response = await loginAction({
-        email: result.output.email,
-        password: result.output.password,
-        returnTo: searchParams.get('returnTo'),
+      const result = await loginAction({
+        login: parsed.output.login,
+        password: parsed.output.password,
+        returnTo,
+        locale,
       })
 
-      if (!response.ok) {
-        let message = t('wrongCredentials')
-        if (response.reason === 'service_unavailable') {
-          message = t('serviceUnavailable')
-        } else if (response.reason === 'rate_limited') {
-          message = t('rateLimited')
+      if (!result.ok) {
+        if (result.reason === 'mfa_required') {
+          return {
+            step: 'totp',
+            login: parsed.output.login,
+            password: parsed.output.password,
+            error: null,
+            fieldErrors: {},
+          }
         }
-        return { error: message, fieldErrors: {} }
+        return { ...INITIAL_STATE, login: parsed.output.login, error: messageForFailure(result) }
       }
 
-      return { error: null, fieldErrors: {} }
+      return { ...INITIAL_STATE }
     },
-    { error: null, fieldErrors: {} },
+    INITIAL_STATE,
   )
 
   const handleGoogleSignIn = () => {
     startGoogleTransition(() => {
-      const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'))
-      const frontendCallback = getAbsoluteUrl(postLoginPath.startsWith('/') ? postLoginPath : '/redirect_from_auth')
-      const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google/authorize`)
-      authorizeUrl.searchParams.set('callback', frontendCallback)
+      const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'), locale)
+      const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google`)
+      authorizeUrl.searchParams.set('callback', postLoginPath.startsWith('/') ? postLoginPath : '/')
       globalThis.location.href = authorizeUrl.toString()
     })
   }
 
   const anyPending = isPending || isPendingGoogle
+  // UX-083: `useActionState` keeps the previous result until the action
+  // settles — a submit after a validation miss must not show stale
+  // «required» under fields that are now filled.
+  const fieldErrors: LoginState['fieldErrors'] = isPending ? {} : state.fieldErrors
+  // The Google `?error=` banner belongs to the credentials step only: once
+  // the password went through, a stale OAuth failure above the code field
+  // reads as if the code step failed.
+  const redirectError = state.error || state.step !== 'credentials' ? null : messageForCode(searchParams.get('error'))
+  const bannerError = state.error ?? redirectError
+
+  // The submit button that brought the user here unmounts with the credentials
+  // step, so keyboard focus would fall back to <body>; move it to the code field.
+  const totpInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (state.step === 'totp') totpInputRef.current?.focus()
+  }, [state.step])
 
   return (
     <AuthCard>
@@ -102,64 +217,101 @@ function LoginClient() {
         <AuthLogo />
       </Link>
 
-      <Button className="mt-8 w-full gap-3" onClick={handleGoogleSignIn} disabled={anyPending}>
-        <SiGoogle />
-        {t('signInWithGoogle')}
-      </Button>
+      {state.step === 'credentials' ? (
+        <>
+          <Button className="mt-8 w-full gap-3" onClick={handleGoogleSignIn} disabled={anyPending}>
+            <SiGoogle />
+            {t('signInWithGoogle')}
+          </Button>
 
-      <div className="my-7 flex w-full items-center justify-center overflow-hidden">
-        <Separator />
-        <span className="px-2 text-sm">{t('or')}</span>
-        <Separator />
-      </div>
+          <div className="my-7 flex w-full items-center justify-center overflow-hidden">
+            <Separator />
+            <span className="px-2 text-sm">{t('or')}</span>
+            <Separator />
+          </div>
+        </>
+      ) : (
+        <div className="mt-8" />
+      )}
 
-      {state.error ? (
+      {bannerError ? (
         <div className="mb-4">
-          <AuthErrorBanner message={state.error} />
+          <AuthErrorBanner message={bannerError} />
         </div>
       ) : null}
 
-      <form className="w-full space-y-4" action={action}>
-        <input type="hidden" name="returnTo" value={searchParams.get('returnTo') ?? ''} />
-        <Field>
-          <FieldLabel>{t('email')}</FieldLabel>
-          <FieldContent>
-            <Input
-              name="email"
-              type="email"
-              placeholder={t('emailPlaceholder')}
-              autoComplete="email"
-              className="w-full"
-            />
-          </FieldContent>
-          <FieldError>{state.fieldErrors.email}</FieldError>
-        </Field>
+      <form className="w-full space-y-4" action={action} onKeyDown={submitOnEnter}>
+        {state.step === 'credentials' ? (
+          <>
+            {/* Keyed per step: React would otherwise reuse the login Field for the
+                TOTP code and Base UI complains about a changed default value. */}
+            <Field key="login">
+              <FieldLabel>{t('loginIdentifier')}</FieldLabel>
+              <FieldContent>
+                <Input
+                  name="login"
+                  type="text"
+                  value={login}
+                  onChange={event => setLogin(event.target.value)}
+                  placeholder={t('loginIdentifierPlaceholder')}
+                  autoComplete="username"
+                  className="w-full"
+                />
+              </FieldContent>
+              <FieldError>{fieldErrors.login}</FieldError>
+            </Field>
 
-        <Field>
-          <FieldLabel>{t('password')}</FieldLabel>
-          <FieldContent>
-            <PasswordInput
-              name="password"
-              placeholder={t('passwordPlaceholder')}
-              autoComplete="current-password"
-              className="w-full"
-            />
-          </FieldContent>
-          <FieldError>{state.fieldErrors.password}</FieldError>
-        </Field>
+            <Field key="password">
+              <FieldLabel>{t('password')}</FieldLabel>
+              <FieldContent>
+                <PasswordInput
+                  name="password"
+                  placeholder={t('passwordPlaceholder')}
+                  autoComplete="current-password"
+                  className="w-full"
+                />
+              </FieldContent>
+              <FieldError>{fieldErrors.password}</FieldError>
+            </Field>
 
-        <div className="flex justify-end">
-          <Link href={getAbsoluteUrl('/forgot')} className="text-muted-foreground text-xs underline">
-            {t('forgotPassword')}
-          </Link>
-        </div>
+            <AuthSubmitButton isPending={anyPending} label={t('login')} pendingLabel={t('loading')} />
+          </>
+        ) : (
+          <>
+            <Field key="totpCode">
+              <FieldLabel>{t('totpCode')}</FieldLabel>
+              <FieldContent>
+                <Input
+                  name="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder={t('totpCodePlaceholder')}
+                  className="w-full"
+                  ref={totpInputRef}
+                />
+              </FieldContent>
+              <FieldDescription>{t('totpHint')}</FieldDescription>
+              <FieldError>{fieldErrors.totpCode}</FieldError>
+            </Field>
 
-        <AuthSubmitButton isPending={anyPending} label={t('login')} pendingLabel={t('loading')} />
+            <AuthSubmitButton isPending={anyPending} label={t('verifyCode')} pendingLabel={t('loading')} />
+            <button
+              type="submit"
+              name="intent"
+              value="back"
+              formNoValidate
+              className="text-muted-foreground block w-full text-center text-sm underline"
+            >
+              {t('backToPassword')}
+            </button>
+          </>
+        )}
       </form>
 
-      <p className="mt-5 text-center text-sm">
-        {t('noAccount')}
-        <Link href={getAbsoluteUrl('/signup')} className="text-muted-foreground ml-1 underline">
+      <p className="text-muted-foreground mt-5 text-center text-sm">
+        {t('noAccount')}{' '}
+        <Link href={'/auth/signup'} className="text-primary underline">
           {t('signup')}
         </Link>
       </p>

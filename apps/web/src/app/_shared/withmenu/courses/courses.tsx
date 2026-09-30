@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 
 interface CourseProps {
   courses: AppCourse[]
-  totalCourses: number
+  hasNextPage: boolean
   trailData: AppTrailData | null
   currentPage: number
   isAuthenticated: boolean
@@ -50,10 +50,11 @@ function EmptyStateMessage({
 
 function Courses(props: CourseProps) {
   const t = useTranslations('CoursesPage')
-  const { courses, totalCourses, trailData, currentPage, isAuthenticated, canManagePlatform } = props
+  const { courses, hasNextPage, trailData, currentPage, isAuthenticated, canManagePlatform } = props
 
   const createCourseTrigger = <CreateCourseTrigger />
-  const hasCourses = courses.length > 0 || totalCourses > 0
+  // UX-133: past the last page the grid shows its own "nothing further" state, not "no courses yet".
+  const hasCourses = courses.length > 0 || currentPage > 1
 
   return (
     <div className="w-full">
@@ -69,7 +70,7 @@ function Courses(props: CourseProps) {
           ) : (
             <CourseGridClient
               initialCourses={courses}
-              initialTotal={totalCourses}
+              hasNextPage={hasNextPage}
               trailData={trailData}
               currentPage={currentPage}
               isAuthenticated={isAuthenticated}

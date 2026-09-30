@@ -32,8 +32,8 @@ export interface XPAwardRequest {
 
 // XP transaction record
 export interface XPTransaction {
-  id: number
-  user_id: number
+  id: string
+  user_id: string
   amount: number
   source: XPSource
   source_id: string | null
@@ -51,8 +51,8 @@ export interface XPAwardResponse {
 }
 
 const XPTransactionSchema = v.object({
-  id: v.number(),
-  user_id: v.number(),
+  id: v.string(),
+  user_id: v.string(),
   amount: v.number(),
   source: v.string(),
   source_id: v.nullable(v.string()),

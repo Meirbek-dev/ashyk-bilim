@@ -57,7 +57,10 @@ test.describe('Admin – User Roles Panel', () => {
     await adminUsersPage.goto()
     await adminUsersPage.assignRole(USERS.teacher.email, 'Teacher')
 
-    // After assignment, the table should show the teacher with the Teacher role
+    // After assignment, the table should show the teacher with the Teacher role.
+    // The list is newest-first and paged by 50, so filter by email (signup runs
+    // accumulate users in a long-lived environment).
+    await page.getByRole('searchbox').fill(USERS.teacher.email)
     await expect(page.getByRole('cell', { name: new RegExp(USERS.teacher.email, 'i') }).first()).toBeVisible({
       timeout: 10_000,
     })

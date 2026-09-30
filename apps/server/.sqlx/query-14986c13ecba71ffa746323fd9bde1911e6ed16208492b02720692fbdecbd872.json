@@ -1,0 +1,175 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT metric_date::text AS \"metric_date!\", teacher_user_id AS \"teacher_user_id: UserId\",\n                  managed_course_count, active_learners_7d, active_learners_28d,\n                  active_learners_90d, returning_learners_28d, completion_rate, avg_progress_pct,\n                  at_risk_learners, ungraded_submissions, courses_with_negative_engagement,\n                  certificates_issued_28d,\n                  (extract(epoch FROM generated_at))::bigint AS \"generated_at!\"\n           FROM daily_teacher_metrics\n           WHERE teacher_user_id IS NOT DISTINCT FROM $1 AND metric_date < ($2::text)::date\n           ORDER BY metric_date DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "metric_date!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "teacher_user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "teacher_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "managed_course_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "managed_course_count"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "active_learners_7d",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "active_learners_7d"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "active_learners_28d",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "active_learners_28d"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "active_learners_90d",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "active_learners_90d"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "returning_learners_28d",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "returning_learners_28d"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "completion_rate",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "completion_rate"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "avg_progress_pct",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "avg_progress_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "at_risk_learners",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "at_risk_learners"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "ungraded_submissions",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "ungraded_submissions"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "courses_with_negative_engagement",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "courses_with_negative_engagement"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "certificates_issued_28d",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_teacher_metrics",
+            "name": "certificates_issued_28d"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "generated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "14986c13ecba71ffa746323fd9bde1911e6ed16208492b02720692fbdecbd872"
+}

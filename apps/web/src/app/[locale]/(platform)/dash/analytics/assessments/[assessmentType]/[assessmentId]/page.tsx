@@ -5,42 +5,76 @@ import { getTeacherAssessmentDetail, normalizeAnalyticsQuery } from '@services/a
 import QuestionDifficultyRadar from '@components/Dashboard/Analytics/QuestionDifficultyRadar'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
-import { getLocale, getTranslations } from 'next-intl/server'
+import { getAnalyticsAssessmentTypeLabel, getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server'
+import { describeAnalyticsError } from '@/lib/analytics/errors'
 import type { AssessmentType } from '@/types/analytics'
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
+import { analyticsDetailMetadata, notFoundMetadata } from '../../../_components/metadata'
+import { AnalyticsBoundary } from '../../../_components/AnalyticsPage'
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { AssessmentId, AssessmentKind } from '@/lib/api/generated/zod'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
+}): Promise<Metadata> {
+  const { assessmentType, assessmentId } = await params
+  if (!AssessmentKind.safeParse(assessmentType).success || !AssessmentId.safeParse(assessmentId).success) {
+    return notFoundMetadata()
+  }
+  return analyticsDetailMetadata(
+    async () =>
+      (await getTeacherAssessmentDetail({ assessmentType, assessmentId, query: normalizeAnalyticsQuery({}) })).title,
+    'pages.assessmentsTitle',
+  )
+}
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsAssessmentDetailPageInner params={props.params} searchParams={props.searchParams} />
+  return (
+    <AnalyticsBoundary>
+      <PlatformAnalyticsAssessmentDetailPageInner params={props.params} searchParams={props.searchParams} />
+    </AnalyticsBoundary>
+  )
 }
 
 async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ assessmentType, assessmentId }, searchParams, locale, t] = await Promise.all([
+  const [{ assessmentType, assessmentId }, searchParams, locale, t, tErrors, format] = await Promise.all([
     props.params,
     props.searchParams,
     getLocale(),
     getTranslations('TeacherAnalytics'),
+    getTranslations('Errors'),
+    getFormatter(),
   ])
+  if (!AssessmentKind.safeParse(assessmentType).success || !AssessmentId.safeParse(assessmentId).success) notFound()
   const query = normalizeAnalyticsQuery(searchParams)
 
   let detail: Awaited<ReturnType<typeof getTeacherAssessmentDetail>>
   try {
     detail = await getTeacherAssessmentDetail({
       assessmentType,
-      assessmentId: Number(assessmentId),
+      assessmentId,
       query,
     })
   } catch (error) {
+    // Unknown assessment, wrong kind or out of scope: the not-found page, not an English detail.
+    if (isApiError(error) && error.status === 404) notFound()
     return (
       <AnalyticsEmptyState
         title={t('pages.assessmentDetailTitle')}
-        description={error instanceof Error ? error.message : t('pages.assessmentDetailLoadError')}
+        description={describeAnalyticsError(error, t, tErrors, t('pages.assessmentDetailLoadError'))}
       />
     )
   }
@@ -51,7 +85,6 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
-            <Badge variant="outline">{t('pages.assessmentDetailBadge', { id: detail.assessment_id })}</Badge>
           </div>
           <CardTitle className="mt-3 text-2xl">{detail.title}</CardTitle>
         </CardHeader>
@@ -62,8 +95,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatSubmissionRate')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.submission_rate ?? t('atRisk.na')}
-                {detail.summary.submission_rate !== null ? '%' : ''}
+                {detail.summary.submission_rate == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.submission_rate, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -71,8 +105,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatPassRate')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.pass_rate ?? t('atRisk.na')}
-                {detail.summary.pass_rate !== null ? '%' : ''}
+                {detail.summary.pass_rate == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.pass_rate, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
@@ -80,16 +115,18 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {t('pages.assessmentStatMedianScore')}
               </div>
               <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
-                {detail.summary.median_score ?? t('atRisk.na')}
-                {detail.summary.median_score !== null ? '%' : ''}
+                {detail.summary.median_score == null
+                  ? t('atRisk.na')
+                  : `${format.number(detail.summary.median_score, { maximumFractionDigits: 1 })}%`}
               </div>
             </div>
             <div className="px-4 py-3">
               <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
                 {t('pages.assessmentStatGenerated')}
               </div>
-              <div className="text-foreground mt-1 text-sm font-semibold">
-                {new Date(detail.generated_at).toLocaleString(locale)}
+              {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+              <div className="text-foreground mt-1 text-sm font-semibold" suppressHydrationWarning>
+                {formatDate(fromUnix(detail.generated_at_unix), locale, DATE_TIME_OPTIONS)}
               </div>
             </div>
           </div>
@@ -101,9 +138,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           title={t('pages.assessmentScoreDistTitle')}
           description={t('pages.assessmentScoreDistDesc')}
           data={detail.score_distribution}
-          {...(detail.pass_threshold !== null
+          {...(detail.pass_threshold != null
             ? {
-                thresholdLabel: `${t('pages.assessmentPassThresholdDefault')} ${detail.pass_threshold}%`,
+                thresholdLabel: t('pages.assessmentPassThreshold', { value: detail.pass_threshold }),
               }
             : {})}
           {...(detail.pass_threshold_bucket_label ? { thresholdBucketLabel: detail.pass_threshold_bucket_label } : {})}
@@ -131,7 +168,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           {detail.common_failures.length ? (
             detail.common_failures.map(failure => (
               <Badge key={failure.key} variant="outline">
-                {failure.label} · {failure.count}
+                {/* UX-261: the wire `label` is the English key; `TeacherAnalytics.codes` has it. */}
+                {getAnalyticsCodeLabel(t, failure.key)} · {failure.count}
               </Badge>
             ))
           ) : (

@@ -1,9 +1,8 @@
 import type ArtplayerType from 'artplayer'
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import Artplayer from 'artplayer'
-import ruRUMessages from '@/messages/ru-RU.json'
-import kkKZMessages from '@/messages/kk-KZ.json'
-import enUSMessages from '@/messages/en-US.json'
+import { useTranslations } from 'next-intl'
+import { MediaUnavailable, useMediaMissing } from '@components/Objects/Activities/Media/MediaUnavailable'
 
 interface SubtitleEntry {
   html: string
@@ -18,32 +17,9 @@ interface PlayerProps {
   startTime?: number
   endTime?: number | null
   onPlayerReady?: (art: Artplayer) => void
-  locale?: string | undefined
   [key: string]: unknown
 }
 const captionsSVGString = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-captions-icon lucide-captions"><rect width="18" height="14" x="3" y="5" rx="2" ry="2" /><path d="M7 15h4M15 15h2M7 11h2M13 11h4" /></svg>`
-
-interface MessagesWithArtplayer {
-  Artplayer?: Record<string, string>
-}
-
-const getArtplayerSection = (messages: unknown): Record<string, string> | undefined => {
-  return (messages as MessagesWithArtplayer).Artplayer
-}
-
-function getArtplayerLocale(locale: string) {
-  // Map incoming locale to the messages JSON we ship
-  const map: Record<string, unknown> = {
-    en: getArtplayerSection(enUSMessages),
-    'en-US': getArtplayerSection(enUSMessages),
-    kk: getArtplayerSection(kkKZMessages),
-    'kk-KZ': getArtplayerSection(kkKZMessages),
-    ru: getArtplayerSection(ruRUMessages),
-    'ru-RU': getArtplayerSection(ruRUMessages),
-  }
-
-  return map[locale] || undefined
-}
 
 const EMPTY_SUBTITLE_ENTRIES: SubtitleEntry[] = []
 
@@ -51,7 +27,6 @@ export default function ArtPlayer({
   option,
   getInstance,
   subtitle,
-  locale = 'en',
   subtitleEntries = EMPTY_SUBTITLE_ENTRIES,
   startTime,
   endTime,
@@ -59,15 +34,20 @@ export default function ArtPlayer({
   ...rest
 }: PlayerProps) {
   const artRef = useRef<HTMLDivElement>(null)
-
+  const instanceRef = useRef<ArtplayerType | null>(null)
+  const t = useTranslations('Components.VideoPlayer')
+  // UX-221: a missing object would only ever show «Reconnect: N».
+  const missing = useMediaMissing(option.url as string | undefined)
   useEffect(() => {
-    if (!artRef.current) return
+    if (missing && instanceRef.current && !instanceRef.current.isDestroy) instanceRef.current.destroy(false)
+  }, [missing])
 
-    const i18nLocale = getArtplayerLocale(locale)
+  // One player per mount: the props are read when the container mounts.
+  const createPlayer = useEffectEvent((container: HTMLDivElement) => {
     const art: ArtplayerType = new Artplayer({
       url: (option.url as string) || '',
       ...option,
-      container: artRef.current,
+      container,
       volume: 1,
       isLive: false,
       pip: !!option.pip,
@@ -89,15 +69,14 @@ export default function ArtPlayer({
       autoPlayback: true,
       airplay: true,
       theme: '#23ade5',
-      i18n: i18nLocale ? { [locale]: i18nLocale } : {},
       settings: [
         {
           width: 200,
-          html: 'Субтитры',
+          html: t('subtitles'),
           icon: captionsSVGString,
           selector: [
             {
-              html: 'Включить',
+              html: t('enableSubtitles'),
               switch: true,
               onSwitch: item => {
                 art.subtitle.show = !item.switch
@@ -118,6 +97,7 @@ export default function ArtPlayer({
       ...(subtitle ? { subtitle } : {}),
     })
 
+    instanceRef.current = art
     if (getInstance && typeof getInstance === 'function') {
       getInstance(art)
     }
@@ -148,11 +128,17 @@ export default function ArtPlayer({
       if (handleTimeUpdate) {
         art.off('timeupdate', handleTimeUpdate)
       }
-      if (art?.destroy) {
+      if (!art.isDestroy) {
         art.destroy(false)
       }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  })
 
+  useEffect(() => {
+    if (!artRef.current) return
+    return createPlayer(artRef.current)
+  }, [])
+
+  if (missing) return <MediaUnavailable kind="video" />
   return <div ref={artRef} {...rest} />
 }

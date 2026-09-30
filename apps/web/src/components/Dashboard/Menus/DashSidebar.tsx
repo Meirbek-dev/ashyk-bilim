@@ -19,9 +19,9 @@ import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
 import appLogoLight from '@public/app_logo_light.svg'
 import { useTheme } from '@/components/providers/theme-provider'
-import { logout } from '@services/auth/auth'
-import { getAbsoluteUrl } from '@services/config/config'
+import { useLogout } from '@/lib/auth/use-logout'
 import { Separator } from '@/components/ui/separator'
+import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserAvatar from '../../Objects/UserAvatar'
 import { useCallback, useEffect, useEffectEvent } from 'react'
@@ -118,7 +118,7 @@ const useNavigationItems = () => {
       ? [
           {
             title: t('tooltips.users'),
-            href: '/dash/users/settings/users',
+            href: '/dash/users/settings',
             icon: Users,
             tooltip: t('tooltips.users'),
             isActive: pathname.startsWith('/dash/users'),
@@ -184,14 +184,7 @@ function DashSidebar({ className }: SidebarProps) {
   const isCollapsed = state === 'collapsed'
   const isExpanded = state === 'expanded'
 
-  async function handleLogout() {
-    try {
-      await logout({ redirectTo: getAbsoluteUrl('/login') })
-    } catch (error) {
-      console.error('Logout failed:', error)
-      // Could add toast notification here
-    }
-  }
+  const { logout: handleLogout, isLoggingOut } = useLogout()
 
   const handleModeToggle = useCallback(
     (e: React.MouseEvent) => {
@@ -317,10 +310,15 @@ function DashSidebar({ className }: SidebarProps) {
                 isCollapsed ? 'hidden w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <p className="text-sidebar-foreground truncate text-sm font-medium">@{user.username}</p>
-              <p className="text-sidebar-foreground/60 truncate text-xs">{user.email}</p>
+              <p className="text-sidebar-foreground truncate text-sm font-medium">
+                {user.display_name?.trim() || user.username}
+              </p>
+              <p className="text-sidebar-foreground/60 truncate text-xs">@{user.username}</p>
             </div>
           </div>
+
+          {/* Locale switcher (UX-074): the same control as the public nav, on every /dash screen */}
+          {!isCollapsed && <LocaleSwitcher className="w-full [&>select]:flex-1" />}
 
           {/* Action Buttons */}
           <div className={`flex gap-2 ${isCollapsed ? 'w-full flex-col' : ''}`}>
@@ -342,6 +340,7 @@ function DashSidebar({ className }: SidebarProps) {
               {...(isCollapsed ? { tooltip: t('tooltips.logout') } : {})}
               size="sm"
               onClick={handleLogout}
+              disabled={isLoggingOut}
               className={`text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center px-0' : 'gap-2 px-3'
               }`}

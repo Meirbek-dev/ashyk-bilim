@@ -13,11 +13,12 @@ import {
   Users,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { queryOptions, useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { toast } from 'sonner'
 
-import { apiJson } from '@/lib/api-client'
+import { reportSubmissionViolation, startAssessmentSubmission } from '@/features/assessments/submission-client'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -26,10 +27,14 @@ import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useContributorStatus } from '@/hooks/useContributorStatus'
+import { useApiError } from '@/hooks/useApiError'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
+import { gradeOfRecord, submitVerdict } from '@/features/assessments/domain/grade-of-record'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
 import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
 import { useAttemptShellControls } from '@/features/assessments/shell'
@@ -38,38 +43,26 @@ import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAsse
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation'
-import { getOrderedExamQuestions } from './questionOrder'
 import { Progress } from '@components/ui/progress'
 import type { KindAttemptProps } from '../index'
 import ExamQuestionCard from './ExamQuestionCard'
 import ExamSubmitDialog from './ExamSubmitDialog'
-import { getSubmissionPlagiarismState } from '@/features/grading/domain/types'
-
-interface QuestionData {
-  id: string
-  question_uuid: string
-  question_text: string
-  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING'
-  points: number
-  explanation?: string
-  answer_options: {
-    text: string
-    is_correct?: boolean
-    left?: string
-    right?: string
-    option_id?: string | number
-  }[]
-}
 
 export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.ExamActivity')
   const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const { contributorStatus } = useContributorStatus(courseUuid)
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
+  // UX-140: the entry panel's score is the grade of record (projection), the
+  // same source the result card and the outline sidebar use — not the latest attempt.
+  const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
+  const formatPercent = usePercentFormat()
   const [isStarting, setIsStarting] = useState(false)
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
   const assessmentUuid = vm?.assessmentUuid ?? null
-  const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items])
+  // Every item the server returns is a question — no kind filter (BUG-110).
+  const questions = vm?.items ?? []
 
   const handleComplete = useCallback(async () => {
     await Promise.allSettled([
@@ -85,9 +78,12 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.draft(assessmentUuid),
       }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.attemptState(assessmentUuid),
+      }),
       queryClient.invalidateQueries(
         queryOptions({
-          queryKey: ['assessments', 'submissions', 'me', assessmentUuid],
+          queryKey: queryKeys.assessments.mySubmissions(assessmentUuid),
         }),
       ),
       queryClient.invalidateQueries({
@@ -95,6 +91,18 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       }),
     ])
   }, [assessmentUuid, courseUuid, queryClient])
+
+  // UX-224: the counted result (projection) — the submit refreshes it before
+  // resolving, so the toast reads what the result card will show.
+  const activityUuid = vm?.activityUuid
+  const countedActivity = useCallback(
+    () =>
+      queryClient
+        .getQueryData(learnerCourseStateQueryOptions(courseUuid).queryKey)
+        ?.outline.flatMap(chapter => chapter.activities)
+        .find(activity => activity.id === activityUuid),
+    [activityUuid, courseUuid, queryClient],
+  )
 
   if (!vm || submissionState.isLoading) {
     return <PageLoading />
@@ -108,27 +116,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     submission: (typeof submissionState.submissions)[number],
     index: number,
   ): AttemptHistoryItem => {
-    const plagiarism = getSubmissionPlagiarismState(submission)
-    let plagiarismText: string
-
-    if (plagiarism.status === 'failed') {
-      plagiarismText = 'Plagiarism: Failed'
-    } else if (plagiarism.status === 'checking') {
-      plagiarismText = 'Plagiarism: Checking'
-    } else if (plagiarism.status === 'pending') {
-      plagiarismText = 'Plagiarism: Pending'
-    } else if (plagiarism.flagged) {
-      plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
-    } else {
-      plagiarismText = 'Plagiarism: Checked Clear'
-    }
-
-    const label =
-      index === 0
-        ? t('latestSubmission')
-        : t('attemptNumber', {
-            number: submissionState.submissions.length - index,
-          })
+    const label = index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submission.attempt_number })
     const submittedAt = submission.submitted_at ?? submission.updated_at ?? null
 
     return {
@@ -136,13 +124,19 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       label,
       submittedAt,
       status: submission.status ?? 'PENDING',
-      scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
-      metaLabel: plagiarismText || null,
+      scoreLabel: typeof submission.final_score === 'number' ? formatPercent(submission.final_score) : null,
+      metaLabel: null,
     }
   }
 
   const latestCompletedSubmission =
     submissionState.submissions.find(submission => submission.status !== 'DRAFT') ?? null
+  const record = gradeOfRecord(
+    vm,
+    learnerState.data?.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === vm.activityUuid),
+  )
+  const recordScore = vm.isResultVisible ? record.pct : null
+  const recordFeedback = vm.isResultVisible ? (record.recordAttempt?.generalFeedback ?? null) : null
   const historyItems = submissionState.submissions
     .filter(submission => submission.status !== 'DRAFT')
     .map(buildHistoryItem)
@@ -151,17 +145,13 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     if (!assessmentUuid || !vm.canEdit) return
     setIsStarting(true)
     try {
-      await apiJson(`assessments/${assessmentUuid}/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
+      await startAssessmentSubmission(assessmentUuid)
       toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
       await handleComplete()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('errorStartingExam'))
-    } finally {
-      setIsStarting(false)
+      toastApiError(error, { fallback: t('errorStartingExam') })
     }
+    setIsStarting(false)
   }
 
   if (!submissionState.draft) {
@@ -275,6 +265,8 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
             {latestCompletedSubmission ? (
               <ExamSubmissionStatePanel
                 submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+                score={recordScore}
+                feedback={recordFeedback}
               />
             ) : null}
           </div>
@@ -285,16 +277,20 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
 
   return (
     <ExamTakingContent
+      key={submissionState.draft.submission_uuid}
       title={vm.title}
       questions={questions}
       submissionState={submissionState}
       attempt={submissionState.draft}
       policy={policy}
       onComplete={handleComplete}
+      countedActivity={countedActivity}
       canSaveDraft={vm.canSaveDraft}
       canSubmit={vm.canSubmit}
       timerExpiresAt={vm.timerExpiresAt}
+      passingScore={vm.passingScore}
       latestCompletedSubmission={latestCompletedSubmission}
+      recordFeedback={recordFeedback}
       historyItems={historyItems}
     />
   )
@@ -307,45 +303,63 @@ function ExamTakingContent({
   attempt,
   policy,
   onComplete,
+  countedActivity,
   canSaveDraft,
   canSubmit,
   timerExpiresAt,
+  passingScore,
   latestCompletedSubmission,
+  recordFeedback,
   historyItems,
 }: {
   title: string
-  questions: QuestionData[]
+  questions: AssessmentItem[]
   submissionState: ReturnType<typeof useAssessmentSubmission>
   attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>
   policy: typeof DEFAULT_POLICY_VIEW
   onComplete: () => void | Promise<void>
+  countedActivity: () => Parameters<typeof submitVerdict>[1]
   canSaveDraft: boolean
   canSubmit: boolean
   timerExpiresAt: string | null
+  passingScore: number | null
   latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
+  recordFeedback: string | null
   historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
+  const tWorkspace = useTranslations('Features.ActivityWorkspace')
+  const formatPercent = usePercentFormat()
+  const locale = useLocale()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false)
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
   const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null)
+  // "Draft restored" means answers existed BEFORE this attempt was opened; the
+  // draft query refetches after every autosave, so `answered_count` alone would
+  // flip the banner on ~2 s into a brand-new attempt.
+  const [resumedDraft] = useState(() => attempt.answered_count > 0)
   const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set())
-  const violationCountRef = useRef(0)
+  const violationCountRef = useRef(attempt.violation_count)
 
   // View mode: CARD (one at a time) or SCROLL (all visible)
   const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
-    if (typeof globalThis.window !== 'undefined') {
-      return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD'
+    try {
+      return (globalThis.window?.localStorage?.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD'
+    } catch {
+      return 'CARD'
     }
-    return 'CARD'
   })
   const questionRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const toggleViewMode = useCallback(() => {
     setViewMode(prev => {
       const next = prev === 'CARD' ? 'SCROLL' : 'CARD'
-      localStorage.setItem('exam-view-mode', next)
+      try {
+        globalThis.window.localStorage?.setItem('exam-view-mode', next)
+      } catch {
+        // Storage may be disabled; the in-memory preference still works.
+      }
       return next
     })
   }, [])
@@ -397,13 +411,14 @@ function ExamTakingContent({
     onRestore: handleRestoreAnswers,
   })
 
-  const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions])
+  const orderedQuestions = questions
 
   // Track which question is in view when in SCROLL mode
   useEffect(() => {
     if (viewMode !== 'SCROLL') return
     const observers: IntersectionObserver[] = []
-    questionRefs.current.forEach((ref, index) => {
+    orderedQuestions.forEach((_, index) => {
+      const ref = questionRefs.current[index]
       if (!ref) return
       const obs = new IntersectionObserver(
         ([entry]) => {
@@ -415,23 +430,8 @@ function ExamTakingContent({
       observers.push(obs)
     })
     return () => observers.forEach(obs => obs.disconnect())
-  }, [viewMode, orderedQuestions.length])
+  }, [viewMode, orderedQuestions])
   const currentQuestion = orderedQuestions[currentIndex]
-  const questionById = useMemo(
-    () => new Map(orderedQuestions.map(question => [question.id, question])),
-    [orderedQuestions],
-  )
-
-  const displayAnswers = useMemo(() => {
-    const next: Record<string, unknown> = {}
-    for (const question of orderedQuestions) {
-      const answer = submissionState.answers[question.id]
-      if (!answer) continue
-      next[question.id] = toExamAnswer(question, answer)
-    }
-    return next
-  }, [orderedQuestions, submissionState.answers])
-
   const isAnswered = useCallback(
     (questionId: string) => isItemAnswered(submissionState.answers[questionId]),
     [submissionState.answers],
@@ -449,15 +449,9 @@ function ExamTakingContent({
 
   const progress = orderedQuestions.length > 0 ? (answeredCount / orderedQuestions.length) * 100 : 0
 
-  const handleAnswerChange = (questionId: string, answer: unknown) => {
-    const question = questionById.get(questionId)
-    if (!question) return
-    const canonicalAnswer = fromExamAnswer(question, answer)
-    submissionState.setItemAnswer(question.id, canonicalAnswer)
-    persistence.saveAnswers({
-      ...submissionState.answers,
-      [question.id]: canonicalAnswer,
-    })
+  const handleAnswerChange = (itemId: string, answer: ItemAnswer) => {
+    submissionState.setItemAnswer(itemId, answer)
+    persistence.saveAnswers({ ...submissionState.answers, [itemId]: answer })
   }
 
   const handleOpenSubmitConfirmation = useCallback(() => {
@@ -470,25 +464,57 @@ function ExamTakingContent({
       setIsConfirmingSubmit(false)
 
       try {
-        await submissionState.submit({
+        const submitted = await submissionState.submit({
           violationCount: violationCountRef.current,
           autoSubmit: isAutoSubmit,
         })
         persistence.clearSavedAnswers()
-        toast.success(t('examSubmittedSuccessfully'))
+        // The toast states the verdict, never «успешно завершен» over «Не пройдено» (UX-035),
+        // and the counted result the card shows, not this attempt's (UX-224).
+        const verdict = submitVerdict(
+          submitted.release_state === 'visible' ? submitted.final_score : null,
+          countedActivity(),
+          passingScore,
+        )
+        toast.success(
+          verdict
+            ? [
+                t(verdict.passed ? 'examSubmittedPassed' : 'examSubmittedFailed', {
+                  score: formatPercent(verdict.score),
+                }),
+                verdict.latest === null
+                  ? null
+                  : tWorkspace('latestAttemptScore', { score: formatPercent(verdict.latest) }),
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            : submitted.status === 'PENDING'
+              ? t('examSubmittedPending')
+              : t('examSubmittedSuccessfully'),
+        )
         await onComplete()
-      } catch (error) {
-        console.error('Error submitting exam:', error)
-        toast.error(t('errorSubmittingExam'))
+      } catch {
+        // The submission hook has already toasted the localized reason.
       }
     },
-    [onComplete, persistence, submissionState, t],
+    [countedActivity, formatPercent, onComplete, passingScore, persistence, submissionState, t, tWorkspace],
   )
 
-  const handleViolation = useCallback((type: string, count: number) => {
-    void type
-    violationCountRef.current = count
-  }, [])
+  const handleViolation = useCallback(
+    async (type: string, count: number) => {
+      violationCountRef.current = count
+      // The server keeps the authoritative count and audit trail
+      // (`POST submissions/{id}/violations`); the local tally only ever
+      // raises what is sent with the final submit.
+      try {
+        const state = await reportSubmissionViolation(attempt.id, type.toLowerCase())
+        violationCountRef.current = Math.max(violationCountRef.current, state.violation_count)
+      } catch {
+        // Reporting is best-effort; the guard's local threshold still applies.
+      }
+    },
+    [attempt.id],
+  )
 
   const toggleFlag = useCallback((index: number) => {
     setFlaggedIndexes(prev => {
@@ -562,14 +588,10 @@ function ExamTakingContent({
           }
         : null,
       policy,
-      initialViolationCount: 0,
+      initialViolationCount: attempt.violation_count,
       onViolation: handleViolation,
+      // UX-087: the guard already told the learner the attempt is forfeited.
       onGuardAutoSubmit: () => {
-        toast.error(
-          t('autoSubmitting', {
-            reason: t('autoSubmittingReason.violationThresholdExceeded'),
-          }),
-        )
         void handleSubmit(true)
       },
       recovery: showRecoveryDialog
@@ -609,6 +631,7 @@ function ExamTakingContent({
       canSubmit,
       answeredCount,
       attempt.created_at,
+      attempt.violation_count,
       attempt.started_at,
       currentIndex,
       handleOpenSubmitConfirmation,
@@ -640,21 +663,27 @@ function ExamTakingContent({
 
   return (
     <div className="space-y-6">
-      <Alert>
-        <RotateCcw className="size-4" />
-        <AlertTitle>{t('resumedDraft')}</AlertTitle>
-        <AlertDescription>
-          {t('resumedDraftDescription', {
-            time: formatDateTime(attempt.updated_at),
-          })}
-        </AlertDescription>
-      </Alert>
+      {resumedDraft ? (
+        <Alert>
+          <RotateCcw className="size-4" />
+          <AlertTitle>{t('resumedDraft')}</AlertTitle>
+          <AlertDescription>
+            {t('resumedDraftDescription', {
+              time: formatDate(attempt.updated_at, locale, DATE_TIME_LONG_OPTIONS),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? (
+      {/* Mid-attempt only the returned-for-revision feedback matters; an older
+          attempt's score reads as this attempt's result. */}
+      {latestCompletedSubmission?.status === 'RETURNED' ? (
         <ExamSubmissionStatePanel
           submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+          score={null}
+          feedback={recordFeedback}
         />
       ) : null}
 
@@ -694,12 +723,13 @@ function ExamTakingContent({
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">
             <ExamQuestionCard
-              question={currentQuestion}
+              item={currentQuestion}
               questionNumber={currentIndex + 1}
-              answer={displayAnswers}
+              answer={submissionState.answers[currentQuestion.id]}
               isFlagged={flaggedIndexes.has(currentIndex)}
               onAnswerChange={handleAnswerChange}
               onToggleFlag={() => toggleFlag(currentIndex)}
+              disabled={!canSaveDraft}
             />
           </div>
 
@@ -730,12 +760,13 @@ function ExamTakingContent({
                 )}
               >
                 <ExamQuestionCard
-                  question={question}
+                  item={question}
                   questionNumber={index + 1}
-                  answer={displayAnswers}
+                  answer={submissionState.answers[question.id]}
                   isFlagged={flaggedIndexes.has(index)}
                   onAnswerChange={handleAnswerChange}
                   onToggleFlag={() => toggleFlag(index)}
+                  disabled={!canSaveDraft}
                 />
               </div>
             ))}
@@ -788,7 +819,7 @@ function ExamTakingContent({
         answeredCount={answeredCount}
         flaggedCount={flaggedIndexes.size}
         unansweredQuestions={orderedQuestions
-          .map((q, i) => ({ index: i, id: q.id, question_text: q.question_text }))
+          .map((q, i) => ({ index: i, id: q.id, question_text: q.body.prompt }))
           .filter(q => !isAnswered(q.id))}
         isSubmitting={submissionState.isSubmitting}
         onNavigateTo={index => {
@@ -814,60 +845,22 @@ function ExamTakingContent({
   )
 }
 
-function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
-  return items.reduce<QuestionData[]>((questions, item) => {
-    const { body } = item
-
-    if (body.kind === 'CHOICE') {
-      questions.push({
-        id: item.item_uuid,
-        question_uuid: item.item_uuid,
-        question_text: body.prompt,
-        question_type:
-          body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
-        points: item.max_score,
-        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
-        answer_options: body.options.map(option => ({
-          text: option.text,
-          is_correct: option.is_correct,
-          option_id: option.id,
-        })),
-      })
-      return questions
-    }
-
-    if (body.kind === 'MATCHING') {
-      questions.push({
-        id: item.item_uuid,
-        question_uuid: item.item_uuid,
-        question_text: body.prompt,
-        question_type: 'MATCHING',
-        points: item.max_score,
-        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
-        answer_options: body.pairs.map((pair, index) => ({
-          text: '',
-          left: pair.left,
-          right: pair.right,
-          option_id: String(index),
-        })),
-      })
-    }
-
-    return questions
-  }, [])
-}
-
 function ExamSubmissionStatePanel({
   submission,
+  score,
+  feedback,
 }: {
   submission: {
     status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
-    final_score?: number | null
-    grading_json?: { feedback?: string } | null
     submitted_at?: string | null
   }
+  /** Grade of record (`gradeOfRecord`), null when not released. */
+  score: number | null
+  feedback: string | null
 }) {
   const t = useTranslations('Activities.ExamActivity')
+  const formatPercent = usePercentFormat()
+  const locale = useLocale()
   if (submission.status === 'PENDING') {
     return (
       <Alert>
@@ -875,7 +868,7 @@ function ExamSubmissionStatePanel({
         <AlertDescription>
           {submission.submitted_at
             ? t('submissionReceivedWithDateDescription', {
-                date: formatDateTime(submission.submitted_at),
+                date: formatDate(submission.submitted_at, locale, DATE_TIME_LONG_OPTIONS),
               })
             : t('submissionReceivedDescription')}
         </AlertDescription>
@@ -896,15 +889,13 @@ function ExamSubmissionStatePanel({
     <Alert>
       <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
       <AlertDescription className="space-y-3">
-        {typeof submission.final_score === 'number' ? (
+        {score !== null ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
             <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
-            {Math.round(submission.final_score)}%
+            {formatPercent(score)}
           </span>
         ) : null}
-        {submission.grading_json?.feedback ? (
-          <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p>
-        ) : null}
+        {feedback ? <p className="whitespace-pre-wrap">{feedback}</p> : null}
       </AlertDescription>
     </Alert>
   )
@@ -923,42 +914,4 @@ function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean 
   return (
     policy.antiCheat.tabSwitchDetection || policy.antiCheat.copyPasteProtection || policy.antiCheat.devtoolsDetection
   )
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
-}
-
-function toExamAnswer(question: QuestionData, answer: ItemAnswer): unknown {
-  if (question.question_type === 'MATCHING' && answer.kind === 'MATCHING') {
-    return Object.fromEntries(answer.matches.map(pair => [pair.left, pair.right]))
-  }
-
-  if (answer.kind !== 'CHOICE') return null
-  if (question.question_type === 'MULTIPLE_CHOICE') return answer.selected
-  return answer.selected[0] ?? null
-}
-
-function fromExamAnswer(question: QuestionData, answer: unknown): ItemAnswer {
-  if (question.question_type === 'MATCHING') {
-    const matches =
-      answer && typeof answer === 'object' && !Array.isArray(answer)
-        ? Object.entries(answer as Record<string, string>)
-            .filter(([, right]) => typeof right === 'string' && right.length > 0)
-            .map(([left, right]) => ({ left, right }))
-        : []
-    return { kind: 'MATCHING', matches }
-  }
-
-  const selected = Array.isArray(answer)
-    ? answer.map(String)
-    : answer === null || answer === undefined || answer === ''
-      ? []
-      : [String(answer)]
-  return { kind: 'CHOICE', selected }
 }

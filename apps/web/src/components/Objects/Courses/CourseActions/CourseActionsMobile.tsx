@@ -1,72 +1,31 @@
 'use client'
 
-import { BookOpen, Loader2, LogIn } from 'lucide-react'
+import { BookOpen, CheckCircle2, Loader2, LogIn } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
-import { useState, useTransition } from 'react'
-import { revalidateTags } from '@/lib/cache/revalidate'
-import { startCourse } from '@services/courses/activity'
-import { getAbsoluteUrl } from '@services/config/config'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import type { LearnerCourseState } from '@/features/learner-course/api'
+import { useContributors } from '@/features/courses/hooks/useContributors'
+import type { Contributor } from '@/lib/api/generated/zod'
+import CourseProgress from '../CourseProgress/CourseProgress'
+import { CTA_LABEL, ContributorControl, useCourseCta } from './useCourseActions'
 
 import { Button } from '@/components/ui/button'
 import UserAvatar from '../../UserAvatar'
 
-interface Author {
-  user: {
-    user_uuid: string
-    avatar_image: string
-    first_name: string
-    middle_name?: string
-    last_name: string
-    username: string
-  }
-  authorship: 'CREATOR' | 'CONTRIBUTOR' | 'MAINTAINER' | 'REPORTER'
-  authorship_status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-}
-
-interface CourseRun {
-  status: string
-  course_id: number
-}
-
-interface Course {
-  id: number
-  course_uuid: string
-  authors: Author[]
-  trail?: {
-    runs: CourseRun[]
-  }
-  chapters?: {
-    name: string
-    activities: {
-      id: number
-      activity_uuid: string
-      name: string
-      activity_type: string
-    }[]
-  }[]
-}
+const ROLE_PRIORITY: Record<string, number> = { creator: 0, maintainer: 1, contributor: 2, reporter: 3 }
 
 interface CourseActionsMobileProps {
   courseuuid: string
-  course: Course
+  course: AppCourse
   trailData?: AppTrailData | null | undefined
+  learnerState?: LearnerCourseState | null | undefined
 }
 
 // Component for displaying multiple authors
-function MultipleAuthors({ authors }: { authors: Author[] }) {
+/** Active roster rows (`GET /courses/{id}/contributors`) — the v2 `Course` carries no author profiles (BUG-248). */
+function MultipleAuthors({ authors }: { authors: Contributor[] }) {
   const t = useTranslations('Courses.CourseActionsMobile')
-
-  // Early return if no authors
-  if (!authors || authors.length === 0) {
-    return (
-      <div className="flex items-center gap-3">
-        <div className="text-sm text-neutral-400">{t('noAuthors')}</div>
-      </div>
-    )
-  }
 
   const displayedAvatars = authors.slice(0, 3)
   const remainingCount = Math.max(0, authors.length - 3)
@@ -78,16 +37,12 @@ function MultipleAuthors({ authors }: { authors: Author[] }) {
     <div className="flex items-center gap-3">
       <div className="relative flex -space-x-3">
         {displayedAvatars.map((author, index) => (
-          <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
+          <div key={author.user_id} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
             <UserAvatar
               size="sm"
               variant="outline"
-              avatar_url={
-                author.user.avatar_image && author.user.user_uuid
-                  ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
-                  : ''
-              }
-              {...(!author.user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+              avatar_url={author.avatar_key ? getUserAvatarMediaDirectory(author.user_id, author.avatar_key) : ''}
+              {...(author.avatar_key ? {} : { predefined_avatar: 'empty' })}
             />
           </div>
         ))}
@@ -110,159 +65,74 @@ function MultipleAuthors({ authors }: { authors: Author[] }) {
         <span className="text-muted-foreground text-xs font-medium">
           {authors.length > 1 ? t('authors') : t('author')}
         </span>
-        {authors.length === 1 ? (
-          <span className="text-foreground text-sm font-semibold">
-            {authors[0]?.user?.first_name && authors[0]?.user?.last_name
-              ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
-                  .filter(Boolean)
-                  .join(' ')
-              : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
-          </span>
-        ) : (
-          <span className="text-foreground text-sm font-semibold">
-            {authors[0]?.user?.first_name && authors[0]?.user?.last_name
-              ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
-                  .filter(Boolean)
-                  .join(' ')
-              : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
-            {authors.length > 1 && ` ${t('moreAuthors', { count: authors.length - 1 })}`}
-          </span>
-        )}
+        <span className="text-foreground text-sm font-semibold">
+          {authors[0]?.display_name || `@${authors[0]?.username || t('unknownAuthor')}`}
+          {authors.length > 1 && ` ${t('moreAuthors', { count: authors.length - 1 })}`}
+        </span>
       </div>
     </div>
   )
 }
 
-function CourseActionsMobile({ courseuuid, course, trailData }: CourseActionsMobileProps) {
+function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: CourseActionsMobileProps) {
   const t = useTranslations('Courses.CourseActionsMobile')
-  const router = useRouter()
+  const tActions = useTranslations('Courses.CoursesActions')
   const { user: currentUser } = useSession()
-  const [isActionLoading, setIsActionLoading] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  // Same CTA branches and toasts as the desktop sidebar (UX-174/175).
+  const { action, hasNoLiveActivities, isActionLoading, handleCourseAction, isProgressOpen, setIsProgressOpen } =
+    useCourseCta({ courseuuid, course, trailData, learnerState })
 
-  // Clean up course UUID by removing 'course_' prefix if it exists
-  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-
-  const isStarted =
-    trailData?.runs?.find((run: AppTrailRun) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    }) ?? false
-
-  const handleCourseAction = async () => {
-    if (!currentUser) {
-      router.push(getAbsoluteUrl('/signup'))
-      return
-    }
-
-    // If already started, navigate to first unfinished activity
-    if (isStarted) {
-      const run = trailData?.runs?.find((r: AppTrailRun) => {
-        const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
-
-      // Find first unfinished activity
-      let firstUnfinishedActivity: { id: number; activity_uuid: string } | null = null
-
-      if (course.chapters) {
-        for (const chapter of course.chapters) {
-          for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some(
-              (step: AppTrailStep) => step.activity_id === activity.id && step.complete,
-            )
-            if (!isCompleted) {
-              firstUnfinishedActivity = activity
-              break
-            }
-          }
-          if (firstUnfinishedActivity) break
-        }
-      }
-
-      // If all activities are completed, go to first activity
-      const targetActivity = firstUnfinishedActivity || course.chapters?.[0]?.activities?.[0]
-
-      if (targetActivity) {
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${targetActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      }
-      return
-    }
-
-    startTransition(() => setIsActionLoading(true))
-    try {
-      await startCourse(`course_${courseuuid}`)
-      await revalidateTags(['courses'])
-
-      // Get the first activity from the first chapter
-      const firstChapter = course.chapters?.[0]
-      const firstActivity = firstChapter?.activities?.[0]
-
-      if (firstActivity) {
-        // Redirect to the first activity
-        await revalidateTags(['activities'])
-        router.push(
-          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
-        )
-      } else {
-        router.refresh()
-      }
-    } catch (error) {
-      console.error('Failed to perform course action:', error)
-    } finally {
-      startTransition(() => setIsActionLoading(false))
-      await revalidateTags(['courses'])
-    }
-  }
-
-  // Filter active authors and sort by role priority
-  const sortedAuthors = [...course.authors]
-    .filter(author => author.authorship_status === 'ACTIVE')
-    .toSorted((a, b) => {
-      const rolePriority: Record<string, number> = {
-        CREATOR: 0,
-        MAINTAINER: 1,
-        CONTRIBUTOR: 2,
-        REPORTER: 3,
-      }
-      const aPriority = rolePriority[a.authorship] ?? 999
-      const bPriority = rolePriority[b.authorship] ?? 999
-      return aPriority - bPriority
-    })
+  // The roster is a signed-in read (anonymous → 401), like CourseAuthors.
+  const { data: roster } = useContributors(courseuuid, { enabled: Boolean(currentUser) })
+  const sortedAuthors = (roster ?? [])
+    .filter(row => row.status === 'active')
+    .toSorted((a, b) => (ROLE_PRIORITY[a.role] ?? 999) - (ROLE_PRIORITY[b.role] ?? 999))
 
   return (
     <div className="border-border/80 bg-card overflow-hidden rounded-xl border p-4 shadow-xs">
       <div className="flex flex-col space-y-4">
-        <MultipleAuthors authors={sortedAuthors} />
+        {sortedAuthors.length > 0 && <MultipleAuthors authors={sortedAuthors} />}
 
-        <Button
-          type="button"
-          onClick={handleCourseAction}
-          disabled={isActionLoading || isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
-        >
-          {isActionLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : !currentUser ? (
-            <>
-              <LogIn className="h-4 w-4" />
-              {t('signIn')}
-            </>
-          ) : isStarted ? (
-            <>
-              <BookOpen className="h-4 w-4" />
-              {t('continueLearning')}
-            </>
-          ) : (
-            <>
-              <LogIn className="h-4 w-4" />
-              {t('startCourse')}
-            </>
-          )}
-        </Button>
+        {hasNoLiveActivities ? (
+          <p className="text-muted-foreground text-sm">{t('noPublishedActivities')}</p>
+        ) : (
+          <Button
+            type="button"
+            onClick={handleCourseAction}
+            disabled={isActionLoading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            {isActionLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : !currentUser ? (
+              <>
+                <LogIn className="h-4 w-4" />
+                {t('signIn')}
+              </>
+            ) : (
+              <>
+                {action === 'start' ? (
+                  <LogIn className="h-4 w-4" />
+                ) : action === 'continue' || action === 'preview' ? (
+                  <BookOpen className="h-4 w-4" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {tActions(CTA_LABEL[action])}
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* UX-176: the phone landing is the only one below md — apply/withdraw lives here too. */}
+        <ContributorControl courseuuid={courseuuid} course={course} />
       </div>
+      <CourseProgress
+        course={course}
+        isOpen={isProgressOpen}
+        onClose={() => setIsProgressOpen(false)}
+        learnerState={learnerState}
+      />
     </div>
   )
 }

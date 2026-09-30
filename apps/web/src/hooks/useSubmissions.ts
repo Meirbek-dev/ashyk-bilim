@@ -16,7 +16,7 @@ export interface UseSubmissionsOptions {
 }
 
 function submissionsHookOptions(
-  activityId: number | null,
+  _activityId: number | null,
   assessmentUuid: string | null | undefined,
   page: number,
   pageSize: number,
@@ -37,7 +37,9 @@ function submissionsHookOptions(
       sortDir,
       status: queryStatus,
     }),
-    enabled: Boolean(activityId && assessmentUuid),
+    // v2 keys submissions by assessment id; `activityId` is a legacy numeric
+    // prop the v2 review passes as 0 and must not gate the query.
+    enabled: Boolean(assessmentUuid),
   })
 }
 
@@ -73,17 +75,21 @@ export function useSubmissions({
   const query = useQuery(
     submissionsHookOptions(activityId, assessmentUuid, page, pageSize, search ?? '', sortBy, sortDir, status ?? 'ALL'),
   )
+  // BUG-351: a queue that shrank below the selected page answers with the
+  // last page it has — follow it rather than keep asking for a phantom page.
+  if (query.data && query.data.page < page) setPage(query.data.page)
 
   return {
     submissions: query.data?.items ?? [],
     total: query.data?.total ?? 0,
+    hasMore: query.data?.has_more ?? false,
     pages: query.data?.pages ?? 1,
     page,
     setPage,
     isLoading: query.isPending,
     error: query.error ?? null,
     mutate: async () => {
-      if (!activityId || !assessmentUuid) return undefined
+      if (!assessmentUuid) return undefined
       await queryClient.invalidateQueries({ queryKey })
       return queryClient.fetchQuery(submissionsQueryOptions(queryParams))
     },

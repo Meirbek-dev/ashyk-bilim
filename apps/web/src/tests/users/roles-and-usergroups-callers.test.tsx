@@ -1,0 +1,226 @@
+/** @vitest-environment jsdom */
+
+// Regression tests for the caller-side fixes made after the users/usergroups
+// service layer moved to the v2 contract (string ids, slug-based roles,
+// "resolved without throwing" success instead of `res.status === 200`).
+// Both assertions fail against the pre-fix code:
+//  - RolesUpdate used to parseInt the role value and the already-assigned
+//    role, then call assignRoleToUser/removeRoleFromUser with NaN.
+//  - EditUserGroup used to check `res.status === 200`, which is never true
+//    for a 204 (or a plain body with no `status` field), so it always
+//    reported failure even on a successful PATCH.
+
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vite-plus/test'
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { loading: vi.fn(() => 'toast-id'), success: vi.fn(), error: vi.fn() },
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn().mockResolvedValue(undefined) }),
+}))
+
+const assignRoleToUser = vi.fn().mockResolvedValue(undefined)
+const removeRoleFromUser = vi.fn().mockResolvedValue(undefined)
+
+vi.mock('@/services/rbac', () => ({ assignRoleToUser, removeRoleFromUser }))
+
+vi.mock('@/features/users/queries/users.query', () => ({
+  allMembersQueryOptions: () => ({ queryKey: ['members'] }),
+}))
+
+vi.mock('@/features/users/hooks/useUsers', () => ({
+  useRoles: () => ({
+    data: [
+      {
+        slug: 'user',
+        priority: 10,
+        is_system: true,
+        permissions: [],
+        display_name_key: '',
+        description_key: '',
+        display_name: 'Учащийся',
+      },
+      {
+        slug: 'admin',
+        priority: 100,
+        is_system: true,
+        permissions: [],
+        display_name_key: '',
+        description_key: '',
+        display_name: 'Администратор',
+      },
+    ],
+    error: undefined,
+  }),
+}))
+
+const updateUserGroup = vi.fn()
+vi.mock('@services/usergroups/usergroups', () => ({ updateUserGroup }))
+
+describe('RolesUpdate role-assignment payload (v2)', () => {
+  it('assigns/revokes roles by string user id and slug, not parsed integers', async () => {
+    const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
+
+    render(
+      <RolesUpdate
+        user={{ id: '0198c0ae-0000-7000-8000-000000000001', username: 'alice' }}
+        setRolesModal={vi.fn()}
+        alreadyAssignedRole="user"
+      />,
+    )
+
+    // UX-094: options carry the localized role name, not the slug.
+    expect(screen.getByRole('option', { name: 'Администратор' })).toHaveValue('admin')
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } })
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+
+    await vi.waitFor(() => {
+      expect(assignRoleToUser).toHaveBeenCalledWith('0198c0ae-0000-7000-8000-000000000001', 'admin')
+    })
+    expect(removeRoleFromUser).toHaveBeenCalledWith('0198c0ae-0000-7000-8000-000000000001', 'user')
+
+    // Neither call may receive NaN (what `Number.parseInt(slug, 10)` produced pre-fix).
+    for (const call of [...assignRoleToUser.mock.calls, ...removeRoleFromUser.mock.calls]) {
+      expect(typeof call[0]).toBe('string')
+      expect(typeof call[1]).toBe('string')
+    }
+  })
+})
+
+describe('RolesUpdate unchanged role (UX-094)', () => {
+  it('closes without a DELETE + POST round-trip when the role did not change', async () => {
+    assignRoleToUser.mockClear()
+    removeRoleFromUser.mockClear()
+    const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
+    const setRolesModal = vi.fn()
+
+    render(
+      <RolesUpdate
+        user={{ id: '0198c0ae-0000-7000-8000-000000000001', username: 'alice' }}
+        setRolesModal={setRolesModal}
+        alreadyAssignedRole="user"
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect(assignRoleToUser).not.toHaveBeenCalled()
+    expect(removeRoleFromUser).not.toHaveBeenCalled()
+  })
+})
+
+describe('RolesUpdate partial failure (BUG-347)', () => {
+  const userId = '0198c0ae-0000-7000-8000-000000000001'
+
+  async function renderDialog(setRolesModal = vi.fn()) {
+    const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
+    render(
+      <RolesUpdate user={{ id: userId, username: 'alice' }} setRolesModal={setRolesModal} alreadyAssignedRole="user" />,
+    )
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } })
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+    return setRolesModal
+  }
+
+  async function backend(held: Set<string>) {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    removeRoleFromUser.mockReset().mockImplementation(async (_id: string, role: string) => {
+      if (!held.delete(role))
+        throw new APIError({ code: 'not-found', message: 'role assignment not found', status: 404 })
+    })
+    assignRoleToUser.mockReset().mockImplementation(async (_id: string, role: string) => {
+      held.add(role)
+    })
+  }
+
+  it('retries only the assign after the old role was already removed', async () => {
+    const held = new Set(['user'])
+    await backend(held)
+    assignRoleToUser.mockRejectedValueOnce(new Error('network'))
+    const { toast } = await import('sonner')
+    vi.mocked(toast.error).mockClear()
+
+    const setRolesModal = await renderDialog()
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
+    expect(held.size).toBe(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'updateButton' }))
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect([...held]).toEqual(['admin'])
+    expect(removeRoleFromUser).toHaveBeenCalledTimes(1)
+    vi.mocked(toast.error).mockClear()
+  })
+
+  it('treats a 404 on the old role as already removed', async () => {
+    const held = new Set<string>()
+    await backend(held)
+    const setRolesModal = await renderDialog()
+    await vi.waitFor(() => expect(setRolesModal).toHaveBeenCalledWith(false))
+    expect([...held]).toEqual(['admin'])
+  })
+})
+
+describe('EditUserGroup success detection (v2)', () => {
+  it('reports success when the PATCH resolves without a 200 status field (204/body response)', async () => {
+    updateUserGroup.mockReset().mockResolvedValue({ id: 'group-1', name: 'Team', description: '' })
+    const { toast } = await import('sonner')
+    const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
+
+    const onSaved = vi.fn()
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={onSaved} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+
+    await vi.waitFor(() => {
+      expect(updateUserGroup).toHaveBeenCalledWith('group-1', expect.objectContaining({ name: 'Team' }))
+    })
+    await vi.waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('toastSuccess')
+    })
+    expect(toast.error).not.toHaveBeenCalled()
+    // The dialog closes on success, like the create dialog.
+    expect(onSaved).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the dialog open when the PATCH fails', async () => {
+    updateUserGroup.mockReset().mockRejectedValue(new Error('boom'))
+    const { toast } = await import('sonner')
+    vi.mocked(toast.error).mockClear()
+    const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
+
+    const onSaved = vi.fn()
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={onSaved} />)
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('toastError', expect.anything())
+    })
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  // UX-242: a plain module (not a server action) keeps the 422 field errors,
+  // and the dialog binds them to the input.
+  it('shows a server field error under the name input', async () => {
+    const { APIError } = await import('@/lib/api/assertSuccess')
+    updateUserGroup.mockReset().mockRejectedValue(
+      new APIError({
+        code: 'validation-failed',
+        message: 'invalid',
+        status: 422,
+        fieldErrors: [{ field: 'name', code: 'too-long', message: 'name is too long' }],
+      }),
+    )
+    const { default: EditUserGroup } = await import('@/components/Objects/Modals/Dash/UserGroups/EditUserGroup')
+
+    render(<EditUserGroup usergroup={{ id: 'group-1', name: 'Team', description: '' }} onSaved={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+
+    expect(await screen.findByText('name is too long')).toBeTruthy()
+  })
+})

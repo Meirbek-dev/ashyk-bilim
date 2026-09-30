@@ -2,7 +2,7 @@
 
 import { Suspense, lazy } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics'
+import type { AnalyticsQuery, AtRiskLearnersResponse, TeacherOverviewResponse } from '@/types/analytics'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Link } from '@/i18n/navigation'
@@ -22,10 +22,14 @@ function SectionFallback({ height = 'h-[280px]' }: { height?: string }) {
 interface WatchlistTabProps {
   query: AnalyticsQuery
   data: TeacherOverviewResponse
+  /** First page of `learners/at-risk` in the query's sort; the fixed preview is the fallback. */
+  atRisk?: AtRiskLearnersResponse | null
 }
 
-export default function WatchlistTab({ query, data }: WatchlistTabProps) {
+export default function WatchlistTab({ query, data, atRisk }: WatchlistTabProps) {
   const t = useTranslations('TeacherAnalytics')
+  const atRiskRows = atRisk?.items ?? data.at_risk_preview
+  const atRiskTotal = atRisk?.total ?? data.at_risk_total ?? 0
 
   const interventionSummary = data.intervention_summary
 
@@ -37,7 +41,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
     if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket)
     if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids)
     if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids)
-    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', String(scopedQuery.teacher_user_id))
+    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', scopedQuery.teacher_user_id)
     if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone)
     if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start)
     if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by)
@@ -93,12 +97,9 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_2.2fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
         <Suspense fallback={<SectionFallback height="h-[360px]" />}>
-          <AnalyticsRiskDistributionChart
-            counts={data.risk_distribution}
-            totalAtRisk={data.summary.at_risk_learners.value}
-          />
+          <AnalyticsRiskDistributionChart counts={data.risk_distribution} />
         </Suspense>
 
         <div className="flex flex-col gap-4">
@@ -108,21 +109,21 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
             </Badge>
             <span className="text-muted-foreground text-xs">
               {t('riskDistribution.preview', {
-                shown: data.at_risk_preview.length,
-                total: data.at_risk_total ?? 0,
+                shown: atRiskRows.length,
+                total: atRiskTotal,
               })}
             </span>
           </div>
           <Suspense fallback={<SectionFallback height="h-[360px]" />}>
             <AtRiskLearnersTable
-              rows={data.at_risk_preview}
+              rows={atRiskRows}
               title={t('overview.watchlistTitle')}
               description={t('overview.watchlistDescription')}
               storageKey="overview-risk"
               query={query}
             />
           </Suspense>
-          {(data.at_risk_total ?? 0) > 0 && (
+          {atRiskTotal > 0 && (
             <p className="text-muted-foreground pl-1 text-sm">
               <Link
                 href={buildScopedHref('/dash/analytics/learners/at-risk')}

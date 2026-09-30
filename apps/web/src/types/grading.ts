@@ -18,16 +18,12 @@ import type {
   ActivityProgressCell,
   ActivityProgressState,
   AssessmentType,
-  BatchGradeItem,
-  BatchGradeRequest,
-  BatchGradeResponse,
   CourseGradebookResponse,
   GradebookActivity,
   GradebookStudent,
   GradebookSummary,
   GradedItem,
   GradingBreakdown,
-  ItemFeedback,
   Submission,
   SubmissionStats,
   SubmissionStatus,
@@ -41,16 +37,12 @@ export type {
   ActivityProgressCell,
   ActivityProgressState,
   AssessmentType,
-  BatchGradeItem,
-  BatchGradeRequest,
-  BatchGradeResponse,
   CourseGradebookResponse,
   GradebookActivity,
   GradebookStudent,
   GradebookSummary,
   GradedItem,
   GradingBreakdown,
-  ItemFeedback,
   Submission,
   SubmissionStats,
   SubmissionStatus,
@@ -106,4 +98,8 @@ export interface BulkPublishGradesResponse {
   activity_id: number
   published_count: number
   already_published_count: number
+  /** Rows held back: an item still awaits its manual score (BUG-197). */
+  needs_grading_count?: number
+  /** Rows a save or return changed while the release ran (BUG-226 guard, UX-161). */
+  skipped_count?: number
 }

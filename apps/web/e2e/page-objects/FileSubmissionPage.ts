@@ -23,7 +23,8 @@ export class FileSubmissionPage {
     this.page = page
     this.fileInput = page.locator('input[type="file"]').first()
     this.dropZone = page.locator('[data-dropzone], [aria-label*="upload"], .upload-zone').first()
-    this.submitButton = page.getByRole('button', { name: /submit|upload|send/i }).first()
+    // v2 learner workspace: "Save draft" / "Submit files"
+    this.submitButton = page.getByRole('button', { name: /^submit files$/i }).first()
     this.statusBadge = page.locator('[data-status-badge], .submission-status, [aria-label*="status"]').first()
     this.toast = page.locator('[data-sonner-toast]').first()
   }
@@ -39,10 +40,14 @@ export class FileSubmissionPage {
       timeout: 8000,
     })
 
+    // v2: draft (POST …/draft) → presigned upload → POST file-submissions/{id}/submit
+    const submitted = this.page.waitForResponse(
+      r => r.request().method() === 'POST' && /\/file-submissions\/[^/]+\/submit$/u.test(r.url()),
+      { timeout: 30_000 },
+    )
     await this.submitButton.click()
-    await this.page.waitForResponse(r => r.url().includes('/file-submissions') && r.request().method() === 'POST', {
-      timeout: 15_000,
-    })
+    const response = await submitted
+    expect(response.ok(), `submit → ${response.status()} ${await response.text()}`).toBe(true)
   }
 
   public async assertSubmitted(): Promise<void> {

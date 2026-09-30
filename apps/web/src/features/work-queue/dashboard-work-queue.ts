@@ -19,13 +19,16 @@ interface EditableCourseSummary {
 }
 
 interface TeacherDashboardSignal {
+  /** `at_risk_total` counts learner×course pairs, not distinct learners. */
   atRiskTotal: number
+  /** Rendered pair count (`DashPage.Admin.enrollments`); falls back to a bare number. */
+  atRiskMetric?: string
   gradingBacklogTotal: number
   slaBreaches: number
   forecastBacklog7d: number
   medianFeedbackLatencyHours: number | null
   backlogItems: {
-    assessmentId: number
+    assessmentId: string
     awaitingReview: number
     courseName: string
     title: string
@@ -33,7 +36,6 @@ interface TeacherDashboardSignal {
   }[]
   signalAvailable: boolean
   errorMessage?: string | null
-  workItems?: LearnerDashboardSignal['items']
 }
 
 interface AdminDashboardSignal {
@@ -62,12 +64,22 @@ export interface LearnerDashboardSignal {
   signalAvailable: boolean
 }
 
+/**
+ * Translator for the `DashboardWorkQueue` message namespace. Matches the
+ * `getTranslations('DashboardWorkQueue')` result shape already threaded into
+ * `localizeWorkItem` by the caller in `dash/page.tsx`.
+ */
+export type WorkQueueTranslate = (key: string, values?: Record<string, string | number>) => string
+
 interface DashboardWorkQueueInput {
   access: DashboardAccess
   courseSummary: EditableCourseSummary | null
   teacherSignal: TeacherDashboardSignal | null
+  /** Grading queue (`work?role=teacher`): course management, not analytics. */
+  teacherWorkItems?: LearnerDashboardSignal['items']
   adminSignal: AdminDashboardSignal | null
   learnerSignal: LearnerDashboardSignal | null
+  t: WorkQueueTranslate
 }
 
 export interface DashboardWorkQueueModel {
@@ -75,79 +87,101 @@ export interface DashboardWorkQueueModel {
   tools: DashboardToolItem[]
 }
 
-const countMetric = (value: number, label: string) => ({
-  value,
-  label,
-})
-
 export function buildDashboardWorkQueue({
   access,
   courseSummary,
   teacherSignal,
+  teacherWorkItems,
   adminSignal,
   learnerSignal,
+  t,
 }: DashboardWorkQueueInput): DashboardWorkQueueModel {
-  const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal })
-  const adminSection = buildAdminSection({ access, adminSignal })
+  const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal, teacherWorkItems, t })
+  const adminSection = buildAdminSection({ access, adminSignal, t })
   const sections: WorkQueueSection[] = []
 
-  if (access.hasCoursesAccess || access.hasAnalyticsAccess) {
+  // UX-155: the section is the grading queue's — an analytics-only grant
+  // gets the analytics tool card, not an empty «teacher work» list.
+  if (access.hasCoursesAccess) {
     sections.push(teacherSection)
   }
 
-  if (access.hasUsersAccess || access.hasAdminAccess) {
+  // Admin work only for admins: `hasUsersAccess` is also true for instructors
+  // (`usergroup:read:platform`), and every item here lands on admin-only routes.
+  if (access.hasAdminAccess) {
     sections.push(adminSection)
   }
 
   if (sections.length === 0) {
-    sections.push(buildLearnerSection(learnerSignal))
+    sections.push(buildLearnerSection(learnerSignal, t))
   }
 
   return {
     sections,
-    tools: buildDashboardTools(access),
+    tools: buildDashboardTools(access, t),
   }
 }
 
-function buildLearnerSection(signal: LearnerDashboardSignal | null): WorkQueueSection {
+function buildLearnerSection(signal: LearnerDashboardSignal | null, t: WorkQueueTranslate): WorkQueueSection {
   return {
     audience: 'learner',
-    title: 'Learner Work',
-    description: 'Assignments and course actions that need the learner next.',
-    emptyTitle: 'No learner work is queued',
-    emptyDescription: 'You are caught up. Browse a course when you are ready to continue learning.',
+    title: t('sections.learner.title'),
+    description: t('sections.learner.description'),
+    emptyTitle: t('sections.learner.emptyTitle'),
+    emptyDescription: t('sections.learner.emptyDescription'),
     items: signal?.signalAvailable
       ? sortWorkQueueItems(
-          signal.items.map(item => ({
-            id: item.id,
-            audience: 'learner',
-            title: item.title,
-            description: item.description,
-            href: item.href,
-            primaryActionLabel: item.primary_action,
-            source: 'learner-learning',
-            sourceLabel: 'Learning',
-            status: learnerQueueStatus(item.kind, item.status),
-            priority: item.priority,
-            ...(item.due_at ? { dueAt: item.due_at } : {}),
-            ...(item.created_at ? { createdAt: item.created_at } : {}),
-            ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
-          })),
+          signal.items.map(item => {
+            const groupLabel = learnerGroupLabel(item, t)
+            return {
+              id: item.id,
+              audience: 'learner',
+              title: item.title,
+              description: item.description,
+              href: item.href,
+              primaryActionLabel: item.primary_action,
+              source: 'learner-learning',
+              sourceLabel: t('sourceLabels.learning'),
+              status: learnerQueueStatus(item.kind, item.status),
+              priority: item.priority,
+              ...(item.due_at ? { dueAt: item.due_at } : {}),
+              ...(item.created_at ? { createdAt: item.created_at } : {}),
+              ...(groupLabel ? { groupLabel } : {}),
+            }
+          }),
         )
       : [
           {
             id: 'learner-work-unavailable',
             audience: 'learner',
-            title: 'Check learning work',
-            description: 'Your learning queue could not be loaded. Open Courses to continue directly.',
+            title: t('sections.learner.unavailable.title'),
+            description: t('sections.learner.unavailable.description'),
             href: '/courses',
-            primaryActionLabel: 'Browse Courses',
+            primaryActionLabel: t('sections.learner.unavailable.action'),
             source: 'learner-learning',
-            sourceLabel: 'Learning',
+            sourceLabel: t('sourceLabels.learning'),
             status: LmsStatuses.UNAVAILABLE,
             priority: 'normal',
           },
         ],
+  }
+}
+
+/** «Скоро срок» only when there is a due date; a draft without one is just «in progress». */
+function learnerGroupLabel(item: LearnerDashboardSignal['items'][number], t: WorkQueueTranslate) {
+  switch (item.kind) {
+    case 'returned_for_revision':
+      return t('groups.returned')
+    case 'waiting_for_grade':
+      return t('groups.waiting')
+    case 'feedback_released':
+      return t('groups.released')
+    case 'overdue':
+      return t('groups.today')
+    case 'in_progress':
+      return item.due_at ? t('groups.dueSoon') : undefined
+    default:
+      return undefined
   }
 }
 
@@ -161,43 +195,54 @@ interface TeacherSectionInput {
   access: DashboardAccess
   courseSummary: EditableCourseSummary | null
   teacherSignal: TeacherDashboardSignal | null
+  teacherWorkItems: LearnerDashboardSignal['items'] | undefined
+  t: WorkQueueTranslate
 }
 
-function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSectionInput): WorkQueueSection {
+function buildTeacherSection({
+  access,
+  courseSummary,
+  teacherSignal,
+  teacherWorkItems,
+  t,
+}: TeacherSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
 
-  teacherSignal?.workItems?.forEach(item => {
-    items.push({
-      id: item.id,
-      audience: 'teacher',
-      title: item.title,
-      description: item.description,
-      href: item.href,
-      primaryActionLabel: item.primary_action,
-      source: 'course-management',
-      sourceLabel: 'Grading Queue',
-      status: item.priority === 'critical' ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
-      priority: item.priority,
-      ...(item.due_at ? { dueAt: item.due_at } : {}),
-      ...(item.created_at ? { createdAt: item.created_at } : {}),
-      ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+  // UX-151: every item and card is gated by its own grant (BUG-046 class) —
+  // grading work lands on course routes an analytics-only grant cannot open.
+  if (access.hasCoursesAccess)
+    teacherWorkItems?.forEach(item => {
+      items.push({
+        id: item.id,
+        audience: 'teacher',
+        title: item.title,
+        description: item.description,
+        href: item.href,
+        primaryActionLabel: item.primary_action,
+        source: 'course-management',
+        sourceLabel: t('sourceLabels.gradingQueue'),
+        status: item.priority === 'critical' ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+        priority: item.priority,
+        ...(item.due_at ? { dueAt: item.due_at } : {}),
+        ...(item.created_at ? { createdAt: item.created_at } : {}),
+        ...(item.groupLabel ? { groupLabel: item.groupLabel } : {}),
+      })
     })
-  })
 
   if (access.hasCoursesAccess && courseSummary?.signalAvailable) {
     if (courseSummary.attention > 0) {
       items.push({
         id: 'course-readiness',
         audience: 'teacher',
-        title: 'Review course readiness',
-        description: 'Draft, private, or incomplete courses need teacher review before learners rely on them.',
+        title: t('builderItems.courseReadiness.title'),
+        description: t('builderItems.courseReadiness.description'),
         href: '/dash/courses?preset=attention',
-        primaryActionLabel: 'Open Courses',
+        primaryActionLabel: t('builderItems.courseReadiness.action'),
         source: 'course-management',
-        sourceLabel: 'Course Management',
+        sourceLabel: t('sourceLabels.courseManagement'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'high',
-        metric: countMetric(courseSummary.attention, 'courses'),
+        metric: t('metrics.courses', { count: courseSummary.attention }),
       })
     }
 
@@ -205,12 +250,12 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       items.push({
         id: 'create-first-course',
         audience: 'teacher',
-        title: 'Create the first course',
-        description: 'The teaching workspace has no editable courses yet.',
+        title: t('builderItems.createFirstCourse.title'),
+        description: t('builderItems.createFirstCourse.description'),
         href: '/dash/courses/new',
-        primaryActionLabel: 'Create Course',
+        primaryActionLabel: t('builderItems.createFirstCourse.action'),
         source: 'course-management',
-        sourceLabel: 'Course Management',
+        sourceLabel: t('sourceLabels.courseManagement'),
         status: LmsStatuses.READY,
         priority: 'normal',
       })
@@ -221,12 +266,12 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
     items.push({
       id: 'courses-unavailable',
       audience: 'teacher',
-      title: 'Check courses feed',
-      description: 'Course management is available, but its summary could not be loaded. Open Courses to retry.',
+      title: t('builderItems.coursesUnavailable.title'),
+      description: t('builderItems.coursesUnavailable.description'),
       href: '/dash/courses',
-      primaryActionLabel: 'Open Courses',
+      primaryActionLabel: t('builderItems.coursesUnavailable.action'),
       source: 'course-management',
-      sourceLabel: 'Course Management',
+      sourceLabel: t('sourceLabels.courseManagement'),
       status: LmsStatuses.UNAVAILABLE,
       priority: 'normal',
     })
@@ -237,15 +282,15 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       items.push({
         id: 'grading-sla-breaches',
         audience: 'teacher',
-        title: 'Fix grading SLA breaches',
-        description: formatFeedbackLatencyDescription(teacherSignal.medianFeedbackLatencyHours),
+        title: t('builderItems.gradingSlaBreaches.title'),
+        description: formatFeedbackLatencyDescription(teacherSignal.medianFeedbackLatencyHours, t),
         href: '/dash/analytics/assessments',
-        primaryActionLabel: 'Open SLA Queue',
+        primaryActionLabel: t('builderItems.gradingSlaBreaches.action'),
         source: 'teacher-analytics',
-        sourceLabel: 'Teacher Analytics',
+        sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'critical',
-        metric: countMetric(teacherSignal.slaBreaches, 'breaches'),
+        metric: t('metrics.breaches', { count: teacherSignal.slaBreaches }),
       })
     }
 
@@ -253,15 +298,15 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       items.push({
         id: 'grading-backlog',
         audience: 'teacher',
-        title: 'Grade pending submissions',
-        description: 'Manual assessment work is waiting for review and feedback.',
+        title: t('builderItems.gradingBacklog.title'),
+        description: t('builderItems.gradingBacklog.description'),
         href: '/dash/analytics/assessments',
-        primaryActionLabel: 'Open Grading',
+        primaryActionLabel: t('builderItems.gradingBacklog.action'),
         source: 'teacher-analytics',
-        sourceLabel: 'Teacher Analytics',
+        sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: teacherSignal.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
         priority: teacherSignal.slaBreaches > 0 ? 'critical' : 'high',
-        metric: countMetric(teacherSignal.gradingBacklogTotal, 'submissions'),
+        metric: t('metrics.submissions', { count: teacherSignal.gradingBacklogTotal }),
       })
     }
 
@@ -270,14 +315,14 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
         id: `manual-assessment-${item.assessmentId}`,
         audience: 'teacher',
         title: item.title,
-        description: `${item.courseName} has manual submissions waiting for review.`,
+        description: t('builderItems.manualAssessment.description', { course: item.courseName }),
         href: `/dash/analytics/assessments/manual_assessment/${item.assessmentId}`,
-        primaryActionLabel: 'Open Assessment',
+        primaryActionLabel: t('builderItems.manualAssessment.action'),
         source: 'teacher-analytics',
-        sourceLabel: 'Cross-Course Queue',
+        sourceLabel: t('sourceLabels.crossCourseQueue'),
         status: item.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
         priority: item.slaBreaches > 0 ? 'critical' : 'high',
-        metric: countMetric(item.awaitingReview, 'awaiting review'),
+        metric: t('metrics.awaitingReview', { count: item.awaitingReview }),
       })
     })
 
@@ -285,15 +330,15 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       items.push({
         id: 'forecast-grading-load',
         audience: 'teacher',
-        title: 'Plan the 7-day grading load',
-        description: 'Forecasted submissions exceed the current backlog.',
+        title: t('builderItems.forecastGradingLoad.title'),
+        description: t('builderItems.forecastGradingLoad.description'),
         href: '/dash/analytics/assessments',
-        primaryActionLabel: 'Open Forecast',
+        primaryActionLabel: t('builderItems.forecastGradingLoad.action'),
         source: 'teacher-analytics',
-        sourceLabel: 'Teacher Analytics',
+        sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.IN_PROGRESS,
         priority: 'normal',
-        metric: countMetric(teacherSignal.forecastBacklog7d, 'forecast'),
+        metric: t('metrics.forecast', { count: teacherSignal.forecastBacklog7d }),
       })
     }
 
@@ -301,15 +346,15 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       items.push({
         id: 'learner-risk',
         audience: 'teacher',
-        title: 'Intervene with at-risk learners',
-        description: 'Learners with stalled progress or assessment blocks need action.',
+        title: t('builderItems.learnerRisk.title'),
+        description: t('builderItems.learnerRisk.description'),
         href: '/dash/analytics/learners/at-risk',
-        primaryActionLabel: 'Open Watchlist',
+        primaryActionLabel: t('builderItems.learnerRisk.action'),
         source: 'teacher-analytics',
-        sourceLabel: 'Teacher Analytics',
+        sourceLabel: t('sourceLabels.teacherAnalytics'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'high',
-        metric: countMetric(teacherSignal.atRiskTotal, 'learners'),
+        metric: teacherSignal.atRiskMetric ?? String(teacherSignal.atRiskTotal),
       })
     }
   }
@@ -318,12 +363,12 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
     items.push({
       id: 'teacher-analytics-unavailable',
       audience: 'teacher',
-      title: 'Check analytics feed',
-      description: 'Teacher analytics could not be loaded. Open Analytics to retry.',
+      title: t('builderItems.teacherAnalyticsUnavailable.title'),
+      description: t('builderItems.teacherAnalyticsUnavailable.description'),
       href: '/dash/analytics',
-      primaryActionLabel: 'Open Analytics',
+      primaryActionLabel: t('builderItems.teacherAnalyticsUnavailable.action'),
       source: 'teacher-analytics',
-      sourceLabel: 'Teacher Analytics',
+      sourceLabel: t('sourceLabels.teacherAnalytics'),
       status: LmsStatuses.UNAVAILABLE,
       priority: 'normal',
     })
@@ -331,26 +376,27 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
 
   return {
     audience: 'teacher',
-    title: 'Teacher Work',
-    description: 'Course readiness, grading, and learner intervention work.',
-    emptyTitle: 'No teacher work is queued',
-    emptyDescription: 'Courses, grading backlog, and learner risk checks will appear here when they need action.',
+    title: t('sections.teacher.title'),
+    description: t('sections.teacher.description'),
+    emptyTitle: t('sections.teacher.emptyTitle'),
+    emptyDescription: t('sections.teacher.emptyDescription'),
     items: sortWorkQueueItems(items),
   }
 }
 
-function formatFeedbackLatencyDescription(hours: number | null): string {
-  if (hours === null) return 'Feedback is missing the target response window.'
-  if (hours < 24) return `Median feedback latency is ${Math.round(hours)} hours.`
-  return `Median feedback latency is ${Math.round(hours / 24)} days.`
+function formatFeedbackLatencyDescription(hours: number | null, t: WorkQueueTranslate): string {
+  if (hours === null) return t('builderItems.gradingSlaBreaches.latencyMissing')
+  if (hours < 24) return t('builderItems.gradingSlaBreaches.latencyHours', { hours: Math.round(hours) })
+  return t('builderItems.gradingSlaBreaches.latencyDays', { days: Math.round(hours / 24) })
 }
 
 interface AdminSectionInput {
   access: DashboardAccess
   adminSignal: AdminDashboardSignal | null
+  t: WorkQueueTranslate
 }
 
-function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueueSection {
+function buildAdminSection({ access, adminSignal, t }: AdminSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
 
   if (access.hasAdminAccess && adminSignal?.signalAvailable) {
@@ -359,29 +405,29 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
       items.push({
         id: 'admin-ai-budget-critical',
         audience: 'admin',
-        title: 'Review AI budget before requests fail',
-        description: `AI usage has consumed ${aiBudgetUsage}% of the monthly token budget.`,
+        title: t('builderItems.adminAiBudgetCritical.title'),
+        description: t('builderItems.adminAiBudgetCritical.description', { percent: aiBudgetUsage }),
         href: '/dash/admin',
-        primaryActionLabel: 'Open AI Admin',
+        primaryActionLabel: t('builderItems.adminAiBudgetCritical.action'),
         source: 'ai-admin',
-        sourceLabel: 'AI Operations',
+        sourceLabel: t('sourceLabels.aiOperations'),
         status: LmsStatuses.NEEDS_ATTENTION,
         priority: 'critical',
-        metric: countMetric(aiBudgetUsage, '% used'),
+        metric: t('metrics.percentUsed', { count: aiBudgetUsage }),
       })
     } else if (aiBudgetUsage !== null && aiBudgetUsage >= 75) {
       items.push({
         id: 'admin-ai-budget-warning',
         audience: 'admin',
-        title: 'Plan AI budget usage',
-        description: `AI usage is at ${aiBudgetUsage}% of the monthly token budget.`,
+        title: t('builderItems.adminAiBudgetWarning.title'),
+        description: t('builderItems.adminAiBudgetWarning.description', { percent: aiBudgetUsage }),
         href: '/dash/admin',
-        primaryActionLabel: 'Open AI Admin',
+        primaryActionLabel: t('builderItems.adminAiBudgetWarning.action'),
         source: 'ai-admin',
-        sourceLabel: 'AI Operations',
+        sourceLabel: t('sourceLabels.aiOperations'),
         status: LmsStatuses.IN_PROGRESS,
         priority: 'high',
-        metric: countMetric(aiBudgetUsage, '% used'),
+        metric: t('metrics.percentUsed', { count: aiBudgetUsage }),
       })
     }
   }
@@ -390,15 +436,15 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
     items.push({
       id: 'admin-workload-hotspots',
       audience: 'admin',
-      title: 'Review teacher workload hotspots',
-      description: 'Teacher workload has SLA breaches that need operations review.',
+      title: t('builderItems.adminWorkloadHotspots.title'),
+      description: t('builderItems.adminWorkloadHotspots.description'),
       href: '/dash/analytics/admin',
-      primaryActionLabel: 'Open Admin Analytics',
+      primaryActionLabel: t('builderItems.adminWorkloadHotspots.action'),
       source: 'admin-analytics',
-      sourceLabel: 'Admin Analytics',
+      sourceLabel: t('sourceLabels.adminAnalytics'),
       status: LmsStatuses.NEEDS_ATTENTION,
       priority: 'critical',
-      metric: countMetric(adminSignal.teacherSlaBreaches, 'breaches'),
+      metric: t('metrics.breaches', { count: adminSignal.teacherSlaBreaches }),
     })
   }
 
@@ -406,28 +452,29 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
     items.push({
       id: 'admin-teacher-backlog',
       audience: 'admin',
-      title: 'Inspect teacher backlog',
-      description: 'Workload is accumulating across managed courses.',
+      title: t('builderItems.adminTeacherBacklog.title'),
+      description: t('builderItems.adminTeacherBacklog.description'),
       href: '/dash/analytics/admin',
-      primaryActionLabel: 'Open Workload',
+      primaryActionLabel: t('builderItems.adminTeacherBacklog.action'),
       source: 'admin-analytics',
-      sourceLabel: 'Admin Analytics',
+      sourceLabel: t('sourceLabels.adminAnalytics'),
       status: LmsStatuses.READY,
       priority: 'high',
-      metric: countMetric(adminSignal.teacherBacklogTotal, 'submissions'),
+      metric: t('metrics.submissions', { count: adminSignal.teacherBacklogTotal }),
     })
   }
 
-  if (access.hasUsersAccess) {
+  // `/dash/users/settings/users` is the admin directory (`GET /users`, `platform:read:platform`).
+  if (access.hasAdminAccess) {
     items.push({
       id: 'user-access-audit',
       audience: 'admin',
-      title: 'Audit user access',
-      description: 'Review users and groups before expanding course or analytics permissions.',
+      title: t('builderItems.userAccessAudit.title'),
+      description: t('builderItems.userAccessAudit.description'),
       href: '/dash/users/settings/users',
-      primaryActionLabel: 'Open Users',
+      primaryActionLabel: t('builderItems.userAccessAudit.action'),
       source: 'access-control',
-      sourceLabel: 'Access Control',
+      sourceLabel: t('sourceLabels.accessControl'),
       status: LmsStatuses.READY,
       priority: 'normal',
     })
@@ -437,12 +484,12 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
     items.push({
       id: 'role-policy-review',
       audience: 'admin',
-      title: 'Review role policy',
-      description: 'Keep system roles aligned with the learner, teacher, and admin dashboard model.',
+      title: t('builderItems.rolePolicyReview.title'),
+      description: t('builderItems.rolePolicyReview.description'),
       href: '/dash/admin/roles',
-      primaryActionLabel: 'Open Roles',
+      primaryActionLabel: t('builderItems.rolePolicyReview.action'),
       source: 'access-control',
-      sourceLabel: 'Access Control',
+      sourceLabel: t('sourceLabels.accessControl'),
       status: LmsStatuses.READY,
       priority: 'normal',
     })
@@ -452,12 +499,12 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
     items.push({
       id: 'admin-analytics-unavailable',
       audience: 'admin',
-      title: 'Check admin analytics feed',
-      description: 'Admin workload signals could not be loaded. Open Admin Analytics to retry.',
+      title: t('builderItems.adminAnalyticsUnavailable.title'),
+      description: t('builderItems.adminAnalyticsUnavailable.description'),
       href: '/dash/analytics/admin',
-      primaryActionLabel: 'Open Admin Analytics',
+      primaryActionLabel: t('builderItems.adminAnalyticsUnavailable.action'),
       source: 'admin-analytics',
-      sourceLabel: 'Admin Analytics',
+      sourceLabel: t('sourceLabels.adminAnalytics'),
       status: LmsStatuses.UNAVAILABLE,
       priority: 'normal',
     })
@@ -465,10 +512,10 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
 
   return {
     audience: 'admin',
-    title: 'Admin Work',
-    description: 'Access, policy, and operational work for the platform.',
-    emptyTitle: 'No admin work is queued',
-    emptyDescription: 'Access reviews and operations signals will appear here when your role can act on them.',
+    title: t('sections.admin.title'),
+    description: t('sections.admin.description'),
+    emptyTitle: t('sections.admin.emptyTitle'),
+    emptyDescription: t('sections.admin.emptyDescription'),
     items: sortWorkQueueItems(items),
   }
 }
@@ -480,48 +527,49 @@ function getAiBudgetUsage(adminSignal: AdminDashboardSignal): number | null {
   return Math.max(0, Math.min(100, Math.round((used / adminSignal.aiMonthlyBudget) * 100)))
 }
 
-function buildDashboardTools(access: DashboardAccess): DashboardToolItem[] {
+function buildDashboardTools(access: DashboardAccess, t: WorkQueueTranslate): DashboardToolItem[] {
   const tools: DashboardToolItem[] = [
     {
       id: 'browse-courses',
-      title: 'Browse Courses',
-      description: 'Find published learning content.',
+      title: t('tools.browseCourses.title'),
+      description: t('tools.browseCourses.description'),
       href: '/courses',
       audience: 'learner',
     },
     {
       id: 'courses',
-      title: 'Courses',
-      description: 'Create and manage courses, chapters, and assessment tasks.',
+      title: t('tools.courses.title'),
+      description: t('tools.courses.description'),
       href: '/dash/courses',
       audience: 'teacher',
     },
     {
       id: 'analytics',
-      title: 'Analytics',
-      description: 'Open learner, course, and assessment analytics.',
+      title: t('tools.analytics.title'),
+      description: t('tools.analytics.description'),
       href: '/dash/analytics',
       audience: 'teacher',
     },
     {
       id: 'users',
-      title: 'Users',
-      description: 'Manage organization users and groups.',
-      href: '/dash/users/settings/users',
+      title: t('tools.users.title'),
+      description: t('tools.users.description'),
+      // The settings index lands on the first tab the caller may open.
+      href: '/dash/users/settings',
       audience: 'admin',
     },
     {
       id: 'admin',
-      title: 'Admin',
-      description: 'Manage roles, AI operations, and platform policy.',
+      title: t('tools.admin.title'),
+      description: t('tools.admin.description'),
       href: '/dash/admin',
       audience: 'admin',
-      badge: 'System',
+      badge: t('tools.admin.badge'),
     },
     {
       id: 'account',
-      title: 'Account Settings',
-      description: 'Update profile, security, and personal preferences.',
+      title: t('tools.account.title'),
+      description: t('tools.account.description'),
       href: '/dash/user-account/settings/general',
       audience: 'all',
     },
@@ -529,8 +577,12 @@ function buildDashboardTools(access: DashboardAccess): DashboardToolItem[] {
 
   return tools.filter(tool => {
     if (tool.audience === 'all' || tool.audience === 'learner') return true
-    if (tool.audience === 'teacher') return access.hasCoursesAccess || access.hasAnalyticsAccess
-    return access.hasUsersAccess || access.hasAdminAccess
+    if (tool.id === 'courses') return access.hasCoursesAccess
+    if (tool.id === 'analytics') return access.hasAnalyticsAccess
+    // The users card is the only admin-audience tool an instructor may open
+    // (usergroups); `/dash/admin` needs the platform/role grants.
+    if (tool.id === 'users') return access.hasUsersAccess || access.hasAdminAccess
+    return access.hasAdminAccess
   })
 }
 

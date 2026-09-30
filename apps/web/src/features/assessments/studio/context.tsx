@@ -8,14 +8,16 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import type { KindAuthorProps } from '@/features/assessments/registry'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle'
+import { localizeValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import ErrorUI from '@/components/Objects/Elements/Error/Error'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import type { AssessmentStudioDetail, StudioReadinessPayload } from './utils'
-import { toWorkspaceReadinessIssues } from './utils'
+import { studioDetailFromWire, toWorkspaceReadinessIssues } from './utils'
+import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import type { AssessmentWorkspaceView, WorkspaceReadinessIssue } from './studioTypes'
 import type { SaveLedgerEntry, SaveLedgerSummary } from './workspace/saveLedger'
-import { summarizeSaveLedger } from './workspace/saveLedger'
+import { SAVE_STATE_LABEL_KEY, summarizeSaveLedger } from './workspace/saveLedger'
 import { readAssessmentWorkspaceUrlState, writeAssessmentWorkspaceUrlState } from './workspace/urlState'
 
 export interface AssessmentStudioContextValue {
@@ -49,8 +51,8 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     error,
   } = useQuery(
     queryOptions({
-      queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () => apiJson<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
+      queryKey: queryKeys.assessments.studio(normalizedActivityUuid),
+      queryFn: async () => studioDetailFromWire(await getActivityAssessment(normalizedActivityUuid)),
       enabled: Boolean(normalizedActivityUuid),
     }),
   )
@@ -126,6 +128,9 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     if (!assessment) return
     await Promise.all([
       queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.studio(normalizedActivityUuid),
+      }),
+      queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
       }),
       queryClient.invalidateQueries({
@@ -138,6 +143,14 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   }, [assessment, normalizedActivityUuid, queryClient])
 
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tValidation = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation')
+  // Readiness issues carry the server's English `message`; the UI only ever shows
+  // the catalog text for the `code` (fallback to `message` for unknown codes).
+  const localizeIssue = useCallback(
+    (issue: Pick<ValidationIssue, 'code' | 'message'>) =>
+      localizeValidationIssue(issue, key => (tValidation.has(key) ? tValidation(key) : undefined)),
+    [tValidation],
+  )
 
   const items = useMemo(() => {
     if (!assessment) return []
@@ -151,20 +164,35 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
   const isEditable = assessment ? isAssessmentEditable(assessment.lifecycle) : false
 
   const issues = readinessQuery.data?.issues
+  // Inline field markers and the publish gate see blockers only; policy
+  // warnings (UX-137: past due, cutoff before due, penalty with late off)
+  // show in the readiness strip and never disable «Опубликовать».
   const validationIssues = useMemo(() => {
     if (!issues) return []
-    return issues.map(issue => ({
-      code: issue.code,
-      message: issue.message,
-      ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
-      ...(issue.field ? { field: issue.field } : {}),
-      ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
-    }))
-  }, [issues])
+    return issues
+      .filter(issue => issue.severity !== 'warning')
+      .map(issue => {
+        const mapped: ValidationIssue = { code: issue.code, message: localizeIssue(issue) }
+        if (issue.item_uuid) mapped.itemUuid = issue.item_uuid
+        if (issue.field) mapped.field = issue.field
+        if (issue.action_label) mapped.actionLabel = issue.action_label
+        return mapped
+      })
+  }, [issues, localizeIssue])
 
-  const readinessIssues = useMemo(() => toWorkspaceReadinessIssues(readinessQuery.data), [readinessQuery.data])
+  const readinessIssues = useMemo(
+    () =>
+      toWorkspaceReadinessIssues(readinessQuery.data).map(issue =>
+        Object.assign(issue, { message: localizeIssue(issue) }),
+      ),
+    [readinessQuery.data, localizeIssue],
+  )
 
-  const saveLedger = useMemo(() => summarizeSaveLedger(saveLedgerEntries), [saveLedgerEntries])
+  const tSaveState = useTranslations('Components.SaveStateBadge')
+  const saveLedger = useMemo(
+    () => summarizeSaveLedger(saveLedgerEntries, state => tSaveState(SAVE_STATE_LABEL_KEY[state])),
+    [saveLedgerEntries, tSaveState],
+  )
 
   const setSaveLedgerEntry = useCallback((entry: Omit<SaveLedgerEntry, 'updatedAt'>) => {
     setSaveLedgerEntries(current => {

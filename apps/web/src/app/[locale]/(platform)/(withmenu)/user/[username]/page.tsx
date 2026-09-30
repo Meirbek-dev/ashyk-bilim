@@ -1,6 +1,9 @@
 import { getUserByUsername } from '@/lib/users/server'
 import { getTranslations } from 'next-intl/server'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import { APP_NAME } from '@/lib/constants'
 
 import UserProfileClient from '@/app/_shared/withmenu/user/[username]/UserProfileClient'
 
@@ -15,27 +18,23 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 
   try {
     const userData = await getUserByUsername(resolvedParams.username)
+    if (!userData) {
+      const tErrors = await getTranslations({ locale: resolvedParams.locale, namespace: 'Errors' })
+      return { title: `${tErrors('userNotFound')} - ${APP_NAME}`, robots: { index: false } }
+    }
 
     return {
-      title: t('metaTitle', {
-        firstName: userData.first_name ?? '',
-        lastName: userData.last_name ?? '',
-      }),
-      description:
-        userData.bio ||
-        t('metaDescriptionFallback', {
-          firstName: userData.first_name ?? '',
-          lastName: userData.last_name ?? '',
-        }),
+      title: `${t('metaTitle', { name: userData.display_name })} - ${APP_NAME}`,
+      description: userData.bio || t('metaDescriptionFallback', { name: userData.display_name }),
     }
   } catch {
     return {
-      title: t('metaTitleError'),
+      title: `${t('metaTitleError')} - ${APP_NAME}`,
     }
   }
 }
 
-export default async function PlatformUserPage({ params }: UserPageProps) {
+async function UserProfile({ params }: UserPageProps) {
   const t = await getTranslations('UserProfilePage')
   const resolvedParams = await params
   const { username } = resolvedParams
@@ -46,15 +45,19 @@ export default async function PlatformUserPage({ params }: UserPageProps) {
 
   try {
     userData = await getUserByUsername(username)
-    profile = userData.profile
-      ? typeof userData.profile === 'string'
-        ? JSON.parse(userData.profile)
-        : userData.profile
-      : { sections: [] }
+    profile = !userData
+      ? undefined
+      : userData.profile
+        ? typeof userData.profile === 'string'
+          ? JSON.parse(userData.profile)
+          : userData.profile
+        : { sections: [] }
   } catch (error) {
     console.error('Error fetching user data:', error)
     hasError = true
   }
+
+  if (!hasError && !userData) return <ResourceNotFound type="user" />
 
   if (hasError || !userData) {
     return (
@@ -70,5 +73,15 @@ export default async function PlatformUserPage({ params }: UserPageProps) {
     <div>
       <UserProfileClient userData={userData} profile={profile} />
     </div>
+  )
+}
+
+// The profile lookup is dynamic; the boundary keeps the dev "uncached data
+// outside <Suspense>" notice (an error-level console entry) off the page.
+export default function PlatformUserPage(props: UserPageProps) {
+  return (
+    <Suspense fallback={null}>
+      <UserProfile {...props} />
+    </Suspense>
   )
 }

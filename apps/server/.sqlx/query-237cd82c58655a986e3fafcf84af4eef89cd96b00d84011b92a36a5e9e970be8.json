@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE platforms p SET\n               name = COALESCE($1, p.name),\n               description = COALESCE($2, p.description),\n               about = COALESCE($3, p.about),\n               email = COALESCE($4, p.email),\n               label = CASE WHEN $8 THEN $5 ELSE p.label END,\n               logo_key = COALESCE($6, p.logo_key),\n               thumbnail_key = COALESCE($7, p.thumbnail_key)\n           FROM (SELECT singleton, logo_key, thumbnail_key FROM platforms\n                 WHERE singleton FOR UPDATE) old\n           WHERE p.singleton = old.singleton\n           RETURNING old.logo_key AS \"logo_key?\", old.thumbnail_key AS \"thumbnail_key?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "logo_key?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "logo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "thumbnail_key?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "thumbnail_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "237cd82c58655a986e3fafcf84af4eef89cd96b00d84011b92a36a5e9e970be8"
+}

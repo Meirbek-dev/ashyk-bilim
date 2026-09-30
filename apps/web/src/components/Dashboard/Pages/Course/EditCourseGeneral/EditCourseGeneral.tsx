@@ -1,7 +1,7 @@
 'use client'
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
-import { AlertTriangle, Image as ImageIcon, Tag, Video } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, Image as ImageIcon, ListChecks, Plus, Tag, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
@@ -18,31 +18,13 @@ import { courseGeneralSchema } from '@/schemas/courseSchemas'
 import { TagsInput } from '@components/ui/custom/tags-input'
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useSaveSection } from '@/hooks/useSaveSection'
-import { Controller, useForm, useWatch } from 'react-hook-form'
-import { Separator } from '@components/ui/separator'
-import LearningItemsList from './LearningItemsList'
+import { Controller, useForm } from 'react-hook-form'
 import ThumbnailUpdate from './ThumbnailUpdate'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import type * as v from 'valibot'
 import { MarkdownEditor, getMarkdownSaveGate } from '@/features/content-markdown'
 import { Spinner } from '@/components/ui/spinner'
-
-// Placeholder ID is stable across SSR and hydration; LearningItemsList replaces it
-// with a real UUID in a post-mount effect, avoiding hydration mismatches.
-const LEARNINGS_PLACEHOLDER_ID = '__placeholder_0__'
-
-function initializeLearnings(learnings: unknown): string {
-  if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-  if (typeof learnings !== 'string') return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-  try {
-    const parsed = JSON.parse(learnings)
-    if (Array.isArray(parsed)) return learnings
-  } catch {
-    return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '' }])
-  }
-  return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
-}
 
 function parseTags(raw: unknown): string[] {
   if (!raw) return []
@@ -62,55 +44,132 @@ function parseTags(raw: unknown): string[] {
   return []
 }
 
+type LearningValue = CourseGeneralValues['learnings'][number]
+
+/** The wire `Course.learnings` (`{id, text, emoji?}`) as form rows; `''` = no emoji. */
+function parseLearnings(raw: unknown): LearningValue[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((item): item is { id: string; text: string; emoji?: string | null } =>
+      Boolean(item && typeof item === 'object' && typeof item.id === 'string' && typeof item.text === 'string'),
+    )
+    .map(({ id, text, emoji }) => ({ id, text, emoji: emoji ?? '' }))
+}
+
 function buildFormValues(courseStructure: AppCourse): CourseGeneralValues {
   return {
     name: courseStructure?.name || '',
     description: courseStructure?.description || '',
     about: courseStructure?.about || '',
-    learnings: initializeLearnings(courseStructure?.learnings || ''),
     tags: parseTags(courseStructure?.tags),
-    public: courseStructure?.public ?? false,
-    thumbnail_type: ['image', 'video', 'both'].includes(String(courseStructure?.thumbnail_type))
-      ? (courseStructure.thumbnail_type as 'image' | 'video' | 'both')
-      : 'image',
+    learnings: parseLearnings(courseStructure?.learnings),
   }
 }
+
+/** "What you'll learn" rows: text, optional emoji, reorder by buttons. */
+function LearningsEditor({
+  value,
+  onChange,
+  errors,
+}: {
+  value: LearningValue[]
+  onChange: (next: LearningValue[]) => void
+  errors: ({ text?: { message?: string } } | undefined)[] | undefined
+}) {
+  const t = useTranslations('CourseEdit.General.LearningItems')
+  const validationT = useTranslations('Validation')
+  const update = (index: number, patch: Partial<LearningValue>) =>
+    onChange(value.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+  const move = (from: number, to: number) => {
+    const next = [...value]
+    const [item] = next.splice(from, 1)
+    if (item) next.splice(to, 0, item)
+    onChange(next)
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {value.length === 0 && <p className="text-muted-foreground text-sm">{t('noItems')}</p>}
+      {value.map((item, index) => {
+        const message = errors?.[index]?.text?.message
+        return (
+          <div key={item.id} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Input
+                value={item.emoji}
+                onChange={event => update(index, { emoji: event.target.value })}
+                aria-label={t('changeEmojiAriaLabel')}
+                placeholder="📝"
+                maxLength={16}
+                className="w-14 shrink-0 text-center"
+              />
+              <Input
+                value={item.text}
+                onChange={event => update(index, { text: event.target.value })}
+                placeholder={t('placeholder')}
+                maxLength={300}
+                aria-invalid={Boolean(message)}
+                className="min-w-0 flex-1"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t('moveUpAriaLabel')}
+                disabled={index === 0}
+                onClick={() => move(index, index - 1)}
+              >
+                <ArrowUp aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t('moveDownAriaLabel')}
+                disabled={index === value.length - 1}
+                onClick={() => move(index, index + 1)}
+              >
+                <ArrowDown aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t('removeItemAriaLabel')}
+                onClick={() => onChange(value.filter((_, i) => i !== index))}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
+            </div>
+            {message && (
+              <p className="text-destructive text-sm">
+                {validationT.has(camelCase(message)) ? validationT(camelCase(message)) : message}
+              </p>
+            )}
+          </div>
+        )
+      })}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="self-start"
+        disabled={value.length >= 30}
+        onClick={() => onChange([...value, { id: crypto.randomUUID(), text: '', emoji: '' }])}
+      >
+        <Plus aria-hidden="true" />
+        {t('addItemButton')}
+      </Button>
+    </div>
+  )
+}
+
+const camelCase = (key: string) => key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
 
 function EditCourseGeneral() {
   const t = useTranslations('CourseEdit.General')
   const tCommon = useTranslations('Common')
   const [error, setError] = useState('')
-
-  const thumbnailTypeItems = [
-    {
-      value: 'image',
-      label: (
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" aria-hidden="true" />
-          {t('image')}
-        </div>
-      ),
-    },
-    {
-      value: 'video',
-      label: (
-        <div className="flex items-center gap-2">
-          <Video className="h-4 w-4" aria-hidden="true" />
-          {t('video')}
-        </div>
-      ),
-    },
-    {
-      value: 'both',
-      label: (
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" aria-hidden="true" />
-          <Video className="h-4 w-4" aria-hidden="true" />
-          {t('both')}
-        </div>
-      ),
-    },
-  ]
 
   const course = useCourse()
   const { isLoading, courseStructure } = course
@@ -127,12 +186,6 @@ function EditCourseGeneral() {
     mode: 'onChange',
   })
 
-  const thumbnailType = useWatch({
-    control: form.control,
-    name: 'thumbnail_type',
-    defaultValue: serverValues.thumbnail_type,
-  })
-
   const { isDirty } = form.formState
 
   // Keep the global store's dirty map in sync — no separate state needed.
@@ -143,22 +196,22 @@ function EditCourseGeneral() {
     errorMessage: t('errors.saveFailed'),
     successMessage: tCommon('saved'),
     onError: setError,
+    setError: form.setError,
   })
 
   // Hydrate form from server data on mount / when server data changes.
   // RHF's `reset` only runs when values actually differ, so it's cheap.
   useEffect(() => {
     if (!isLoading && courseStructure) {
-      form.reset(serverValues, { keepDirtyValues: true })
+      // keepErrors: a failed save rolls the optimistic cache back, and that
+      // re-hydration must not wipe the server's field errors (UX-242).
+      form.reset(serverValues, { keepDirtyValues: true, keepErrors: true })
     }
   }, [courseStructure, isLoading, serverValues, form])
 
   const handleSubmit = async (values: CourseGeneralValues) => {
     setError('')
-    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', {
-      intent: 'publish',
-      required: true,
-    })
+    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', { intent: 'publish' })
     if (!descriptionGate.canSave) {
       setError(descriptionGate.errors[0]?.message ?? t('errors.saveFailed'))
       return
@@ -246,7 +299,6 @@ function EditCourseGeneral() {
                       onBlur={field.onBlur}
                       preset="courseDescription"
                       placeholder={t('description.placeholder')}
-                      required
                     />
                   )}
                 />
@@ -272,24 +324,6 @@ function EditCourseGeneral() {
                 <FieldError errors={[form.formState.errors.about]} />
               </Field> */}
 
-            <Separator />
-
-            <Controller
-              control={form.control}
-              name="learnings"
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel id="learnings-label" className="text-base font-semibold">
-                    {t('learnings.label')}
-                  </FieldLabel>
-                  <div role="group" aria-labelledby="learnings-label">
-                    <LearningItemsList value={field.value} onChange={field.onChange} />
-                  </div>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
-
             <Controller
               control={form.control}
               name="tags"
@@ -308,6 +342,28 @@ function EditCourseGeneral() {
                 </Field>
               )}
             />
+
+            <Controller
+              control={form.control}
+              name="learnings"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel className="flex items-center gap-2 text-base font-semibold">
+                    <ListChecks className="h-4 w-4" aria-hidden="true" />
+                    {t('learnings.label')}
+                  </FieldLabel>
+                  <LearningsEditor
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    errors={
+                      Array.isArray(form.formState.errors.learnings) ? form.formState.errors.learnings : undefined
+                    }
+                  />
+                  {/* `learnings.root`: schema; `learnings` itself: a server field error (UX-242). */}
+                  <FieldError errors={[form.formState.errors.learnings?.root ?? form.formState.errors.learnings]} />
+                </Field>
+              )}
+            />
           </div>
         </CourseEditorStagedSection>
 
@@ -322,32 +378,7 @@ function EditCourseGeneral() {
             description={t('thumbnail.mediaActionsDescription')}
           />
 
-          <Controller
-            control={form.control}
-            name="thumbnail_type"
-            render={({ field, fieldState }) => (
-              <Field>
-                <FieldLabel className="text-base font-semibold">{t('thumbnailType')}</FieldLabel>
-                <Select value={field.value} onValueChange={field.onChange} items={thumbnailTypeItems}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {thumbnailTypeItems.map(item => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <FieldError errors={[fieldState.error]} />
-              </Field>
-            )}
-          />
-
-          <ThumbnailUpdate thumbnailType={thumbnailType} />
+          <ThumbnailUpdate />
         </CourseEditorSection>
       </form>
     </div>

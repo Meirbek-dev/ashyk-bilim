@@ -275,7 +275,7 @@ const MARKDOWN_PRESET_RULES: Record<MarkdownEditorPreset, MarkdownPresetRules> =
     icon: GraduationCap,
     renderMode: 'courseDescription',
     minHeight: 300,
-    maxLength: 8000,
+    maxLength: 5000,
     allowTaskList: false,
     allowTable: true,
     allowMath: false,

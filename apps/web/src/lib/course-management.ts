@@ -21,6 +21,27 @@ export interface CourseChecklistItem {
   href?: CourseWorkspaceStage
 }
 
+/**
+ * Whether `userId` authors the course the way the server sees it
+ * (`Course::is_author`): the creator, or an active contributor
+ * (`contributor_ids` on the wire). `:own`-scoped grants apply to authors.
+ */
+export function isCourseAuthor(
+  course: { creator_id?: string | null | undefined; contributor_ids?: string[] | undefined },
+  userId: string | null | undefined,
+): boolean {
+  if (!userId) return false
+  return course.creator_id === userId || (course.contributor_ids ?? []).includes(userId)
+}
+
+/** Only the creator may delete the course (`CourseService::delete`); contributors may not (UX-166). */
+export function isCourseCreator(
+  course: { creator_id?: string | null | undefined },
+  userId: string | null | undefined,
+): boolean {
+  return Boolean(userId) && course.creator_id === userId
+}
+
 export function cleanCourseUuid(courseUuid: string): string {
   return courseUuid.replace(/^course_/, '')
 }
@@ -84,7 +105,7 @@ export function getCourseReadinessChecklist(
   editorData?: CourseEditorBundle | null,
 ): CourseChecklistItem[] {
   const stats = getCourseContentStats(course)
-  const contributors = editorData?.contributors?.data ?? course?.authors ?? []
+  const contributors = editorData?.contributors?.data ?? []
   const certifications = editorData?.certifications?.data ?? []
   const linkedUserGroups = editorData?.linkedUserGroups?.data ?? []
 

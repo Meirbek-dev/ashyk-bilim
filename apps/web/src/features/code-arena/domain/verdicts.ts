@@ -1,59 +1,74 @@
 import type { CodeVerdict, TestCaseResult } from './codeChallenge.types'
 
+// BUG-373: verdicts come from exact codes, never substrings ('RUNTIME'.includes('TIME')).
+/** Server `CodeRunStatus` (upper-cased by the service layer) → verdict. */
+const RUN_STATUS_VERDICT: Record<string, CodeVerdict> = {
+  QUEUED: 'RUNNING',
+  RUNNING: 'RUNNING',
+  ACCEPTED: 'ACCEPTED',
+  WRONG_ANSWER: 'WRONG_ANSWER',
+  COMPILE_ERROR: 'COMPILE_ERROR',
+  RUNTIME_ERROR: 'RUNTIME_ERROR',
+  TIME_LIMIT: 'TIME_LIMIT',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  DEGRADED: 'DEGRADED',
+}
+
 export function verdictFromRun(status: string | undefined, passed: number, total: number): CodeVerdict {
-  const normalized = (status ?? '').toUpperCase()
-  if (!normalized) return 'IDLE'
-  if (normalized === 'DEGRADED') return 'DEGRADED'
-  if (normalized.includes('COMPILE')) return 'COMPILE_ERROR'
-  if (normalized.includes('TIME')) return 'TIME_LIMIT'
-  if (normalized.includes('RUNTIME')) return 'RUNTIME_ERROR'
-  if (normalized.includes('RUN') || normalized.includes('QUEUE') || normalized.includes('PROCESS')) return 'RUNNING'
-  if (total > 0 && passed >= total) return 'ACCEPTED'
-  if (normalized.includes('ACCEPTED') && passed >= total) return 'ACCEPTED'
-  return 'WRONG_ANSWER'
+  if (!status) return 'IDLE'
+  const verdict = RUN_STATUS_VERDICT[status.toUpperCase()] ?? 'INTERNAL_ERROR'
+  return verdict === 'ACCEPTED' && total > 0 && passed < total ? 'WRONG_ANSWER' : verdict
+}
+
+/** One case's verdict from its Judge0 status id (the server rewrites a mismatched output to 4). */
+export function caseVerdict(result: Pick<TestCaseResult, 'passed' | 'status_id'>): CodeVerdict {
+  const id = result.status_id
+  if (id === null || id === undefined) return result.passed ? 'ACCEPTED' : 'WRONG_ANSWER'
+  if (id === 1 || id === 2) return 'RUNNING'
+  if (id === 3) return 'ACCEPTED'
+  if (id === 4) return 'WRONG_ANSWER'
+  if (id === 5) return 'TIME_LIMIT'
+  if (id === 6) return 'COMPILE_ERROR'
+  if (id >= 7 && id <= 12) return 'RUNTIME_ERROR'
+  return 'INTERNAL_ERROR'
 }
 
 export function verdictFromResults(results: TestCaseResult[] | null): CodeVerdict | null {
   if (!results) return null
   if (results.length === 0) return 'IDLE'
-  if (results.every(result => result.passed)) return 'ACCEPTED'
   const firstFailed = results.find(result => !result.passed)
-  const status = (firstFailed?.status_description ?? '').toUpperCase()
-  if (status.includes('COMPILE')) return 'COMPILE_ERROR'
-  if (status.includes('TIME')) return 'TIME_LIMIT'
-  if (status.includes('RUNTIME')) return 'RUNTIME_ERROR'
-  return 'WRONG_ANSWER'
+  return firstFailed ? caseVerdict(firstFailed) : 'ACCEPTED'
 }
 
-export function verdictLabel(verdict: CodeVerdict | null): string {
+/** Catalog key under `Activities.CodeChallenges` (UX-286: labels are localized). */
+export function verdictLabelKey(verdict: CodeVerdict | null): string {
   switch (verdict) {
     case 'ACCEPTED': {
-      return 'Accepted'
+      return 'status.accepted'
     }
     case 'WRONG_ANSWER': {
-      return 'Wrong Answer'
+      return 'status.wrongAnswer'
     }
     case 'COMPILE_ERROR': {
-      return 'Compile Error'
+      return 'status.compilationError'
     }
     case 'RUNTIME_ERROR': {
-      return 'Runtime Error'
+      return 'status.runtimeError'
     }
     case 'TIME_LIMIT': {
-      return 'Time Limit'
+      return 'status.timeLimitExceeded'
+    }
+    case 'INTERNAL_ERROR': {
+      return 'status.internalError'
     }
     case 'DEGRADED': {
-      return 'Runner Unavailable'
+      return 'status.runnerUnavailable'
     }
     case 'RUNNING': {
-      return 'Running'
-    }
-    case 'IDLE':
-    case null: {
-      return 'Ready'
+      return 'status.running'
     }
     default: {
-      return 'Ready'
+      return 'status.ready'
     }
   }
 }
@@ -69,6 +84,7 @@ export function verdictTone(verdict: CodeVerdict | null): 'success' | 'destructi
     }
     case 'COMPILE_ERROR':
     case 'TIME_LIMIT':
+    case 'INTERNAL_ERROR':
     case 'DEGRADED': {
       return 'warning'
     }

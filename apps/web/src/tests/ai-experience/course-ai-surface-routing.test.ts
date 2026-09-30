@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { resolveCourseAISurfaceRoute } from '@/features/course-qa/components/course-ai-hub'
 import type { ActivityAIMode, AIScope } from '@/features/ai-experience'

@@ -8,7 +8,6 @@ export class CourseCreatePage {
   public readonly page: Page
 
   public readonly titleInput: Locator
-  public readonly descriptionTextarea: Locator
   public readonly createButton: Locator
   public readonly errorMessage: Locator
 
@@ -16,10 +15,8 @@ export class CourseCreatePage {
     this.page = page
     // The wizard uses id="course-title" on the title input
     this.titleInput = page.locator('#course-title').or(page.locator('input[id*="course-title"]'))
-    // Short description textarea
-    this.descriptionTextarea = page
-      .locator('#course-description')
-      .or(page.locator('textarea[id*="course-description"]'))
+    // v2: the wizard is title + structure only — description/access/media live in
+    // Course Studio (details stage), so there is no description field here.
     // Primary CTA — matches any button containing "create" in the wizard
     this.createButton = page.getByRole('button', {
       name: /create course|create/i,
@@ -34,20 +31,19 @@ export class CourseCreatePage {
 
   /**
    * Fill the wizard and submit.
-   * Returns the URL-embedded course UUID after redirect to the curriculum page.
+   * Returns the URL-embedded course UUID after redirect to the course overview
+   * (v2 lands on `/dash/courses/<uuid>`, the Course Studio overview).
    */
-  public async createCourse(opts: { title: string; description: string }): Promise<string> {
+  public async createCourse(opts: { title: string }): Promise<string> {
     await this.titleInput.fill(opts.title)
-    await this.descriptionTextarea.fill(opts.description)
     await this.createButton.click()
 
-    // After creation, Next.js redirects to /en/dash/courses/<uuid>/curriculum
-    await this.page.waitForURL(/\/dash\/courses\/[^/]+\/curriculum/, {
+    await this.page.waitForURL(/\/dash\/courses\/(?!new)[^/?#]+(?:[/?#]|$)/, {
       timeout: 20_000,
     })
 
     const url = this.page.url()
-    const match = /\/courses\/([^/]+)\/curriculum/.exec(url)
+    const match = /\/courses\/([^/?#]+)/.exec(url)
     if (!match?.[1]) throw new Error(`Could not extract course UUID from URL: ${url}`)
     return match[1]
   }

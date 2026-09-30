@@ -1,6 +1,6 @@
 'use client'
 
-import { getAnalyticsBucketLabel, getAnalyticsCompareLabel } from '@/lib/analytics/labels'
+import { getAnalyticsBucketLabel, getAnalyticsCompareLabel, getAnalyticsSortLabel } from '@/lib/analytics/labels'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { AnalyticsFilterOption, AnalyticsQuery } from '@/types/analytics'
 import { usePathname, useRouter } from 'next/navigation'
@@ -36,6 +36,8 @@ interface TeacherFilterBarProps {
   courseCount: number
   courseOptions?: AnalyticsFilterOption[]
   cohortOptions?: AnalyticsFilterOption[]
+  /** `sort_by` keys the page's endpoint honours; none hides the sort controls. */
+  sortKeys?: readonly string[] | undefined
 }
 
 const windows: NonNullable<AnalyticsQuery['window']>[] = ['7d', '28d', '90d']
@@ -43,6 +45,7 @@ const windows: NonNullable<AnalyticsQuery['window']>[] = ['7d', '28d', '90d']
 const compareOptions: NonNullable<AnalyticsQuery['compare']>[] = ['previous_period', 'none']
 const bucketOptions: NonNullable<AnalyticsQuery['bucket']>[] = ['day', 'week']
 const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
+const EMPTY_SORT_KEYS: readonly string[] = []
 
 export default function TeacherFilterBar({
   path,
@@ -50,6 +53,7 @@ export default function TeacherFilterBar({
   courseCount,
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
+  sortKeys = EMPTY_SORT_KEYS,
 }: TeacherFilterBarProps) {
   const t = useTranslations('TeacherAnalytics')
   const router = useRouter()
@@ -91,14 +95,10 @@ export default function TeacherFilterBar({
     })
   }
 
+  const sortable = sortKeys.length > 0
   const sortOptions = [
     { value: '', label: t('filters.sortDefault') },
-    { value: 'risk', label: t('filters.sortRisk') },
-    { value: 'health', label: t('filters.sortHealth') },
-    { value: 'completion', label: t('filters.sortCompletion') },
-    { value: 'active', label: t('filters.sortActiveLearners') },
-    { value: 'difficulty', label: t('filters.sortDifficulty') },
-    { value: 'signals', label: t('filters.sortSignals') },
+    ...sortKeys.map(key => ({ value: key, label: getAnalyticsSortLabel(t, key) })),
   ]
 
   const buildHref = (windowValue: string, nextState = formState) => {
@@ -108,9 +108,9 @@ export default function TeacherFilterBar({
     params.set('bucket', nextState.bucket || 'day')
     if (nextState.course_ids) params.set('course_ids', nextState.course_ids)
     if (nextState.cohort_ids) params.set('cohort_ids', nextState.cohort_ids)
-    if (query.teacher_user_id) params.set('teacher_user_id', String(query.teacher_user_id))
-    if (nextState.sort_by) params.set('sort_by', nextState.sort_by)
-    if (nextState.sort_order) params.set('sort_order', nextState.sort_order)
+    if (query.teacher_user_id) params.set('teacher_user_id', query.teacher_user_id)
+    if (sortable && nextState.sort_by) params.set('sort_by', nextState.sort_by)
+    if (sortable && nextState.sort_order) params.set('sort_order', nextState.sort_order)
     if (nextState.timezone) params.set('timezone', nextState.timezone)
     params.set('page', '1')
     return `${basePath}?${params.toString()}`
@@ -164,37 +164,45 @@ export default function TeacherFilterBar({
           className="bg-card grid grid-cols-1 gap-4 rounded-2xl border p-5 shadow-2xs sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-windowSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.windowSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-windowSelect"
               value={formState.window}
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  window: event.target.value as NonNullable<AnalyticsQuery['window']>,
+                  window: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
             >
               {windows.map(windowValue => (
                 <NativeSelectOption key={windowValue} value={windowValue}>
-                  {t('filters.windowPrefix', { window: windowValue })}
+                  {t('filters.windowPrefix', { window: t(`filters.windows.${windowValue}`) })}
                 </NativeSelectOption>
               ))}
             </NativeSelect>
           </div>
 
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-compareSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.compareSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-compareSelect"
               value={formState.compare}
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  compare: event.target.value as NonNullable<AnalyticsQuery['compare']>,
+                  compare: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
@@ -210,15 +218,19 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-bucketSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.bucketSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-bucketSelect"
               value={formState.bucket}
               onChange={event =>
                 setFormState(state => ({
                   ...state,
-                  bucket: event.target.value as NonNullable<AnalyticsQuery['bucket']>,
+                  bucket: event.target.value,
                 }))
               }
               className="h-9 w-full text-sm"
@@ -234,10 +246,14 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-courseSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.courseSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-courseSelect"
               value={formState.course_ids}
               onChange={event =>
                 setFormState(state => ({
@@ -257,10 +273,14 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-cohortSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.cohortSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-cohortSelect"
               value={formState.cohort_ids}
               onChange={event =>
                 setFormState(state => ({
@@ -280,10 +300,14 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label
+              htmlFor="analytics-filter-timezoneSelect"
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               {t('filters.timezoneSelect')}
             </Label>
             <NativeSelect
+              id="analytics-filter-timezoneSelect"
               value={formState.timezone}
               onChange={event =>
                 setFormState(state => ({
@@ -301,41 +325,53 @@ export default function TeacherFilterBar({
             </NativeSelect>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-              {t('filters.sortBySelect')}
-            </Label>
-            <NativeSelect
-              value={formState.sort_by}
-              onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
-              className="h-9 w-full text-sm"
-            >
-              {sortOptions.map(option => (
-                <NativeSelectOption key={option.value || 'default'} value={option.value}>
-                  {option.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
+          {sortable && (
+            <>
+              <div className="space-y-1">
+                <Label
+                  htmlFor="analytics-filter-sortBySelect"
+                  className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+                >
+                  {t('filters.sortBySelect')}
+                </Label>
+                <NativeSelect
+                  id="analytics-filter-sortBySelect"
+                  value={formState.sort_by}
+                  onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
+                  className="h-9 w-full text-sm"
+                >
+                  {sortOptions.map(option => (
+                    <NativeSelectOption key={option.value || 'default'} value={option.value}>
+                      {option.label}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
 
-          <div className="space-y-1">
-            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-              {t('filters.sortOrderSelect')}
-            </Label>
-            <NativeSelect
-              value={formState.sort_order}
-              onChange={event =>
-                setFormState(state => ({
-                  ...state,
-                  sort_order: event.target.value as NonNullable<AnalyticsQuery['sort_order']>,
-                }))
-              }
-              className="h-9 w-full text-sm"
-            >
-              <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
-              <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
-            </NativeSelect>
-          </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor="analytics-filter-sortOrderSelect"
+                  className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+                >
+                  {t('filters.sortOrderSelect')}
+                </Label>
+                <NativeSelect
+                  id="analytics-filter-sortOrderSelect"
+                  value={formState.sort_order}
+                  onChange={event =>
+                    setFormState(state => ({
+                      ...state,
+                      sort_order: event.target.value,
+                    }))
+                  }
+                  className="h-9 w-full text-sm"
+                >
+                  <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
+                  <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
+                </NativeSelect>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end gap-2 pt-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
             <Button

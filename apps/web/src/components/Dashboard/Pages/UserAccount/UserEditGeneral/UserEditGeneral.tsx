@@ -11,10 +11,9 @@ import type * as v from 'valibot'
 import { Loader2 } from 'lucide-react'
 
 import { Card } from '@components/ui/card'
-import { updateProfile, updateUserAvatar } from '@/lib/users/client'
+import { removeUserAvatar, updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
-import { logout } from '@services/auth/auth'
-import { getAbsoluteUrl } from '@services/config/config'
+import { useApiError } from '@/hooks/useApiError'
 import { getUserLocale } from '@/i18n/locale'
 import type { Locale } from '@/i18n/config'
 
@@ -33,6 +32,8 @@ function UserEditGeneral() {
   const { user: me } = useSession()
   const [localAvatar, setLocalAvatar] = useState<File | null>(null)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  // `null` until this page changes it: the session's avatar decides.
+  const [avatarSet, setAvatarSet] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [success, setSuccess] = useState('')
@@ -40,20 +41,20 @@ function UserEditGeneral() {
   const [currentLocale, setCurrentLocale] = useState<Locale | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const t = useTranslations('DashPage.Notifications')
-  const validationSchema = createValidationSchema(t)
+  const tCommon = useTranslations('Common')
+  const tLabels = useTranslations('DashPage.UserAccountSettings.generalSection')
+  const validationSchema = createValidationSchema(t, tLabels)
 
   type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
+  const { handleApiError, toastApiError } = useApiError<UserEditFormInput>()
 
   const form = useForm<UserEditFormInput, unknown, FormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       username: '',
-      first_name: '',
-      middle_name: '',
-      last_name: '',
+      display_name: '',
       email: '',
       bio: '',
-      details: {},
     },
     mode: 'onChange',
   })
@@ -63,24 +64,18 @@ function UserEditGeneral() {
       if (me?.id) {
         try {
           const [userDataResponse, localeResponse] = await Promise.all([Promise.resolve(me), getUserLocale()])
-          const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {}
           setUserData(userDataResponse)
           setCurrentLocale(localeResponse)
 
           // Reset form with fetched data
           form.reset({
             username: userDataResponse.username || '',
-            first_name: userDataResponse.first_name || '',
-            middle_name: userDataResponse.middle_name || '',
-            last_name: userDataResponse.last_name || '',
+            display_name: userDataResponse.display_name || '',
             email: userDataResponse.email || '',
             bio: userDataResponse.bio || '',
-            details,
           })
         } catch (fetchError) {
-          const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error'
-          console.error('Error fetching initial data:', errorMessage, fetchError)
-          setError('Failed to load user data.')
+          setError(handleApiError(fetchError, { fallback: t('profileLoadError') }).message)
         } finally {
           setInitialLoading(false)
         }
@@ -90,7 +85,7 @@ function UserEditGeneral() {
     }
 
     fetchData()
-  }, [form, me])
+  }, [form, handleApiError, me, t])
 
   useEffect(() => {
     return () => {
@@ -138,30 +133,36 @@ function UserEditGeneral() {
         if (prev) URL.revokeObjectURL(prev)
         return previewUrl
       })
-      await updateUserAvatar(me.id, uploadFile)
+      await updateUserAvatar(uploadFile)
+      setAvatarSet(true)
       setSuccess(t('avatarSuccess'))
       router.refresh()
     } catch (uploadError) {
-      console.error('Avatar upload error:', uploadError)
-      setError(t('avatarError'))
+      setError(handleApiError(uploadError, { fallback: t('avatarError') }).message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleEmailChange = async (newEmail: string) => {
-    toast.success(t('profileUpdateSuccess'), {
-      duration: 4000,
-    })
-
-    toast(t('promptLogoutOnEmailChange', { newEmail }), {
-      duration: 4000,
-      icon: '📧',
-    })
-
-    // Wait for 4 seconds before signing out
-    await new Promise(resolve => setTimeout(resolve, 4000))
-    await logout({ redirectTo: getAbsoluteUrl('/') })
+  const handleRemoveAvatar = async () => {
+    setIsLoading(true)
+    setError(undefined)
+    setSuccess('')
+    try {
+      await removeUserAvatar()
+      setAvatarSet(false)
+      setLocalAvatar(null)
+      setAvatarPreviewUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+      setSuccess(t('avatarRemoved'))
+      router.refresh()
+    } catch (removeError) {
+      setError(handleApiError(removeError, { fallback: t('avatarError') }).message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const onSubmit = async (values: FormValues) => {
@@ -170,33 +171,30 @@ function UserEditGeneral() {
       return
     }
 
-    const isEmailChanged = values.email !== userData.email
     const loadingToast = toast.loading(t('updating'))
 
     try {
-      await updateProfile(values, userData.id)
-      setUserData(current => (current ? { ...current, ...values, middle_name: values.middle_name ?? null } : null))
+      await updateProfile({ display_name: values.display_name, bio: values.bio ?? '' })
+      setUserData(current => (current ? { ...current, ...values } : null))
 
       toast.dismiss(loadingToast)
-      if (isEmailChanged) {
-        await handleEmailChange(values.email)
-      } else {
-        router.refresh()
-        toast.success(t('profileUpdateSuccess'))
-      }
+      router.refresh()
+      toast.success(t('profileUpdateSuccess'))
     } catch (updateError) {
-      console.error('Profile update error:', updateError)
-      toast.error(t('profileUpdateError'), {
-        id: loadingToast,
-      })
+      toastApiError(updateError, { setError: form.setError, fallback: t('profileUpdateError'), toastId: loadingToast })
     }
   }
 
   if (initialLoading || !userData || !currentLocale) {
     return (
       <Card className="mx-0 sm:mx-10">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <div
+          className="text-muted-foreground flex min-h-[400px] flex-col items-center justify-center gap-3 text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="text-primary h-8 w-8 animate-spin" aria-hidden="true" />
+          <span>{tCommon('loading')}</span>
         </div>
       </Card>
     )
@@ -213,7 +211,9 @@ function UserEditGeneral() {
             isLoading,
             localAvatar,
             previewUrl: avatarPreviewUrl,
+            hasAvatar: avatarSet ?? Boolean(me?.avatar_key),
             handleFileChange,
+            handleRemove: handleRemoveAvatar,
           }}
         />
       </form>

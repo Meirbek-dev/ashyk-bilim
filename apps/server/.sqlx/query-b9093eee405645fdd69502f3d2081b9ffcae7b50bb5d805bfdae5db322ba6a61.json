@@ -1,0 +1,188 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiRunId\", thread_id AS \"thread_id: AiThreadId\",\n                  kind AS \"kind: AiRunKind\", status AS \"status: AiRunStatus\",\n                  triggered_by AS \"triggered_by: UserId\", model_name, duration_ms,\n                  input_tokens, output_tokens,\n                  cost_estimate::double precision AS \"cost_estimate?\",\n                  safety_state, error_code, metadata,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at!\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM ai_runs WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "thread_id: AiThreadId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "thread_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "kind: AiRunKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status: AiRunStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "triggered_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "triggered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "model_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "model_name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "duration_ms",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "duration_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "input_tokens",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "input_tokens"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "output_tokens",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "output_tokens"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "cost_estimate?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "safety_state",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "safety_state"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "error_code",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "error_code"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "metadata",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "metadata"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "started_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "completed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 15,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "b9093eee405645fdd69502f3d2081b9ffcae7b50bb5d805bfdae5db322ba6a61"
+}

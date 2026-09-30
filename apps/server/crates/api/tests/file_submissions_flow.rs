@@ -1,0 +1,1849 @@
+//! File submissions end to end: authoring + publish gate, a learner's
+//! attempt built from real uploads (presigned PUT, finalize, attach),
+//! mime/size/count policy, submit under `If-Match`, the grader's queue and
+//! grade (redacted for the learner until published), signed downloads,
+//! CSV export, the attempt cap, and late handling.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use ab_testkit::{MintedSession, TestApp, drop_request_when, wait_until};
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
+use sqlx::PgPool;
+
+async fn instructor(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:create:platform",
+            "course:read:all",
+            "course:update:own",
+            "assessment:*:own",
+            "certificate:create:platform",
+        ],
+    )
+    .await
+}
+
+async fn learner(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["user"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "assessment:submit:assigned",
+            "assessment:read:assigned",
+            "file:create:own",
+        ],
+    )
+    .await
+}
+
+fn now_unix() -> i64 {
+    i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+    .unwrap()
+}
+
+/// Public course + chapter; returns (course_id, chapter_id).
+async fn public_course(app: &TestApp, teacher: &MintedSession) -> (String, String) {
+    let course = app
+        .post_as(
+            teacher,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Files 101" }),
+        )
+        .await;
+    let course_id = course.json()["id"].as_str().unwrap().to_owned();
+    app.publish_course(&course_id).await;
+    let chapter = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week 1" }),
+        )
+        .await;
+    (course_id, chapter.json()["id"].as_str().unwrap().to_owned())
+}
+
+/// Create + publish a file submission with the given extra config.
+async fn published_activity(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+    extra: serde_json::Value,
+) -> String {
+    let mut body = serde_json::json!({
+        "chapter_id": chapter_id, "title": "Essay PDF",
+        "instructions": "Upload your essay as a PDF.",
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        body[k] = v.clone();
+    }
+    let created = app
+        .post_as(teacher, "/api/v2/file-submissions", &body)
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/file-submissions/{id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["lifecycle"], "published");
+    assert_eq!(published.json()["published"], true);
+    id
+}
+
+/// The browser's part of an upload: create, PUT to storage, finalize.
+async fn finalized_upload(
+    app: &TestApp,
+    session: &MintedSession,
+    mime: &str,
+    payload: &[u8],
+) -> String {
+    let created = app
+        .post_as(
+            session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "file-submission", "mime": mime,
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(&put_url)
+        .header("content-type", mime)
+        .header("if-none-match", "*")
+        .body(payload.to_vec())
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "presigned PUT: {}", put.status());
+    let finalized = app
+        .post_as(
+            session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+    id
+}
+
+fn with_if_match(
+    session: &MintedSession,
+    method: &str,
+    uri: String,
+    if_match: Option<&str>,
+    body: &serde_json::Value,
+) -> Request<Body> {
+    let mut builder = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::COOKIE, &session.cookie);
+    if let Some(version) = if_match {
+        builder = builder.header(header::IF_MATCH, version);
+    }
+    builder.body(Body::from(body.to_string())).unwrap()
+}
+
+async fn referenced_count(app: &TestApp, upload_id: &str) -> i32 {
+    sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(upload_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn author_attempt_grade_and_download(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let mallory = learner(&app, "mallory").await;
+
+    // A draft activity is invisible to learners until published.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay PDF" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(created.json()["lifecycle"], "draft");
+    assert_eq!(created.json()["max_files"], 1);
+    assert_eq!(
+        app.get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    // BUG-114: saving a draft on an unpublished activity is 409 like starting one.
+    let draft_on_draft = app
+        .send(with_if_match(
+            &alice,
+            "PATCH",
+            format!("/api/v2/file-submissions/{id}/draft"),
+            None,
+            &serde_json::json!({ "files": [] }),
+        ))
+        .await;
+    assert_eq!(
+        draft_on_draft.status,
+        StatusCode::CONFLICT,
+        "{}",
+        draft_on_draft.text()
+    );
+    // Publishing needs instructions; a zero-width space is not one, nor a
+    // title (BUG-224 nit).
+    let zero_width = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "title": "\u{200B}" }),
+        )
+        .await;
+    assert_eq!(zero_width.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(zero_width.json()["field_errors"][0]["field"], "title");
+    for instructions in ["", "\u{200B}"] {
+        let patched = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}"),
+                &serde_json::json!({ "instructions": instructions }),
+            )
+            .await;
+        assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+        let refused = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/publish"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(refused.json()["field_errors"][0]["field"], "instructions");
+    }
+    let patched = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({
+                "instructions": "Upload your essay as a PDF.",
+                "allowed_mime_types": ["Application/PDF"], "max_files": 2,
+                "max_file_size_mb": 1, "max_attempts": 1,
+                "due_at_unix": now_unix() + 3600,
+            }),
+        )
+        .await;
+    assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+    assert_eq!(patched.json()["allowed_mime_types"][0], "application/pdf");
+    let out_of_range = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "max_files": 99 }),
+        )
+        .await;
+    assert_eq!(out_of_range.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK, "{}", seen.text());
+    assert!(seen.json()["current_attempt"].is_null());
+    let activity_id = seen.json()["activity_id"].as_str().unwrap().to_owned();
+    assert_eq!(
+        app.get_as(
+            &alice,
+            &format!("/api/v2/activities/{activity_id}/file-submission")
+        )
+        .await
+        .json()["id"],
+        id.as_str()
+    );
+
+    // No draft yet → 404; opening one → 201, again → 200 (same attempt).
+    assert_eq!(
+        app.get_as(&alice, &format!("/api/v2/file-submissions/{id}/draft"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    let opened = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(opened.status, StatusCode::CREATED, "{}", opened.text());
+    let attempt_id = opened.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(opened.json()["version"], 1);
+    let reopened = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(reopened.status, StatusCode::OK);
+    assert_eq!(reopened.json()["id"], attempt_id.as_str());
+
+    // Policy: wrong mime, oversize, too many, someone else's upload.
+    let pdf = b"%PDF-1.4 fake essay".to_vec();
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", &pdf).await;
+    let png_upload = finalized_upload(&app, &alice, "image/png", b"png").await;
+    let wrong_mime = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": png_upload }] }),
+        )
+        .await;
+    assert_eq!(wrong_mime.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(wrong_mime.json()["details"]["content_type"], "image/png");
+    let big = vec![b'x'; 1024 * 1024 + 1];
+    let big_upload = finalized_upload(&app, &alice, "application/pdf", &big).await;
+    let oversize = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": big_upload }] }),
+        )
+        .await;
+    assert_eq!(oversize.status, StatusCode::PAYLOAD_TOO_LARGE);
+    let too_many = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({ "files": [
+                { "upload_id": pdf_upload }, { "upload_id": png_upload },
+                { "upload_id": big_upload }
+            ] }),
+        )
+        .await;
+    assert_eq!(too_many.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let foreign = app
+        .patch_as(
+            &mallory,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(foreign.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        foreign.json()["field_errors"][0]["code"],
+        "upload-not-ready"
+    );
+    // BUG-204 nit: the rejected body opened no attempt for mallory.
+    let none = app
+        .get_as(&mallory, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(none.json().as_array().unwrap().len(), 0, "{}", none.text());
+
+    // Attach the PDF: the version moves, the upload is now referenced.
+    let saved = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({ "files": [
+                { "upload_id": pdf_upload, "display_name": "essay.pdf" }
+            ] }),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    assert_eq!(saved.json()["version"], 2);
+    assert_eq!(saved.json()["files"][0]["filename"], "essay.pdf");
+    let file_id = saved.json()["files"][0]["id"].as_str().unwrap().to_owned();
+    assert_eq!(referenced_count(&app, &pdf_upload).await, 1);
+
+    // Submit: stale If-Match → 412; then it lands on time.
+    let stale = app
+        .send(with_if_match(
+            &alice,
+            "POST",
+            format!("/api/v2/file-submissions/{id}/submit"),
+            Some("1"),
+            &serde_json::json!({}),
+        ))
+        .await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["details"]["actual"], 2);
+    let submitted = app
+        .send(with_if_match(
+            &alice,
+            "POST",
+            format!("/api/v2/file-submissions/{id}/submit"),
+            Some("2"),
+            &serde_json::json!({}),
+        ))
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["status"], "submitted");
+    assert_eq!(submitted.json()["is_late"], false);
+    assert_eq!(submitted.json()["version"], 3);
+    // Only one attempt allowed: no new draft.
+    let capped = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(capped.status, StatusCode::CONFLICT, "{}", capped.text());
+    assert_eq!(capped.json()["details"]["max_attempts"], 1);
+    // UX-189: the author's previews are uncapped, like quiz previews.
+    for number in 1..=2 {
+        let preview = app
+            .post_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/draft"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
+        assert_eq!(preview.json()["attempt_number"], number);
+        sqlx::query(
+            "UPDATE file_submission_attempts SET status = 'submitted', submitted_at = now()
+             WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(preview.json()["id"].as_str().unwrap()).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    }
+
+    // Teacher surface: queue, attempt view, grade under the lock.
+    assert_eq!(
+        app.get_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submissions")
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
+    let queue = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/submissions?status=submitted"),
+        )
+        .await;
+    assert_eq!(queue.status, StatusCode::OK, "{}", queue.text());
+    assert_eq!(queue.json()["items"].as_array().unwrap().len(), 1);
+    assert_eq!(queue.json()["items"][0]["user"]["username"], "alice");
+    assert_eq!(queue.json()["items"][0]["file_count"], 1);
+    let none = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/submissions?search=zzz"),
+        )
+        .await;
+    assert_eq!(none.json()["items"].as_array().unwrap().len(), 0);
+    // UX-146: an out-of-range page size is refused, not clamped.
+    for limit in ["0", "101"] {
+        let bad = app
+            .get_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}/submissions?limit={limit}"),
+            )
+            .await;
+        assert_eq!(
+            bad.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            bad.text()
+        );
+        assert_eq!(bad.json()["field_errors"][0]["code"], "out-of-range");
+    }
+    let grader_view = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}"),
+        )
+        .await;
+    assert_eq!(grader_view.status, StatusCode::OK, "{}", grader_view.text());
+    assert_eq!(grader_view.json()["user"]["username"], "alice");
+    assert_eq!(
+        app.get_as(
+            &mallory,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+    let no_score = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("3"),
+            &serde_json::json!({ "action": "save" }),
+        ))
+        .await;
+    assert_eq!(no_score.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(no_score.json()["field_errors"][0]["field"], "final_score");
+    assert_eq!(no_score.json()["field_errors"][0]["code"], "required");
+    let out_of_range = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("3"),
+            &serde_json::json!({ "action": "save", "final_score": 101 }),
+        ))
+        .await;
+    assert_eq!(out_of_range.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        out_of_range.json()["field_errors"][0]["field"],
+        "final_score"
+    );
+    let no_lock = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 90 }),
+        )
+        .await;
+    assert_eq!(no_lock.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(no_lock.json()["field_errors"][0]["field"], "If-Match");
+    // UX-108: the grading gate answers before the header is validated.
+    let learner_no_lock = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 90 }),
+        )
+        .await;
+    assert_eq!(learner_no_lock.status, StatusCode::FORBIDDEN);
+    // UX-134 (BUG-204 nit): a stranger grading → the unknown-id 404.
+    let stranger_grade = app
+        .patch_as(
+            &mallory,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            &serde_json::json!({ "action": "save", "final_score": 90 }),
+        )
+        .await;
+    assert_eq!(
+        stranger_grade.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        stranger_grade.text()
+    );
+    // UX-141: `rubric_scores` is an object of bounded size — 422 otherwise;
+    // BUG-223: a NUL in an object key is refused at the door like a value.
+    for (bad, field) in [
+        (serde_json::json!("notobj"), "rubric_scores"),
+        (
+            serde_json::json!({ "blob": "x".repeat(5000) }),
+            "rubric_scores",
+        ),
+        (serde_json::json!({ "a\u{0}b": 1 }), "body"),
+    ] {
+        let bad_rubric = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+                &serde_json::json!({ "action": "save", "final_score": 90, "rubric_scores": bad }),
+            )
+            .await;
+        assert_eq!(
+            bad_rubric.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            bad_rubric.text()
+        );
+        assert_eq!(bad_rubric.json()["field_errors"][0]["field"], field);
+    }
+    let saved_grade = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("3"),
+            &serde_json::json!({ "action": "save", "final_score": 90,
+                                  "feedback": "Solid.", "rubric_scores": { "clarity": 9 } }),
+        ))
+        .await;
+    assert_eq!(saved_grade.status, StatusCode::OK, "{}", saved_grade.text());
+    assert_eq!(saved_grade.json()["status"], "graded");
+    assert_eq!(saved_grade.json()["final_score"], 90.0);
+    // The learner sees nothing until publication.
+    let hidden = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}"),
+        )
+        .await;
+    assert_eq!(hidden.json()["status"], "graded");
+    // UX-199: the owner's view names its owner (the review workspace's «own» check).
+    assert_eq!(hidden.json()["user"]["username"], "alice");
+    assert!(hidden.json()["final_score"].is_null());
+    assert!(hidden.json()["feedback"].is_null());
+    let stale_grade = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("3"),
+            &serde_json::json!({ "action": "publish", "final_score": 90 }),
+        ))
+        .await;
+    assert_eq!(stale_grade.status, StatusCode::PRECONDITION_FAILED);
+    let published_grade = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("4"),
+            // UX-113: no `feedback` key keeps the stored text (asserted below).
+            &serde_json::json!({ "action": "publish", "final_score": 90 }),
+        ))
+        .await;
+    assert_eq!(
+        published_grade.status,
+        StatusCode::OK,
+        "{}",
+        published_grade.text()
+    );
+    // BUG-128: a released grade is final — it cannot be returned (same
+    // table as assessment submissions).
+    let retract = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some("5"),
+            &serde_json::json!({ "action": "return", "feedback": "again" }),
+        ))
+        .await;
+    assert_eq!(
+        retract.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        retract.text()
+    );
+    assert_eq!(retract.json()["field_errors"][0]["field"], "action");
+    assert_eq!(
+        retract.json()["field_errors"][0]["code"],
+        "transition-not-allowed"
+    );
+    let visible = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(visible.json()[0]["status"], "published");
+    assert_eq!(visible.json()[0]["final_score"], 90.0);
+    assert_eq!(visible.json()[0]["feedback"], "Solid.");
+    assert_eq!(visible.json()[0]["rubric_scores"]["clarity"], 9);
+
+    // Downloads: owner and grader get a working signed URL; others 404.
+    for session in [&alice, &teacher] {
+        let signed = app
+            .get_as(
+                session,
+                &format!("/api/v2/file-submission-files/{file_id}/url"),
+            )
+            .await;
+        assert_eq!(signed.status, StatusCode::OK, "{}", signed.text());
+        assert_eq!(signed.json()["filename"], "essay.pdf");
+        let url = signed.json()["url"].as_str().unwrap().to_owned();
+        let fetched = reqwest::get(url).await.unwrap();
+        assert_eq!(fetched.bytes().await.unwrap().to_vec(), pdf);
+    }
+    assert_eq!(
+        app.get_as(
+            &mallory,
+            &format!("/api/v2/file-submission-files/{file_id}/url")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+
+    // CSV export.
+    let csv = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/submissions/export"),
+        )
+        .await;
+    assert_eq!(csv.status, StatusCode::OK);
+    assert!(csv.content_type().starts_with("text/csv"));
+    let text = csv.text();
+    // UX-108: BOM + Russian by default, like the grading exports.
+    assert!(
+        text.starts_with("\u{feff}ID попытки,Студент,Email,Статус"),
+        "{text}"
+    );
+    assert!(text.contains("alice@example.com,Опубликовано,1,"), "{text}");
+    let kk = app
+        .send(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/v2/file-submissions/{id}/submissions/export"))
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::ACCEPT_LANGUAGE, "kk-KZ,ru;q=0.8")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    let kk_text = kk.text();
+    assert!(
+        kk_text.starts_with("\u{feff}Әрекет ID,Білім алушы,Email,Мәртебе"),
+        "{kk_text}"
+    );
+    assert!(kk_text.contains(",Жарияланды,1,"), "{kk_text}");
+}
+
+/// BUG-113: a submit retried with the same `Idempotency-Key` replays the
+/// stored response instead of opening and submitting a second attempt.
+#[sqlx::test(migrations = "../../migrations")]
+async fn submit_replays_under_an_idempotency_key(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF once").await;
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let submit = |key: &str, body: serde_json::Value| {
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/v2/file-submissions/{id}/submit"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &alice.cookie)
+            .header("idempotency-key", key)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    let body = serde_json::json!({ "files": [{ "upload_id": pdf_upload }] });
+    let first = app.send(submit("k1", body.clone())).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["attempt_number"], 1);
+    let replay = app.send(submit("k1", body)).await;
+    assert_eq!(replay.status, StatusCode::OK, "{}", replay.text());
+    assert_eq!(replay.json(), first.json(), "the stored response, verbatim");
+    let reused = app
+        .send(submit("k1", serde_json::json!({ "files": [] })))
+        .await;
+    assert_eq!(reused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(reused.json()["field_errors"][0]["code"], "reused");
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF late").await;
+
+    // Closed: past due, no late work.
+    let closed = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() - 60, "allow_late": false }),
+    )
+    .await;
+    let refused = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closed}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    // BUG-166: the quiz vocabulary (403 `cannot submit: PAST_DUE`), not 409.
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert_eq!(refused.json()["detail"], "cannot submit: PAST_DUE");
+    let no_draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closed}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        no_draft.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        no_draft.text()
+    );
+    assert_eq!(no_draft.json()["detail"], "cannot start: PAST_DUE");
+    let projection = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{closed}"))
+        .await;
+    assert_eq!(
+        projection.json()["disabled_reasons"],
+        serde_json::json!(["PAST_DUE"]),
+        "{}",
+        projection.text()
+    );
+
+    // The deadline closes under an open draft: submit is 403, the draft stays.
+    let closing = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    let draft = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::OK, "{}", draft.text());
+    let moved = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{closing}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 60 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+    let late_submit = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        late_submit.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        late_submit.text()
+    );
+    assert_eq!(late_submit.json()["detail"], "cannot submit: PAST_DUE");
+    // UX-115: so is a draft save — the stored files stay.
+    let late_save = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{closing}/draft"),
+            &serde_json::json!({ "files": [] }),
+        )
+        .await;
+    assert_eq!(
+        late_save.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        late_save.text()
+    );
+    assert_eq!(late_save.json()["detail"], "cannot save: PAST_DUE");
+    let still_draft = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{closing}/draft"))
+        .await;
+    assert_eq!(still_draft.status, StatusCode::OK, "{}", still_draft.text());
+    assert_eq!(still_draft.json()["status"], "draft");
+    assert_eq!(still_draft.json()["files"].as_array().unwrap().len(), 1);
+    // Nothing attached is a validation error even when open.
+    let empty_target = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let empty = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{empty_target}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        empty.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        empty.text()
+    );
+    assert_eq!(empty.json()["field_errors"][0]["field"], "files");
+    // BUG-137: …and it did not open an empty draft attempt on the way out.
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{empty_target}/me"),
+        )
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 0, "{}", mine.text());
+
+    // Penalised: 10%/day, two days late (capped at 5 days).
+    let penalised = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({
+            "due_at_unix": now_unix() - 2 * 86_400 - 60, "allow_late": true,
+            "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 5 },
+        }),
+    )
+    .await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{penalised}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(submitted.json()["status"], "submitted");
+    assert_eq!(submitted.json()["is_late"], true);
+    assert_eq!(submitted.json()["late_penalty_pct"], 30.0);
+    // The same upload is now referenced by two attempts.
+    assert_eq!(referenced_count(&app, &pdf_upload).await, 2);
+    // UX-121: the grade applies the stored penalty like a quiz (80 → 56 at
+    // 30 %); the raw score is kept so the form reopens with 80, not 56.
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let version = submitted.json()["version"].to_string();
+    let graded = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    assert_eq!(graded.json()["raw_score"], 80.0);
+    assert_eq!(graded.json()["final_score"], 56.0);
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}"),
+        )
+        .await;
+    assert_eq!(mine.json()["final_score"], 56.0, "{}", mine.text());
+}
+
+/// BUG-316: a settings change to the late rules re-prices every existing
+/// file hand-in — the rate (80 → 56 → 32) and the due date (→ on time, 80).
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF late").await;
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({
+            "due_at_unix": now_unix() - 2 * 86_400 - 60, "allow_late": true,
+            "late_policy": { "kind": "penalty", "percent_per_day": 10, "max_days": 5 },
+        }),
+    )
+    .await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let graded = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&submitted.json()["version"].to_string()),
+            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+        ))
+        .await;
+    assert_eq!(graded.json()["final_score"], 56.0, "{}", graded.text());
+    let attempt_path = format!("/api/v2/file-submission-attempts/{attempt_id}");
+    for (patch, late, pct, score) in [
+        (
+            serde_json::json!({ "late_policy":
+                { "kind": "penalty", "percent_per_day": 20, "max_days": 5 } }),
+            true,
+            60.0,
+            32.0,
+        ),
+        (
+            serde_json::json!({ "due_at_unix": now_unix() + 86_400 }),
+            false,
+            0.0,
+            80.0,
+        ),
+    ] {
+        let moved = app
+            .patch_as(&teacher, &format!("/api/v2/file-submissions/{id}"), &patch)
+            .await;
+        assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+        let mine = app.get_as(&alice, &attempt_path).await;
+        assert_eq!(mine.json()["is_late"], late, "{}", mine.text());
+        assert_eq!(mine.json()["late_penalty_pct"], pct, "{}", mine.text());
+        assert_eq!(mine.json()["final_score"], score, "{}", mine.text());
+    }
+
+    // BUG-322: the client hangs up the moment the PATCH commits — the
+    // re-price still runs (detached, durable post-commit path): late again.
+    let fs = uuid::Uuid::parse_str(&id).unwrap();
+    drop_request_when(
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 2 * 86_400 - 60 }),
+        ),
+        async || {
+            sqlx::query_scalar::<_, bool>(
+                "SELECT due_at < now() FROM file_submissions WHERE id = $1",
+            )
+            .bind(fs)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+        },
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped settings PATCH never re-priced", async || {
+        app.get_as(&alice, &attempt_path).await.json()["final_score"] == 32.0
+    })
+    .await;
+}
+
+/// BUG-129: completion is sticky. A second attempt that is only submitted
+/// (not yet published) keeps the course completed and the certificate.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2 }),
+    )
+    .await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let first = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let attempt_id = first.json()["id"].as_str().unwrap().to_owned();
+    let version = first.json()["version"].to_string();
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 91 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    let state = app.get_as(&alice, &learner_state).await;
+    assert_eq!(
+        state.json()["enrollment_state"],
+        "completed",
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["progress"]["completed_required_count"], 1);
+    assert_eq!(state.json()["certificate"]["issued"], true);
+    let code = state.json()["certificate"]["verify_code"].clone();
+
+    // Second attempt, submitted and awaiting a grade.
+    let second = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    assert_eq!(second.json()["status"], "submitted");
+    let state = app.get_as(&alice, &learner_state).await;
+    assert_eq!(
+        state.json()["enrollment_state"],
+        "completed",
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["progress"]["completed_required_count"], 1);
+    assert_eq!(state.json()["progress"]["progress_pct"], 100.0);
+    assert_eq!(state.json()["progress"]["needs_grading_count"], 1);
+    assert_eq!(
+        state.json()["outline"][0]["activities"][0]["complete"],
+        true
+    );
+    assert_eq!(state.json()["certificate"]["issued"], true);
+    assert_eq!(state.json()["certificate"]["verify_code"], code);
+    assert_eq!(state.json()["next_action"]["id"], "view_certificate");
+}
+
+/// UX-105: a published config whose activity the curriculum toggle hid is
+/// 404 for a learner on the config read AND on the draft (no existence
+/// leak, no misleading 409); the author still sees it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK, "{}", seen.text());
+    let activity_id = seen.json()["activity_id"].as_str().unwrap().to_owned();
+    let hidden = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": false }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::OK, "{}", hidden.text());
+    assert_eq!(
+        app.get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::NOT_FOUND, "{}", draft.text());
+    let submit = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(submit.status, StatusCode::NOT_FOUND, "{}", submit.text());
+    // UX-108: the learner reads are hidden the same way.
+    for path in ["draft", "me"] {
+        let read = app
+            .get_as(&alice, &format!("/api/v2/file-submissions/{id}/{path}"))
+            .await;
+        assert_eq!(
+            read.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            read.text()
+        );
+    }
+    let by_author = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(
+        by_author.status,
+        StatusCode::CREATED,
+        "{}",
+        by_author.text()
+    );
+}
+
+/// BUG-219: a live config passed the publish gate; an edit that would blank
+/// the instructions is a 409 with the readiness code, learners keep the old
+/// text, and course readiness names a published-but-blank config
+/// `file-submission-not-ready` (not `-unpublished`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+
+    let blanked = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "instructions": "   " }),
+        )
+        .await;
+    assert_eq!(blanked.status, StatusCode::CONFLICT, "{}", blanked.text());
+    assert_eq!(blanked.json()["code"], "conflict");
+    assert_eq!(
+        blanked.json()["details"]["readiness"],
+        serde_json::json!(["file-submission.instructions_missing"])
+    );
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(seen.json()["instructions"], "Upload your essay as a PDF.");
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ready"], true, "{}", readiness.text());
+
+    // A ready edit still lands.
+    let edited = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "instructions": "Upload the PDF." }),
+        )
+        .await;
+    assert_eq!(edited.status, StatusCode::OK, "{}", edited.text());
+
+    // A legacy row that is published with blank instructions is its own code.
+    let uuid: uuid::Uuid = id.parse().unwrap();
+    sqlx::query("UPDATE file_submissions SET instructions = '' WHERE id = $1")
+        .bind(uuid)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(
+        readiness.json()["blockers"][0]["code"],
+        "file-submission-not-ready",
+        "{}",
+        readiness.text()
+    );
+}
+
+/// BUG-229: publish racing a blank-instructions PATCH never leaves a
+/// published config with blank instructions — both run under the config
+/// row lock. BUG-232: publish flips the activity flag in the same
+/// transaction, so a client that hangs up mid-publish leaves no torn pair.
+#[sqlx::test(migrations = "../../migrations")]
+async fn publish_and_config_edits_serialize(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let create = async |title: String| {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/file-submissions",
+                &serde_json::json!({ "chapter_id": chapter_id, "title": title,
+                                      "instructions": "Upload the PDF." }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        created.json()["id"].as_str().unwrap().to_owned()
+    };
+
+    for round in 0..20 {
+        let id = create(format!("Race {round}")).await;
+        let path = format!("/api/v2/file-submissions/{id}");
+        let publish_path = format!("{path}/publish");
+        let none = serde_json::json!({});
+        let publish = app.post_as(&teacher, &publish_path, &none);
+        let blank = serde_json::json!({ "instructions": "   " });
+        let edit = app.patch_as(&teacher, &path, &blank);
+        let (published, edited) = if round % 2 == 0 {
+            tokio::join!(publish, edit)
+        } else {
+            let (edited, published) = tokio::join!(edit, publish);
+            (published, edited)
+        };
+        let seen = app.get_as(&teacher, &path).await.json();
+        if seen["lifecycle"] == "published" {
+            assert_eq!(
+                edited.status,
+                StatusCode::CONFLICT,
+                "round {round}: {}",
+                edited.text()
+            );
+            assert_eq!(seen["instructions"], "Upload the PDF.", "round {round}");
+        } else {
+            assert_eq!(
+                edited.status,
+                StatusCode::OK,
+                "round {round}: {}",
+                edited.text()
+            );
+            assert_eq!(
+                published.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "round {round}: {}",
+                published.text()
+            );
+        }
+    }
+
+    let id = create("Dropped".into()).await;
+    let path = format!("/api/v2/file-submissions/{id}");
+    let seen = async || app.get_as(&teacher, &path).await.json();
+    drop_request_when(
+        app.post_as(&teacher, &format!("{path}/publish"), &serde_json::json!({})),
+        async || seen().await["lifecycle"] == "published",
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    wait_until("the dropped publish left the activity hidden", async || {
+        let seen = seen().await;
+        seen["lifecycle"] == "published" && seen["published"] == true
+    })
+    .await;
+}
+
+/// BUG-230: a refused config PATCH writes nothing — the title travels in
+/// the same transaction as the config it was refused with.
+#[sqlx::test(migrations = "../../migrations")]
+async fn refused_config_patch_keeps_the_title(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let path = format!("/api/v2/file-submissions/{id}");
+
+    let invalid = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "title": "Renamed", "max_files": 0 }),
+        )
+        .await;
+    assert_eq!(
+        invalid.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        invalid.text()
+    );
+    let unready = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "title": "Renamed", "instructions": "  " }),
+        )
+        .await;
+    assert_eq!(unready.status, StatusCode::CONFLICT, "{}", unready.text());
+    let seen = app.get_as(&teacher, &path).await;
+    assert_eq!(seen.json()["title"], "Essay PDF", "{}", seen.text());
+}
+
+/// UX-154: the config `rubric` is an object, like the grade route's
+/// `rubric_scores` — a list or a string is a 422, on create and on patch.
+#[sqlx::test(migrations = "../../migrations")]
+async fn config_rubric_must_be_an_object(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    for bad in [serde_json::json!([1, 2]), serde_json::json!("str")] {
+        let refused = app
+            .post_as(
+                &teacher,
+                "/api/v2/file-submissions",
+                &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay", "rubric": bad }),
+            )
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.text()
+        );
+    }
+}
+
+/// BUG-241: a draft file swap whose client hangs up mid-request still moves
+/// both reference counts with the file rows, and the reaper skips (never
+/// fails on) an expired upload a file row still points at.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let draft_path = format!("/api/v2/file-submissions/{id}/draft");
+    let a = finalized_upload(&app, &alice, "application/pdf", b"%PDF a").await;
+    let b = finalized_upload(&app, &alice, "application/pdf", b"%PDF b").await;
+    let first = app
+        .patch_as(
+            &alice,
+            &draft_path,
+            &serde_json::json!({ "files": [{ "upload_id": a }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let attached = async |upload: &str| -> bool {
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM file_submission_files WHERE upload_id = $1)",
+        )
+        .bind(uuid::Uuid::parse_str(upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    for round in 0..6 {
+        let (from, to) = if round % 2 == 0 { (&a, &b) } else { (&b, &a) };
+        drop_request_when(
+            app.patch_as(
+                &alice,
+                &draft_path,
+                &serde_json::json!({ "files": [{ "upload_id": to }] }),
+            ),
+            async || attached(to).await,
+            |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+        )
+        .await;
+        wait_until("the dropped swap left a torn reference", async || {
+            referenced_count(&app, to).await == 1 && referenced_count(&app, from).await == 0
+        })
+        .await;
+    }
+
+    // An attached upload whose count was torn by an older build: expired,
+    // count 0. The reaper skips it and still collects a genuine orphan.
+    let orphan = finalized_upload(&app, &alice, "application/pdf", b"%PDF orphan").await;
+    for upload in [&a, &orphan] {
+        sqlx::query(
+            "UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'
+             WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(upload).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    }
+    let reaped = ab_db::uploads::expired(&app.pool, 500).await.unwrap();
+    assert_eq!(reaped.len(), 1);
+    let mut conn = app.pool.acquire().await.unwrap();
+    ab_db::uploads::delete(&mut conn, reaped[0].id)
+        .await
+        .unwrap();
+    drop(conn);
+    let left: Vec<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM uploads WHERE id = ANY($1)")
+        .bind(vec![
+            uuid::Uuid::parse_str(&a).unwrap(),
+            uuid::Uuid::parse_str(&orphan).unwrap(),
+        ])
+        .fetch_all(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(left, vec![uuid::Uuid::parse_str(&a).unwrap()]);
+}
+
+/// BUG-258: two drafts of one learner swapping shared uploads at once lock
+/// them in key order — never a 40P01 deadlock, and the counts stay exact.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let first = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let second = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let paths = [
+        format!("/api/v2/file-submissions/{first}/draft"),
+        format!("/api/v2/file-submissions/{second}/draft"),
+    ];
+    let files = |upload: &str| serde_json::json!({ "files": [{ "upload_id": upload }] });
+    for round in 0..12 {
+        let u1 = finalized_upload(&app, &alice, "application/pdf", b"%PDF 1").await;
+        let u2 = finalized_upload(&app, &alice, "application/pdf", b"%PDF 2").await;
+        for (path, upload) in paths.iter().zip([&u1, &u2]) {
+            let seeded = app.patch_as(&alice, path, &files(upload)).await;
+            assert_eq!(seeded.status, StatusCode::OK, "{}", seeded.text());
+        }
+        let (to_first, to_second) = (files(&u2), files(&u1));
+        let (a, b) = tokio::join!(
+            app.patch_as(&alice, &paths[0], &to_first),
+            app.patch_as(&alice, &paths[1], &to_second),
+        );
+        for swapped in [&a, &b] {
+            assert_eq!(
+                swapped.status,
+                StatusCode::OK,
+                "round {round}: {}",
+                swapped.text()
+            );
+        }
+        assert_eq!(referenced_count(&app, &u1).await, 1, "round {round}");
+        assert_eq!(referenced_count(&app, &u2).await, 1, "round {round}");
+    }
+}
+
+/// BUG-259: deleting the activity, chapter or course under a submitted file
+/// releases the learner's upload (count 0, reaper clock set) — the cascade
+/// drops the file rows, never the reference.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deletes_release_submitted_file_uploads(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let deleter = app
+        .mint_session_for(
+            teacher.user_id,
+            &["course:read:all", "course:update:own", "course:delete:own"],
+        )
+        .await;
+    let alice = learner(&app, "alice").await;
+    for target in ["activity", "chapter", "course"] {
+        let (course_id, chapter_id) = public_course(&app, &teacher).await;
+        let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+        let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF essay").await;
+        let saved = app
+            .patch_as(
+                &alice,
+                &format!("/api/v2/file-submissions/{id}/draft"),
+                &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+            )
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        let submitted = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/file-submissions/{id}/submit"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        assert_eq!(referenced_count(&app, &upload).await, 1);
+        let activity_id: uuid::Uuid =
+            sqlx::query_scalar("SELECT activity_id FROM file_submissions WHERE id = $1")
+                .bind(uuid::Uuid::parse_str(&id).unwrap())
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
+        let path = match target {
+            "activity" => format!("/api/v2/activities/{activity_id}"),
+            "chapter" => format!("/api/v2/chapters/{chapter_id}"),
+            _ => format!("/api/v2/courses/{course_id}"),
+        };
+        let deleted = app.delete_as(&deleter, &path).await;
+        assert_eq!(
+            deleted.status,
+            StatusCode::NO_CONTENT,
+            "{target}: {}",
+            deleted.text()
+        );
+        let (count, expiring): (i32, bool) = sqlx::query_as(
+            "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(&upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+        assert_eq!((count, expiring), (0, true), "{target}");
+    }
+}
+
+/// BUG-260: a grade published for a learner who left the course is
+/// recorded — and nothing more: no completion, no certificate.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let version = submitted.json()["version"].to_string();
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 91 }),
+        ))
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(published.json()["final_score"], 91.0);
+    let (completed, certificates): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM course_progress
+                 WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
+                (SELECT count(*) FROM certificate_users WHERE user_id = $1)",
+    )
+    .bind(alice.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!((completed, certificates), (0, 0));
+}
+
+/// Author permissions but no contributor row — a learner until added.
+async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:read:all",
+            "assessment:*:own",
+            "assessment:submit:assigned",
+            "assessment:read:assigned",
+            "file:create:own",
+        ],
+    )
+    .await
+}
+
+async fn set_maintainer(
+    app: &TestApp,
+    teacher: &MintedSession,
+    course_id: &str,
+    who: &MintedSession,
+    on: bool,
+) {
+    let res = if on {
+        app.post_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors"),
+            &serde_json::json!({ "user_id": who.user_id, "role": "maintainer" }),
+        )
+        .await
+    } else {
+        app.patch_as(
+            teacher,
+            &format!("/api/v2/courses/{course_id}/contributors/{}", who.user_id),
+            &serde_json::json!({ "status": "inactive" }),
+        )
+        .await
+    };
+    assert!(res.status.is_success(), "{}", res.text());
+}
+
+/// BUG-296: an open file attempt is judged by its own preview flag — a
+/// counted draft stays gated (PAST_DUE) after its owner joins the staff.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let lena = future_maintainer(&app, "lena").await;
+    let counted = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    let pdf = finalized_upload(&app, &lena, "application/pdf", b"%PDF counted").await;
+    let draft = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{counted}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf }] }),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::OK, "{}", draft.text());
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    let moved = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{counted}"),
+            &serde_json::json!({ "due_at_unix": now_unix() - 60 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::OK, "{}", moved.text());
+    let view = app
+        .get_as(&lena, &format!("/api/v2/file-submissions/{counted}"))
+        .await;
+    assert_eq!(
+        view.json()["disabled_reasons"],
+        serde_json::json!(["PAST_DUE"]),
+        "{}",
+        view.text()
+    );
+    let late = app
+        .post_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{counted}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
+    assert_eq!(late.json()["detail"], "cannot submit: PAST_DUE");
+}
+
+/// BUG-295: a file preview draft is never resumed by a learner — hidden
+/// from `GET draft`, discarded by their next write (upload reference
+/// released), which opens a counted attempt.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let lena = future_maintainer(&app, "lena").await;
+    let fresh = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "allow_late": false }),
+    )
+    .await;
+    set_maintainer(&app, &teacher, &course_id, &lena, true).await;
+    let old = finalized_upload(&app, &lena, "application/pdf", b"%PDF preview").await;
+    let preview = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{fresh}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": old }] }),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
+    assert_eq!(referenced_count(&app, &old).await, 1);
+    set_maintainer(&app, &teacher, &course_id, &lena, false).await;
+    let hidden = app
+        .get_as(&lena, &format!("/api/v2/file-submissions/{fresh}/draft"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND, "{}", hidden.text());
+    let new = finalized_upload(&app, &lena, "application/pdf", b"%PDF counted").await;
+    let reopened = app
+        .patch_as(
+            &lena,
+            &format!("/api/v2/file-submissions/{fresh}/draft"),
+            &serde_json::json!({ "files": [{ "upload_id": new }] }),
+        )
+        .await;
+    assert_eq!(reopened.status, StatusCode::OK, "{}", reopened.text());
+    assert_ne!(reopened.json()["id"], preview.json()["id"]);
+    assert_eq!(reopened.json()["attempt_number"], 1);
+    assert_eq!(referenced_count(&app, &old).await, 0);
+    let rows: Vec<bool> = sqlx::query_scalar(
+        "SELECT preview FROM file_submission_attempts WHERE file_submission_id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&fresh).unwrap())
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(rows, [false]);
+}
+
+/// BUG-314: the client hangs up the moment a file grade's publish commits.
+/// The progress projection still runs (detached, durable post-commit
+/// path): the activity completes and the certificate is issued.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let pdf_upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": pdf_upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let attempt = uuid::Uuid::parse_str(&attempt_id).unwrap();
+    let version = submitted.json()["version"].to_string();
+    drop_request_when(
+        app.send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "publish", "final_score": 90 }),
+        )),
+        async || {
+            sqlx::query_scalar::<_, String>(
+                "SELECT status::text FROM file_submission_attempts WHERE id = $1",
+            )
+            .bind(attempt)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
+                == "published"
+        },
+        |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
+    )
+    .await;
+    let learner_state = format!("/api/v2/courses/{course_id}/learner-state");
+    wait_until("the dropped file publish never projected", async || {
+        let state = app.get_as(&alice, &learner_state).await.json();
+        state["outline"][0]["activities"][0]["complete"] == true
+            && state["certificate"]["issued"] == true
+    })
+    .await;
+}

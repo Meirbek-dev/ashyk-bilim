@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO etl_id_map (entity, legacy_id, legacy_uuid, new_id)\n                   SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::uuid[])\n                   ON CONFLICT (entity, legacy_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e6b4bb868100ea917d3820abcdf233c149198e91f993dea8296eeca73735275c"
+}

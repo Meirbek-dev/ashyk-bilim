@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: BulkActionId\", performed_by AS \"performed_by: UserId\", action_type,\n                  status, target_user_ids AS \"target_user_ids: Vec<UserId>\", affected_count,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\"\n           FROM bulk_actions WHERE assessment_id = $1 ORDER BY created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: BulkActionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "performed_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "performed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "action_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "action_type"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "target_user_ids: Vec<UserId>",
+        "type_info": "UuidArray",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "target_user_ids"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "affected_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "affected_count"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "completed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "53af5a071e1e33fb454f6f2559e585977109adae6a2bd7a5f46fe4304fc57482"
+}

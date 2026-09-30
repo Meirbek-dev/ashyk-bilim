@@ -1,15 +1,23 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
+import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
+import type { AttemptState } from '@/lib/api/generated/zod'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 interface InlineStatusStripProps {
   runtime: StudentActivityRuntime
 }
 
 const ASSESSMENT_TYPES = new Set(['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLENGE', 'TYPE_FILE_SUBMISSION'])
+/** Kinds whose attempt policy (max attempts, time limit) lives on the assessment, not the learner-state runtime. */
+const ATTEMPT_POLICY_TYPES = new Set(['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLENGE'])
 
 /**
  * InlineStatusStrip
@@ -26,52 +34,75 @@ const ASSESSMENT_TYPES = new Set(['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLEN
  */
 export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   const t = useTranslations('ActivityPage')
+  const locale = useLocale()
+  const tKinds = useTranslations('Features.Assessments.Studio.kinds')
+  const formatTimeLimit = useTimeLimitLabel()
   const { mode } = useActivityLayout()
+  const activityType = runtime.activity?.type ?? ''
+  const activityUuid = runtime.activity?.uuid.replace(/^activity_/, '') ?? null
+  const hasAttemptPolicy = ATTEMPT_POLICY_TYPES.has(activityType)
+  // Same effective policy the entry card renders (shares the react-query cache with InlineAssessmentWorkspace).
+  const { vm: assessment } = useAssessmentAttempt(hasAttemptPolicy ? activityUuid : null)
+  const attempt = assessment?.surface === 'ATTEMPT' ? assessment.vm : null
+  const attemptState = useQueryClient().getQueryData<AttemptState>(
+    queryKeys.assessments.attemptState(attempt?.assessmentUuid),
+  )
 
   if (mode === 'ACTIVE_ATTEMPT') return null
-
-  const activityType = runtime.activity?.type ?? ''
   if (!ASSESSMENT_TYPES.has(activityType)) return null
 
-  const { policy } = runtime
   const { state } = runtime.progress
+  const policy = attempt
+    ? {
+        maxAttempts: attempt.policy.maxAttempts,
+        timeLimitSeconds: attempt.policy.timeLimitSeconds,
+        attemptsUsed: attemptState?.attempts_used ?? 0,
+      }
+    : hasAttemptPolicy
+      ? null // assessment policy not loaded yet — say nothing rather than "unlimited"
+      : {
+          maxAttempts: runtime.policy?.max_attempts ?? null,
+          timeLimitSeconds: runtime.policy?.time_limit_seconds ?? null,
+          attemptsUsed: runtime.progress.attempt_count ?? 0,
+        }
 
   const items: string[] = []
 
   // Human-readable activity kind label
-  items.push(getKindLabel(activityType, t))
+  items.push(tKinds(activityType))
 
-  // State
-  const stateLabel = getStateChip(state, t)
+  // State — staff previewing track no progress of their own (UX-194). UX-237: off the
+  // allowlist a leftover draft cannot be continued; the result card shows the counted attempt.
+  const accessClosed = attemptState?.disabled_reasons?.includes('ACCESS_RESTRICTED') ?? false
+  const staleDraft = accessClosed && state === 'in_progress'
+  const stateLabel = runtime.permissions.staff_preview || staleDraft ? null : getStateChip(state, t)
   if (stateLabel) items.push(stateLabel)
 
   // Passing score (not grade_release_mode)
-  if (policy?.passing_score !== null && policy?.passing_score !== undefined) {
-    items.push(t('passingScore', { score: policy.passing_score }))
+  const passingScore = runtime.policy?.passing_score
+  if (passingScore !== null && passingScore !== undefined) {
+    items.push(t('passingScore', { score: passingScore }))
   }
 
-  // Max attempts — student-readable
-  if (policy?.max_attempts) {
-    items.push(
-      t('attemptsUsed', {
-        used: runtime.progress.attempt_count ?? 0,
-        max: policy.max_attempts,
-      }),
-    )
-  } else if (activityType !== 'TYPE_FILE_SUBMISSION') {
+  // Max attempts — student-readable. UX-189: an open draft may be finished after the cap
+  // was lowered (BUG-256), so the count can pass it — never «2 из 1».
+  if (policy?.maxAttempts) {
+    items.push(t('attemptsUsed', { used: Math.min(policy.attemptsUsed, policy.maxAttempts), max: policy.maxAttempts }))
+  } else if (policy && activityType !== 'TYPE_FILE_SUBMISSION') {
     items.push(t('attemptsUnlimited'))
   }
 
   // Time limit
-  if (policy?.time_limit_seconds) {
-    items.push(formatDuration(policy.time_limit_seconds))
+  if (policy?.timeLimitSeconds) {
+    items.push(formatTimeLimit(policy.timeLimitSeconds))
   }
 
   // Due date
-  if (policy?.due_at) {
-    const dueDate = new Date(policy.due_at)
+  const dueAt = attempt?.dueAt ?? runtime.policy?.due_at
+  if (dueAt) {
+    const dueDate = new Date(dueAt)
     const isOverdue = dueDate < new Date() && state !== 'complete' && state !== 'passed' && state !== 'published'
-    const duePart = `${t('dueDate')}: ${formatDate(policy.due_at)}`
+    const duePart = `${t('dueDate')}: ${formatDate(dueAt, locale, DATE_TIME_LONG_OPTIONS)}`
     if (isOverdue) {
       items.push(`⚠ ${duePart}`)
     } else {
@@ -94,32 +125,12 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getKindLabel(activityType: string, t: (key: string) => string): string {
-  switch (activityType) {
-    case 'TYPE_EXAM': {
-      return t('activityTypes.exam')
-    }
-    case 'TYPE_CUSTOM': {
-      return t('activityTypes.learningMaterial')
-    }
-    case 'TYPE_CODE_CHALLENGE': {
-      return t('activityTypes.codeChallenge')
-    }
-    case 'TYPE_FILE_SUBMISSION': {
-      return t('activityTypes.fileSubmission')
-    }
-    default: {
-      return activityType
-    }
-  }
-}
-
 function getStateChip(state: string, t: (key: string) => string): string | null {
   switch (state) {
     case 'not_started': {
       return t('notStarted')
     }
-    case 'draft': {
+    case 'in_progress': {
       return t('draft')
     }
     case 'submitted':
@@ -144,19 +155,4 @@ function getStateChip(state: string, t: (key: string) => string): string | null 
       return null
     }
   }
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-function formatDuration(seconds: number) {
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return rest ? `${hours}h ${rest}m` : `${hours}h`
 }

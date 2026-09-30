@@ -1,34 +1,53 @@
-import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query'
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { contributorOf, useContributors } from '@/features/courses/hooks/useContributors'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 import { useSession } from '@/hooks/useSession'
-import { queryOptions, useQuery } from '@tanstack/react-query'
 
 export type ContributorStatus = 'NONE' | 'PENDING' | 'ACTIVE' | 'INACTIVE'
 
-interface Contributor {
-  user_id: number
-  authorship_status: ContributorStatus
-}
-
+/**
+ * The signed-in user's row on the course roster (`GET /courses/{id}/contributors`,
+ * creator included as `creator/active`). `NONE` when absent or signed out.
+ */
 export function useContributorStatus(courseUuid: string) {
-  const { user: viewer } = useSession()
-  const userId = viewer?.id
-  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
+  const { session } = useSession()
+  const queryClient = useQueryClient()
+  const userId = session?.userId ?? null
+  const query = useContributors(courseUuid, {
+    enabled: Boolean(userId),
+    // UX-233: no learner event channel — while the application is pending,
+    // poll the visible tab so an approval shows without a reload (focus
+    // refetch covers the tab-switch case).
+    refetchInterval: roster => (contributorOf(roster, userId)?.status === 'pending' ? 10_000 : false),
+  })
+  const row = contributorOf(query.data, userId)
+  const contributorStatus: ContributorStatus = row
+    ? (row.status.toUpperCase() as Exclude<ContributorStatus, 'NONE'>)
+    : 'NONE'
 
-  const query = useQuery(
-    queryOptions({
-      ...courseContributorsQueryOptions(userId ? normalizedCourseUuid : 'disabled'),
-      enabled: Boolean(userId),
-      select: (response): ContributorStatus => {
-        const contributors = Array.isArray(response?.data) ? (response.data as Contributor[]) : []
-        const currentUser = contributors.find(contributor => contributor.user_id === userId)
-        return currentUser?.authorship_status ?? 'NONE'
-      },
-    }),
-  )
+  // UX-251: a roster change (approval seen by the poll) also changes what the
+  // landing offers — staff never enrol — so the learner-state behind the CTA
+  // must refetch, not only the roster.
+  const lastStatus = useRef<ContributorStatus | null>(null)
+  useEffect(() => {
+    if (query.isPending) return
+    const previous = lastStatus.current
+    lastStatus.current = contributorStatus
+    if (previous !== null && previous !== contributorStatus) {
+      void queryClient.invalidateQueries({
+        queryKey: learnerCourseStateQueryOptions(stripEntityPrefix(courseUuid)).queryKey,
+      })
+    }
+  }, [contributorStatus, courseUuid, query.isPending, queryClient])
 
   return {
-    contributorStatus: query.data ?? 'NONE',
-    isLoading: query.isPending,
+    contributorStatus,
+    contributorRole: row?.role ?? null,
+    isLoading: Boolean(userId) && query.isPending,
     refetch: async () => {
       await query.refetch()
     },

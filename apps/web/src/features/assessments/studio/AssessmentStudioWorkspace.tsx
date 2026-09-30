@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, Eye, LoaderCircle, MoreHorizontal } from 'lucide-react'
+import { Archive, ArchiveRestore, Eye, LoaderCircle, MoreHorizontal } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -12,8 +12,20 @@ import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment'
 import type { AssessmentLifecycle } from '@/features/assessments/domain'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import Link from '@components/ui/AppLink'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experience'
@@ -40,10 +52,12 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const t = useTranslations('Features.Assessments.Studio')
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid)
   const [prevKind, setPrevKind] = useState<string | undefined>(undefined)
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const [kindModule, setKindModule] = useState<KindModule | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const aiScope: AIScope = {
     courseUuid,
     activityUuid,
@@ -95,20 +109,34 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm
   const previewHref = `/assessments/${studio.assessmentUuid}`
-  const archiveAssessment = () => {
+  const isArchived = studio.lifecycle === 'ARCHIVED'
+  // UX-124: archiving a live (published / scheduled) assessment cuts learners off — confirm first.
+  const isLive = studio.lifecycle === 'PUBLISHED' || studio.lifecycle === 'SCHEDULED'
+  // «Архивировать» from any live state; «Восстановить» (→ draft) once archived (BUG-171).
+  const setLifecycle = (to: 'ARCHIVED' | 'DRAFT') => {
     startTransition(async () => {
+      // The header badge reads the `activity` key; `studio` is a child of
+      // that prefix, so this refreshes both (UX-107).
+      const refresh = () =>
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
+        })
       try {
         await apiJson(`assessments/${studio.assessmentUuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: 'ARCHIVED', scheduled_at: null }),
+          body: JSON.stringify({ to: to.toLowerCase(), scheduled_at_unix: null }),
         })
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
-        })
-        toast.success(t('lifecycleChanged', { state: lifecycleLabels.ARCHIVED }))
+        await refresh()
+        toast.success(t('lifecycleChanged', { state: lifecycleLabels[to] }))
       } catch (updateError) {
-        toast.error(updateError instanceof Error ? updateError.message : t('updateLifecycleFailed'))
+        // BUG-171: a 409 names the refused stage in the page language and re-syncs the view.
+        if (hasErrorCode(updateError, 'conflict')) {
+          await refresh()
+          toast.error(t('lifecycleConflict', { state: lifecycleLabels[to] }))
+          return
+        }
+        toastApiError(updateError, { fallback: t('updateLifecycleFailed') })
       }
     })
   }
@@ -169,16 +197,44 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 }
               />
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={isPending || !studio.canArchive}
-                  onSelect={archiveAssessment}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Archive className="mr-2 size-4" />
-                  {t('archive')}
-                </DropdownMenuItem>
+                {isArchived ? (
+                  <DropdownMenuItem disabled={isPending} onClick={() => setLifecycle('DRAFT')}>
+                    <ArchiveRestore className="mr-2 size-4" />
+                    {t('restore')}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    disabled={isPending || !studio.canArchive}
+                    onClick={() => (isLive ? setArchiveConfirmOpen(true) : setLifecycle('ARCHIVED'))}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Archive className="mr-2 size-4" />
+                    {t('archive')}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <AlertDialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('archiveConfirmTitle', { title: studio.title })}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('archiveConfirmMessage')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isPending} />
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={isPending}
+                    onClick={() => {
+                      setArchiveConfirmOpen(false)
+                      setLifecycle('ARCHIVED')
+                    }}
+                  >
+                    {t('archive')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>

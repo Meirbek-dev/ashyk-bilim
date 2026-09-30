@@ -78,6 +78,12 @@ docs/
 *.md
 
 # Secrets / env (never bake into images)
+.env
+.env.*
+**/.env
+**/.env.*
+certs/
+**/target/
 extra/.env
 extra/backup.env
 apps/web/.env

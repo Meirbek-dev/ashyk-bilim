@@ -2,28 +2,25 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 
-import { apiJson } from '@/lib/api-client'
+import { aiGetRun } from '@/lib/api/generated/ai/ai'
+import type { RunStatus } from '@/lib/api/generated/zod'
 
-export interface AIRunStatusPayload {
-  run_uuid: string
-  status: string
-  model_name?: string | null
-  error_code?: string | null
-  run_metadata?: Record<string, unknown>
+/** `GET /ai/runs/{id}` (v2 `RunStatus`); the queue endpoints answer the same shape. */
+export type AIRunStatusPayload = RunStatus
+
+export function isTerminalRunStatus(status: RunStatus['status'] | undefined) {
+  return status === 'succeeded' || status === 'failed' || status === 'aborted'
 }
 
-export function aiRunStatusQueryOptions(runUuid: string, enabled = true) {
+export function aiRunStatusQueryOptions(runId: string, enabled = true) {
   return queryOptions({
-    queryKey: ['ai-run-status', runUuid],
-    queryFn: () => apiJson<AIRunStatusPayload>(`ai/runs/${runUuid}`),
-    enabled: enabled && Boolean(runUuid),
-    refetchInterval: query => {
-      const status = query.state.data?.status?.toLowerCase()
-      return status === 'finished' || status === 'error' || status === 'aborted' ? false : 2000
-    },
+    queryKey: ['ai-run-status', runId],
+    queryFn: () => aiGetRun(runId),
+    enabled: enabled && Boolean(runId),
+    refetchInterval: query => (isTerminalRunStatus(query.state.data?.status) ? false : 2000),
   })
 }
 
-export function useAIRunStatus(runUuid: string, enabled = true) {
-  return useQuery(aiRunStatusQueryOptions(runUuid, enabled))
+export function useAIRunStatus(runId: string, enabled = true) {
+  return useQuery(aiRunStatusQueryOptions(runId, enabled))
 }

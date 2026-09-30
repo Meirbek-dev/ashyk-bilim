@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { searchEditableCourses } from '@services/courses/courses'
+import { searchEditableCourses } from '@services/courses/editable'
 import { cleanCourseUuid } from '@/lib/course-management'
 import type { SourceCourseOption } from './course-create-types'
 
@@ -38,7 +38,7 @@ export function useSourceCourseSearch(initialQuery = ''): UseSourceCourseSearchR
         setOptions(
           results.map(c => ({
             courseUuid: cleanCourseUuid(c.course_uuid),
-            name: c.name,
+            name: c.name ?? '',
           })),
         )
         setState('success')

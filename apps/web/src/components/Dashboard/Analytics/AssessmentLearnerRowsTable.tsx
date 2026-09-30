@@ -1,6 +1,10 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 import type { AssessmentLearnerRow } from '@/types/analytics'
 import { useLocale, useTranslations } from 'next-intl'
@@ -14,7 +18,9 @@ interface AssessmentLearnerRowsTableProps {
 
 export default function AssessmentLearnerRowsTable({ rows, storageKey }: AssessmentLearnerRowsTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const tWorkspace = useTranslations('Features.ActivityWorkspace')
   const locale = useLocale()
+  const percent = usePercentFormat()
 
   const columns: DataTableColumnDef<AssessmentLearnerRow>[] = [
     {
@@ -28,24 +34,43 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
     {
       accessorKey: 'best_score',
       header: t('pages.assessmentColBestScore'),
-      cell: ({ row }) => row.original.best_score ?? t('atRisk.na'),
+      cell: ({ row }) => (row.original.best_score == null ? t('atRisk.na') : percent(row.original.best_score)),
     },
     {
       accessorKey: 'last_score',
       header: t('pages.assessmentColLastScore'),
-      cell: ({ row }) => row.original.last_score ?? t('atRisk.na'),
+      cell: ({ row }) => (row.original.last_score == null ? t('atRisk.na') : percent(row.original.last_score)),
     },
     {
       accessorKey: 'submitted_at',
       header: t('pages.assessmentColSubmitted'),
-      cell: ({ row }) =>
-        row.original.submitted_at ? new Date(row.original.submitted_at).toLocaleString(locale) : t('atRisk.na'),
+      // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
+      cell: ({ row }) => (
+        <span suppressHydrationWarning>
+          {row.original.submitted_at_unix
+            ? formatDate(fromUnix(row.original.submitted_at_unix), locale, DATE_TIME_OPTIONS)
+            : t('atRisk.na')}
+        </span>
+      ),
     },
     {
       accessorFn: row => row.status || '',
       id: 'status',
       header: t('pages.assessmentColStatus'),
-      cell: ({ row }) => getAnalyticsStatusLabel(t, row.original.status),
+      // UX-138: the status is the grade of record's; a newer attempt still with
+      // the teacher is flagged like the gradebook cell (BUG-175 rule).
+      cell: ({ row }) => {
+        const { status, pending_attempt } = row.original
+        const retake = status === 'pending' || status === 'graded' ? null : pending_attempt
+        return (
+          <span className="flex flex-col">
+            <span>{getAnalyticsStatusLabel(t, status)}</span>
+            {typeof retake === 'number' ? (
+              <span className="text-muted-foreground text-xs">{tWorkspace('pendingAttempt', { attempt: retake })}</span>
+            ) : null}
+          </span>
+        )
+      },
     },
   ]
 

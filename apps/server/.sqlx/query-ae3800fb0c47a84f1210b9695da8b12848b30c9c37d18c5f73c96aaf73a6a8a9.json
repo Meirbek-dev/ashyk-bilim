@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE bulk_actions SET status = $2, affected_count = $3, error_log = $4,\n               completed_at = CASE WHEN $2 IN ('completed', 'failed') THEN now() ELSE completed_at END\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ae3800fb0c47a84f1210b9695da8b12848b30c9c37d18c5f73c96aaf73a6a8a9"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM daily_teacher_metrics WHERE metric_date = ($1::text)::date",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b3ac2a28ca2f79646bb712815f47267847ef72975309b8d0f98b2b688ff93cb6"
+}

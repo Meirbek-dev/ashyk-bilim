@@ -11,7 +11,13 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { buildCourseCreationPath, getCourseContentStats, getCourseManagementContext } from '@/lib/course-management'
+import {
+  buildCourseCreationPath,
+  getCourseContentStats,
+  getCourseManagementContext,
+  isCourseAuthor,
+  isCourseCreator,
+} from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertTriangle,
@@ -29,8 +35,10 @@ import {
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
-import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
+import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbnails/CourseThumbnail'
+import { updateCourseAccess } from '@services/courses/course-writes'
+import { deleteCourseFromBackend } from '@services/courses/course-delete'
+import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import { useSession } from '@/hooks/useSession'
@@ -49,7 +57,6 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { getAbsoluteUrl } from '@services/config/config'
 
 interface ManageableCourse extends Course {
   course_uuid: string
@@ -91,7 +98,7 @@ function CoursesHome({
   const searchParams = useSearchParams()
   const [searchInput, setSearchInput] = useState(searchQuery)
   const viewMode = searchParams.get('view') === 'table' ? 'table' : 'cards'
-  const { can, isAuthenticated } = useSession()
+  const { can, isAuthenticated, user } = useSession()
   const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.APP)
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([])
   const [isBulkPending, startBulkTransition] = useTransition()
@@ -109,6 +116,10 @@ function CoursesHome({
   const totalPages = Math.max(1, Math.ceil(totalCourses / pageSize))
   const hasPagination = totalPages > 1
   const hasQuery = searchQuery.length > 0
+  // A preset scopes `totalCourses` like a query does (UX-086): its empty
+  // state names the section instead of «всего 0 / Создать первый курс».
+  const hasPreset = preset !== 'all'
+  const presetLabel = t(`presets.${preset}`)
 
   const updateRoute = (updates: Record<string, string | null>) => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -154,15 +165,15 @@ function CoursesHome({
   const canManageCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
-      Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
-    [can],
+      (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
+    [can, user?.id],
   )
 
   const canDeleteCourse = useCallback(
     (course: ManageableCourse) =>
       can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-      Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
-    [can],
+      (isCourseCreator(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
+    [can, user?.id],
   )
 
   const visibleCourseUuids = useMemo(() => optimisticCourses.map(course => course.course_uuid), [optimisticCourses])
@@ -542,7 +553,7 @@ function CoursesHome({
         }
       />
 
-      <main className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
+      <section className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
         {/* Summary Cards */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map(card => (
@@ -622,7 +633,7 @@ function CoursesHome({
               <NativeSelect
                 value={sortBy}
                 onChange={event => updateRoute({ sort: event.target.value, page: '1' })}
-                className="h-9 w-[180px]"
+                className="h-9 w-auto min-w-[180px]"
                 aria-label={t('sort.label')}
               >
                 <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
@@ -632,9 +643,10 @@ function CoursesHome({
           </div>
 
           <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
-            {t('resultsSummary', {
+            {t(hasQuery ? 'resultsSummaryWithQuery' : hasPreset ? 'resultsSummaryWithPreset' : 'resultsSummary', {
               visible: optimisticCourses.length,
               total: totalCourses,
+              preset: presetLabel,
             })}
           </div>
         </div>
@@ -644,11 +656,17 @@ function CoursesHome({
           <div className="bg-card rounded-2xl border border-dashed py-16 shadow-2xs">
             <div className="flex items-center justify-center">
               <div className="max-w-sm space-y-4 px-4 text-center">
-                <h2 className="text-foreground text-xl font-bold">{t('empty.title')}</h2>
+                <h2 className="text-foreground text-xl font-bold">
+                  {hasQuery
+                    ? t('empty.titleWithQuery', { query: searchQuery })
+                    : hasPreset
+                      ? t('empty.titleWithPreset')
+                      : t('empty.title')}
+                </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
+                  {hasQuery ? t('empty.withQuery') : hasPreset ? t('empty.withPreset') : t('empty.withoutQuery')}
                 </p>
-                {canCreateCourse ? (
+                {canCreateCourse && !hasQuery && !hasPreset ? (
                   <div className="flex justify-center pt-2">
                     <Button
                       size="sm"
@@ -670,9 +688,8 @@ function CoursesHome({
               <div key={course.course_uuid} className="w-full">
                 <CourseThumbnail
                   customLink={getCourseManagementContext(course as AppCourse, 'card').workspaceHref}
-                  actionLink={getAbsoluteUrl(
-                    getCourseManagementContext(course as AppCourse, 'card').learnerPreviewHref,
-                  )}
+                  actionLink={getCourseManagementContext(course as AppCourse, 'card').learnerPreviewHref}
+                  actionLabel={t('card.previewAsLearner')}
                   course={course}
                   trailData={trailData}
                   trailLoading={isTrailLoading}
@@ -730,7 +747,7 @@ function CoursesHome({
             </div>
           </div>
         ) : null}
-      </main>
+      </section>
 
       <AlertDialog
         open={pendingBulkAction !== null}
@@ -764,7 +781,7 @@ function CoursesHome({
   )
 }
 
-function CourseRowActions({
+export function CourseRowActions({
   course,
   onOptimisticDelete,
 }: {
@@ -773,28 +790,31 @@ function CourseRowActions({
 }) {
   const t = useTranslations('DashPage.CourseManagement.Dashboard')
   const router = useRouter()
-  const { can } = useSession()
+  const { can, user } = useSession()
+  const { toastApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const canManageCourse =
     can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
+    (isCourseAuthor(course, user?.id) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
   const canDeleteCourse =
     can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    (isCourseCreator(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
   const context = getCourseManagementContext(course as AppCourse, 'row')
 
   const handleDelete = () => {
     if (!canDeleteCourse) return
 
+    setIsDeleteDialogOpen(false)
     startTransition(async () => {
       onOptimisticDelete([course.course_uuid])
       try {
         await deleteCourseFromBackend(course.course_uuid)
         toast.success(t('rowActions.deleteSuccess'))
         router.refresh()
-      } catch {
-        toast.error(t('rowActions.deleteError'))
+      } catch (error) {
+        toastApiError(error, { fallback: t('rowActions.deleteError') })
       }
     })
   }
@@ -822,45 +842,54 @@ function CourseRowActions({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="outline" size="icon" disabled={isPending}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        }
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="icon" disabled={isPending} aria-label={t('rowActions.menuLabel')}>
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => router.push(context.workspaceHref)}>
+            <List className="size-4" />
+            {t('rowActions.openWorkspace')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(context.curriculumHref)}>
+            <Workflow className="size-4" />
+            {t('rowActions.openCurriculum')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(context.reviewHref)}>
+            <ShieldCheck className="size-4" />
+            {t('rowActions.reviewPublish')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
+            <LayoutGrid className="size-4" />
+            {t('rowActions.useAsTemplate')}
+          </DropdownMenuItem>
+          {canManageCourse ? (
+            <DropdownMenuItem onClick={handleToggleVisibility}>
+              {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
+              {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
+            </DropdownMenuItem>
+          ) : null}
+          {canDeleteCourse ? (
+            <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} variant="destructive">
+              <Trash2 className="size-4" />
+              {t('rowActions.delete')}
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CourseDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        courseName={course.name}
+        isPending={isPending}
+        onConfirm={handleDelete}
       />
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push(context.workspaceHref)}>
-          <List className="size-4" />
-          {t('rowActions.openWorkspace')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(context.curriculumHref)}>
-          <Workflow className="size-4" />
-          {t('rowActions.openCurriculum')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(context.reviewHref)}>
-          <ShieldCheck className="size-4" />
-          {t('rowActions.reviewPublish')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
-          <LayoutGrid className="size-4" />
-          {t('rowActions.useAsTemplate')}
-        </DropdownMenuItem>
-        {canManageCourse ? (
-          <DropdownMenuItem onClick={handleToggleVisibility}>
-            {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
-            {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
-          </DropdownMenuItem>
-        ) : null}
-        {canDeleteCourse ? (
-          <DropdownMenuItem onClick={handleDelete} variant="destructive">
-            <Trash2 className="size-4" />
-            {t('rowActions.delete')}
-          </DropdownMenuItem>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    </>
   )
 }
 

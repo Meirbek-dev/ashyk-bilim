@@ -42,45 +42,6 @@ function logLandingFetchError(scope: string, error: unknown) {
   })
 }
 
-function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | null) {
-  if (!trailData?.runs) return courses
-
-  return [...courses].toSorted((a, b) => {
-    const aCleanUuid = a.course_uuid?.replace('course_', '')
-    const bCleanUuid = b.course_uuid?.replace('course_', '')
-
-    const aRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
-
-    const getProgress = (run: AppTrailRun | undefined, course: AppCourse) => {
-      if (!run) return 0
-      const total =
-        run.course_total_steps ||
-        course.chapters?.reduce((acc: number, chap: AppChapter) => acc + (chap.activities?.length || 0), 0) ||
-        0
-      const completed = run.steps?.filter((s: AppTrailStep) => s.complete === true)?.length || 0
-      return total > 0 ? Math.round((completed / total) * 100) : 0
-    }
-
-    const aProgress = getProgress(aRun, a)
-    const bProgress = getProgress(bRun, b)
-
-    const aInProgress = aProgress > 0 && aProgress < 100
-    const bInProgress = bProgress > 0 && bProgress < 100
-
-    // 1. In-progress courses first
-    if (aInProgress !== bInProgress) return bInProgress ? 1 : -1
-
-    // 2. Higher progress first
-    if (aProgress !== bProgress) return bProgress - aProgress
-
-    // 3. Fallback to newest
-    const aDate = new Date(a.creation_date || a.created_at || a.update_date || 0).getTime()
-    const bDate = new Date(b.creation_date || b.created_at || b.update_date || 0).getTime()
-    return bDate - aDate
-  })
-}
-
 export async function LandingContent({ page = 1 }: { page?: number }) {
   const tDegraded = await getTranslations('LandingDegraded')
   let coursesData, collections, gamificationData, trailData, session
@@ -107,11 +68,21 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
         })
       : Promise.resolve(null)
 
+    // Only the platform and the course catalog are fatal; the side sections degrade on their own.
     const [resCoursesData, resCollections, resGamificationData, resTrailData] = await Promise.all([
-      getCourses(undefined, page, 20),
-      getCollections(),
+      // UX-274: the server orders the caller's in-progress courses first across pages.
+      getCourses(undefined, page, 20, 'progress'),
+      getCollections().catch((error: unknown) => {
+        logLandingFetchError('Collections fetch failed', error)
+        return [] as AppCollection[]
+      }),
       gamificationPromise,
-      session ? getCurrentTrail().catch(() => null) : Promise.resolve(null),
+      session
+        ? getCurrentTrail().catch((error: unknown) => {
+            logLandingFetchError('Trail fetch failed', error)
+            return null
+          })
+        : Promise.resolve(null),
     ])
 
     coursesData = resCoursesData
@@ -131,14 +102,10 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
     return <LandingDegradedState isAuthenticated={Boolean(session)} t={tDegraded} />
   }
 
-  const { courses } = coursesData
-  const totalCourses = coursesData.total
-  const sortedCourses = sortCoursesByProgress(courses, trailData)
-
   return (
     <LandingClassic
-      courses={sortedCourses}
-      totalCourses={totalCourses}
+      courses={coursesData.courses}
+      hasNextPage={Boolean(coursesData.next_cursor)}
       collections={collections}
       gamificationData={gamificationData}
       trailData={trailData}
@@ -156,7 +123,7 @@ function LandingDegradedState({
   t: Awaited<ReturnType<typeof getTranslations<'LandingDegraded'>>>
 }) {
   return (
-    <main className="mx-auto flex min-h-[60dvh] w-full max-w-4xl items-center px-4 py-12 sm:px-6">
+    <div className="mx-auto flex min-h-[60dvh] w-full max-w-4xl items-center px-4 py-12 sm:px-6">
       <section aria-labelledby="landing-unavailable-title" className="w-full border-y py-10 sm:py-14">
         <AlertTriangle className="size-8 text-amber-600" aria-hidden />
         <h1 id="landing-unavailable-title" className="mt-5 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -181,6 +148,6 @@ function LandingDegradedState({
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   )
 }

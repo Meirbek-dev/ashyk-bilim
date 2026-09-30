@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE uploads\n           SET referenced_count = referenced_count - 1,\n               expires_at = CASE WHEN referenced_count - 1 = 0\n                                 THEN now() + make_interval(secs => $2)\n                                 ELSE expires_at END\n           WHERE key = $1 AND referenced_count > 0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9619787d058081054b6902f8989a112b943cdf580b31240f291a1f0990dae7b"
+}

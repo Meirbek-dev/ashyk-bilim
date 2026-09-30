@@ -32,7 +32,9 @@ export default function ActivityOutlineContent({ runtime, className }: ActivityO
       <div className="space-y-4">
         {(runtime.outline ?? []).map(chapter => {
           const activities = chapter.activities ?? []
-          const completeCount = activities.filter(item => item.complete).length
+          // BUG-318: the chapter tally counts what is required of this learner, like the server.
+          const counted = activities.filter(item => item.required)
+          const completeCount = counted.filter(item => item.complete).length
           return (
             <section key={chapter.id} className="space-y-1">
               <div className="flex items-center justify-between gap-2 px-2 py-1">
@@ -40,7 +42,7 @@ export default function ActivityOutlineContent({ runtime, className }: ActivityO
                   {chapter.index + 1}. {chapter.title}
                 </p>
                 <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                  {completeCount}/{activities.length}
+                  {completeCount}/{counted.length}
                 </span>
               </div>
               <div className="space-y-0.5">

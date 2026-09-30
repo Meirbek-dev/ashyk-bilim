@@ -155,6 +155,10 @@
       "exampleTestCaseLabel": "e.g., Empty list check",
       "failed": "Failed",
       "form": {
+        "promptPlaceholder": "Write the problem statement here...",
+        "inputSpecPlaceholder": "Describe the input format, ranges, etc...",
+        "outputSpecPlaceholder": "Describe the expected output format, precision, etc...",
+        "constraintsPlaceholder": "e.g., 1 <= N <= 10^5\nOne constraint per line",
         "addHint": "Add Hint",
         "addTestCase": "Add Test Case",
         "advanced": "Advanced",
@@ -178,7 +182,7 @@
         "maxSubmissions": "Maximum Submissions",
         "maxSubmissionsHint": "Leave empty for unlimited submissions",
         "memoryLimit": "Memory Limit (KB)",
-        "memoryLimitHint": "Maximum memory usage (1MB-500MB)",
+        "memoryLimitHint": "Maximum memory usage (1 MB-500 MB)",
         "noLanguagesFound": "No languages found",
         "penalty": "Penalty",
         "points": "Points",
@@ -238,10 +242,10 @@
       "notConfigured": "Challenge Not Configured",
       "notConfiguredDescription": "This code challenge hasn't been set up yet. Please contact your instructor.",
       "underConstructionIcon": "🛠️",
-      "timeLimitValue": "{value}ms",
-      "timeSecondsValue": "{value}s",
-      "hiddenTestsCount": "{count} hidden tests",
-      "memoryLimitValue": "{value}MB",
+      "timeLimitValue": "{value} ms",
+      "timeSecondsValue": "{value} s",
+      "hiddenTestsCount": "{count, plural, one {# hidden test} other {# hidden tests}}",
+      "memoryLimitValue": "{value} MB",
       "otherLanguages": "Other Languages",
       "output": "Output",
       "partialCredit": "Partial Credit",
@@ -275,7 +279,10 @@
         "runtimeError": "Runtime Error",
         "timeLimitExceeded": "Time Limit Exceeded",
         "unknown": "Unknown",
-        "wrongAnswer": "Wrong Answer"
+        "wrongAnswer": "Wrong Answer",
+        "runnerUnavailable": "Runner Unavailable",
+        "running": "Running",
+        "ready": "Ready"
       },
       "assertionDescriptionPlaceholder": "Explain why this case matters...",
       "stdinPlaceholder": "Console inputs feed here",
@@ -391,7 +398,7 @@
       "locateAndInspect": "Locate & Inspect",
       "executingEnvironment": "Executing Judge0 Environment",
       "caseNumber": "Case {number}",
-      "timeMsValue": "{value}ms",
+      "timeMsValue": "{value} ms",
       "difference": "Difference",
       "restoreCode": "Restore",
       "saveSettings": "Save Settings",
@@ -438,7 +445,7 @@
       "sideBySide": "Side-by-side",
       "inline": "Inline",
       "noCodeAnswerSubmitted": "No code answer was submitted for this item.",
-      "evaluatedLanguageId": "Evaluated Language ID: {language}",
+      "evaluatedLanguageId": "Language: {language}",
       "testCasesPassedValue": "{passed}/{total} Test Cases Passed",
       "gradeValue": "Grade: {score}%",
       "submittedCode": "Submitted Code",
@@ -468,6 +475,10 @@
         "limits": {
           "label": "Execution Limits & Thresholds",
           "detail": "Specify execution time limits (seconds) and memory usage limits (MB) to prevent infinite loops and resource exhaustions."
+        },
+        "markdown": {
+          "label": "Markdown safety",
+          "detail": "Problem text, sample explanations, and hints pass Markdown safety checks."
         }
       },
       "referenceVerificationSuite": "Reference Verification Suite",
@@ -521,7 +532,24 @@
       "submissionRequiresReview": "Submission Requires Review",
       "testCasesPassed": "{passed}/{total} Test Cases Passed",
       "starterTemplate": "Starter Template",
-      "studentSubmission": "Student Submission"
+      "studentSubmission": "Student Submission",
+      "languagesUnavailable": "The code runner is unavailable: tests cannot run right now, but you can still edit and save your solution.",
+      "attemptStatus": {
+        "draft": "Draft",
+        "pending": "Under review",
+        "graded": "Graded",
+        "published": "Scored",
+        "returned": "Returned for revision"
+      },
+      "attemptNumber": "Attempt #{number}",
+      "markdownField": {
+        "problem": "Problem statement",
+        "inputSpec": "Input format",
+        "outputSpec": "Output format",
+        "visibleTest": "Sample {number} description",
+        "hiddenTest": "Hidden test {number} description",
+        "hint": "Hint {number}"
+      }
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
@@ -560,12 +588,12 @@
       "current": "Current",
       "devToolsDetected": "Developer tools detected - violation recorded",
       "downloadCsv": "Download CSV",
-      "errorLoadingExam": "Failed to load exam",
-      "errorStartingExam": "Failed to start exam",
-      "errorSubmittingExam": "Failed to submit exam",
+      "errorLoadingExam": "Failed to load the test",
+      "errorStartingExam": "Failed to start the test",
+      "errorSubmittingExam": "Failed to submit the test",
       "examCompleted": "Exam Completed!",
       "examStarted": "Exam started successfully",
-      "examSubmittedSuccessfully": "Exam submitted successfully",
+      "examSubmittedSuccessfully": "Answers submitted",
       "explanation": "Explanation",
       "flagged": "Flagged",
       "flaggedForReview": "Flagged for review",
@@ -656,7 +684,7 @@
       "timeRemaining": "Time remaining",
       "totalQuestions": "Total Questions",
       "unanswered": "Unanswered",
-      "unansweredQuestionsWarning": "You have {count} unanswered questions. Are you sure you want to submit?",
+      "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
       "unlimited": "Unlimited",
       "unlimitedAttempts": "Unlimited Attempts",
       "unsupportedQuestionType": "Unsupported question type",
@@ -667,11 +695,17 @@
       "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
       "violationDialogTitle": "Security violation detected",
       "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-      "violationsRecorded": "{count} violations recorded during this exam",
+      "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
       "yourAnswer": "Your Answer",
       "latestSubmission": "Latest submission",
       "resultsWaitingForReleaseTitle": "Results awaiting publication",
       "resultsWaitingForReleaseDescription": "Your test has been graded, but results will be available after the teacher publishes them.",
+      "submissionReceivedTitle": "Answer received",
+      "submissionReceivedDescription": "Your answers were submitted and are awaiting the teacher's review.",
+      "submissionReceivedWithDateDescription": "Answers submitted {date}; awaiting the teacher's review.",
+      "examSubmittedPassed": "Test passed: {score}",
+      "examSubmittedFailed": "Test not passed: {score}",
+      "examSubmittedPending": "Answers submitted, awaiting review",
       "resultAvailable": "Result available",
       "noQuestions": "There are no questions in this exam.",
       "testNotReadyTitle": "Test is not ready",
@@ -692,7 +726,8 @@
       "interactive": "Interactive",
       "learningMaterial": "Learning Material",
       "page": "Page",
-      "video": "Video"
+      "video": "Video",
+      "quiz": "Quiz"
     },
     "chapter": "Chapter",
     "completed": "completed",
@@ -705,6 +740,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Activity completed",
+    "activityGone": "This activity is no longer available",
     "unsupportedActivityType": "Unsupported activity type: {type}",
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
@@ -715,7 +751,8 @@
       "codeChallenge": "Code challenge",
       "fileSubmission": "File Submission",
       "learningMaterial": "Learning Material",
-      "video": "Video"
+      "video": "Video",
+      "quiz": "Quiz"
     },
     "chapter": "Chapter",
     "chapters": "Chapters",
@@ -737,10 +774,6 @@
     "markAsComplete": "Mark as complete",
     "finishReadingBeforeComplete": "Finish reading the content before marking it complete",
     "markCompleteError": "Failed to mark activity as complete",
-    "markStatus": {
-      "markTooltipMessage": "Click the checkbox to mark this activity as complete",
-      "unmarkTooltipMessage": "Click the checkbox to unmark as complete if needed"
-    },
     "marking": "Marking...",
     "next": "Next",
     "nextActivityTitle": "Next: {name}",
@@ -813,13 +846,10 @@
       "medium": "Medium"
     },
     "relativeTime": {
-      "dayAgo": "{count} day ago",
-      "daysAgo": "{count} days ago",
-      "hourAgo": "{count} hour ago",
-      "hoursAgo": "{count} hours ago",
+      "day": "{count, plural, one {# day ago} other {# days ago}}",
+      "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
       "justNow": "just now",
-      "minuteAgo": "{count} minute ago",
-      "minutesAgo": "{count} minutes ago"
+      "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
     },
     "status": {
       "active": "Active",
@@ -832,108 +862,77 @@
     }
   },
   "Auth": {
-    "Forgot": {
-      "backToLogin": "Back to Login",
-      "checkEmail": "Check your email for the reset link",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "enterEmailMessage": "Enter your email to receive a reset link",
-      "invalidEmail": "Invalid email address",
-      "loading": "Loading...",
-      "required": "Required",
-      "sendResetLink": "Send Reset Link",
-      "title": "Forgot Password"
-    },
-    "Layout": {
-      "accessFromOrg": "Please access this page from an organization",
-      "orgNotSpecified": "Organization not specified"
-    },
     "Login": {
       "email": "Email",
-      "emailAddress": "Email address",
       "emailPlaceholder": "Enter your email",
-      "signInToAcme": "Sign in to Acme",
-      "welcomeBack": "Welcome back! Please enter your details.",
-      "resetPassword": "Reset password",
-      "rememberMe": "Remember me",
       "signIn": "Sign In",
-      "sso": "Single sign-on (SSO)",
-      "newToAcme": "New to Acme?",
-      "forgotPassword": "Forgot Password?",
       "hidePassword": "Hide password",
       "loading": "Loading...",
       "login": "Login",
-      "loginTo": "Login to",
       "or": "OR",
       "password": "Password",
       "passwordPlaceholder": "Enter your password",
       "showPassword": "Show password",
       "signInWithGoogle": "Sign in with Google",
       "signup": "Sign up",
-      "title": "Login",
-      "sessionExpired": "Your session expired. Please sign in again.",
-      "sessionRevoked": "Your session was revoked. Please sign in again.",
-      "sessionRecoveryFailed": "We could not recover your session. Please sign in again.",
-      "wrongCredentials": "Wrong email or password",
+      "title": "Login - Ashyk Bilim",
+      "wrongCredentials": "Wrong login or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
-      "loginTitle": "Login",
-      "noAccount": "Don't have an account?"
+      "rateLimitedRetry": "Too many attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+      "noAccount": "No account yet?",
+      "loginIdentifier": "Email or username",
+      "loginIdentifierPlaceholder": "Enter your email or username",
+      "totpCode": "Verification code",
+      "totpCodePlaceholder": "Enter the 6-digit code",
+      "totpHint": "Enter the code from your authenticator app.",
+      "verifyCode": "Verify",
+      "backToPassword": "Back to login",
+      "accountDisabled": "This account is disabled. Contact an administrator.",
+      "invalidTotpCode": "Invalid one-time code.",
+      "googleCancelled": "Google sign-in was cancelled."
     },
-    "Reset": {
-      "changePassword": "Change Password",
-      "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm new password",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "enterResetDetails": "Enter your email and reset code to reset your password",
-      "loading": "Loading...",
-      "loginAgain": "Please login again with your new password",
-      "newPassword": "New Password",
-      "newPasswordPlaceholder": "Enter new password",
-      "resetCode": "Reset Code",
-      "resetCodePlaceholder": "Enter reset code",
-      "success": "Password reset successfully",
-      "title": "Reset Password"
-    },
-    "Signup": {
-      "accountCreated": "Your account was successfully created",
-      "bio": "Bio",
-      "bioPlaceholder": "Tell something about yourself",
-      "createAccount": "Create an account",
-      "createAccountAndJoin": "Create account & Join",
-      "email": "Email",
-      "emailPlaceholder": "Enter your email",
-      "errorSomethingWentWrong": "Something went wrong",
-      "goBack": "Back to Login",
-      "hi": "Hi",
-      "join": "Join",
-      "loading": "Loading...",
-      "loginToAccount": "Login to your account",
-      "password": "Password",
-      "passwordPlaceholder": "Enter your password",
-      "signInWithGoogle": "Sign in with Google",
-      "submit": "Submit",
-      "title": "Sign up",
-      "redirecting": "Redirecting...",
-      "formComponentNeeded": "Signup form component needed.",
-      "username": "Username",
-      "usernamePlaceholder": "Enter your username",
-      "continueWithGoogle": "Continue with Google",
-      "or": "OR",
-      "firstName": "First Name",
-      "firstNamePlaceholder": "Enter first name",
-      "lastName": "Last Name",
-      "lastNamePlaceholder": "Enter last name",
-      "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm your password",
-      "alreadyHaveAccount": "Already have an account?",
-      "signIn": "Sign in",
-      "emailTaken": "An account with this email already exists",
-      "usernameTaken": "This username is already taken"
-    },
+    "hidePassword": "Hide password",
     "password": "Password",
-    "passwordPlaceholder": "Enter your password"
+    "passwordPlaceholder": "Enter your password",
+    "showPassword": "Show password",
+    "Signup": {
+      "title": "Sign up - Ashyk Bilim",
+      "heading": "Create an account",
+      "subtitle": "Fill in the form to start learning.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username",
+      "usernamePlaceholder": "e.g. aigerim.k",
+      "usernameRule": "3–48 characters: Latin letters, digits, dot, hyphen and underscore.",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Choose a password",
+      "passwordRule": "At least 8 characters, including an uppercase and a lowercase Latin letter, a digit and a symbol. At most 72 Latin or 36 Cyrillic characters.",
+      "confirmPassword": "Confirm password",
+      "submit": "Sign up",
+      "submitting": "Creating your account...",
+      "success": "Account created",
+      "successDescription": "Your account is ready to use — you can sign in right away. An email verification code has been sent to your address.",
+      "failed": "Could not create the account. Please try again.",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "VerifyEmail": {
+      "title": "Verify email - Ashyk Bilim",
+      "heading": "Verify your email address",
+      "subtitle": "Enter the code from the email we sent when you signed up.",
+      "email": "Email",
+      "code": "Verification code",
+      "codeHint": "The 6-character code from the email.",
+      "submit": "Verify",
+      "submitting": "Checking...",
+      "success": "Email address verified",
+      "invalidCode": "The code is invalid or has expired.",
+      "failed": "Could not verify the address. Please try again.",
+      "backToLogin": "Go to sign in"
+    }
   },
   "Certificates": {
     "ActivityIndicators": {
@@ -991,14 +990,15 @@
       "qrLabel": "QR",
       "scanToVerify": "Scan to verify",
       "template": "Template",
-      "thisIsToConfirm": "This is to confirm that"
+      "thisIsToConfirm": "This is to confirm that",
+      "recipient": "Recipient",
+      "recipientSample": "Aigerim Saparova"
     },
     "CertificateVerificationPage": {
       "authenticityGuaranteed": "Verify the authenticity of this certificate",
       "authenticityVerified": "Certificate verified against our secure database",
       "awardedBy": "Awarded by",
       "backToHome": "Back to Home",
-      "byLabel": "By:",
       "certificateDetails": "Certificate Details",
       "certificateHolder": "Certificate Holder",
       "certificateId": "Certificate ID",
@@ -1008,7 +1008,6 @@
       "certificateType": "Certification Type",
       "certificateVerified": "Certificate Verified",
       "certificationDetails": "Certification Details",
-      "completion": "Course Completion",
       "completionDate": "Awarded Date",
       "courseName": "Course Name",
       "courseThumbnailAlt": "thumbnail",
@@ -1020,7 +1019,6 @@
       "incorrectId": "The certificate ID is incorrect",
       "instructor": "Instructor",
       "loadingCertificate": "Please wait while we verify the certificate...",
-      "moreAuthors": "more",
       "revokedCertificate": "The certificate has been revoked",
       "scanQRCode": "Scan QR code to verify this certificate",
       "timestampVerified": "Timestamp verified and authenticated",
@@ -1031,8 +1029,7 @@
       "verificationStatusUnknown": "Verification Status Unknown",
       "verifyingCertificate": "Verifying Certificate...",
       "viewCourse": "View Course",
-      "viewFullCertificate": "View Full Certificate",
-      "mastery": "Skill Mastery"
+      "viewFullCertificate": "View Full Certificate"
     },
     "CertificateVerifyPage": {
       "description": "Verify the authenticity of the {certificationName} certificate for the course {courseName}.",
@@ -1047,6 +1044,7 @@
         "title": "Verify {certificationName} Certificate - {courseName}"
       },
       "title": "Certificate Verification - {certificationName} ({courseName})",
+      "titleSingle": "Certificate Verification - {name}",
       "twitter": {
         "description": "Check and verify the authenticity of the {certificationName} certificate for {courseName}.",
         "title": "Verify {certificationName} Certificate - {courseName}"
@@ -1054,7 +1052,7 @@
     },
     "CourseEndView": {
       "authRequired": "Authentication required to view certificate",
-      "backToCourse": "Back to Course",
+      "backToCourse": "Back to course",
       "backToDashboard": "Back to Dashboard",
       "badgeCheckIcon": "✓",
       "certificate": "Certificate",
@@ -1081,6 +1079,9 @@
       "downloadCertificate": "Download Certificate",
       "earnedCertificate": "Your Certificate",
       "encouragementMessage": "You're doing great! Complete the remaining activities to unlock your course completion certificate.",
+      "encouragementMessageNoCertificate": "You're doing great! Complete the remaining activities.",
+      "notEnrolledMessageNoCertificate": "Start the course to track your progress:",
+      "noPublishedActivities": "This course has no published lessons yet",
       "errorGeneratingPDF": "Failed to generate PDF. Please try again.",
       "exploreCourses": "Explore More Courses",
       "instructor": "Instructor",
@@ -1091,7 +1092,7 @@
       "loadingCertificate": "Loading your certificate...",
       "loadingError": "Failed to load certificate. Please try again later.",
       "noCertificateAvailable": "No certificate available",
-      "noCertificateFound": "No certificate found for this course",
+      "noCertificateFound": "Certificate not available",
       "progress": "Progress",
       "progressCompleted": "{completed} of {total} activities completed",
       "progressPercentage": "{percentage}% Complete",
@@ -1099,9 +1100,12 @@
       "shareAchievement": "Share Your Achievement",
       "verifyCertificate": "Verify Certificate",
       "viewCertificate": "View Certificate",
-      "xpBonusMessage": "+100 XP Course Completion Bonus!",
+      "xpBonusMessage": "+{xp} XP for completing the course!",
       "youAreAlmostThere": "You're almost there!",
-      "youAreMakingProgress": "You're making great progress in"
+      "youAreMakingProgress": "You're making great progress in",
+      "readyToBegin": "Ready to begin?",
+      "notEnrolledMessage": "Start the course to track your progress and earn a certificate:",
+      "goToCourse": "Go to the course"
     },
     "EditCourseCertification": {
       "basicInfo": "Basic Information",
@@ -1187,15 +1191,22 @@
       "noCertificatesEarned": "No certificates earned yet",
       "verifyCertificate": "Verify",
       "viewCertificate": "View Certificate"
+    },
+    "Pdf": {
+      "download": "Download PDF",
+      "preparing": "Preparing PDF…",
+      "downloaded": "Certificate downloaded",
+      "failed": "Could not download the certificate"
     }
   },
   "Common": {
+    "playVideo": "Play video",
     "close": "Close",
     "cancel": "Cancel",
     "DataTable": {
       "searchPlaceholder": "Search table...",
       "emptyMessage": "No rows found.",
-      "visibleRows": "{count} visible rows",
+      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "prev": "Previous",
@@ -1216,14 +1227,17 @@
       "reset": "Reset",
       "toggleColumns": "Toggle columns",
       "searchColumns": "Search columns...",
-      "noColumns": "No columns found."
+      "noColumns": "No columns found.",
+      "firstPage": "Go to first page",
+      "lastPage": "Go to last page"
     },
     "DragAndDrop": {
       "liftItem": "Picked up item {index} of {count}",
       "moveItem": "Moved item to position {index} of {count}",
       "dropItem": "Dropped item at position {index} of {count}",
       "cancelDrag": "Drag cancelled, item returned to position {index}",
-      "dragHandle": "Drag to reorder"
+      "dragHandle": "Drag to reorder",
+      "instructions": "To pick up an item, press Space. Use the arrow keys to move it, press Space again to drop it, or press Escape to cancel."
     },
     "googleLogo": "Google logo",
     "loading": "Loading...",
@@ -1234,7 +1248,10 @@
     "saved": "Saved",
     "saving": "Saving...",
     "discard": "Discard",
-    "unsavedChanges": "Unsaved changes"
+    "unsavedChanges": "Unsaved changes",
+    "notifications": "Notifications",
+    "unsavedChangesPrompt": "You have unsaved changes. Are you sure you want to leave this page?",
+    "leaveWithoutSaving": "Leave without saving"
   },
   "Components": {
     "WidgetErrorBoundary": {
@@ -1247,7 +1264,15 @@
       "scrollToStart": "Scroll to start"
     },
     "Calendar": {
-      "set": "Set"
+      "set": "Set",
+      "pickDate": "Pick a date",
+      "pickDateTime": "Pick a date and time",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "chooseMonth": "Choose the month",
+      "chooseYear": "Choose the year",
+      "today": "Today, {date}",
+      "selected": "{date}, selected"
     },
     "SaveStateBadge": {
       "unsaved": "Unsaved",
@@ -1460,7 +1485,26 @@
         "yes": "Yes",
         "no": "No",
         "na": "N/A",
-        "couldNotLoadRows": "Could not load drill-through rows."
+        "couldNotLoadRows": "Could not load drill-through rows.",
+        "columns": {
+          "learner": "Learner",
+          "course": "Course",
+          "progress": "Progress",
+          "steps": "Steps",
+          "completed": "Completed",
+          "lastActivity": "Last activity",
+          "assessment": "Assessment",
+          "assessmentType": "Type",
+          "status": "Status",
+          "submitted": "Submitted",
+          "ageHours": "Age, h",
+          "slaBreached": "SLA breached",
+          "attempts": "Attempts",
+          "bestScore": "Best score",
+          "lastScore": "Last score",
+          "gradedAt": "Graded",
+          "passed": "Passed"
+        }
       },
       "savedViewsBar": {
         "nameFirst": "Name this view first.",
@@ -1468,7 +1512,10 @@
         "couldNotSave": "Could not save view.",
         "noSavedViews": "No saved views yet.",
         "namePlaceholder": "Save current filters",
-        "save": "Save draft"
+        "save": "Save",
+        "deleted": "View deleted.",
+        "couldNotDelete": "Could not delete the view.",
+        "deleteView": "Delete the “{name}” view"
       }
     },
     "Button": {
@@ -1496,6 +1543,8 @@
       "deleteButtonText": "Delete Collection",
       "deleteConfirmationMessage": "Are you sure you want to delete this collection?",
       "deleteConfirmationTitle": "Delete {collectionName}?",
+      "deleteFailed": "Could not delete the collection.",
+      "deleted": "Collection \"{collectionName}\" deleted.",
       "deleting": "Deleting..."
     },
     "ConfirmationModal": {
@@ -1522,11 +1571,10 @@
       "purchaseToAccess": "This content requires a course purchase to access."
     },
     "CourseThumbnail": {
+      "viewCertificate": "View certificate",
+      "reviewCompletion": "Review course summary",
       "authorLabel": "{count, plural, one {Author} other {Authors}}",
       "authors": "Authors",
-      "courseAuthorsAria": "Course authors",
-      "instructorLabel": "Instructor",
-      "moreAuthors": "{count} more",
       "ownerBadge": "Owner",
       "continueLearning": "Continue Learning",
       "courseOptions": "Course options",
@@ -1558,12 +1606,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Choose PDF document file to upload",
       "createActivity": "Create Activity",
-      "fileTooLarge": "File size exceeds the 100MB limit",
+      "fileTooLarge": "File size exceeds the {size} MB limit",
       "noFileSelected": "No file selected",
       "pdfDocumentFile": "PDF Document File",
       "pdfDocumentName": "PDF Document Name",
       "selectFile": "Select PDF File",
-      "supportedFormats": "Supported format: PDF • Max size: 100MB",
+      "supportedFormats": "Supported format: PDF • Max size: {size} MB",
       "valueMissingFile": "Please provide a PDF document for your activity",
       "valueMissingName": "Please provide a name for your PDF activity"
     },
@@ -1669,11 +1717,12 @@
       "infoMessage": "Users not in the group will no longer have access to this course",
       "linkButton": "Link",
       "linkError": "Error linking to group: {error}",
-      "linkSuccess": "Successfully linked to group",
+      "linkSuccess": "Course linked to the group",
       "noUserGroupsAvailable": "No user groups available",
       "selectUserGroup": "Select user group",
       "unknownError": "Unknown error",
-      "userGroupNameLabel": "Group Name"
+      "userGroupNameLabel": "Group Name",
+      "noRightsOnGroup": "No rights on this group"
     },
     "LocaleSwitcher": {
       "en-US": "English",
@@ -1696,6 +1745,10 @@
       "unlinkButton": "Unlink",
       "unlinkError": "Error unlinking user: {error}",
       "unlinkSuccess": "User unlinked successfully",
+      "searchPlaceholder": "Search people by name or username",
+      "searching": "Searching…",
+      "searchHint": "Showing group members and matching users.",
+      "searchIdleHint": "Type at least 2 characters to find users to add.",
       "userHeader": "User"
     },
     "Modal": {
@@ -1738,13 +1791,15 @@
       "documentDesc": "Upload a PDF or document for students to read",
       "dynamicPage": "Dynamic Page",
       "dynamicPageDesc": "Rich interactive content with text, media, and exercises",
-      "exams": "Exams",
-      "examsDesc": "Build a quiz or exam with automated grading",
+      "exams": "Exam",
+      "examsDesc": "Build an exam with limited attempts and proctoring",
       "fileSubmission": "File Submission",
       "fileSubmissionDesc": "Collect student files with review and feedback",
       "video": "Video",
       "videoDesc": "Upload or embed a video for students to watch",
-      "opening": "Opening…"
+      "opening": "Opening…",
+      "quiz": "Quiz",
+      "quizDesc": "Build a quiz with automated grading"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Allowed file types",
@@ -1756,7 +1811,6 @@
       "instructions": "Instructions",
       "maxFiles": "Max files",
       "maxSize": "Max size (MB)",
-      "requiredFields": "Title and instructions are required",
       "selectAll": "Select all",
       "title": "Title"
     },
@@ -1770,25 +1824,38 @@
     "NewExamModal": {
       "activityName": "Activity Name",
       "activityNameDescription": "This will be the name shown in the course content list",
-      "activityNamePlaceholder": "e.g., Final Exam",
       "allowResultReview": "Allow Students to Review Results",
       "allowResultReviewDescription": "Students can see their answers and correct answers after submission",
       "cancel": "Cancel",
-      "createExam": "Create Exam",
       "creating": "Creating...",
-      "creatingExam": "Creating exam...",
       "enableTimeLimit": "Enable Time Limit",
-      "errorCreatingExam": "Failed to create exam",
-      "examCreatedSuccessfully": "Exam created successfully",
-      "examDescription": "Exam Description",
-      "examDescriptionPlaceholder": "Describe what this exam covers",
-      "examTitle": "Exam Title",
-      "examTitlePlaceholder": "e.g., Chapter 1 Test",
       "shuffleQuestions": "Shuffle Questions",
       "shuffleQuestionsDescription": "Questions will appear in random order for each student",
-      "timeLimitDescription": "Set a maximum time for completing the exam",
+      "timeLimitDescription": "Set a maximum time to complete it",
       "timeLimitMinutes": "Time Limit (minutes)",
-      "timeLimitMinutesDescription": "How long students have to complete the exam"
+      "timeLimitMinutesDescription": "How long students have to complete it",
+      "exam": {
+        "activityNamePlaceholder": "e.g., Final exam",
+        "createExam": "Create exam",
+        "creatingExam": "Creating exam...",
+        "errorCreatingExam": "Failed to create exam",
+        "examCreatedSuccessfully": "Exam created successfully",
+        "examDescription": "Exam description",
+        "examDescriptionPlaceholder": "Describe what this exam covers",
+        "examTitle": "Exam title",
+        "examTitlePlaceholder": "e.g., Course exam"
+      },
+      "quiz": {
+        "activityNamePlaceholder": "e.g., Final quiz",
+        "createExam": "Create quiz",
+        "creatingExam": "Creating quiz...",
+        "errorCreatingExam": "Failed to create quiz",
+        "examCreatedSuccessfully": "Quiz created successfully",
+        "examDescription": "Quiz description",
+        "examDescriptionPlaceholder": "Describe what this quiz covers",
+        "examTitle": "Quiz title",
+        "examTitlePlaceholder": "e.g., Chapter 1 quiz"
+      }
     },
     "Onboarding": {
       "endButton": "End",
@@ -1845,310 +1912,119 @@
       "trail": "Progress"
     },
     "Roles": {
-      "AddRole": {
-        "cancel": "Cancel",
-        "couldntCreateNewRole": "Couldn't create new role",
-        "createRole": "Create Role",
-        "createdNewRole": "Role created successfully",
-        "creating": "Creating role...",
-        "description": "Description",
-        "descriptionMinLength": "Description must be at least {length} characters",
-        "descriptionPlaceholder": "Describe what this role can do...",
-        "descriptionRequired": "Description is required",
-        "deselect": "Deselect",
-        "deselectAll": "Deselect All",
-        "nameMinLength": "Name must be at least {length} characters",
-        "permissions": {
-          "access": "Access",
-          "create": "Create",
-          "delete": "Delete",
-          "deleteOwn": "Delete Own",
-          "read": "Read",
-          "readOwn": "Read Own",
-          "update": "Update",
-          "updateOwn": "Update Own"
-        },
-        "permissionsNote": "Permissions are managed through the new role-based access control system.",
-        "permissionsTitle": "Permissions",
-        "predefinedRights": "Predefined Role Templates",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Full platform control with all permissions",
-            "name": "Admin"
-          },
-          "analyst": {
-            "description": "Read-only access with analytics capabilities",
-            "name": "Analyst"
-          },
-          "contentCreator": {
-            "description": "Can create and edit content but not manage users",
-            "name": "Content Creator"
-          },
-          "courseManager": {
-            "description": "Can manage courses, chapters, and activities",
-            "name": "Course Manager"
-          },
-          "guest": {
-            "description": "Limited access for external users",
-            "name": "Guest"
-          },
-          "instructor": {
-            "description": "Can create and manage their own courses",
-            "name": "Instructor"
-          },
-          "moderator": {
-            "description": "Can moderate content and manage activities",
-            "name": "Moderator"
-          },
-          "userManager": {
-            "description": "Can manage users and user groups",
-            "name": "User Manager"
-          },
-          "viewer": {
-            "description": "Read-only access to courses and content",
-            "name": "Viewer"
-          }
-        },
-        "roleName": "Role Name",
-        "roleNamePlaceholder": "e.g., Course Manager",
-        "roleNameRequired": "Role name is required",
-        "sections": {
-          "activities": "Activities",
-          "collections": "Collections",
-          "courseChapters": "Course Chapters",
-          "courses": "Courses",
-          "dashboard": "Dashboard",
-          "organizations": "Organizations",
-          "roles": "Roles",
-          "userGroups": "User Groups",
-          "users": "Users"
-        },
-        "select": "Select",
-        "selectAll": "Select All",
-        "unknownError": "An unknown error occurred"
-      },
-      "EditRole": {
-        "cancel": "Cancel",
-        "couldntUpdateRole": "Couldn't update role",
-        "description": "Description",
-        "descriptionPlaceholder": "Describe what this role can do...",
-        "deselect": "Deselect",
-        "deselectAll": "Deselect All",
-        "permissions": {
-          "access": "Access",
-          "create": "Create",
-          "delete": "Delete",
-          "deleteOwn": "Delete Own",
-          "read": "Read",
-          "readOwn": "Read Own",
-          "update": "Update",
-          "updateOwn": "Update Own"
-        },
-        "permissionsNote": "Permissions are managed through the new role-based access control system.",
-        "permissionsTitle": "Permissions",
-        "predefinedRights": "Predefined Role Templates",
-        "predefinedRoles": {
-          "admin": {
-            "description": "Full platform control with all permissions",
-            "name": "Admin"
-          },
-          "analyst": {
-            "description": "Read-only access with analytics capabilities",
-            "name": "Analyst"
-          },
-          "contentCreator": {
-            "description": "Can create and edit content but not manage users",
-            "name": "Content Creator"
-          },
-          "courseManager": {
-            "description": "Can manage courses, chapters, and activities",
-            "name": "Course Manager"
-          },
-          "guest": {
-            "description": "Limited access for external users",
-            "name": "Guest"
-          },
-          "instructor": {
-            "description": "Can create and manage their own courses",
-            "name": "Instructor"
-          },
-          "moderator": {
-            "description": "Can moderate content and manage activities",
-            "name": "Moderator"
-          },
-          "userManager": {
-            "description": "Can manage users and user groups",
-            "name": "User Manager"
-          },
-          "viewer": {
-            "description": "Read-only access to courses and content",
-            "name": "Viewer"
-          }
-        },
-        "roleName": "Role Name",
-        "roleNamePlaceholder": "e.g., Course Manager",
-        "sections": {
-          "activities": "Activities",
-          "collections": "Collections",
-          "courseChapters": "Course Chapters",
-          "courses": "Courses",
-          "dashboard": "Dashboard",
-          "organizations": "Organizations",
-          "roles": "Roles",
-          "userGroups": "User Groups",
-          "users": "Users"
-        },
-        "select": "Select",
-        "selectAll": "Select All",
-        "updateRole": "Update Role",
-        "updatedRole": "Role updated successfully",
-        "updating": "Updating role..."
-      },
-      "updating": "Updating role...",
-      "updateRole": "Update Role",
-      "updatedRole": "Role updated successfully",
-      "basicAccess": "Basic access",
-      "cardTitle": "Organization Roles",
-      "createRole": "Create Role",
-      "createRoleDescription": "Define a new role with specific permissions",
-      "createRoleTitle": "Create New Role",
-      "cloneRole": "Clone Role",
-      "cloneRoleTitle": "Clone Role",
-      "cloneRoleDescription": "Create a new role using this role as a template",
-      "cloneSuccess": "Role cloned successfully",
-      "cloneLoadFailed": "Failed to load role for cloning",
-      "deleteRole": "Delete Role",
-      "deleteRoleConfirmation": "Are you sure you want to delete this role? This action cannot be undone.",
-      "deleteRoleConfirmationWithUsers": "This role is assigned to {count} users. Deleting it will remove their access. Continue?",
-      "deleteRoleError": "Failed to delete role",
-      "deleteRoleTitle": "Delete Role",
-      "deletedRoleSuccess": "Role deleted successfully",
-      "deleting": "Deleting role...",
-      "description": "Description",
-      "edit": "Edit",
-      "editRoleDescription": "Modify the role permissions and details",
-      "editRoleTitle": "Edit Role",
-      "fullAccess": "Full access",
-      "globalRole": "Global role",
-      "instructorAccess": "Instructor access",
-      "noDescription": "No description",
-      "noPermissions": "No permissions",
-      "permissions": "Permissions",
-      "permissionsCount": "{count} permissions",
-      "permissionsAria": "Manage permissions for {roleName}",
-      "permissionLoadFailed": "Failed to load role permissions",
-      "permissionSearchPlaceholder": "Search permissions by code, resource, or description",
-      "roleName": "Role Name",
-      "systemWide": "System-wide",
-      "rolesTab": "Roles",
-      "permissionsTab": "Permissions",
-      "auditLogTab": "Audit Log",
+      "rejectedGrant": "The server rejected the grant {grant}.",
+      "userRolesTitle": "User roles",
+      "userRolesDescription": "Assign and remove roles for platform members",
+      "addRole": "Add role",
+      "assignRoleTitle": "Assign role",
+      "assignRoleDescription": "Pick a user and the role to assign.",
+      "userLabel": "User",
+      "roleLabel": "Role",
+      "selectUserPlaceholder": "Search by name or email…",
+      "selectRolePlaceholder": "Select a role",
+      "noMatches": "No matches",
+      "assignRole": "Assign role",
+      "cancel": "Cancel",
+      "save": "Save",
+      "assignedRoleSuccess": "Role assigned",
+      "removedRoleSuccess": "Role removed",
+      "removeRoleAria": "Remove role {roleName}",
+      "removeRoleConfirmTitle": "Remove role",
+      "removeRoleConfirmDescription": "Remove the “{roleName}” role from {name}?",
+      "removeRoleConfirm": "Remove",
+      "searchUsers": "Search by name, username or email…",
       "tableHead": {
+        "user": "User",
+        "email": "Email",
+        "status": "Status",
+        "roles": "Roles",
         "role": "Role",
         "slug": "Slug",
         "type": "Type",
         "priority": "Priority",
         "permissions": "Permissions",
-        "users": "Users",
         "actions": "Actions"
       },
-      "allPermissionsTitle": "All Permissions",
-      "allPermissionsDescription": "A list of all permissions available in the system.",
-      "scopeHierarchy": "Scope hierarchy",
-      "scopeHierarchyValue": "all → platform → assigned → own",
-      "managePermissionsTitle": "Manage Permissions",
-      "managePermissionsDescription": "Select a resource type to manage granular permissions.",
-      "fieldName": "Name",
-      "namePlaceholder": "e.g., Content Manager",
-      "fieldSlug": "Slug",
-      "slugPlaceholder": "e.g., content_manager",
-      "slugHelp": "A short unique identifier used programmatically",
-      "slugCreateHelp": "The slug is a permanent identifier used in API calls and policies. It will be locked after creation.",
-      "slugImmutableHelp": "The slug is a permanent identifier used in API calls and policies. It cannot be changed after creation.",
-      "fieldDescription": "Description",
-      "descriptionPlaceholder": "e.g., Can manage course content",
-      "priorityMaxHelp": "Maximum allowed priority is {max} based on your current role.",
-      "title": "Access Control",
-      "cardDescription": "Manage roles and permissions for your organization",
-      "loadFailed": "Failed to load roles and permissions",
-      "sessionRefreshWarning": "Permissions may be stale. Please refresh the page.",
-      "totalRoles": "Total Roles",
-      "system": "system",
-      "custom": "custom",
-      "resourceTypes": "Resource Types",
-      "resourceTypesHint": "course, user, organization, ...",
-      "acrossResourceTypes": "Across {count} resource types",
-      "permissionAdded": "Permission added",
-      "permissionRemoved": "Permission removed",
-      "failedToUpdatePermission": "Failed to update permission",
-      "resourcePermissionsAdded": "All {resourceType} permissions added",
-      "resourcePermissionsRemoved": "All {resourceType} permissions removed",
-      "systemRoleReadOnlyBanner": "System roles are managed by the platform and cannot be modified. Clone this role to create an editable copy.",
-      "allResources": "All resources",
-      "loadingPermissions": "Loading permissions...",
-      "selectAllResource": "Select all",
-      "noPermissionsFound": "No permissions match your filters",
-      "done": "Done",
-      "searchRolesPlaceholder": "Search roles...",
-      "editRoleAria": "Edit {roleName} role",
-      "deleteRoleAria": "Delete {roleName} role",
-      "cloneRoleAria": "Clone {roleName} role",
-      "auditLogTitle": "Role Audit Log",
-      "auditLogDescription": "Review role and permission changes in this organization.",
-      "auditLogLoadFailed": "Failed to load audit log",
-      "loadingAuditLog": "Loading audit log...",
-      "userRolesTitle": "User Roles",
-      "permissionTable": {
-        "resource": "Resource",
-        "code": "Permission",
-        "action": "Action",
-        "scope": "Scope",
-        "description": "Description"
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
       },
-      "columns": "Columns",
-      "exportCSV": "Export CSV",
-      "exportStarted": "Download started",
-      "userRolesDescription": "Manage role assignments for organization members",
-      "assignRole": "Assign Role",
-      "assignRoleTitle": "Assign Role to User",
-      "assignRoleDescription": "Select a user and a role to assign to them.",
-      "userLabel": "User",
-      "roleLabel": "Role",
-      "assignedRoleSuccess": "Role assigned successfully",
-      "removedRoleSuccess": "Role removed successfully",
-      "removeRoleConfirmTitle": "Remove Role",
-      "removeRoleConfirmDescription": "Are you sure you want to remove the {roleName} role from this user?",
-      "removeRoleConfirm": "Remove",
+      "disableUser": "Disable",
+      "enableUser": "Enable",
+      "disableConfirmTitle": "Disable the account of {name}?",
+      "disableConfirmDescription": "Every live session of this user is revoked. The account can be re-enabled later.",
+      "accountEnabled": "Account enabled",
+      "accountDisabled": "Account disabled",
+      "loadMore": "Load more",
+      "noUsers": "No users found",
+      "loadFailed": "Failed to load data",
+      "title": "Roles and permissions",
+      "cardDescription": "System roles are managed by the platform; custom roles can be created and configured",
+      "createRole": "Create role",
+      "createRoleTitle": "New role",
+      "createRoleDescription": "Create a custom role, then configure its permissions.",
+      "editRoleTitle": "Edit role",
+      "editRoleDescription": "Name, description and priority of the role.",
+      "fieldName": "Name",
+      "fieldSlug": "Slug",
+      "fieldDescription": "Description",
+      "fieldPriority": "Priority",
+      "namePlaceholder": "e.g. Teaching assistant",
+      "slugPlaceholder": "e.g. teaching-assistant",
+      "slugHelp": "Permanent kebab-case identifier; cannot be changed after creation.",
+      "slugInvalid": "Slug: lowercase Latin letters, digits and hyphens only (kebab-case).",
+      "descriptionPlaceholder": "What this role can do",
+      "createdRole": "Role created",
+      "updatedRole": "Role updated",
+      "roleGone": "This role was already deleted in another tab — the list has been refreshed.",
+      "deletedRole": "Role deleted",
+      "permissionsSaved": "Role permissions saved",
+      "deleteRoleTitle": "Delete the “{roleName}” role?",
+      "deleteRoleDescription": "Users holding this role lose its permissions immediately. This cannot be undone.",
       "deleteRoleConfirm": "Delete",
-      "selectUserPlaceholder": "Select a user",
-      "selectRolePlaceholder": "Select a role",
-      "searchUsersOrRoles": "Search users or roles...",
-      "assignedAt": "Assigned At",
-      "expires": "Expires",
-      "actions": "Actions",
-      "noUserRoleAssignments": "No user role assignments found",
-      "never": "Never",
-      "previous": "Previous",
-      "next": "Next",
-      "audit": {
-        "timestamp": "Timestamp",
-        "actor": "Actor",
-        "action": "Action",
-        "role": "Role",
-        "summary": "Summary",
-        "empty": "No audit events yet",
-        "pagination": "Page {page} of {totalPages}"
-      }
+      "system": "System",
+      "custom": "Custom",
+      "systemRoleReadOnly": "System role: managed by the platform, cannot be edited",
+      "grantsCount": "{count, plural, one {# permission} other {# permissions}}",
+      "managePermissionsTitle": "Permissions of “{roleName}”",
+      "managePermissionsDescription": "Permissions are resource:action:scope triples. Pick from the list or type one.",
+      "grantPlaceholder": "e.g. course:read:all",
+      "addGrant": "Add",
+      "invalidGrant": "A permission must look like resource:action:scope (lowercase, “_” or “*”)",
+      "removeGrantAria": "Remove permission {grant}",
+      "noGrants": "This role has no permissions",
+      "editRoleAria": "Edit role {roleName}",
+      "deleteRoleAria": "Delete role {roleName}",
+      "permissionsAria": "Permissions of role {roleName}",
+      "createUser": "Create user",
+      "createUserTitle": "New user",
+      "createUserDescription": "The account is created with a verified email. Without a password the user can only sign in with Google.",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "usernameLabel": "Username",
+      "emailLabel": "Email",
+      "passwordLabel": "Password (optional)",
+      "passwordHint": "At least 8 characters, including an uppercase and a lowercase Latin letter, a digit and a symbol. At most 72 Latin or 36 Cyrillic characters. Leave empty for Google-only sign-in.",
+      "extraRolesLabel": "Additional role",
+      "noExtraRole": "\"User\" only",
+      "createUserSubmit": "Create",
+      "userCreated": "User created",
+      "usernameInvalid": "3–48 characters: Latin letters, digits, dot, hyphen and underscore.",
+      "emailInvalid": "Invalid email address.",
+      "passwordTooShort": "The password must be at least 8 characters.",
+      "fieldRequired": "This field is required."
     },
     "PageLoading": {
       "loading": "Loading..."
     },
     "Pagination": {
+      "backToFirst": "Back to the first page",
       "ellipsis": "More pages",
       "ellipsisAria": "More pages",
       "label": "Pagination",
       "next": "Next",
       "nextAria": "Go to next page",
+      "pastEnd": "This page is empty — there is nothing further.",
       "previous": "Previous",
       "previousAria": "Go to previous page"
     },
@@ -2305,9 +2181,6 @@
       "totalBlanks": "Total Blanks",
       "userIdRequired": "User ID is required for grading."
     },
-    "TypeOfContentTitle": {
-      "logoAlt": "{type} logo"
-    },
     "UnconfiguredPaymentsDisclaimer": {
       "configureButton": "Configure Payments",
       "message": "The payments feature requires configuration before it can be used.",
@@ -2396,13 +2269,13 @@
       "errorEndTimeGreaterThanStartTime": "End time must be greater than start time",
       "errorFailedToAddSubtitle": "Failed to add subtitle file",
       "errorFailedToCreateVideoActivity": "Failed to create video activity. Please try again.",
-      "errorFileSizeLimit": "File size must be less than 1000MB",
+      "errorFileSizeLimit": "File size must be less than {size} MB",
       "errorFixErrorsBeforeSubmitting": "Please fix the errors before submitting",
       "errorInvalidSubtitleFile": "Invalid subtitle file",
       "errorInvalidVideoFileType": "Please select a valid video file (MP4, WebM, or MKV)",
       "errorMaxSubtitleFiles": "Maximum 5 subtitle files allowed at once",
       "errorPleaseSelectVideoFile": "Please select a video file",
-      "errorSubtitleFileSize": "File size must be less than 5MB",
+      "errorSubtitleFileSize": "File size must be less than 5 MB",
       "errorSubtitleFileType": "Only SRT and VTT files are supported",
       "errorSubtitleLanguageExists": "Subtitle for \"{language}\" already exists",
       "errorValidYouTubeUrl": "Please enter a valid YouTube URL",
@@ -2428,8 +2301,8 @@
       "startTimeLabel": "Start Time",
       "subtitleAutoDetectionInfo": "File names like \"subtitles.en.srt\" are auto-detected",
       "subtitleBatchUploadInfo": "Drag multiple files for batch upload",
-      "subtitleFileSizeInfo": "Maximum file size: 5MB",
-      "subtitleFileSizeLimit": "Max 5MB per file",
+      "subtitleFileSizeInfo": "Maximum file size: 5 MB",
+      "subtitleFileSizeLimit": "Max 5 MB per file",
       "subtitleFormatsInfo": "Support for SRT and VTT formats",
       "subtitleFormatsSupported": "SRT, VTT supported",
       "subtitleGuidelines": "Subtitle guidelines:",
@@ -2439,10 +2312,8 @@
       "successSubtitleAdded": "{label} subtitle added successfully",
       "successSubtitleLanguageUpdated": "Subtitle language updated",
       "successSubtitleRemoved": "{label} subtitle removed",
-      "successVideoActivityCreated": "Video activity created successfully!",
       "successVideoFileSelected": "Video file selected successfully",
-      "successYouTubeVideoActivityCreated": "YouTube video activity created successfully!",
-      "supportedFormatsAndSize": "Supported formats: MP4, MKV, WebM • Max size: 1GB",
+      "supportedFormatsAndSize": "Supported formats: MP4, MKV, WebM • Max size: {size} MB",
       "timingControls": "Timing Controls",
       "uploadVideo": "Upload Video",
       "validYouTubeUrl": "Valid YouTube URL",
@@ -2478,7 +2349,10 @@
       "showButton": "Show button",
       "visitSite": "Visit Site",
       "websitePreview": "Website Preview",
-      "websiteUrl": "Website URL"
+      "websiteUrl": "Website URL",
+      "previewUnavailable": "Preview unavailable",
+      "previewUnavailableHint": "The page details could not be fetched. The link still opens.",
+      "urlMustBeHttp": "Enter a link that starts with http:// or https://"
     },
     "WhitelistManagement": {
       "accessModeSetToWhitelist": "Access mode set to WHITELIST so the whitelist will be enforced",
@@ -2495,6 +2369,15 @@
       "selectedCount": "{count} of {total} students selected",
       "whitelistDescription": "Select which students can access this exam",
       "whitelistUpdated": "Whitelist updated successfully"
+    },
+    "MediaUnavailable": {
+      "video": "Video unavailable",
+      "pdf": "Document unavailable",
+      "hint": "The file is missing from storage. Let the course teacher know."
+    },
+    "VideoPlayer": {
+      "subtitles": "Subtitles",
+      "enableSubtitles": "Enable"
     }
   },
   "Contexts": {
@@ -2543,13 +2426,12 @@
     "statusBar": {
       "empty": "Empty",
       "markdown": "Markdown",
-      "word": "word",
-      "words": "words",
       "unsaved": "Unsaved",
       "saving": "Saving…",
       "saved": "Saved",
       "saveFailed": "Save failed",
-      "issueToggle": "{count, plural, one {# issue} other {# issues}}"
+      "issueToggle": "{count, plural, one {# issue} other {# issues}}",
+      "wordCount": "{count, plural, one {# word} other {# words}}"
     },
     "linkDialog": {
       "title": "Insert link",
@@ -2558,7 +2440,7 @@
       "urlPlaceholder": "https://example.com or /relative/path",
       "urlError": "Please enter a safe URL (https, http, mailto, or relative path).",
       "openNewTab": "Open in new tab",
-      "removeLink": "Remove link",
+      "removeLink": "Unlink",
       "cancel": "Cancel",
       "insert": "Insert",
       "update": "Update"
@@ -2577,7 +2459,7 @@
     },
     "validation": {
       "required": "Content is required.",
-      "tooLong": "Content is {count} characters over the limit.",
+      "tooLong": "Content is {count, plural, one {# character} other {# characters}} over the limit.",
       "nearLimit": "Content is approaching the character limit.",
       "rawHtml": "Raw HTML is not supported.",
       "unsafeLink": "One or more links use an unsafe protocol.",
@@ -2683,6 +2565,30 @@
         "description": "Public course overview shown to learners.",
         "placeholder": "Describe the course, audience, prerequisites, and outcomes..."
       }
+    },
+    "editorAriaLabel": "{label} editor",
+    "sourceAriaLabel": "{label} Markdown source",
+    "issues": {
+      "content": {
+        "empty": "Content cannot be empty.",
+        "tooLong": "Character limit exceeded. Remove {overBy} characters.",
+        "nearLimit": "The text is approaching the length limit."
+      },
+      "html": {
+        "raw": "Raw HTML is not supported."
+      },
+      "link": {
+        "unsafe": "One or more links use an unsafe protocol."
+      },
+      "codeFence": {
+        "unclosed": "A code block seems to be missing its closing fence (```)."
+      },
+      "math": {
+        "unbalanced": "A math expression seems to have an unbalanced $ delimiter."
+      },
+      "table": {
+        "columnMismatch": "A table seems to have rows with different column counts."
+      }
     }
   },
   "CourseBreadcrumbs": {
@@ -2706,6 +2612,8 @@
       "configureButton": "Configure",
       "deleteButton": "Delete Activity",
       "deleteConfirmation": "Are you sure you want to delete this activity?",
+      "deleteAssessmentConfirmation": "Are you sure you want to delete this activity? Every learner hand-in for this assessment will be deleted for good.",
+      "lockedAssessment": "This assessment cannot be renamed: it is scheduled, archived or already has hand-ins. Unpublish it in the studio first.",
       "deleteFailed": "Failed to delete activity",
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
@@ -2718,6 +2626,7 @@
       "ownerBadge": "You created this activity",
       "previewTooltip": "Preview Activity",
       "publish": "Publish",
+      "scheduledHint": "Publishes automatically; unschedule it in the studio to change this",
       "publishButton": "Publish",
       "unpublish": "Unpublish",
       "unpublishButton": "Unpublish",
@@ -2727,7 +2636,10 @@
       "draftBadge": "Draft",
       "liveBadge": "Live",
       "save": "Save draft",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unpublishConfirmTitle": "Unpublish \"{name}\"?",
+      "unpublishConfirmMessage": "Learners will lose access to this activity and their submitted work in it until you publish it again.",
+      "unpublishedToast": "Activity unpublished — learners no longer see it."
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Chapter name",
@@ -2750,21 +2662,23 @@
         "placeholder": "Enter what you will learn...",
         "removeItemAriaLabel": "Remove learning item",
         "removeItemTooltip": "Remove item",
-        "searchEmojis": "Search emojis..."
+        "searchEmojis": "Search emojis...",
+        "moveUpAriaLabel": "Move up",
+        "moveDownAriaLabel": "Move down"
       },
       "Thumbnail": {
         "ariaLabelImage": "Choose course thumbnail image to upload",
         "ariaLabelVideo": "Choose course thumbnail video to upload",
         "currentThumbnailAlt": "Current course thumbnail",
         "errors": {
-          "fileTooLarge": "File size ({fileSize}MB) exceeds the 8MB limit",
+          "fileTooLarge": "File size ({fileSize}) exceeds the 10 MB limit",
           "imageReadFailed": "Could not read the selected image",
           "invalidAspectRatio": "Image must use a 16:9 ratio. Selected image is {width}x{height}",
-          "invalidMimeType": "Invalid file type: {fileType}. Please upload only PNG or JPG/JPEG images",
+          "invalidMimeType": "Invalid file type: {fileType}. Please upload JPG, PNG or WebP images",
           "invalidVideoMimeType": "Invalid file type: {fileType}. Please upload only MP4, MKV or WebM videos",
           "pleaseSelectAFile": "Please select a file",
           "updateFailed": "Failed to update thumbnail",
-          "videoFileTooLarge": "File size ({fileSize}MB) exceeds the 100MB limit"
+          "videoFileTooLarge": "File size ({fileSize} MB) exceeds the 100 MB limit"
         },
         "gallery": "Gallery",
         "image": "Image",
@@ -2774,14 +2688,18 @@
         "pleaseSelectAFile": "Please select a file",
         "selectImageFile": "Select Image File",
         "selectVideoFile": "Select Video File",
-        "supportedFormats": "Supported formats: JPG, PNG (max 8MB, 16:9)",
-        "supportedVideoFormats": "Supported formats: MP4, MKV, WebM (max 100MB)",
+        "supportedFormats": "Supported formats: JPG, PNG, WebP (max 10 MB, 16:9)",
+        "supportedVideoFormats": "Supported formats: MP4, MKV, WebM (max 100 MB)",
         "thumbnailPreviewAlt": "Course thumbnail preview",
         "thumbnailUpdatedSuccessfully": "Thumbnail updated successfully",
         "uploadImageButton": "Upload Image",
         "uploadVideo": "Upload Video",
         "uploading": "Uploading...",
-        "video": "Video"
+        "video": "Video",
+        "removeImageButton": "Remove image",
+        "thumbnailRemoved": "Thumbnail removed",
+        "removeConfirmTitle": "Remove the thumbnail?",
+        "removeConfirmDescription": "The course stays without a cover until you upload a new one."
       },
       "about": {
         "label": "About",
@@ -2797,7 +2715,7 @@
         "atLeastOneLearningItem": "At least one learning item is required",
         "invalidFormat": "Invalid format",
         "invalidJsonFormat": "Invalid JSON format",
-        "maxLength": "Must be {count} characters or less",
+        "maxLength": "Must be {count, plural, one {# character} other {# characters}} or less",
         "required": "{fieldName} is required",
         "saveFailed": "Failed to save course general info."
       },
@@ -2852,6 +2770,7 @@
       "creatingChapter": "Creating...",
       "chapterNamePlaceholder": "Chapter name",
       "saveOrderError": "Failed to save the new content order",
+      "orderSaved": "Order saved",
       "savingOrder": "Applying curriculum changes",
       "curriculumChangesApplyImmediately": "Curriculum changes apply immediately",
       "curriculumInlineFeedback": "Drag, reorder, and chapter creation actions save as you work.",
@@ -2897,6 +2816,10 @@
     "deleteChapterConfirmation": "Are you sure you want to delete this chapter?",
     "deleteChapterConfirmationWithCount": "This will permanently delete the chapter and its {count, plural, =0 {0 activities} one {# activity} other {# activities}}.",
     "deleteChapterTitle": "Delete {name}?",
+    "chapterUpdatedSuccess": "Chapter name updated",
+    "chapterUpdateFailed": "Failed to update the chapter",
+    "chapterDeletedSuccess": "Chapter deleted",
+    "chapterDeleteFailed": "Failed to delete the chapter",
     "deleting": "Deleting...",
     "edit": "Edit",
     "editButton": "Edit",
@@ -2913,9 +2836,10 @@
     "dedicationMessage": "Your dedication and hard work have paid off. You've mastered all the content in this course."
   },
   "CoursePage": {
+    "noPublishedActivities": "This course has no published lessons yet",
     "about": "About",
     "access": "Access",
-    "activitiesCount": "{count} Activities",
+    "activitiesCount": "{count, plural, one {# Activity} other {# Activities}}",
     "activityCount": "{count, plural, =0 {0 Activities} one {# Activity} other {# Activities}}",
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
@@ -2931,6 +2855,7 @@
     "contributors": "Contributors",
     "courseContent": "Course Content",
     "courseDiscussions": "Course Discussion",
+    "signInToParticipate": "Sign in to participate",
     "courseLessons": "Course Lessons",
     "courseThumbnailAlt": "Course Thumbnail",
     "current": "Current",
@@ -2963,7 +2888,7 @@
     "reply": "Reply",
     "save": "Save draft",
     "saveChanges": "Save Changes",
-    "showReplies": "Show {count} replies",
+    "showReplies": "Show {count, plural, one {# reply} other {# replies}}",
     "startDiscussionPlaceholder": "Start a discussion about this course...",
     "statusComplete": "Complete",
     "statusGraded": "Graded",
@@ -2985,10 +2910,26 @@
     "vote": "vote",
     "votes": "votes",
     "whatYouWillLearn": "What you will learn",
-    "writeReplyPlaceholder": "Write a reply..."
+    "writeReplyPlaceholder": "Write a reply...",
+    "you": "You",
+    "errors": {
+      "createFailed": "Could not post the discussion",
+      "replyFailed": "Could not post the reply",
+      "voteFailed": "Could not save your vote",
+      "deleteFailed": "Could not delete the message",
+      "updateFailed": "Could not save the changes"
+    },
+    "toasts": {
+      "posted": "Message posted",
+      "replied": "Reply sent",
+      "edited": "Changes saved",
+      "deleted": "Message deleted"
+    },
+    "quiz": "Quiz"
   },
   "Courses": {
     "CourseActionsMobile": {
+      "noPublishedActivities": "This course has no published lessons yet",
       "unknownAuthor": "Unknown",
       "author": "Author",
       "authors": "Authors",
@@ -3065,9 +3006,16 @@
       "updates": "Updates"
     },
     "CoursesActions": {
+      "noPublishedActivities": "This course has no published lessons yet",
       "activitiesCompleted": "{completed} of {total} activities completed",
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
+      "applicationWithdrawn": "Application withdrawn",
+      "applicationAlreadyReviewed": "The application was already reviewed — status updated",
+      "reviewCompletion": "Review course completion",
+      "withdrawApplication": "Withdraw application",
+      "withdrawApplicationError": "Could not withdraw the application. Please try again later.",
+      "withdrawingApplication": "Withdrawing application...",
       "aria": {
         "applyToBecome": "Apply to become a course contributor",
         "signupToApply": "Sign up to apply as course contributor"
@@ -3078,6 +3026,7 @@
       "authors": "Authors",
       "completed": "Done",
       "completedActivities": "{completedActivities} of {totalActivities} completed",
+      "viewCertificate": "View certificate",
       "continueLearning": "Continue Learning",
       "contributeError": "Failed to submit your application. Please try again later.",
       "contributeLoading": "Submitting contributor application...",
@@ -3097,13 +3046,14 @@
       "moreAuthors": "& {count} more",
       "progressCard": {
         "activitiesCompletedLabel": "activities completed",
-        "chapterActivitiesCount": "{completed}/{total} activities",
+        "chapterActivitiesCount": "{completed}/{total, plural, one {# activity} other {# activities}}",
         "complete": "Complete",
         "completedAllActivities": "Great job! You have completed all activities.",
         "courseCompleted": "Course Completed!"
       },
       "readyToBegin": "Ready to Begin?",
       "startCourse": "Start Course",
+      "openCourse": "Open course",
       "startCourseError": "Failed to start the course. Please try again later.",
       "startError": "Failed to start the course. Please try again later.",
       "startLearningJourney": "Start your learning journey with {totalActivities} exciting {totalActivities, plural, one {activity} other {activities}}",
@@ -3112,7 +3062,8 @@
       "startingCourse": "Starting course...",
       "submittingContributorApplication": "Submitting contributor application...",
       "youAreAContributor": "You are a contributor",
-      "youAreContributor": "You are a contributor"
+      "youAreContributor": "You are a contributor",
+      "contributorApplicationConflict": "The application cannot be sent: the course is closed to contributors or you already have a role in it."
     },
     "access": "Access",
     "content": "Content",
@@ -3449,13 +3400,10 @@
           "medium": "Medium"
         },
         "relativeTime": {
-          "dayAgo": "{count} day ago",
-          "daysAgo": "{count} days ago",
-          "hourAgo": "{count} hour ago",
-          "hoursAgo": "{count} hours ago",
+          "day": "{count, plural, one {# day ago} other {# days ago}}",
+          "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
           "justNow": "just now",
-          "minuteAgo": "{count} minute ago",
-          "minutesAgo": "{count} minutes ago"
+          "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
         },
         "status": {
           "active": "Active",
@@ -3496,7 +3444,7 @@
       "avgProgress": "Avg. Progress",
       "backupData": "Backup Data",
       "basedOnLoginStreaks": "Based on login streaks",
-      "bulkOperationCompletedDescription": "Successfully processed {count} users",
+      "bulkOperationCompletedDescription": "Successfully processed {count, plural, one {# user} other {# users}}",
       "bulkOperationCompletedTitle": "Bulk Operation Completed",
       "bulkOperationFailedDescription": "Please try again",
       "bulkOperationFailedTitle": "Bulk Operation Failed",
@@ -3654,9 +3602,12 @@
         },
         "empty": {
           "createAction": "Create your first course",
+          "titleWithQuery": "Nothing found for “{query}”",
           "title": "No matching courses on this page",
           "withQuery": "Adjust the search or preset.",
-          "withoutQuery": "Create a course or widen the current preset."
+          "withoutQuery": "Create a course or widen the current preset.",
+          "titleWithPreset": "No courses in this section yet",
+          "withPreset": "Pick another preset or open “All”."
         },
         "errors": {
           "cannotDeleteSelection": "No selected courses can be deleted.",
@@ -3682,7 +3633,9 @@
           "recent": "Recently updated"
         },
         "resultsSummary": "{visible} visible on this page, {total} total in the workspace.",
+        "resultsSummaryWithQuery": "{total} found for the query, {visible} on this page.",
         "rowActions": {
+          "menuLabel": "Course actions",
           "delete": "Delete",
           "deleteError": "Unable to delete course.",
           "deleteSuccess": "Course deleted.",
@@ -3716,8 +3669,8 @@
             "label": "Private"
           },
           "ready": {
-            "detail": "Ready for review",
-            "label": "Publish-ready"
+            "detail": "Visible to learners",
+            "label": "Published"
           },
           "visible": {
             "detail": "Courses on this page",
@@ -3733,7 +3686,7 @@
           "course": "Course",
           "selectAll": "Select all submissions on this page",
           "selectSubmission": "Select submission for {student}",
-          "selectedCount": "{count} submissions selected",
+          "selectedCount": "{count, plural, one {# submission} other {# submissions}} selected",
           "clearSelection": "Clear selection",
           "batchGrade": "Batch Grade",
           "emptyMessage": "No courses match the current filters.",
@@ -3757,7 +3710,11 @@
         "viewMode": {
           "cards": "Card view",
           "table": "Table view"
-        }
+        },
+        "card": {
+          "previewAsLearner": "Preview as learner"
+        },
+        "resultsSummaryWithPreset": "{total} in “{preset}”, {visible} on this page."
       },
       "Overview": {
         "access": {
@@ -3895,19 +3852,24 @@
         "issues": {
           "noVisibleActivities": "Publish at least one learner-visible activity.",
           "requiredActivityUnpublished": "A required activity is still unpublished.",
-          "assessmentUnready": "A published assessment has unresolved readiness issues.",
-          "fileSubmissionUnready": "A file-submission activity is incomplete or unpublished.",
+          "assessmentUnready": "Assessment “{title}” is unpublished or not ready.",
+          "fileSubmissionUnpublished": "File submission “{title}” is unpublished.",
+          "fileSubmissionUnready": "File submission “{title}” has empty instructions.",
           "thumbnailMissing": "Add a thumbnail to improve recognition. This does not block publishing.",
           "outcomesMissing": "Add learning outcomes. This does not block publishing.",
           "certificateMissing": "No certificate is configured. This does not block publishing.",
           "contributorMissing": "No active contributor is configured. This does not block publishing.",
-          "unknown": "A publication requirement still needs attention."
+          "unknown": "A publication requirement still needs attention.",
+          "activityUnpublished": "Activity “{title}” is still unpublished — learners cannot see it.",
+          "codeChallengeUnconfigured": "Code checking is not configured for “{title}”."
         },
         "sectionLabel": "Review & publish",
         "toasts": {
           "movedPrivate": "Course moved back to private.",
           "published": "Course is now public."
-        }
+        },
+        "movePrivateConfirmTitle": "Make the course private again?",
+        "movePrivateConfirmMessage": "The course leaves the catalogue, and learners outside the groups linked to it lose access."
       },
       "Create": {
         "actions": {
@@ -3989,7 +3951,9 @@
         },
         "toasts": {
           "created": "Course created.",
-          "partial": "Course created. {imported} of {imported, number} chapters imported. {failed} failed."
+          "partial": "Course created. {imported} of {total} chapters imported. {failed} failed.",
+          "outlineFailed": "Course created, but the source course outline could not be loaded. Add chapters manually.",
+          "failed": "Could not create the course"
         },
         "visibility": {
           "private": {
@@ -4106,6 +4070,8 @@
           "private": "Private",
           "public": "Public",
           "ready": "Ready",
+          "archived": "Archived",
+          "scheduled": "Scheduled",
           "unsavedChanges": "Unsaved changes"
         }
       },
@@ -4120,7 +4086,8 @@
           "gradebook": "Gradebook",
           "overview": "Overview",
           "publish": "Review & Publish",
-          "settings": "Settings"
+          "settings": "Settings",
+          "collaboration": "Contributors"
         },
         "untitledCourse": "Untitled course",
         "unsavedDialogLeave": "Leave workspace",
@@ -4140,7 +4107,7 @@
         "changeToUsersOnlyButton": "Change to Users Only",
         "changeToUsersOnlyConfirmMsg": "Are you sure you want this course to be only accessible to signed in users?",
         "changeToUsersOnlyConfirmTitle": "Change to Users Only?",
-        "deleteLinkButton": "Delete link",
+        "deleteLinkButton": "Unlink",
         "deleting": "Deleting...",
         "description": "You can choose to give access to this course to specific groups of users only by linking it to a UserGroup",
         "linkModalDescription": "Choose a UserGroup to link this course to. Users from this UserGroup will have access to this course.",
@@ -4150,9 +4117,9 @@
         "publicLabel": "Public",
         "tableHeaderActions": "Actions",
         "tableHeaderName": "Name",
-        "title": "UserGroups",
-        "unlinkConfirmMsg": "Users from this UserGroup will no longer have access to this course",
-        "unlinkConfirmTitle": "Unlink UserGroup?",
+        "title": "User groups",
+        "unlinkConfirmMsg": "Users from this user group will no longer have access to this course",
+        "unlinkConfirmTitle": "Unlink user group?",
         "unlinkUserGroupErrorDetailed": "Failed to unlink user group: {error}",
         "unlinkUserGroupErrorGeneric": "Failed to unlink user group",
         "loadingUserGroups": "Loading user groups...",
@@ -4160,7 +4127,7 @@
         "usersOnlyDescription": "The Course is only accessible to signed in users, additionally you can choose which UserGroups can access this course",
         "usersOnlyLabel": "Users Only",
         "accessPolicyStagedTitle": "Access policy is staged until you save",
-        "accessPolicyStagedDescription": "Visibility changes stay local until you save this section. User-group linking below applies immediately and is intentionally isolated from the policy draft.",
+        "accessPolicyStagedDescription": "Visibility changes stay local until you save this section.",
         "readinessReadyTitle": "Ready to publish",
         "readinessReadyDescription": "The server found no deterministic publish blockers.",
         "readinessBlockedTitle": "Publishing blocked by {count, plural, one {# issue} other {# issues}}",
@@ -4195,7 +4162,7 @@
         "noCoursesAvailable": "No courses available yet",
         "pageStatus": "Page {current} of {total}",
         "previousPage": "Previous",
-        "resultsCount": "{count} courses",
+        "resultsCount": "{count, plural, one {# course} other {# courses}}",
         "rightsGuide": "Rights Guide",
         "searchButton": "Search",
         "searchPlaceholder": "Search editable courses",
@@ -4328,6 +4295,7 @@
       "removeSelectedConfirmMessage": "This will remove {count, plural, one {# contributor} other {# contributors}} from the course.",
       "removeSelectedConfirmTitle": "Remove {count, plural, one {# contributor} other {# contributors}}?",
       "failedToUpdateContributor": "Failed to update contributor",
+      "rowAlreadyGone": "The application was already withdrawn — the list has been refreshed",
       "inactive": "Inactive",
       "maintainer": "Maintainer",
       "manageContributorsTitle": "Manage Contributors",
@@ -4366,9 +4334,23 @@
       "usernameColumn": "Username",
       "usersSelectedMessage": "{count, plural, one {# user selected} other {# users selected}}",
       "contributorPolicyStagedTitle": "Contributor policy is staged until you save",
-      "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section. Adding, removing, and editing contributors below applies immediately.",
+      "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section.",
       "rosterActionsImmediateTitle": "Roster actions apply immediately",
-      "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above."
+      "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above.",
+      "addButton": "Add",
+      "addedContributor": "@{username} added as a contributor",
+      "removedContributor": "@{username} removed from contributors",
+      "removeConfirmTitle": "Remove @{username} from the course?",
+      "removeConfirmMessage": "They will lose editing access to the course. You can add them again later.",
+      "removeButton": "Remove",
+      "approveButton": "Approve",
+      "activateButton": "Activate",
+      "deactivateButton": "Deactivate",
+      "actionsColumn": "Actions",
+      "updating": "Updating…",
+      "failedToLoadContributors": "Could not load the contributor roster.",
+      "rosterReadOnlyTitle": "The roster is read-only for you",
+      "rosterReadOnlyDescription": "The course creator, active maintainers and platform administrators can add, approve and remove contributors."
     },
     "Editor": {
       "BadgesExtension": {
@@ -4392,13 +4374,16 @@
         "mobileMessage2": "Please switch to a desktop to view.",
         "mobileTitle": "Desktop Only",
         "preview": "Preview",
-        "save": "Save draft"
+        "save": "Save draft",
+        "placeholder": "Start writing or type `/` for commands…"
       },
       "EditorWrapper": {
-        "detailedSaveError": "Error {status}: {message}",
         "saveError": "Error: Could not save activity.",
         "saveSuccess": "Activity saved!",
-        "saving": "Saving..."
+        "saving": "Saving...",
+        "conflict": "This activity was changed in another tab. Autosave stopped so it is not overwritten.",
+        "reload": "Reload page",
+        "noAccess": "You no longer have access to this course — changes are not saved."
       },
       "EmbedObjects": {
         "addEmbedCodeTitle": "Add Embed Code",
@@ -4432,6 +4417,7 @@
         "embeddedContentFallback": "Embed failed to render"
       },
       "FileUploadBlock": {
+        "dropOrClick": "Drop a file here or click to select",
         "browseFiles": "Browse Files",
         "chooseFile": "Choose File",
         "dragAndDrop": "Drag and drop files here or",
@@ -4471,6 +4457,7 @@
         "smallSize": "Small Size"
       },
       "ImageBlock": {
+        "remove": "Remove image",
         "alignCenter": "Align center",
         "alignLeft": "Align left",
         "alignRight": "Align right",
@@ -4479,9 +4466,9 @@
         "dropOrClick": "Drop an image here or click to select",
         "expand": "Expand",
         "imageViewer": "Image Viewer",
-        "invalidImageFile": "Please select a valid image file",
+        "invalidImageFile": "This format is not supported. Upload JPG, PNG, WebP, GIF or AVIF",
         "previewImageAlt": "Preview",
-        "supportedFormats": "Supported formats: JPG, PNG, WebP, GIF",
+        "supportedFormats": "Supported formats: JPG, PNG, WebP, GIF, AVIF (max 10 MB)",
         "uploadFailed": "Upload failed",
         "upload": "Upload",
         "uploading": "Uploading..."
@@ -4540,10 +4527,12 @@
         "title": "Math Equation"
       },
       "PDFBlock": {
+        "supportedFormats": "PDF (max 50 MB)",
         "download": "Download",
         "expand": "Expand",
         "pdfDocument": "PDF Document",
-        "pdfViewer": "PDF Viewer"
+        "pdfViewer": "PDF Viewer",
+        "remove": "Remove PDF"
       },
       "Scenarios": {
         "add": "Add",
@@ -5302,7 +5291,7 @@
       },
       "title": "Gamification Settings",
       "toast": {
-        "fromActivities": "from {count} activities",
+        "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
         "levelUp": "Level Up!"
       }
     },
@@ -5329,9 +5318,10 @@
       "Form": {
         "errorMessageDefault": "Invalid input",
         "invalidEmail": "Invalid email",
-        "maxChars": "Must be {count} characters or less",
+        "invalidUrl": "Enter a link starting with http:// or https://",
+        "maxChars": "Must be {count, plural, one {# character} other {# characters}} or less",
         "minAmount": "Amount must be at least {min}",
-        "minChars": "Must be at least {count} characters",
+        "minChars": "Must be at least {count, plural, one {# character} other {# characters}}",
         "positiveNumber": "Must be a positive number",
         "requiredField": "{fieldName} is required"
       },
@@ -5374,6 +5364,7 @@
         "uploadImageButton": "Upload New Image"
       },
       "activityCreatedSuccess": "Activity created successfully",
+      "activityCreateFailed": "Failed to create activity",
       "activityDeleteFailed": "Failed to delete activity",
       "activityDeletedSuccess": "Activity deleted successfully",
       "activityNameUpdateFailed": "Failed to update activity name",
@@ -5382,6 +5373,7 @@
       "activityUpdateSuccess": "Activity updated successfully",
       "avatarError": "Failed to update an avatar",
       "avatarSuccess": "Avatar updated successfully",
+      "avatarRemoved": "Avatar removed",
       "changingJoinMethod": "Changing join method...",
       "configUpdatedSuccess": "Configuration updated successfully.",
       "courseLinkedSuccess": "Course linked successfully.",
@@ -5445,7 +5437,9 @@
       "uploadingAndCreating": "Uploading file and creating activity...",
       "uploadingImage": "Uploading image...",
       "userGroupDeletedSuccess": "User group deleted.",
-      "userRemovedSuccess": "User removed from organization."
+      "userRemovedSuccess": "User removed from organization.",
+      "profileLoadError": "Could not load the profile data",
+      "profileStaleError": "Your profile was changed in another tab. Reload the page and make your changes again."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -5554,7 +5548,7 @@
         "Errors": {
           "invalidVideoUrl": "Please enter a valid {type} URL.",
           "logoUploadFailed": "Failed to upload logo.",
-          "maxPreviewsError": "You can only add {count} more preview(s).",
+          "maxPreviewsError": "You can only add {count, plural, one {# more preview} other {# more previews}}.",
           "previewOrderUpdateFailed": "Failed to update preview order.",
           "previewRemoveFailed": "Failed to remove preview.",
           "previewsUploadFailed": "Failed to upload previews.",
@@ -5562,7 +5556,7 @@
           "videoAlreadyAddedError": "This video has already been added."
         },
         "Info": {
-          "acceptedFormats": "Accepted formats: PNG, JPG (max 5MB)",
+          "acceptedFormats": "Accepted formats: PNG, JPG (max 5 MB)",
           "previewInstructions": "Maximum 4 previews • Drag to reorder",
           "recommendedSizeLogo": "Recommended size: 200x100px",
           "recommendedSizeThumbnail": "Recommended size: 200x100px"
@@ -5572,12 +5566,12 @@
           "logoUpdatedSuccess": "Logo updated successfully.",
           "previewOrderUpdatedSuccess": "Preview order updated successfully.",
           "previewRemovedSuccess": "Preview removed successfully.",
-          "previewsAddedSuccess": "{count} preview(s) added successfully.",
+          "previewsAddedSuccess": "{count, plural, one {# preview} other {# previews}} added successfully.",
           "removingPreview": "Removing preview...",
           "thumbnailUpdatedSuccess": "Thumbnail updated successfully.",
           "updatingPreviewOrder": "Updating preview order...",
           "uploadingLogo": "Uploading logo...",
-          "uploadingPreviews": "Uploading {count} preview(s)...",
+          "uploadingPreviews": "Uploading {count, plural, one {# preview} other {# previews}}...",
           "uploadingThumbnail": "Uploading thumbnail...",
           "videoPreviewAddFailed": "Failed to add video preview.",
           "videoPreviewAddedSuccess": "Video preview added successfully."
@@ -6047,6 +6041,7 @@
           "yourRank": "Your Rank"
         },
         "levelIndicators": {
+          "compactProgress": "{xp} XP · {remaining} to level {level}",
           "congratsMaxLevel": "Congratulations! You've reached the maximum level!",
           "currentLevel": "Current Level",
           "experienceBar": "Experience Bar",
@@ -6276,7 +6271,7 @@
         "toast": {
           "dailyLoginBonus": "Daily Login Bonus!",
           "earnedXP": "Earned {xp} XP",
-          "fromActivities": "from {count} activities",
+          "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
           "levelUp": "Level Up!",
           "preferencesError": "Failed to save preferences",
           "preferencesReset": "Preferences reset to defaults",
@@ -6365,22 +6360,57 @@
           "usernameLabel": "Username",
           "usernamePlaceholder": "Enter your username"
         },
-        "EditPassword": {
-          "Notifications": {
-            "passwordUpdateError": "Failed to update password",
-            "passwordUpdateSuccess": "Password updated successfully",
-            "promptLogoutOnPasswordChange": "Please login again with your new password",
-            "updating": "Updating password..."
-          },
-          "confirmPasswordLabel": "Confirm Password",
-          "currentPasswordLabel": "Current Password",
-          "description": "Update your password to keep your account secure",
-          "logoutWarning": "You will be logged out after changing your password",
-          "newPasswordLabel": "New Password",
-          "promptLogoutOnPasswordChange": "Please log in again with your new password",
-          "title": "Change Password",
-          "updateButton": "Update Password",
-          "updatingButton": "Updating..."
+        "Security": {
+          "sessionsTitle": "Active sessions",
+          "sessionsDescription": "Devices signed in to your account. Revoke any session you do not recognise.",
+          "sessionsLoadError": "Could not load your sessions.",
+          "loading": "Loading...",
+          "retry": "Retry",
+          "unknownDevice": "Unknown device",
+          "currentSession": "Current",
+          "lastSeen": "Last active: {at}",
+          "revoke": "Revoke",
+          "sessionRevoked": "Session revoked",
+          "sessionAlreadyEnded": "This session had already ended",
+          "totpTitle": "Two-factor authentication",
+          "totpDescription": "Protect password sign-in with one-time codes from an authenticator app (TOTP).",
+          "totpGoogleNote": "Signing in with Google does not ask for the code — your Google account protects it.",
+          "totpScanHint": "Add the secret to your authenticator app and enter the first code to activate it.",
+          "totpSecretLabel": "TOTP secret",
+          "totpOpenAuthenticator": "Open in authenticator app",
+          "codeLabel": "Code from the app",
+          "codePlaceholder": "Enter the 6-digit code",
+          "codeHint": "The code refreshes every 30 seconds.",
+          "activate": "Activate",
+          "cancel": "Cancel",
+          "enableTotp": "Enable two-factor authentication",
+          "disableTotp": "Disable",
+          "totpActive": "Two-factor authentication is on",
+          "totpAlreadyActive": "Two-factor authentication is already enabled.",
+          "totpEnrollmentReset": "Setup was reset, start again.",
+          "totpActivated": "Two-factor authentication enabled",
+          "totpRemoved": "Two-factor authentication disabled",
+          "invalidCode": "Invalid code. Try again.",
+          "passwordTitle": "Password",
+          "passwordDescription": "Change your sign-in password. Your other sessions will be signed out.",
+          "passwordNotSet": "This account has no password: you sign in with Google. A password cannot be set here — keep signing in with Google.",
+          "currentPassword": "Current password",
+          "newPassword": "New password",
+          "confirmPassword": "Confirm new password",
+          "passwordRule": "At least 8 characters, including an uppercase and a lowercase Latin letter, a digit and a symbol. At most 72 Latin or 36 Cyrillic characters.",
+          "changePassword": "Change password",
+          "passwordChanged": "Password changed",
+          "passwordChangedDescription": "Your other sessions were signed out.",
+          "currentPasswordWrong": "The current password is wrong.",
+          "newPasswordRejected": "The new password does not meet the requirements.",
+          "required": "This field is required.",
+          "passwordTooShort": "The password must be at least 8 characters.",
+          "passwordsDoNotMatch": "The passwords do not match.",
+          "revokeConfirmTitle": "End this session?",
+          "revokeConfirmDescription": "The device will be signed out and asked to log in again on its next action.",
+          "revokeCancel": "Cancel",
+          "disableTotpConfirmTitle": "Disable two-factor authentication?",
+          "disableTotpConfirmDescription": "Signing in will no longer ask for an authenticator-app code. You can enable it again at any time."
         }
       },
       "gamification": "Gamification Settings",
@@ -6397,6 +6427,7 @@
         "bio": "Bio",
         "bioPlaceholder": "Tell us about yourself",
         "changeAvatar": "Change Avatar",
+        "removeAvatar": "Remove avatar",
         "charactersLeft": "characters left",
         "clearAll": "Clear All",
         "description": "Manage your account details and preferences",
@@ -6424,6 +6455,7 @@
         "email": "Email",
         "emailChangeWarning": "Changing your email will require you to sign in again",
         "emailPlaceholder": "Enter your email",
+        "displayName": "Display name",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter your first name",
         "language": "Language",
@@ -6461,16 +6493,6 @@
         "uploadingAvatar": "Uploading",
         "username": "Username",
         "usernamePlaceholder": "Enter your username"
-      },
-      "password": "Password",
-      "passwordSection": {
-        "currentPasswordLabel": "Current Password",
-        "description": "Update your password to keep your account secure",
-        "logoutWarning": "You will be logged out after changing your password",
-        "newPasswordLabel": "New Password",
-        "title": "Change Password",
-        "updateButton": "Update Password",
-        "updatingButton": "Updating..."
       },
       "profile": "Profile",
       "profileSection": {
@@ -6517,7 +6539,7 @@
         },
         "links": {
           "addLink": "Add Link",
-          "removeLink": "Remove Link",
+          "removeLink": "Unlink",
           "selectIcon": "Select Icon",
           "titleLabel": "Link Title",
           "urlLabel": "Link URL"
@@ -6541,7 +6563,17 @@
         },
         "untitledSection": "Untitled Section"
       },
-      "title": "Account Settings"
+      "title": "Account Settings",
+      "security": "Security",
+      "securitySection": {
+        "currentPasswordLabel": "Current Password",
+        "description": "Update your password to keep your account secure",
+        "logoutWarning": "You will be logged out after changing your password",
+        "newPasswordLabel": "New Password",
+        "title": "Change Password",
+        "updateButton": "Update Password",
+        "updatingButton": "Updating..."
+      }
     },
     "UserProfileBuilder": {
       "AffiliationEditor": {
@@ -6591,7 +6623,8 @@
       },
       "Errors": {
         "profileLoadFailed": "Failed to load profile data",
-        "unknownSectionType": "Unknown section type"
+        "unknownSectionType": "Unknown section type",
+        "sectionField": "Section “{section}”: {message}"
       },
       "ExperienceEditor": {
         "addExperienceButton": "Add Experience",
@@ -6686,6 +6719,8 @@
       },
       "SectionsPanel": {
         "addSectionButton": "Add Section",
+        "deleteSection": "Delete section",
+        "editSection": "Edit section",
         "title": "Sections"
       },
       "SkillsEditor": {
@@ -6768,7 +6803,7 @@
         "typeHeader": "Type"
       },
       "signupsTitle": "Signups & Invite Codes",
-      "usergroups": "UserGroups",
+      "usergroups": "User groups",
       "usergroupsDescription": "Create and manage user groups",
       "usergroupsSection": {
         "actionsHeader": "Actions",
@@ -6780,10 +6815,10 @@
         "deleteModalMessage": "Access to all resources will be removed for all users in this UserGroup. Are you sure you want to delete this UserGroup?",
         "deleteModalTitle": "Delete UserGroup?",
         "deletingUserGroup": "Deleting...",
-        "description": "UserGroups are a way to group users together to manage their access to the resources (Courses) in your organization.",
+        "description": "User groups are a way to group users together to manage their access to the resources (Courses) in your organization.",
         "descriptionHeader": "Description",
         "editButton": "Edit",
-        "errorLoadingUserGroups": "Failed to load usergroups",
+        "errorLoadingUserGroups": "Failed to load user groups",
         "errors": {
           "deleteUserGroupFailed": "Error deleting usergroup"
         },
@@ -6792,38 +6827,44 @@
         "manageUsersModalDescription": "Manage the users in this UserGroup",
         "manageUsersModalTitle": "Manage UserGroup Users",
         "noUserGroupsFound": "No user groups found.",
-        "title": "Manage UserGroups & Users",
+        "readOnlyGroup": "Read only",
+        "title": "Manage user groups & users",
         "userGroupDeletedSuccess": "Deleted usergroup",
-        "userGroupHeader": "UserGroup"
+        "userGroupHeader": "UserGroup",
+        "membersHeader": "Members",
+        "loading": "Loading groups…",
+        "editUserGroupModalTitle": "Edit UserGroup",
+        "editUserGroupModalDescription": "Change the name and description of this UserGroup"
       },
-      "usergroupsTitle": "UserGroups",
+      "usergroupsTitle": "User groups",
       "users": "Users",
       "usersDescription": "Manage your organization users, assign roles and permissions",
       "usersSection": {
         "actionsHeader": "Actions",
-        "activeUsersTitle": "Active users",
+        "activeUsersTitle": "Users",
         "cannotEditSelf": "You cannot change your own role",
         "cannotManageHigherRole": "You cannot manage users with a higher role than you",
         "description": "Manage your organization users, assign roles and permissions",
         "editRoleButton": "Edit Role",
-        "errors": {
-          "removeUserFailed": "Error removing user"
-        },
+        "enableUserButton": "Enable",
+        "enablingUser": "Enabling...",
         "noActionsForAdministrators": "No actions for administrator",
         "noSearchResults": "No users found matching your search.",
         "noUsersFound": "No users found in this organization.",
         "paginationInfo": "Showing {start}-{end} of {total} users",
-        "removeFromOrgButton": "Remove from organization",
-        "removeUserButton": "Remove User",
-        "removeUserModalMessage": "Are you sure you want remove this user from the organization?",
-        "removeUserModalTitle": "Remove {username}?",
-        "removingUser": "Removing...",
+        "removeFromOrgButton": "Disable user",
+        "removeUserButton": "Disable user",
+        "removeUserModalMessage": "Every live session of this user is revoked. The account can be re-enabled later.",
+        "removeUserModalTitle": "Disable the account of {name}?",
+        "removingUser": "Disabling...",
         "roleHeader": "Role",
         "searchPlaceholder": "Search by name, username, or email...",
+        "statusDisabled": "Disabled",
         "updateRoleModalDescription": "Update @{username}'s role",
         "updateRoleModalTitle": "Update Role",
+        "userEnabledSuccess": "User enabled",
         "userHeader": "User",
-        "userRemovedSuccess": "Removed user from org"
+        "userRemovedSuccess": "User disabled"
       },
       "usersTitle": "Users"
     },
@@ -6838,6 +6879,8 @@
     "technicalDetails": "Technical details:",
     "tryAgain": "Try again",
     "rateLimited": "Too many requests. Please try again shortly.",
+    "rateLimitedRetry": "Too many attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+    "rateLimitedRetrySeconds": "Too many attempts. Try again in {seconds, plural, one {# second} other {# seconds}}.",
     "networkUnavailable": "Network unavailable. Please check your connection.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "permissionDenied": "You do not have permission to perform this action.",
@@ -6855,8 +6898,14 @@
     "ref": "Ref: {digest}",
     "activityNotFound": "Activity Not Found",
     "activityNotFoundMessage": "The activity you are looking for does not exist or has been removed.",
+    "activityUnavailable": "Activity not available",
+    "activityUnavailableMessage": "This activity is not published yet. Go back to the course to continue.",
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
+    "collectionNotFound": "Collection not found",
+    "collectionNotFoundMessage": "The collection you are looking for does not exist or has been removed.",
+    "userNotFound": "User not found",
+    "userNotFoundMessage": "There is no user with that name, or the profile has been removed.",
     "backToCourse": "Back to Course",
     "backToDashboard": "Back to Dashboard",
     "courseLoadErrorTitle": "Course failed to load",
@@ -6864,7 +6913,70 @@
     "coursesLoadErrorTitle": "Courses failed to load",
     "coursesLoadErrorDescription": "Courses could not be loaded. Retry the request or use the support reference if it keeps failing.",
     "activityLoadErrorTitle": "Activity failed to load",
-    "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing."
+    "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing.",
+    "codes": {
+      "internal": "Internal server error. Please try again later.",
+      "not-found": "The requested resource was not found.",
+      "method-not-allowed": "This request method is not supported.",
+      "forbidden": "You do not have permission to perform this action.",
+      "unauthenticated": "Please sign in to continue.",
+      "conflict": "The data was changed elsewhere. Reload the page and try again.",
+      "idempotency-in-progress": "This request is still being processed. Wait a moment and reload the page.",
+      "validation-failed": "Check the highlighted fields and try again.",
+      "precondition-failed": "This record was changed by someone else. Reload the page and try again.",
+      "rate-limited": "Too many attempts. Please try again later.",
+      "payload-too-large": "The file or request is too large.",
+      "service-unavailable": "The service is temporarily unavailable. Please try again later.",
+      "invalid-credentials": "Wrong login or password.",
+      "mfa-required": "Enter the code from your authenticator app.",
+      "session-expired": "Your session expired. Please sign in again.",
+      "csrf-rejected": "The request was rejected for security reasons. Reload the page and try again.",
+      "account-disabled": "This account is disabled. Contact an administrator.",
+      "google-oauth-expired": "Google sign-in failed or expired. Please try again.",
+      "account-exists": "An account with this email already exists. Sign in with your password: Google sign-in links only to a confirmed email.",
+      "invalid-totp-code": "Invalid one-time code.",
+      "code-runner-degraded": "The code runner is temporarily unavailable. Please try again later.",
+      "compile-error": "The code does not compile. Fix the errors and try again.",
+      "language-not-allowed": "This programming language is not allowed for the task.",
+      "ai-disabled": "AI features are disabled.",
+      "ai-budget-exhausted": "The AI token budget is exhausted. Please try again later.",
+      "ai-rate-limited": "Hourly AI request limit reached. Please try again later.",
+      "ai-run-cancelled": "The AI run was cancelled.",
+      "grade-not-released": "The grade for this work has not been released yet.",
+      "ai-provider-unavailable": "The AI provider is unavailable. Please try again later.",
+      "username-taken": "This username is already taken.",
+      "email-taken": "This email address is already registered.",
+      "role-slug-taken": "A role with this slug already exists.",
+      "last-admin": "The platform must keep at least one active administrator.",
+      "self-disable": "You cannot disable your own account.",
+      "activity-not-ready": "Publish the assessment or file-submission settings first, then the activity.",
+      "course-not-ready": "Resolve every readiness blocker before publishing the course.",
+      "unsupported-media-type": "This file type is not allowed here.",
+      "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later.",
+      "grade-own-attempt": "You cannot grade your own attempt.",
+      "assessment-read-only": "This assessment can no longer be edited: it is archived, scheduled, or already has submissions."
+    },
+    "fields": {
+      "required": "This field is required.",
+      "invalid": "Invalid value.",
+      "too-long": "The value is too long.",
+      "too-short": "The value is too short.",
+      "out-of-range": "The value is out of range.",
+      "not-in-course": "Not enrolled in this course.",
+      "staff": "On this course's staff.",
+      "unknown": "Not found.",
+      "unknown-field": "Unknown field.",
+      "unsafe": "This address cannot be used.",
+      "password-policy": "The password must be at least 8 characters and include an uppercase and a lowercase Latin letter, a digit and a symbol.",
+      "password-unchanged": "The new password is the same as the current one.",
+      "password-too-long": "The password is too long: at most 72 Latin or 36 Cyrillic characters.",
+      "choice": {
+        "option_id_duplicate": "Choice option ids must be unique."
+      },
+      "duplicate": "This entry is already in the list.",
+      "own-attempt": "You cannot grade your own attempt."
+    },
+    "requestFailed": "Request failed"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -6976,7 +7088,8 @@
     "upload": "Upload",
     "users": "Users",
     "warning": "Warning",
-    "yes": "Yes"
+    "yes": "Yes",
+    "appDescription": "An educational platform for online learning"
   },
   "GradientDirections": {
     "bottom": "⬇️ Bottom",
@@ -7101,16 +7214,18 @@
       "releaseStateAwaitingRelease": "Awaiting release",
       "releaseStateVisible": "Visible",
       "releaseStateReturned": "Returned",
-      "staleDraftTitle": "Unsaved local draft",
+      "staleDraftTitle": "Grade updated by a colleague",
       "staleDraft": {
         "serverScoreLabel": "Server score:",
         "yourDraftLabel": "Your draft:"
       },
-      "useServerValues": "Use server values",
+      "useServerValues": "Load their version",
       "keepMyDraft": "Keep my draft",
+      "staleDraftBlocked": "Choose which version to keep first.",
       "saveDraftGrade": "Save as draft",
       "returnForRevision": "Return for revision",
-      "publishPrerequisite": "At least one item must be graded before publishing.",
+      "publishPrerequisite": "Score every item before publishing.",
+      "publishPrerequisiteScore": "Set the final score before publishing.",
       "keyboardHintNextKey": "j",
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Next student",
@@ -7123,10 +7238,12 @@
       "shortcutPublish": "Ctrl⇧↵",
       "shortcutFocusGrade": "G",
       "loadingSubmission": "Loading submission...",
-      "formUnavailable": "Grading form is unavailable."
+      "formUnavailable": "Grading form is unavailable.",
+      "republishHint": "This grade is already published. Changes become visible to the learner as soon as you publish again.",
+      "republishGrade": "Publish again"
     },
     "Batch": {
-      "title": "Batch Grade ({count} submissions)",
+      "title": "Batch Grade ({count, plural, one {# submission} other {# submissions}})",
       "subtitle": "{count} drafts edited",
       "close": "Close batch grading panel",
       "position": "Student {current} of {total}: {student}",
@@ -7137,7 +7254,7 @@
       "submitAll": "Submit All ({count})",
       "submitting": "Submitting...",
       "confirmSubmitTitle": "Submit grades for selected students?",
-      "confirmSubmitDesc": "Submit grades for {count} students? This cannot be undone.",
+      "confirmSubmitDesc": "Submit grades for {count, plural, one {# student} other {# students}}? This cannot be undone.",
       "confirmSubmitAction": "Submit All ({count})",
       "nothingToSubmit": "Edit at least one submission before submitting",
       "scoreRequired": "Every edited submission must have a final score",
@@ -7311,7 +7428,8 @@
   "NotFoundPage": {
     "code": "404!",
     "button": "Return to Homepage",
-    "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed."
+    "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed.",
+    "title": "Page not found"
   },
   "RichTextEditor": {
     "addImage": "Add Image",
@@ -7329,9 +7447,15 @@
     "url": "URL",
     "urlPlaceholder": "https://example.com",
     "videoPlaceholder": "https://youtube.com/watch?v=...",
-    "videoUrl": "Video URL"
+    "videoUrl": "Video URL",
+    "quote": "Quote"
   },
   "SearchPage": {
+    "noFilterResults": {
+      "courses": "No courses found for “{query}”",
+      "collections": "No collections found for “{query}”",
+      "users": "No users found for “{query}”"
+    },
     "collections": "Collections",
     "courses": "Courses",
     "coursesCount": "{count, plural, =0 {0 courses} one {# course} other {# courses}}",
@@ -7341,7 +7465,8 @@
     "filterUsers": "Users",
     "noResultsMessage": "We couldn't find any results for \"{query}\". Try adjusting your search terms or browse our featured content.",
     "noResultsTitle": "No results found",
-    "resultsFound": "{count} results found for \"{query}\"",
+    "searching": "Searching for \"{query}\"…",
+    "resultsFound": "{count, plural, one {# result} other {# results}} found for \"{query}\"",
     "searchButton": "Search",
     "searchInputPlaceholder": "Search for courses, collections, users...",
     "searchTitle": "Search",
@@ -7398,12 +7523,6 @@
       "users": "Users"
     }
   },
-  "SignupPage": {
-    "hi": "Hi",
-    "join": "join",
-    "signUp": "Sign Up",
-    "submit": "Submit"
-  },
   "TeacherAnalytics": {
     "tabs": {
       "overview": "Overview",
@@ -7451,11 +7570,13 @@
         "recovered": "Recovered"
       },
       "viewAllAtRisk": "View full at-risk list →",
-      "contentFriction": "Content Friction"
+      "contentFriction": "Content Friction",
+      "exportSaved": "CSV saved",
+      "exportFailed": "Could not download the CSV"
     },
     "filters": {
       "label": "Teacher Analytics",
-      "scopedCourses": "{count} scoped courses",
+      "scopedCourses": "{count, plural, one {# scoped course} other {# scoped courses}}",
       "buckets": "{bucket} buckets",
       "windowPrefix": "Window: {window}",
       "comparePrefix": "Compare: {compare}",
@@ -7482,7 +7603,20 @@
       "cohortSelect": "Select cohort",
       "timezoneSelect": "Select timezone",
       "sortBySelect": "Select sort field",
-      "sortOrderSelect": "Select sort order"
+      "sortOrderSelect": "Select sort order",
+      "windows": {
+        "7d": "7 days",
+        "28d": "28 days",
+        "90d": "90 days"
+      },
+      "sortProgress": "Progress",
+      "sortActivity": "Activity",
+      "sortName": "Name",
+      "sortEngagement": "Engagement",
+      "sortTitle": "Title",
+      "sortSubmission": "Submission rate",
+      "sortPass": "Pass rate",
+      "sortLatency": "Grading latency"
     },
     "labels": {
       "bucket": {
@@ -7547,7 +7681,10 @@
         "completed": "Completed",
         "failed": "Failed",
         "processing": "Processing",
-        "pendingJudge0": "Pending Judge0"
+        "pendingJudge0": "Pending Judge0",
+        "draft": "Draft",
+        "published": "Published",
+        "returned": "Returned"
       }
     },
     "kpi": {
@@ -7605,7 +7742,7 @@
     "table": {
       "searchDefault": "Search...",
       "emptyDefault": "No rows found for the selected filters.",
-      "visibleRows": "{count} visible rows",
+      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "pagination": "Pagination",
@@ -7625,8 +7762,8 @@
     },
     "riskDistribution": {
       "title": "Risk distribution",
-      "description": "Learner risk by urgency level for the current scope.",
-      "preview": "Showing top {shown} of {total} at-risk learners.",
+      "description": "At-risk learners (medium and high risk) by level for the current scope.",
+      "preview": "Showing top {shown} of {total, plural, one {# at-risk enrollment} other {# at-risk enrollments}}.",
       "learners": "Learners",
       "emptyState": "No at-risk learners are currently in view for the selected scope."
     },
@@ -7665,15 +7802,15 @@
       "healthy": "Healthy",
       "searchPlaceholder": "Search assessments...",
       "emptyMessage": "No assessment outliers match the current scope.",
-      "rowCount": "{count} assessment outliers"
+      "rowCount": "{count, plural, one {# assessment outlier} other {# assessment outliers}}"
     },
     "atRisk": {
       "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
       "noInterventions": "No interventions logged",
       "interventions": {
-        "message": "Message",
-        "meeting": "Meeting",
-        "recovered": "Recovered"
+        "message": "Mark: message sent",
+        "meeting": "Mark: meeting scheduled",
+        "recovered": "Mark: risk resolved"
       },
       "defaultTitle": "At-risk learners",
       "defaultDescription": "Operational learner list ranked by urgency.",
@@ -7690,14 +7827,16 @@
       "emptyMessage": "No at-risk learners are visible for the current filters.",
       "interventionLogged": "Intervention logged",
       "interventionLogFailed": "Failed to log intervention",
-      "gradeSubmissions": "Grade {count} pending submission(s) →",
+      "gradeSubmissions": "Grade {count, plural, one {# pending submission} other {# pending submissions}}",
       "riskComponents": {
         "inactivity": "Inactivity",
         "progress": "Progress gap",
         "failures": "Failures",
         "missing": "Missing",
         "grading": "Awaiting grade"
-      }
+      },
+      "learnerNotEnrolled": "The learner is no longer enrolled in the course",
+      "learnerIsStaff": "The learner is now on the course team"
     },
     "gradingBacklog": {
       "title": "Grading backlog",
@@ -7714,7 +7853,8 @@
       "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
-      "learners": "Learners"
+      "learners": "Learners",
+      "empty": "No data yet: the course has no chapters or progress records."
     },
     "scoreChart": {
       "learners": "Learners"
@@ -7725,6 +7865,8 @@
       "overviewDisabledTitle": "Analytics unavailable",
       "overviewDisabledDesc": "This organization has analytics disabled or the current session cannot access analytics data.",
       "overviewLoadError": "The analytics service could not be loaded.",
+      "scopeDenied": "You do not have access to analytics for these courses.",
+      "invalidFilters": "The filters are invalid. Change the period or the course selection.",
       "assessmentsUnavailableTitle": "Assessment analytics unavailable",
       "assessmentsUnavailableDesc": "An authenticated session is required to inspect assessment analytics.",
       "assessmentsLoadError": "The assessment analytics view could not be loaded.",
@@ -7743,7 +7885,7 @@
       "atRiskUnavailableDesc": "An authenticated session is required to inspect at-risk learners.",
       "atRiskLoadError": "The learner risk view could not be loaded.",
       "atRiskPageTitle": "Full at-risk learner list",
-      "atRiskPageDescription": "Showing {total} scoped learners ranked by risk score.",
+      "atRiskPageDescription": "Showing {total, plural, one {# scoped enrollment} other {# scoped enrollments}} ranked by risk score.",
       "courseDetailBadge": "Course detail",
       "courseStatCompletion": "Completion",
       "courseStatAvgProgress": "Average progress",
@@ -7854,14 +7996,254 @@
       "assessmentColSubmitted": "Awaiting grade",
       "assessmentColStatus": "Status",
       "assessmentPassThresholdExam": "Pass threshold from exam settings",
-      "assessmentPassThresholdDefault": "Pass threshold: 60%"
+      "assessmentPassThreshold": "Pass threshold: {value}%",
+      "assessmentStatGenerated": "Generated",
+      "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
+      "assessmentItemAccuracy": "Accuracy {value}%",
+      "courseContentHealthNoLearners": "No data yet: the course has no learners.",
+      "teacherFilterDenied": "The teacher filter is unavailable: viewing another teacher’s analytics needs platform-wide access.",
+      "teacherFilterUnknown": "The teacher in the filter does not exist. Pick a teacher from the list."
+    },
+    "codes": {
+      "active_learners": "Active learners",
+      "returning_learners": "Returning learners",
+      "completion_rate": "Completion rate",
+      "at_risk_learners": "At-risk learners",
+      "ungraded_submissions": "Ungraded submissions",
+      "negative_engagement_courses": "Courses with falling engagement",
+      "median_across_courses": "Median across courses",
+      "pct_of_enrolled": "% of enrolled",
+      "pct_of_courses": "% of courses",
+      "too_hard": "Too hard",
+      "too_easy": "Too easy",
+      "low_variance": "Low score variance",
+      "low_discrimination": "Low discrimination",
+      "live": "Live",
+      "rollup": "Rollup",
+      "progress_events": "progress events",
+      "quiz_submissions": "quiz submissions",
+      "exam_attempts": "exam attempts",
+      "code_submissions": "code submissions",
+      "event_log": "event log",
+      "fewer_than_5_learners": "fewer than 5 learners",
+      "enrolled": "Enrolled",
+      "active_7d": "Active in 7 days",
+      "active_in_window": "Active in period",
+      "completed": "Completed",
+      "days_since_course_or_activity_update": "Days since the course or an activity was updated",
+      "average_progress_of_scoped_learners": "Average progress of scoped learners",
+      "ungraded_submissions_delaying_feedback": "Ungraded submissions delaying feedback",
+      "assessment_results_drop_around_this_activity": "Assessment results drop around this activity",
+      "learners_open_and_leave_without_completing": "Learners open and leave without completing",
+      "high_time_spent_low_completion": "High time spent, low completion",
+      "stale_content_correlates_with_low_performance": "Stale content correlates with low performance",
+      "repeated_assessment_failures": "Repeated assessment failures",
+      "exit_after_open": "Exit after open",
+      "high_time_low_completion": "Time sink",
+      "stale_low_performance": "Stale content",
+      "canonical_submissions_and_grading_ledger": "Source: submissions and grading ledger",
+      "no_teacher_grading_dependency": "No teacher grading dependency",
+      "support_diagnostics_within_operational_range": "Support diagnostics within operational range",
+      "support_follow_up_recommended": "Support follow-up recommended",
+      "grading_queue_within_target": "Grading queue within target",
+      "grading_queue_approaching_72h_target": "Grading queue approaching the 72 h target",
+      "grading_queue_past_72h_target": "Grading queue past the 72 h target",
+      "integrity_signals_in_scope": "Integrity signals in scope",
+      "attempts_without_score_in_scope": "Attempts without a score",
+      "grading_latency_past_service_target": "Grading latency past the service target",
+      "grading_latency_approaching_service_target": "Grading latency approaching the service target",
+      "suspicious_attempts": "Suspicious attempts",
+      "missing_scores": "Missing scores",
+      "grading_latency": "Grading latency",
+      "awaiting_teacher_grading": "Awaiting teacher grading",
+      "awaiting_grading": "Awaiting grading",
+      "returned_for_resubmission": "Returned for resubmission",
+      "late_submissions": "Late submissions",
+      "manual_review_pending": "Manual review pending",
+      "resubmission_pending_after_feedback": "Resubmission pending after feedback",
+      "late_work_may_need_deadline_or_policy_review": "Late work may need a deadline or policy review",
+      "integrity_signals_recorded": "Integrity signals recorded",
+      "submission_without_score": "Submission without a score",
+      "accuracy_unavailable": "Accuracy unavailable",
+      "workflow": "Workflow",
+      "question": "Question",
+      "test": "Test",
+      "grading_entry": "Grading entry",
+      "bulk_action": "Bulk action",
+      "publish_grade": "Grade published",
+      "save_grade": "Grade saved",
+      "published": "Published",
+      "draft_saved": "Draft saved",
+      "extend_deadline": "Deadline extension",
+      "release_grades": "Grade release",
+      "return_all": "Return all",
+      "override_score": "Score override",
+      "batch_grade": "Batch grading",
+      "pending": "Pending",
+      "running": "Running",
+      "failed": "Failed",
+      "recent_assessment_failures": "Recent assessment failures",
+      "missing_required_work": "Missing required work",
+      "inactivity_past_7_days": "Inactive for over 7 days",
+      "grading_block_blocks_progress": "Grading block stalls progress",
+      "progress_behind_course_baseline": "Progress behind the course baseline",
+      "multiple_risk_signals": "Multiple risk signals",
+      "offer_targeted_help": "Offer targeted help",
+      "remind_missing_work": "Remind about missing work",
+      "contact_learner_this_week": "Contact the learner this week",
+      "review_submissions_first": "Review submissions first",
+      "schedule_pace_meeting": "Schedule a pace meeting",
+      "send_personal_message": "Send a personal message",
+      "newly_at_risk": "Newly at risk",
+      "worsening": "Worsening",
+      "improving": "Improving",
+      "recovered": "Recovered",
+      "stable": "Stable",
+      "message_sent": "Message sent",
+      "meeting_scheduled": "Meeting scheduled",
+      "extension_granted": "Support plan",
+      "learner_recovered": "Learner recovered",
+      "planned": "Planned",
+      "resolved": "Resolved",
+      "learner_contacted": "Learner contacted",
+      "check_in_scheduled": "Teacher check-in scheduled",
+      "remediation_draft_prepared": "Support plan prepared",
+      "recovered_from_risk": "Recovered from risk",
+      "risk_resolved_after_review": "Risk marked resolved after teacher review.",
+      "engagement_drop": "Engagement drop",
+      "submission_spike": "Submission spike",
+      "fast_quiz_completion": "Fast quiz completion",
+      "score_distribution_shift": "Score distribution shift"
+    },
+    "messages": {
+      "grading_backlog": {
+        "title": "Grading queue needs attention",
+        "body": "{count, plural, one {# submission is} other {# submissions are}} still awaiting review."
+      },
+      "engagement_dropped": {
+        "title": "Engagement dropped",
+        "body": "Active learners fell by {delta_pct, number}% compared with the previous period."
+      },
+      "content_stale": {
+        "title": "Content may be stale",
+        "body": "This course has not been updated for {days, plural, one {# day} other {# days}}."
+      },
+      "risk_spike": {
+        "title": "At-risk learners need intervention",
+        "body": "{count, plural, one {# learner} other {# learners}} in scope at medium or high risk."
+      },
+      "grading_slo_breached": {
+        "title": "{assessment_title}: outside the grading target",
+        "body": "{breaches, plural, one {# submission} other {# submissions}} in {course_name} exceeded the {target_hours, number} h grading target; {awaiting, number} still queued, the oldest submitted {oldest_hours, number} h ago."
+      },
+      "grading_slo_watch": {
+        "title": "{assessment_title}: approaching the grading target",
+        "body": "{awaiting, plural, one {# submission is} other {# submissions are}} waiting in {course_name}; the oldest has been open for {oldest_hours, number} h against a {target_hours, number} h target."
+      },
+      "completion_target_miss": {
+        "title": "{course_name}: learners likely to miss the completion target",
+        "body": "{count, plural, one {# learner is} other {# learners are}} inactive or below 70% progress."
+      },
+      "course_completion_deadline": {
+        "title": "{course_name}: 14-day completion forecast",
+        "body": "Expected completion rate is {expected_pct, number}% if the current pace holds."
+      },
+      "grading_backlog_7d": {
+        "title": "Expected grading backlog in 7 days",
+        "body": "The queue is projected to reach {count, plural, one {# submission} other {# submissions}}."
+      },
+      "assessment_failure_risk": {
+        "title": "{assessment_title}: elevated failure risk",
+        "body": "Expected failure rate is {expected_pct, number}% before the next deadline."
+      },
+      "sharp_engagement_drop": {
+        "title": "{course_name}: sharp engagement drop",
+        "body": "Active learners fell sharply compared with the previous period."
+      },
+      "submission_spike": {
+        "title": "{course_name}: unusual submission spike",
+        "body": "Submission volume is far above the previous period."
+      },
+      "fast_quiz_completion": {
+        "title": "{assessment_title}: suspiciously fast completions",
+        "body": "Many attempts finished near the minimum observed time."
+      },
+      "score_distribution_shift": {
+        "title": "{assessment_title}: score distribution shifted after a content update",
+        "body": "The average score changed after the last content update."
+      },
+      "new_at_risk_learners": {
+        "title": "{count, plural, one {# new at-risk learner} other {# new at-risk learners}} in {course_name}",
+        "body": "Risk rose against each learner's own baseline; review the watchlist."
+      },
+      "low_pass_rate": {
+        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
+        "body": "The low pass rate flags this assessment."
+      },
+      "low_pass_rate_with_diagnostics": {
+        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
+        "body": "The quality diagnostics flag this assessment."
+      },
+      "content_bottleneck": {
+        "title": "{activity_name} is a content bottleneck",
+        "body": "{signal, select, high_time_low_completion {High time spent, low completion.} exit_after_open {Learners open and leave without completing.} repeated_assessment_failures {Assessment results drop around this activity.} stale_low_performance {Stale content correlates with low performance.} other {Learners get stuck on this activity.}}"
+      },
+      "workload_backlog": {
+        "title": "{count, plural, one {# submission is} other {# submissions are}} awaiting review",
+        "body": "{breaches, number} breached the {target_hours, number} h grading target; the 7-day forecast is {forecast_7d, number}."
+      },
+      "completion_improved": {
+        "title": "Completion for {course_name} improved by {delta_pts, number} points",
+        "body": "This cohort outperforms the course's historical baseline."
+      },
+      "missing_event_sources": {
+        "title": "Some event sources have no data",
+        "body": "No data: {sources}"
+      },
+      "thin_course_data": {
+        "title": "Some courses have too little data",
+        "body": "{count, plural, one {# course has} other {# courses have}} fewer than 5 learners."
+      },
+      "stale_rollup": {
+        "title": "Rollups older than 24 hours",
+        "body": "Refresh the analytics rollups before using this view for operational decisions."
+      }
+    },
+    "units": {
+      "hours": "{value} h",
+      "days": "{value} d"
+    },
+    "intervention": {
+      "manage": "Manage intervention",
+      "recommendedAction": "Recommended action",
+      "draftLabel": "Support plan",
+      "confirmDescription": "This will be recorded in the support log for {learner}. Continue?",
+      "confirmAction": "Record",
+      "saveDraft": "Save support plan",
+      "auditLog": "Audit log",
+      "loadingAudit": "Loading interventions…",
+      "emptyAudit": "No interventions logged yet.",
+      "open": "Intervention open",
+      "resolved": "Resolved",
+      "improving": "Improving",
+      "none": "No intervention",
+      "riskDescription": "{course} · risk {score} · {level}",
+      "draftTemplate": "Goal: reduce the risk for {learner} in {course}.\nRisk drivers: {reasons}.\nTeacher action: {action}.\nSupport plan: assign a short catch-up task, message the learner with one concrete next step, and review progress after the next activity.",
+      "needsReview": "needs teacher review",
+      "completed": "Last intervention completed"
     }
   },
   "Features": {
     "ContentMarkdown": {
-      "imageLabel": "Image"
+      "imageLabel": "Image",
+      "copyCode": "Copy code",
+      "copiedCode": "Copied code",
+      "plainText": "Text"
     },
     "Grading": {
+      "Stream": {
+        "accessLost": "Your grading access to this course was revoked. Checking access…"
+      },
       "Gradebook": {
         "title": "Course progress",
         "loading": "Loading gradebook...",
@@ -7883,22 +8265,28 @@
         "actionRequired": "Action",
         "late": "Late",
         "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
+        "pendingAttempt": "Awaiting grading · attempt {attempt}",
+        "awaitingReleaseAttempt": "Awaiting release · attempt {attempt}",
+        "releaseGrade": "Release grade",
+        "teacherActions": "Awaiting the teacher",
         "refresh": "Refresh",
         "export": "Export",
         "noScore": "No score yet",
-        "averageScore": "Average {score}%",
+        "averageScore": "Average {score}",
         "defaultCohort": "Course roster",
         "summary": {
           "learners": "Learners",
+          "learnersFiltered": "Learners in filter (of {total})",
           "activities": "Activities",
           "needsGrading": "Needs grading",
+          "awaitingRelease": "Awaiting release",
           "overdue": "Overdue",
           "notStarted": "Not started",
           "selected": "Selected"
         },
         "savedFilters": {
           "all": "All",
-          "needs_grading": "Needs grading",
+          "needs_grading": "Needs action",
           "overdue": "Overdue",
           "returned": "Returned",
           "failed": "Failed",
@@ -7929,7 +8317,10 @@
           "quiz": "Quiz",
           "form": "Form",
           "file": "File"
-        }
+        },
+        "exportDone": "CSV saved: {count} {count, plural, one {learner} other {learners}}",
+        "noLearnersTitle": "No learners in this course yet",
+        "noLearnersDescription": "Learners appear here once they enroll in the course."
       },
       "Review": {
         "layout": {
@@ -7939,7 +8330,10 @@
             "total": "Total",
             "needsGrading": "Needs Grading",
             "avgScore": "Avg Score",
-            "passRate": "Pass Rate"
+            "passRate": "Pass Rate",
+            "awaitingRelease": "Awaiting release",
+            "slaBreaches": "SLA breaches",
+            "slaTarget": "{hours}h target"
           }
         },
         "submissionList": {
@@ -7956,7 +8350,8 @@
             "attempt": "Attempt"
           },
           "totals": {
-            "submissions": "{count} submissions",
+            "submissions": "{count, plural, one {# submission} other {# submissions}}",
+            "submissionsAtLeast": "{count}+ submissions",
             "selected": "{count} selected"
           },
           "loading": "Loading",
@@ -7969,7 +8364,10 @@
           "releaseStateHidden": "Hidden",
           "releaseStateAwaitingRelease": "Awaiting release",
           "releaseStateVisible": "Visible",
-          "releaseStateReturned": "Returned"
+          "releaseStateReturned": "Returned",
+          "ownAttempt": "Your attempt",
+          "previousPage": "Previous page",
+          "nextPage": "Next page"
         },
         "submissionInspector": {
           "selectSubmission": "Select a submission to begin reviewing.",
@@ -7995,13 +8393,7 @@
           "noAnswerPayload": "No answer payload recorded.",
           "itemLabel": "Item {index}",
           "rubricGuidance": "Rubric guidance",
-          "plagiarism": {
-            "failed": "Plagiarism: Failed",
-            "checking": "Plagiarism: Checking",
-            "pending": "Plagiarism: Pending",
-            "match": "Plagiarism: {score}% Match",
-            "clear": "Plagiarism: Clear"
-          }
+          "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown."
         },
         "bulkActions": {
           "selectedCount": "{count} selected",
@@ -8010,9 +8402,17 @@
           "running": "Running bulk action",
           "publishSelected": "Publish selected",
           "returnSelected": "Return selected",
+          "returnNeedsSavedScore": "Save a grade first",
           "releaseHidden": "Release hidden grades",
           "deadlinePlaceholder": "Pick date and time",
           "reasonPlaceholder": "Reason",
+          "auditNote": {
+            "label": "Audit note",
+            "placeholder": "Reason for this bulk action",
+            "help": "Required for publish, return, and release actions.",
+            "tooShort": "Enter at least 8 characters.",
+            "unknownError": "Unknown error"
+          },
           "extend": "Extend",
           "export": "Export",
           "lastResult": "Last result: {detail}",
@@ -8029,19 +8429,29 @@
             "bulkPartialFailure": "{failed} submission(s) could not be updated — see details below.",
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
+            "deadlineExtended": "Deadline extended for {count, plural, one {# learner} other {# learners}}",
             "hiddenReleased": "Hidden grades released",
-            "releaseFailed": "Failed to release hidden grades"
+            "releaseFailed": "Failed to release hidden grades",
+            "publishedWithSkipped": "Published: {count}. Skipped without a grade: {skipped}.",
+            "returnedWithSkipped": "Returned: {count}. Skipped without a grade: {skipped}.",
+            "exported": "CSV saved",
+            "exportFailed": "Could not export the CSV",
+            "notEnrolled": "Not enrolled in the course: {names}. They were left out — queue the extension again."
           },
           "summaries": {
             "publishFinished": "Bulk publish finished",
             "returnFinished": "Bulk return finished",
+            "deadlineExtended": "Deadline extended",
+            "finishedWithErrors": "Bulk action finished with errors",
             "resultDetail": "Succeeded: {succeeded}. Failed: {failed}.",
             "deadlineQueued": "Deadline extension queued",
             "deadlineDetail": "Learners targeted: {count}. {reason}",
             "releaseFinished": "Grade release finished",
-            "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}."
+            "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}.",
+            "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}",
+            "releaseSkipped": "{count, plural, one {# submission stayed hidden: it changed during the release (release again) or it is your own attempt} other {# submissions stayed hidden: they changed during the release (release again) or they are your own attempts}}"
           },
-          "failedSubmissionsTitle": "{count} submission(s) failed to update:",
+          "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
           "preview": {
             "selectedSubmissions": "Selected submissions",
             "gradeReady": "Grade-ready",
@@ -8052,8 +8462,12 @@
             "reason": "Reason",
             "notSet": "Not set",
             "noReason": "No reason provided",
-            "selectedHiddenSubmissions": "Selected hidden submissions",
-            "releaseHiddenDescription": "This applies the activity-level grade release action and updates any graded submissions that are still hidden."
+            "dueDatePast": "The new due date must be in the future.",
+            "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
+            "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
+            "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}",
+            "notEnrolled": "Not enrolled in the course — the extension skips them: {names}",
+            "staff": "Course staff — the extension skips them: {names}"
           },
           "dialogs": {
             "publishTitle": "Publish selected grades",
@@ -8162,6 +8576,16 @@
         "releaseStateAwaitingRelease": "Awaiting release",
         "releaseStateVisible": "Visible",
         "releaseStateReturned": "Returned"
+      },
+      "itemFeedback": {
+        "noAnswer": "No answer provided",
+        "noCorrectAnswer": "No correct answer defined",
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "partiallyCorrectNoCredit": "Partially correct (no partial credit)",
+        "partiallyCorrect": "Partially correct ({correct}/{total})",
+        "pairsMatched": "{correct}/{total} pairs matched",
+        "testsPassed": "{correct}/{total} tests passed"
       }
     },
     "Assessments": {
@@ -8311,7 +8735,9 @@
           "selectMatch": "Select match",
           "matchForLabel": "Match for: {term}",
           "removePair": "Remove pair",
-          "addPair": "Add pair"
+          "addPair": "Add pair",
+          "correct": "Correct",
+          "noAnswer": "No answer"
         },
         "OpenText": {
           "title": "Open text item",
@@ -8338,6 +8764,7 @@
           "answerReview": "Answer Review",
           "answered": "Answered",
           "answeredCount": "{answered} of {total} answered",
+          "answeredSummary": "{count, plural, one {# answered} other {# answered}}",
           "answersRecovered": "Your previous answers have been recovered",
           "antiCheatingDescription": "Violations are being monitored. After {threshold} violations, your exam will be auto-submitted.",
           "antiCheatingEnabled": "Anti-Cheating Protection Enabled",
@@ -8461,7 +8888,7 @@
           "timeRemaining": "Time remaining",
           "totalQuestions": "Total Questions",
           "unanswered": "Unanswered",
-          "unansweredQuestionsWarning": "You have {count} unanswered questions. Are you sure you want to submit?",
+          "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
           "unlimited": "Unlimited",
           "unlimitedAttempts": "Unlimited Attempts",
           "unsupportedQuestionType": "Unsupported question type",
@@ -8472,7 +8899,7 @@
           "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
           "violationDialogTitle": "Security violation detected",
           "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-          "violationsRecorded": "{count} violations recorded during this exam",
+          "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
           "yourAnswer": "Your Answer",
           "focus": "Focus",
           "exitFocus": "Exit focus mode",
@@ -8509,16 +8936,11 @@
           "answered_short": "ans",
           "resumedDraftDescription": "Last saved: {time}",
           "codeChallenge": "Code Challenge",
-          "securityViolationAlertTitle": "Security Violation Detected",
-          "securityViolationAlertDescription": "Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.",
-          "secondsRemaining": "seconds remaining",
-          "reEnterFullscreen": "Re-enter Fullscreen",
-          "clickBackToResume": "Click back or refocus to resume.",
           "assessmentTitle": "Assessment",
           "connectionLostTitle": "Connection Lost",
           "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
           "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
-          "draftConflictAnswerCounts": "Local: {localCount} answers | Server: {serverCount} answers"
+          "draftConflictAnswerCounts": "Local: {localCount, plural, one {# answer} other {# answers}} | Server: {serverCount, plural, one {# answer} other {# answers}}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -8574,7 +8996,7 @@
             "maxSubmissions": "Maximum Submissions",
             "maxSubmissionsHint": "Leave empty for unlimited submissions",
             "memoryLimit": "Memory Limit (KB)",
-            "memoryLimitHint": "Maximum memory usage (1MB-500MB)",
+            "memoryLimitHint": "Maximum memory usage (1 MB-500 MB)",
             "noLanguagesFound": "No languages found",
             "penalty": "Penalty",
             "points": "Points",
@@ -8716,23 +9138,29 @@
           "QUIZ": "Quiz",
           "TYPE_FILE_SUBMISSION": "File Submission",
           "TYPE_EXAM": "Exam",
-          "TYPE_CODE_CHALLENGE": "Code Challenge"
+          "TYPE_CODE_CHALLENGE": "Code Challenge",
+          "TYPE_CUSTOM": "Quiz"
         },
         "loading": "Loading studio",
         "unavailable": "Studio is unavailable for this activity.",
+        "studioNotAvailableForType": "The studio is not available for a “{type}” activity.",
         "lifecycle": {
           "draft": "Draft",
           "scheduled": "Scheduled",
           "published": "Published",
           "archived": "Archived"
         },
-        "lifecycleChanged": "Lifecycle changed to {state}",
+        "lifecycleChanged": "Lifecycle changed: {state}",
         "updateLifecycleFailed": "Failed to update lifecycle",
+        "restore": "Restore",
+        "unschedule": "Unschedule",
+        "scheduledReadOnly": "Unschedule to edit",
+        "lifecycleConflict": "Cannot move to “{state}” from the current stage. Data refreshed.",
         "breadcrumb": {
           "curriculum": "Curriculum",
           "studio": "Studio"
         },
-        "issueCount": "{count} issues",
+        "issueCount": "{count, plural, one {# issue} other {# issues}}",
         "preview": "Preview",
         "scheduleOptions": "Schedule options",
         "schedulePublication": "Schedule publication",
@@ -8740,6 +9168,8 @@
         "saveAsDraft": "Save as draft",
         "moreOptions": "More options",
         "archive": "Archive",
+        "archiveConfirmTitle": "Archive \"{title}\"?",
+        "archiveConfirmMessage": "Learners will lose access to this activity and its schedule is dropped. You can restore it to draft at any time.",
         "hideInspector": "Hide inspector",
         "showInspector": "Show inspector",
         "publishNow": "Publish now",
@@ -8762,7 +9192,9 @@
             "openText": "Open text",
             "fileUpload": "File upload",
             "form": "Form",
-            "matching": "Matching"
+            "matching": "Matching",
+            "code": "Code",
+            "unknown": "Unknown type"
           },
           "addKind": "Add {kind}",
           "outlineEmptyMessage": "Add a {itemNoun} to begin.",
@@ -8795,6 +9227,7 @@
           "gradingModePercentage": "Percentage",
           "examPolicyTitle": "Exam policy",
           "attemptLimitLabel": "Attempt limit",
+          "attemptLimitUnlimited": "Unlimited",
           "timeLimitLabel": "Time limit, minutes",
           "violationThresholdLabel": "Violation threshold",
           "copyPasteProtectionLabel": "Copy/paste protection",
@@ -8823,7 +9256,7 @@
           "validation": {
             "assessment_empty": "Assessment has no items.",
             "assessment_title_missing": "Assessment title is required.",
-            "policy_max_attempts_invalid": "Attempt limit must be at least 1.",
+            "policy_max_attempts_invalid": "Attempt limit must be between 1 and {max}.",
             "policy_time_limit_invalid": "Time limit must be greater than zero.",
             "policy_violation_threshold_invalid": "Violation threshold must be at least 1.",
             "item_title_missing": "Item title is required.",
@@ -8833,6 +9266,7 @@
             "choice_options_missing": "Choice items need at least two options.",
             "choice_option_text_missing": "Every choice option needs visible text.",
             "choice_option_duplicate": "Choice options should be unique.",
+            "choice_option_id_duplicate": "Choice option ids must be unique.",
             "choice_correct_missing": "Mark at least one correct choice.",
             "choice_too_many_correct": "Single-choice items can only have one correct option.",
             "matching_prompt_missing": "Matching prompt is required.",
@@ -8842,6 +9276,9 @@
             "matching_right_duplicate": "Right-side answers should be unique.",
             "open_text_prompt_missing": "Open-text prompt is required.",
             "open_text_min_words_invalid": "Minimum words cannot be negative.",
+            "policy_due_at_past": "The due date is already in the past.",
+            "policy_cutoff_before_due": "The late cutoff is before the due date.",
+            "policy_penalty_without_late": "A late penalty has no effect while late submissions are not allowed.",
             "file_prompt_missing": "File-upload prompt is required.",
             "file_max_files_invalid": "File upload items must allow at least one file.",
             "file_max_mb_invalid": "Maximum file size must be greater than zero when set.",
@@ -8851,7 +9288,12 @@
             "form_field_label_missing": "Each form field needs a label.",
             "form_field_id_duplicate": "Form fields need unique IDs.",
             "code_languages_missing": "Select at least one allowed language",
-            "code_tests_missing": "Add at least one test case"
+            "code_tests_missing": "Add at least one test case",
+            "code_prompt_missing": "Code challenge prompt is required.",
+            "code_test_io_missing": "Every test case needs input and expected output.",
+            "code_test_weight_invalid": "Test case weight must be greater than zero.",
+            "item_kind_forbidden": "This question type is not allowed for this assessment.",
+            "schedule_after_due_at": "The publish date must be before the due date."
           },
           "duplicate": "Duplicate",
           "delete": "Delete",
@@ -8921,7 +9363,7 @@
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Details & Description",
-          "detailsDescription": "General information about this exam.",
+          "detailsDescription": "General information about this assessment.",
           "impactTitle": "Student impact",
           "impactTiming": "Time",
           "impactAttempts": "Attempts",
@@ -8929,7 +9371,7 @@
           "impactIntegrity": "Integrity",
           "summaryTimed": "{minutes} minutes after start",
           "summaryUntimed": "No timer",
-          "summaryAttempts": "{count} attempt(s)",
+          "summaryAttempts": "{count, plural, one {# attempt} other {# attempts}}",
           "summaryUnlimitedAttempts": "Unlimited attempts",
           "summaryIntegrityOn": "Deterrent checks enabled",
           "summaryIntegrityOff": "No deterrent checks",
@@ -9030,7 +9472,7 @@
           "previewEmptyPair": "Empty value",
           "previewEmptyField": "Untitled field",
           "previewFieldMeta": "{type} · {required}",
-          "previewMinWords": "Student long answer · minimum {count} words",
+          "previewMinWords": "Student long answer · minimum {count, plural, one {# word} other {# words}}",
           "previewOpenText": "Student long answer",
           "correct": "Correct",
           "required": "required",
@@ -9058,7 +9500,7 @@
           "commaSeparated": "Separate values with commas."
         },
         "PublishDashboard": {
-          "metricsTitle": "Exam Metrics",
+          "metricsTitle": "Assessment metrics",
           "totalQuestions": "Questions",
           "totalPoints": "Total Points",
           "timeLimit": "Time Limit",
@@ -9068,7 +9510,7 @@
           "questionTypes": "Question Types",
           "preflightTitle": "Pre-flight Checklist",
           "noIssues": "All checks passed",
-          "noIssuesDesc": "This exam is ready to publish.",
+          "noIssuesDesc": "This assessment is ready to publish.",
           "assessmentIssues": "Assessment Issues",
           "questionIssues": "Question Issues",
           "goToSetup": "Fix",
@@ -9079,13 +9521,16 @@
           "untitledQuestion": "Untitled question",
           "unknownQuestion": "Unknown question",
           "statusPublished": "Published",
-          "statusPublishedDesc": "Students can now access this exam.",
+          "statusPublishedDesc": "Students can now access this assessment.",
           "statusScheduled": "Scheduled",
-          "statusScheduledDesc": "This exam will be published at the scheduled time.",
+          "statusScheduledDesc": "This assessment will be published at the scheduled time.",
           "statusHasIssues": "{count} {count, plural, =1 {issue} other {issues}} must be fixed before publishing",
           "statusHasIssuesDesc": "Resolve all issues in the checklist to unlock publishing.",
           "statusReadyToPublish": "Ready to Publish",
           "statusReadyDesc": "All checks passed. You can publish now or schedule.",
+          "statusArchived": "Archived",
+          "statusArchivedDesc": "This assessment is hidden from students and read-only. Restore it to draft to edit or publish again.",
+          "restoreToDraft": "Restore to draft",
           "revertToDraft": "Revert to Draft",
           "publishNow": "Publish Now",
           "schedulePublication": "Schedule Publication",
@@ -9094,7 +9539,7 @@
           "honestPreviewDescription": "Open the real learner runtime to inspect the assessment. Opening it does not count as verification or change publish readiness.",
           "openLearnerPreview": "Open learner preview",
           "previewGateDesc": "Preview the student experience before changing lifecycle state.",
-          "previewGateHighStakesDesc": "This exam is treated as high-stakes. Run at least one preview before publishing or scheduling.",
+          "previewGateHighStakesDesc": "This assessment is treated as high-stakes. Run at least one preview before publishing or scheduling.",
           "previewCompletedCount": "{count, plural, =0 {No previews run} =1 {# preview run} other {# previews run}}",
           "previewScenarioGeneric": "Generic learner",
           "previewScenarioGenericDesc": "Default eligible student view",
@@ -9115,7 +9560,7 @@
           "previewOutcomeExpiredTimer": "Confirms the runtime blocks continued work and explains why the timer expired.",
           "previewOutcomeRetake": "Confirms the start action is blocked when attempts are exhausted.",
           "previewOutcomeLate": "Confirms late-attempt messaging, penalties, or blocked access.",
-          "previewOutcomeRestricted": "Confirms learners outside the saved audience cannot start the exam.",
+          "previewOutcomeRestricted": "Confirms learners outside the saved audience cannot start the assessment.",
           "previewOutcomeResults": "Confirms the score, feedback, and answer visibility match the release policy.",
           "specificLearnerLabel": "Specific learner",
           "specificLearnerPlaceholder": "Name, email, or ID",
@@ -9124,7 +9569,7 @@
           "previewScenarioPassed": "Preview completed for this scenario.",
           "previewScenarioPending": "Run this preview before relying on the scenario.",
           "publishConfirmTitle": "Confirm publish",
-          "publishConfirmDesc": "Review exactly what changes before students can access this exam.",
+          "publishConfirmDesc": "Review exactly what changes before students can access this assessment.",
           "scheduleConfirmTitle": "Confirm schedule",
           "scheduleConfirmDesc": "Review exactly what will change at the scheduled publication time.",
           "impactLearners": "Affected learners",
@@ -9142,8 +9587,8 @@
           "blockersRequiredBeforePublish": "Resolve all publish blockers before confirming.",
           "auditNoteRequiredBeforePublish": "Add an audit note before confirming this high-stakes lifecycle change.",
           "cancel": "Cancel",
-          "confirmPublish": "Publish exam",
-          "confirmSchedule": "Schedule exam",
+          "confirmPublish": "Publish",
+          "confirmSchedule": "Schedule",
           "auditTimelineTitle": "Audit timeline",
           "auditTimelineDesc": "Lifecycle events are shown here so instructors can verify the current state before publishing.",
           "auditDraft": "Draft created",
@@ -9158,17 +9603,25 @@
             "ARCHIVED": "Archived"
           },
           "archiveTitle": "Archive",
-          "archiveDesc": "This exam will no longer be accessible to students."
+          "archiveDesc": "This assessment will no longer be accessible to students.",
+          "revertConfirmTitle": "Revert to draft?",
+          "revertConfirmMessage": "Learners will lose access to this assessment and their attempts in it until you publish it again."
         },
         "AccessManagement": {
-          "title": "Test access",
-          "description": "Restrict this test to selected learners or groups that already have access to the course.",
+          "title": "Learner access",
+          "description": "Restrict access to selected course members (enrolled learners) or groups linked to the course.",
+          "lockoutTitle": "Access list is empty",
+          "lockoutDesc": "Nobody will be able to take it until you add learners or groups. Save anyway?",
+          "lockoutConfirm": "Save anyway",
+          "dropAttemptsTitle": "Learners with attempts will lose access",
+          "dropAttemptsDesc": "{count, plural, one {# learner who already has attempts} other {# learners who already have attempts}} will no longer be able to take this assessment. They will still see their own results. Save?",
+          "fixHighlighted": "Fix the highlighted entries.",
           "eligible": "Eligible",
           "effective": "Effective",
           "allCourseLearners": "All course learners",
-          "allCourseLearnersDesc": "Every learner with course access can take this test.",
+          "allCourseLearnersDesc": "Every learner with course access can take it.",
           "restricted": "Selected learners and groups",
-          "restrictedDesc": "Only selected course learners and selected course groups can take this test.",
+          "restrictedDesc": "Only selected course learners and selected course groups can take it.",
           "students": "Students",
           "usergroups": "Usergroups",
           "searchStudents": "Search students",
@@ -9189,7 +9642,7 @@
           "previewSelectedGroups": "Selected groups",
           "previewEffective": "Estimated access",
           "previewExcludedLoaded": "Excluded from loaded list",
-          "previewNote": "Search is server-side and capped to the current result window for large courses.",
+          "previewNote": "The list holds the course members (enrolled learners) and the groups linked to the course; search filters that list.",
           "overrideBadge": "Accommodation",
           "expandGroup": "Show group expansion",
           "groupExpansion": "This group expands to {count, plural, =1 {# learner} other {# learners}} before individual exclusions.",
@@ -9232,6 +9685,7 @@
           "queueTitle": "Review queue",
           "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
           "queueTotal": "{count, plural, =1 {# submission} other {# submissions}}",
+          "queueTotalAtLeast": "{count}+ submissions",
           "queueSelected": "{count, plural, =1 {# selected} other {# selected}}",
           "searchLearner": "Search learner",
           "statusFilter": "Status filter",
@@ -9381,6 +9835,8 @@
       }
     },
     "ActivityWorkspace": {
+      "accessClosedTitle": "Access to new attempts is closed",
+      "accessClosedDescription": "Your teacher limited who can take this. Your attempts and results stay available to view.",
       "questions": "Questions",
       "readyToStart": "Ready to Start",
       "readyToStartSubtitle": "Review details and start the exam when you're ready.",
@@ -9398,8 +9854,20 @@
       "failed": "Failed",
       "pendingGrade": "Pending grade",
       "assessmentSubmitted": "Assessment submitted",
+      "latestAttemptScore": "Latest attempt: {score}",
+      "recordAttempt": "Counted attempt {attempt} · {score}",
+      "pendingAttempt": "Attempt {attempt} awaiting review",
+      "attemptTab": "Attempt {attempt} · {score}",
+      "attemptAnnulled": "Attempt annulled",
+      "attemptSwitcher": "Attempts",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
       "retryAssessment": "Retry assessment",
+      "attemptCapNote": "Next attempt: capped at {percent}",
+      "autoSubmittedTimeExpired": "The attempt was closed automatically: time ran out.",
+      "autoSubmittedViolation": "The attempt was closed automatically because of integrity violations; the score is zero.",
+      "latePenaltyApplied": "Late penalty: −{percent}.",
+      "attemptCapApplied": "Cap applied to this attempt: {percent}.",
+      "teacherFeedback": "Teacher feedback",
       "nextActivity": "Next activity",
       "breakdown": "View answers",
       "attempt": "Attempt",
@@ -9419,12 +9887,24 @@
       "noQuestionsSidebar": "This exam cannot be started because it has no questions.",
       "teacherNoQuestionsSidebar": "Please add questions before publishing.",
       "startActivityFailed": "Unable to start this activity. Please refresh and try again.",
-      "focusRestoredResume": "Focus and screen compliance restored. Resuming exam.",
+      "notConfiguredTitle": "This assignment is not set up yet",
+      "notConfiguredDescription": "The teacher has not set up this assignment yet. Check back later.",
+      "openStudio": "Set up in the studio",
       "fullscreenUnsupported": "Fullscreen is not supported in this browser.",
       "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
       "fullscreenExited": "Fullscreen was exited.",
       "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
-      "submitFailed": "Failed to submit"
+      "assessmentChanged": "The assessment changed. Review your answers and submit again.",
+      "sessionEnded": "Your session ended. Your unsaved answers are kept on this device — sign in to continue.",
+      "sessionEndedRestored": "Your session had ended. The answers kept on this device are restored and being saved.",
+      "submitFailed": "Failed to submit",
+      "timeLimitMinutes": "{minutes} min",
+      "timeLimitHours": "{hours} h",
+      "timeLimitHoursMinutes": "{hours} h {minutes} min",
+      "yourAnswer": "Your answer",
+      "correctAnswer": "Correct answer",
+      "violationThresholdForfeited": "Violation threshold reached ({count}): the attempt is forfeited and handed in with a zero score.",
+      "startNewAttempt": "Start a new attempt"
     }
   },
   "Themes": {
@@ -9845,13 +10325,18 @@
   },
   "Trail": {
     "courseLabel": "Course",
-    "downloadCertificate": "Download Certificate",
     "loadingCertificate": "Loading...",
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
     "stepsLabel": "steps",
-    "stepsProgress": "{completed} / {total} steps",
-    "viewCertificate": "View Certificate"
+    "stepsProgress": "{completed} / {total, plural, one {# step} other {# steps}}",
+    "viewCertificate": "View Certificate",
+    "quitCourseConfirmTitle": "Quit “{course}”?",
+    "quitCourseConfirmDescription": "Lesson completion marks will be reset; submitted work and grades are kept. This cannot be undone.",
+    "quitCourseCancel": "Stay",
+    "quitCourseDone": "You left “{course}”",
+    "quitCourseAlreadyLeft": "You have already left this course",
+    "quitCourseFailed": "Could not quit the course. Please try again later."
   },
   "TrailPage": {
     "metaDescription": "Check your progress using trail and easily navigate through your courses.",
@@ -9875,16 +10360,18 @@
       "loadingCourses": "Loading courses...",
       "noCoursesFound": "No courses found"
     },
+    "coursesTitle": "Courses",
     "fetchError": "Failed to fetch user data: ",
     "generalInfo": "General Information",
     "in": "in",
-    "metaDescriptionFallback": "View {firstName} {lastName}'s profile and courses",
-    "metaTitle": "{firstName} {lastName}'s Profile",
+    "metaDescriptionFallback": "View {name}'s profile and courses",
+    "metaTitle": "{name}'s Profile",
     "metaTitleError": "User Profile",
     "noBiography": "No biography provided",
     "professionalInfo": "Professional Information",
     "profileLoadError": "Failed to load user profile",
-    "viewCourses": "View Courses"
+    "viewCourses": "View Courses",
+    "present": "Present"
   },
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",
@@ -9895,8 +10382,8 @@
     "descriptionMinLength": "Description must be at least {length} characters",
     "descriptionRequired": "Description is required",
     "documentNameRequired": "Document name is required",
-    "examDescriptionRequired": "Exam description is required",
-    "examTitleRequired": "Exam title is required",
+    "examDescriptionRequired": "Description is required",
+    "examTitleRequired": "Title is required",
     "fieldRequired": "{fieldName} is required",
     "fileRequired": "Please select a file",
     "invalidEmail": "Invalid email address",
@@ -9922,9 +10409,16 @@
     "passwordNeedsUppercase": "Password must contain at least one uppercase letter",
     "passwordNeedsNumber": "Password must contain at least one number",
     "titleTooLong": "Title must not exceed 100 characters",
-    "descriptionTooLong": "Description must not exceed 8000 characters",
+    "descriptionTooLong": "Description must not exceed 5000 characters",
+    "aboutTooLong": "About must not exceed 20000 characters",
+    "tagTooLong": "A tag must not exceed 64 characters",
+    "tooManyTags": "No more than 20 tags",
     "sourceCourseRequired": "Please select a source course",
-    "learningsInvalid": "Invalid format for learning outcomes"
+    "learningsInvalid": "Invalid format for learning outcomes",
+    "instructionsRequired": "Instructions are required",
+    "learningRequired": "Enter the item text or remove it",
+    "learningTooLong": "An item must not exceed 300 characters",
+    "tooManyLearnings": "No more than 30 items"
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",
@@ -9970,11 +10464,12 @@
     "blocked": "Access blocked",
     "blockedReasons": {
       "NOT_PUBLISHED": "This assessment is not yet published.",
-      "BEFORE_WINDOW": "This assessment is not yet available.",
-      "AFTER_WINDOW": "The submission window has closed.",
+      "SCHEDULED_NOT_OPEN": "This assessment has not opened yet.",
+      "ARCHIVED": "This assessment has been archived.",
+      "PAST_DUE": "The due date has passed.",
       "MAX_ATTEMPTS_REACHED": "You have used all your allowed attempts.",
-      "NOT_ENROLLED": "You are not enrolled in this course.",
-      "AWAITING_GRADE": "Your submission is being graded. Please check back later.",
+      "TIME_LIMIT_EXPIRED": "The time limit for this attempt has expired.",
+      "REMEDIATION_REQUIRED": "Finish the assigned remediation first.",
       "UNKNOWN": "Action unavailable."
     }
   },
@@ -10021,6 +10516,7 @@
     "description": "Grade each item individually. The final score is calculated automatically.",
     "overrideScore": "Override score",
     "overrideScoreDescription": "Set a custom final score instead of the calculated total.",
+    "annulledOverrideHint": "Attempt annulled (violations) — score 0 unless overridden.",
     "finalScore": "Final score",
     "overrideReason": "Override reason",
     "overallFeedback": "Overall feedback",
@@ -10040,14 +10536,40 @@
       "saved": "Grading draft saved",
       "published": "Grade published",
       "returned": "Returned for revision",
-      "failed": "Failed to save grading"
-    }
+      "failed": "Failed to save grading",
+      "unscoredItems": "Score every item awaiting review before publishing the grade"
+    },
+    "invalidItemScore": "Score must be between 0 and {max}",
+    "republish": "Publish again",
+    "shareOfTotal": "share of the total"
   },
   "FileSubmission": {
+    "mimeCategories": {
+      "pdf": "PDF",
+      "documents": "Documents",
+      "images": "Images",
+      "spreadsheets": "Spreadsheets",
+      "presentations": "Presentations",
+      "archives": "Archives",
+      "textAndCode": "Text and code",
+      "text": "Text",
+      "code": "Code",
+      "video": "Video",
+      "audio": "Audio",
+      "anyFile": "Any file"
+    },
     "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
     "requirementMaxSize": "{size} MB each",
     "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",
-    "invalidFiles": "Some files do not meet activity requirements",
+    "fileTooLarge": "File exceeds {size} MB",
+    "fileTypeNotAllowed": "File type not allowed ({type})",
+    "noExtension": "no extension",
+    "confirmSubmitTitle": "Submit files?",
+    "confirmSubmitDescription": "This uses attempt {number} of {max}. Files cannot be changed after submitting.",
+    "confirmSubmitAction": "Submit",
+    "notConfiguredTitle": "This assignment is not set up yet",
+    "notConfiguredDescription": "The teacher has not added the file upload requirements yet. Check back later.",
+    "openStudio": "Set up in the studio",
     "notAvailable": "File submission is not available",
     "uploadFailed": "Upload failed",
     "submittedToast": "Files submitted successfully",
@@ -10064,7 +10586,8 @@
     "saveDraft": "Save draft",
     "submitFiles": "Submit files",
     "submissionHistory": "Submission history",
-    "attemptNumber": "Attempt {number}",
+    "attemptNumber": "Attempt #{number}",
+    "attemptOrdinal": "#{number}",
     "draft": "Draft",
     "fileCount": "{count, plural, one {# file} other {# files}}",
     "submissionReceived": "Submission received",
@@ -10086,10 +10609,16 @@
       "submitted": "Submitted",
       "graded": "Graded",
       "published": "Published",
-      "contentChanged": "Course content changed since this review",
-      "previousScore": "Previous review score: {score}",
       "returned": "Returned"
-    }
+    },
+    "newAttempt": "New attempt ({number} of {max})",
+    "bytes": {
+      "B": "{value} B",
+      "KB": "{value} KB",
+      "MB": "{value} MB",
+      "GB": "{value} GB"
+    },
+    "blocked": "Submitting is not available right now."
   },
   "FileSubmissionReview": {
     "loadingSubmissions": "Loading submissions",
@@ -10099,7 +10628,7 @@
     "openButton": "Open",
     "downloadButton": "Download",
     "noSubmissions": "No submissions match this view.",
-    "attemptInfo": "Attempt {attemptNumber} · {count, plural, one {# file} other {# files}}",
+    "attemptInfo": "Attempt #{attemptNumber} · {count, plural, one {# file} other {# files}}",
     "submittedAt": "Submitted {date}",
     "submittedAsDraft": "Submitted as draft",
     "late": "Late",
@@ -10108,13 +10637,18 @@
     "gradeAndFeedback": "Grade and feedback",
     "finalScore": "Final score",
     "scoreSlash": "/ 100",
+    "latePenaltyPreview": "−{percent}% late penalty → {final}%",
     "useRubricTotal": "Use rubric total ({score})",
     "saveGrade": "Save grade",
     "returnForRevision": "Return for revision",
     "publishResult": "Publish result",
     "selectSubmission": "Select a submission.",
     "rubric": "Rubric",
-    "submissionUpdated": "Submission updated",
+    "draftSaved": "Draft saved",
+    "gradePublished": "Grade published",
+    "gradeReturned": "Submission returned for revision",
+    "scoreInvalid": "Score must be between 0 and 100",
+    "scoreRequired": "Enter a score",
     "updateSubmissionFailed": "Unable to update submission",
     "openFileFailed": "Unable to open file",
     "previewFileFailed": "Unable to preview file",
@@ -10140,7 +10674,16 @@
     "unsavedDescription": "Your score or feedback changes have not been saved. Leave this page and discard them?",
     "stayHere": "Stay here",
     "leaveWithoutSaving": "Leave without saving",
-    "csv": "CSV"
+    "csv": "CSV",
+    "scan_pending": "scan pending",
+    "scan_clean": "scanned",
+    "scan_flagged": "flagged",
+    "scan_error": "scan error",
+    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible.",
+    "ownAttempt": "Your attempt",
+    "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown.",
+    "csvSaved": "CSV saved",
+    "csvFailed": "Could not download the CSV."
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",
@@ -10159,6 +10702,7 @@
     "allowedFileTypes": "Allowed file types",
     "selectAll": "Select all",
     "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
+    "dueChangeReprices": "A new due date re-prices lateness and the late penalty of work already handed in — grades may change.",
     "collectionRules": "Collection rules",
     "attempts": "Attempts",
     "lateWork": "Late work",
@@ -10175,7 +10719,13 @@
     "publishSuccess": "File submission published",
     "publishError": "Unable to publish file submission",
     "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
-    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
+    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing",
+    "published": "Published",
+    "lifecycle": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    }
   },
   "AIConfidenceMeter": {
     "high": "High confidence",
@@ -10207,14 +10757,6 @@
       "course-practice": {
         "label": "Generate practice",
         "prompt": "Create a short practice plan from the next unfinished course activities."
-      },
-      "submission-review": {
-        "label": "Review feedback",
-        "prompt": "Explain the feedback on this submission and identify the first revision step."
-      },
-      "submission-remediate": {
-        "label": "Draft remediation",
-        "prompt": "Create a remediation plan from the submission evidence and cite the source of each gap."
       }
     },
     "qaMessage": {
@@ -10245,7 +10787,10 @@
     },
     "errorRecovery": {
       "title": "AI run failed",
-      "retry": "Retry"
+      "retry": "Retry",
+      "unavailableTitle": "AI unavailable",
+      "unavailableDescription": "AI features are currently unavailable. Try again later.",
+      "fallback": "The AI request could not be completed."
     },
     "privacyNotice": {
       "title": "Data scope",
@@ -10259,7 +10804,8 @@
     "resultShell": {
       "modelRecorded": "Model: {name}",
       "modelNotRecorded": "Model: not recorded",
-      "citationsCount": "Citations: {count}"
+      "citationsCount": "Citations: {count}",
+      "draftModeModel": "draft mode (no model)"
     },
     "states": {
       "labels": {
@@ -10315,7 +10861,12 @@
       "cancelledStatus": "Answer stopped. The partial response is preserved.",
       "error": "The answer could not be completed. Your question is still here.",
       "retry": "Try again",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "unavailable": "AI features are currently unavailable. Try again later.",
+      "threadDeleted": "Thread deleted",
+      "courseContext": "Using course material",
+      "emptyTitleCourse": "Ask about this course",
+      "emptyDescCourse": "Answers are grounded in the course material; inspect the sources before you rely on an answer."
     },
     "courseAIHub": {
       "title": "AI learning support",
@@ -10334,7 +10885,10 @@
       "rerun": "Rerun",
       "analyze": "Analyze",
       "draftFeedback": "Draft feedback",
-      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance."
+      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance.",
+      "publishedToast": "Quality score published",
+      "publishFailed": "Could not publish the score",
+      "emptyTitle": "No analysis yet"
     },
     "courseAnalysisResultShell": {
       "title": "Course quality score {score}",
@@ -10348,6 +10902,11 @@
       "criticalBlockers": "Critical blockers",
       "contentStrengths": "Content strengths",
       "findings": "Findings",
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
       "priority": "Priority",
       "finding": "Finding",
       "recommendedFix": "Recommended fix",
@@ -10358,7 +10917,13 @@
       "acceptFinding": "Accept",
       "dismissFinding": "Dismiss",
       "createTask": "Create task",
-      "reviewActions": { "accepted": "Accepted", "dismissed": "Dismissed", "task_created": "Task created" },
+      "findingReviewedToast": "Finding decision saved",
+      "findingReviewFailed": "Could not save the finding decision",
+      "reviewActions": {
+        "accepted": "Accepted",
+        "dismissed": "Dismissed",
+        "task_created": "Task created"
+      },
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
       "reviewGateLabel": "I opened the evidence and findings below and reviewed them before publishing.",
@@ -10366,17 +10931,36 @@
       "publishDialogTitle": "Publish reviewed score?",
       "publishDialogDescription": "This score, the findings list, and cited sources will become visible to students and staff enrolled in this course. A revised score will appear as an update, not a silent removal.",
       "cancelPublish": "Keep reviewing",
-      "confirmPublish": "Publish reviewed score"
+      "confirmPublish": "Publish reviewed score",
+      "contentChanged": "Course content changed since this review",
+      "previousScore": "Previous review score: {score}",
+      "draftModeModel": "draft mode (no model)"
     },
     "submissionAIEntry": {
       "title": "AI submission insight",
       "description": "Knowledge gaps, evidence, and optional adaptive remediation.",
       "analyze": "Analyze",
-      "generateGate": "Generate remediation gate"
+      "draftFeedback": "Draft feedback",
+      "replaceFeedbackTitle": "Replace the feedback?",
+      "replaceFeedbackDescription": "The feedback box already has text. The AI draft will replace it.",
+      "replaceFeedbackCancel": "Cancel",
+      "replaceFeedbackConfirm": "Replace",
+      "generateGate": "Generate remediation gate",
+      "gateAlreadyAssigned": "A gate is already assigned",
+      "gateConfirmTitle": "Assign a remediation gate?",
+      "gateConfirmDescription": "The learner cannot continue this activity until they pass the remediation. The gate cannot be undone.",
+      "gateConfirmAction": "Assign",
+      "emptyTitle": "No analysis yet",
+      "emptyDescription": "Run an analysis to see knowledge gaps and evidence for this submission."
     },
     "submissionAnalysisResultShell": {
-      "title": "{count} knowledge gaps",
-      "defaultDescription": "Submission analysis is ready."
+      "title": "Knowledge gaps: {count}",
+      "defaultDescription": "Submission analysis is ready.",
+      "severities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
     },
     "studyCompanion": {
       "title": "Study Companion",
@@ -10393,7 +10977,17 @@
     "remediation": {
       "title": "Adaptive remediation",
       "activeGate": "Gate mode is active until the learner passes.",
-      "assigned": "Practice remediation is assigned."
+      "assigned": "Practice remediation is assigned.",
+      "open": "Start remediation",
+      "answer": "Answer",
+      "revealAnswer": "Show answer",
+      "gotItRight": "I got it right",
+      "complete": "Complete remediation",
+      "selfCheckNote": "Self-check: tick the questions you answered correctly. Passing score is {threshold}%.",
+      "completedPassed": "Remediation passed ({score}%). You can attempt again.",
+      "completedFailed": "Remediation not passed ({score}%). Review the material and try again.",
+      "completeFailed": "Could not complete the remediation",
+      "gatePassed": "Remediation passed."
     },
     "budgetStatus": {
       "label": "Monthly AI token budget",
@@ -10429,8 +11023,8 @@
         "all": "All statuses",
         "queued": "Queued",
         "running": "Running",
-        "finished": "Finished",
-        "error": "Failed",
+        "succeeded": "Finished",
+        "failed": "Failed",
         "aborted": "Cancelled"
       },
       "metrics": {
@@ -10457,7 +11051,16 @@
       "detailTitle": "Redacted run detail",
       "close": "Close",
       "artifacts": "Artifacts",
-      "notAvailable": "Not available"
+      "notAvailable": "Not available",
+      "features": {
+        "course_analysis": "Course analysis",
+        "submission_analysis": "Submission analysis",
+        "remediation": "Remediation",
+        "study_companion": "Study companion",
+        "lecture_review": "Lecture review",
+        "course_qa": "Course Q&A"
+      },
+      "draftModeModel": "draft mode (no model)"
     },
     "tokenUsageChart": {
       "title": "AI usage",
@@ -10478,7 +11081,10 @@
       "study-companion": "Study companion",
       "course-qa": "Course Q&A",
       "lecture-authoring": "Lecture authoring",
-      "semantic-memory": "Semantic memory"
+      "semantic-memory": "Semantic memory",
+      "sources": {
+        "environment": "server environment"
+      }
     },
     "evalDashboard": {
       "title": "Evaluation dashboard",
@@ -10493,8 +11099,8 @@
       "runs": {
         "queued": "Queued",
         "running": "Running",
-        "finished": "Finished",
-        "error": "Failed",
+        "succeeded": "Finished",
+        "failed": "Failed",
         "aborted": "Cancelled"
       },
       "evals": {
@@ -10508,6 +11114,13 @@
         "score": "Score",
         "status": "Status"
       }
+    },
+    "artifactLifecycle": {
+      "queued": "Queued",
+      "evidenceChecked": "Evidence checked",
+      "draftArtifact": "Draft artifact",
+      "finalArtifact": "Final artifact",
+      "ready": "Ready"
     }
   },
   "PageLoading": {
@@ -10569,7 +11182,173 @@
         "description": "A grade in {course} is saved but not visible to the learner.",
         "action": "Review and release"
       }
+    },
+    "sections": {
+      "learner": {
+        "title": "Learner Work",
+        "description": "Assignments and course actions that need the learner next.",
+        "emptyTitle": "No learner work is queued",
+        "emptyDescription": "You are caught up. Browse a course when you are ready to continue learning.",
+        "unavailable": {
+          "title": "Check learning work",
+          "description": "Your learning queue could not be loaded. Open Courses to continue directly.",
+          "action": "Browse Courses"
+        }
+      },
+      "teacher": {
+        "title": "Teacher Work",
+        "description": "Course readiness, grading, and learner intervention work.",
+        "emptyTitle": "No teacher work is queued",
+        "emptyDescription": "Courses, grading backlog, and learner risk checks will appear here when they need action."
+      },
+      "admin": {
+        "title": "Admin Work",
+        "description": "Access, policy, and operational work for the platform.",
+        "emptyTitle": "No admin work is queued",
+        "emptyDescription": "Access reviews and operations signals will appear here when your role can act on them."
+      }
+    },
+    "sourceLabels": {
+      "learning": "Learning",
+      "gradingQueue": "Grading Queue",
+      "courseManagement": "Course Management",
+      "teacherAnalytics": "Teacher Analytics",
+      "crossCourseQueue": "Cross-Course Queue",
+      "adminAnalytics": "Admin Analytics",
+      "aiOperations": "AI Operations",
+      "accessControl": "Access Control"
+    },
+    "builderItems": {
+      "courseReadiness": {
+        "title": "Review course readiness",
+        "description": "Draft, private, or incomplete courses need teacher review before learners rely on them.",
+        "action": "Open Courses"
+      },
+      "createFirstCourse": {
+        "title": "Create the first course",
+        "description": "The teaching workspace has no editable courses yet.",
+        "action": "Create Course"
+      },
+      "coursesUnavailable": {
+        "title": "Check courses feed",
+        "description": "Course management is available, but its summary could not be loaded. Open Courses to retry.",
+        "action": "Open Courses"
+      },
+      "gradingSlaBreaches": {
+        "title": "Fix grading SLA breaches",
+        "action": "Open SLA Queue",
+        "latencyMissing": "Feedback is missing the target response window.",
+        "latencyHours": "Median feedback latency is {hours} hours.",
+        "latencyDays": "Median feedback latency is {days} days."
+      },
+      "gradingBacklog": {
+        "title": "Grade pending submissions",
+        "description": "Manual assessment work is waiting for review and feedback.",
+        "action": "Open Grading"
+      },
+      "manualAssessment": {
+        "description": "{course} has manual submissions waiting for review.",
+        "action": "Open Assessment"
+      },
+      "forecastGradingLoad": {
+        "title": "Plan the 7-day grading load",
+        "description": "Forecasted submissions exceed the current backlog.",
+        "action": "Open Forecast"
+      },
+      "learnerRisk": {
+        "title": "Intervene with at-risk learners",
+        "description": "Learners with stalled progress or assessment blocks need action.",
+        "action": "Open Watchlist"
+      },
+      "teacherAnalyticsUnavailable": {
+        "title": "Check analytics feed",
+        "description": "Teacher analytics could not be loaded. Open Analytics to retry.",
+        "action": "Open Analytics"
+      },
+      "adminAiBudgetCritical": {
+        "title": "Review AI budget before requests fail",
+        "description": "AI usage has consumed {percent}% of the monthly token budget.",
+        "action": "Open AI Admin"
+      },
+      "adminAiBudgetWarning": {
+        "title": "Plan AI budget usage",
+        "description": "AI usage is at {percent}% of the monthly token budget.",
+        "action": "Open AI Admin"
+      },
+      "adminWorkloadHotspots": {
+        "title": "Review teacher workload hotspots",
+        "description": "Teacher workload has SLA breaches that need operations review.",
+        "action": "Open Admin Analytics"
+      },
+      "adminTeacherBacklog": {
+        "title": "Inspect teacher backlog",
+        "description": "Workload is accumulating across managed courses.",
+        "action": "Open Workload"
+      },
+      "userAccessAudit": {
+        "title": "Audit user access",
+        "description": "Review users and groups before expanding course or analytics permissions.",
+        "action": "Open Users"
+      },
+      "rolePolicyReview": {
+        "title": "Review role policy",
+        "description": "Keep system roles aligned with the learner, teacher, and admin dashboard model.",
+        "action": "Open Roles"
+      },
+      "adminAnalyticsUnavailable": {
+        "title": "Check admin analytics feed",
+        "description": "Admin workload signals could not be loaded. Open Admin Analytics to retry.",
+        "action": "Open Admin Analytics"
+      }
+    },
+    "metrics": {
+      "courses": "{count, plural, one {# course} other {# courses}}",
+      "breaches": "{count, plural, one {# breach} other {# breaches}}",
+      "submissions": "{count, plural, one {# submission} other {# submissions}}",
+      "awaitingReview": "{count} awaiting review",
+      "forecast": "forecast: {count}",
+      "percentUsed": "{count}% used"
+    },
+    "tools": {
+      "browseCourses": {
+        "title": "Browse Courses",
+        "description": "Find published learning content."
+      },
+      "courses": {
+        "title": "Courses",
+        "description": "Create and manage courses, chapters, and assessment tasks."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "description": "Open learner, course, and assessment analytics."
+      },
+      "users": {
+        "title": "Users",
+        "description": "Manage organization users and groups."
+      },
+      "admin": {
+        "title": "Admin",
+        "description": "Manage roles, AI operations, and platform policy.",
+        "badge": "System"
+      },
+      "account": {
+        "title": "Account Settings",
+        "description": "Update profile, security, and personal preferences."
+      }
     }
+  },
+  "LmsStatus": {
+    "ready": "Ready",
+    "needsAttention": "Needs Attention",
+    "blocked": "Blocked",
+    "inProgress": "In Progress",
+    "noWork": "No Work",
+    "limited": "Limited",
+    "unavailable": "Unavailable",
+    "published": "Published",
+    "private": "Private",
+    "draft": "Draft",
+    "unsaved": "Unsaved"
   },
   "LandingDegraded": {
     "title": "Courses are temporarily unavailable",
@@ -10621,5 +11400,51 @@
     "startingCourse": "Starting course",
     "courseStarted": "Course started",
     "startCourseError": "Could not start course"
+  },
+  "roles": {
+    "admin": {
+      "name": "Administrator",
+      "description": "Full access to the whole platform"
+    },
+    "maintainer": {
+      "name": "Maintainer",
+      "description": "Maintains content and courses across the platform"
+    },
+    "instructor": {
+      "name": "Teacher",
+      "description": "Creates and runs their own courses"
+    },
+    "moderator": {
+      "name": "Moderator",
+      "description": "Moderates discussions and content"
+    },
+    "user": {
+      "name": "User",
+      "description": "Learns on courses"
+    },
+    "guest": {
+      "name": "Guest",
+      "description": "Limited access without an account"
+    },
+    "maintainer-legacy-grants": {
+      "name": "Maintainer: previous platform rights",
+      "description": "Rights Maintainer holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "instructor-legacy-grants": {
+      "name": "Teacher: previous platform rights",
+      "description": "Rights Teacher holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "moderator-legacy-grants": {
+      "name": "Moderator: previous platform rights",
+      "description": "Rights Moderator holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "user-legacy-grants": {
+      "name": "User: previous platform rights",
+      "description": "Rights User holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    },
+    "guest-legacy-grants": {
+      "name": "Guest: previous platform rights",
+      "description": "Rights Guest holders had on the previous platform beyond the standard role; given to all of them during the migration"
+    }
   }
 }

@@ -5,16 +5,19 @@ import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { Tiptap } from '@tiptap/react'
 import { useEditorInstance } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core/editor-types'
+import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import { EditorToolbar } from '../Toolbar/EditorToolbar'
 import { BubbleToolbar } from '../menus/BubbleToolbar'
 import { FloatingPlusButton } from '../menus/FloatingPlusButton'
 import { SlashCommandMenu } from '../Toolbar/SlashCommandMenu'
+import { WebPreviewInsertDialog } from '../Extensions/WebPreview/WebPreviewInsertDialog'
 import { EditorHeader, EditorShell } from '../chrome'
 import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
+import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
 import { useCallback, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
@@ -32,6 +35,7 @@ interface EditorCoreProps {
 }
 
 function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
+  const t = useTranslations('DashPage.Editor.Editor')
   const closeEmbedPanel = useEmbedPanelStore(s => s.close)
 
   // Close the embed panel when EditorCore unmounts (Requirement 2.1 / design cleanup).
@@ -57,6 +61,7 @@ function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
     activity,
     content,
     onUpdate: stableOnUpdate,
+    placeholder: t('placeholder'),
   })
 
   // Render a loading placeholder while the editor is null (Requirement 1.2).
@@ -112,6 +117,8 @@ function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
           It renders as a fixed-position modal overlay, so placement here does
           not affect visual layout (Requirements 3.2, 3.4). */}
       <EmbedPanel />
+      {/* URL dialog for a new web-preview block: the node is inserted only on confirm (BUG-107). */}
+      <WebPreviewInsertDialog />
     </Tiptap>
   )
 }
@@ -128,7 +135,7 @@ interface AuthoringEditorProps {
   }
   platform: unknown
   onContentChange: (content: unknown) => void
-  saveState: 'idle' | 'saving' | 'saved' | 'error'
+  saveState: SaveStatus
   setContent: (content: unknown) => void
   assistantSlot?: ReactNode
 }
@@ -137,8 +144,9 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   const t = useTranslations('DashPage.Editor.Editor')
   const latestContentRef = useRef(props.content)
 
-  const courseUuid = props.course.course_uuid.slice(7)
-  const activityUuid = props.activity.activity_uuid.slice(9)
+  // v2 ids are bare UUIDs; legacy callers may still pass `course_` / `activity_` prefixes
+  const courseUuid = cleanCourseUuid(props.course.course_uuid)
+  const activityUuid = cleanActivityUuid(props.activity.activity_uuid)
 
   useEffect(() => {
     latestContentRef.current = props.content

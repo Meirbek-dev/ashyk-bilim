@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT to_char(month, 'YYYY-MM') AS \"month!\", user_id AS \"user_id: UserId\",\n                  input_tokens, output_tokens, run_count\n           FROM ai_token_ledger WHERE month = date_trunc('month', now())::date\n           ORDER BY input_tokens + output_tokens DESC, user_id LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "month!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_token_ledger",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "input_tokens",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "ai_token_ledger",
+            "name": "input_tokens"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "output_tokens",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "ai_token_ledger",
+            "name": "output_tokens"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "run_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_token_ledger",
+            "name": "run_count"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f1e1aa19b176dc13b3c1307be816ae279203f394b4a7954a976ec8b687e009a0"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM submissions\n         WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft' AND preview",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bea38599d0955d09427fa402a92929e0c2d84324455686f5b81eb6237c2fa672"
+}

@@ -10,17 +10,14 @@ import { getStudentActivityRuntime } from '@/features/student-activity/api/runti
 import { queryKeys } from '@/lib/react-query/queryKeys'
 
 import ActivityClient from './activity'
-import { getSession } from '@/lib/auth/session'
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>
 }
 
 // Add this function at the top level to avoid duplicate fetches
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only (matches the learner-state outline).
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
 
@@ -84,8 +81,9 @@ async function ActivityPage(params: { params: Promise<{ courseuuid: string; acti
   const [course_meta, activity, runtime] = await Promise.all([
     fetchCourseMetadata(courseuuid),
     isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
-    isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
+    getStudentActivityRuntime(courseuuid, activityid),
   ])
+  if (!runtime) throw new Error(`Activity ${activityid} is not in course ${courseuuid}`)
 
   const course: CourseStructure = {
     ...course_meta,
@@ -95,9 +93,7 @@ async function ActivityPage(params: { params: Promise<{ courseuuid: string; acti
   }
 
   const queryClient = new QueryClient()
-  if (runtime) {
-    queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
-  }
+  queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
 
   return (
     <div className={jetBrainsMono.variable}>

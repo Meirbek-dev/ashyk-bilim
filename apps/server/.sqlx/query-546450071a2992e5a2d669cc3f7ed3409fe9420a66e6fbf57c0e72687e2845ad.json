@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO bulk_actions\n               (assessment_id, performed_by, action_type, params, target_user_ids)\n           VALUES ($1, $2, $3, $4, $5)\n           RETURNING id AS \"id: BulkActionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: BulkActionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "bulk_actions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "546450071a2992e5a2d669cc3f7ed3409fe9420a66e6fbf57c0e72687e2845ad"
+}

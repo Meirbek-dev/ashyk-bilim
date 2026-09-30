@@ -1,9 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import type { KindModule } from '@/features/assessments/registry'
+import { useGradingPanel } from '@/hooks/useGradingPanel'
 import { useSubmissionStats } from '@/hooks/useSubmissionStats'
 import { useSubmissions } from '@/hooks/useSubmissions'
 import { AnnotationProvider } from './AnnotationContext'
@@ -11,6 +14,7 @@ import ReviewLayout from './components/ReviewLayout'
 import SubmissionList from './components/SubmissionList'
 import SubmissionInspector from './components/SubmissionInspector'
 import GradeForm from './components/GradeForm'
+import { parseStatusFilter } from './types'
 import type { StatusFilter } from './types'
 import { getReleaseState } from '../domain'
 
@@ -36,10 +40,10 @@ export default function GradingReviewWorkspace({
   initialFilter,
 }: GradingReviewWorkspaceProps) {
   const searchParams = useSearchParams()
-  const router = useRouter()
+  const t = useTranslations('Features.Grading.Review.submissionInspector')
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
-  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
+  const filterFromUrl = parseStatusFilter(searchParams.get('filter')) ?? initialFilter ?? 'NEEDS_GRADING'
   const sortFromUrl = searchParams.get('sort') ?? 'submitted_at'
   const searchFromUrl = searchParams.get('q') ?? ''
 
@@ -72,9 +76,15 @@ export default function GradingReviewWorkspace({
         if (updates.submission === null) next.delete('submission')
         else next.set('submission', updates.submission)
       }
-      router.replace(`?${next.toString()}`, { scroll: false })
+      // Mirror the selection into the URL without a server round-trip. A
+      // `router.replace` re-renders the page segment for the new search params
+      // (and re-passes `initialSubmissionUuid`), which let the list highlight
+      // drift from the attempt actually loaded (BUG-030). The studio uses the
+      // same replaceState pattern for its view state.
+      const query = next.toString()
+      globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${query ? `?${query}` : ''}`)
     },
-    [router, searchParams],
+    [searchParams],
   )
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null)
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())
@@ -88,7 +98,7 @@ export default function GradingReviewWorkspace({
     ...(search ? { search } : {}),
   }
 
-  const { submissions, total, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
+  const { submissions, total, hasMore, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
   const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid ?? null)
 
   const hasSubmissions = submissions.length > 0
@@ -146,6 +156,31 @@ export default function GradingReviewWorkspace({
     [updateUrl],
   )
 
+  // UX-067: an unknown `?submission=` (deleted, another activity, a typo) is
+  // said out loud and dropped from the URL instead of selecting nothing.
+  const initialPanel = useGradingPanel(
+    selectedUuid && selectedUuid === initialSubmissionUuid ? selectedUuid : null,
+    assessmentUuid ?? null,
+  )
+  const initialUnknown =
+    Boolean(initialSubmissionUuid) &&
+    selectedUuid === initialSubmissionUuid &&
+    !initialPanel.isLoading &&
+    initialPanel.submission === null &&
+    !isSelectedUuidValid
+  const [unknownParam, setUnknownParam] = useState<string | null>(null)
+  if (initialUnknown && unknownParam !== initialSubmissionUuid) {
+    setUnknownParam(initialSubmissionUuid ?? null)
+    setSelectedUuid(null)
+  }
+  const dropUnknownParam = useEffectEvent(() => {
+    toast.warning(t('unknownSubmissionParam'))
+    updateUrl({ submission: null })
+  })
+  useEffect(() => {
+    if (unknownParam) dropUnknownParam()
+  }, [unknownParam])
+
   const selectByOffset = useCallback(
     (offset: number) => {
       const next = submissions[Math.min(submissions.length - 1, Math.max(0, selectedIndex + offset))]
@@ -192,6 +227,7 @@ export default function GradingReviewWorkspace({
       <ReviewLayout
         activityId={activityId}
         total={total}
+        hasMore={hasMore}
         selectedSubmissions={selectedSubmissions}
         onBulkRefresh={async () => {
           setSelectedUuids(new Set())
@@ -205,6 +241,7 @@ export default function GradingReviewWorkspace({
         <SubmissionList
           submissions={submissions}
           total={total}
+          hasMore={hasMore}
           pages={pages}
           page={page}
           activeFilter={activeFilter}
@@ -251,6 +288,7 @@ export default function GradingReviewWorkspace({
           onSaved={refresh}
           navigation={navigation}
           {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
+          {...(activityUuid !== undefined ? { activityUuid } : {})}
         />
       </ReviewLayout>
     </AnnotationProvider>

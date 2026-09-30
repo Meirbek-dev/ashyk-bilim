@@ -1,9 +1,14 @@
 import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import { Suspense } from 'react'
 
 interface PlatformCourseGradebookPageProps {
   params: Promise<{ courseuuid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformCourseGradebookPageProps) {
+  return courseWorkspaceMetadata((await params).courseuuid, 'gradebook')
 }
 
 export default function PlatformCourseGradebookPage(props: PlatformCourseGradebookPageProps) {

@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Award,
   BookMinus,
   Calendar,
   Crown,
@@ -11,9 +12,10 @@ import {
   Play,
   Settings2,
 } from 'lucide-react'
-import { buildCourseWorkspacePath } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseAuthor, isCourseCreator } from '@/lib/course-management'
 import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { formatDate } from '@/lib/date'
 import { useRouter } from 'next/navigation'
 import type { FC } from 'react'
 import { toast } from 'sonner'
@@ -35,16 +37,18 @@ import {
 import { ResourceActionsMenu } from '@/components/Utils/ResourceActionsMenu'
 import type { ResourceAction } from '@/components/Utils/ResourceActionsMenu'
 import { useSession } from '@/hooks/useSession'
+import { useLearnerCourseProgress } from '@/features/learner-course/useLearnerCourseProgress'
 import { Card, CardContent, CardFooter } from '@components/ui/card'
 import { Actions, Resources, Scopes } from '@/types/permissions'
-import UserAvatar from '@components/Objects/UserAvatar'
+import { CTA_LABEL } from '@components/Objects/Courses/CourseActions/useCourseActions'
 import NextImage from '@components/ui/NextImage'
 import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import Link from '@components/ui/AppLink'
 
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
-import { deleteCourseFromBackend } from '@services/courses/courses'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { deleteCourseFromBackend } from '@services/courses/course-delete'
+import { useApiError } from '@/hooks/useApiError'
 import { getAbsoluteUrl } from '@services/config/config'
 
 // ============================================================================
@@ -57,20 +61,16 @@ export interface Course {
   description?: string
   thumbnail_image?: string | null
   update_date?: string | null
-  authors?: AppCourseAuthor[]
-  chapters?: {
-    activities?: unknown[]
-  }[]
-  can_update?: boolean
-  can_delete?: boolean
-  can_manage_contributors?: boolean
-  is_owner?: boolean
+  creator_id?: string | null | undefined
+  contributor_ids?: string[] | undefined
 }
 
 export interface CourseThumbnailProps {
   course: Course
   customLink?: string
   actionLink?: string
+  /** Label for the footer action when `actionLink` is a preview, not enrolment. */
+  actionLabel?: string
   trailData?: AppTrailData | null | undefined
   trailLoading?: boolean
   /** Set to true for above-the-fold cards to eager-load the thumbnail (fixes LCP) */
@@ -82,22 +82,6 @@ export interface CourseThumbnailProps {
 // ============================================================================
 
 const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').replace('course_', '')
-
-const getAuthorFullName = (author?: AppUserSummary): string =>
-  author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : ''
-
-const formatDate = (dateString: string, locale: string): string => {
-  try {
-    return new Date(dateString).toLocaleDateString(locale, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    })
-  } catch {
-    return ''
-  }
-}
 
 // ============================================================================
 // Sub-components
@@ -162,115 +146,12 @@ const CourseImage: FC<CourseImageProps> = ({
           aria-hidden="true"
         >
           <Calendar className="mr-1 h-3 w-3" />
-          {formatDate(updateDate, locale)}
+          {formatDate(updateDate, locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
         </Badge>
       )}
     </div>
   </Link>
 )
-
-interface AuthorsDisplayProps {
-  authors: AppCourseAuthor[]
-  t: AppTranslator
-}
-
-const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
-  // LMS Best Practice: Sort authors so CREATORs/Main instructors appear first.
-  const sortedAuthors = useMemo(() => {
-    return [...authors].toSorted((a, b) => {
-      if (a.authorship === 'CREATOR' && b.authorship !== 'CREATOR') return -1
-      if (b.authorship === 'CREATOR' && a.authorship !== 'CREATOR') return 1
-      return 0
-    })
-  }, [authors])
-
-  const displayedAuthors = sortedAuthors.slice(0, 3)
-  const hasMoreAuthors = sortedAuthors.length > 3
-  const remainingCount = sortedAuthors.length - 3
-
-  const authorsText = useMemo(() => {
-    const names = displayedAuthors.map(a => {
-      const u = a.user
-      const fullName = getAuthorFullName(u)
-      return fullName.trim() !== '' ? fullName : u?.username || ''
-    })
-
-    const joinedNames = names.join(', ')
-    return hasMoreAuthors ? `${joinedNames} +${remainingCount}` : joinedNames
-  }, [displayedAuthors, hasMoreAuthors, remainingCount])
-
-  if (authors.length === 0) return null
-
-  return (
-    <div className="flex items-center gap-3 pt-2">
-      {/* Overlapping Avatars */}
-      <div
-        className="flex items-center -space-x-2"
-        role="group"
-        aria-label={t('courseAuthorsAria', { defaultValue: 'Course authors' })}
-      >
-        {displayedAuthors.map((author, idx) => {
-          const u = author.user
-          const authorName = getAuthorFullName(u).trim() || (u?.username ?? '')
-          // Format role for tooltip (e.g., "CREATOR" -> "Creator")
-          const roleLabel = author.authorship
-            ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase()
-            : ''
-          const isCreator = author.authorship === 'CREATOR'
-
-          return (
-            <div
-              key={u?.user_uuid ?? idx}
-              className={`ring-background relative rounded-full ring-2 transition-all duration-200 hover:z-20 hover:-translate-y-0.5 hover:shadow-sm ${
-                isCreator ? 'ring-primary/10' : ''
-              }`}
-              style={{ zIndex: displayedAuthors.length - idx }}
-              title={roleLabel ? `${authorName} (${roleLabel})` : authorName}
-            >
-              <UserAvatar
-                size="sm"
-                variant="outline"
-                avatar_url={
-                  u?.avatar_image && u?.user_uuid ? getUserAvatarMediaDirectory(u.user_uuid, u.avatar_image) : ''
-                }
-                {...(!u?.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                showProfilePopup
-                userId={u?.id}
-              />
-            </div>
-          )
-        })}
-
-        {hasMoreAuthors && (
-          <div
-            className="bg-muted text-muted-foreground ring-background flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold ring-2 transition-transform hover:z-20 hover:scale-105"
-            title={t('moreAuthors', {
-              count: remainingCount,
-              defaultValue: `${remainingCount} more contributors`,
-            })}
-          >
-            +{remainingCount}
-          </div>
-        )}
-      </div>
-
-      {/* Author Names & LMS Role Context */}
-      <div className="flex min-w-0 flex-col justify-center">
-        <span className="text-muted-foreground/70 mb-0.5 text-[10px] font-semibold tracking-wider uppercase">
-          {/* You can replace this with t('instructor') depending on your translation keys */}
-          {t('instructorLabel', { defaultValue: 'Instructor' })}
-        </span>
-        <span
-          className="text-foreground/90 hover:text-foreground truncate text-xs leading-none font-medium transition-colors"
-          aria-label={authorsText}
-          title={authorsText}
-        >
-          {authorsText}
-        </span>
-      </div>
-    </div>
-  )
-}
 
 interface ProgressBarProps {
   percentage: number
@@ -297,12 +178,28 @@ const ProgressBar: FC<ProgressBarProps> = ({ percentage, courseName, t }) => (
   </div>
 )
 
+/** UX-250: the bar reads «…», not «0%», while the learner-state is still loading. */
+const ProgressSkeleton: FC = () => (
+  <div className="flex items-center gap-2.5" aria-busy>
+    <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
+      <div className="bg-muted-foreground/20 h-full w-2/5 animate-pulse rounded-full" />
+    </div>
+    <span className="text-muted-foreground/50 text-xs">…</span>
+  </div>
+)
+
 interface CourseActionsProps {
   isEnrolled: boolean
   isLoading: boolean
-  progressPercentage: number
+  /** `null` until the learner-state resolved (UX-250). */
+  progressPercentage: number | null
   courseUrl: string
   courseName: string
+  /** Management cards link to the learner preview, not to "start learning". */
+  actionLabel?: string | undefined
+  /** The server's `next_action.id` for an enrolled course (UX-127). */
+  nextAction?: string | null
+  certificateHref?: string | null
   t: AppTranslator
 }
 
@@ -312,17 +209,15 @@ const CourseActions: FC<CourseActionsProps> = ({
   progressPercentage,
   courseUrl,
   courseName,
+  actionLabel,
+  nextAction,
+  certificateHref,
   t,
 }) => {
   if (isLoading) {
     return (
       <div className="w-full space-y-2">
-        <div className="flex items-center gap-2.5">
-          <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
-            <div className="bg-muted-foreground/20 h-full w-2/5 animate-pulse rounded-full" />
-          </div>
-          <span className="text-muted-foreground/50 text-xs">…</span>
-        </div>
+        <ProgressSkeleton />
         <Button size="sm" className="w-full" disabled aria-disabled>
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
           {t('loading', { defaultValue: 'Loading…' })}
@@ -332,20 +227,25 @@ const CourseActions: FC<CourseActionsProps> = ({
   }
 
   if (isEnrolled) {
+    // A completed course follows the server's next action (UX-127): the
+    // certificate when there is one, the course summary otherwise.
+    const isCertificate = nextAction === 'view_certificate'
+    const label = isCertificate
+      ? t('viewCertificate')
+      : nextAction === 'review_completion'
+        ? t('reviewCompletion')
+        : t('continueLearning')
+    const href = isCertificate && certificateHref ? getAbsoluteUrl(certificateHref) : courseUrl
     return (
       <div className="w-full space-y-2">
-        <ProgressBar percentage={progressPercentage} courseName={courseName} t={t} />
-        <Button
-          nativeButton={false}
-          render={<Link href={courseUrl} />}
-          aria-label={t('continueLearning', {
-            defaultValue: 'Continue Learning',
-          })}
-          size="sm"
-          className="w-full"
-        >
-          <Play className="mr-2 h-3.5 w-3.5" />
-          {t('continueLearning', { defaultValue: 'Continue Learning' })}
+        {progressPercentage === null ? (
+          <ProgressSkeleton />
+        ) : (
+          <ProgressBar percentage={progressPercentage} courseName={courseName} t={t} />
+        )}
+        <Button nativeButton={false} render={<Link href={href} />} aria-label={label} size="sm" className="w-full">
+          {isCertificate ? <Award className="mr-2 h-3.5 w-3.5" /> : <Play className="mr-2 h-3.5 w-3.5" />}
+          {label}
         </Button>
       </div>
     )
@@ -355,14 +255,57 @@ const CourseActions: FC<CourseActionsProps> = ({
     <Button
       nativeButton={false}
       render={<Link href={courseUrl} />}
-      aria-label={t('startLearning')}
+      aria-label={actionLabel ?? t('startLearning')}
       size="sm"
       variant="outline"
       className="w-full"
     >
       <Play className="mr-2 h-3.5 w-3.5" />
-      {t('startLearning')}
+      {actionLabel ?? t('startLearning')}
     </Button>
+  )
+}
+
+/** The course-delete confirm — every delete entry point goes through it (UX-168). */
+export function CourseDeleteDialog({
+  open,
+  onOpenChange,
+  courseName,
+  isPending,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  courseName: string
+  isPending: boolean
+  onConfirm: () => void
+}) {
+  const t = useTranslations('Components.CourseThumbnail')
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
+            <AlertTriangle className="size-8" />
+          </AlertDialogMedia>
+          <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel />
+          <AlertDialogAction variant="destructive" onClick={onConfirm} disabled={isPending}>
+            {isPending ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                {t('deleting')}
+              </div>
+            ) : (
+              t('deleteButtonText')
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -379,21 +322,15 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   const [isPending, startTransition] = useTransition()
   const currentUserId = _thumbnailUser?.id
 
-  const isOwner = useMemo(() => {
-    if (!currentUserId || !course.authors?.length) return course.is_owner ?? false
-    return course.authors.some(
-      a =>
-        a.authorship_status === 'ACTIVE' &&
-        (a.authorship === 'CREATOR' || a.authorship === 'MAINTAINER') &&
-        a.user?.id === currentUserId,
-    )
-  }, [currentUserId, course.authors, course.is_owner])
-
+  // `:own` update applies to every author (creator or active contributor), as on
+  // the server; `:own` delete to the creator only (UX-166).
   const canUpdate =
-    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
+    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) ||
+    (isCourseAuthor(course, currentUserId) && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
 
   const canDelete =
-    can(Resources.COURSE, Actions.DELETE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
+    (isCourseCreator(course, currentUserId) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
   const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])]
 
@@ -449,30 +386,13 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
         <ResourceActionsMenu availableActions={availableActions} actions={actions} trigger={trigger} />
       </div>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
-              <AlertTriangle className="size-8" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName: course.name || '' })}</AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel />
-            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
-              {isPending ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" />
-                  {t('deleting')}
-                </div>
-              ) : (
-                t('deleteButtonText')
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CourseDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        courseName={course.name || ''}
+        isPending={isPending}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }
@@ -485,14 +405,17 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   course,
   customLink,
   actionLink,
+  actionLabel,
   trailData,
   trailLoading = false,
   priority = false,
 }) => {
   const t = useTranslations('Components.CourseThumbnail')
+  const tCta = useTranslations('Courses.CoursesActions')
   const locale = useLocale()
   const router = useRouter()
-  const { user: currentUser, isAuthenticated } = useSession()
+  const { toastApiError } = useApiError()
+  const { user: currentUser, isAuthenticated, can } = useSession()
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -503,11 +426,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   // the parent accidentally passes trailLoading=true without trail data.
   const effectiveTrailLoading = isAuthenticated && trailLoading && hasMounted
 
-  const activeAuthors = useMemo(
-    () => course.authors?.filter(a => a.authorship_status === 'ACTIVE') || [],
-    [course.authors],
-  )
-
   const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid])
 
   const courseRun = useMemo(() => {
@@ -517,16 +435,16 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     })
   }, [trailData, cleanCourseUuid])
 
-  const { progressPercentage } = useMemo(() => {
-    const total =
-      courseRun?.course_total_steps ||
-      course.chapters?.reduce((acc, chapter) => acc + (chapter.activities?.length || 0), 0) ||
-      0
-    const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
-
-    return { progressPercentage: percentage }
-  }, [courseRun, course.chapters])
+  // UX-250: the run carries `progress_pct` — the same value learner-state
+  // reports — in the one `GET /trail` the page already made; `null` (no
+  // projection row yet) is what learner-state also shows as 0 %. The
+  // per-card learner-state query stays only for a completed run, whose CTA
+  // needs `next_action` / the certificate (UX-127).
+  const progressPercentage = courseRun ? Math.round(courseRun.progress_pct ?? 0) : null
+  const learnerProgress = useLearnerCourseProgress(
+    cleanCourseUuid,
+    isAuthenticated && progressPercentage !== null && progressPercentage >= 100,
+  )
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
@@ -544,11 +462,15 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const isEnrolled = Boolean(courseRun)
   const titleId = `course-title-${cleanCourseUuid}`
 
-  const currentUserId = currentUser?.id
-  const isOwner = useMemo(() => {
-    if (!currentUserId || !activeAuthors.length) return false
-    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user?.id === currentUserId)
-  }, [currentUserId, activeAuthors])
+  // The owner badge marks the creator only; co-authors get the menu, not the crown.
+  const isOwner = isCourseCreator(course, currentUser?.id)
+  // UX-204: the course's staff (`is_course_staff`: the roster in the list
+  // payload, or a platform authoring grant) get the landing's «Открыть курс»
+  // — the server refuses to enrol them (BUG-287).
+  const isStaff =
+    isCourseAuthor(course, currentUser?.id) ||
+    can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.APP) ||
+    can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.ALL)
 
   const handleDelete = async () => {
     const toastId = toast.loading(t('deleting'))
@@ -556,8 +478,9 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
       await deleteCourseFromBackend(course.course_uuid || '')
       toast.success(t('toastDeleteSuccess'))
       router.refresh()
-    } catch {
-      toast.error(t('toastDeleteError'))
+    } catch (error) {
+      // A 403 reads «нет прав», not «попробуйте снова» (UX-166).
+      toastApiError(error, { fallback: t('toastDeleteError') })
     } finally {
       toast.dismiss(toastId)
     }
@@ -601,8 +524,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
             {extractMarkdownSummary(course.description || '', 140)}
           </p>
         </div>
-
-        <AuthorsDisplay authors={activeAuthors} t={t} />
       </CardContent>
 
       <CardFooter className="bg-muted/20 mt-auto border-t px-4 py-3">
@@ -612,6 +533,9 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           progressPercentage={progressPercentage}
           courseUrl={actionUrl}
           courseName={course.name || ''}
+          actionLabel={actionLink && !isEnrolled ? actionLabel : isStaff ? tCta(CTA_LABEL.preview) : undefined}
+          nextAction={learnerProgress.nextAction}
+          certificateHref={learnerProgress.certificateHref}
           t={t}
         />
       </CardFooter>

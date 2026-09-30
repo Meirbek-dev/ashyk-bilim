@@ -1,176 +1,181 @@
-import type * as schemas from '@/lib/api/generated/api.schemas'
+import type {
+  GradedItem as WireGradedItem,
+  GradingBreakdown as WireGradingBreakdown,
+  Stats,
+  UserSummary,
+} from '@/lib/api/generated/zod'
+import type {
+  ActivityProgressCell as ProgressCell,
+  ActivityProgressState,
+} from '@/features/assessments/domain/progress'
+import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
 
-type GeneratedSubmission = schemas.SubmissionRead
-type GeneratedGradedItem = schemas.GradedItem
-type GeneratedGradingBreakdown = schemas.GradingBreakdown
-type GeneratedActivityProgressCell = schemas.ActivityProgressCell
-type GeneratedCourseGradebookResponse = schemas.CourseGradebookResponse
-type GeneratedSubmissionListResponse = schemas.SubmissionListResponse
+export type { ActivityProgressState, SubmissionStatus }
 
-export type SubmissionStatus = schemas.SubmissionStatus
-export type AssessmentType = schemas.AssessmentType
-export interface GradedItem extends Omit<GeneratedGradedItem, 'max_score'> {
-  max_score: number
+// Display projections only. HTTP responses are parsed and converted in wire.ts.
+export type AssessmentType = 'manual_assessment' | 'quiz' | 'exam' | 'code_challenge'
+export type GradedItem = WireGradedItem
+export type GradingBreakdown = WireGradingBreakdown
+export interface SubmissionUser extends UserSummary {
+  first_name?: string
+  middle_name?: string
+  last_name?: string
 }
-export interface GradingBreakdown extends Omit<GeneratedGradingBreakdown, 'items'> {
-  items?: GradedItem[]
-}
-export interface Submission extends Omit<
-  GeneratedSubmission,
-  'grading_json' | 'status' | 'is_late' | 'attempt_number'
-> {
-  grading_json?: GradingBreakdown
-  status: SubmissionStatus
-  is_late: boolean
-  attempt_number: number
+export interface Submission {
+  id: string
+  submission_uuid: string
+  assessment_id?: string
+  activity_id: string
+  assessment_type: AssessmentType
+  user_id: string
   user?: SubmissionUser | null
-  user_id: number
+  status: SubmissionStatus
+  release_state?: string
+  grading_json?: GradingBreakdown
+  answers_json?: unknown
+  metadata_json?: unknown
+  attempt_number: number
+  is_late: boolean
+  auto_score?: number | null
+  final_score?: number | null
+  /** BUG-174: the stored raw when it is a manual override (teacher view only). */
+  score_override?: number | null
+  /** UX-117: `integrity_violation` = annulled, the raw stays 0 unless overridden. */
+  auto_submit_reason?: 'time_expired' | 'integrity_violation' | null
+  version?: number
+  /** UX-167: `false` = not a course member (left) — no per-learner actions. */
+  enrolled?: boolean
+  /** UX-199: on the course staff — never a member, named as staff. */
+  staff?: boolean
+  started_at?: string | null
+  submitted_at?: string | null
+  graded_at?: string | null
+  created_at: string
+  updated_at: string
 }
-export type SubmissionUser = schemas.SubmissionUser
-export interface SubmissionsPage extends Omit<GeneratedSubmissionListResponse, 'items'> {
+export interface SubmissionsPage {
   items: Submission[]
+  page: number
+  page_size: number
+  pages: number
+  /** Rows through `page`: exact unless `has_more` (then a lower bound). */
+  total: number
+  has_more: boolean
 }
-export type SubmissionStats = schemas.SubmissionStats
-export type ItemFeedback = schemas.ItemFeedback
-export type TeacherGradeInput = schemas.TeacherGradeInput
-export type BatchGradeItem = schemas.BatchGradeItem
-export type BatchGradeRequest = schemas.BatchGradeRequest
-export type BatchGradeResultItem = schemas.BatchGradeResultItem
-export type BatchGradeResponse = schemas.BatchGradeResponse
-export type ActivityProgressState = schemas.ActivityProgressState
-export interface ActivityProgressCell extends Omit<
-  GeneratedActivityProgressCell,
-  'attempt_count' | 'is_late' | 'teacher_action_required'
-> {
+export interface SubmissionStats extends Stats {
+  needs_grading_count: number
+}
+export interface TeacherItemGradeInput {
+  item_id: string
+  score?: number | null
+  feedback?: string
+}
+export interface TeacherGradeInput {
+  status: 'GRADED' | 'PUBLISHED' | 'RETURNED'
+  final_score?: number | null
+  feedback?: string
+  /** Per-item scores, wired to `PATCH /submissions/{id}/grade`'s `item_grades`. */
+  item_grades?: TeacherItemGradeInput[]
+}
+export interface ActivityProgressCell extends ProgressCell {
   attempt_count: number
   is_late: boolean
   teacher_action_required: boolean
+  /** BUG-175: the newest attempt awaiting grading behind the grade of record. */
+  pending_attempt?: number | null
+  /** UX-123: that attempt's id — the «На проверке» deep link opens it, not the grade of record. */
+  pending_attempt_id?: string | null
+  /** UX-146: the teacher-owed attempt is scored and waits for a release, not a grade. */
+  awaiting_release?: boolean
 }
-export interface CourseGradebookResponse extends Omit<GeneratedCourseGradebookResponse, 'cells'> {
+export interface GradebookActivity {
+  id: string
+  activity_uuid: string
+  name: string
+  activity_type: string
+  assessment_type?: string | null
+}
+export type GradebookStudent = SubmissionUser
+export interface GradebookSummary {
+  activity_count: number
+  completed_count: number
+  /** Every cell owed a teacher action (a grade or a release). */
+  needs_grading_count: number
+  /** UX-146: the subset of `needs_grading_count` that is scored and only awaits a release. */
+  awaiting_release_count: number
+  not_started_count: number
+  overdue_count: number
+  student_count: number
+}
+export interface TeacherAction {
+  activity_id: string
+  activity_name: string
+  user_id: string
+  student_name: string
+  submission_uuid: string
+  /** Graded, only the release is owed (UX-219). */
+  awaiting_release?: boolean
+}
+export interface CourseGradebookResponse {
+  course_id: string
+  course_uuid: string
+  course_name: string
   cells: ActivityProgressCell[]
+  activities: GradebookActivity[]
+  students: GradebookStudent[]
+  summary: GradebookSummary
+  teacher_actions: TeacherAction[]
+  page_info?: {
+    page: number
+    page_size: number
+    total_students: number
+    total_activities: number
+    activity_types: string[]
+    has_previous: boolean
+    has_next: boolean
+  }
 }
-export type GradebookActivity = schemas.GradebookActivity
-export type GradebookStudent = schemas.GradebookStudent
-export type GradebookSummary = schemas.GradebookSummary
-export type TeacherAction = schemas.TeacherAction
 
-export function normalizeSubmission(
-  submission: Partial<GeneratedSubmission> | Partial<Submission> | null | undefined,
-): Submission {
-  const normalized = submission ?? {
-    activity_id: 0,
-    assessment_type: 'manual_assessment' as AssessmentType,
+export function normalizeSubmission(value: Partial<Submission> | null | undefined): Submission {
+  return {
+    activity_id: '',
+    assessment_type: 'manual_assessment',
     created_at: '',
-    id: 0,
+    id: '',
     submission_uuid: '',
     updated_at: '',
-    user_id: 0,
+    user_id: '',
+    status: 'PENDING',
+    is_late: false,
+    attempt_number: 0,
+    ...value,
   }
-
-  const gradingJson = normalized.grading_json
-    ? ({
-        ...normalized.grading_json,
-        ...(normalized.grading_json.items ? { items: normalized.grading_json.items.map(normalizeGradedItem) } : {}),
-      } as GradingBreakdown)
-    : undefined
-
-  const normalizedSubmission: Submission = {
-    ...(normalized as Partial<Submission>),
-    ...(gradingJson !== undefined ? { grading_json: gradingJson } : {}),
-    activity_id: normalized.activity_id ?? 0,
-    assessment_type: normalized.assessment_type ?? ('manual_assessment' as AssessmentType),
-    created_at: normalized.created_at ?? '',
-    id: normalized.id ?? 0,
-    submission_uuid: normalized.submission_uuid ?? '',
-    updated_at: normalized.updated_at ?? '',
-    user_id: normalized.user_id ?? 0,
-    status: normalized.status ?? 'PENDING',
-    is_late: normalized.is_late ?? false,
-    attempt_number: normalized.attempt_number ?? 0,
-  }
-
-  return normalizedSubmission
 }
 
 export function normalizeActivityProgressCell(
-  cell: Partial<GeneratedActivityProgressCell> | Partial<ActivityProgressCell> | null | undefined,
+  value: Partial<ActivityProgressCell> | null | undefined,
 ): ActivityProgressCell {
-  const normalized = cell ?? {
-    activity_id: 0,
-    state: 'NOT_STARTED' as ActivityProgressState,
-    user_id: 0,
-  }
-
-  const normalizedCell: ActivityProgressCell = {
-    ...(normalized as Partial<ActivityProgressCell>),
-    activity_id: normalized.activity_id ?? 0,
-    state: normalized.state ?? 'NOT_STARTED',
-    user_id: normalized.user_id ?? 0,
-    attempt_count: normalized.attempt_count ?? 0,
-    is_late: normalized.is_late ?? false,
-    teacher_action_required: normalized.teacher_action_required ?? false,
-  }
-
-  return normalizedCell
-}
-
-export function normalizeGradedItem(item: GeneratedGradedItem | GradedItem | null | undefined): GradedItem {
   return {
-    ...(item ?? { item_id: '', max_score: 0 }),
-    max_score: item?.max_score ?? 0,
+    activity_id: '',
+    user_id: '',
+    state: 'NOT_STARTED',
+    attempt_count: 0,
+    is_late: false,
+    teacher_action_required: false,
+    ...value,
   }
 }
 
-export function normalizeCourseGradebookResponse(
-  data: GeneratedCourseGradebookResponse | CourseGradebookResponse | null | undefined,
-): CourseGradebookResponse {
-  if (!data) {
-    return {
-      course_id: 0,
-      course_name: '',
-      course_uuid: '',
-      cells: [],
-      activities: [],
-      students: [],
-      summary: {
-        activity_count: 0,
-        completed_count: 0,
-        needs_grading_count: 0,
-        not_started_count: 0,
-        overdue_count: 0,
-        student_count: 0,
-      },
-      teacher_actions: [],
-    }
-  }
-
-  return {
-    ...data,
-    cells: (data.cells ?? []).map(normalizeActivityProgressCell),
-  }
+export function normalizeGradedItem(item: GradedItem | null | undefined): GradedItem {
+  return item ?? { item_id: '', max_score: 0, score: 0 }
 }
 
-export function normalizeSubmissionsPage(
-  data: GeneratedSubmissionListResponse | SubmissionsPage | null | undefined,
-): SubmissionsPage {
-  if (!data) {
-    return {
-      items: [],
-      page: 1,
-      page_size: 25,
-      pages: 1,
-      total: 0,
-    }
-  }
+export function normalizeCourseGradebookResponse(data: CourseGradebookResponse): CourseGradebookResponse {
+  return { ...data, cells: data.cells.map(normalizeActivityProgressCell) }
+}
 
-  return {
-    ...data,
-    items: (data.items ?? []).map(normalizeSubmission),
-    page: data.page ?? 1,
-    page_size: data.page_size ?? 25,
-    pages: data.pages ?? 1,
-    total: data.total ?? 0,
-  }
+export function normalizeSubmissionsPage(data: SubmissionsPage): SubmissionsPage {
+  return { ...data, items: data.items.map(normalizeSubmission) }
 }
 
 export type ReleaseState = 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION'
@@ -196,29 +201,10 @@ export interface AntiCheatViolation {
   count?: number
 }
 
-export interface PlagiarismScore {
-  score: number
-  checked_at: string
-  flagged?: boolean
-  details?: Record<string, unknown>
-}
-
-export type PlagiarismCheckStatus = 'pending' | 'checking' | 'complete' | 'failed'
-
-export interface PlagiarismState {
-  status: PlagiarismCheckStatus
-  score: number | null
-  flagged: boolean
-  error: string | null
-}
-
 export interface SubmissionMetadata {
   latest_run?: CodeRunRecord | null
   runs?: CodeRunRecord[]
   violations?: AntiCheatViolation[]
-  plagiarism?: PlagiarismScore | null
-  plagiarism_status?: PlagiarismCheckStatus | string | null
-  plagiarism_error?: string | null
   [key: string]: unknown
 }
 
@@ -230,46 +216,6 @@ export function getSubmissionMetadata(submission: { metadata_json?: unknown }): 
 export function getSubmissionViolations(submission: { metadata_json?: unknown }): AntiCheatViolation[] {
   const { violations } = getSubmissionMetadata(submission)
   return Array.isArray(violations) ? violations : []
-}
-
-export function getSubmissionPlagiarismState(submission: { metadata_json?: unknown }): PlagiarismState {
-  const metadata = getSubmissionMetadata(submission)
-  const status = metadata.plagiarism_status
-  const plagiarism = metadata.plagiarism ?? null
-
-  if (status === 'failed') {
-    return {
-      status: 'failed',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: metadata.plagiarism_error ?? 'Plagiarism check failed',
-    }
-  }
-
-  if (status === 'checking') {
-    return {
-      status: 'checking',
-      score: plagiarism?.score ?? null,
-      flagged: Boolean(plagiarism?.flagged),
-      error: null,
-    }
-  }
-
-  if (plagiarism) {
-    return {
-      status: 'complete',
-      score: plagiarism.score,
-      flagged: Boolean(plagiarism.flagged),
-      error: null,
-    }
-  }
-
-  return {
-    status: 'pending',
-    score: null,
-    flagged: false,
-    error: null,
-  }
 }
 
 export interface SubmissionReviewViewModel {

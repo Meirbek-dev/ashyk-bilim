@@ -1,11 +1,28 @@
 'use client'
 
-import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, PlayCircle, Save } from 'lucide-react'
+import {
+  CheckCircle2,
+  ClipboardCheck,
+  Code2,
+  FileText,
+  FlaskConical,
+  Loader2,
+  PlayCircle,
+  Save,
+  Send,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
+import { InlineError } from '@/components/ui/error-state'
+import { useApiError } from '@/hooks/useApiError'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -23,10 +40,11 @@ import { cn } from '@/lib/utils'
 import { ProblemStatementEditor } from './ProblemStatementEditor'
 import { TestSuiteBuilder } from './TestSuiteBuilder'
 import { ReferenceSolutionRunner } from './ReferenceSolutionRunner'
-import { PublishReadinessPanel } from './PublishReadinessPanel'
+import { PublishReadinessPanel, buildReadiness, useMarkdownIssueText } from './PublishReadinessPanel'
 
 interface CodeChallengeBuilderProps {
   activityUuid: string
+  courseUuid: string
 }
 
 type BuilderTab = 'problem' | 'languages' | 'tests' | 'verify' | 'review'
@@ -55,13 +73,17 @@ const DEFAULT_SETTINGS: CodeChallengeSettings = {
   hints: [],
 }
 
-export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps) {
+export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallengeBuilderProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const tStudio = useTranslations('Features.Assessments.Studio')
+  const queryClient = useQueryClient()
+  const [isPublishing, setIsPublishing] = useState(false)
   const [tab, setTab] = useState<BuilderTab>('problem')
   const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS)
   const { data: settings, isLoading } = useCodeChallengeSettings(activityUuid)
-  const { data: languages = [] } = useJudge0Languages()
+  const { data: languages = [], error: languagesError } = useJudge0Languages()
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
+  const { toastApiError } = useApiError()
 
   const selectedLanguages = useMemo(
     () =>
@@ -71,7 +93,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     [draft.allowed_languages, languages],
   )
 
-  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
+  const markdownIssueText = useMarkdownIssueText()
+  const readiness = useMemo(() => buildReadiness(draft, t, markdownIssueText), [draft, t, markdownIssueText])
   const blockersCount = readiness.items.filter(item => !item.ok).length
   const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft])
 
@@ -99,10 +122,17 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     setDraft(current => ({ ...current, ...patch }))
   }
 
-  const save = async () => {
+  /** Persists the draft; `false` once the failure has been toasted. An unchanged draft sends nothing (UX-284). */
+  const persist = async () => {
     if (firstMarkdownIssue) {
-      toast.error(`${firstMarkdownIssue.field}: ${firstMarkdownIssue.issue.message}`)
-      return
+      toast.error(markdownIssueText(firstMarkdownIssue))
+      return false
+    }
+    // UX-282: out-of-range limits would make Judge0 refuse every run.
+    const limits = readiness.items.find(item => item.id === 'limits')
+    if (limits && !limits.ok) {
+      toast.error(limits.detail)
+      return false
     }
 
     try {
@@ -111,9 +141,48 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         visible_tests: (draft.visible_tests ?? []).map(test => Object.assign(test, { is_visible: true })),
         hidden_tests: (draft.hidden_tests ?? []).map(test => Object.assign(test, { is_visible: false })),
       })
-      toast.success(t('configSaved'))
+      return true
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('configSaveFailed'))
+      // UX-284: problem+json codes (e.g. a locked assessment) are localized.
+      toastApiError(error, { fallback: t('configSaveFailed') })
+      return false
+    }
+  }
+
+  const save = async () => {
+    if (await persist()) toast.success(t('configSaved'))
+  }
+
+  // BUG-385: the only way a code challenge goes live — the curriculum toggle
+  // refuses a draft assessment (409 `activity-not-ready`).
+  const isDraft = (settings?.lifecycle_status ?? 'draft') === 'draft'
+  const publish = async () => {
+    if (!settings?.uuid) return
+    setIsPublishing(true)
+    const published = tStudio('lifecycle.published')
+    try {
+      if (!(await persist())) return
+      await apiJson(`assessments/${settings.uuid}/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: 'published', scheduled_at_unix: null }),
+      })
+      toast.success(tStudio('lifecycleChanged', { state: published }))
+    } catch (error) {
+      if (hasErrorCode(error, 'conflict')) toast.error(tStudio('lifecycleConflict', { state: published }))
+      else toastApiError(error, { fallback: tStudio('updateLifecycleFailed') })
+    } finally {
+      setIsPublishing(false)
+      // The studio badge, the curriculum row and the course readiness move with the lifecycle (UX-085).
+      const course = courseUuid.replace(/^course_/, '')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.codeChallenges.settings(activityUuid) }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
+        }),
+        queryClient.invalidateQueries({ queryKey: courseKeys.structure(course).slice(0, 3) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(course) }),
+      ])
     }
   }
 
@@ -148,6 +217,18 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
             {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             {t('saveSettings')}
           </Button>
+          {isDraft ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={publish}
+              disabled={isPublishing || saveSettings.isPending || blockersCount > 0}
+              className="h-8 gap-1.5 text-xs font-semibold"
+            >
+              {isPublishing ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+              {tStudio('publishNow')}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -206,6 +287,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                 <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
                   {t('allowedLanguages')}
                 </h3>
+                {languagesError ? (
+                  <InlineError
+                    description={t('languageServiceUnavailableDescription')}
+                    error={languagesError}
+                    title={t('languageServiceUnavailableTitle')}
+                  />
+                ) : null}
                 {languages.map(language => {
                   const selected = draft.allowed_languages.includes(language.id)
                   return (
@@ -316,7 +404,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         </TabsContent>
 
         <TabsContent value="verify" className="min-h-0 flex-1 overflow-hidden">
-          <ReferenceSolutionRunner draft={draft} languages={languages} />
+          {/* UX-281: the server checks the stored solutions, so verifying saves the draft first. */}
+          <ReferenceSolutionRunner draft={draft} languages={languages} onBeforeValidate={persist} />
         </TabsContent>
 
         <TabsContent value="review" className="min-h-0 flex-1 overflow-hidden">
@@ -325,45 +414,4 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       </Tabs>
     </div>
   )
-}
-
-function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
-  const visible = settings.visible_tests ?? []
-  const hidden = settings.hidden_tests ?? []
-  const referenceSolutions = settings.reference_solutions ?? {}
-  const starterCode = settings.starter_code ?? {}
-  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings)
-
-  const items = [
-    {
-      label: t('readiness.problem.label'),
-      ok: Boolean((settings.prompt ?? '').trim() && (settings.title ?? '').trim()),
-    },
-    {
-      label: t('readiness.languages.label'),
-      ok:
-        settings.allowed_languages.length > 0 &&
-        settings.allowed_languages.every(id => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
-    },
-    {
-      label: t('readiness.visible.label'),
-      ok: visible.some(test => test.input.trim() || test.expected_output.trim()),
-    },
-    {
-      label: t('readiness.hidden.label'),
-      ok: hidden.length > 0,
-    },
-    {
-      label: t('readiness.limits.label'),
-      ok: Boolean(settings.time_limit && settings.memory_limit),
-    },
-    {
-      label: 'Markdown safety',
-      ok: !markdownIssue,
-    },
-  ]
-  return {
-    items,
-    blockers: items.filter(item => !item.ok),
-  }
 }

@@ -22,7 +22,7 @@ export default function AccessDenied({ session }: AccessDeniedProps) {
   const handleLogout = () => {
     startTransition(async () => {
       await logout()
-      router.push('/login')
+      router.push('/auth/login')
     })
   }
 

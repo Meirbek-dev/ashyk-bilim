@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Clock, FlaskConical, List, Play, Send } from 'lucide-react'
+import { Clock, FlaskConical, List, Play, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { CodeChallengeProblem, CodeVerdict } from '../domain'
-import { verdictLabel } from '../domain'
+import { verdictLabelKey } from '../domain'
 
 interface CodeArenaHeaderProps {
   problem: CodeChallengeProblem
@@ -47,13 +47,12 @@ export function CodeArenaHeader({
   }
 
   return (
-    <div className="bg-muted/40 flex h-14 shrink-0 items-center justify-between border-b px-4">
+    // UX-290: on a phone the title and the actions wrap onto their own rows.
+    <div className="bg-muted/40 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2">
       {/* Left: Breadcrumbs & Problem Select */}
-      <div className="flex items-center gap-3">
-        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">
-          {t('courseChallenges')}
-        </span>
-        <span className="text-muted-foreground hidden md:inline">/</span>
+      <div className="hidden items-center gap-3 md:flex">
+        <span className="text-muted-foreground text-xs font-medium">{t('courseChallenges')}</span>
+        <span className="text-muted-foreground">/</span>
 
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -68,25 +67,14 @@ export function CodeArenaHeader({
             <DropdownMenuItem className="text-muted-foreground text-xs">{t('practiceModeActive')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <div className="bg-border h-4 w-px" />
-
-        <div className="flex items-center gap-0.5">
-          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
       </div>
 
       {/* Center: Title & Info */}
-      <div className="flex items-center gap-3 truncate">
+      <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
         <h1 className="truncate text-sm font-semibold">{problem.title}</h1>
         {problem.difficulty ? (
           <Badge variant={difficultyTone(problem.difficulty)} className="px-1.5 py-0 text-[10px] font-bold uppercase">
-            {problem.difficulty}
+            {t(`difficulty.${problem.difficulty.toLowerCase()}`)}
           </Badge>
         ) : null}
         {problem.points ? (
@@ -98,13 +86,13 @@ export function CodeArenaHeader({
       </div>
 
       {/* Right: Timer and execution actions */}
-      <div className="flex items-center gap-2">
-        <div className="bg-muted text-muted-foreground flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-xs select-none">
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="bg-muted text-muted-foreground hidden h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-xs select-none sm:flex">
           <Clock className="size-3.5" />
           {formatTime(timeElapsed)}
         </div>
 
-        <div className="bg-border h-4 w-px" />
+        <div className="bg-border hidden h-4 w-px sm:block" />
 
         <Button
           type="button"
@@ -144,6 +132,7 @@ export function CodeArenaHeader({
 }
 
 function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
+  const t = useTranslations('Activities.CodeChallenges')
   if (!verdict) return null
 
   return (
@@ -160,7 +149,7 @@ function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
                 : 'bg-rose-500',
         )}
       />
-      {verdictLabel(verdict)}
+      {t(verdictLabelKey(verdict))}
     </span>
   )
 }

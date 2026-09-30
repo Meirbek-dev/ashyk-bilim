@@ -4,6 +4,7 @@ import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderC
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
 import { getActivity } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
+import { activityWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import EditorWrapper from '@/components/Objects/Editor/EditorWrapper'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
@@ -11,9 +12,15 @@ import { redirect } from '@/i18n/navigation'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 
 interface PlatformAssessmentStudioPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformAssessmentStudioPageProps): Promise<Metadata> {
+  const { courseuuid, activityid } = await params
+  return activityWorkspaceMetadata(courseuuid, activityid)
 }
 
 function StudioPageFallback() {
@@ -87,10 +94,15 @@ async function PlatformAssessmentStudioContent({ params }: PlatformAssessmentStu
       </div>
     ) : (
       <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('studioNotAvailableForType', {
-          type: activity.activity_type?.replace('TYPE_', '').toLowerCase() || 'this',
-        })}
+        {t('studioNotAvailableForType', { type: await activityTypeLabel(activity.activity_type) })}
       </div>
     ),
   })
+}
+
+/** UX-139: the localized type name («Видео»), not the raw wire token. */
+async function activityTypeLabel(type: string | null | undefined) {
+  const t = await getTranslations('ActivityIndicators')
+  const key = { TYPE_VIDEO: 'video', TYPE_DOCUMENT: 'document', TYPE_DYNAMIC: 'interactive' }[type ?? '']
+  return key ? t(`activityTypes.${key}`) : t('unknownActivity')
 }

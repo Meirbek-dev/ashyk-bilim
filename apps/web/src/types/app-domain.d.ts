@@ -38,7 +38,7 @@ declare global {
     update_date?: string | undefined
     url?: string | undefined
     // Commonly accessed payload properties
-    learnings?: string | string[] | null | undefined
+    learnings?: unknown
     tags?: string | string[] | null | undefined
     visibility?: boolean | string | null | undefined
     template?: string | null | undefined
@@ -79,23 +79,23 @@ declare global {
 
   interface AppFileActivityInput {
     activity: AppPayload
-    chapterId: number
+    chapterId: string
     file: File
     type: string
   }
 
   interface AppActivityModalProps {
-    chapterId: number
+    chapterId: string
     closeModal: () => void
     course?: AppCourse | AppCourseContextShape
     submitActivity?: (payload: AppPayload) => Promise<void>
-    submitExternalVideo?: (externalVideoData: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>
+    submitExternalVideo?: (externalVideoData: AppPayload, activity: AppPayload, chapterId: string) => Promise<void>
     submitFileActivity?: (params: AppFileActivityInput) => Promise<void>
   }
 
   interface AppUserSummary {
-    id?: number
-    user_id?: number
+    id?: string
+    user_id?: string
     user_uuid?: string
     username?: string
     email?: string
@@ -103,25 +103,6 @@ declare global {
     middle_name?: string | null
     last_name?: string
     avatar_image?: string | null
-    role?: string | AppRoleSummary
-    roles?: AppRoleSummary[]
-    [key: string]: unknown
-  }
-
-  interface AppRoleSummary {
-    id?: number
-    name?: string
-    priority?: number
-    role?: string | AppRoleSummary
-    [key: string]: unknown
-  }
-
-  interface AppCourseAuthor {
-    id?: number | string | null
-    user_id?: number
-    authorship?: string
-    authorship_status?: string
-    user?: AppUserSummary
     [key: string]: unknown
   }
 
@@ -156,7 +137,7 @@ declare global {
   }
 
   interface AppCourse {
-    id?: number
+    id?: string
     course_uuid: string
     courseStructure?: AppCourse
     name?: string
@@ -164,14 +145,17 @@ declare global {
     description?: string
     about?: string
     mini_description?: string
-    learnings?: string | string[] | AppPayload | null
+    /** v2 `Course.learnings` (`CourseLearning[]`); legacy shapes are normalized by readers. */
+    learnings?: unknown
     tags?: string[] | string | null
     public?: boolean
     thumbnail_image?: string | null
     thumbnail_type?: string | null
     thumbnail_video?: string | null
     chapters?: AppChapter[]
-    authors?: AppCourseAuthor[]
+    creator_id?: string | null | undefined
+    /** Active co-authors (v2 `Course.contributor_ids`). */
+    contributor_ids?: string[] | undefined
     update_date?: string
     creation_date?: string
     created_at?: string
@@ -189,6 +173,8 @@ declare global {
     course: AppCourse
     steps?: AppTrailStep[]
     course_total_steps?: number
+    /** `learner-state.progress.progress_pct` for the run; `null` until projected (UX-250). */
+    progress_pct?: number | null | undefined
     [key: string]: unknown
   }
 
@@ -198,22 +184,14 @@ declare global {
     [key: string]: unknown
   }
 
-  interface AppUserGroup {
-    id?: number
-    usergroup_id?: number
-    usergroup_uuid?: string
-    name?: string
-    description?: string
-    users?: AppUserSummary[]
-    [key: string]: unknown
-  }
-
   interface AppCollection {
     id?: number
     collection_uuid?: string
     name?: string
     description?: string
     courses?: AppCourse[] | number[]
+    /** Creator or `collection:delete:platform` (server-derived). */
+    can_delete?: boolean
     [key: string]: unknown
   }
 
@@ -253,10 +231,14 @@ declare global {
       created_at: string
       [key: string]: unknown
     }
+    /** The name signed on the certificate (config instructor, else the course creator) — what the PDF prints. */
+    instructor_name?: string | null
+    /** The public verification view names the holder (UX-300); issued listings do not. */
+    holder?: { display_name: string }
     certification: {
       config: {
-        certification_name: string
-        certification_type: string
+        certification_name?: string
+        certification_type?: string
         certification_description?: string
         certificate_pattern?: string
         certificate_instructor?: string | null

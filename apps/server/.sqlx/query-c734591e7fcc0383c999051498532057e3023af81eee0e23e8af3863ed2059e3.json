@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users u SET avatar_key = $2\n           FROM (SELECT id, avatar_key FROM users WHERE id = $1 FOR UPDATE) old\n           WHERE u.id = old.id\n           RETURNING old.avatar_key AS \"previous?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "previous?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "c734591e7fcc0383c999051498532057e3023af81eee0e23e8af3863ed2059e3"
+}

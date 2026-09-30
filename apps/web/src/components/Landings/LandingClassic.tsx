@@ -1,6 +1,5 @@
 import NewCollectionButton from '@/components/Objects/Elements/Buttons/NewCollectionButton'
 import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle'
-import { LoginBonusHandler } from '@/app/_shared/withmenu/_components/LoginBonusHandler'
 import CollectionThumbnail from '@components/Objects/Thumbnails/CollectionThumbnail'
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import { GamificationProvider } from '@/components/Contexts/GamificationContext'
@@ -19,7 +18,7 @@ import { cn } from '@/lib/utils'
 // Types
 interface LandingClassicProps {
   courses: AppCourse[]
-  totalCourses: number
+  hasNextPage: boolean
   collections: AppCollection[]
   gamificationData?: DashboardData | null
   trailData: AppTrailData | null
@@ -98,7 +97,7 @@ function SectionHeader({ title, type, action }: { title: string; type: 'cou' | '
 // Main Component
 async function LandingClassic({
   courses,
-  totalCourses,
+  hasNextPage,
   collections,
   gamificationData,
   trailData,
@@ -109,12 +108,12 @@ async function LandingClassic({
   const gamificationProfile = gamificationData?.profile
   const userRank = gamificationData?.user_rank
 
-  const hasCourses = courses.length > 0 || totalCourses > 0
+  // UX-133: past the last page the grid shows its own "nothing further" state, not "no courses yet".
+  const hasCourses = courses.length > 0 || currentPage > 1
   const hasCollections = collections.length > 0
 
   return (
     <GamificationProvider initialData={gamificationData === undefined ? undefined : { dashboard: gamificationData }}>
-      <LoginBonusHandler />
       <div className="min-h-screen w-full">
         <GeneralWrapper>
           <div className="space-y-12">
@@ -132,7 +131,7 @@ async function LandingClassic({
                 {hasCourses ? (
                   <CourseGridClient
                     initialCourses={courses}
-                    initialTotal={totalCourses}
+                    hasNextPage={hasNextPage}
                     trailData={trailData}
                     currentPage={currentPage}
                     isAuthenticated={isAuthenticated}

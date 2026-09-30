@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useSessionContext } from '@/components/providers/session-provider'
 
 import { apiJson } from '@/lib/api-client'
 
@@ -42,8 +43,8 @@ export interface AIScopeCapability {
 
 function scopeCapabilitiesPath(scope: AIScope) {
   const params = new URLSearchParams({ surface: scope.surface })
-  if (scope.activityUuid) params.set('activity_uuid', scope.activityUuid)
-  if (scope.submissionUuid) params.set('submission_uuid', scope.submissionUuid)
+  // v2 takes `activity_id` only; a submission scope resolves through its activity.
+  if (scope.activityUuid) params.set('activity_id', scope.activityUuid)
   return `ai/capabilities/scope/${scope.courseUuid}?${params.toString()}`
 }
 
@@ -57,5 +58,7 @@ export function aiScopeCapabilitiesQueryOptions(scope: AIScope) {
 }
 
 export function useAIScopeCapabilities(scope: AIScope) {
-  return useQuery(aiScopeCapabilitiesQueryOptions(scope))
+  // Capabilities are per-session; an anonymous fetch would 401 and redirect (BUG-159).
+  const { isAuthenticated } = useSessionContext()
+  return useQuery({ ...aiScopeCapabilitiesQueryOptions(scope), enabled: isAuthenticated && Boolean(scope.courseUuid) })
 }

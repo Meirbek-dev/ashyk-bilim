@@ -133,3 +133,25 @@ export function normalizeTiptapJsonContent(content: unknown, fallback: Content =
 
   return fallback
 }
+
+const FILE_BLOCK_TYPES = new Set(['blockImage', 'blockPDF', 'blockVideo'])
+
+function isEmptyFileBlock(node: JSONContent): boolean {
+  return FILE_BLOCK_TYPES.has(node.type ?? '') && !node.attrs?.blockObject
+}
+
+function stripNode(node: JSONContent): JSONContent {
+  if (!Array.isArray(node.content)) return node
+  return { ...node, content: node.content.filter(child => !isEmptyFileBlock(child)).map(stripNode) }
+}
+
+/**
+ * Drops image/PDF/video blocks that never received an upload — a placeholder
+ * is editor chrome, not content, so autosave must not persist it (UX-058).
+ * Anything that is not a Tiptap doc passes through untouched.
+ */
+export function stripEmptyFileBlocks(content: unknown): unknown {
+  if (!isTiptapJsonDoc(content)) return content
+  const stripped = stripNode(content) as TiptapJsonDoc
+  return stripped.content.length > 0 ? stripped : EMPTY_TIPTAP_DOC
+}

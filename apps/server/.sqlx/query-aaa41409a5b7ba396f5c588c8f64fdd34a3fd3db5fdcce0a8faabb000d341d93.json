@@ -1,0 +1,150 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: TrailStepId\", trail_run_id AS \"trail_run_id: TrailRunId\",\n                  trail_id AS \"trail_id: TrailId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  complete, teacher_verified, grade, data,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM trail_steps WHERE trail_id = $1 ORDER BY created_at, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: TrailStepId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "trail_run_id: TrailRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "trail_run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "trail_id: TrailId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "trail_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "complete",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "complete"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "teacher_verified",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "teacher_verified"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "grade",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "grade"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "data",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "trail_steps",
+            "name": "data"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "aaa41409a5b7ba396f5c588c8f64fdd34a3fd3db5fdcce0a8faabb000d341d93"
+}

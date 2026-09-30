@@ -84,7 +84,7 @@ const runtimeCases = [
   },
   {
     title: 'web preview',
-    run: (editor: Editor) => editor.commands.insertWebPreview(),
+    run: (editor: Editor) => editor.commands.insertWebPreview({ url: 'https://example.com' }),
     expectedType: 'blockWebPreview',
   },
 ]
@@ -107,6 +107,19 @@ describe('custom block runtime commands', () => {
       expect(doc.content?.[0]?.type).toBe(testCase.expectedType)
     })
   }
+
+  // BUG-107: the bare command only opens the URL dialog; nothing reaches the
+  // doc (so nothing autosaves or re-opens on the next load) until it confirms.
+  it('inserts no web preview before the URL dialog confirms', () => {
+    editor = createEditor()
+
+    expect(editor.commands.insertWebPreview()).toBe(true)
+    expect(editor.storage.blockWebPreview.insertOpen).toBe(true)
+    expect(editor.getJSON().content?.some(node => node.type === 'blockWebPreview')).toBe(false)
+
+    expect(editor.commands.closeWebPreviewDialog()).toBe(true)
+    expect(editor.storage.blockWebPreview.insertOpen).toBe(false)
+  })
 
   it('persists kotlin as a code block language', () => {
     editor = createEditor()

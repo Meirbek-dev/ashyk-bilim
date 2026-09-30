@@ -6,8 +6,10 @@ import { getSession } from '@/lib/auth/session'
 import { APP_NAME } from '@/lib/constants'
 import { cache } from 'react'
 import type { Metadata } from 'next'
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { redirect } from '@/i18n/navigation'
-import { getLocale, setRequestLocale } from 'next-intl/server'
+import { getLocale, setRequestLocale, getTranslations } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -17,10 +19,9 @@ interface MetadataProps {
   params: Promise<{ courseuuid: string }>
 }
 
-const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession()
-  return await getCourseMetadata(courseuuid, undefined, !!session)
-})
+// Learner surface: published activities only. Drafts are not in the
+// learner-state outline, so listing them here only leads to a dead link.
+const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
@@ -67,9 +68,12 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401 || apiError.status === 403) {
-      return {
-        title: `Access Denied - ${APP_NAME}`,
-      }
+      const tUnauthorized = await getTranslations('UnauthorizedPage')
+      return { title: `${tUnauthorized('title')} - ${APP_NAME}`, robots: { index: false } }
+    }
+    if (apiError.status === 404 || apiError.status === 422) {
+      const tErrors = await getTranslations('Errors')
+      return { title: `${tErrors('courseNotFound')} - ${APP_NAME}`, robots: { index: false } }
     }
     throw error
   }
@@ -96,21 +100,33 @@ export default async function PlatformCoursePage(props: { params: Promise<{ loca
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    if (apiError.status === 404) {
+    // A malformed id is a 422 that names nothing: not found, not an error (UX-078).
+    if (apiError.status === 404 || apiError.status === 422) {
       const activeSession = await getSession()
       return <ResourceNotFound type="course" session={activeSession} />
     }
     throw error
   }
 
+  // Learner state is prefetched here so the progress strip and card hydrate
+  // with the page instead of popping in after a client fetch.
+  const queryClient = new QueryClient()
   const [discussions, trailData] = await Promise.all([
     session?.user && course_meta?.course_uuid
-      ? getCourseDiscussions(course_meta.course_uuid, true, 50, 0)
+      ? getCourseDiscussions(course_meta.course_uuid, true, 50)
       : Promise.resolve([]),
     session?.user ? getCurrentTrail() : Promise.resolve(null),
+    session?.user ? queryClient.prefetchQuery(learnerCourseStateQueryOptions(courseuuid)) : Promise.resolve(),
   ])
 
   return (
-    <CourseClient courseuuid={courseuuid} course={course_meta} initialDiscussions={discussions} trailData={trailData} />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <CourseClient
+        courseuuid={courseuuid}
+        course={course_meta}
+        initialDiscussions={discussions}
+        trailData={trailData}
+      />
+    </HydrationBoundary>
   )
 }

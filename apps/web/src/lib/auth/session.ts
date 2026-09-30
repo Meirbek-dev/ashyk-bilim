@@ -2,62 +2,52 @@ import 'server-only'
 import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
 import { connection } from 'next/server'
-import { redirect as nextRedirect, unstable_rethrow } from 'next/navigation'
+import { unstable_rethrow } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { redirect as localeRedirect } from '@/i18n/navigation'
 import { apiJson } from '@/lib/api-client'
-import { isAccessTokenExpired } from './cookie-bridge'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { SessionInfo, UserProfile } from '@/lib/api/generated/zod'
 import { buildReturnTo } from './return-to'
-import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from './types'
+import { SESSION_COOKIE_NAME } from './types'
 import type { Session } from './types'
-
-async function getPageReturnTo(): Promise<string | null> {
-  const headersList = await headers()
-  const pathname = headersList.get('x-pathname')
-  if (!pathname) return null
-  return buildReturnTo(pathname, headersList.get('x-search'))
-}
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
  * Get the current session from the backend.
  *
- * The result is deduplicated within a single RSC render tree via React.cache().
- * A fresh auth check still happens on every incoming request.
+ * `GET /auth/session` is the cheap "am I logged in?" probe (user id, roles,
+ * permission strings); the profile comes from `GET /users/me`. The result is
+ * deduplicated within a single RSC render tree via React.cache(); a fresh
+ * check still happens on every incoming request. Without the session cookie
+ * no request is made at all.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
   try {
     await connection()
-    const [cookieStore, pageReturnTo] = await Promise.all([cookies(), getPageReturnTo()])
-    const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value
-    const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE_NAME)?.value
-
-    if (!accessToken) {
-      if (refreshToken && pageReturnTo) {
-        nextRedirect(`/api/auth/refresh?returnTo=${encodeURIComponent(pageReturnTo)}`)
-      }
+    const cookieStore = await cookies()
+    if (!cookieStore.get(SESSION_COOKIE_NAME)?.value) {
       return null
     }
 
-    if (isAccessTokenExpired(accessToken)) {
-      if (pageReturnTo) {
-        nextRedirect(`/api/auth/refresh?returnTo=${encodeURIComponent(pageReturnTo)}`)
-      }
-      return null
-    }
+    const [info, user] = await Promise.all([
+      apiJson('auth/session', {}, data => SessionInfo.parse(data)),
+      apiJson('users/me', {}, data => UserProfile.parse(data)),
+    ])
 
-    const sessionData = await apiJson<
-      Session & { expires_at?: number; permissions?: string[]; session_version?: number | null }
-    >('auth/me')
     return {
-      ...sessionData,
-      expiresAt: sessionData.expires_at ?? 0,
-      permissions: sessionData.permissions ?? [],
-      sessionVersion: sessionData.session_version ?? null,
+      user,
+      userId: info.user_id,
+      roles: info.roles,
+      permissions: info.permissions,
     }
   } catch (error) {
     unstable_rethrow(error)
+
+    if (isApiError(error) && error.status === 401) {
+      return null
+    }
 
     const message = error instanceof Error ? error.message : String(error)
     console.warn('[getSession] Failed to fetch session from backend:', message)

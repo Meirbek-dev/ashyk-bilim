@@ -1,5 +1,5 @@
 import { getSupportReference, isApiError, isRetryableApiError, parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
-import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/generated/api.schemas'
+import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/assertSuccess'
 
 export type ErrorSeverity = 'info' | 'warning' | 'error'
 export type ErrorRetryPolicy = 'none' | 'manual' | 'after-delay' | 'conditional'
@@ -20,8 +20,10 @@ type CopyKey =
   | 'validationFailed'
 
 export interface ApiErrorPresenterCopy {
+  /** Generic copy by presentation bucket (i18n `Errors.<key>`). */
   get?: (key: CopyKey, fallback: string) => string
-  byCode?: Partial<Record<string, string>>
+  /** Per-contract-code copy (i18n `Errors.codes.<code>`), looked up first. */
+  byCode?: Partial<Record<string, string>> | ((code: string) => string | undefined)
 }
 
 export interface PresentApiErrorOptions {
@@ -33,6 +35,8 @@ export interface PresentedApiError {
   actionLabel: string
   code: string | null
   description: string
+  /** Machine-readable context (`{expected, actual}` on lock conflicts, `compile_output`, …). */
+  details: Record<string, unknown> | null
   fieldErrors: ApiFieldError[]
   retryPolicy: ErrorRetryPolicy
   severity: ErrorSeverity
@@ -54,8 +58,23 @@ function copy(options: PresentApiErrorOptions, key: CopyKey, fallback: string): 
   return options.copy?.get?.(key, fallback) ?? fallback
 }
 
+function codeCopy(options: PresentApiErrorOptions, code: string | null): string | undefined {
+  if (!code) return undefined
+  const source = options.copy?.byCode
+  if (!source) return undefined
+  return typeof source === 'function' ? source(code) : source[code]
+}
+
+const DEPENDENCY_CODES = new Set([
+  'service-unavailable',
+  'code-runner-degraded',
+  'ai-disabled',
+  'ai-provider-unavailable',
+  'ai-budget-exhausted',
+])
+
 function isDependencyFailure(code: string | null, status: number | null): boolean {
-  return Boolean(code?.endsWith('_UNAVAILABLE')) || status === 502 || status === 503 || status === 504
+  return (code !== null && DEPENDENCY_CODES.has(code)) || status === 502 || status === 503 || status === 504
 }
 
 function shouldReport(error: unknown, status: number | null, code: string | null): boolean {
@@ -65,26 +84,36 @@ function shouldReport(error: unknown, status: number | null, code: string | null
   return true
 }
 
+/**
+ * Turn any thrown value into user-facing copy plus retry/telemetry hints.
+ *
+ * Resolution order for the description: per-code copy (`Errors.codes.*`) →
+ * explicit fallback → bucket copy (`Errors.*`) → the server's English
+ * `detail`. Titles come from the presentation bucket, which is chosen by the
+ * contract `code` first and the HTTP status second.
+ */
 export function presentApiError(error: unknown, options: PresentApiErrorOptions = {}): PresentedApiError {
   const envelope = readEnvelope(error)
   const apiError = isApiError(error) ? error : null
-  const status = apiError?.status ?? null
+  const status = apiError?.status ?? envelope?.status ?? null
   const code = envelope?.code ?? apiError?.code ?? null
   const fieldErrors = envelope?.field_errors ?? apiError?.fieldErrors ?? []
+  const details = apiError?.details ?? envelope?.details ?? null
   const actionLabel = copy(options, 'tryAgain', 'Try again')
-  const codeMessage = code ? options.copy?.byCode?.[code] : undefined
+  const codeMessage = codeCopy(options, code)
+  const serverMessage = envelope?.detail ?? envelope?.title ?? null
 
   let title = 'Request failed'
   let description =
     codeMessage ??
     options.fallback ??
-    envelope?.message ??
+    serverMessage ??
     (apiError ? apiError.message : '') ??
     (error instanceof Error ? error.message : '')
   let retryPolicy: ErrorRetryPolicy = isRetryableApiError(error) ? 'manual' : 'none'
   let severity: ErrorSeverity = 'error'
 
-  if (code === 'RATE_LIMITED' || status === 429) {
+  if (code === 'rate-limited' || code === 'ai-rate-limited' || status === 429) {
     title = 'Too many requests'
     description = codeMessage ?? copy(options, 'rateLimited', 'Too many requests. Try again shortly.')
     retryPolicy = 'after-delay'
@@ -106,26 +135,26 @@ export function presentApiError(error: unknown, options: PresentApiErrorOptions 
       codeMessage ??
       copy(options, 'invalidClientRequest', 'The request could not be sent because required data is missing.')
     retryPolicy = 'none'
-  } else if (status === 401) {
+  } else if (code === 'unauthenticated' || code === 'session-expired' || status === 401) {
     title = 'Session expired'
     description = codeMessage ?? copy(options, 'sessionExpired', 'Your session expired. Sign in again to continue.')
     retryPolicy = 'none'
-  } else if (status === 403) {
+  } else if (code === 'forbidden' || code === 'csrf-rejected' || code === 'account-disabled' || status === 403) {
     title = 'Access denied'
     description = codeMessage ?? copy(options, 'permissionDenied', 'You do not have access to this resource.')
     retryPolicy = 'none'
-  } else if (status === 404) {
+  } else if (code === 'not-found' || status === 404) {
     title = 'Not found'
     description =
       codeMessage ?? copy(options, 'notFound', 'This item is no longer available or you do not have access.')
     retryPolicy = 'none'
-  } else if (status === 409 || status === 412) {
+  } else if (code === 'conflict' || code === 'precondition-failed' || status === 409 || status === 412) {
     title = 'Conflict'
     description =
       codeMessage ?? copy(options, 'conflict', 'This was changed elsewhere. Review the latest version before saving.')
     retryPolicy = 'conditional'
     severity = 'warning'
-  } else if (fieldErrors.length > 0 || status === 422 || code === 'VALIDATION_ERROR') {
+  } else if (fieldErrors.length > 0 || code === 'validation-failed' || status === 422 || status === 413) {
     title = 'Check the form'
     description = codeMessage ?? copy(options, 'validationFailed', 'Check the highlighted fields and try again.')
     retryPolicy = 'none'
@@ -151,6 +180,7 @@ export function presentApiError(error: unknown, options: PresentApiErrorOptions 
     actionLabel,
     code,
     description,
+    details,
     fieldErrors,
     retryPolicy,
     severity,

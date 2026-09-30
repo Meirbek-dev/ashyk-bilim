@@ -21,15 +21,18 @@ import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useQuery, queryOptions } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { getReleaseState, getSubmissionDisplayName } from '@/features/grading/domain'
 import { getSubmissionViolations } from '@/features/grading/domain/types'
-import type { ReleaseState, Submission, SubmissionStatus, SubmissionUser } from '@/features/grading/domain'
+import type { ReleaseState, Submission, SubmissionStatus } from '@/features/grading/domain'
+import { submissionStatsQueryOptions, submissionsQueryOptions } from '@/features/grading/queries/grading.query'
 import { cn } from '@/lib/utils'
-import { apiBody, apiJson } from '@/lib/api-client'
+import { saveBlob } from '@/lib/download'
+import { exportGradesCSV } from '@/services/grading/grading'
+import { itemAnalytics as fetchItemAnalytics } from '@/lib/api/generated/grading/grading'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Link from '@components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
@@ -39,75 +42,17 @@ import { InlineError } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import {
-  buildSubmissionQueuePath,
-  countItemActionPrompts,
-  getItemActionPrompt,
-  summarizeIntegrityEvents,
-} from './operateViewUtils'
-
-interface ScoreDistributionBucket {
-  range: string
-  count: number
-}
-
-interface SubmissionStats {
-  total: number
-  needs_grading_count: number
-  avg_score: number | null
-  pass_rate: number | null
-  score_distribution: ScoreDistributionBucket[]
-}
-
-interface ItemAnalytics {
-  item_uuid: string
-  title: string
-  kind: string
-  max_score: number
-  response_count: number
-  avg_score_pct: number | null
-  correct_pct: number | null
-  discrimination_index: number | null
-}
-
-type ReviewQueueSubmission = Submission & {
-  submission_uuid: string
-  metadata_json: unknown
-  user: SubmissionUser | null
-  user_id: number | null
-  submitted_at?: string | null
-  updated_at?: string | null
-  release_state?: ReleaseState | string | null
-}
-
-interface ReviewQueueRead {
-  items: ReviewQueueSubmission[]
-  total: number
-  page: number
-  page_size: number
-  pages: number
-  contract_version?: number
-}
-
-const statsQueryOptions = (assessmentUuid: string) =>
-  queryOptions({
-    queryKey: queryKeys.assessments.stats(assessmentUuid),
-    queryFn: () => apiJson<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
-    staleTime: 30_000,
-  })
+import { countItemActionPrompts, getItemActionPrompt, summarizeIntegrityEvents } from './operateViewUtils'
+import { ITEM_KIND_LABEL_KEYS, type UnifiedItemKind } from '@/features/assessments/domain/items'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
-    queryFn: () => apiJson<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
+    // The generated fetcher: the row key is `item_id` (UX-058 — a hand-rolled
+    // `item_uuid` type left every row keyed `undefined`).
+    queryFn: () => fetchItemAnalytics(assessmentUuid),
     staleTime: 30_000,
-  })
-
-const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
-  queryOptions({
-    queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
-    queryFn: () => apiJson<ReviewQueueRead>(queuePath),
-    staleTime: 5000,
   })
 
 interface ResultsReviewTabProps {
@@ -118,9 +63,18 @@ interface ResultsReviewTabProps {
 
 type StatusFilter = SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
 
+// Hand-ins arrive while the teacher watches (UX-085): the queue and its
+// stats follow on focus and every 30 s while the tab is visible (the
+// grading SSE is course-scoped and not mounted here).
+const LIVE = { refetchOnWindowFocus: true, refetchInterval: 30_000, refetchIntervalInBackground: false } as const
+
 export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
+  const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const { toastApiError } = useApiError()
   const locale = useLocale()
+  // UX-137: one percent format on this tab (locale decimals, ≤ 2 digits).
+  const formatPercent = usePercentFormat()
   const [analyticsExpanded, setAnalyticsExpanded] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [search, setSearch] = useState('')
@@ -132,26 +86,35 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const [regradeCandidates, setRegradeCandidates] = useState<Set<string>>(new Set())
   const [isExporting, startExportTransition] = useTransition()
 
-  const queuePath = buildSubmissionQueuePath(assessmentUuid, {
-    status: statusFilter,
-    search,
-    sortBy,
-    sortDir,
-    page,
-    pageSize: 10,
-    lateOnly,
-  })
-
-  const statsQuery = useQuery(statsQueryOptions(assessmentUuid))
+  // v2 queue: keyset `GET assessments/{id}/submissions` (status/search/cursor/limit)
+  // walked page-by-page by the shared grading query in the server's sort/order (BUG-351).
+  const statsQuery = useQuery({ ...submissionStatsQueryOptions(assessmentUuid), ...LIVE })
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
-  const queueQuery = useQuery(queueQueryOptions(assessmentUuid, queuePath))
+  const queueQuery = useQuery({
+    ...submissionsQueryOptions({
+      assessmentUuid,
+      page,
+      pageSize: 10,
+      search,
+      sortBy,
+      sortDir,
+      status: statusFilter,
+      lateOnly,
+    }),
+    ...LIVE,
+  })
 
   const stats = statsQuery.isSuccess ? statsQuery.data : null
   const itemAnalytics = itemAnalyticsQuery.isSuccess ? itemAnalyticsQuery.data : []
-  const queue = queueQuery.isSuccess ? queueQuery.data : { items: [], total: 0, page, page_size: 10, pages: 1 }
-  const selectedSubmissions = queue.items.filter(submission => selectedUuids.has(submission.submission_uuid))
+  const queue = queueQuery.isSuccess
+    ? queueQuery.data
+    : { items: [], total: 0, page, page_size: 10, pages: 1, has_more: false }
+  // A queue that shrank below the selected page answers with its last page.
+  if (queueQuery.isSuccess && queueQuery.data.page < page) setPage(queueQuery.data.page)
+  const queueItems = queue.items
+  const selectedSubmissions = queueItems.filter(submission => selectedUuids.has(submission.submission_uuid))
   const promptCounts = countItemActionPrompts(itemAnalytics)
-  const integritySummary = summarizeIntegrityEvents(queue.items)
+  const integritySummary = summarizeIntegrityEvents(queueItems)
 
   const cleanCourseUuid = courseUuid?.replace(/^course_/, '') ?? ''
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
@@ -175,18 +138,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const exportCsv = () => {
     startExportTransition(async () => {
       try {
-        const csv = await apiBody<string, 'text'>(`assessments/${assessmentUuid}/submissions/export`, {
-          responseType: 'text',
-        })
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const anchor = document.createElement('a')
-        anchor.href = url
-        anchor.download = `assessment-${assessmentUuid}-results.csv`
-        anchor.click()
-        URL.revokeObjectURL(url)
+        saveBlob(await exportGradesCSV(assessmentUuid, locale), `assessment-${assessmentUuid}-results.csv`)
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('exportFailed'))
+        toastApiError(error, { fallback: t('exportFailed') })
       }
     })
   }
@@ -221,13 +175,13 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         <ResultMetric
           icon={TrendingUp}
           label={t('averageScore')}
-          value={stats?.avg_score !== null && stats?.avg_score !== undefined ? `${stats.avg_score.toFixed(1)}%` : '--'}
+          value={stats?.avg_score !== null && stats?.avg_score !== undefined ? formatPercent(stats.avg_score) : '--'}
           accent="blue"
         />
         <ResultMetric
           icon={BookOpenCheck}
           label={t('passRate')}
-          value={stats?.pass_rate !== null && stats?.pass_rate !== undefined ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+          value={stats?.pass_rate !== null && stats?.pass_rate !== undefined ? formatPercent(stats.pass_rate) : '--'}
           accent="lime"
         />
       </div>
@@ -244,12 +198,17 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               <p className="text-muted-foreground text-xs">{t('queueBody')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{t('queueTotal', { count: queue.total })}</Badge>
+              <Badge variant="outline">
+                {queue.has_more
+                  ? t('queueTotalAtLeast', { count: queue.total })
+                  : t('queueTotal', { count: queue.total })}
+              </Badge>
               <Badge variant="outline">{t('queueSelected', { count: selectedUuids.size })}</Badge>
             </div>
           </div>
-          <div className="mt-4 grid gap-2 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem_10rem_auto]">
-            <div className="relative">
+          {/* UX-190: a wrapping row — the fixed 5-column grid overflowed a studio at 1380 px. */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <div className="relative min-w-[16rem] flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={search}
@@ -268,6 +227,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 setPage(1)
               }}
               aria-label={t('statusFilter')}
+              className="w-full sm:w-48"
             >
               <NativeSelectOption value="ALL">{t('filterAll')}</NativeSelectOption>
               <NativeSelectOption value="NEEDS_GRADING">{t('filterNeedsGrading')}</NativeSelectOption>
@@ -283,16 +243,30 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 setPage(1)
               }}
               aria-label={t('sortBy')}
+              className="w-full sm:w-48"
             >
               <NativeSelectOption value="submitted_at">{t('sortSubmitted')}</NativeSelectOption>
               <NativeSelectOption value="final_score">{t('sortScore')}</NativeSelectOption>
               <NativeSelectOption value="attempt_number">{t('sortAttempt')}</NativeSelectOption>
             </NativeSelect>
-            <Button variant="outline" onClick={() => setSortDir(value => (value === 'asc' ? 'desc' : 'asc'))}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSortDir(value => (value === 'asc' ? 'desc' : 'asc'))
+                setPage(1)
+              }}
+            >
               {sortDir === 'asc' ? <ArrowUp className="size-4" /> : <ArrowDown className="size-4" />}
               {sortDir === 'asc' ? t('sortAscending') : t('sortDescending')}
             </Button>
-            <Button variant={lateOnly ? 'default' : 'outline'} onClick={() => setLateOnly(value => !value)}>
+            <Button
+              variant={lateOnly ? 'default' : 'outline'}
+              aria-pressed={lateOnly}
+              onClick={() => {
+                setLateOnly(value => !value)
+                setPage(1)
+              }}
+            >
               {t('lateOnly')}
             </Button>
           </div>
@@ -332,14 +306,14 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {queue.items.length === 0 ? (
+                {queueItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-muted-foreground h-32 text-center">
                       {queueQuery.isLoading ? t('loadingQueue') : t('emptyQueue')}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  queue.items.map(submission => {
+                  queueItems.map(submission => {
                     const violations = getSubmissionViolations(submission)
                     return (
                       <TableRow key={submission.submission_uuid}>
@@ -353,7 +327,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                         <TableCell>
                           <div className="font-medium">{getSubmissionDisplayName(submission)}</div>
                           <div className="text-muted-foreground text-xs">
-                            {submission.user?.email ?? `#${submission.user_id}`}
+                            {submission.user?.email ?? submission.user_id}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -363,7 +337,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                           <Badge variant="outline">{releaseStateLabel(readReleaseState(submission), t)}</Badge>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : '--'}
+                          {typeof submission.final_score === 'number' ? formatPercent(submission.final_score) : '--'}
                         </TableCell>
                         <TableCell>
                           {violations.length > 0 ? (
@@ -445,11 +419,11 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         />
       </section>
 
-      {stats && stats.score_distribution.some(bucket => bucket.count > 0) ? (
+      {stats && stats.distribution.some(bucket => bucket.count > 0) ? (
         <div className="bg-card rounded-lg border p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+            <BarChart data={stats.distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
               <XAxis dataKey="range" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
@@ -468,7 +442,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         <Button
           type="button"
           variant="ghost"
-          className="flex h-auto w-full items-center justify-between p-5 text-left hover:bg-transparent"
+          className="flex h-auto w-full items-center justify-between gap-3 p-5 text-left whitespace-normal hover:bg-transparent"
           onClick={() => setAnalyticsExpanded(value => !value)}
         >
           <h3 className="text-sm font-semibold">{t('itemAnalyticsTitle')}</h3>
@@ -508,22 +482,28 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                   <TableBody className="divide-y">
                     {itemAnalytics.map((item, index) => {
                       const prompt = getItemActionPrompt(item)
-                      const marked = regradeCandidates.has(item.item_uuid)
+                      const marked = regradeCandidates.has(item.item_id)
                       return (
-                        <TableRow key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
+                        <TableRow key={item.item_id} className="hover:bg-muted/20 transition-colors">
                           <TableCell className="text-muted-foreground px-4 py-2.5">{index + 1}</TableCell>
                           <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
                             {item.title || '--'}
                           </TableCell>
-                          <TableCell className="text-muted-foreground px-4 py-2.5 text-xs tracking-wide uppercase">
-                            {item.kind.replace(/_/g, ' ')}
+                          <TableCell className="text-muted-foreground px-4 py-2.5 text-xs">
+                            {tStudio(
+                              `kindLabels.${ITEM_KIND_LABEL_KEYS[item.kind.toUpperCase() as UnifiedItemKind] ?? 'unknown'}`,
+                            )}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.correct_pct !== null ? <PercentBadge value={item.correct_pct} /> : '--'}
+                            {typeof item.correct_pct === 'number' ? (
+                              <PercentBadge value={item.correct_pct} format={formatPercent} />
+                            ) : (
+                              '--'
+                            )}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.discrimination_index !== null ? (
+                            {typeof item.discrimination_index === 'number' ? (
                               <DiscriminationBadge value={item.discrimination_index} />
                             ) : (
                               '--'
@@ -541,8 +521,8 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                               onClick={() => {
                                 setRegradeCandidates(current => {
                                   const next = new Set(current)
-                                  if (next.has(item.item_uuid)) next.delete(item.item_uuid)
-                                  else next.add(item.item_uuid)
+                                  if (next.has(item.item_id)) next.delete(item.item_id)
+                                  else next.add(item.item_id)
                                   return next
                                 })
                               }}
@@ -564,9 +544,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   )
 }
 
-function PercentBadge({ value }: { value: number }) {
+function PercentBadge({ value, format }: { value: number; format: (percent: number) => string }) {
   const color = value >= 70 ? 'text-lime-600' : value >= 40 ? 'text-amber-600' : 'text-red-600'
-  return <span className={cn('font-medium', color)}>{value.toFixed(1)}%</span>
+  return <span className={cn('font-medium', color)}>{format(value)}</span>
 }
 
 function DiscriminationBadge({ value }: { value: number }) {

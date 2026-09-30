@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_lecture_reviews\n           SET dismissed_suggestion_ids = array_append(\n                   array_remove(dismissed_suggestion_ids, $2), $2)\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "897c54aa798e8a8e9cdeef340808e8d486c341612f4e4d1c46018df4e790c9f6"
+}

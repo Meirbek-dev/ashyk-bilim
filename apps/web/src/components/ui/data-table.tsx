@@ -1,5 +1,6 @@
 'use client'
 
+import { csvBlob, saveBlob } from '@/lib/download'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
 
@@ -104,11 +105,6 @@ interface StoredDataTableState {
   globalFilter?: string
   columnVisibility?: ColumnVisibilityState
   pagination?: PaginationState
-}
-
-const escapeCsv = (value: unknown) => {
-  const normalized = value === null || value === undefined ? '' : String(value)
-  return `"${normalized.replace(/"/g, '""')}"`
 }
 
 const resolveUpdater = <TValue,>(updater: TValue | ((old: TValue) => TValue), old: TValue) =>
@@ -388,26 +384,18 @@ export default function DataTable<TData extends RowData>({
       const label =
         column.columnDef.meta?.label ??
         (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)
-      return escapeCsv(label)
+      return label
     })
 
     const bodyRows = sourceRows.map(row =>
-      exportableColumns.map(column => {
-        const value = column.columnDef.meta?.exportValue
+      exportableColumns.map(column =>
+        column.columnDef.meta?.exportValue
           ? column.columnDef.meta.exportValue(row.original as never)
-          : row.getValue(column.id)
-        return escapeCsv(value)
-      }),
+          : row.getValue(column.id),
+      ),
     )
 
-    const csv = [headerRow.join(','), ...bodyRows.map(row => row.join(','))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = csvFileName
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(csvBlob([headerRow, ...bodyRows]), csvFileName)
     toast.success(resolvedLabels.exportStarted)
   }
 
@@ -487,9 +475,11 @@ export default function DataTable<TData extends RowData>({
           {toolbarContent}
         </div>
         <div className="text-muted-foreground text-sm">
-          {totalFiltered > 0
+          {/* A server page without `totalRows` only knows its own rows; "1–25 of 25"
+              would contradict the caller's server-side count. */}
+          {totalFiltered > 0 && (!isServerPaginated || totalRows !== undefined)
             ? resolvedLabels.showingRows({ from, to, total: totalFiltered })
-            : resolvedLabels.visibleRows(0)}
+            : resolvedLabels.visibleRows(rows.length)}
         </div>
       </div>
 

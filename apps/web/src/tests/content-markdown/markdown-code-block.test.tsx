@@ -12,6 +12,9 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
 })
 
+// `MarkdownCodeBlock` localizes its copy-button label, so it needs a translator.
+vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+
 // Mock Shiki
 vi.mock('@/features/content-markdown/lib/shiki', () => ({
   highlightCode: vi.fn().mockResolvedValue('<pre><code>console.log("hi")</code></pre>'),
@@ -36,9 +39,9 @@ describe('MarkdownCodeBlock', () => {
     expect(screen.getByText('TypeScript')).toBeInTheDocument()
   })
 
-  it('shows Text as fallback when no language', () => {
+  it('shows the localized plain-text caption when no language (UX-309)', () => {
     render(<MarkdownCodeBlock code="some text" />)
-    expect(screen.getByText('Text')).toBeInTheDocument()
+    expect(screen.getByText('plainText')).toBeInTheDocument()
   })
 
   it('shows fallback pre while Shiki loads', () => {

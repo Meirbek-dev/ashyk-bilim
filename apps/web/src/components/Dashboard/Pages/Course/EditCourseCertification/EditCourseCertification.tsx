@@ -57,7 +57,7 @@ const CERTIFICATE_PATTERNS = [
 ] as const satisfies readonly { value: string; icon: LucideIcon }[]
 
 interface CourseCertificationResource {
-  certification_uuid: string
+  id: string
   config: AppCertification['certification']['config']
 }
 
@@ -198,16 +198,8 @@ function EditCourseCertification() {
   })
 
   const getInitialValues = useCallback((): FormValues => {
-    const getInstructorName = () => {
-      if ((courseStructure?.authors?.length ?? 0) > 0) {
-        const [author] = courseStructure.authors ?? []
-        if (!author) return ''
-        const firstName = author.user?.first_name || ''
-        const lastName = author.user?.last_name || ''
-        if (firstName || lastName) return `${firstName} ${lastName}`.trim()
-      }
-      return ''
-    }
+    // The roster lists the creator first (`creator/active`).
+    const getInstructorName = () => editorData.contributors.data?.find(c => c.role === 'creator')?.display_name ?? ''
 
     const config = (existingCertification?.config ?? {}) as Partial<AppCertification['certification']['config']>
     return {
@@ -218,7 +210,7 @@ function EditCourseCertification() {
       certificate_pattern: (config.certificate_pattern as FormValues['certificate_pattern']) || 'professional',
       certificate_instructor: config.certificate_instructor || getInstructorName(),
     }
-  }, [courseStructure, existingCertification, hasExistingCertification])
+  }, [courseStructure, editorData.contributors.data, existingCertification, hasExistingCertification])
 
   const serverValues = useMemo(() => {
     if (editorData.certifications.data === null || isLoading) {
@@ -308,33 +300,21 @@ function EditCourseCertification() {
         if (isCertificationEnabled) {
           if (existingCertification) {
             await updateCertification({
-              certification_uuid: existingCertification.certification_uuid,
+              certification_id: existingCertification.id,
               config,
-
-              options: {
-                courseUuid: courseStructure.course_uuid,
-                lastKnownUpdateDate: courseStructure.update_date,
-              },
             })
             return
           }
 
           await createCertification({
-            course_id: courseStructure.id ?? 0,
+            course_id: courseStructure.course_uuid,
             config,
-            options: {
-              courseUuid: courseStructure.course_uuid,
-              lastKnownUpdateDate: courseStructure.update_date,
-            },
           })
           return
         }
 
         if (existingCertification) {
-          await deleteCertification(existingCertification.certification_uuid, {
-            courseUuid: courseStructure.course_uuid,
-            lastKnownUpdateDate: courseStructure.update_date,
-          })
+          await deleteCertification(existingCertification.id)
         }
 
         return { success: true }
@@ -567,6 +547,7 @@ function EditCourseCertification() {
                         certificationType={certificationType}
                         certificatePattern={certificatePattern}
                         {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
+                        sample
                       />
                     </CardContent>
                   </Card>

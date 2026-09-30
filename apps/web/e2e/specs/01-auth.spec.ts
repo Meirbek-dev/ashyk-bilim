@@ -1,12 +1,14 @@
 /**
- * SPEC: Authentication flows
+ * SPEC: Authentication flows (v2 BFF)
  *
  * Covers:
  *  - Login with valid credentials
  *  - Login with invalid credentials shows error
- *  - Sign-up with a new account
- *  - Sign-up with a duplicate email shows error
+ *  - Client-side validation of the login form
  *  - Unauthenticated users are redirected to login
+ *  - Self-registration (`POST /auth/register`) followed by a login
+ *
+ * Password reset is still not part of v2 (DECISIONS.md 2026-09-12).
  */
 
 import { test, expect } from '../fixtures'
@@ -35,76 +37,28 @@ test.describe('Login', () => {
     expect(page.url()).toContain('/login')
   })
 
-  test('shows validation error when email is empty', async ({ page, loginPage }) => {
+  test('shows validation error when login is empty', async ({ page, loginPage }) => {
     await loginPage.goto()
     await loginPage.passwordInput.fill('somepassword')
     await loginPage.submitButton.click()
 
-    // A validation error for the email field should appear
-    await expect(page.getByText(/required|email/i).first()).toBeVisible()
+    // A validation error for the login field should appear
+    await expect(page.getByText(/required/i).first()).toBeVisible()
     expect(page.url()).toContain('/login')
   })
 
-  test('shows validation error when password too short', async ({ page, loginPage }) => {
+  test('shows validation error when password is empty', async ({ page, loginPage }) => {
     await loginPage.goto()
     await loginPage.emailInput.fill(USERS.admin.email)
-    await loginPage.passwordInput.fill('short')
     await loginPage.submitButton.click()
 
-    await expect(page.getByText(/password.*length|at least/i).first()).toBeVisible()
+    await expect(page.getByText(/required/i).first()).toBeVisible()
     expect(page.url()).toContain('/login')
   })
-})
 
-// ---------------------------------------------------------------------------
-// Sign-up
-// ---------------------------------------------------------------------------
-
-test.describe('Sign-up', () => {
-  // Use a unique email per run to avoid the "already exists" error
-  const uniqueEmail = () => `e2e-signup-${Date.now()}@test.local`
-
-  test('creates a new account and redirects', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    await signupPage.signup({
-      firstName: 'Test',
-      lastName: 'User',
-      email: uniqueEmail(),
-      password: 'TestUser1234!',
-    })
-
-    // After successful signup the app should redirect away from /signup
-    await page.waitForURL(url => !url.pathname.includes('/signup'), {
-      timeout: 15_000,
-    })
-    expect(page.url()).not.toContain('/signup')
-  })
-
-  test('shows error when email is already registered', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    // Use an email we know already exists (admin)
-    await signupPage.signup({
-      firstName: 'Dup',
-      lastName: 'User',
-      email: USERS.admin.email,
-      password: 'TestUser1234!',
-    })
-
-    await expect(signupPage.errorBanner).toBeVisible({ timeout: 10_000 })
-    expect(page.url()).toContain('/signup')
-  })
-
-  test('shows validation error when passwords do not match', async ({ page, signupPage }) => {
-    await signupPage.goto()
-    await signupPage.firstNameInput.fill('Test')
-    await signupPage.lastNameInput.fill('User')
-    await signupPage.emailInput.fill(uniqueEmail())
-    await signupPage.passwordInput.fill('Password1234!')
-    await signupPage.confirmPasswordInput.fill('DifferentPassword1234!')
-    await signupPage.submitButton.click()
-
-    await expect(page.getByText(/passwords.*(do not|don't) match/i).first()).toBeVisible()
-    expect(page.url()).toContain('/signup')
+  test('surfaces backend redirect errors from the Google flow', async ({ page, loginPage }) => {
+    await page.goto('/en/login?error=google-oauth-expired')
+    await expect(loginPage.errorBanner).toBeVisible()
   })
 })
 
@@ -118,6 +72,59 @@ test.describe('Auth guard', () => {
     await page.goto('/en/dash/courses')
     // Should be redirected to the login page
     await page.waitForURL(/\/login/, { timeout: 10_000 })
-    expect(page.url()).toContain('/login')
+    expect(page.url()).toContain('returnTo=')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Sign-up
+// ---------------------------------------------------------------------------
+
+test.describe('Sign-up', () => {
+  test('registers a new account, lands on login with a success message, then signs in', async ({
+    page,
+    signupPage,
+    loginPage,
+  }) => {
+    const stamp = Date.now()
+    const email = `e2e-signup-${stamp}@test.local`
+    const password = 'Signup1234!'
+
+    await signupPage.goto()
+    await signupPage.signup({
+      firstName: 'E2E',
+      lastName: 'Signup',
+      username: `e2e-signup-${stamp}`,
+      email,
+      password,
+    })
+
+    // Success: toast + the login page (no session is opened by registration).
+    await page.waitForURL(/\/login/, { timeout: 15_000 })
+    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible()
+
+    await loginPage.loginAndWait(email, password)
+    expect(page.url()).not.toContain('/login')
+  })
+
+  test('shows the taken-email error inline', async ({ page, signupPage }) => {
+    await signupPage.goto()
+    await signupPage.signup({
+      firstName: 'Dup',
+      lastName: 'User',
+      username: `e2e-dup-${Date.now()}`,
+      email: USERS.admin.email,
+      password: 'Signup1234!',
+    })
+    // `email-taken` lands on the email field as a field error.
+    await expect(signupPage.errorBanner).toBeVisible({ timeout: 10_000 })
+    expect(page.url()).toContain('/signup')
+  })
+
+  test('shows validation errors for an empty form', async ({ page, signupPage }) => {
+    await signupPage.goto()
+    await signupPage.submitButton.click()
+    await expect(page.getByText(/required/i).first()).toBeVisible()
+    expect(page.url()).toContain('/signup')
   })
 })

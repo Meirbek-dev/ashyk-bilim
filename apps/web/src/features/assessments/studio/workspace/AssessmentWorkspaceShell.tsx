@@ -21,10 +21,11 @@ export interface AssessmentWorkspaceNavItem {
 
 interface AssessmentWorkspaceShellProps {
   navItems: AssessmentWorkspaceNavItem[]
+  banner?: ReactNode
   renderView: (view: AssessmentWorkspaceView) => ReactNode
 }
 
-export function AssessmentWorkspaceShell({ navItems, renderView }: AssessmentWorkspaceShellProps) {
+export function AssessmentWorkspaceShell({ navItems, banner, renderView }: AssessmentWorkspaceShellProps) {
   const { activeView, saveLedger } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.Workspace')
   const activeItem = navItems.find(item => item.id === activeView)
@@ -32,7 +33,7 @@ export function AssessmentWorkspaceShell({ navItems, renderView }: AssessmentWor
   return (
     <div className="bg-muted/20 grid min-h-[calc(100vh-61px)] grid-cols-1 lg:grid-cols-[232px_minmax(0,1fr)]">
       <AssessmentWorkspaceNavigator items={navItems} />
-      <main className="bg-background min-w-0 border-l" aria-label={t('mainArea')}>
+      <section className="bg-background min-w-0 border-l" aria-label={t('mainArea')}>
         <div className="bg-background/95 sticky top-[61px] z-20 flex min-h-14 items-center justify-between gap-3 border-b px-4 backdrop-blur md:px-6">
           <div className="min-w-0">
             <p className="text-muted-foreground text-xs font-medium uppercase">{t('currentView')}</p>
@@ -43,9 +44,10 @@ export function AssessmentWorkspaceShell({ navItems, renderView }: AssessmentWor
         <div aria-live="polite" className="sr-only">
           {saveLedger.liveMessage}
         </div>
+        {banner}
         <AssessmentReadinessStrip />
         <section aria-label={activeItem?.label}>{renderView(activeView)}</section>
-      </main>
+      </section>
     </div>
   )
 }
@@ -204,7 +206,7 @@ function AssessmentReadinessStrip() {
                     )}
                     <div className="min-w-0">
                       <p className="truncate font-medium">{issue.message}</p>
-                      <p className="text-muted-foreground mt-0.5 truncate text-xs">{issue.why ?? issue.code}</p>
+                      {issue.why ? <p className="text-muted-foreground mt-0.5 truncate text-xs">{issue.why}</p> : null}
                     </div>
                   </div>
                 </button>

@@ -11,15 +11,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useSession } from '@/hooks/useSession'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { StatusFilter, SubmissionListProps } from '../types'
-
-const submissionListCopy = {
-  awaitingRelease: 'Awaiting Release',
-}
 
 export default function SubmissionList({
   submissions,
   total,
+  hasMore = false,
   pages,
   page,
   activeFilter,
@@ -38,7 +37,10 @@ export default function SubmissionList({
   const t = useTranslations('Features.Grading.Review.submissionList')
   const tReview = useTranslations('Features.Grading.Review')
   const tTable = useTranslations('Grading.Table')
+  // UX-099: the same «79,96 %» the learner sees, not a rounded «80%».
+  const percent = usePercentFormat()
   const locale = useLocale()
+  const { user } = useSession()
 
   return (
     <aside className="bg-muted/20 border-b p-4 lg:border-r lg:border-b-0">
@@ -60,7 +62,7 @@ export default function SubmissionList({
           >
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
-            <NativeSelectOption value="AWAITING_RELEASE">{submissionListCopy.awaitingRelease}</NativeSelectOption>
+            <NativeSelectOption value="AWAITING_RELEASE">{tReview('releaseStateAwaitingRelease')}</NativeSelectOption>
             <NativeSelectOption value="PENDING">{tTable('statusPending')}</NativeSelectOption>
             <NativeSelectOption value="GRADED">{tTable('statusGraded')}</NativeSelectOption>
             <NativeSelectOption value="PUBLISHED">{tTable('statusPublished')}</NativeSelectOption>
@@ -75,7 +77,9 @@ export default function SubmissionList({
       </div>
 
       <div className="text-muted-foreground mt-4 flex items-center justify-between text-xs">
-        <span>{t('totals.submissions', { count: total })}</span>
+        <span>
+          {hasMore ? t('totals.submissionsAtLeast', { count: total }) : t('totals.submissions', { count: total })}
+        </span>
         <span>{t('totals.selected', { count: selectedUuids.size })}</span>
       </div>
 
@@ -92,6 +96,8 @@ export default function SubmissionList({
             const selected = submission.submission_uuid === selectedUuid
             const displayName = getSubmissionDisplayName(submission)
             const releaseState = getReleaseState(submission.status)
+            // UX-193: the viewer's own attempt is theirs to see, never to grade.
+            const own = Boolean(user) && submission.user_id === user?.id
             return (
               <div
                 key={submission.submission_uuid}
@@ -102,7 +108,8 @@ export default function SubmissionList({
               >
                 <div className="flex items-start gap-2">
                   <Checkbox
-                    checked={selectedUuids.has(submission.submission_uuid)}
+                    checked={!own && selectedUuids.has(submission.submission_uuid)}
+                    disabled={own}
                     onCheckedChange={checked => onToggleSelected(submission.submission_uuid, checked)}
                     aria-label={t('selectSubmission', { name: displayName })}
                   />
@@ -113,7 +120,7 @@ export default function SubmissionList({
                   >
                     <div className="truncate text-sm font-medium">{displayName}</div>
                     <div className="text-muted-foreground truncate text-xs">
-                      {submission.user?.email ?? `User #${submission.user_id}`}
+                      {submission.user?.email ?? submission.user_id}
                     </div>
                     <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-xs">
                       <span>
@@ -123,7 +130,7 @@ export default function SubmissionList({
                       </span>
                       <span>{formatDate(submission.submitted_at ?? submission.updated_at, locale, t)}</span>
                       {typeof submission.final_score === 'number' ? (
-                        <span>{Math.round(submission.final_score)}%</span>
+                        <span>{percent(submission.final_score)}</span>
                       ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -137,6 +144,7 @@ export default function SubmissionList({
                               ? tReview('releaseStateVisible')
                               : tReview('releaseStateReturned')}
                       </Badge>
+                      {own ? <Badge variant="secondary">{t('ownAttempt')}</Badge> : null}
                       {submission.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
                       {needsTeacherAction(submission.status) ? <Badge variant="warning">{t('action')}</Badge> : null}
                     </div>
@@ -150,8 +158,14 @@ export default function SubmissionList({
 
       {pages > 1 ? (
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(current => current - 1)}>
-            <ChevronLeft className="size-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={t('previousPage')}
+            disabled={page <= 1}
+            onClick={() => onPageChange(current => current - 1)}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
           </Button>
           <span className="text-muted-foreground text-sm">
             {page} / {pages}
@@ -159,10 +173,11 @@ export default function SubmissionList({
           <Button
             variant="outline"
             size="sm"
+            aria-label={t('nextPage')}
             disabled={page >= pages}
             onClick={() => onPageChange(current => current + 1)}
           >
-            <ChevronRight className="size-4" />
+            <ChevronRight className="size-4" aria-hidden />
           </Button>
         </div>
       ) : null}

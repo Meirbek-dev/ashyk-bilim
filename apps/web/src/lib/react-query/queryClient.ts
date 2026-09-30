@@ -3,7 +3,7 @@
 import { MutationCache, QueryCache, QueryClient, environmentManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Mutation, Query } from '@tanstack/react-query'
-import { recoverBrowserSessionFrom401 } from '@/lib/api-client'
+import { handleBrowserUnauthenticated, isCredentialCheckCode } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { reportClientError, serializeClientError } from '@/services/telemetry/client'
 
@@ -15,8 +15,11 @@ function handle401(error: unknown): void {
       ? Number((error as Record<string, unknown>).status)
       : undefined
   if (status !== 401 || environmentManager.isServer()) return
+  // A wrong current password on a password change is a form error, not a
+  // lost session (api-client.ts applies the same rule at the fetch layer).
+  if (isCredentialCheckCode((error as Record<string, unknown>).code)) return
   const { pathname, search } = globalThis.location
-  void recoverBrowserSessionFrom401(`${pathname}${search}`).catch(() => undefined)
+  handleBrowserUnauthenticated(`${pathname}${search}`, (error as Record<string, unknown>).code)
 }
 
 interface ErrorMeta {

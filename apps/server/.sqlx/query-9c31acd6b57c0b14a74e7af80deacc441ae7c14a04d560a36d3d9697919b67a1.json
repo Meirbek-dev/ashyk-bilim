@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE course_discussions\n           SET content = COALESCE($2, content), status = COALESCE($3, status)\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c31acd6b57c0b14a74e7af80deacc441ae7c14a04d560a36d3d9697919b67a1"
+}

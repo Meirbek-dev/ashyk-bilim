@@ -7,7 +7,10 @@ import { getTranslations } from 'next-intl/server'
 import AppLink from '@/components/ui/AppLink'
 import { Layers } from 'lucide-react'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Badge } from '@/components/ui/badge'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 interface MetadataProps {
   params: Promise<{ locale: string; collectionid: string }>
@@ -16,7 +19,16 @@ interface MetadataProps {
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
   const t = await getTranslations({ locale: params.locale, namespace: 'General' })
-  const col = await getCollectionById(params.collectionid)
+  let col
+  try {
+    col = await getCollectionById(params.collectionid)
+  } catch (error) {
+    if (isApiError(error) && (error.status === 404 || error.status === 422)) {
+      const tErrors = await getTranslations({ locale: params.locale, namespace: 'Errors' })
+      return { title: `${tErrors('collectionNotFound')} - ${APP_NAME}`, robots: { index: false } }
+    }
+    throw error
+  }
 
   return {
     title: `${t('collection')}: ${col.name} - ${APP_NAME}`,
@@ -39,11 +51,33 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformCollectionPage(props: { params: Promise<{ collectionid: string }> }) {
+interface PageProps {
+  params: Promise<{ collectionid: string }>
+}
+
+// The fetch runs inside the boundary (Next 16: uncached data outside
+// <Suspense> blocks the route — UX-231).
+export default function PlatformCollectionPage(props: PageProps) {
+  return (
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
+      <CollectionContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function CollectionContent(props: PageProps) {
   const t = await getTranslations('General')
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
-  const col = await getCollectionById(collectionid)
+  let col
+  try {
+    col = await getCollectionById(collectionid)
+  } catch (error) {
+    // A plain not-found (or a malformed id, 422) is a page state, not an error boundary.
+    if (isApiError(error) && (error.status === 404 || error.status === 422))
+      return <ResourceNotFound type="collection" />
+    throw error
+  }
   const courses = (col.courses ?? []).filter(
     (course): course is AppCourse => typeof course === 'object' && course !== null,
   )
@@ -62,10 +96,13 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
           </Badge>
         </div>
 
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">{col.name}</h1>
+        {/* UX-278: a long unbroken word wraps instead of widening a phone page. */}
+        <h1 className="max-w-full text-4xl font-extrabold tracking-tight wrap-anywhere lg:text-5xl">{col.name}</h1>
 
         {col.description && (
-          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed md:text-lg">{col.description}</p>
+          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed wrap-anywhere md:text-lg">
+            {col.description}
+          </p>
         )}
       </div>
 

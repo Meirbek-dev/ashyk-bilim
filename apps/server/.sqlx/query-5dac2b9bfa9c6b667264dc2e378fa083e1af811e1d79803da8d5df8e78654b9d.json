@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT is_course_staff($1, $2) AS \"staff!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "staff!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5dac2b9bfa9c6b667264dc2e378fa083e1af811e1d79803da8d5df8e78654b9d"
+}

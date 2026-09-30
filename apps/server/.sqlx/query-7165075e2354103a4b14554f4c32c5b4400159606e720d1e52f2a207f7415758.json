@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.slug, r.priority, rp.permission AS \"permission?\"\n           FROM user_roles ur\n           JOIN roles r ON r.id = ur.role_id\n           LEFT JOIN role_permissions rp ON rp.role_id = r.id\n           WHERE ur.user_id = $1\n           ORDER BY r.priority DESC, rp.permission",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "priority",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "permission?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "role_permissions",
+            "name": "permission"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7165075e2354103a4b14554f4c32c5b4400159606e720d1e52f2a207f7415758"
+}

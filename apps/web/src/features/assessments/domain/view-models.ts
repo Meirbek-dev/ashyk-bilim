@@ -12,6 +12,7 @@ import type { ReleaseState } from './release'
 import type { NormalizedScore } from './score'
 import type { PolicyView } from './policy'
 import type { AssessmentItem } from './items'
+import type { GradedItem } from '@/lib/api/generated/zod'
 
 /** The three product surfaces every assessment kind must support. */
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT'
@@ -71,9 +72,21 @@ export interface ReviewQueueItemViewModel {
  * View model for the Student Attempt surface.
  * Shared by all kinds; the kind provides the task/question content.
  */
+/** UX-116: one released attempt the learner may review on the result card. */
+export interface AttemptReview {
+  attemptNumber: number
+  percent: number | null
+  itemScores: Record<string, GradedItem>
+  generalFeedback: string | null
+  /** Integrity-annulled: the breakdown is not a verdict. */
+  annulled: boolean
+}
+
 export interface AttemptViewModel {
   surface: 'ATTEMPT'
   kind: AssessmentKind
+  /** UX-213: off the access list — own attempts read-only, no new attempts. */
+  accessClosed?: boolean
   assessmentUuid: string
   activityUuid: string
   title: string
@@ -84,6 +97,10 @@ export interface AttemptViewModel {
   score: NormalizedScore
   policy: PolicyView
   items: AssessmentItem[]
+  /** Released per-item grades keyed by item id (the wire `GradedItem`: score, verdict code, teacher prose); empty until released. */
+  itemScores: Record<string, GradedItem>
+  /** UX-116: every released attempt, newest first — the card reviews the grade-of-record one. */
+  attemptReviews: AttemptReview[]
   /** Student may edit answers. */
   canEdit: boolean
   /** Student may save a draft. */
@@ -94,6 +111,8 @@ export interface AttemptViewModel {
   isReturnedForRevision: boolean
   /** Score and feedback are visible to the student. */
   isResultVisible: boolean
+  /** Effective passing threshold (percent), null when the policy has none. */
+  passingScore: number | null
   /** Backend reason codes explaining why start/save/submit actions are disabled. */
   disabledActionReasons: string[]
   serverNow: string | null
@@ -112,6 +131,18 @@ export interface AttemptViewModel {
   canViewResult: boolean
   /** Student can start a revision (returned attempt). */
   canStartRevision: boolean
+  /** Score cap the next attempt would carry (`attempt_penalty_percent` × attempts used), null when uncapped. */
+  nextAttemptCapPercent: number | null
+  /** Cap the shown attempt carried (`attempt_penalty_percent` × earlier attempts), null when uncapped or hidden. */
+  attemptCapPercent: number | null
+  /** Late penalty deducted from the shown attempt, null when none or hidden (UX-060). */
+  latePenaltyPct: number | null
+  /** Why the server closed the shown attempt; null when the learner submitted. */
+  autoSubmitReason: 'time_expired' | 'integrity_violation' | null
+  /** Teacher's overall comment on the shown attempt, null until released (UX-063). */
+  generalFeedback: string | null
+  /** UX-123: a newer hand-in awaiting the teacher while the card shows the released grade of record. */
+  pendingAttemptNumber: number | null
   /**
    * Backend-recommended primary action for this student right now.
    * Drive the primary CTA from this value.
@@ -154,12 +185,15 @@ export interface ValidationIssue {
  */
 export function assessmentTypeToKind(assessmentType: string): AssessmentKind | null {
   switch (assessmentType) {
+    case 'exam':
     case 'EXAM': {
       return 'TYPE_EXAM'
     }
+    case 'code_challenge':
     case 'CODE_CHALLENGE': {
       return 'TYPE_CODE_CHALLENGE'
     }
+    case 'quiz':
     case 'QUIZ': {
       return 'TYPE_CUSTOM'
     }

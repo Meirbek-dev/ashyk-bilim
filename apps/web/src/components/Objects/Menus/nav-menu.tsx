@@ -262,7 +262,8 @@ export default function NavBar() {
 
         {/* ── Center: desktop search ───────────────────────────────── */}
         <div className="hidden flex-1 justify-center lg:flex">
-          <SearchBar className="w-full max-w-md" />
+          {/* Keyed by route: a query typed on one page must not survive into (and refire on) the next (BUG-033b). */}
+          <SearchBar key={pathname} className="w-full max-w-md" />
         </div>
 
         {/* Spacer for md-only viewports where search is hidden */}
@@ -313,7 +314,7 @@ export default function NavBar() {
                   <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                     {t('search')}
                   </Label>
-                  <SearchBar isMobile className="w-full" />
+                  <SearchBar key={pathname} isMobile className="w-full" />
                 </section>
 
                 <Separator />

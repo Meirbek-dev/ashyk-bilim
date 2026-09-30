@@ -11,21 +11,22 @@ import {
   Laptop2,
   Lightbulb,
   Link as LinkIcon,
-  Loader2,
   MapPin,
   Users,
   X,
 } from 'lucide-react'
 import { useUserCourses } from '@/features/users/hooks/useUsers'
-import { InlineError } from '@/components/ui/error-state'
+import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
+import { useSession } from '@/hooks/useSession'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import type { FC } from 'react'
 import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
-import Image from 'next/image'
+import NextImage from '@components/ui/NextImage'
+import type { ProfileSection, ProfileSections } from '@/lib/api/generated/zod'
 
 interface UserProfileClientProps {
   userData: UserProfileData
@@ -33,77 +34,31 @@ interface UserProfileClientProps {
 }
 
 interface UserProfileData {
-  avatar_image?: string | null
+  avatar_key?: string | null
   bio?: string | null
   details?: Record<string, ProfileDetail>
   first_name?: string
-  id: number
+  id: string
   last_name?: string
   middle_name?: string | null
-  user_uuid: string
+  username: string
 }
 
 interface ProfileDetail {
   icon: string
-  id?: number | string
+  id?: string
   text: string
 }
 
-interface ProfileImage {
-  caption?: string
-  url: string
-}
-
-interface ProfileLink {
-  title: string
-  url: string
-}
-
-interface ProfileSkill {
-  level?: string
-  name: string
-}
-
-interface ProfileExperience {
-  current?: boolean
-  description?: string
-  endDate?: string
-  organization?: string
-  startDate?: string
-  title?: string
-}
-
-interface ProfileEducation {
-  current?: boolean
-  degree?: string
-  description?: string
-  endDate?: string
-  field?: string
-  institution?: string
-  startDate?: string
-}
-
-interface ProfileAffiliation {
-  description?: string
-  logoUrl?: string
-  name: string
-}
-
-interface ProfileSectionView {
-  affiliations?: ProfileAffiliation[]
-  content?: string
-  education?: ProfileEducation[]
-  experiences?: ProfileExperience[]
-  images?: ProfileImage[]
-  links?: ProfileLink[]
-  skills?: ProfileSkill[]
-  title?: string
-  type: string
-}
-
-interface UserProfileView {
-  sections?: ProfileSectionView[]
-}
+/** The server's profile builder document (`users.profile`, BUG-361). */
+type UserProfileView = ProfileSections
+type ProfileSectionView = ProfileSection
+type ProfileImage = Extract<ProfileSection, { type: 'image-gallery' }>['images'][number]
+type ProfileLink = Extract<ProfileSection, { type: 'links' }>['links'][number]
+type ProfileSkill = Extract<ProfileSection, { type: 'skills' }>['skills'][number]
+type ProfileExperience = Extract<ProfileSection, { type: 'experience' }>['experiences'][number]
+type ProfileEducation = Extract<ProfileSection, { type: 'education' }>['education'][number]
+type ProfileAffiliation = Extract<ProfileSection, { type: 'affiliation' }>['affiliations'][number]
 
 const ICON_MAP = {
   briefcase: Briefcase,
@@ -127,7 +82,7 @@ function IconComponent({ iconName }: { iconName: string }) {
 }
 
 const ImageModal: FC<{
-  image: { url: string; caption?: string }
+  image: ProfileImage
   onClose: () => void
 }> = ({ image, onClose }) => {
   return (
@@ -140,7 +95,7 @@ const ImageModal: FC<{
           <X className="h-6 w-6" />
         </button>
         {image.url ? (
-          <Image
+          <NextImage
             src={image.url}
             alt={image.caption || ''}
             width={800}
@@ -154,17 +109,32 @@ const ImageModal: FC<{
   )
 }
 
+/** `YYYY-MM-DD` (builder date picker) → «сентябрь 2024 г.» in the page locale (UX-270). */
+function useProfileDateRange() {
+  const t = useTranslations('UserProfilePage')
+  const format = useFormatter()
+  const month = (value: string | null | undefined) => {
+    if (!value) return ''
+    const date = new Date(`${value}T00:00:00Z`)
+    return Number.isNaN(date.getTime())
+      ? value
+      : format.dateTime(date, { year: 'numeric', month: 'long', timeZone: 'UTC' })
+  }
+  return (item: { startDate: string; endDate?: string | null | undefined; current: boolean }) =>
+    `${month(item.startDate)} – ${item.current ? t('present') : month(item.endDate)}`
+}
+
 function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const t = useTranslations('UserProfilePage')
-  const [selectedImage, setSelectedImage] = useState<{
-    url: string
-    caption?: string
-  } | null>(null)
-  const userCoursesQuery = useUserCourses(userData.id, {
-    enabled: Boolean(userData.id),
+  const dateRange = useProfileDateRange()
+  const [selectedImage, setSelectedImage] = useState<ProfileImage | null>(null)
+  const userCoursesQuery = useUserCourses(userData.username, {
+    enabled: Boolean(userData.username),
   })
   const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
-  const isLoadingCourses = userCoursesQuery.isPending
+  // Same progress label as home/courses: the cards need the viewer's trail (UX-053).
+  const { isAuthenticated } = useSession()
+  const { data: trailData, isLoading: isTrailLoading } = useTrailCurrent({ enabled: isAuthenticated })
 
   return (
     <div className="text-foreground container mx-auto py-8">
@@ -179,10 +149,8 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
           <div className="border-background overflow-hidden rounded-full border-4 shadow-lg">
             <UserAvatar
               size="3xl"
-              avatar_url={
-                userData.avatar_image ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image) : ''
-              }
-              {...(!userData.avatar_image && { predefined_avatar: 'empty' })}
+              avatar_url={userData.avatar_key ? getUserAvatarMediaDirectory(userData.id, userData.avatar_key) : ''}
+              {...(!userData.avatar_key && { predefined_avatar: 'empty' })}
               userId={userData.id}
               showProfilePopup
             />
@@ -191,15 +159,15 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
         {/* Affiliation Logos */}
         <div className="absolute -top-12 right-8 flex items-center gap-4">
-          {profile.sections?.map(
+          {profile.sections.map(
             (section: ProfileSectionView) =>
               section.type === 'affiliation' &&
-              section.affiliations?.map(
+              section.affiliations.map(
                 (affiliation: ProfileAffiliation, index: number) =>
                   typeof affiliation.logoUrl === 'string' &&
                   affiliation.logoUrl.trim() !== '' && (
                     <div key={index} className="border-background bg-card rounded-lg border-2 p-2 shadow-lg">
-                      <Image
+                      <NextImage
                         src={affiliation.logoUrl}
                         alt={affiliation.name}
                         width={64}
@@ -249,8 +217,38 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                 )}
               </div>
 
+              {/* Courses authored by this user (catalog filtered by creator; v2 has no per-user list). */}
+              {userCourses.length > 0 ? (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-xl font-semibold">{t('coursesTitle')}</h2>
+                  <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+                    {userCourses.map(course => {
+                      const courseThumbnailData: CourseThumbnailData = {
+                        course_uuid: course.course_uuid,
+                        name: course.name ?? '',
+                        update_date: course.update_date ?? null,
+                        description: course.description ?? '',
+                        thumbnail_image: course.thumbnail_image ?? '',
+                        creator_id: course.creator_id,
+                        contributor_ids: course.contributor_ids,
+                      }
+
+                      return (
+                        <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                          <CourseThumbnail
+                            course={courseThumbnailData}
+                            trailData={trailData}
+                            trailLoading={isAuthenticated && isTrailLoading}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Profile sections from profile builder */}
-              {profile.sections && profile.sections.length > 0 ? (
+              {profile.sections.length > 0 ? (
                 <div>
                   {profile.sections.map((section: ProfileSectionView, index: number) => (
                     <div key={index} className="mb-8">
@@ -259,7 +257,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                       {/* Add Image Gallery section */}
                       {section.type === 'image-gallery' && (
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                          {(section.images ?? []).map((image: ProfileImage, imageIndex: number) => {
+                          {section.images.map((image: ProfileImage, imageIndex: number) => {
                             if (typeof image.url !== 'string' || !image.url.trim()) return null
                             return (
                               <div
@@ -269,7 +267,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                                   setSelectedImage(image)
                                 }}
                               >
-                                <Image
+                                <NextImage
                                   src={image.url}
                                   alt={image.caption || ''}
                                   width={300}
@@ -291,7 +289,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'links' && (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          {(section.links ?? []).map((link: ProfileLink, linkIndex: number) => (
+                          {section.links.map((link: ProfileLink, linkIndex: number) => (
                             <a
                               key={linkIndex}
                               href={link.url}
@@ -308,7 +306,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'skills' && (
                         <div className="flex flex-wrap gap-2">
-                          {(section.skills ?? []).map((skill: ProfileSkill, skillIndex: number) => (
+                          {section.skills.map((skill: ProfileSkill, skillIndex: number) => (
                             <span
                               key={skillIndex}
                               className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm"
@@ -322,13 +320,11 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'experience' && (
                         <div className="space-y-4">
-                          {(section.experiences ?? []).map((exp: ProfileExperience, expIndex: number) => (
+                          {section.experiences.map((exp: ProfileExperience, expIndex: number) => (
                             <div key={expIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{exp.title}</h3>
                               <p className="text-muted-foreground">{exp.organization}</p>
-                              <p className="text-muted-foreground text-sm">
-                                {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
-                              </p>
+                              <p className="text-muted-foreground text-sm">{dateRange(exp)}</p>
                               {exp.description ? <p className="text-muted-foreground mt-2">{exp.description}</p> : null}
                             </div>
                           ))}
@@ -337,15 +333,13 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'education' && (
                         <div className="space-y-4">
-                          {(section.education ?? []).map((edu: ProfileEducation, eduIndex: number) => (
+                          {section.education.map((edu: ProfileEducation, eduIndex: number) => (
                             <div key={eduIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{edu.institution}</h3>
                               <p className="text-muted-foreground">
                                 {edu.degree} {t('in')} {edu.field}
                               </p>
-                              <p className="text-muted-foreground text-sm">
-                                {edu.startDate} - {edu.current ? 'Present' : edu.endDate}
-                              </p>
+                              <p className="text-muted-foreground text-sm">{dateRange(edu)}</p>
                               {edu.description ? <p className="text-muted-foreground mt-2">{edu.description}</p> : null}
                             </div>
                           ))}
@@ -354,11 +348,11 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
                       {section.type === 'affiliation' && (
                         <div className="space-y-4">
-                          {(section.affiliations ?? []).map((affiliation: ProfileAffiliation, affIndex: number) => (
+                          {section.affiliations.map((affiliation: ProfileAffiliation, affIndex: number) => (
                             <div key={affIndex} className="border-border border-l-2 pl-4">
                               <div className="flex items-start gap-4">
                                 {typeof affiliation.logoUrl === 'string' && affiliation.logoUrl.trim() !== '' ? (
-                                  <Image
+                                  <NextImage
                                     src={affiliation.logoUrl}
                                     alt={affiliation.name}
                                     width={48}
@@ -375,63 +369,6 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                               </div>
                             </div>
                           ))}
-                        </div>
-                      )}
-
-                      {section.type === 'courses' && (
-                        <div>
-                          {userCoursesQuery.isError ? (
-                            <InlineError
-                              description={t('courseSection.errorLoadingCourses')}
-                              error={userCoursesQuery.error}
-                            />
-                          ) : isLoadingCourses ? (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 className="h-8 w-8 animate-spin" />
-                            </div>
-                          ) : userCourses.length > 0 ? (
-                            <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
-                              {userCourses.map(course => {
-                                const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
-                                const mappedAuthors: AppCourseAuthor[] | undefined = authors?.flatMap(author => {
-                                  if (!author.user) return []
-                                  return [
-                                    {
-                                      authorship: author.authorship,
-                                      authorship_status: author.authorship_status,
-                                      user: {
-                                        id: author.user.id,
-                                        user_uuid: author.user.user_uuid,
-                                        avatar_image: author.user.avatar_image ?? '',
-                                        first_name: author.user.first_name,
-                                        ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
-                                        last_name: author.user.last_name,
-                                        username: author.user.username,
-                                      },
-                                    },
-                                  ]
-                                })
-                                const courseThumbnailData: CourseThumbnailData = {
-                                  course_uuid: courseWithoutAuthors.course_uuid,
-                                  name: courseWithoutAuthors.name,
-                                  update_date: courseWithoutAuthors.update_date,
-                                  description: description ?? '',
-                                  thumbnail_image: thumbnail_image ?? '',
-                                  ...(mappedAuthors ? { authors: mappedAuthors } : {}),
-                                }
-
-                                return (
-                                  <div key={course.id} className="mx-auto w-full max-w-[300px]">
-                                    <CourseThumbnail course={courseThumbnailData} />
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-muted-foreground py-8 text-center">
-                              {t('courseSection.noCoursesFound')}
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>

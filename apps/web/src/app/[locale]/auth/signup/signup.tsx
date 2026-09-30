@@ -1,230 +1,248 @@
 'use client'
 
-import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
+import { useActionState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/navigation'
+import { toast } from 'sonner'
+import * as v from 'valibot'
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@components/ui/field'
 import { AuthErrorBanner, AuthSubmitButton } from '@components/auth/AuthForm'
-import { getAbsoluteUrl, getPublicAPIUrl } from '@services/config/config'
-import { signupAction } from '@/app/actions/auth'
 import PasswordInput from '@components/ui/custom/password-input'
-import { SiGoogle } from '@icons-pack/react-simple-icons'
-import { Separator } from '@components/ui/separator'
-import { passwordSchema } from '@/lib/auth/schemas'
-import { useActionState, useTransition } from 'react'
-import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
 import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'
-import { Input } from '@components/ui/input'
-import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
-import * as v from 'valibot'
+import { getAbsoluteUrl } from '@services/config/config'
+import { registerAction } from '@/app/actions/auth'
+import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 
-const SIGNUP_ERROR_MAP: Record<string, string> = {
-  email_taken: 'emailTaken',
-  username_taken: 'usernameTaken',
-}
+const USERNAME_RE = /^[A-Za-z0-9._-]{3,48}$/u
+const FIELDS = ['username', 'email', 'password', 'confirmPassword', 'firstName', 'lastName'] as const
+type FieldName = (typeof FIELDS)[number]
 
 interface SignupState {
+  values: Record<FieldName, string>
   error: string | null
-  fieldErrors: {
-    firstName?: string
-    lastName?: string
-    email?: string
-    password?: string
-    confirmPassword?: string
-  }
+  fieldErrors: Partial<Record<FieldName, string>>
+  /** Bumped per submit: the form re-mounts so `defaultValue` re-applies (Base UI warns otherwise). */
+  version: number
 }
 
-function SignUpClient() {
+const EMPTY_VALUES: SignupState['values'] = {
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  firstName: '',
+  lastName: '',
+}
+const INITIAL_STATE: SignupState = { values: EMPTY_VALUES, error: null, fieldErrors: {}, version: 0 }
+
+/** Wire field names → form field names (server field errors land on the right input). */
+const WIRE_TO_FIELD: Record<string, FieldName> = {
+  username: 'username',
+  email: 'email',
+  password: 'password',
+  first_name: 'firstName',
+  last_name: 'lastName',
+}
+
+/**
+ * Self-registration against `POST /auth/register` (DECISIONS.md 2026-09-12).
+ * Success → toast + the login page; the verification code arrives by email
+ * and is confirmed on `/auth/verify-email` (login does not depend on it).
+ */
+function SignupClient() {
   const t = useTranslations('Auth.Signup')
   const validationT = useTranslations('Validation')
-  const [isPendingGoogle, startGoogleTransition] = useTransition()
+  const errorsT = useTranslations('Errors')
+  const locale = useLocale()
+  const router = useRouter()
 
   const schema = v.pipe(
     v.object({
-      firstName: v.pipe(v.string(), v.minLength(1, validationT('required'))),
-      lastName: v.pipe(v.string(), v.minLength(1, validationT('required'))),
-      email: v.pipe(v.string(), v.email(validationT('invalidEmail'))),
-      password: passwordSchema(validationT),
+      firstName: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(100)),
+      lastName: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(100)),
+      username: v.pipe(
+        v.string(),
+        v.trim(),
+        v.minLength(1, validationT('required')),
+        v.regex(USERNAME_RE, t('usernameRule')),
+      ),
+      email: v.pipe(
+        v.string(),
+        v.trim(),
+        v.minLength(1, validationT('required')),
+        v.email(validationT('invalidEmail')),
+      ),
+      password: v.pipe(
+        v.string(),
+        v.minLength(8, validationT('passwordTooShort')),
+        v.maxLength(200),
+        v.check(meetsPasswordPolicy, errorsT('fields.password-policy')),
+      ),
       confirmPassword: v.string(),
     }),
     v.forward(
       v.partialCheck(
         [['password'], ['confirmPassword']],
-        data => data.password === data.confirmPassword,
-        validationT('passwordsDontMatch'),
+        input => input.password === input.confirmPassword,
+        validationT('passwordsDoNotMatch'),
       ),
       ['confirmPassword'],
     ),
   )
 
   const [state, action, isPending] = useActionState(
-    async (_prev: SignupState, formData: FormData): Promise<SignupState> => {
-      const result = v.safeParse(schema, {
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        confirmPassword: formData.get('confirmPassword'),
-      })
-
-      if (!result.success) {
-        const flat = v.flatten(result.issues)
-        const firstNameError = flat.nested?.firstName?.[0]
-        const lastNameError = flat.nested?.lastName?.[0]
-        const emailError = flat.nested?.email?.[0]
-        const passwordError = flat.nested?.password?.[0]
-        const confirmPasswordError = flat.nested?.confirmPassword?.[0]
-        return {
-          error: null,
-          fieldErrors: {
-            ...(firstNameError ? { firstName: firstNameError } : {}),
-            ...(lastNameError ? { lastName: lastNameError } : {}),
-            ...(emailError ? { email: emailError } : {}),
-            ...(passwordError ? { password: passwordError } : {}),
-            ...(confirmPasswordError ? { confirmPassword: confirmPasswordError } : {}),
-          },
+    async (prev: SignupState, formData: FormData): Promise<SignupState> => {
+      const version = prev.version + 1
+      const values = Object.fromEntries(
+        FIELDS.map(name => [name, String(formData.get(name) ?? '')]),
+      ) as SignupState['values']
+      const parsed = v.safeParse(schema, values)
+      if (!parsed.success) {
+        const flat = v.flatten<typeof schema>(parsed.issues)
+        const fieldErrors: SignupState['fieldErrors'] = {}
+        for (const name of FIELDS) {
+          const message = flat.nested?.[name]?.[0]
+          if (message) fieldErrors[name] = message
         }
+        return { values, error: null, fieldErrors, version }
       }
 
-      const { firstName, lastName, email, password } = result.output
-      const response = await signupAction({
-        email,
-        firstName,
-        lastName,
-        password,
-      })
-
-      if (!response.ok) {
-        const code = response.signupCode
-        const msgKey = code && SIGNUP_ERROR_MAP[code] ? SIGNUP_ERROR_MAP[code] : null
-        return {
-          error: msgKey ? t(msgKey) : t('errorSomethingWentWrong'),
-          fieldErrors: {},
+      const result = await registerAction({ ...parsed.output, locale })
+      if (!result.ok) {
+        const fieldErrors: SignupState['fieldErrors'] = {}
+        for (const [wire, code] of Object.entries(result.fieldErrors ?? {})) {
+          const name = WIRE_TO_FIELD[wire]
+          if (!name) continue
+          const key = `fields.${code}`
+          fieldErrors[name] = errorsT.has(key) ? errorsT(key) : errorsT('fields.invalid')
         }
+        if (result.code === 'username-taken') fieldErrors.username = errorsT('codes.username-taken')
+        if (result.code === 'email-taken') fieldErrors.email = errorsT('codes.email-taken')
+        const codeKey = `codes.${result.code}`
+        const banner =
+          Object.keys(fieldErrors).length > 0 ? null : errorsT.has(codeKey) ? errorsT(codeKey) : t('failed')
+        return { values, error: banner, fieldErrors, version }
       }
 
-      return { error: null, fieldErrors: {} }
+      toast.success(t('success'), { description: t('successDescription') })
+      router.push('/auth/login')
+      return INITIAL_STATE
     },
-    { error: null, fieldErrors: {} },
+    INITIAL_STATE,
   )
 
-  const handleGoogleSignIn = () => {
-    startGoogleTransition(() => {
-      const frontendCallback = getAbsoluteUrl('/redirect_from_auth')
-      const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google/authorize`)
-      authorizeUrl.searchParams.set('callback', frontendCallback)
-      globalThis.location.href = authorizeUrl.toString()
-    })
-  }
+  // UX-255: `useActionState` keeps the previous result until the action settles —
+  // a stale «Обязательно» under a now-filled field is masked while pending (as login, UX-083).
+  const fieldErrors: SignupState['fieldErrors'] = isPending ? {} : state.fieldErrors
 
-  const anyPending = isPending || isPendingGoogle
+  const field = (name: FieldName, label: string, input: React.ReactNode, hint?: string) => (
+    <Field key={name}>
+      <FieldLabel>{label}</FieldLabel>
+      <FieldContent>{input}</FieldContent>
+      {hint ? <FieldDescription>{hint}</FieldDescription> : null}
+      <FieldError>{fieldErrors[name]}</FieldError>
+    </Field>
+  )
 
   return (
-    <AuthCard className="max-w-md">
+    <AuthCard>
       <Link href={getAbsoluteUrl('/')}>
         <AuthLogo />
       </Link>
-      <p className="mt-4 text-xl font-semibold tracking-tight">{t('title')}</p>
+      <h1 className="mt-8 text-center text-xl font-semibold">{t('heading')}</h1>
+      <p className="text-muted-foreground mt-1 mb-4 text-center text-sm">{t('subtitle')}</p>
 
-      <Button className="mt-8 w-full gap-3" onClick={handleGoogleSignIn} disabled={anyPending}>
-        <SiGoogle />
-        {t('continueWithGoogle')}
-      </Button>
-
-      <div className="my-7 flex w-full items-center justify-center overflow-hidden">
-        <Separator />
-        <span className="px-2 text-sm">{t('or')}</span>
-        <Separator />
-      </div>
-
-      <form className="w-full space-y-4" action={action}>
-        {state.error ? <AuthErrorBanner message={state.error} /> : null}
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field>
-            <FieldLabel>{t('firstName')}</FieldLabel>
-            <FieldContent>
-              <Input
-                name="firstName"
-                type="text"
-                placeholder={t('firstNamePlaceholder')}
-                autoComplete="given-name"
-                className="w-full"
-              />
-            </FieldContent>
-            <FieldError>{state.fieldErrors.firstName}</FieldError>
-          </Field>
-
-          <Field>
-            <FieldLabel>{t('lastName')}</FieldLabel>
-            <FieldContent>
-              <Input
-                name="lastName"
-                type="text"
-                placeholder={t('lastNamePlaceholder')}
-                autoComplete="family-name"
-                className="w-full"
-              />
-            </FieldContent>
-            <FieldError>{state.fieldErrors.lastName}</FieldError>
-          </Field>
+      {state.error ? (
+        <div className="mb-4">
+          <AuthErrorBanner message={state.error} />
         </div>
+      ) : null}
 
-        <Field>
-          <FieldLabel>{t('email')}</FieldLabel>
-          <FieldContent>
+      <form key={state.version} className="w-full space-y-4" action={action} noValidate>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field(
+            'firstName',
+            t('firstName'),
             <Input
-              name="email"
-              type="email"
-              placeholder={t('emailPlaceholder')}
-              autoComplete="email"
+              name="firstName"
+              defaultValue={state.values.firstName}
+              autoComplete="given-name"
               className="w-full"
-            />
-          </FieldContent>
-          <FieldError>{state.fieldErrors.email}</FieldError>
-        </Field>
-
-        <Field>
-          <FieldLabel>{t('password')}</FieldLabel>
-          <FieldContent>
-            <PasswordInput
-              name="password"
-              placeholder={t('passwordPlaceholder')}
-              autoComplete="new-password"
+            />,
+          )}
+          {field(
+            'lastName',
+            t('lastName'),
+            <Input
+              name="lastName"
+              defaultValue={state.values.lastName}
+              autoComplete="family-name"
               className="w-full"
-            />
-          </FieldContent>
-          <FieldError>{state.fieldErrors.password}</FieldError>
-        </Field>
+            />,
+          )}
+        </div>
+        {field(
+          'username',
+          t('username'),
+          <Input
+            name="username"
+            defaultValue={state.values.username}
+            autoComplete="username"
+            placeholder={t('usernamePlaceholder')}
+            className="w-full"
+          />,
+          t('usernameRule'),
+        )}
+        {field(
+          'email',
+          t('email'),
+          <Input
+            name="email"
+            type="email"
+            defaultValue={state.values.email}
+            autoComplete="email"
+            placeholder={t('emailPlaceholder')}
+            className="w-full"
+          />,
+        )}
+        {field(
+          'password',
+          t('password'),
+          <PasswordInput
+            name="password"
+            autoComplete="new-password"
+            placeholder={t('passwordPlaceholder')}
+            // Kept across a validation round-trip like the other fields (never after a server error).
+            defaultValue={state.error ? '' : state.values.password}
+            className="w-full"
+          />,
+          t('passwordRule'),
+        )}
+        {field(
+          'confirmPassword',
+          t('confirmPassword'),
+          <PasswordInput
+            name="confirmPassword"
+            autoComplete="new-password"
+            defaultValue={state.error ? '' : state.values.confirmPassword}
+            className="w-full"
+          />,
+        )}
 
-        <Field>
-          <FieldLabel>{t('confirmPassword')}</FieldLabel>
-          <FieldContent>
-            <PasswordInput
-              name="confirmPassword"
-              placeholder={t('confirmPasswordPlaceholder')}
-              autoComplete="new-password"
-              className="w-full"
-            />
-          </FieldContent>
-          <FieldError>{state.fieldErrors.confirmPassword}</FieldError>
-        </Field>
-
-        <AuthSubmitButton
-          isPending={anyPending}
-          label={t('createAccount')}
-          pendingLabel={t('loading')}
-          className="mt-2 w-full"
-        />
+        <AuthSubmitButton isPending={isPending} label={t('submit')} pendingLabel={t('submitting')} />
       </form>
 
-      <p className="mt-5 text-center text-sm">
-        {t('alreadyHaveAccount')}
-        <Link href={getAbsoluteUrl('/login')} className="text-muted-foreground ml-1 underline">
-          {t('signIn')}
+      <p className="text-muted-foreground mt-5 text-center text-sm">
+        {t('haveAccount')}{' '}
+        <Link href={getAbsoluteUrl('/login')} className="text-primary underline">
+          {t('login')}
         </Link>
       </p>
     </AuthCard>
   )
 }
 
-export default SignUpClient
+export default SignupClient

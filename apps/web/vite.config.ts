@@ -136,7 +136,23 @@ export default defineConfig({
       'unicorn',
     ],
     rules: {
-      'react/react-compiler': 'warn',
+      // Match the repository's one-declaration-per-statement convention.
+      'one-var': ['warn', 'never'],
+      // Compiler diagnostics are provided by the React Hooks JS plugin.
+      'react-hooks-js/static-components': 'error',
+      'react-hooks-js/use-memo': 'error',
+      'react-hooks-js/preserve-manual-memoization': 'error',
+      'react-hooks-js/incompatible-library': 'warn',
+      'react-hooks-js/immutability': 'error',
+      'react-hooks-js/globals': 'error',
+      'react-hooks-js/refs': 'error',
+      'react-hooks-js/set-state-in-effect': 'error',
+      'react-hooks-js/error-boundaries': 'error',
+      'react-hooks-js/purity': 'error',
+      'react-hooks-js/set-state-in-render': 'error',
+      'react-hooks-js/unsupported-syntax': 'warn',
+      'react-hooks-js/config': 'error',
+      'react-hooks-js/gating': 'error',
       'no-shadow': 'warn',
       'typescript/no-explicit-any': 'warn',
       'prefer-named-capture-group': 'off',
@@ -360,6 +376,10 @@ export default defineConfig({
       typeCheck: true,
     },
     jsPlugins: [
+      {
+        name: 'react-hooks-js',
+        specifier: 'eslint-plugin-react-hooks',
+      },
       {
         name: 'vite-plus',
         specifier: 'vite-plus/oxlint-plugin',

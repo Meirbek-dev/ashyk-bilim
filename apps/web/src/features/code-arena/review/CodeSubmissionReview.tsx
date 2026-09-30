@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor'
 import { CodeDiffViewer } from './CodeDiffViewer'
+import { useJudge0Languages } from '@/features/assessments/registry/code-challenge/hooks'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +22,7 @@ type ReviewTab = 'code' | 'diff' | 'diagnostics'
 export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmissionReviewProps) {
   const t = useTranslations('Activities.CodeChallenges')
   const [activeTab, setActiveTab] = useState<ReviewTab>('code')
+  const languages = useJudge0Languages()
 
   if (answer?.kind !== 'CODE') {
     return (
@@ -34,31 +36,41 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
   const passed = latestRun?.passed ?? 0
   const total = latestRun?.total ?? 0
   const accepted = total > 0 && passed === total
+  // UX-226: an attempt with no test run (migrated, or graded by hand) has no
+  // verdict to show — no «требует проверки · 0/0»; the language by name, never a raw id.
+  const tested = total > 0
+  const languageName = languages.data?.find(language => language.id === answer.language)?.name ?? null
 
   return (
     <div className="grid gap-4 select-none">
       {/* Submission status overview header card */}
       <div className="bg-card flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4 shadow-xs">
         <div className="flex items-center gap-3">
-          {accepted ? (
+          {!tested ? (
+            <Code2 className="text-muted-foreground size-6" />
+          ) : accepted ? (
             <CheckCircle2 className="size-6 animate-bounce fill-lime-600/10 text-lime-600" />
           ) : (
             <XCircle className="size-6 fill-rose-600/10 text-rose-600" />
           )}
           <div>
             <h3 className="text-foreground text-sm font-semibold">
-              {accepted ? t('solutionAccepted') : t('submissionRequiresReview')}
+              {!tested ? t('submittedCode') : accepted ? t('solutionAccepted') : t('submissionRequiresReview')}
             </h3>
-            <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-              {t('evaluatedLanguageId', { language: answer.language })}
-            </p>
+            {languageName ? (
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('evaluatedLanguageId', { language: languageName })}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant={accepted ? 'success' : 'destructive'} className="text-[10px] font-bold uppercase">
-            {t('testCasesPassed', { passed, total })}
-          </Badge>
+          {tested ? (
+            <Badge variant={accepted ? 'success' : 'destructive'} className="text-[10px] font-bold uppercase">
+              {t('testCasesPassed', { passed, total })}
+            </Badge>
+          ) : null}
           {typeof latestRun?.score === 'number' ? (
             <Badge variant="outline" className="text-[10px] font-bold">
               {t('gradeValue', { score: Math.round(latestRun.score) })}

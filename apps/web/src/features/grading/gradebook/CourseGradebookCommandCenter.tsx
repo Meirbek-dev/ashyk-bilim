@@ -1,11 +1,15 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { courseGradebookExportUrl, courseGradebookQueryOptions } from '@/features/grading/queries/grading.query'
+import { courseGradebookQueryOptions, downloadGradebookCsv } from '@/features/grading/queries/grading.query'
+import { useCourseGradingEvents } from '@/features/grading/queries/use-grading-events'
+import { useApiError } from '@/hooks/useApiError'
+import { saveBlob } from '@/lib/download'
 import {
   buildGradebookRollups,
   emptyGradebookCell,
@@ -13,6 +17,7 @@ import {
   gradebookCellKey,
   gradebookLearnerName,
 } from '@/features/grading/domain'
+import { reviewTarget } from '@/features/grading/domain/wire'
 import type {
   ActivityProgressCell,
   CourseGradebookResponse,
@@ -28,9 +33,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import GradebookToolbar, { labelActivityType } from './GradebookToolbar'
 import GradebookActivityCell, { progressStateLabelKey } from './GradebookActivityCell'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface CourseGradebookCommandCenterProps {
   courseUuid: string
+}
+
+interface EmptyKeys {
+  title: 'emptyTitle' | 'noLearnersTitle'
+  description: 'emptyDescription' | 'noLearnersDescription'
 }
 
 const ROLLUP_KINDS: GradebookRollupKind[] = ['activity_category', 'cohort', 'learner', 'activity']
@@ -38,36 +49,49 @@ const PAGE_SIZE = 25
 
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const locale = useLocale()
+  const { handleApiError, toastApiError } = useApiError()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
+  // Grades landing elsewhere arrive over the course stream; polling is the fallback.
+  const { live, accessLost } = useCourseGradingEvents(courseUuid)
   const [page, setPage] = useState(() => normalizePage(searchParams.get('page')))
-  const [filters, setFilters] = useState<GradebookFilters>({
+  const [chosenFilters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
     search: searchParams.get('search') ?? '',
     activityType: searchParams.get('activityType') ?? 'all',
   })
   const gradebookQueryParams = useMemo(() => {
-    const trimmedSearch = filters.search.trim()
+    const trimmedSearch = chosenFilters.search.trim()
     return {
       page,
       pageSize: PAGE_SIZE,
-      activityType: filters.activityType,
-      savedFilter: filters.savedFilter,
+      activityType: chosenFilters.activityType,
+      savedFilter: chosenFilters.savedFilter,
       ...(trimmedSearch ? { search: trimmedSearch } : {}),
     }
-  }, [filters.activityType, filters.savedFilter, filters.search, page])
+  }, [chosenFilters.activityType, chosenFilters.savedFilter, chosenFilters.search, page])
   const { data, error, isError, isLoading, refetch } = useQuery(
-    courseGradebookQueryOptions(courseUuid, gradebookQueryParams),
+    courseGradebookQueryOptions(courseUuid, gradebookQueryParams, { live }),
   )
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
-
+  // The implicit default ("needs grading", no `filter` in the URL) would show
+  // an empty table when nothing needs review — fall back to "all" then.
+  const filters = useMemo<GradebookFilters>(
+    () =>
+      searchParams.get('filter') === null &&
+      chosenFilters.savedFilter === 'needs_grading' &&
+      data?.summary.needs_grading_count === 0
+        ? { ...chosenFilters, savedFilter: 'all' }
+        : chosenFilters,
+    [chosenFilters, data?.summary.needs_grading_count, searchParams],
+  )
   const handleFiltersChange = useCallback(
     (newFilters: GradebookFilters) => {
       setFilters(newFilters)
       const params = new URLSearchParams(searchParams.toString())
-      setParam(params, 'filter', newFilters.savedFilter === 'needs_grading' ? '' : newFilters.savedFilter)
+      setParam(params, 'filter', newFilters.savedFilter)
       setParam(params, 'search', newFilters.search)
       setParam(params, 'activityType', newFilters.activityType === 'all' ? '' : newFilters.activityType)
       params.delete('page')
@@ -105,37 +129,20 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     return filterGradebookStudents(data, visibleActivities, cellMap, filters)
   }, [cellMap, data, filters, visibleActivities])
 
-  const visibleKeySet = useMemo(
-    () =>
-      new Set(
-        visibleStudents.flatMap(student =>
-          visibleActivities.map(activity => gradebookCellKey(student.id, activity.id)),
-        ),
-      ),
-    [visibleActivities, visibleStudents],
-  )
-  const selectedCells = useMemo(
-    () =>
-      [...selectedKeys]
-        .filter(key => visibleKeySet.has(key))
-        .map(key => cellMap.get(key))
-        .filter((cell): cell is ActivityProgressCell => Boolean(cell)),
-    [cellMap, selectedKeys, visibleKeySet],
-  )
-
   if (isLoading) return <div className="text-muted-foreground text-sm">{t('loading')}</div>
 
   if (isError) {
+    // UX-258: the problem+json code, localized — never the server's English `detail`.
     return (
       <div role="alert" className="text-destructive text-sm">
-        {error instanceof Error ? error.message : t('loadError')}
+        {handleApiError(error, { fallback: t('loadError') }).message}
       </div>
     )
   }
 
   if (!data) return <div className="text-muted-foreground text-sm">{t('unavailable')}</div>
 
-  const openReview = (activityId: number, submissionUuid?: string | null) => {
+  const openReview = (activityId: string, submissionUuid?: string | null) => {
     const activity = data.activities.find(item => item.id === activityId)
     if (!activity?.activity_uuid) return
     const cleanCourse = courseUuid.replace(/^course_/, '')
@@ -145,15 +152,16 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   }
 
   const openCell = (cell: ActivityProgressCell) => {
-    if (!cell.latest_submission_uuid) return
-    openReview(cell.activity_id, cell.latest_submission_uuid)
+    const target = reviewTarget(cell)
+    if (!target) return
+    openReview(cell.activity_id, target)
   }
 
   const openTeacherAction = (action: TeacherAction) => {
     openReview(action.activity_id, action.submission_uuid)
   }
 
-  const openActivityReview = (activityId: number) => {
+  const openActivityReview = (activityId: string) => {
     const activity = data.activities.find(item => item.id === activityId)
     if (!activity?.activity_uuid) return
     const cleanCourse = courseUuid.replace(/^course_/, '')
@@ -161,17 +169,32 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     router.push(`/dash/courses/${cleanCourse}/activity/${cleanActivity}/review`)
   }
 
+  // UX-297: a course nobody has joined yet is not a filter miss (the list is filtered client-side).
+  const emptyKeys: EmptyKeys =
+    data.students.length === 0
+      ? { title: 'noLearnersTitle', description: 'noLearnersDescription' }
+      : { title: 'emptyTitle', description: 'emptyDescription' }
+
+  const exportCsv = async () => {
+    try {
+      const blob = await downloadGradebookCsv(courseUuid, locale)
+      saveBlob(blob, `gradebook-${courseUuid}.csv`)
+      toast.success(t('exportDone', { count: data.students.length }))
+    } catch (error) {
+      toastApiError(error)
+    }
+  }
+
   return (
-    <div className="space-y-5">
+    // UX-216: grading access lost mid-session — nothing stays clickable while it is confirmed.
+    <div className="space-y-5" inert={accessLost}>
       <GradebookToolbar
         data={data}
         filters={filters}
         activityTypes={activityTypes}
-        selectedCount={selectedCells.length}
+        visibleStudentCount={visibleStudents.length}
         onFiltersChange={handleFiltersChange}
-        onExport={() => {
-          globalThis.location.assign(courseGradebookExportUrl(courseUuid))
-        }}
+        onExport={() => void exportCsv()}
         onRefresh={() => void refetch()}
       />
 
@@ -182,6 +205,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
       {isMobile ? (
         <MobileGradebookList
           students={visibleStudents}
+          emptyKeys={emptyKeys}
           activities={visibleActivities}
           cellMap={cellMap}
           onOpenCell={openCell}
@@ -212,8 +236,8 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
               {visibleStudents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleActivities.length + 1} className="h-32 text-center">
-                    <div className="text-sm font-medium">{t('emptyTitle')}</div>
-                    <div className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</div>
+                    <div className="text-sm font-medium">{t(emptyKeys.title)}</div>
+                    <div className="text-muted-foreground mt-1 text-xs">{t(emptyKeys.description)}</div>
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -226,28 +250,25 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                   {visibleActivities.map(activity => {
                     const key = gradebookCellKey(student.id, activity.id)
                     const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
-                    const selected = selectedKeys.has(key)
                     return (
                       <GradebookActivityCell
                         key={key}
                         cell={cell}
-                        selected={selected}
                         labels={{
                           actionRequired: t('actionRequired'),
                           attempts: t('attempts', { count: cell.attempt_count }),
                           late: t('late'),
-                          selectCell: t('selectCell'),
                           state: t(progressStateLabelKey(cell.state)),
+                          // UX-146: a scored attempt waits for a release; otherwise only when the
+                          // pending attempt is not the one the cell ranks (BUG-175).
+                          pendingAttempt:
+                            cell.pending_attempt != null && cell.awaiting_release
+                              ? t('awaitingReleaseAttempt', { attempt: cell.pending_attempt })
+                              : cell.pending_attempt != null && cell.latest_submission_status !== 'PENDING'
+                                ? t('pendingAttempt', { attempt: cell.pending_attempt })
+                                : null,
                         }}
                         onOpen={() => openCell(cell)}
-                        onSelect={checked => {
-                          setSelectedKeys(current => {
-                            const next = new Set(current)
-                            if (checked) next.add(key)
-                            else next.delete(key)
-                            return next
-                          })
-                        }}
                       />
                     )
                   })}
@@ -301,11 +322,13 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
 function MobileGradebookList({
   students,
+  emptyKeys,
   activities,
   cellMap,
   onOpenCell,
 }: {
   students: GradebookStudent[]
+  emptyKeys: EmptyKeys
   activities: GradebookActivity[]
   cellMap: Map<string, ActivityProgressCell>
   onOpenCell: (cell: ActivityProgressCell) => void
@@ -314,8 +337,8 @@ function MobileGradebookList({
   if (students.length === 0) {
     return (
       <div className="rounded-lg border p-6 text-center">
-        <p className="text-sm font-medium">{t('emptyTitle')}</p>
-        <p className="text-muted-foreground mt-1 text-xs">{t('emptyDescription')}</p>
+        <p className="text-sm font-medium">{t(emptyKeys.title)}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t(emptyKeys.description)}</p>
       </div>
     )
   }
@@ -350,7 +373,9 @@ function MobileGradebookList({
                     <span className="text-muted-foreground block text-xs">{t(progressStateLabelKey(cell.state))}</span>
                   </span>
                   {cell.teacher_action_required ? (
-                    <span className="text-xs font-medium">{t('submissionReview')}</span>
+                    <span className="text-xs font-medium">
+                      {t(cell.awaiting_release ? 'releaseGrade' : 'submissionReview')}
+                    </span>
                   ) : null}
                 </Button>
               ))}
@@ -369,7 +394,7 @@ function TeacherActionsPanel({
 }: {
   data: CourseGradebookResponse
   onOpenAction: (action: TeacherAction) => void
-  onOpenActivity: (activityId: number) => void
+  onOpenActivity: (activityId: string) => void
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
   const actions = data.teacher_actions.slice(0, 6)
@@ -378,7 +403,7 @@ function TeacherActionsPanel({
   return (
     <section className="rounded-lg border p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">{t('summary.needsGrading')}</h2>
+        <h2 className="text-sm font-semibold">{t('teacherActions')}</h2>
         <span className="text-muted-foreground text-xs">{data.teacher_actions.length}</span>
       </div>
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -391,7 +416,9 @@ function TeacherActionsPanel({
           >
             <span className="block truncate text-sm font-medium">{action.student_name}</span>
             <span className="text-muted-foreground mt-1 block truncate text-xs">{action.activity_name}</span>
-            <span className="mt-2 inline-flex text-xs font-medium">{t('submissionReview')}</span>
+            <span className="mt-2 inline-flex text-xs font-medium">
+              {t(action.awaiting_release ? 'releaseGrade' : 'submissionReview')}
+            </span>
           </button>
         ))}
       </div>
@@ -415,7 +442,7 @@ function TeacherActionsPanel({
 }
 
 function uniqueActionActivities(actions: TeacherAction[]) {
-  const byActivity = new Map<number, Pick<TeacherAction, 'activity_id' | 'activity_name'>>()
+  const byActivity = new Map<string, Pick<TeacherAction, 'activity_id' | 'activity_name'>>()
   for (const action of actions) {
     byActivity.set(action.activity_id, {
       activity_id: action.activity_id,
@@ -427,6 +454,7 @@ function uniqueActionActivities(actions: TeacherAction[]) {
 
 function RollupPanel({ data }: { data: CourseGradebookResponse }) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const formatPercent = usePercentFormat()
   const [kind, setKind] = useState<GradebookRollupKind>('activity_category')
   const rows = useMemo(() => buildGradebookRollups(data, kind), [data, kind])
 
@@ -454,9 +482,9 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
                 <div className="text-muted-foreground mt-1 text-xs">
                   {row.averageScore === null
                     ? t('noScore')
-                    : t('averageScore', { score: Math.round(row.averageScore) })}
+                    : t('averageScore', { score: formatPercent(row.averageScore) })}
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
                   <RollupMetric label={t('summary.needsGrading')} value={row.needsGrading} />
                   <RollupMetric label={t('summary.overdue')} value={row.overdue} />
                   <RollupMetric label={t('summary.notStarted')} value={row.notStarted} />
@@ -474,7 +502,7 @@ function RollupMetric({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="font-semibold">{value}</div>
-      <div className="text-muted-foreground truncate">{label}</div>
+      <div className="text-muted-foreground">{label}</div>
     </div>
   )
 }

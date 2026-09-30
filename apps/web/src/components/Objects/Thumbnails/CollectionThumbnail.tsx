@@ -11,19 +11,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { deleteCollection } from '@services/courses/collections'
+import { deleteCollection } from '@/lib/api/generated/collections/collections'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Crown, Layers, Loader2, Trash2 } from 'lucide-react'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { getAbsoluteUrl } from '@services/config/config'
-import { useState, useTransition } from 'react'
+import { useApiError } from '@/hooks/useApiError'
 import { Badge } from '@components/ui/badge'
 import { Button } from '@components/ui/button'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface PropsType {
   collection: AppCollection
@@ -109,18 +110,18 @@ function CollectionThumbnail({ collection }: PropsType) {
       <Link
         href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
         className="border-border/50 relative block aspect-[16/9] w-full overflow-hidden border-b"
+        aria-label={collection.name ?? ''}
       >
         <CollectionMosaic courses={collection.courses} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       </Link>
 
-      <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <CollectionDeleteAction
-          collection_uuid={collection.collection_uuid ?? ''}
-          collection={collection}
-          canDelete={canDelete}
-        />
-      </div>
+      {/* UX-119: a learner can never delete — no disabled icon to hover over. */}
+      {canDelete && (
+        <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <CollectionDeleteAction collection_uuid={collection.collection_uuid ?? ''} collection={collection} />
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
@@ -152,72 +153,68 @@ function CollectionThumbnail({ collection }: PropsType) {
 function CollectionDeleteAction({
   collection_uuid,
   collection,
-  canDelete,
 }: {
   collection_uuid: string
   collection: AppCollection
-  canDelete: boolean
 }) {
   const t = useTranslations('Components.CollectionThumbnail')
-  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const [isOpen, setIsOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
 
-  async function handleDelete() {
-    startTransition(async () => {
-      await deleteCollection(collection_uuid)
-      await revalidateTags(['collections'])
+  // UX-124: apiJson from the client (BUG-035) — the grid is a client query, so
+  // drop it and the server seed; no router.refresh().
+  const remove = useMutation({
+    mutationFn: () => deleteCollection(collection_uuid),
+    onSuccess: async () => {
       setIsOpen(false)
-      router.refresh()
-    })
-  }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.collections.list() })
+      toast.success(t('deleted', { collectionName: collection.name ?? '' }))
+      await revalidateTags(['collections'])
+    },
+    onError: error => toastApiError(error, { fallback: t('deleteFailed') }),
+  })
+  const isPending = remove.isPending
 
   return (
-    <PermissionTooltip enabled={canDelete} action="delete">
-      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-        <AlertDialogTrigger
-          render={
-            <Button
-              variant="secondary"
-              size="icon"
-              disabled={!canDelete}
-              className={cn(
-                'h-8 w-8 bg-background/90 text-muted-foreground shadow-sm backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground',
-                !canDelete && 'cursor-not-allowed opacity-40',
-              )}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          }
-        />
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label={t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}
+            className="bg-background/90 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground h-8 w-8 shadow-sm backdrop-blur-sm"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        }
+      />
 
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending} />
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('deleting')}
-                </>
-              ) : (
-                t('deleteButtonText')
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </PermissionTooltip>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending} />
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
+            onClick={() => remove.mutate()}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('deleting')}
+              </>
+            ) : (
+              t('deleteButtonText')
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

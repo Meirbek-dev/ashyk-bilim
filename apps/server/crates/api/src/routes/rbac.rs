@@ -1,0 +1,231 @@
+use ab_core::id::UserId;
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+
+use crate::detach::detached;
+use crate::dto::rbac::{
+    AssignRoleRequest, CreateRoleRequest, Role, SetRolePermissionsRequest, UpdateRoleRequest,
+};
+use crate::error::{ApiResult, Problem};
+use crate::extract::{CurrentActor, Path, ValidJson};
+use crate::state::AppState;
+
+/// All roles with their grants (requires `role:read:platform`).
+#[utoipa::path(
+    get,
+    path = "/rbac/roles",
+    tag = "rbac",
+    responses(
+        (status = 200, description = "Roles", body = [Role]),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn list_roles(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<Vec<Role>>> {
+    let roles = state.rbac.list_roles(&actor).await?;
+    Ok(Json(roles.into_iter().map(Into::into).collect()))
+}
+
+/// Assign a role to a user (requires `role:manage:platform`). Live sessions
+/// of the user pick the new grants up immediately.
+#[utoipa::path(
+    post,
+    path = "/users/{user_id}/roles",
+    tag = "rbac",
+    params(("user_id" = UserId, Path, description = "Target user")),
+    request_body = AssignRoleRequest,
+    responses(
+        (status = 204, description = "Assigned"),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown user or role", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn assign_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(user_id): Path<UserId>,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<AssignRoleRequest>::parse(&body)?;
+    // Grant → propagate → audit outlive the connection (BUG-214).
+    detached(async move {
+        state
+            .rbac
+            .assign_role(&actor, user_id, &request.role)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Remove a role from a user (requires `role:manage:platform`).
+#[utoipa::path(
+    delete,
+    path = "/users/{user_id}/roles/{slug}",
+    tag = "rbac",
+    params(
+        ("user_id" = UserId, Path, description = "Target user"),
+        ("slug" = String, Path, description = "Role slug"),
+    ),
+    responses(
+        (status = 204, description = "Removed"),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown user or role", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "`last-admin`", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn unassign_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path((user_id, slug)): Path<(UserId, String)>,
+) -> ApiResult<StatusCode> {
+    detached(async move {
+        state.rbac.unassign_role(&actor, user_id, &slug).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Create a custom role (requires `role:manage:platform`).
+#[utoipa::path(
+    post,
+    path = "/rbac/roles",
+    tag = "rbac",
+    request_body = CreateRoleRequest,
+    responses(
+        (status = 204, description = "Created"),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "`role-slug-taken`", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<CreateRoleRequest>::parse(&body)?;
+    // Detached (BUG-313 sweep): work after the first commit outlives a
+    // hang-up.
+    detached(async move {
+        state
+            .rbac
+            .create_role(
+                &actor,
+                &request.slug,
+                &request.display_name,
+                request.description.as_deref(),
+                request.priority,
+            )
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Update a custom role's metadata (system roles are seed-managed).
+#[utoipa::path(
+    patch,
+    path = "/rbac/roles/{slug}",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    request_body = UpdateRoleRequest,
+    responses(
+        (status = 204, description = "Updated"),
+        (status = 404, description = "Unknown or system role", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn update_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<UpdateRoleRequest>::parse(&body)?;
+    state
+        .rbac
+        .update_role(
+            &actor,
+            &slug,
+            request.display_name.as_deref(),
+            request.description.as_deref(),
+            request.priority,
+        )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Delete a custom role; holders' live sessions lose it immediately.
+#[utoipa::path(
+    delete,
+    path = "/rbac/roles/{slug}",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "System role", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_role(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+) -> ApiResult<StatusCode> {
+    detached(async move {
+        state.rbac.delete_role(&actor, &slug).await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Replace a custom role's grant set; holders' sessions update live.
+#[utoipa::path(
+    put,
+    path = "/rbac/roles/{slug}/permissions",
+    tag = "rbac",
+    params(("slug" = String, Path, description = "Role slug")),
+    request_body = SetRolePermissionsRequest,
+    responses(
+        (status = 204, description = "Replaced"),
+        (status = 403, description = "System role", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Unparseable grant", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn set_role_permissions(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(slug): Path<String>,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    // UX-311: permission before the body.
+    ab_domain::identity::RbacAdminService::require_manage_roles(&actor)?;
+    let request = ValidJson::<SetRolePermissionsRequest>::parse(&body)?;
+    detached(async move {
+        state
+            .rbac
+            .set_role_permissions(&actor, &slug, request.permissions)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}

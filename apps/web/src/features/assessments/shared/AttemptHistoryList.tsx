@@ -1,7 +1,7 @@
 'use client'
 
 import { History } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import type { SubmissionStatus } from '@/features/grading/domain'
@@ -34,6 +34,7 @@ export default function AttemptHistoryList({
   className,
 }: AttemptHistoryListProps) {
   const t = useTranslations('Components.AttemptHistoryList')
+  const format = useFormatter()
   const resolvedTitle = title ?? t('attemptHistory')
   const resolvedEmptyLabel = emptyLabel ?? t('noAttemptsYet')
   return (
@@ -55,7 +56,9 @@ export default function AttemptHistoryList({
                     {item.status ? <SubmissionStatusBadge status={item.status} /> : null}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : item.metaLabel}
+                    {item.submittedAt
+                      ? format.dateTime(new Date(item.submittedAt), { dateStyle: 'medium', timeStyle: 'short' })
+                      : item.metaLabel}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">

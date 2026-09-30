@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -14,6 +14,8 @@ import { runStudentActivityAction } from '@/features/student-activity/api/runtim
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import { useApiError } from '@/hooks/useApiError'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 type RuntimeNavItem = NonNullable<StudentActivityRuntime['next']>
 type RuntimeActionId = StudentActivityRuntime['primary_action']['id']
@@ -45,6 +47,8 @@ export default function BottomActionBar({
 }: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout()
   const outlineProgress = useMemo(() => getOutlineProgress(runtime), [runtime])
+  // Once complete the primary CTA *is* "next" — a second next chevron beside it is a duplicate.
+  const nextIsPrimary = !bottomBarAction && runtime.primary_action.id === 'next_activity'
 
   // ACTIVE_ATTEMPT: the AssessmentLayout renders its own action controls
   if (mode === 'ACTIVE_ATTEMPT' || focusMode) return null
@@ -65,7 +69,7 @@ export default function BottomActionBar({
           )}
         </div>
 
-        <NavChevron courseUuid={courseUuid} item={runtime.next ?? null} side="next" />
+        {nextIsPrimary ? <div /> : <NavChevron courseUuid={courseUuid} item={runtime.next ?? null} side="next" />}
       </div>
     </div>
   )
@@ -126,7 +130,9 @@ function RuntimeCTA({
           )
         }
       >
-        <span className="min-w-0 truncate">{t('next')}</span>
+        <span className="min-w-0 truncate">
+          {runtime.next?.title ? t('nextActivityTooltip', { activityName: runtime.next.title }) : t('next')}
+        </span>
         <ChevronRight className="size-4" />
       </Button>
     )
@@ -139,7 +145,7 @@ function RuntimeCTA({
     return (
       <Button
         className={PRIMARY_BUTTON_CLASSNAME}
-        onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
+        onClick={() => completion.run(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
         disabled={!action.enabled || completion.isPending || waitingForReadCompletion}
         title={disabledReason}
       >
@@ -149,18 +155,9 @@ function RuntimeCTA({
     )
   }
 
-  if (action.id !== 'none' && action.enabled) {
-    return (
-      <Button
-        className={PRIMARY_BUTTON_CLASSNAME}
-        onClick={() =>
-          document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      >
-        <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
-      </Button>
-    )
-  }
+  // start / continue / submit / revise: the inline workspace on this page
+  // owns the primary control — a second one here only scrolled to it (UX-036).
+  if (action.id !== 'none' && action.enabled) return null
 
   return (
     <Button
@@ -257,28 +254,53 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('ActivityPage')
+  const { toastApiError } = useApiError()
   const activityUuid = runtime.activity?.uuid ?? ''
-  return useMutation({
+  // UX-133: `isPending` lands on the next render — a double click fired two
+  // POSTs and two toasts. The ref closes the gap synchronously.
+  const inFlight = useRef(false)
+  const refreshActivity = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.studentActivity.runtime(
+        cleanUuid(courseUuid, 'course_'),
+        cleanUuid(activityUuid, 'activity_'),
+      ),
+    })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+    router.refresh()
+  }
+  const mutation = useMutation({
     mutationFn: (command: 'mark_complete' | 'unmark_complete') =>
       runStudentActivityAction(cleanUuid(courseUuid, 'course_'), cleanUuid(activityUuid, 'activity_'), {
         command,
         payload: {},
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.studentActivity.runtime(
-          cleanUuid(courseUuid, 'course_'),
-          cleanUuid(activityUuid, 'activity_'),
-        ),
-      })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
-      router.refresh()
+      await refreshActivity()
       toast.success(t('activityCompleted'))
     },
-    onError: error => {
-      toast.error(error instanceof Error ? error.message : t('markCompleteError'))
+    // UX-133: problem+json codes reach the toast (`activity not found` was raw English).
+    // BUG-221 nit: a 404 here means the lesson was unpublished under the open
+    // tab — name that instead of the generic «resource not found», and (UX-276)
+    // drop the stale lesson, outline and mark button with it.
+    onError: async error => {
+      if (isApiError(error) && error.status === 404) {
+        toast.error(t('activityGone'))
+        await refreshActivity()
+        return
+      }
+      toastApiError(error, { fallback: t('markCompleteError') })
+    },
+    onSettled: () => {
+      inFlight.current = false
     },
   })
+  const run = (command: 'mark_complete' | 'unmark_complete') => {
+    if (inFlight.current) return
+    inFlight.current = true
+    mutation.mutate(command)
+  }
+  return { isPending: mutation.isPending, run }
 }
 
 function ProgressFill({ percent }: { percent: number }) {

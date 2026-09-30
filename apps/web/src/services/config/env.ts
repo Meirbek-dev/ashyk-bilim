@@ -50,12 +50,13 @@ type ResolutionResult<T> =
   | { success: true; config: T; errors: [] }
   | { success: false; config: null; errors: ConfigIssue[] }
 
-const configIssueDetails = (issues: ConfigIssue[]) =>
-  issues.map(issue => ({
+const configIssueDetails = (issues: ConfigIssue[]) => ({
+  issues: issues.map(issue => ({
     key: issue.key,
     message: issue.message,
     scope: issue.scope,
-  }))
+  })),
+})
 
 const getOptionalEnvValue = (value: string | undefined): string | undefined => {
   if (value === undefined) return undefined

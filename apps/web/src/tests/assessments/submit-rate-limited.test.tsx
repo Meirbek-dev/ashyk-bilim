@@ -1,0 +1,107 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useState, type ReactNode } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { toast } from 'sonner'
+import { apiJson } from '@/lib/api-client'
+import { APIError } from '@/lib/api/assertSuccess'
+import type { StudentSubmission } from '@/lib/api/generated/zod'
+import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
+
+// UX-111: a submit 429 used to toast the server's English detail («too many
+// submit attempts; slow down»). Every non-conflict, non-reason failure now
+// goes through the localized mapper — a 429 with `Retry-After` says when.
+
+vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn() }))
+vi.mock('next-intl', () => ({
+  useTranslations: (ns: string) => {
+    const t = (key: string, values?: Record<string, unknown>) =>
+      values ? `${ns}.${key}:${JSON.stringify(values)}` : `${ns}.${key}`
+    t.has = (key: string) =>
+      key === 'codes.rate-limited' || key === 'rateLimitedRetry' || key === 'rateLimitedRetrySeconds'
+    return t
+  },
+}))
+vi.mock('@/services/telemetry/client', () => ({ reportClientError: vi.fn(async () => {}) }))
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+
+const assessmentId = '00000000-0000-4000-8000-000000000001'
+const submissionId = '00000000-0000-4000-8000-000000000002'
+const itemId = '00000000-0000-4000-8000-000000000003'
+const fixture: StudentSubmission = {
+  id: submissionId,
+  assessment_id: assessmentId,
+  status: 'draft',
+  release_state: 'hidden',
+  answers: { [itemId]: { kind: 'open_text', text: 'server' } },
+  answered_count: 1,
+  total_items: 1,
+  attempt_number: 1,
+  draft_version: 3,
+  is_late: false,
+  violation_count: 0,
+  started_at_unix: 1777982400,
+}
+beforeEach(() => vi.resetAllMocks())
+
+function wrapper({ children }: { children: ReactNode }) {
+  const [client] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }),
+  )
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+}
+
+describe('submit rate limited', () => {
+  it('toasts the localized rate-limit copy with the Retry-After window, not the English detail', async () => {
+    vi.mocked(apiJson).mockImplementation(async (path, _init, parse) => {
+      if (String(path).endsWith('/submit'))
+        throw new APIError({
+          code: 'rate-limited',
+          status: 429,
+          message: 'too many submit attempts; slow down',
+          headers: { 'retry-after': '8' },
+        })
+      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+    })
+    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await act(async () => {
+      await result.current.submit().catch(() => undefined)
+    })
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+    const [message] = vi.mocked(toast.error).mock.calls[0]!
+    // UX-121: an 8 s window is «через 8 с», not «через 1 минуту».
+    expect(message).toBe('Errors.rateLimitedRetrySeconds:{"seconds":8}')
+    expect(String(message)).not.toContain('slow down')
+  })
+
+  // BUG-178: answers typed inside the autosave throttle used to die with a
+  // failed submit — the draft PATCH must follow with the typed answers and
+  // the attempt stays «Не сохранено» until it lands.
+  it('re-queues the unsaved answers as a draft save when the submit fails', async () => {
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit'))
+        throw new APIError({
+          code: 'rate-limited',
+          status: 429,
+          message: 'slow down',
+          headers: { 'retry-after': '10' },
+        })
+      if (init?.method === 'PATCH') return parse!({ ...fixture, draft_version: 4 })
+      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+    })
+    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'typed' }))
+    await act(async () => {
+      await result.current.submit().catch(() => undefined)
+    })
+    expect(result.current.saveState).toBe('dirty')
+    await waitFor(() => {
+      const draftSave = vi.mocked(apiJson).mock.calls.find(([, init]) => init?.method === 'PATCH')
+      expect(draftSave).toBeDefined()
+      expect(String(draftSave![1]!.body)).toContain('"typed"')
+    })
+    await waitFor(() => expect(result.current.saveState).toBe('saved'))
+  })
+})

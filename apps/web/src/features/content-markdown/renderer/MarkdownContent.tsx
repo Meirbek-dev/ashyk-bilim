@@ -233,15 +233,17 @@ export function MarkdownContent({
           },
 
           // ── Code ─────────────────────────────────────────────────────────────
-          code: ({ className: codeClassName, children }) => {
-            const match = /language-(\w+)/.exec(codeClassName ?? '')
-            const code = String(children).replace(/\n$/, '')
-
-            // Inline code: no language class AND no newlines
-            if (!match && !code.includes('\n')) {
-              return <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>{children}</code>
-            }
-
+          // A block is a `<pre><code>` in the AST (UX-320: a one-line fence
+          // without a language too); a bare `<code>` is inline.
+          pre: ({ node, children }) => {
+            const codeNode = node?.children[0]
+            if (codeNode?.type !== 'element' || codeNode.tagName !== 'code') return <pre>{children}</pre>
+            const classes = codeNode.properties.className
+            const match = /language-(\w+)/.exec(Array.isArray(classes) ? classes.join(' ') : String(classes ?? ''))
+            const code = codeNode.children
+              .map(child => (child.type === 'text' ? child.value : ''))
+              .join('')
+              .replace(/\n$/, '')
             return (
               <MarkdownCodeBlock
                 code={code}
@@ -250,6 +252,9 @@ export function MarkdownContent({
               />
             )
           },
+          code: ({ className: codeClassName, children }) => (
+            <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>{children}</code>
+          ),
 
           // ── Tables ────────────────────────────────────────────────────────────
           table: ({ children }) => (

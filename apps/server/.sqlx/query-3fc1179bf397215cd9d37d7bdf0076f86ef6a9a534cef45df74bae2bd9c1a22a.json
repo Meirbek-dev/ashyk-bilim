@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_course_analyses SET status = 'published', published_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3fc1179bf397215cd9d37d7bdf0076f86ef6a9a534cef45df74bae2bd9c1a22a"
+}

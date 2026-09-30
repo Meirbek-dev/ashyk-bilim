@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.key FROM uploads u\n           WHERE u.key IN (SELECT content->>'file_key' FROM blocks\n                           WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2))\n           ORDER BY u.key FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "818caede8ca0ba64bd314dd9d105cf54dce37c36bdd38139db41f251ec5afec9"
+}

@@ -1,8 +1,14 @@
-import { redirect } from 'next/navigation'
+import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
+import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { courseWorkspaceMetadata } from '@components/Dashboard/Courses/courseWorkspaceMetadata'
 import { Suspense } from 'react'
 
 interface PlatformCourseCollaborationPageProps {
   params: Promise<{ courseuuid: string }>
+}
+
+export async function generateMetadata({ params }: PlatformCourseCollaborationPageProps) {
+  return courseWorkspaceMetadata((await params).courseuuid, 'collaboration')
 }
 
 export default function PlatformCourseCollaborationPage(props: PlatformCourseCollaborationPageProps) {
@@ -15,5 +21,9 @@ export default function PlatformCourseCollaborationPage(props: PlatformCourseCol
 
 async function PlatformCourseCollaborationContent({ params }: PlatformCourseCollaborationPageProps) {
   const { courseuuid } = await params
-  return redirect(`/dash/courses/${courseuuid}/access`)
+  return renderCourseWorkspacePage({
+    courseuuid,
+    activeStage: 'collaboration',
+    children: <EditCourseContributors />,
+  })
 }

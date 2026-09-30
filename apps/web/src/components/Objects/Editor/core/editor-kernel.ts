@@ -42,6 +42,8 @@ export type EditorExtension = Extension | Node | Mark
 interface EditorKernelOptions {
   preset: EditorPresetName
   activity?: ActivityRef
+  /** Authoring preset: localized empty-document hint (callers pass a catalog string). */
+  placeholder?: string
 }
 
 export interface EditorKernel {
@@ -182,7 +184,7 @@ export function createEditorExtensions(options: EditorKernelOptions): EditorExte
         SlashCommand,
         ImagePasteHandler.configure({ activity }),
         Placeholder.configure({
-          placeholder: 'Начните писать или введите `/` для команд…',
+          placeholder: options.placeholder ?? '',
         }),
         // Markdown ↔ Tiptap serialization (used by AI toolkit insertMarkdown)
         Markdown.configure({ html: true, transformPastedText: true }),

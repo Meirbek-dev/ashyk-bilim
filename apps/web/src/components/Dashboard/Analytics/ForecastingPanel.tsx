@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { ForecastItem } from '@/types/analytics'
 import { TrendingUp } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { getAnalyticsMessage } from '@/lib/analytics/labels'
 
 interface ForecastingPanelProps {
   forecasts: ForecastItem[]
@@ -12,6 +13,8 @@ interface ForecastingPanelProps {
 
 export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
+  const copy = (item: ForecastItem) => getAnalyticsMessage(tA, item)
   const confidenceText = (level: string) =>
     t('forecastingPanel.confidenceLabel', {
       level: t(`forecastingPanel.confidenceLevels.${level}`),
@@ -39,8 +42,8 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
               </Badge>
               <Badge variant="outline">{confidenceText(item.confidence_level)}</Badge>
             </div>
-            <div className="text-foreground text-sm font-medium">{item.title}</div>
-            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{item.prediction}</div>
+            <div className="text-foreground text-sm font-medium">{copy(item).title}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{copy(item).body}</div>
           </div>
         ))}
         {!forecasts.length ? (

@@ -1,5 +1,7 @@
 'use client'
 
+import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'
+
 import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertDialog,
@@ -19,15 +21,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
-import { useMembers } from '@/features/users/hooks/useUsers'
-import type { PaginationState } from '@tanstack/react-table'
+import { useAllMembers, useRoles } from '@/features/users/hooks/useUsers'
+import { accountLabel, useRoleLabels } from '@/features/users/hooks/useRoleLabels'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import type { AdminUser } from '@/lib/api/generated/zod'
 import DataTable from '@/components/ui/data-table'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 
-import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
+import { AlertTriangle, KeyRound, Loader2, UserRoundCheck, UserRoundX } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
-import { removeUser } from '@/services/platform/platform'
-import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { setUserStatus } from '@/services/rbac'
+import { useApiError } from '@/hooks/useApiError'
+import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import React, { useState, useTransition, useSyncExternalStore } from 'react'
 
 const emptySubscribe = () => () => {}
@@ -38,49 +43,16 @@ import { Button } from '@/components/ui/button'
 
 const USERS_PER_PAGE = 20
 
-interface UserSessionRoleLike {
-  role?: { priority?: number } | null
-  priority?: number
-}
-
-const getRolePriority = (roleObj: { role?: unknown; priority?: number } | string | null | undefined) => {
-  if (!roleObj) return 0
-  if (typeof roleObj === 'string') return 0
-  let priority = roleObj.priority
-  if (roleObj.role && typeof roleObj.role === 'object' && 'priority' in roleObj.role) {
-    const nested = roleObj.role as { priority?: unknown }
-    if (typeof nested.priority === 'number') {
-      priority = nested.priority
-    }
-  }
-  return priority ?? 0
-}
-
 interface RemoveUserButtonProps {
-  userId: number
-  username: string
-  onRemove: (userId: number) => Promise<void>
+  userId: string
+  name: string
+  onRemove: (userId: string) => Promise<void>
   t: (key: string, values?: Record<string, string>) => string
 }
 
-interface UserRow {
-  user: {
-    id: number
-    user_uuid?: string
-    username: string
-    first_name?: string
-    middle_name?: string
-    last_name?: string
-    email?: string
-  }
-  role: {
-    id?: number
-    name?: string
-    priority?: number
-  }
-}
+type UserRow = AdminUser
 
-function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonProps) {
+function RemoveUserButton({ userId, name, onRemove, t }: RemoveUserButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -96,7 +68,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
       <AlertDialogTrigger
         render={
           <Button type="button" variant="destructive" size="sm">
-            <LogOut className="size-3.5" />
+            <UserRoundX className="size-3.5" />
             {t('removeFromOrgButton')}
           </Button>
         }
@@ -106,7 +78,7 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
           <AlertDialogMedia>
             <AlertTriangle className="text-destructive size-6" />
           </AlertDialogMedia>
-          <AlertDialogTitle>{t('removeUserModalTitle', { username })}</AlertDialogTitle>
+          <AlertDialogTitle>{t('removeUserModalTitle', { name })}</AlertDialogTitle>
           <AlertDialogDescription>{t('removeUserModalMessage')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -124,37 +96,29 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
 function Users() {
   const { session: sessionData, user: currentUser, can } = useSession()
   const t = useTranslations('DashPage.UserSettings.usersSection')
+  const tErrors = useTranslations('Errors')
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
-  const currentUserPriority = React.useMemo(() => {
-    try {
-      const userRoles = sessionData?.roles
-      if (!userRoles || userRoles.length === 0) return 0
-      return Math.max(
-        ...userRoles.map((r: AppRoleSummary | UserSessionRoleLike) =>
-          getRolePriority((r as AppRoleSummary).role ?? (r as UserSessionRoleLike).role ?? r),
-        ),
-      )
-    } catch {
-      return 0
-    }
-  }, [sessionData?.roles])
+  const { data: roles } = useRoles()
+  const rolePriority = React.useCallback(
+    (slugs: readonly string[] | undefined) =>
+      Math.max(0, ...(slugs ?? []).map(slug => roles?.find(role => role.slug === slug)?.priority ?? 0)),
+    [roles],
+  )
+  const { roleName: roleLabel } = useRoleLabels(roles)
+  const currentUserPriority = rolePriority(sessionData?.roles)
+  const isAdminUser = sessionData?.permissions.includes(AUTH_PERMISSION_WILDCARD) ?? false
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: USERS_PER_PAGE,
-  })
   const queryClient = useQueryClient()
-  const { data: usersData, isLoading } = useMembers(pagination.pageIndex + 1, pagination.pageSize)
+  const { toastApiError } = useApiError()
+  const { data: users = [], isLoading, isError, error } = useAllMembers()
+  const isForbidden = isError && hasErrorCode(error, 'forbidden')
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false,
   )
-
-  const totalUsers = usersData?.total ?? 0
-  const totalPages = usersData?.total_pages ?? 1
 
   const [rolesModal, setRolesModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
@@ -169,59 +133,47 @@ function Users() {
     setRolesModal(false)
   }, [])
 
-  const handleRemoveUser = React.useCallback(
-    async (user_id: number) => {
-      const toastId = toast.loading(t('removingUser'))
+  // v2 has no hard user delete (DECISIONS.md 2026-09-13): the control disables the account; a disabled row offers «Включить».
+  const handleSetDisabled = React.useCallback(
+    async (user_id: string, disabled: boolean) => {
+      const toastId = toast.loading(t(disabled ? 'removingUser' : 'enablingUser'))
       try {
-        const res = await removeUser(user_id)
-        if (res.status === 200) {
-          await queryClient.invalidateQueries({
-            queryKey: membersQueryOptions(1, USERS_PER_PAGE).queryKey.slice(0, 2),
-          })
-          await queryClient.invalidateQueries({
-            queryKey: userRoleAssignmentsQueryOptions().queryKey,
-          })
-          toast.success(t('userRemovedSuccess'), { id: toastId })
-        } else {
-          toast.error(t('errors.removeUserFailed'), { id: toastId })
-        }
-      } catch {
-        toast.error(t('errors.removeUserFailed'), { id: toastId })
+        await setUserStatus(user_id, { disabled })
+        await queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
+        toast.success(t(disabled ? 'userRemovedSuccess' : 'userEnabledSuccess'), { id: toastId })
+      } catch (statusError) {
+        toastApiError(statusError, { toastId })
       }
     },
-    [queryClient, t],
+    [queryClient, t, toastApiError],
   )
-
-  const users = (usersData?.users ?? []) as UserRow[]
+  const handleRemoveUser = React.useCallback((user_id: string) => handleSetDisabled(user_id, true), [handleSetDisabled])
   const columns = React.useMemo<DataTableColumnDef<UserRow>[]>(
     () => [
       {
-        accessorFn: row =>
-          [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username, row.user.email]
-            .filter(Boolean)
-            .join(' '),
+        accessorFn: row => `${row.display_name} ${row.username} ${row.email}`,
         id: 'user',
         header: t('userHeader'),
-        cell: ({ row }) => {
-          const fullName = [row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
-            .filter(Boolean)
-            .join(' ')
-          return (
-            <div className="flex items-center gap-2">
-              {fullName && <span className="font-medium">{fullName}</span>}
-              <Badge variant="outline" className="font-mono text-xs">
-                @{row.original.user.username}
-              </Badge>
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            {row.original.display_name && <span className="font-medium">{row.original.display_name}</span>}
+            <Badge variant="outline" className="font-mono text-xs">
+              @{row.original.username}
+            </Badge>
+            {row.original.status === 'disabled' && <Badge variant="secondary">{t('statusDisabled')}</Badge>}
+          </div>
+        ),
       },
       {
-        accessorFn: row => row.role?.name || '',
+        accessorFn: row => row.roles.join(' '),
         id: 'role',
         header: t('roleHeader'),
         cell: ({ row }) =>
-          row.original.role?.name ? <Badge variant="secondary">{row.original.role.name}</Badge> : null,
+          row.original.roles.map(slug => (
+            <Badge key={slug} variant="secondary" className="mr-1">
+              {roleLabel(slug)}
+            </Badge>
+          )),
       },
       {
         id: 'actions',
@@ -229,17 +181,14 @@ function Users() {
         enableSorting: false,
         cell: ({ row }) => {
           const user = row.original
-          const isSelf = currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id
-          const targetPriority = getRolePriority(user.role)
-          const canManage = !isSelf && currentUserPriority > targetPriority
-          const isMainAdmin = currentUser?.id === 1
+          const isSelf = currentUser?.id === user.id
+          const targetPriority = rolePriority(user.roles)
+          const canManage = !isSelf && (isAdminUser || currentUserPriority > targetPriority)
 
           if (isSelf) return <span className="text-muted-foreground text-xs">{t('cannotEditSelf')}</span>
-          if (!isSelf && !isMainAdmin && currentUserPriority <= targetPriority) {
+          if (!canManage) {
             return <span className="text-muted-foreground text-xs">{t('cannotManageHigherRole')}</span>
           }
-          if (!canManage)
-            return <span className="text-muted-foreground text-xs">{t('noActionsForAdministrators')}</span>
 
           const showEditRole = canUpdateRole
           const showRemoveUser = canDeleteUser
@@ -252,7 +201,7 @@ function Users() {
             <div className="flex items-center gap-2">
               {showEditRole && (
                 <Modal
-                  isDialogOpen={rolesModal ? selectedUser?.user?.user_uuid === user.user.user_uuid : false}
+                  isDialogOpen={rolesModal ? selectedUser?.id === user.id : false}
                   onOpenChange={isOpen => {
                     if (!isOpen) handleCloseRolesModal()
                   }}
@@ -260,52 +209,39 @@ function Users() {
                   dialogContent={
                     selectedUser ? (
                       <RolesUpdate
-                        alreadyAssignedRole={selectedUser.role?.id?.toString() || ''}
+                        alreadyAssignedRole={selectedUser.roles[0] ?? ''}
                         setRolesModal={setRolesModal}
                         user={{
-                          id: selectedUser.user.id,
-                          user_id: selectedUser.user.id,
-                          username: selectedUser.user.username,
-                          ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
-                          ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
-                          ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
-                          ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
-                          ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
-                          user: {
-                            id: selectedUser.user.id,
-                            username: selectedUser.user.username,
-                            ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
-                            ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
-                            ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
-                            ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
-                            ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
-                          },
+                          id: selectedUser.id,
+                          user_id: selectedUser.id,
+                          username: selectedUser.username,
+                          email: selectedUser.email,
+                          first_name: selectedUser.display_name,
                         }}
                       />
                     ) : null
                   }
                   dialogTitle={t('updateRoleModalTitle')}
                   dialogDescription={t('updateRoleModalDescription', {
-                    username: user.user.username,
+                    username: user.username,
                   })}
                   dialogTrigger={
-                    <span>
-                      <Button variant="outline" size="sm" onClick={() => handleRolesModal(user)}>
-                        <KeyRound className="size-3.5" />
-                        {t('editRoleButton')}
-                      </Button>
-                    </span>
+                    <Button variant="outline" size="sm" type="button" onClick={() => handleRolesModal(user)}>
+                      <KeyRound className="size-3.5" />
+                      {t('editRoleButton')}
+                    </Button>
                   }
                 />
               )}
-              {showRemoveUser && (
-                <RemoveUserButton
-                  userId={user.user.id}
-                  username={user.user.username}
-                  onRemove={handleRemoveUser}
-                  t={t}
-                />
-              )}
+              {showRemoveUser &&
+                (user.status === 'disabled' ? (
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleSetDisabled(user.id, false)}>
+                    <UserRoundCheck className="size-3.5" />
+                    {t('enableUserButton')}
+                  </Button>
+                ) : (
+                  <RemoveUserButton userId={user.id} name={accountLabel(user)} onRemove={handleRemoveUser} t={t} />
+                ))}
             </div>
           )
         },
@@ -315,11 +251,14 @@ function Users() {
       canDeleteUser,
       canUpdateRole,
       currentUser?.id,
-      currentUser?.user_uuid,
       currentUserPriority,
       handleCloseRolesModal,
       handleRolesModal,
       handleRemoveUser,
+      handleSetDisabled,
+      isAdminUser,
+      roleLabel,
+      rolePriority,
       rolesModal,
       selectedUser,
       t,
@@ -337,6 +276,27 @@ function Users() {
     )
   }
 
+  // A 403 is a permission denial, not an empty org — rendering it through
+  // the DataTable's "no results" state would tell a learner/teacher there
+  // are simply no users, which is false and hides why they can't see any.
+  if (isForbidden) {
+    return (
+      <div className="mx-10 mt-6">
+        <Card>
+          <CardHeader className="border-b">
+            <CardTitle>{t('activeUsersTitle')}</CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
+            <AlertTriangle className="text-muted-foreground size-8" aria-hidden="true" />
+            <p className="font-medium">{tErrors('accessDenied')}</p>
+            <p className="text-muted-foreground text-sm">{tErrors('permissionDenied')}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-10 mt-6">
       <Card>
@@ -348,11 +308,7 @@ function Users() {
           <DataTable
             columns={columns}
             data={users}
-            serverPaginated
-            pageSize={pagination.pageSize}
-            pageCount={totalPages}
-            totalRows={totalUsers}
-            onPaginationChange={setPagination}
+            pageSize={USERS_PER_PAGE}
             storageKey="platform-users"
             labels={{
               searchPlaceholder: t('searchPlaceholder'),

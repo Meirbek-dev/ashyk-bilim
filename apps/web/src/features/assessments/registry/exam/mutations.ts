@@ -1,16 +1,17 @@
 'use client'
 
 import { apiJson } from '@/lib/api-client'
+import { AssessmentDetail } from '@/lib/api/generated/zod'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { buildExamPolicyPatch } from './policySettings'
 
 export interface CreateExamWithActivityInput {
+  kind: 'quiz' | 'exam'
+  /** One name (UX-112): the assessment title and the activity name are the same string. */
   activityName: string
-  courseId: number
-  chapterId: number
-  examTitle: string
+  chapterId: string
   examDescription: string
   settings: Record<string, unknown>
 }
@@ -21,32 +22,48 @@ export interface CreateExamWithActivityResponse {
   [key: string]: unknown
 }
 
+const json = (method: 'POST' | 'PUT' | 'PATCH', body: unknown) => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+})
+
+/**
+ * v2 creates the activity and the assessment in one `POST assessments`,
+ * starting from the kind's policy preset. The modal's settings are then applied
+ * as a whole-policy `PUT` merged onto that preset — `Policy` is replaced
+ * wholesale, so a partial patch would 422. A quiz keeps the preset's attempt
+ * and proctoring settings; only an exam overrides them (UX-028).
+ */
 async function createExamWithActivityRequest(
   input: CreateExamWithActivityInput,
 ): Promise<CreateExamWithActivityResponse> {
-  const payload = await apiJson<{
-    detail?: string
-    assessment_uuid?: string
-    activity_uuid?: string
-  }>('assessments', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      kind: 'EXAM',
-      title: input.examTitle,
-      description: input.examDescription,
-      course_id: input.courseId,
+  const created = await apiJson(
+    'assessments',
+    json('POST', {
+      kind: input.kind,
       chapter_id: input.chapterId,
-      grading_type: 'PERCENTAGE',
-      policy: buildExamPolicyPatch(input.settings),
+      title: input.activityName,
+      description: input.examDescription || null,
+      grading_type: 'percentage',
     }),
-  })
+    data => AssessmentDetail.parse(data),
+  )
 
-  return {
-    ...payload,
-    ...(payload.assessment_uuid === undefined ? {} : { exam_uuid: payload.assessment_uuid }),
-    ...(payload.activity_uuid === undefined ? {} : { activity_uuid: payload.activity_uuid }),
-  }
+  const { violation_threshold, ...patch } = buildExamPolicyPatch(input.settings)
+  await apiJson(
+    `assessments/${created.id}/policy`,
+    json('PUT', {
+      ...created.policy,
+      ...(input.kind === 'exam' ? patch : { time_limit_seconds: patch.time_limit_seconds }),
+      ...(violation_threshold === null ? {} : { violation_threshold }),
+      randomize_questions: input.settings.shuffle_questions === true,
+      randomize_options: input.settings.shuffle_answers === true,
+      review_visibility: input.settings.allow_result_review === true ? 'full' : 'none',
+    }),
+  )
+
+  return { exam_uuid: created.id, activity_uuid: created.activity_id }
 }
 
 export function createExamWithActivityMutationOptions(

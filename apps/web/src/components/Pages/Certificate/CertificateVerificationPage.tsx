@@ -3,6 +3,7 @@
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, Shield, XCircle } from 'lucide-react'
 import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifications'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
@@ -19,6 +20,7 @@ interface CertificateVerificationPageProps {
 const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = ({ certificateUuid }) => {
   const locale = useLocale()
   const t = useTranslations('Certificates.CertificateVerificationPage')
+  const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes')
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
@@ -38,11 +40,9 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
   const verificationStatus: 'valid' | 'invalid' | 'loading' =
     !mounted || isLoading ? 'loading' : certificateData ? 'valid' : 'invalid'
 
-  // Certificate type translation helper
-  const getCertificationTypeLabel = (type: string): string => {
-    const typeKey = type as keyof typeof t
-    return t(typeKey) || t('completion')
-  }
+  // Every type the editor offers has a label; anything else (or nothing) reads as completion (UX-131).
+  const getCertificationTypeLabel = (type: string | undefined): string =>
+    type && tTypes.has(type) ? tTypes(type) : tTypes('completion')
 
   const getVerificationStatusIcon = () => {
     switch (verificationStatus) {
@@ -157,8 +157,9 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
       <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
         <div className="soft-shadow border-border bg-card text-card-foreground mb-8 rounded-2xl border p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+          {/* UX-179: on a phone the status badge wraps under the title instead of overflowing the card. */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
               <div className="bg-primary/10 rounded-full p-3">
                 <Shield className="text-primary h-8 w-8" />
               </div>
@@ -169,10 +170,11 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
             </div>
 
             <div
-              className={`flex items-center space-x-3 rounded-full border px-4 py-2 ${getVerificationStatusColor()}`}
+              data-testid="verification-status"
+              className={`flex max-w-full items-center gap-3 rounded-full border px-4 py-2 ${getVerificationStatusColor()}`}
             >
               {getVerificationStatusIcon()}
-              <span className="font-semibold">{getVerificationStatusText()}</span>
+              <span className="min-w-0 font-semibold">{getVerificationStatusText()}</span>
             </div>
           </div>
         </div>
@@ -186,11 +188,14 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificatePreview')}</h2>
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <CertificatePreview
-                  certificationName={certificateData.certification.config.certification_name}
+                  certificationName={
+                    certificateData.certification.config.certification_name || certificateData.course.name || ''
+                  }
                   certificationDescription={certificateData.certification.config.certification_description ?? ''}
                   certificationType={certificateData.certification.config.certification_type}
                   certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
-                  certificateInstructor={certificateData.certification.config.certificate_instructor ?? undefined}
+                  certificateInstructor={certificateData.instructor_name ?? undefined}
+                  recipientName={certificateData.holder?.display_name}
                   certificateId={certificateData.certificate_user.user_certification_uuid}
                   awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
                     year: 'numeric',
@@ -252,35 +257,6 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                         </p>
                       ) : null}
                     </div>
-
-                    {(() => {
-                      const authors = certificateData.course.authors ?? []
-                      const activeAuthors = authors.filter(
-                        (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE' && author.user,
-                      )
-                      if (activeAuthors.length === 0) return null
-                      return (
-                        <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
-                          <span>{t('byLabel')}</span>
-                          <div className="flex items-center gap-1">
-                            {activeAuthors.slice(0, 2).map((author: AppCourseAuthor, index: number) => {
-                              const user = author.user!
-                              return (
-                                <span key={user.user_uuid} className="text-foreground">
-                                  {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
-                                  {index < Math.min(2, activeAuthors.length - 1) && ', '}
-                                </span>
-                              )
-                            })}
-                            {activeAuthors.length > 2 && (
-                              <span className="text-muted-foreground">
-                                +{activeAuthors.length - 2} {t('moreAuthors')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })()}
                   </div>
                 </div>
 
@@ -306,6 +282,16 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificationDetails')}</h2>
 
               <div className="space-y-4">
+                {/* UX-300: whose certificate this is — the name the API verifies. */}
+                {certificateData.holder ? (
+                  <div>
+                    <Label className="text-foreground mb-1 block text-sm font-medium">{t('certificateHolder')}</Label>
+                    <div className="bg-muted rounded-lg p-3">
+                      <span className="text-foreground font-medium">{certificateData.holder.display_name}</span>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div>
                   <Label className="text-foreground mb-1 block text-sm font-medium">{t('certificateId')}</Label>
                   <div className="bg-muted rounded-lg p-3">
@@ -356,6 +342,13 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                     </div>
                   </div>
                 ) : null}
+
+                <CertificatePdfDownloadButton
+                  verifyCode={certificateData.certificate_user.user_certification_uuid}
+                  size="default"
+                  variant="default"
+                  className="w-full"
+                />
               </div>
             </div>
 

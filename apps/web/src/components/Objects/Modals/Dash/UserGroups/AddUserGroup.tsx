@@ -10,6 +10,7 @@ import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 import * as v from 'valibot'
 
 interface AddUserGroupProps {
@@ -18,7 +19,7 @@ interface AddUserGroupProps {
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    name: v.pipe(v.string(), v.minLength(1, t('nameRequiredError'))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1, t('nameRequiredError'))),
     description: v.optional(v.string()),
   })
 
@@ -29,6 +30,7 @@ function AddUserGroup(props: AddUserGroupProps) {
   const queryClient = useQueryClient()
   const t = useTranslations('Components.AddUserGroup')
   const validationSchema = createValidationSchema(t)
+  const { toastApiError } = useApiError<UserGroupInputValues>()
 
   const form = useForm<UserGroupInputValues, unknown, UserGroupFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -40,17 +42,16 @@ function AddUserGroup(props: AddUserGroupProps) {
 
   const handleSubmit = async (values: UserGroupFormValues) => {
     const toastID = toast.loading(t('toastLoading'))
-    const res = await createUserGroup(values)
-    if (res.status === 200) {
+    try {
+      await createUserGroup(values)
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userGroups.all(),
       })
       props.setCreateUserGroupModal(false)
       toast.success(t('toastSuccess'), { id: toastID })
-      return
+    } catch (error) {
+      toastApiError(error, { setError: form.setError, fallback: t('toastError'), toastId: toastID })
     }
-
-    toast.error(t('toastError'), { id: toastID })
   }
 
   return (
@@ -58,7 +59,7 @@ function AddUserGroup(props: AddUserGroupProps) {
       <Field>
         <FieldLabel htmlFor="name">{t('nameLabel')}</FieldLabel>
         <FieldContent>
-          <Input id="name" type="text" {...form.register('name')} />
+          <Input id="name" type="text" aria-invalid={!!form.formState.errors.name} {...form.register('name')} />
         </FieldContent>
         <FieldError errors={[form.formState.errors.name]} />
       </Field>
@@ -66,7 +67,12 @@ function AddUserGroup(props: AddUserGroupProps) {
       <Field>
         <FieldLabel htmlFor="description">{t('descriptionLabel')}</FieldLabel>
         <FieldContent>
-          <Input id="description" type="text" {...form.register('description')} />
+          <Input
+            id="description"
+            type="text"
+            aria-invalid={!!form.formState.errors.description}
+            {...form.register('description')}
+          />
         </FieldContent>
         <FieldError errors={[form.formState.errors.description]} />
       </Field>

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.activity_id AS \"id: ActivityId\" FROM assessments s\n           WHERE s.course_id = $1 AND s.access_mode = 'restricted'\n             AND NOT EXISTS (SELECT 1 FROM assessment_access_users u\n                             WHERE u.assessment_id = s.id AND u.user_id = $2)\n             AND NOT EXISTS (SELECT 1 FROM assessment_access_usergroups g\n                             JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id\n                             WHERE g.assessment_id = s.id AND m.user_id = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "activity_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "35143106407d46b645385d9aa128272f8e30f4b526eb78ba2798425cd8d43bae"
+}

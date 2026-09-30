@@ -1,0 +1,180 @@
+//! Gamification: dashboard, leaderboard, rank, streaks, preferences, and the
+//! platform-manager award and policy endpoints.
+
+use ab_core::assessments::StreakKind;
+use ab_domain::gamification::GamificationService;
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+
+use crate::dto::gamification::{
+    AdminAwardRequest, AwardResponse, Dashboard, GamificationConfig, Leaderboard, LeaderboardQuery,
+    PreferencesPatch, Profile, StreakUpdate, UpdateGamificationConfigRequest, UserRank,
+};
+use crate::error::{ApiResult, Problem};
+use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::state::AppState;
+
+/// Profile, recent XP, rank and the top-10 leaderboard in one call.
+#[utoipa::path(
+    get, path = "/gamification", tag = "gamification",
+    responses((status = 200, description = "Dashboard", body = Dashboard)),
+)]
+pub async fn dashboard(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<Dashboard>> {
+    Ok(Json(state.gamification.dashboard(&actor).await?.into()))
+}
+
+#[utoipa::path(
+    get, path = "/gamification/leaderboard", tag = "gamification",
+    params(LeaderboardQuery),
+    responses((status = 200, description = "Leaderboard", body = Leaderboard)),
+)]
+pub async fn leaderboard(
+    State(state): State<AppState>,
+    CurrentActor(_actor): CurrentActor,
+    Query(query): Query<LeaderboardQuery>,
+) -> ApiResult<Json<Leaderboard>> {
+    Ok(Json(
+        state
+            .gamification
+            .leaderboard(query.limit.unwrap_or(10), query.offset.unwrap_or(0))
+            .await?
+            .into(),
+    ))
+}
+
+#[utoipa::path(
+    get, path = "/gamification/rank", tag = "gamification",
+    responses((status = 200, description = "Rank", body = UserRank)),
+)]
+pub async fn rank(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<UserRank>> {
+    let rank = state.gamification.rank(&actor).await?;
+    Ok(Json(UserRank {
+        user_id: actor.user_id,
+        rank,
+    }))
+}
+
+/// Touch the login streak for today (same day keeps, next day extends, a
+/// gap resets). `learning` is 422: that streak is recorded by completing
+/// an activity.
+#[utoipa::path(
+    post, path = "/gamification/streaks/{kind}", tag = "gamification",
+    params(("kind" = StreakKind, Path, description = "login (learning is 422)")),
+    responses(
+        (status = 200, description = "Streak", body = StreakUpdate),
+        (status = 422, description = "learning is not touched manually", body = Problem,
+         content_type = "application/problem+json"),
+    ),
+)]
+pub async fn record_streak(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(kind): Path<StreakKind>,
+) -> ApiResult<Json<StreakUpdate>> {
+    Ok(Json(
+        state
+            .gamification
+            .touch_streak(actor.user_id, kind)
+            .await?
+            .into(),
+    ))
+}
+
+/// Merge preferences: a section absent from the patch is kept, `null`
+/// removes it, an object replaces it. Unknown sections or keys are 422.
+#[utoipa::path(
+    patch, path = "/gamification/preferences", tag = "gamification",
+    request_body = PreferencesPatch,
+    responses(
+        (status = 200, description = "Profile", body = Profile),
+        (status = 422, description = "Unknown section or key, or a null value", body = Problem,
+         content_type = "application/problem+json"),
+    ),
+)]
+pub async fn update_preferences(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(patch): ValidJson<PreferencesPatch>,
+) -> ApiResult<Json<Profile>> {
+    let patch = serde_json::to_value(&patch)
+        .map_err(|err| ab_core::Error::internal("serialize preferences patch", err))?;
+    Ok(Json(
+        state
+            .gamification
+            .update_preferences(&actor, &patch)
+            .await?
+            .into(),
+    ))
+}
+
+/// Grant XP to a user (`platform:manage`). Learners never award themselves
+/// in v2; XP is a side effect of completing things.
+#[utoipa::path(
+    post, path = "/gamification/xp", tag = "gamification",
+    request_body = AdminAwardRequest,
+    responses(
+        (status = 201, description = "Awarded (or the earlier identical award)", body = AwardResponse),
+        (status = 403, description = "Not a platform manager", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn admin_award(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    body: axum::body::Bytes,
+) -> ApiResult<(StatusCode, Json<AwardResponse>)> {
+    // UX-301: permission before the body — a learner gets 403 whatever they send.
+    GamificationService::require_manage(&actor)?;
+    let request = ValidJson::<AdminAwardRequest>::parse(&body)?;
+    let award = state
+        .gamification
+        .admin_award(
+            &actor,
+            request.user_id,
+            request.amount,
+            request.reason.as_deref(),
+            request.idempotency_key.as_deref(),
+        )
+        .await?;
+    Ok((StatusCode::CREATED, Json(award.into())))
+}
+
+#[utoipa::path(
+    get, path = "/gamification/config", tag = "gamification",
+    responses((status = 200, description = "Policy overrides", body = GamificationConfig)),
+)]
+pub async fn get_config(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<GamificationConfig>> {
+    Ok(Json(state.gamification.config(&actor).await?.into()))
+}
+
+/// Replace the policy overrides (`platform:manage`).
+#[utoipa::path(
+    put, path = "/gamification/config", tag = "gamification",
+    request_body = UpdateGamificationConfigRequest,
+    responses((status = 200, description = "Policy overrides", body = GamificationConfig)),
+)]
+pub async fn update_config(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<GamificationConfig>> {
+    GamificationService::require_manage(&actor)?;
+    let request = ValidJson::<UpdateGamificationConfigRequest>::parse(&body)?;
+    Ok(Json(
+        state
+            .gamification
+            .update_config(&actor, request.daily_xp_limit, &request.rewards)
+            .await?
+            .into(),
+    ))
+}

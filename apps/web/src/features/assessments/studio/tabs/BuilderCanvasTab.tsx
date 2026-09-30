@@ -29,10 +29,17 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useTranslations } from 'next-intl'
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
-import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
+import type {
+  AssessmentItem,
+  AssessmentItemMetadata,
+  ItemBody,
+  UnifiedItemKind,
+} from '@/features/assessments/domain/items'
 import {
   classifyValidationIssue,
   dedupeIssues,
@@ -45,7 +52,10 @@ import { useAssessmentStudioContext } from '@/features/assessments/studio/contex
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
 import QuestionInspectorPanel from './QuestionInspectorPanel'
+import { InlineIssueMessage } from '../components/ValidationIssues'
 import { apiJson } from '@/lib/api-client'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -123,6 +133,9 @@ export default function BuilderCanvasTab({
 }: BuilderCanvasTabProps) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
+  const tDnd = useTranslations('Common.DragAndDrop')
+  const { toastApiError } = useApiError()
+  const announcements = useDndAnnouncements(items.map(item => item.item_uuid))
   const [isCreating, startCreateTransition] = useTransition()
   const [isDuplicating, startDuplicateTransition] = useTransition()
   const [isDeleting, startDeleteTransition] = useTransition()
@@ -151,10 +164,10 @@ export default function BuilderCanvasTab({
   const outlineWindow = useMemo(() => getOutlineWindow(items, selectedItemUuid), [items, selectedItemUuid])
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
-    CHOICE: t('kindLabels.choice'),
-    OPEN_TEXT: t('kindLabels.openText'),
-    FORM: t('kindLabels.form'),
-    MATCHING: t('kindLabels.matching'),
+    CHOICE: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.CHOICE}`),
+    OPEN_TEXT: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.OPEN_TEXT}`),
+    FORM: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.FORM}`),
+    MATCHING: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.MATCHING}`),
   }
 
   const sensors = useSensors(
@@ -216,7 +229,7 @@ export default function BuilderCanvasTab({
       try {
         await Promise.all(
           items.map(async item => {
-            await apiJson(`assessments/${assessmentUuid}/items/${item.item_uuid}`, {
+            await apiJson(`assessment-items/${item.item_uuid}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -239,30 +252,34 @@ export default function BuilderCanvasTab({
         setSelectedIssueCode(null)
       } catch (error) {
         console.error('Failed to apply assessment item bulk patch', error)
-        toast.error(error instanceof Error ? error.message : tBuilder('bulkFailed'))
+        toastApiError(error, { fallback: tBuilder('bulkFailed') })
       } finally {
         setIsApplyingBulk(false)
       }
     },
-    [assessmentUuid, items, refresh, setSelectedIssueCode, tBuilder],
+    [items, refresh, setSelectedIssueCode, tBuilder, toastApiError],
   )
 
   const createItem = (kind: SupportedStudioItemKind) => {
     startCreateTransition(async () => {
       try {
-        const body = buildDefaultItemPayload(kind, t('defaultItemTitle'))
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
+        const payload = buildDefaultItemPayload(kind, t('defaultItemTitle'))
+        const created = await apiJson<{ id?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            title: payload.title,
+            max_score: payload.max_score,
+            body: itemBodyToWire(payload.body as ItemBody),
+          }),
         })
         toast.success(t('itemCreated', { itemNoun }))
-        if (typeof created.item_uuid === 'string') {
-          await onItemCreated(created.item_uuid)
+        if (typeof created.id === 'string') {
+          await onItemCreated(created.id)
         }
       } catch (error) {
         console.error('Failed to create assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('createFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('createFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }
@@ -271,24 +288,23 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDuplicateTransition(async () => {
       try {
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessmentUuid}/items`, {
+        const created = await apiJson<{ id?: string }>(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: itemState.kind,
             title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
-            body: structuredClone(itemState.body),
+            body: itemBodyToWire(structuredClone(itemState.body)),
             metadata: structuredClone(itemState.metadata),
           }),
         })
         toast.success(t('itemDuplicated', { itemNoun }))
-        if (typeof created.item_uuid === 'string') {
-          await onItemDuplicated(created.item_uuid)
+        if (typeof created.id === 'string') {
+          await onItemDuplicated(created.id)
         }
       } catch (error) {
         console.error('Failed to duplicate assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }
@@ -297,14 +313,14 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDeleteTransition(async () => {
       try {
-        await apiJson(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
+        await apiJson(`assessment-items/${itemState.item_uuid}`, {
           method: 'DELETE',
         })
         toast.success(t('itemDeleted', { itemNoun }))
         await onItemDeleted()
       } catch (error) {
         console.error('Failed to delete assessment item', error)
-        toast.error(error instanceof Error ? error.message : t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }))
+        toastApiError(error, { fallback: t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }) })
       }
     })
   }
@@ -343,7 +359,7 @@ export default function BuilderCanvasTab({
                 {allowedKinds.map(kind => {
                   const Icon = KIND_ICONS[kind]
                   return (
-                    <DropdownMenuItem key={kind} onSelect={() => createItem(kind)}>
+                    <DropdownMenuItem key={kind} onClick={() => createItem(kind)}>
                       <Icon className="mr-2 size-4" />
                       {kindLabels[kind]}
                     </DropdownMenuItem>
@@ -383,7 +399,12 @@ export default function BuilderCanvasTab({
               {t('outlineEmptyMessage', { itemNoun: itemNoun.toLowerCase() })}
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              accessibility={{ announcements, screenReaderInstructions: { draggable: tDnd('instructions') } }}
+            >
               <SortableContext items={items.map(item => item.item_uuid)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1">
                   {outlineWindow.beforeCount > 0 ? <OutlineWindowSpacer count={outlineWindow.beforeCount} /> : null}
@@ -452,7 +473,7 @@ export default function BuilderCanvasTab({
       </aside>
 
       {/* Middle Canvas */}
-      <main className="bg-muted/10 min-w-0 overflow-y-auto">
+      <div className="bg-muted/10 min-w-0 overflow-y-auto">
         {!itemState ? (
           <div className="flex h-full items-center justify-center p-8">
             <div className="max-w-sm text-center">
@@ -498,7 +519,7 @@ export default function BuilderCanvasTab({
             renderBodyEditor={renderItemBodyEditor}
           />
         )}
-      </main>
+      </div>
 
       {/* Right Inspector */}
       {itemState ? (
@@ -777,7 +798,9 @@ function SortableOutlineItem({
               <TooltipContent side="right" className="max-w-[200px]">
                 <ul className="space-y-1 text-xs">
                   {issues.slice(0, 3).map((issue, i) => (
-                    <li key={i}>• {issue.message}</li>
+                    <li key={i}>
+                      • <InlineIssueMessage issue={issue} />
+                    </li>
                   ))}
                   {issues.length > 3 && <li>{t('moreIssues', { count: issues.length - 3 })}</li>}
                 </ul>
@@ -905,6 +928,7 @@ function ItemCanvas({
   ]).map(classifyValidationIssue)
   const itemMetadataIssues = itemIssueList.filter(issue => issue.area === 'item-metadata')
   const hasMetadataIssue = (field: string) => itemMetadataIssues.some(issue => issue.field === field)
+  const titleIssue = itemMetadataIssues.find(issue => issue.field === 'title')
   const itemIndex = items.findIndex(i => i.item_uuid === item.item_uuid)
 
   return (
@@ -966,6 +990,11 @@ function ItemCanvas({
               className={cn(hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...item, title: e.target.value })}
             />
+            {titleIssue ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+                <InlineIssueMessage issue={titleIssue} />
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="canvas-item-points">{t('pointsLabel')}</Label>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
@@ -34,6 +35,7 @@ function createGuardHistoryState() {
 }
 
 export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChangesGuardOptions) {
+  const tCommon = useTranslations('Common')
   const message = options?.message ?? ''
   const interceptInAppNavigation = options?.interceptInAppNavigation ?? false
   const ignoreNextPopRef = useRef(false)
@@ -248,6 +250,6 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
     cancelNavigation,
     confirmNavigation,
     isPromptOpen: pendingNavigation !== null,
-    promptMessage: message || 'У вас есть несохраненные изменения. Вы уверены, что хотите покинуть страницу?',
+    promptMessage: message || tCommon('unsavedChangesPrompt'),
   }
 }

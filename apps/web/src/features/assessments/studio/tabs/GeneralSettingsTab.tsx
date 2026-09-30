@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
+import { MAX_ATTEMPTS } from '@/features/assessments/studio/utils'
 import { applyResultReleasePolicy, getPolicyWarningCodes, resultReleasePolicyFromState } from './policyWarnings'
 import type { PolicyWarningCode, ResultReleasePolicy } from './policyWarnings'
 
@@ -116,6 +117,11 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={e => onChange({ ...state, title: e.target.value })}
                 />
+                {issues.find(issue => issue.field === 'title')?.message ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+                    {issues.find(issue => issue.field === 'title')?.message}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
@@ -159,12 +165,19 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   id="exam-max-attempts"
                   type="number"
                   min={1}
+                  max={MAX_ATTEMPTS}
                   value={state.maxAttempts}
+                  placeholder={t('attemptLimitUnlimited')}
                   disabled={disabled}
                   aria-invalid={hasIssue('maxAttempts')}
                   className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={e => onChange({ ...state, maxAttempts: e.target.value })}
                 />
+                {issues.find(issue => issue.field === 'maxAttempts')?.message ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+                    {issues.find(issue => issue.field === 'maxAttempts')?.message}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>

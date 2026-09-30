@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO item_feedback\n               (grading_entry_id, submission_id, item_id, item_ref, comment, score, max_score,\n                annotation_type, annotation_key, graded_by)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n           RETURNING id AS \"id: ItemFeedbackId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ItemFeedbackId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1efcd6f19b6dfdcea5ec2a543a1b1e3cecd3c27666b4c4bde34401c7aba4ba38"
+}

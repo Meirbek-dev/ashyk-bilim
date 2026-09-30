@@ -3,58 +3,17 @@
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
-  bulkAddContributors,
-  bulkRemoveContributors,
-  editContributor,
   updateCourseAccess,
   updateCourseLifecycle,
   updateCourseMetadata,
   updateCourseThumbnail,
-} from '@services/courses/courses'
+} from '@services/courses/course-writes'
 import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSchemas'
-import type { CourseEditorBundle } from '@services/courses/editor'
-import { courseKeys } from '@/hooks/courses/courseKeys'
 import { useCourseEditorStore } from '@/stores/courses'
+import { uploadFile } from '@services/media/uploads'
 
 interface MutationOptions {
   lastKnownUpdateDate?: string | null | undefined
-}
-
-interface ContributorDraftUser {
-  id: number
-  username: string
-  first_name?: string
-  middle_name?: string
-  last_name?: string
-  email?: string
-  avatar_image?: string
-  user_uuid?: string
-}
-
-interface ContributorMutationPayload {
-  authorship?: string
-  authorship_status?: string
-}
-
-function buildOptimisticContributor(user: ContributorDraftUser) {
-  const now = new Date().toISOString()
-  return {
-    id: `temp-${user.user_uuid ?? user.id}`,
-    user_id: user.id,
-    authorship: 'CONTRIBUTOR',
-    authorship_status: 'PENDING',
-    creation_date: now,
-    update_date: now,
-    user: {
-      username: user.username,
-      first_name: user.first_name ?? '',
-      middle_name: user.middle_name ?? '',
-      last_name: user.last_name ?? '',
-      email: user.email ?? '',
-      avatar_image: user.avatar_image ?? '',
-      user_uuid: user.user_uuid ?? '',
-    },
-  }
 }
 
 const buildMutationOptions = (lastKnownUpdateDate: string | null | undefined): MutationOptions =>
@@ -135,177 +94,15 @@ export function updateCourseThumbnailMutationOptions(
   detailKey: readonly unknown[],
 ) {
   return mutationOptions({
-    mutationFn: async ({ formData, options }: { formData: FormData; options: MutationOptions }) =>
-      updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
+    // Presigned PUT → finalize, then the course claims the finalized upload;
+    // `null` removes the current one.
+    mutationFn: async ({ file }: { file: File | null }) =>
+      updateCourseThumbnail(courseUuid, file ? (await uploadFile(file, 'course-thumbnail')).id : null),
     onSuccess: async (response: Awaited<ReturnType<typeof updateCourseThumbnail>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
         queryClient.invalidateQueries({ queryKey: detailKey }),
-      ])
-    },
-  })
-}
-
-export function addCourseContributorsMutationOptions(courseUuid: string, queryClient: QueryClient) {
-  return mutationOptions({
-    mutationFn: async ({
-      usernames,
-    }: {
-      options: MutationOptions
-      usernames: string[]
-      users: ContributorDraftUser[]
-    }) => bulkAddContributors(courseUuid, usernames),
-    onMutate: async ({ users }: { users: ContributorDraftUser[]; usernames: string[]; options: MutationOptions }) => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      if (!editorBundleKey) {
-        return { editorBundleKey: null, previousEditorBundle: undefined }
-      }
-
-      await queryClient.cancelQueries({ queryKey: editorBundleKey })
-      const previousEditorBundle = queryClient.getQueryData(editorBundleKey)
-
-      if (users.length > 0) {
-        queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
-          if (!current) return current
-          const existingContributors = current.contributors.data ?? []
-          const existingUsernames = new Set(
-            existingContributors.map((contributor: AppCourseAuthor) => contributor.user?.username),
-          )
-          const optimisticContributors = users
-            .filter(user => !existingUsernames.has(user.username))
-            .map(user => buildOptimisticContributor(user))
-
-          return {
-            ...current,
-            contributors: {
-              ...current.contributors,
-              available: true,
-              data: [...existingContributors, ...optimisticContributors],
-              error: null,
-            },
-          }
-        })
-      }
-
-      return { editorBundleKey, previousEditorBundle }
-    },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
-      if (context?.editorBundleKey) {
-        queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
-      }
-    },
-    onSuccess: async () => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      const detailKey = courseKeys.detail(courseUuid)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: detailKey }),
-        ...(editorBundleKey ? [queryClient.invalidateQueries({ queryKey: editorBundleKey })] : []),
-      ])
-    },
-  })
-}
-
-export function updateCourseContributorMutationOptions(courseUuid: string, queryClient: QueryClient) {
-  return mutationOptions({
-    mutationFn: async ({
-      contributorUserId,
-      payload,
-    }: {
-      contributorUserId: number
-      options: MutationOptions
-      payload: ContributorMutationPayload
-    }) => editContributor(courseUuid, contributorUserId, payload.authorship, payload.authorship_status),
-    onMutate: async ({
-      contributorUserId,
-      payload,
-    }: {
-      contributorUserId: number
-      options: MutationOptions
-      payload: ContributorMutationPayload
-    }) => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      if (!editorBundleKey) {
-        return { editorBundleKey: null, previousEditorBundle: undefined }
-      }
-
-      await queryClient.cancelQueries({ queryKey: editorBundleKey })
-      const previousEditorBundle = queryClient.getQueryData(editorBundleKey)
-
-      queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
-        if (!current) return current
-        return {
-          ...current,
-          contributors: {
-            ...current.contributors,
-            data: (current.contributors.data ?? []).map((contributor: AppCourseAuthor) =>
-              contributor.user_id === contributorUserId ? Object.assign(contributor, payload) : contributor,
-            ),
-          },
-        }
-      })
-
-      return { editorBundleKey, previousEditorBundle }
-    },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
-      if (context?.editorBundleKey) {
-        queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
-      }
-    },
-    onSuccess: async () => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      const detailKey = courseKeys.detail(courseUuid)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: detailKey }),
-        ...(editorBundleKey ? [queryClient.invalidateQueries({ queryKey: editorBundleKey })] : []),
-      ])
-    },
-  })
-}
-
-export function removeCourseContributorsMutationOptions(courseUuid: string, queryClient: QueryClient) {
-  return mutationOptions({
-    mutationFn: async ({ usernames }: { options: MutationOptions; userIds: number[]; usernames: string[] }) =>
-      bulkRemoveContributors(courseUuid, usernames),
-    onMutate: async ({ userIds, usernames }: { options: MutationOptions; userIds: number[]; usernames: string[] }) => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      if (!editorBundleKey) {
-        return { editorBundleKey: null, previousEditorBundle: undefined }
-      }
-
-      await queryClient.cancelQueries({ queryKey: editorBundleKey })
-      const previousEditorBundle = queryClient.getQueryData(editorBundleKey)
-      const usernameSet = new Set(usernames)
-      const userIdSet = new Set(userIds)
-
-      queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
-        if (!current) return current
-        return {
-          ...current,
-          contributors: {
-            ...current.contributors,
-            data: (current.contributors.data ?? []).filter((contributor: AppCourseAuthor) => {
-              const hasUserId = contributor.user_id !== undefined && userIdSet.has(contributor.user_id)
-              const hasUsername = contributor.user?.username !== undefined && usernameSet.has(contributor.user.username)
-              return !hasUserId && !hasUsername
-            }),
-          },
-        }
-      })
-
-      return { editorBundleKey, previousEditorBundle }
-    },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
-      if (context?.editorBundleKey) {
-        queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
-      }
-    },
-    onSuccess: async () => {
-      const editorBundleKey = courseKeys.editorBundle(courseUuid)
-      const detailKey = courseKeys.detail(courseUuid)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: detailKey }),
-        ...(editorBundleKey ? [queryClient.invalidateQueries({ queryKey: editorBundleKey })] : []),
       ])
     },
   })

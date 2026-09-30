@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1),\n           moved AS (\n               UPDATE ai_runs SET status = $2, error_code = $3, completed_at = now(),\n                   duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer\n               WHERE id = $1 AND status IN ('queued', 'running')\n               RETURNING triggered_by, coalesce(input_tokens, 0)::bigint AS input_tokens,\n                         coalesce(output_tokens, 0)::bigint AS output_tokens),\n           charged AS (\n               INSERT INTO ai_token_ledger (month, user_id, input_tokens, output_tokens, run_count)\n               SELECT date_trunc('month', now())::date, triggered_by, input_tokens, output_tokens, 1\n               FROM moved WHERE triggered_by IS NOT NULL AND input_tokens + output_tokens > 0\n               ON CONFLICT (month, user_id) DO UPDATE SET\n                   input_tokens = ai_token_ledger.input_tokens + EXCLUDED.input_tokens,\n                   output_tokens = ai_token_ledger.output_tokens + EXCLUDED.output_tokens,\n                   run_count = ai_token_ledger.run_count + 1,\n                   updated_at = now())\n           SELECT count(*) AS \"moved!\" FROM moved",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "moved!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6554cddd4b42d0b4d5d96dae18e1481aa0989c1848ccd142501d154a9e3a3495"
+}

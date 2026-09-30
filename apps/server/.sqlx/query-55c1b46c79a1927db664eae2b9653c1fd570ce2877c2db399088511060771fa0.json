@@ -1,0 +1,179 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score, s.final_score, s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id\n                            AND NOT is_course_staff(r.course_id, r.user_id)) AS \"enrolled!\",\n                  is_course_staff(s.course_id, s.user_id) AS \"staff!\",\n                  k.key AS \"sort_key!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(s.final_score, -1)\n                  WHEN 'attempt_number' THEN s.attempt_number::float8\n                  ELSE coalesce(extract(epoch FROM s.submitted_at)::float8, 0) END AS key) k\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text IS NULL OR s.status = $2)\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\\' OR u.display_name ILIKE $4 ESCAPE '\\')\n             AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))\n           ORDER BY k.key DESC, s.id DESC\n           LIMIT $6",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: SubmissionStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attempt_number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "attempt_number"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "auto_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "enrolled!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "staff!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "sort_key!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Text",
+        "Uuid",
+        "Int8",
+        "Text",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "55c1b46c79a1927db664eae2b9653c1fd570ce2877c2db399088511060771fa0"
+}

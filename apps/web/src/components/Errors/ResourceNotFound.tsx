@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Home, Compass, BookOpen } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -8,15 +9,40 @@ import { Button } from '@components/ui/button'
 interface ResourceNotFoundProps {
   courseuuid?: string
   session?: unknown
-  type?: 'activity' | 'course' | 'generic'
+  type?: 'activity' | 'activity-unavailable' | 'course' | 'collection' | 'user' | 'generic'
 }
 
 export default function ResourceNotFound({ courseuuid, session, type = 'generic' }: ResourceNotFoundProps) {
   const tErrors = useTranslations('Errors')
   const router = useRouter()
+  // BUG-221 nit: an activity unpublished under an open tab shows this card;
+  // once it is republished, coming back to the tab re-reads the page.
+  useEffect(() => {
+    const refresh = () => router.refresh()
+    globalThis.addEventListener('focus', refresh)
+    return () => globalThis.removeEventListener('focus', refresh)
+  }, [router])
 
-  const heading = type === 'activity' ? tErrors('activityNotFound') : tErrors('courseNotFound')
-  const message = type === 'activity' ? tErrors('activityNotFoundMessage') : tErrors('courseNotFoundMessage')
+  const heading =
+    type === 'activity'
+      ? tErrors('activityNotFound')
+      : type === 'activity-unavailable'
+        ? tErrors('activityUnavailable')
+        : type === 'collection'
+          ? tErrors('collectionNotFound')
+          : type === 'user'
+            ? tErrors('userNotFound')
+            : tErrors('courseNotFound')
+  const message =
+    type === 'activity'
+      ? tErrors('activityNotFoundMessage')
+      : type === 'activity-unavailable'
+        ? tErrors('activityUnavailableMessage')
+        : type === 'collection'
+          ? tErrors('collectionNotFoundMessage')
+          : type === 'user'
+            ? tErrors('userNotFoundMessage')
+            : tErrors('courseNotFoundMessage')
 
   const handleBackToCourse = () => {
     if (!courseuuid) return
@@ -36,25 +62,27 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed">{message}</p>
 
         <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-          {!!courseuuid && (
+          {courseuuid ? (
+            // Inside a course the only sensible exit is the course itself; the
+            // dashboard is not where a learner came from.
             <Button
-              variant="outline"
-              className="flex items-center gap-2 transition-colors duration-200"
+              variant="default"
+              className="flex items-center gap-2 shadow-sm transition-colors duration-200"
               onClick={handleBackToCourse}
             >
               <BookOpen className="h-4 w-4" />
               {tErrors('backToCourse')}
             </Button>
+          ) : (
+            <Button
+              variant="default"
+              className="flex items-center gap-2 shadow-sm transition-opacity duration-200"
+              onClick={() => router.push(session ? '/dash' : '/')}
+            >
+              <Home className="h-4 w-4" />
+              {tErrors('backToDashboard')}
+            </Button>
           )}
-
-          <Button
-            variant="default"
-            className="flex items-center gap-2 shadow-sm transition-opacity duration-200"
-            onClick={() => router.push(session ? '/dash' : '/')}
-          >
-            <Home className="h-4 w-4" />
-            {tErrors('backToDashboard')}
-          </Button>
         </div>
       </div>
     </div>

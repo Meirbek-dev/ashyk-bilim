@@ -1,5 +1,7 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import type { MetricCard, TimeSeriesPoint } from '@/types/analytics'
 import KpiActiveLearnerLineChart from './KpiActiveLearnerLineChart'
 import KpiSubmissionAreaChart from './KpiSubmissionAreaChart'
@@ -28,7 +30,7 @@ interface TeacherKpiChartsProps {
 
 /** Returns the previous-period absolute value for a metric, or null if comparison is unavailable. */
 function prevValue(m: MetricCard): number | null {
-  return m.delta_value !== null ? m.value - m.delta_value : null
+  return m.delta_value != null ? m.value - m.delta_value : null
 }
 
 /**
@@ -38,7 +40,7 @@ function prevValue(m: MetricCard): number | null {
  */
 function getHealthPct(m: MetricCard): number {
   if (m.unit === '%') return Math.min(100, Math.max(0, m.value))
-  if (m.delta_pct === null) return 50
+  if (m.delta_pct == null) return 50
   const trending = m.is_higher_better ? m.delta_pct : -m.delta_pct
   return Math.min(100, Math.max(0, 50 + trending / 2))
 }
@@ -58,19 +60,19 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
   const m = metrics
 
   // ── Area chart data ───────────────────────────────────────────────────────
-  const gradingMap = new Map(trends.grading_completed.map(p => [p.bucket_start, p.value]))
+  const gradingMap = new Map(trends.grading_completed.map(p => [p.bucket_start_unix, p.value]))
   const areaData = trends.submissions.map(p => ({
-    bucket: new Date(p.bucket_start).toLocaleDateString(locale, {
+    bucket: fromUnix(p.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
     }),
     submissions: p.value,
-    grading: gradingMap.get(p.bucket_start) ?? 0,
+    grading: gradingMap.get(p.bucket_start_unix) ?? 0,
   }))
 
   // ── Line chart data ───────────────────────────────────────────────────────
   const lineData = trends.active_learners.map(p => ({
-    bucket: new Date(p.bucket_start).toLocaleDateString(locale, {
+    bucket: fromUnix(p.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
     }),
@@ -125,8 +127,8 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
     let prevHealth: number
     if (metric.unit === '%') {
       const prev = prevValue(metric)
-      prevHealth = prev !== null ? Math.min(100, Math.max(0, prev)) : currHealth
-    } else if (metric.delta_pct === null) {
+      prevHealth = prev != null ? Math.min(100, Math.max(0, prev)) : currHealth
+    } else if (metric.delta_pct == null) {
       prevHealth = 50
     } else {
       const trending = metric.is_higher_better ? metric.delta_pct : -metric.delta_pct
@@ -177,19 +179,19 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <KpiSubmissionAreaChart data={areaData} />
         <KpiActiveLearnerLineChart data={lineData} />
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <KpiPeriodCompBarChart data={barData} />
         <KpiCompletionGauge
           completionPct={m.completion_rate.value}
-          deltaPct={m.completion_rate.delta_pct}
+          deltaPct={m.completion_rate.delta_pct ?? null}
           direction={m.completion_rate.direction}
         />
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <KpiHealthRadarChart data={radarData} />
         <KpiHealthRingsChart data={radialData} />
       </div>

@@ -1,0 +1,313 @@
+//! Grading events for SSE clients, on Redis Streams.
+//!
+//! One stream per submission (`sse:grading:{submission}`) and one per
+//! course (`sse:grading:course:{course}` — every grade change and hand-in
+//! on the course, for graders), both `MAXLEN ~ 1024`. Publishing is `XADD`; the stream id doubles as the SSE `id:` so
+//! `Last-Event-ID` resumes with a plain `XRANGE (id +` — no custom replay
+//! log like the legacy sorted set. Live delivery is `XREAD BLOCK` on a
+//! dedicated connection per subscriber (a blocking read must never sit on
+//! the shared multiplexed connection). Per-user concurrent connections are
+//! capped at 5 (legacy limit) with per-connection leases in a Redis sorted
+//! set (member = lease id, score = its expiry).
+//!
+//! [`ai::AiEvents`] is the sibling for AI run streams (`sse:ai:{run}`) and
+//! shares the per-user connection slots.
+
+pub mod ai;
+
+use std::time::Duration;
+
+pub use ai::{AiEvents, AiStoredEvent, AiSubscriber};
+
+use ab_core::id::{CourseId, SubmissionId, UserId};
+use ab_core::{Error, Result};
+use redis::AsyncCommands;
+use redis::aio::ConnectionManager;
+use redis::streams::{StreamMaxlen, StreamRangeReply, StreamReadOptions, StreamReadReply};
+use serde::Serialize;
+
+/// Legacy `_MAX_CONNECTIONS_PER_USER`.
+pub const MAX_CONNECTIONS_PER_USER: i64 = 5;
+/// Events kept per submission stream (approximate trimming).
+const STREAM_MAXLEN: usize = 1024;
+/// A lease whose release was lost expires on its own (legacy 3600s).
+/// ponytail: live streams are not renewed, so one open past an hour stops
+/// counting toward the cap; renew from the stream loop if that ever matters.
+const SLOT_TTL_SECS: i64 = 3600;
+/// Streams die with the submission's relevance; refreshed on every publish.
+const STREAM_TTL_SECS: i64 = 7 * 24 * 3600;
+
+/// Which Redis stream an event lives on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Stream {
+    Submission(SubmissionId),
+    Course(CourseId),
+}
+
+impl From<SubmissionId> for Stream {
+    fn from(id: SubmissionId) -> Self {
+        Self::Submission(id)
+    }
+}
+
+impl From<CourseId> for Stream {
+    fn from(id: CourseId) -> Self {
+        Self::Course(id)
+    }
+}
+
+impl Stream {
+    fn key(self) -> String {
+        match self {
+            Self::Submission(id) => format!("sse:grading:{id}"),
+            Self::Course(id) => format!("sse:grading:course:{id}"),
+        }
+    }
+
+    const fn submission_id(self) -> Option<SubmissionId> {
+        match self {
+            Self::Submission(id) => Some(id),
+            Self::Course(_) => None,
+        }
+    }
+}
+
+/// One event as stored and as sent (`data:` is this, serialised).
+#[derive(Debug, Clone, Serialize)]
+pub struct StoredEvent {
+    /// Redis stream id — the SSE `id:`.
+    pub event_id: String,
+    /// `grade.published`, `submission.returned`, `deadline.extended`, …
+    pub event: String,
+    /// Set on per-submission streams; course streams carry the ids in `payload`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub submission_id: Option<SubmissionId>,
+    pub payload: serde_json::Value,
+    pub sent_at: i64,
+}
+
+/// Holds one of a user's connection slots (a lease); released on drop.
+pub struct ConnectionSlot {
+    redis: ConnectionManager,
+    key: String,
+    lease: String,
+}
+
+impl Drop for ConnectionSlot {
+    fn drop(&mut self) {
+        let mut redis = self.redis.clone();
+        let key = std::mem::take(&mut self.key);
+        let lease = std::mem::take(&mut self.lease);
+        // Drop cannot await; the release is a fire-and-forget task. `ZREM`
+        // removes only this lease, so it can never erase another
+        // connection's slot; a lost release expires with the lease.
+        tokio::spawn(async move {
+            let _: redis::RedisResult<i64> = redis.zrem(&key, &lease).await;
+        });
+    }
+}
+
+#[derive(Clone)]
+pub struct GradingEvents {
+    client: redis::Client,
+    redis: ConnectionManager,
+}
+
+fn now_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
+}
+
+/// A sorted set of leases (renamed from the legacy `sse_conn:` counter,
+/// a plain string — the old keys expire on their own).
+fn slot_key(user_id: UserId) -> String {
+    format!("sse_leases:{user_id}")
+}
+
+/// Atomically: drop expired leases, then add ours unless the cap is reached.
+/// A rejected attempt changes nothing, so retries cannot keep leaked leases
+/// alive (BUG-343). KEYS[1] = set; ARGV = cap, ttl secs, lease id.
+const ACQUIRE_SLOT_LUA: &str = r"
+local now = tonumber(redis.call('TIME')[1])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', now)
+if redis.call('ZCARD', KEYS[1]) >= tonumber(ARGV[1]) then return 0 end
+redis.call('ZADD', KEYS[1], now + tonumber(ARGV[2]), ARGV[3])
+redis.call('EXPIRE', KEYS[1], ARGV[2])
+return 1
+";
+
+/// A connection whose reads may block for the whole `XREAD BLOCK` window:
+/// the crate's default 500 ms response timeout would cut every idle
+/// stream off (the blocking read's own timeout bounds the wait).
+pub(crate) async fn subscriber_connection(
+    client: &redis::Client,
+) -> Result<redis::aio::MultiplexedConnection> {
+    client
+        .get_multiplexed_async_connection_with_config(
+            &redis::AsyncConnectionConfig::new().set_response_timeout(None),
+        )
+        .await
+        .map_err(|e| Error::internal("redis subscriber connection", e))
+}
+
+/// Take a per-user SSE connection lease, shared by every event stream.
+pub(crate) async fn acquire_slot_with(
+    redis: &ConnectionManager,
+    user_id: UserId,
+) -> Result<Option<ConnectionSlot>> {
+    let mut conn = redis.clone();
+    let key = slot_key(user_id);
+    let lease = uuid::Uuid::now_v7().to_string();
+    let acquired: i64 = redis::Script::new(ACQUIRE_SLOT_LUA)
+        .key(&key)
+        .arg(MAX_CONNECTIONS_PER_USER)
+        .arg(SLOT_TTL_SECS)
+        .arg(&lease)
+        .invoke_async(&mut conn)
+        .await
+        .map_err(|e| Error::internal("sse slot acquire", e))?;
+    Ok((acquired == 1).then(|| ConnectionSlot {
+        redis: redis.clone(),
+        key,
+        lease,
+    }))
+}
+
+fn decode(stream: Stream, id: &redis::streams::StreamId) -> Option<StoredEvent> {
+    let event: String = id.get("event")?;
+    let payload: String = id.get("payload").unwrap_or_else(|| "{}".into());
+    let sent_at: i64 = id.get("sent_at").unwrap_or(0);
+    Some(StoredEvent {
+        event_id: id.id.clone(),
+        event,
+        submission_id: stream.submission_id(),
+        payload: serde_json::from_str(&payload).unwrap_or(serde_json::Value::Null),
+        sent_at,
+    })
+}
+
+impl GradingEvents {
+    /// `client` opens the dedicated per-subscriber connections; `redis` is
+    /// the shared multiplexed handle for publishing and slot leases.
+    #[must_use]
+    pub const fn new(client: redis::Client, redis: ConnectionManager) -> Self {
+        Self { client, redis }
+    }
+
+    /// Append an event; returns its stream id.
+    pub async fn publish(
+        &self,
+        stream: impl Into<Stream>,
+        event: &str,
+        payload: &serde_json::Value,
+    ) -> Result<String> {
+        let mut redis = self.redis.clone();
+        let key = stream.into().key();
+        let id: String = redis
+            .xadd_maxlen(
+                &key,
+                StreamMaxlen::Approx(STREAM_MAXLEN),
+                "*",
+                &[
+                    ("event", event.to_owned()),
+                    ("payload", payload.to_string()),
+                    ("sent_at", now_unix().to_string()),
+                ],
+            )
+            .await
+            .map_err(|e| Error::internal("xadd grading event", e))?;
+        let _: () = redis
+            .expire(&key, STREAM_TTL_SECS)
+            .await
+            .map_err(|e| Error::internal("expire grading stream", e))?;
+        Ok(id)
+    }
+
+    /// Publish without failing the caller: events are advisory — a client
+    /// that misses one refetches on reconnect.
+    pub async fn publish_best_effort(
+        &self,
+        stream: impl Into<Stream>,
+        event: &str,
+        payload: serde_json::Value,
+    ) {
+        let stream = stream.into();
+        if let Err(err) = self.publish(stream, event, &payload).await {
+            tracing::warn!(?stream, event, %err, "grading event not published");
+        }
+    }
+
+    /// Events strictly after `after` (a stream id), oldest first.
+    pub async fn replay(
+        &self,
+        stream: impl Into<Stream>,
+        after: &str,
+        limit: usize,
+    ) -> Result<Vec<StoredEvent>> {
+        let stream = stream.into();
+        let mut redis = self.redis.clone();
+        let reply: StreamRangeReply = redis
+            .xrange_count(stream.key(), format!("({after}"), "+", limit)
+            .await
+            .map_err(|e| Error::internal("xrange grading events", e))?;
+        Ok(reply
+            .ids
+            .iter()
+            .filter_map(|id| decode(stream, id))
+            .collect())
+    }
+
+    /// A dedicated connection for one subscriber's blocking reads.
+    pub async fn subscriber(&self) -> Result<Subscriber> {
+        let conn = subscriber_connection(&self.client).await?;
+        Ok(Subscriber { conn })
+    }
+
+    /// Take a connection slot for `user_id`; `None` when the cap is reached.
+    pub async fn acquire_slot(&self, user_id: UserId) -> Result<Option<ConnectionSlot>> {
+        acquire_slot_with(&self.redis, user_id).await
+    }
+
+    /// Current unexpired lease count (health/tests).
+    pub async fn slots_in_use(&self, user_id: UserId) -> Result<i64> {
+        let mut redis = self.redis.clone();
+        redis
+            .zcount(slot_key(user_id), format!("({}", now_unix()), "+inf")
+            .await
+            .map_err(|e| Error::internal("sse slot count", e))
+    }
+}
+
+/// One subscriber's blocking reader.
+pub struct Subscriber {
+    conn: redis::aio::MultiplexedConnection,
+}
+
+impl Subscriber {
+    /// Wait up to `timeout` for events after `after` (`"$"` = only new).
+    /// An empty vector means the wait timed out.
+    pub async fn read(
+        &mut self,
+        stream: impl Into<Stream>,
+        after: &str,
+        timeout: Duration,
+        limit: usize,
+    ) -> Result<Vec<StoredEvent>> {
+        let stream = stream.into();
+        let options = StreamReadOptions::default()
+            .block(usize::try_from(timeout.as_millis()).unwrap_or(usize::MAX))
+            .count(limit);
+        let reply: Option<StreamReadReply> = self
+            .conn
+            .xread_options(&[stream.key()], &[after], &options)
+            .await
+            .map_err(|e| Error::internal("xread grading events", e))?;
+        Ok(reply
+            .into_iter()
+            .flat_map(|r| r.keys)
+            .flat_map(|k| k.ids)
+            .filter_map(|id| decode(stream, &id))
+            .collect())
+    }
+}

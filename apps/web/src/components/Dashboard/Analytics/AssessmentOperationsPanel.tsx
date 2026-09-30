@@ -1,5 +1,11 @@
 'use client'
 
+import { csvBlob, saveBlob } from '@/lib/download'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
+
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,24 +19,23 @@ interface AssessmentOperationsPanelProps {
   detail: TeacherAssessmentDetailResponse
 }
 
-function escapeCsvValue(value: string | number | null | undefined) {
-  return `"${String(value ?? '').replaceAll('"', '""')}"`
-}
+// One decimal, locale separators («68,8 %» in ru) — same as the summary tiles.
+const oneDecimal = (locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
 
-function formatHours(value: number | null | undefined, emptyLabel: string) {
+function formatHours(value: number | null | undefined, emptyLabel: string, locale: string) {
   if (value === null || value === undefined) {
     return emptyLabel
   }
 
-  return `${value.toFixed(1)}h`
+  return `${oneDecimal(locale).format(value)}h`
 }
 
-function formatRate(value: number | null | undefined, emptyLabel: string) {
+function formatRate(value: number | null | undefined, emptyLabel: string, locale: string) {
   if (value === null || value === undefined) {
     return emptyLabel
   }
 
-  return `${value.toFixed(1)}%`
+  return `${oneDecimal(locale).format(value)}%`
 }
 
 function getSloBadgeVariant(status: TeacherAssessmentDetailResponse['slo']['status']) {
@@ -46,19 +51,6 @@ function getSloBadgeVariant(status: TeacherAssessmentDetailResponse['slo']['stat
     }
     default: {
       return 'outline'
-    }
-  }
-}
-
-function getMigrationBadgeVariant(
-  mode: TeacherAssessmentDetailResponse['migration']['compatibility_mode'],
-): 'success' | 'warning' | 'destructive' | 'outline' {
-  switch (mode) {
-    case 'canonical': {
-      return 'success'
-    }
-    default: {
-      return 'success'
     }
   }
 }
@@ -152,10 +144,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     not_applicable: t('pages.assessmentOpsSloStatusNotApplicable'),
   }
 
-  const migrationLabels: Record<TeacherAssessmentDetailResponse['migration']['compatibility_mode'], string> = {
-    canonical: t('pages.assessmentOpsMigrationModeCanonical'),
-  }
-
   const signalLabels: Record<TeacherAssessmentDetailResponse['item_analytics'][number]['signal'], string> = {
     healthy: t('pages.assessmentSignalHealthy'),
     watch: t('pages.assessmentSignalWatch'),
@@ -171,6 +159,17 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
   const auditStatuses = [
     ...new Set(detail.audit_history.map(event => event.status).filter((status): status is string => Boolean(status))),
   ].toSorted((a, b) => a.localeCompare(b))
+  const auditSummary = (event: TeacherAssessmentDetailResponse['audit_history'][number]) => {
+    const action = getAnalyticsCodeLabel(t, event.action)
+    if (event.source === 'bulk_action') {
+      return t('pages.assessmentOpsAuditBulkSummary', { action, count: event.affected_count ?? 0 })
+    }
+    return event.final_score == null ? action : `${action}: ${oneDecimal(locale).format(event.final_score)}%`
+  }
+  const itemNote = (item: TeacherAssessmentDetailResponse['item_analytics'][number]) =>
+    item.accuracy_pct != null
+      ? t('pages.assessmentItemAccuracy', { value: oneDecimal(locale).format(item.accuracy_pct) })
+      : getAnalyticsCodeLabel(t, item.note ?? 'accuracy_unavailable')
   const normalizedAuditSearch = auditSearch.trim().toLowerCase()
   const filteredAuditHistory = detail.audit_history.filter(event => {
     if (auditSourceFilter !== 'all' && event.source !== auditSourceFilter) {
@@ -183,7 +182,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       return true
     }
 
-    return [event.action, event.source, event.status, event.summary, event.actor_display_name]
+    return [event.action, event.source, event.status, auditSummary(event), event.actor_display_name]
       .filter(Boolean)
       .some(value => String(value).toLowerCase().includes(normalizedAuditSearch))
   })
@@ -198,26 +197,17 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       t('pages.assessmentOpsAuditColumnAffected'),
       t('pages.assessmentOpsAuditColumnSummary'),
     ]
+    // UX-142: the labels the panel shows, never the wire codes.
     const rows = filteredAuditHistory.map(event => [
-      new Date(event.occurred_at).toLocaleString(locale),
-      event.source,
-      event.status ?? '',
-      event.action,
+      fromUnix(event.occurred_at_unix).toLocaleString(locale),
+      getAnalyticsCodeLabel(t, event.source),
+      event.status ? getAnalyticsCodeLabel(t, event.status) : '',
+      getAnalyticsCodeLabel(t, event.action),
       event.actor_display_name ?? t('pages.assessmentOpsAuditSystem'),
       event.affected_count ?? '',
-      event.summary,
+      auditSummary(event),
     ])
-    const csv = [headers.map(escapeCsvValue).join(','), ...rows.map(row => row.map(escapeCsvValue).join(','))].join(
-      '\n',
-    )
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const slug = `${detail.assessment_type}-${detail.assessment_id}-audit`
-    link.href = url
-    link.download = `${slug}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(csvBlob([headers, ...rows]), `${detail.assessment_type}-${detail.assessment_id}-audit.csv`)
   }
 
   const resetAuditFilters = () => {
@@ -237,9 +227,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                 : t('pages.assessmentOpsDiagnosticsAuto')}
             </Badge>
             <Badge variant={getSloBadgeVariant(detail.slo.status)}>{sloLabels[detail.slo.status]}</Badge>
-            <Badge variant={getMigrationBadgeVariant(detail.migration.compatibility_mode)}>
-              {migrationLabels[detail.migration.compatibility_mode]}
-            </Badge>
           </div>
           <CardTitle>{t('pages.assessmentOpsTitle')}</CardTitle>
           <p className="text-muted-foreground text-sm">{t('pages.assessmentOpsDescription')}</p>
@@ -249,7 +236,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       <Card>
         <CardHeader>
           <CardTitle>{t('pages.assessmentOpsDiagnosticsTitle')}</CardTitle>
-          {detail.diagnostics.note ? <p className="text-muted-foreground text-sm">{detail.diagnostics.note}</p> : null}
+          {detail.diagnostics.note ? (
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.diagnostics.note)}</p>
+          ) : null}
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-border divide-y">
@@ -270,7 +259,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
         <Card>
           <CardHeader>
             <CardTitle>{t('pages.assessmentSupportTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.support.note}</p>
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.support.note)}</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="divide-border divide-y">
@@ -318,29 +307,12 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                 <div className="mt-2 flex flex-wrap gap-2">
                   {detail.support.alerts.map(alert => (
                     <Badge key={alert.code} variant={getSupportAlertBadgeVariant(alert.severity)}>
-                      {alert.summary}
+                      {getAnalyticsCodeLabel(t, alert.summary)}
                     </Badge>
                   ))}
                 </div>
               ) : (
                 <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportAlertsEmpty')}</div>
-              )}
-            </div>
-
-            <div>
-              <div className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                {t('pages.assessmentSupportBlockers')}
-              </div>
-              {detail.support.cutover_blockers.length ? (
-                <div className="mt-2 space-y-2">
-                  {detail.support.cutover_blockers.map(blocker => (
-                    <div key={blocker} className="rounded-lg border p-3 text-sm">
-                      {blocker}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportBlockersEmpty')}</div>
               )}
             </div>
           </CardContent>
@@ -352,26 +324,26 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               <Badge variant={getSloBadgeVariant(detail.slo.status)}>{sloLabels[detail.slo.status]}</Badge>
             </div>
             <CardTitle>{t('pages.assessmentOpsSloTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.slo.note}</p>
+            <p className="text-muted-foreground text-sm">{getAnalyticsCodeLabel(t, detail.slo.note)}</p>
           </CardHeader>
           <div className="divide-border divide-y">
             <div className="grid grid-cols-2">
               <div className="px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloTarget')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.target_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.target_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP50')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="border-border border-t px-4 py-2.5">
                 <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP90')}</div>
                 <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                  {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'))}
+                  {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'), locale)}
                 </div>
               </div>
               <div className="border-border border-t px-4 py-2.5">
@@ -382,33 +354,6 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                     {t('pages.assessmentOpsSloOverdue')}: {detail.slo.overdue_backlog_count}
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={getMigrationBadgeVariant(detail.migration.compatibility_mode)}>
-                {migrationLabels[detail.migration.compatibility_mode]}
-              </Badge>
-              <Badge variant={detail.migration.cutover_ready ? 'success' : 'warning'}>
-                {detail.migration.cutover_ready
-                  ? t('pages.assessmentOpsMigrationCutoverReady')
-                  : t('pages.assessmentOpsMigrationCutoverBlocked')}
-              </Badge>
-            </div>
-            <CardTitle>{t('pages.assessmentOpsMigrationTitle')}</CardTitle>
-            <p className="text-muted-foreground text-sm">{detail.migration.note}</p>
-          </CardHeader>
-          <div className="divide-border divide-y">
-            <div className="px-4 py-2.5">
-              <div className="text-muted-foreground text-[10px] uppercase">
-                {t('pages.assessmentOpsMigrationCanonicalRows')}
-              </div>
-              <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
-                {detail.migration.canonical_row_count}
               </div>
             </div>
           </div>
@@ -428,7 +373,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                     <Badge variant="outline">{itemTypeLabels[item.item_type]}</Badge>
                     <Badge variant={getItemSignalBadgeVariant(item.signal)}>{signalLabels[item.signal]}</Badge>
                   </div>
-                  <div className="text-foreground mt-2 text-sm font-medium">{item.item_label}</div>
+                  <div className="text-foreground mt-2 text-sm font-medium">
+                    {item.item_type === 'workflow' ? getAnalyticsCodeLabel(t, item.item_label) : item.item_label}
+                  </div>
                   <div className="text-muted-foreground mt-1.5 grid gap-3 text-sm sm:grid-cols-3">
                     <span>
                       {t('pages.assessmentItemPopulation')}: {item.population_count}
@@ -437,10 +384,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentItemImpacted')}: {item.impacted_count}
                     </span>
                     <span>
-                      {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'))}
+                      {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'), locale)}
                     </span>
                   </div>
-                  <div className="text-muted-foreground mt-1 text-xs">{item.note}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">{itemNote(item)}</div>
                 </div>
               ))}
             </div>
@@ -468,7 +415,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentCohortSubmitted')}: {cohort.submitted_learners}
                     </span>
                     <span>
-                      {t('pages.assessmentCohortPassRate')}: {formatRate(cohort.pass_rate, t('atRisk.na'))}
+                      {t('pages.assessmentCohortPassRate')}: {formatRate(cohort.pass_rate, t('atRisk.na'), locale)}
                     </span>
                     <span>
                       {t('pages.assessmentCohortAwaiting')}: {cohort.awaiting_grading}
@@ -537,7 +484,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       size="sm"
                       onClick={() => setAuditSourceFilter(source)}
                     >
-                      {source === 'all' ? t('pages.assessmentOpsAuditFilterAllSources') : source}
+                      {source === 'all'
+                        ? t('pages.assessmentOpsAuditFilterAllSources')
+                        : getAnalyticsCodeLabel(t, source)}
                     </Button>
                   ))}
                 </div>
@@ -558,7 +507,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       size="sm"
                       onClick={() => setAuditStatusFilter(status)}
                     >
-                      {status}
+                      {getAnalyticsCodeLabel(t, status)}
                     </Button>
                   ))}
                 </div>
@@ -569,13 +518,18 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                   {filteredAuditHistory.map(event => (
                     <div key={event.id} className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">{event.source}</Badge>
-                        {event.status ? <Badge variant="secondary">{event.status}</Badge> : null}
+                        <Badge variant="outline">{getAnalyticsCodeLabel(t, event.source)}</Badge>
+                        {event.status ? (
+                          <Badge variant="secondary">{getAnalyticsCodeLabel(t, event.status)}</Badge>
+                        ) : null}
                       </div>
-                      <div className="text-foreground mt-2 text-sm font-medium">{event.summary}</div>
+                      <div className="text-foreground mt-2 text-sm font-medium">{auditSummary(event)}</div>
                       <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
-                        <span>{new Date(event.occurred_at).toLocaleString(locale)}</span>
+                        {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+                        <span suppressHydrationWarning>
+                          {formatDate(fromUnix(event.occurred_at_unix), locale, DATE_TIME_OPTIONS)}
+                        </span>
                         {event.affected_count !== null && event.affected_count !== undefined ? (
                           <span>
                             {t('pages.assessmentOpsAuditAffected')}: {event.affected_count}

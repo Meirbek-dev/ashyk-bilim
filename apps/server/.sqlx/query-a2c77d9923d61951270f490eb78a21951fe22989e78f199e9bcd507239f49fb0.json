@@ -1,0 +1,79 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT metric_date::text AS \"metric_date!\", course_id AS \"course_id: CourseId\",\n                  completion_rate, ungraded_submissions, engagement_delta_pct,\n                  (extract(epoch FROM generated_at))::bigint AS \"generated_at!\"\n           FROM daily_course_metrics\n           WHERE course_id = ANY($1)\n             AND metric_date = (SELECT max(metric_date) FROM daily_course_metrics\n                                WHERE course_id = ANY($1) AND metric_date < ($2::text)::date)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "metric_date!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "daily_course_metrics",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "completion_rate",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "daily_course_metrics",
+            "name": "completion_rate"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "ungraded_submissions",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "daily_course_metrics",
+            "name": "ungraded_submissions"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "engagement_delta_pct",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "daily_course_metrics",
+            "name": "engagement_delta_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "generated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      true,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "a2c77d9923d61951270f490eb78a21951fe22989e78f199e9bcd507239f49fb0"
+}

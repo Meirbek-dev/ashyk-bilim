@@ -1,65 +1,66 @@
 'use server'
-import { apiJson, apiResult } from '@/lib/api-client'
-import { tags } from '@/lib/cacheTags'
+import { apiJson } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
+import type { AdminUserPage, ProfileSections, PublicProfile } from '@/lib/api/generated/zod'
 
-export interface AppUserProfileDetail {
-  icon: string
-  id?: number | string
-  text: string
+/**
+ * Public profile projection (server side). v2 has no `GET /users/{id}`:
+ * other users are reachable through `GET /users/{username}` (public card,
+ * readable anonymously) or the admin listing `GET /users`. `first_name`/`last_name` are
+ * kept for the profile page which still renders the legacy shape; `profile` is the
+ * server's profile builder document (BUG-361).
+ */
+export interface AppUserProfileData {
+  avatar_key: string | null
+  bio: string
+  details: Record<string, { icon: string; id: string; text: string }>
+  display_name: string
+  first_name: string
+  id: string
+  last_name: string
+  profile: ProfileSections
+  username: string
 }
 
-export interface AppUserProfileData extends AppUserSummary {
-  bio?: string | null
-  details?: Record<string, AppUserProfileDetail>
-  id: number
-  profile?: string | Record<string, unknown> | null
-  user_uuid: string
+function toProfile(user: PublicProfile | AdminUserPage['items'][number]): AppUserProfileData {
+  return {
+    id: user.id,
+    username: user.username,
+    display_name: user.display_name,
+    first_name: user.display_name,
+    last_name: '',
+    bio: 'bio' in user ? user.bio : '',
+    details: {},
+    profile: 'profile' in user ? user.profile : { sections: [] },
+    avatar_key: 'avatar_key' in user ? (user.avatar_key ?? null) : null,
+  }
 }
 
-export async function getUser(user_id: number): Promise<AppUserProfileData> {
-  return apiJson<AppUserProfileData>(`users/id/${user_id}`)
+export async function getUser(user_id: string): Promise<AppUserProfileData> {
+  const page = await apiJson<AdminUserPage>(`users?q=${encodeURIComponent(user_id)}&limit=20`)
+  const user = page.items.find(candidate => candidate.id === user_id)
+  if (!user) throw new Error(`User ${user_id} was not found`)
+  return toProfile(user)
 }
 
-export async function getUserByUsername(username: string): Promise<AppUserProfileData> {
-  return apiJson<AppUserProfileData>(`users/username/${username}`)
+/** Next hands `[username]` over still percent-encoded when it is non-ASCII (`%D0%91…`). */
+function decodeRouteParam(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
 }
 
-export async function getCoursesByUser(user_id: number) {
-  return apiResult<AppCourse[]>(`users/${user_id}/courses`)
-}
-
-export async function updateUserAvatar(user_id: number, avatar_file: File) {
-  const formData = new FormData()
-  formData.append('avatar_file', avatar_file)
-  const data = await apiJson<AppUserProfileData>(`users/update_avatar/${user_id}`, {
-    method: 'PUT',
-    body: formData,
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
-}
-
-export async function updateUserTheme(user_id: number, theme: string) {
-  const data = await apiJson<AppPayload>(`users/preferences/theme/${user_id}?theme=${encodeURIComponent(theme)}`, {
-    method: 'PUT',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
-}
-
-export async function updateUserLocale(user_id: number, locale: string) {
-  const data = await apiJson<AppPayload>(`users/preferences/locale/${user_id}?locale=${encodeURIComponent(locale)}`, {
-    method: 'PUT',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.users, 'max')
-
-  return data
+/**
+ * `username` is the `/user/[username]` route param: decoded once here, encoded once
+ * for the API path. `null` when no user has that username (a page state, not a load failure).
+ */
+export async function getUserByUsername(username: string): Promise<AppUserProfileData | null> {
+  try {
+    return toProfile(await apiJson<PublicProfile>(`users/${encodeURIComponent(decodeRouteParam(username))}`))
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) return null
+    throw error
+  }
 }

@@ -1,12 +1,15 @@
 'use client'
 
+import { getAnalyticsMessage } from '@/lib/analytics/labels'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TeacherCourseRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface CourseHealthTableProps {
   rows: TeacherCourseRow[]
@@ -16,13 +19,15 @@ interface CourseHealthTableProps {
 
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const percent = usePercentFormat()
+  const format = useFormatter()
   const columns: DataTableColumnDef<TeacherCourseRow>[] = [
     {
       accessorKey: 'course_name',
       header: t('courseHealth.colCourse'),
       cell: ({ row }) => (
         <Link
-          href={`/dash/analytics/courses/${row.original.course_uuid}`}
+          href={`/dash/analytics/courses/${row.original.course_id}`}
           className="text-foreground font-medium hover:text-emerald-700"
         >
           {row.original.course_name}
@@ -37,10 +42,10 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
         const course = row.original
         return (
           <div>
-            <div>{course.completion_rate}%</div>
+            <div>{percent(course.completion_rate)}</div>
             <div className="text-muted-foreground text-[11px]">
               {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
-                ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
+                ? `${format.number(course.teacher_completion_delta_pct, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })} ${t('courseHealth.vsTeacherAvg')}`
                 : ''}
             </div>
           </div>
@@ -62,12 +67,15 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
         // Score is already on a 0–100 scale (freshness × 0.55 + avg_progress × 0.45).
         return (
           <div>
-            <div>{Math.round(v)}%</div>
+            <div>{percent(Math.round(v))}</div>
             {course.historical_completion_delta_pct !== null &&
               course.historical_completion_delta_pct !== undefined && (
                 <div className="text-muted-foreground text-[11px]">
-                  {course.historical_completion_delta_pct > 0 ? '+' : ''}
-                  {course.historical_completion_delta_pct} {t('courseHealth.vsHistory')}
+                  {format.number(course.historical_completion_delta_pct, {
+                    maximumFractionDigits: 1,
+                    signDisplay: 'exceptZero',
+                  })}{' '}
+                  {t('courseHealth.vsHistory')}
                 </div>
               )}
           </div>
@@ -88,7 +96,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
                   : 'outline'
             }
           >
-            {row.original.top_alert.title}
+            {getAnalyticsMessage(t, row.original.top_alert).title}
           </Badge>
         ) : (
           t('courseHealth.noAlert')

@@ -3,6 +3,7 @@ import type { APIError } from '@/lib/api/assertSuccess'
 
 type OrvalFetchOptions = Omit<RequestInit, 'body'> & {
   baseUrl?: string
+  retry?: 0 | 1
   body?: BodyInit | null
   data?: unknown
   next?:
@@ -21,7 +22,8 @@ type OrvalConfig = OrvalFetchOptions & {
   url: string
 }
 
-const API_PREFIX = /^\/api\/v1\/?/u
+/** Generated URLs carry the contract base path; the transport adds it back from `NEXT_PUBLIC_API_URL`. */
+const API_PREFIX = /^\/api\/v2\/?/u
 
 function normalizeApiPath(url: string): string {
   return url.replace(API_PREFIX, '')
@@ -56,10 +58,16 @@ function resolveOrvalRequest(urlOrConfig: string | OrvalConfig, options?: OrvalF
   }
 
   const { url, params, data, ...init } = urlOrConfig
+  const mergedHeaders = new Headers(init.headers)
+  if (options?.headers) {
+    new Headers(options.headers).forEach((value, key) => mergedHeaders.set(key, value))
+  }
   return {
     path: normalizeApiPath(appendParams(url, params)),
     init: {
       ...init,
+      ...options,
+      headers: mergedHeaders,
       ...(data === undefined ? {} : { body: data instanceof FormData ? data : JSON.stringify(data) }),
     },
   }

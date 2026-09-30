@@ -1,6 +1,9 @@
 import { getPublicConfig, getServerConfigResult } from './env'
 
-const toAbsoluteUrl = (path: string, baseUrl: string) => new URL(path, baseUrl).toString()
+// An empty path yields the bare origin (no trailing slash) so callers can append
+// `/course/...` without producing `//course/...` (BUG-033a).
+const toAbsoluteUrl = (path: string, baseUrl: string) =>
+  path ? new URL(path, baseUrl).toString() : new URL(baseUrl).origin
 
 /**
  * Resolves the API base URL (always ending with a slash).

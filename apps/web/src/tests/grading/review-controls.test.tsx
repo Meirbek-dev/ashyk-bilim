@@ -5,22 +5,29 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import GradeForm from '@/features/grading/review/components/GradeForm'
+import SubmissionList from '@/features/grading/review/components/SubmissionList'
+import SubmissionInspector from '@/features/grading/review/components/SubmissionInspector'
 import type { Submission } from '@/features/grading/domain'
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { APIError } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
-  createStudentPolicyOverrideMock: vi.fn(),
+  extendDeadlineMock: vi.fn(),
+  getBulkActionMock: vi.fn(),
   exportGradesCsvMock: vi.fn(),
   saveGradeMock: vi.fn(),
   saveGradingDraftMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
+  toastWarningMock: vi.fn(),
   mutateMock: vi.fn().mockResolvedValue(undefined),
   gradingPanelState: {
     submission: null as Submission | null,
     isLoading: false,
+    error: null as unknown,
   },
 }))
 
@@ -47,39 +54,88 @@ vi.mock('sonner', () => ({
   toast: {
     success: mocks.toastSuccessMock,
     error: mocks.toastErrorMock,
+    warning: mocks.toastWarningMock,
   },
+}))
+
+vi.mock('@/hooks/useApiError', () => ({
+  useApiError: () => ({
+    handleApiError: (error: unknown) => ({
+      message: error instanceof Error ? error.message : 'unknown',
+      code: error instanceof APIError ? error.code : null,
+      fieldErrors: error instanceof APIError ? error.fieldErrors : [],
+    }),
+  }),
 }))
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'en',
+  useFormatter: () => ({ number: (value: number) => String(value), dateTime: (value: Date) => value.toISOString() }),
 }))
 
 vi.mock('@/services/grading/grading', () => ({
   publishAssessmentGrades: (...args: unknown[]) => mocks.publishAssessmentGradesMock(...args),
   exportGradesCSV: (...args: unknown[]) => mocks.exportGradesCsvMock(...args),
+}))
+
+// Bulk rows and the deadline extension go straight to the API from the
+// browser (problem+json codes survive, BUG-035).
+vi.mock('@/lib/api/generated/grading/grading', () => ({
   saveGrade: (...args: unknown[]) => mocks.saveGradeMock(...args),
+  extendDeadline: (...args: unknown[]) => mocks.extendDeadlineMock(...args),
+  getBulkAction: (...args: unknown[]) => mocks.getBulkActionMock(...args),
+}))
+
+// A plain textarea stands in for the markdown editor (the BUG-197 case types item feedback).
+vi.mock('@/features/content-markdown', () => ({
+  MarkdownEditor: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string
+    onChange: (value: string) => void
+    placeholder?: string
+  }) => <textarea placeholder={placeholder} value={value} onChange={event => onChange(event.target.value)} />,
 }))
 
 vi.mock('@/services/assessments/assessment-actions', () => ({
-  createStudentPolicyOverride: (...args: unknown[]) => mocks.createStudentPolicyOverrideMock(...args),
   saveGradingDraft: (...args: unknown[]) => mocks.saveGradingDraftMock(...args),
+}))
+
+// The item scale the grade save converts to (BUG-174 tests render item grading).
+vi.mock('@/features/assessments/queries', () => ({
+  assessmentByActivityQueryOptions: (activityUuid: string) => ({
+    queryKey: ['assessment', activityUuid],
+    queryFn: async () => ({
+      items: [
+        { id: 'item_1', max_score: 10 },
+        { id: 'item_2', max_score: 10 },
+      ],
+    }),
+  }),
 }))
 
 vi.mock('@/hooks/useGradingPanel', () => ({
   useGradingPanel: () => ({
     submission: mocks.gradingPanelState.submission,
     isLoading: mocks.gradingPanelState.isLoading,
+    error: mocks.gradingPanelState.error,
     mutate: mocks.mutateMock,
   }),
 }))
 
+vi.mock('@/hooks/useSession', () => ({
+  useSession: () => ({ user: { id: 'user_teacher' } }),
+}))
+
 function createSubmission(overrides: Partial<Submission> = {}): Submission {
   return {
-    id: 1,
+    id: 'submission_review',
     submission_uuid: 'submission_review',
-    user_id: 9,
-    activity_id: 42,
+    user_id: 'user_student',
+    activity_id: 'activity_review',
     status: 'GRADED',
     version: 3,
     final_score: 91,
@@ -95,9 +151,9 @@ function createSubmission(overrides: Partial<Submission> = {}): Submission {
     answers_json: {},
     metadata_json: {},
     user: {
-      id: 9,
-      user_uuid: 'user_student',
+      id: 'user_student',
       username: 'student',
+      display_name: 'Student One',
       first_name: 'Student',
       last_name: 'One',
       email: 'student.one@example.test',
@@ -113,12 +169,19 @@ describe('teacher review controls', () => {
     globalThis.localStorage.clear()
     mocks.gradingPanelState.submission = null
     mocks.gradingPanelState.isLoading = false
+    mocks.gradingPanelState.error = null
     mocks.publishAssessmentGradesMock.mockResolvedValue({
       published_count: 2,
       already_published_count: 1,
     })
-    mocks.createStudentPolicyOverrideMock.mockResolvedValue({ id: 1 })
-    mocks.exportGradesCsvMock.mockResolvedValue('header\nvalue')
+    mocks.extendDeadlineMock.mockResolvedValue({
+      id: 'bulk_1',
+      action_type: 'extend_deadline',
+      status: 'completed',
+      affected_count: 2,
+      error_log: '',
+    })
+    mocks.exportGradesCsvMock.mockResolvedValue(new Blob(['﻿header\nvalue']))
     mocks.saveGradeMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.saveGradingDraftMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.mutateMock.mockResolvedValue(undefined)
@@ -160,8 +223,10 @@ describe('teacher review controls', () => {
     expect(within(dialog).getByText('preview.gradeReady')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument()
     expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument()
+    // UX-067: the ungraded row is named as skipped, not silently dropped.
+    expect(within(dialog).getByText('preview.notGraded')).toBeInTheDocument()
 
-    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Publish graded submissions' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'confirmPublish' }))
@@ -169,36 +234,78 @@ describe('teacher review controls', () => {
     await waitFor(() => {
       expect(mocks.saveGradeMock).toHaveBeenCalledTimes(2)
     })
+    // BUG-138: publish-only — no score (the server keeps the stored raw score
+    // and penalties), no feedback (kept); the note goes to the audit trail.
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       1,
       'submission_ready',
-      {
-        final_score: 91,
-        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-        status: 'PUBLISHED',
-        item_feedback: [],
-      },
-      3,
-      'assessment_review',
+      { action: 'publish', audit_note: 'Publish graded submissions' },
+      { headers: { 'If-Match': '"3"' } },
     )
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       2,
       'submission_visible',
-      {
-        final_score: 77,
-        feedback: 'Solid work.\n\nAudit note: Publish graded submissions',
-        status: 'PUBLISHED',
-        item_feedback: [],
-      },
-      3,
-      'assessment_review',
+      { action: 'publish', audit_note: 'Publish graded submissions' },
+      { headers: { 'If-Match': '"3"' } },
     )
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.published')
+    expect(mocks.toastWarningMock).toHaveBeenCalledWith('toasts.publishedWithSkipped')
+    expect(mocks.toastSuccessMock).not.toHaveBeenCalledWith('toasts.published')
     expect(onRefresh).toHaveBeenCalledTimes(1)
     expect(await screen.findByText('summaries.publishFinished')).toBeInTheDocument()
   })
 
-  it('shows deadline extension preview and queues the selected learner override', async () => {
+  // BUG-125: a PUBLISHED row cannot be returned — it is left out, and a
+  // server refusal keeps the dialog open with the per-row error, no success badge.
+  it('returns only returnable rows and keeps the dialog open when the server refuses one', async () => {
+    mocks.saveGradeMock.mockRejectedValueOnce(new Error('transition-not-allowed'))
+    render(
+      <ReviewBulkActionBar
+        activityId={42}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[
+          createSubmission({ submission_uuid: 'submission_ready', status: 'GRADED', final_score: 91 }),
+          createSubmission({ submission_uuid: 'submission_visible', status: 'PUBLISHED', final_score: 77 }),
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'returnSelected' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('preview.notReturnable')).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+      target: { value: 'Return for another pass' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'confirmReturn' }))
+
+    await waitFor(() => expect(mocks.saveGradeMock).toHaveBeenCalledTimes(1))
+    expect(mocks.saveGradeMock.mock.calls[0]?.[0]).toBe('submission_ready')
+    expect(await within(dialog).findByText('transition-not-allowed', { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(mocks.toastWarningMock).toHaveBeenCalledWith('toasts.bulkPartialFailure')
+    expect(screen.getByText('summaries.finishedWithErrors')).toBeInTheDocument()
+    expect(screen.queryByText('summaries.returnFinished')).toBeNull()
+  })
+
+  // UX-093: a selection of unscored rows explains the disabled bulk return.
+  it('hints that the bulk return needs a saved score', () => {
+    render(
+      <ReviewBulkActionBar
+        activityId={42}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[
+          createSubmission({ submission_uuid: 'submission_pending', status: 'PENDING', final_score: null }),
+        ]}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'returnSelected' })).toBeDisabled()
+    expect(screen.getByText('returnNeedsSavedScore')).toBeInTheDocument()
+  })
+
+  it('shows deadline extension preview and runs the deadline-extensions bulk action', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined)
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + 1)
@@ -217,9 +324,9 @@ describe('teacher review controls', () => {
         submissions={[
           createSubmission({
             user: {
-              id: 9,
-              user_uuid: 'user_a',
+              id: 'user_a',
               username: 'student.a',
+              display_name: 'A Student',
               first_name: 'A',
               last_name: 'Student',
               email: 'a@example.test',
@@ -228,9 +335,9 @@ describe('teacher review controls', () => {
           createSubmission({
             submission_uuid: 'submission_two',
             user: {
-              id: 10,
-              user_uuid: 'user_b',
+              id: 'user_b',
               username: 'student.b',
+              display_name: 'B Student',
               first_name: 'B',
               last_name: 'Student',
               email: 'b@example.test',
@@ -250,27 +357,127 @@ describe('teacher review controls', () => {
     fireEvent.change(dueAtTimeInput!, { target: { value: '14:30' } })
     fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
 
-    fireEvent.change(screen.getByPlaceholderText('reasonPlaceholder'), {
-      target: { value: 'Medical extension' },
-    })
     fireEvent.click(screen.getByRole('button', { name: 'extend' }))
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('dialogs.extendTitle')).toBeInTheDocument()
-    expect(within(dialog).getByText('Medical extension')).toBeInTheDocument()
+    // UX-066: the reason is asked for in the dialog; the date is localized, not raw ISO.
+    expect(within(dialog).getByText(expectedDueAt.toISOString())).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByPlaceholderText('reasonPlaceholder'), {
+      target: { value: 'Medical extension' },
+    })
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
 
+    // BUG-124: one queued bulk action, never per-learner policy overrides.
     await waitFor(() => {
-      expect(mocks.createStudentPolicyOverrideMock).toHaveBeenCalledTimes(2)
+      expect(mocks.extendDeadlineMock).toHaveBeenCalledTimes(1)
     })
-    expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
-      user_id: 9,
-      due_at_override: expectedDueAt.toISOString(),
-      note: 'Medical extension',
+    expect(mocks.extendDeadlineMock).toHaveBeenCalledWith('assessment_review', {
+      user_ids: ['user_a', 'user_b'],
+      new_due_at_unix: Math.floor(expectedDueAt.getTime() / 1000),
+      reason: 'Medical extension',
     })
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued')
+    await waitFor(() => expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineExtended'))
+    expect(mocks.getBulkActionMock).not.toHaveBeenCalled()
     expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  // UX-113: the server's 422 `new_due_at_unix`/`past` is shown on the field; the dialog stays open.
+  it('shows a past new due date as a field error instead of a generic toast', async () => {
+    mocks.extendDeadlineMock.mockRejectedValue(
+      new APIError({
+        code: 'validation-failed',
+        message: 'validation failed',
+        status: 422,
+        fieldErrors: [{ field: 'new_due_at_unix', code: 'past', message: 'the new due date must be in the future' }],
+      }),
+    )
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 1)
+    const dueDateName = new RegExp(
+      `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
+      'i',
+    )
+    render(
+      <ReviewBulkActionBar
+        activityId={77}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[createSubmission({ submission_uuid: 'submission_a' })]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
+    const dueAtDialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: dueDateName }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'extend' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('preview.dueDatePast')
+    expect(mocks.toastErrorMock).not.toHaveBeenCalled()
+  })
+
+  // UX-167: a leaver's row (enrolled: false) is left out of the extension and named; a
+  // learner the server refuses (`user_ids.{id}` not-in-course) is named and dropped too.
+  it('extends course members only and names the learners who are not enrolled', async () => {
+    mocks.extendDeadlineMock.mockRejectedValueOnce(
+      new APIError({
+        code: 'validation-failed',
+        message: 'validation failed',
+        status: 422,
+        fieldErrors: [{ field: 'user_ids.user_c', code: 'not-in-course', message: 'not enrolled' }],
+      }),
+    )
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 1)
+    const dueDateName = new RegExp(
+      `${dueDate.toLocaleString('en-US', { month: 'long' })} ${dueDate.getDate()}(?:st|nd|rd|th), ${dueDate.getFullYear()}`,
+      'i',
+    )
+    const learner = (id: string, enrolled: boolean, staff = false) =>
+      createSubmission({
+        submission_uuid: `submission_${id}`,
+        enrolled,
+        staff,
+        user: { id, username: id, display_name: id, first_name: id, last_name: '', email: `${id}@example.test` },
+      })
+    render(
+      <ReviewBulkActionBar
+        activityId={77}
+        assessmentUuid="assessment_review"
+        disabled={false}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        submissions={[
+          learner('user_a', true),
+          learner('user_b', false),
+          learner('user_c', true),
+          learner('user_d', false, true),
+        ]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
+    const dueAtDialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: dueDateName }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'extend' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('preview.notEnrolled')).toBeInTheDocument()
+    // UX-199: staff are named as staff, not as leavers.
+    expect(within(dialog).getByText('preview.staff')).toBeInTheDocument()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }))
+    await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.notEnrolled'))
+    expect(mocks.extendDeadlineMock.mock.calls[0]?.[1]).toMatchObject({ user_ids: ['user_a', 'user_c'] })
+
+    // The button stays disabled until the rejected mutation settles.
+    const retry = within(dialog).getByRole('button', { name: 'queueExtension' })
+    await waitFor(() => expect(retry).toBeEnabled())
+    fireEvent.click(retry)
+    await waitFor(() => expect(mocks.extendDeadlineMock).toHaveBeenCalledTimes(2))
+    expect(mocks.extendDeadlineMock.mock.calls[1]?.[1]).toMatchObject({ user_ids: ['user_a'] })
   })
 
   it('shows hidden-grade release preview and summarizes the activity-wide publish result', async () => {
@@ -300,9 +507,12 @@ describe('teacher review controls', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument()
-    expect(within(dialog).getByText('preview.selectedHiddenSubmissions')).toBeInTheDocument()
+    // UX-105: the action is assessment-wide — the dialog explains that and shows no selection counts.
+    expect(within(dialog).getByText('preview.releaseHiddenDescription')).toBeInTheDocument()
+    expect(within(dialog).queryByText('preview.selectedHiddenSubmissions')).toBeNull()
+    expect(within(dialog).queryByText('preview.alreadyVisible')).toBeNull()
 
-    fireEvent.change(within(dialog).getByPlaceholderText('Reason for this bulk action'), {
+    fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
       target: { value: 'Release hidden grades' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
@@ -346,9 +556,96 @@ describe('teacher review controls', () => {
     )
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument()
-    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
+    // UX-226: no items — the hint asks for the final score, not «every item».
+    expect(screen.getByText('publishPrerequisiteScore')).toBeInTheDocument()
+    expect(screen.queryByText('publishPrerequisite')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
-    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument()
+  })
+
+  // BUG-123: a colleague's save (SSE refetch) must not overwrite what the
+  // grader typed; the server copy is offered behind an explicit action.
+  it('keeps a dirty draft when the submission is refetched and offers the colleague version', async () => {
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 91, version: 3 })
+    const queryClient = new QueryClient()
+    const navigation = { hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }
+    // A fresh element each time — React skips a re-render of an identical element.
+    const ui = () => (
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            assessmentUuid="assessment_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={navigation}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>
+    )
+    const { rerender } = render(ui())
+
+    fireEvent.change(screen.getByLabelText('finalScore'), { target: { value: '40' } })
+    mocks.gradingPanelState.submission = createSubmission({
+      status: 'GRADED',
+      final_score: 77,
+      version: 4,
+      grading_json: { feedback: 'Colleague feedback' },
+    })
+    rerender(ui())
+
+    expect(screen.getByLabelText('finalScore')).toHaveValue(40)
+    expect(screen.getByText('staleDraftTitle')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'useServerValues' }))
+    expect(screen.getByLabelText('finalScore')).toHaveValue(77)
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
+  })
+
+  // UX-049: while the notice is open nothing can be saved; «keep my draft»
+  // re-bases `If-Match` on the colleague's version and the publish clears it.
+  it('blocks save and publish behind the colleague notice and re-bases the version on keep', async () => {
+    mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 91, version: 3 })
+    const queryClient = new QueryClient()
+    const navigation = { hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }
+    const ui = () => (
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            assessmentUuid="assessment_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={navigation}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>
+    )
+    const { rerender } = render(ui())
+
+    fireEvent.change(screen.getByLabelText('finalScore'), { target: { value: '40' } })
+    mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 77, version: 4 })
+    rerender(ui())
+
+    expect(screen.getByText('staleDraftTitle')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'saveDraftGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+    expect(screen.getByText('staleDraftBlocked')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'keepMyDraft' }))
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
+    expect(screen.getByLabelText('finalScore')).toHaveValue(40)
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'publishGrade' }))
+    await waitFor(() => {
+      expect(mocks.saveGradingDraftMock).toHaveBeenLastCalledWith(
+        'assessment_review',
+        'submission_review',
+        expect.objectContaining({ status: 'publish' }),
+        4,
+      )
+    })
+    expect(screen.queryByText('staleDraftTitle')).toBeNull()
   })
 
   it('explains awaiting release state and publishes student-visible grades', async () => {
@@ -402,7 +699,421 @@ describe('teacher review controls', () => {
     expect(onSaved).toHaveBeenCalledTimes(1)
   })
 
-  it('explains already visible grades and keeps publish disabled after release', () => {
+  // BUG-174: a feedback-only republish sends no item grades, and the stored
+  // override reopens with the switch on and travels along; an edited item
+  // goes alone; switching the override off sends an explicit null.
+  describe('item grading sends only what the teacher edited', () => {
+    const gradedItems = [
+      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '' },
+      { item_id: 'item_2', item_text: 'Q2', score: 10, max_score: 50, feedback: '' },
+    ]
+    const renderItemForm = () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PUBLISHED',
+        final_score: 55,
+        score_override: 55,
+        version: 5,
+        grading_json: { feedback: 'ok', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+    }
+    const lastPayload = () => mocks.saveGradingDraftMock.mock.lastCall?.[2] as Record<string, unknown>
+
+    it('keeps the override through a feedback-only republish', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+      expect(screen.getByRole('switch')).toBeChecked()
+
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ status: 'publish', final_score: 55, item_grades: [] })
+    })
+
+    it('sends the edited item only, override still on', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+
+      fireEvent.change(screen.getByLabelText('2. Q2'), { target: { value: '30' } })
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 55, item_grades: [{ item_uuid: 'item_2', score: 6 }] })
+      expect(lastPayload().item_grades).toHaveLength(1)
+    })
+
+    it('keeps the switch on after a first override publish without a reload (optimistic seed)', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PENDING',
+        final_score: null,
+        score_override: null,
+        version: 1,
+        grading_json: { feedback: '', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      const publish = screen.getByRole('button', { name: 'publish' })
+      await waitFor(() => expect(publish).toBeEnabled())
+      fireEvent.click(screen.getByRole('switch'))
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'overrideScore' }), { target: { value: '55' } })
+      fireEvent.click(publish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 55 })
+      // The optimistic cache entry must carry the override so the reseed keeps the switch on.
+      await waitFor(() => expect(screen.getByRole('switch')).toBeChecked())
+    })
+
+    it('drops the override with an explicit null when the switch goes off', async () => {
+      renderItemForm()
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+
+      fireEvent.click(screen.getByRole('switch'))
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: null, item_grades: [] })
+    })
+
+    // UX-117: an integrity-annulled attempt keeps raw 0 unless overridden — the
+    // form says so, and the switch cannot be turned off (a silent no-op otherwise).
+    it('keeps the override switch on with a hint for an annulled attempt', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PUBLISHED',
+        final_score: 0,
+        score_override: 0,
+        auto_submit_reason: 'integrity_violation',
+        version: 2,
+        grading_json: { feedback: '', items: gradedItems },
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      const republish = screen.getByRole('button', { name: 'republish' })
+      await waitFor(() => expect(republish).toBeEnabled())
+      expect(screen.getByText('annulledOverrideHint')).toBeInTheDocument()
+      expect(screen.getByRole('switch')).toBeChecked()
+      fireEvent.click(screen.getByRole('switch'))
+      expect(screen.getByRole('switch')).toBeChecked()
+
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'overrideScore' }), { target: { value: '40' } })
+      fireEvent.click(republish)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      expect(lastPayload()).toMatchObject({ final_score: 40 })
+    })
+  })
+
+  // BUG-197: an essay awaiting its manual score starts blank; typing only its
+  // feedback sends no score (the server keeps the attempt pending, never a 0)
+  // and the optimistic seed stays PENDING; the server's 409 on a publish maps
+  // to its own toast; the bulk release names the rows it held back.
+  describe('unscored manual items', () => {
+    const essayItems = [
+      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '', needs_manual_review: false },
+      { item_id: 'item_2', item_text: 'Essay', score: 0, max_score: 50, feedback: '', needs_manual_review: true },
+    ]
+    const renderPendingEssay = () => {
+      const queryClient = new QueryClient()
+      mocks.gradingPanelState.submission = createSubmission({
+        status: 'PENDING',
+        final_score: null,
+        score_override: null,
+        version: 1,
+        grading_json: { feedback: '', needs_manual_review: true, items: essayItems },
+      })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="submission_review"
+              assessmentUuid="assessment_review"
+              activityUuid="activity_review"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      return queryClient
+    }
+
+    it('a feedback-only save sends no score and keeps the optimistic row pending', async () => {
+      mocks.saveGradingDraftMock.mockResolvedValue(undefined)
+      const queryClient = renderPendingEssay()
+      const save = screen.getByRole('button', { name: 'saveDraft' })
+      await waitFor(() => expect(save).toBeEnabled())
+      expect(screen.getByRole('spinbutton', { name: '2. Essay' })).toHaveValue(null)
+      expect(screen.getByRole('button', { name: 'publish' })).toBeDisabled()
+
+      fireEvent.change(screen.getAllByPlaceholderText('itemFeedback')[1]!, { target: { value: 'Good try' } })
+      fireEvent.click(save)
+      await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
+      const payload = mocks.saveGradingDraftMock.mock.lastCall?.[2] as { item_grades: unknown[] }
+      expect(payload.item_grades).toEqual([{ item_uuid: 'item_2', score: null, feedback: 'Good try', is_manual: true }])
+      const cached = queryClient.getQueryData<Submission>(
+        queryKeys.grading.detail('submission_review', 'assessment_review'),
+      )
+      expect(cached?.status).toBe('PENDING')
+      expect(cached?.grading_json?.items?.[1]?.needs_manual_review).toBe(true)
+    })
+
+    it("maps the server's 409 on a publish to the unscored-items toast", async () => {
+      mocks.saveGradingDraftMock.mockRejectedValue(
+        new APIError({ status: 409, code: 'conflict', message: 'every item awaiting manual review must be scored' }),
+      )
+      renderPendingEssay()
+      const publish = screen.getByRole('button', { name: 'publish' })
+      fireEvent.change(screen.getByRole('spinbutton', { name: '2. Essay' }), { target: { value: '30' } })
+      await waitFor(() => expect(publish).toBeEnabled())
+      fireEvent.click(publish)
+      await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.unscoredItems'))
+    })
+
+    it('the queue row shows no percent until a score of record exists (BUG-202)', () => {
+      render(
+        <SubmissionList
+          submissions={[
+            createSubmission({ submission_uuid: 'pending', status: 'PENDING', final_score: null, auto_score: 50 }),
+            createSubmission({ submission_uuid: 'graded', status: 'GRADED', final_score: 80 }),
+          ]}
+          total={2}
+          pages={1}
+          page={1}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set()}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={vi.fn()}
+        />,
+      )
+      expect(screen.getAllByText(/%$/)).toHaveLength(1)
+      expect(screen.getByText('80%')).toBeInTheDocument()
+    })
+
+    // BUG-351 re-verify: the queue pager is named, and a lower-bound total says so.
+    it('names the pager buttons and marks a lower-bound total', () => {
+      render(
+        <SubmissionList
+          submissions={[createSubmission({ submission_uuid: 'one' })]}
+          total={20}
+          hasMore
+          pages={3}
+          page={2}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set()}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={vi.fn()}
+        />,
+      )
+      expect(screen.getByRole('button', { name: 'previousPage' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'nextPage' })).toBeEnabled()
+      expect(screen.getByText(/totals\.submissionsAtLeast/)).toBeInTheDocument()
+    })
+
+    // UX-193: the viewer's own attempt is marked, never bulk-selectable, and
+    // opening it says why the form is not there.
+    it("marks the viewer's own attempt and says why it cannot be graded", () => {
+      const toggle = vi.fn()
+      render(
+        <SubmissionList
+          submissions={[
+            createSubmission({ submission_uuid: 'own', user_id: 'user_teacher' }),
+            createSubmission({ submission_uuid: 'theirs' }),
+          ]}
+          total={2}
+          pages={1}
+          page={1}
+          activeFilter="ALL"
+          search=""
+          sortBy="submitted_at"
+          isLoading={false}
+          selectedUuid={null}
+          selectedUuids={new Set(['own'])}
+          onFilterChange={vi.fn()}
+          onSearchChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onPageChange={vi.fn()}
+          onSelectSubmission={vi.fn()}
+          onToggleSelected={toggle}
+        />,
+      )
+      expect(screen.getAllByText('ownAttempt')).toHaveLength(1)
+      const boxes = screen.getAllByRole('checkbox')
+      expect(boxes[0]).toHaveAttribute('aria-disabled', 'true')
+      expect(boxes[0]).not.toBeChecked()
+      expect(boxes[1]).not.toHaveAttribute('aria-disabled')
+
+      mocks.gradingPanelState.error = new APIError({
+        status: 403,
+        code: 'grade-own-attempt',
+        message: 'Нельзя оценивать свою попытку.',
+      })
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnnotationProvider>
+            <GradeForm
+              submissionUuid="own"
+              onSaved={vi.fn().mockResolvedValue(undefined)}
+              navigation={{
+                hasNext: false,
+                hasPrevious: false,
+                goNext: vi.fn(),
+                goPrevious: vi.fn(),
+                selectedIndex: 0,
+              }}
+            />
+          </AnnotationProvider>
+        </QueryClientProvider>,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent('Нельзя оценивать свою попытку.')
+    })
+
+    // UX-196: a refused review shows only the reason, not the list row's
+    // blank «Отправленная работа» / «Начато --».
+    it('a refused review renders only the reason in the inspector', () => {
+      mocks.gradingPanelState.error = new APIError({
+        status: 403,
+        code: 'grade-own-attempt',
+        message: 'Нельзя оценивать свою попытку.',
+      })
+      render(
+        <SubmissionInspector
+          selectedUuid="own"
+          fallbackSubmission={createSubmission({ submission_uuid: 'own', user_id: 'user_teacher' })}
+        />,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent('Нельзя оценивать свою попытку.')
+      expect(screen.queryByText('submissionInspector.submittedWork')).toBeNull()
+      expect(screen.queryByText('submissionInspector.started')).toBeNull()
+    })
+
+    it('the bulk release reports the rows held back for grading', async () => {
+      mocks.publishAssessmentGradesMock.mockResolvedValue({
+        published_count: 1,
+        already_published_count: 0,
+        needs_grading_count: 2,
+      })
+      render(
+        <ReviewBulkActionBar
+          activityId={55}
+          assessmentUuid="assessment_review"
+          disabled={false}
+          onRefresh={vi.fn().mockResolvedValue(undefined)}
+          submissions={[createSubmission({ status: 'GRADED' })]}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'releaseHidden' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+        target: { value: 'Release hidden grades' },
+      })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
+      await waitFor(() => expect(mocks.toastWarningMock).toHaveBeenCalledWith('summaries.releaseNeedsGrading'))
+      expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
+    })
+
+    it('the bulk release reports the rows skipped by a concurrent save (UX-161)', async () => {
+      mocks.publishAssessmentGradesMock.mockResolvedValue({
+        published_count: 0,
+        already_published_count: 0,
+        needs_grading_count: 0,
+        skipped_count: 1,
+      })
+      render(
+        <ReviewBulkActionBar
+          activityId={55}
+          assessmentUuid="assessment_review"
+          disabled={false}
+          onRefresh={vi.fn().mockResolvedValue(undefined)}
+          submissions={[createSubmission({ status: 'GRADED' })]}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'releaseHidden' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(within(dialog).getByPlaceholderText('auditNote.placeholder'), {
+        target: { value: 'Release hidden grades' },
+      })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }))
+      await waitFor(() => expect(mocks.toastWarningMock).toHaveBeenCalledWith('summaries.releaseSkipped'))
+      expect(mocks.toastSuccessMock).not.toHaveBeenCalled()
+    })
+  })
+
+  it('explains already visible grades and offers a re-publish (PUBLISHED → PUBLISHED is the only allowed move)', () => {
     mocks.gradingPanelState.submission = createSubmission({
       status: 'PUBLISHED',
       final_score: 88,
@@ -428,6 +1139,10 @@ describe('teacher review controls', () => {
     )
 
     expect(screen.getByText('releaseStateVisible')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
+    expect(screen.getByText('republishHint')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'republishGrade' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'saveDraftGrade' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'returnForRevision' })).toBeDisabled()
+    expect(screen.getByLabelText('finalScore')).toBeEnabled()
   })
 })

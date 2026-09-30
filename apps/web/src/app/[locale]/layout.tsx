@@ -3,6 +3,7 @@ import { DEFAULT_THEME_MODE, THEME_MODE_STORAGE_KEY } from '@/lib/themes'
 import type { ThemeMode } from '@/lib/themes'
 import RootProviders from '../root-providers'
 import { HtmlLangSync } from '@/components/providers/HtmlLangSync'
+import { IntlPolyfillGate } from '@/components/providers/IntlPolyfillGate'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
@@ -55,9 +56,11 @@ async function LocaleLayoutContent({ children, params }: LocaleLayoutProps) {
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <HtmlLangSync locale={locale} />
-      <Suspense fallback={null}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </Suspense>
+      <IntlPolyfillGate locale={locale}>
+        <Suspense fallback={null}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </Suspense>
+      </IntlPolyfillGate>
     </NextIntlClientProvider>
   )
 }

@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  ListChecks,
   Code2,
   FileArchive,
   FileText,
@@ -25,7 +26,10 @@ interface Props {
   course_uuid: string
   current_activity?: string
   enableNavigation?: boolean
-  trailData?: AppTrailData | null | undefined
+  /** Ids of completed activities from the learner-state outline (the single progress source). */
+  completedActivityIds: ReadonlySet<string>
+  /** Ids not required of this learner (BUG-318): shown, but not counted. */
+  optionalActivityIds?: ReadonlySet<string>
 }
 
 // Helper functions
@@ -45,6 +49,9 @@ function getActivityTypeLabel(activityType: string, t: (key: string) => string):
     }
     case 'TYPE_EXAM': {
       return t('activityTypes.exam')
+    }
+    case 'TYPE_CUSTOM': {
+      return t('activityTypes.quiz')
     }
     case 'TYPE_CODE_CHALLENGE': {
       return t('activityTypes.codeChallenge')
@@ -72,6 +79,9 @@ function getActivityTypeIconColor(activityType: string): string {
     case 'TYPE_EXAM': {
       return 'text-amber-500'
     }
+    case 'TYPE_CUSTOM': {
+      return 'text-violet-500'
+    }
     case 'TYPE_CODE_CHALLENGE': {
       return 'text-cyan-500'
     }
@@ -98,6 +108,9 @@ function ActivityTypeIcon({ activityType, size = 14 }: { activityType: string; s
     }
     case 'TYPE_EXAM': {
       return <ClipboardList size={size} className={colorClass} />
+    }
+    case 'TYPE_CUSTOM': {
+      return <ListChecks size={size} className={colorClass} />
     }
     case 'TYPE_CODE_CHALLENGE': {
       return <Code2 size={size} className={colorClass} />
@@ -227,6 +240,7 @@ function CertificationBadge({ courseid, isCompleted }: { courseid: string; isCom
           isCompleted ? 'opacity-100' : 'pointer-events-none opacity-30'
         }`}
         aria-disabled={!isCompleted}
+        aria-label={isCompleted ? t('viewCertificate') : t('earnCertificate')}
       >
         <div
           className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
@@ -257,22 +271,14 @@ function ActivityIndicators(props: Props) {
     ? (activityIndex.indexByCleanUuid.get(cleanCurrentActivityId) ?? -1)
     : -1
 
-  // Memoized set of completed activity IDs for fast lookup
-  const completedActivityIds = useMemo(() => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = props.trailData?.runs?.find((activeRun: AppTrailRun) => {
-      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    })
-    return new Set(
-      (run?.steps ?? [])
-        .filter((step: AppTrailStep) => step.complete === true)
-        .map((step: AppTrailStep) => Number(step.activity_id)),
-    )
-  }, [props.trailData, course.course_uuid])
+  const { completedActivityIds } = props
 
-  function isActivityDone(activity: { id?: number | null }) {
-    return completedActivityIds.has(Number(activity.id))
+  function isActivityDone(activity: { cleanUuid?: string }) {
+    return Boolean(activity.cleanUuid) && completedActivityIds.has(activity.cleanUuid!)
+  }
+
+  function isCounted(activity: { cleanUuid?: string }) {
+    return !activity.cleanUuid || !props.optionalActivityIds?.has(activity.cleanUuid)
   }
 
   function isActivityCurrent(activity: { cleanUuid?: string }) {
@@ -298,8 +304,9 @@ function ActivityIndicators(props: Props) {
   }
 
   // Check if all activities are completed
-  const totalActivitiesCount = allActivities.length
-  const completedActivities = allActivities.filter(activity => isActivityDone(activity)).length
+  const countedActivities = allActivities.filter(activity => isCounted(activity))
+  const totalActivitiesCount = countedActivities.length
+  const completedActivities = countedActivities.filter(activity => isActivityDone(activity)).length
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount
 
   return (
@@ -315,15 +322,14 @@ function ActivityIndicators(props: Props) {
         </button>
       ) : null}
 
-      <div className="flex flex-1 items-center gap-1 overflow-hidden">
+      {/* Wraps instead of clipping the last chapter at phone widths (UX-234). */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
         {(course.chapters ?? []).map((chapter: AppChapter, chapterIndex: number) => {
           // Get activities for this chapter from the index
           const chapterActivities = allActivities.filter(a => a.chapterIndex === chapterIndex)
-          const completedCount = chapterActivities.reduce(
-            (acc, activity) => acc + (isActivityDone(activity) ? 1 : 0),
-            0,
-          )
-          const isChapterComplete = chapterActivities.length > 0 && completedCount === chapterActivities.length
+          const countedInChapter = chapterActivities.filter(activity => isCounted(activity))
+          const completedCount = countedInChapter.filter(activity => isActivityDone(activity)).length
+          const isChapterComplete = countedInChapter.length > 0 && completedCount === countedInChapter.length
           const firstActivity = chapterActivities[0]
           const chapterLinkHref = firstActivity
             ? `${getAbsoluteUrl('')}/course/${courseid}/activity/${firstActivity.cleanUuid}`
@@ -339,7 +345,7 @@ function ActivityIndicators(props: Props) {
                   <ChapterTooltipContent
                     chapter={chapter}
                     chapterNumber={chapterIndex + 1}
-                    totalActivities={chapterActivities.length}
+                    totalActivities={countedInChapter.length}
                     completedActivities={completedCount}
                   />
                 }
@@ -348,6 +354,7 @@ function ActivityIndicators(props: Props) {
                   <Link
                     href={chapterLinkHref}
                     className="group flex shrink-0 items-center justify-center focus:outline-none"
+                    aria-label={`${t('chapter')} ${chapterIndex + 1}: ${chapter.name}`}
                   >
                     <div
                       className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-colors ${
@@ -390,6 +397,8 @@ function ActivityIndicators(props: Props) {
                       <Link
                         href={`${getAbsoluteUrl('')}/course/${courseid}/activity/${activity.cleanUuid}`}
                         className="group relative flex flex-1 py-1.5"
+                        aria-label={(activity as { name?: string }).name}
+                        aria-current={isCurrent ? 'step' : undefined}
                       >
                         <span
                           className={`block h-2 w-full rounded-full transition-colors duration-150 ${

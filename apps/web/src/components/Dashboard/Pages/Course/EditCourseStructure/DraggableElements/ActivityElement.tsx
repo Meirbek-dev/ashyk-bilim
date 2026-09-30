@@ -24,24 +24,29 @@ import {
   Lock,
   Pencil,
   LayoutTemplate,
+  ListChecks,
   Trash2,
   Video,
   X as XIcon,
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { useListCourseAssessments } from '@/lib/api/generated/assessments/assessments'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
-import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
+import { cleanActivityUuid, cleanCourseUuid, isCourseAuthor } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
-import { getAbsoluteUrl } from '@services/config/config'
+import { useSession } from '@/hooks/useSession'
+import { useApiError } from '@/hooks/useApiError'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import AppLink from '@/components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 type ActivityType =
@@ -104,6 +109,12 @@ const ACTIVITY_CONFIG = {
     translationKey: 'exam',
     colorClass: 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300',
   },
+  TYPE_CUSTOM: {
+    Icon: ListChecks,
+    translationKey: 'quiz',
+    colorClass:
+      'border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300',
+  },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,
     translationKey: 'codeChallenge',
@@ -123,16 +134,60 @@ function ActivityElement({
 }: ActivityElementProps) {
   const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true)
   const t = useTranslations('CourseEdit.ActivityElement')
+  const { toastApiError } = useApiError()
+  // A scheduled assessment's activity is still unpublished on the wire; the
+  // row says «Запланировано» like the studio does (UX-104). One listing per course.
+  const isAssessment = ['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLENGE'].includes(activity.activity_type)
+  const assessments = useListCourseAssessments(course_uuid.replace(/^course_/, ''), {
+    query: { enabled: isAssessment && !activity.published, staleTime: 5_000 },
+  })
+  const activityId = activity.activity_uuid.replace(/^activity_/, '')
+  const assessmentLifecycle = assessments.data?.find(a => a.activity_id === activityId)?.lifecycle
+  const isScheduled = assessmentLifecycle === 'scheduled'
+  // BUG-171: an archived assessment's row is «В архиве», not «Черновик».
+  const isArchived = assessmentLifecycle === 'archived'
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(activity?.name ?? '')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isUpdatingPublish, setIsUpdatingPublish] = useState(false)
+  const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
+  // UX-202: the toggle is disabled while a publish/unpublish request is in
+  // flight, so focus falls to <body> — hand it back to the toggle once it is
+  // enabled again (after the unpublish confirm and after a direct publish).
+  const publishToggleRef = useRef<HTMLButtonElement>(null)
+  const refocusToggle = useRef(false)
+  useEffect(() => {
+    if (isUpdatingPublish || !refocusToggle.current) return
+    refocusToggle.current = false
+    publishToggleRef.current?.focus()
+  }, [isUpdatingPublish])
 
-  const canUpdate = activity.can_update ?? false
-  const canDelete = activity.can_delete ?? false
+  // UX-214: the rename input takes focus when it opens; save / Esc hand it
+  // back to the pencil instead of dropping it to <body>.
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const pencilRef = useRef<HTMLButtonElement>(null)
+  const refocusPencil = useRef(false)
+  useEffect(() => {
+    if (isEditing) {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    } else if (refocusPencil.current) {
+      refocusPencil.current = false
+      pencilRef.current?.focus()
+    }
+  }, [isEditing])
+
+  // v2 activities carry no `can_*` flags: derive them the way the course
+  // workspace does — authorship (creator / active co-author) is the `:own`
+  // scope, `<resource>:<action>:platform` covers every course.
+  const { can, session } = useSession()
+  const { courseStructure } = useCourse()
+  const isAuthor = isCourseAuthor(courseStructure, session?.userId)
+  const canUpdate = isAuthor || can('activity', 'update', 'platform')
+  const canDelete = isAuthor || can('activity', 'delete', 'platform')
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -140,6 +195,7 @@ function ActivityElement({
   }
 
   const handleCancelEdit = () => {
+    refocusPencil.current = true
     setIsEditing(false)
     setEditedName(activity.name)
   }
@@ -154,9 +210,14 @@ function ActivityElement({
     try {
       await updateActivity(activity.activity_uuid, { name: trimmedName })
       toast.success(t('activityNameUpdatedSuccess'))
+      refocusPencil.current = true
       setIsEditing(false)
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('failedToUpdateActivityName'))
+      // UX-128: the assessment lock (scheduled / archived / published with
+      // hand-ins) is a 409 — name the fix in the page language, not the
+      // server's English `detail`.
+      if (isAssessment && hasErrorCode(error, 'conflict')) toast.error(t('lockedAssessment'))
+      else toastApiError(error, undefined, t('failedToUpdateActivityName'))
       setEditedName(activity.name)
     } finally {
       setIsSavingEdit(false)
@@ -164,15 +225,20 @@ function ActivityElement({
   }
 
   const handleTogglePublish = async () => {
+    // The optimistic update rewrites `activity` in place — read it first.
+    const unpublishing = activity.published
+    setIsUnpublishConfirmOpen(false)
     setIsUpdatingPublish(true)
     const toastId = toast.loading(t('updating'))
     try {
       await updateActivity(activity.activity_uuid, {
-        published: !activity.published,
+        published: !unpublishing,
       })
-      toast.success(t('activityUpdateSuccess'))
+      toast.success(unpublishing ? t('unpublishedToast') : t('activityUpdateSuccess'))
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('updateFailed'))
+      // `activity-not-ready` (file-submission config still a draft) and the
+      // rest are localized through the error-code catalog.
+      toastApiError(error, undefined, t('updateFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsUpdatingPublish(false)
@@ -187,7 +253,7 @@ function ActivityElement({
       toast.success(t('activityDeletedSuccess'))
       setIsDeleteDialogOpen(false)
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('deleteFailed'))
+      toastApiError(error, undefined, t('deleteFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsDeletingActivity(false)
@@ -208,6 +274,8 @@ function ActivityElement({
 
   return (
     <div
+      data-activity-element={activity.activity_uuid}
+      data-activity-type={activity.activity_type}
       className={cn(
         'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
         isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
@@ -234,7 +302,9 @@ function ActivityElement({
         {isEditing ? (
           <div className="flex items-center gap-1.5">
             <Input
+              ref={nameInputRef}
               type="text"
+              aria-label={t('activityNamePlaceholder')}
               value={editedName}
               onChange={e => setEditedName(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -270,10 +340,20 @@ function ActivityElement({
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-            <CourseStatusBadge status={activity.published ? 'live' : 'draft'} />
+            {/* UX-124: a scheduled assessment publishes itself — the badge explains why there is no toggle. */}
+            {isScheduled && !activity.published ? (
+              <ToolTip content={t('scheduledHint')} side="top">
+                <button type="button" className="inline-flex cursor-default" aria-label={t('scheduledHint')}>
+                  <CourseStatusBadge status="scheduled" />
+                </button>
+              </ToolTip>
+            ) : (
+              <CourseStatusBadge status={activity.published ? 'live' : isArchived ? 'archived' : 'draft'} />
+            )}
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button
+                  ref={pencilRef}
                   size="icon-sm"
                   variant="outline"
                   className="shrink-0"
@@ -303,26 +383,37 @@ function ActivityElement({
               nativeButton={false}
               aria-label={t('previewTooltip')}
               render={
-                <a
-                  href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
+                <AppLink
+                  href={`/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Eye className="h-4 w-4" />
                   <span className="sr-only">{t('previewTooltip')}</span>
-                </a>
+                </AppLink>
               }
             />
           </ToolTip>
 
-          {/* Publish toggle */}
-          {canUpdate && (
+          {/* Publish toggle — UX-120: an archived assessment publishes only after «Восстановить» in the studio (409
+              otherwise); UX-124: a scheduled one publishes itself (409 `activity-not-ready` until then). */}
+          {canUpdate && !isArchived && !isScheduled && (
             <ToolTip content={activity.published ? t('unpublish') : t('publish')} side="top">
               <Button
                 size="icon"
                 variant="outline"
                 className={ACTION_ICON_BUTTON_CLASS}
-                onClick={handleTogglePublish}
+                // UX-200: unpublishing cuts learners off (their hand-ins too) — confirm first.
+                onClick={
+                  activity.published
+                    ? () => setIsUnpublishConfirmOpen(true)
+                    : () => {
+                        // The toggle disables itself while the request runs; hand focus back after.
+                        refocusToggle.current = true
+                        void handleTogglePublish()
+                      }
+                }
+                ref={publishToggleRef}
                 disabled={isUpdatingPublish}
                 aria-label={activity.published ? t('unpublish') : t('publish')}
               >
@@ -354,6 +445,28 @@ function ActivityElement({
         </div>
       )}
 
+      <AlertDialog open={isUnpublishConfirmOpen} onOpenChange={setIsUnpublishConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('unpublishConfirmTitle', { name: activity.name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('unpublishConfirmMessage')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingPublish} />
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                refocusToggle.current = true
+                void handleTogglePublish()
+              }}
+              disabled={isUpdatingPublish}
+            >
+              {t('unpublish')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -361,7 +474,10 @@ function ActivityElement({
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
             <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
-            <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
+            {/* BUG-186: deleting an assessment activity cascades its hand-ins. */}
+            <AlertDialogDescription>
+              {isAssessment ? t('deleteAssessmentConfirmation') : t('deleteConfirmation')}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingActivity} />
@@ -400,7 +516,8 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
   const course = useCourse()
 
   if (activity.activity_type === 'TYPE_DYNAMIC') {
-    const editUrl = `${getAbsoluteUrl('')}/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`
+    // Straight to the studio: `/editor/…/edit` only redirects there (UX-029).
+    const editUrl = `/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
     return (
       <ToolTip content={t('editPageButton')} side="top">
         <Button
@@ -409,10 +526,10 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <AppLink href={editUrl}>
               <FilePenLine className="h-4 w-4" />
               <span className="sr-only">{t('openEditPage')}</span>
-            </a>
+            </AppLink>
           }
         />
       </ToolTip>
@@ -421,10 +538,13 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
 
   if (
     activity.activity_type === 'TYPE_EXAM' ||
+    activity.activity_type === 'TYPE_CUSTOM' ||
     activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
     activity.activity_type === 'TYPE_FILE_SUBMISSION'
   ) {
-    const editUrl = `${getAbsoluteUrl('')}/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
+    // In-app editor: locale-prefixed, same tab (an `<a target=_blank>` lost
+    // the locale and opened a second copy of the workspace).
+    const editUrl = `/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`
     return (
       <ToolTip content={t('configureButton')} side="top">
         <Button
@@ -433,10 +553,10 @@ function ActivityEditButton({ activity, course_uuid }: { activity: Activity; cou
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <AppLink href={editUrl}>
               <FilePenLine className="h-4 w-4" />
               <span className="sr-only">{t('openEditPage')}</span>
-            </a>
+            </AppLink>
           }
         />
       </ToolTip>

@@ -1,15 +1,22 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { apiJson } from '@/lib/api-client'
+import { deleteQaThread } from '@/lib/api/generated/ai/ai'
+import { useApiError } from '@/hooks/useApiError'
 
 export function useDeleteQAThread(courseUuid: string) {
   const queryClient = useQueryClient()
+  const t = useTranslations('AiExperience.qaInput')
+  const { toastApiError } = useApiError()
   return useMutation({
-    mutationFn: async (threadUuid: string) => {
-      await apiJson(`ai/qa/${courseUuid}/threads/${threadUuid}`, { method: 'DELETE' })
+    mutationFn: (threadUuid: string) => deleteQaThread(courseUuid, threadUuid),
+    onSuccess: () => {
+      toast.success(t('threadDeleted'))
+      return queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] })
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),
+    onError: error => toastApiError(error),
   })
 }

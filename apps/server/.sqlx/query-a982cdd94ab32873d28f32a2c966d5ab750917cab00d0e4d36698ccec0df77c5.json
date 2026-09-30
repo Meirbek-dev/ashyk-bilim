@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT collection_listable($1, $2, $3) AS \"listable!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "listable!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a982cdd94ab32873d28f32a2c966d5ab750917cab00d0e4d36698ccec0df77c5"
+}

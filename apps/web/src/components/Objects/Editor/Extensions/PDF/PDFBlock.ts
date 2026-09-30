@@ -1,15 +1,13 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
+import type { BlockFileContent } from '@services/blocks/upload'
 
 import PDFBlockComponent from './PDFBlockComponent'
 import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 export interface PdfBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 export interface PdfBlockAttrs {

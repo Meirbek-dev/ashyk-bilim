@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO daily_course_metrics\n              (metric_date, course_id, teacher_user_id, enrolled_learners, active_learners_7d,\n               active_learners_28d, completion_rate, avg_progress_pct, at_risk_learners,\n               ungraded_submissions, certificates_issued, content_health_score,\n               engagement_delta_pct, last_content_update_at, generated_at)\n          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,\n                  to_timestamp($14), to_timestamp($15))\n          ON CONFLICT (metric_date, course_id) DO UPDATE SET\n              teacher_user_id = EXCLUDED.teacher_user_id,\n              enrolled_learners = EXCLUDED.enrolled_learners,\n              active_learners_7d = EXCLUDED.active_learners_7d,\n              active_learners_28d = EXCLUDED.active_learners_28d,\n              completion_rate = EXCLUDED.completion_rate,\n              avg_progress_pct = EXCLUDED.avg_progress_pct,\n              at_risk_learners = EXCLUDED.at_risk_learners,\n              ungraded_submissions = EXCLUDED.ungraded_submissions,\n              certificates_issued = EXCLUDED.certificates_issued,\n              content_health_score = EXCLUDED.content_health_score,\n              engagement_delta_pct = EXCLUDED.engagement_delta_pct,\n              last_content_update_at = EXCLUDED.last_content_update_at,\n              generated_at = EXCLUDED.generated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2bb4128d7289ab764409643f39007a07bf2055d69d5adf141b57a66f918f373c"
+}

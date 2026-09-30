@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE collections SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               public = COALESCE($4, public),\n               version = version + 1\n           WHERE id = $1 AND ($5::int IS NULL OR version = $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Bool",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5b1b086704d176e0116b607452cb1af7f27e6c6903f672249c9c81111705a67f"
+}

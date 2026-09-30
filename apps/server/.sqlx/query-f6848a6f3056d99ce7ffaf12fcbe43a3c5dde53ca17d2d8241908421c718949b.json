@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO users (zitadel_user_id, username, email, display_name, locale)\n           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru-RU'))\n           ON CONFLICT DO NOTHING\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f6848a6f3056d99ce7ffaf12fcbe43a3c5dde53ca17d2d8241908421c718949b"
+}

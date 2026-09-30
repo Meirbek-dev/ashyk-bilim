@@ -1,15 +1,29 @@
 'use client'
 
-import { getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
+
+import { getAnalyticsCodeLabel, getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics'
 import { createTeacherIntervention, getTeacherInterventions } from '@services/analytics/teacher'
 import type { TeacherInterventionCreate, TeacherInterventionRow } from '@services/analytics/teacher'
 import AnalyticsDataTable from './AnalyticsDataTable'
-import type { DataTableColumnDef } from '@/components/ui/data-table'
+import type { DataTableColumnDef, DataTableFeatures } from '@/components/ui/data-table'
+import type { CellContext } from '@tanstack/react-table'
 import { InlineError } from '@/components/ui/error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -23,11 +37,14 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type React from 'react'
-import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { useFormatter, useLocale, useTranslations } from 'next-intl'
+import { Link, useRouter } from '@/i18n/navigation'
 import { ClipboardList, MessageSquare, Route, UserCheck } from 'lucide-react'
+import { useApiError } from '@/hooks/useApiError'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface AtRiskLearnersTableProps {
   title?: string
@@ -38,40 +55,12 @@ interface AtRiskLearnersTableProps {
   query?: AnalyticsQuery
 }
 
-type EnhancedAtRiskLearnerRow = AtRiskLearnerRow & {
-  risk_trend?: 'newly_at_risk' | 'worsening' | 'improving' | 'recovered' | 'stable'
-  previous_risk_score?: number | null
-  risk_score_delta?: number | null
-  top_contributing_factor?: string | null
-  confidence_level?: 'low' | 'medium' | 'high'
-  why_now?: string | null
-  intervention_count?: number
-  last_intervention_type?: string | null
-  last_intervention_at?: string | null
-  last_intervention_outcome?: string | null
-}
+type EnhancedAtRiskLearnerRow = AtRiskLearnerRow
 
 const riskVariant = (level: AtRiskLearnerRow['risk_level']) => {
   if (level === 'high') return 'destructive'
   if (level === 'medium') return 'warning'
   return 'outline'
-}
-
-const INTERVENTION_COPY = {
-  auditLog: 'Audit log',
-  dialogTrigger: 'Manage intervention',
-  emptyAudit: 'No interventions logged yet.',
-  improving: 'Improving',
-  interventionOpen: 'Intervention open',
-  loadingAudit: 'Loading interventions...',
-  noIntervention: 'No intervention',
-  recommendedAction: 'Recommended action',
-  remediationDraft: 'Remediation draft',
-  remediationDraftLabel: 'Save remediation draft',
-  remediationDraftOutcome: 'Remediation draft prepared',
-  resolved: 'Resolved',
-  resolvedNotes: 'Risk marked resolved after teacher review.',
-  risk: 'risk',
 }
 
 const teacherInterventionsQueryOptions = (
@@ -85,6 +74,117 @@ const teacherInterventionsQueryOptions = (
     enabled,
   })
 
+/** The page's analytics query, read by the action cell's intervention dialog. */
+const AtRiskQueryContext = createContext<AnalyticsQuery | undefined>(undefined)
+
+type AtRiskCellProps = CellContext<DataTableFeatures, AtRiskLearnerRow>
+
+function LearnerCell({ row }: AtRiskCellProps) {
+  const courseHref = row.original.course_id ? `/dash/analytics/courses/${row.original.course_id}` : undefined
+  return (
+    <div>
+      <div className="text-foreground font-medium">{row.original.user_display_name}</div>
+      {courseHref && (
+        <Link href={courseHref} className="text-primary mt-0.5 block text-xs hover:underline">
+          {row.original.course_name}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function ProgressCell({ row }: AtRiskCellProps) {
+  const percent = usePercentFormat()
+  return percent(row.original.progress_pct)
+}
+
+function InactivityCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  return row.original.days_since_last_activity == null
+    ? t('atRisk.na')
+    : t('units.days', { value: row.original.days_since_last_activity })
+}
+
+function RiskCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
+  const riskRow = row.original
+  const c = riskRow.risk_components ?? {
+    inactivity: 0,
+    progress: 0,
+    failures: 0,
+    missing: 0,
+    grading: 0,
+  }
+  return (
+    <div className="space-y-1">
+      <Badge variant={riskVariant(riskRow.risk_level)}>
+        {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} ·{' '}
+        {format.number(riskRow.risk_score, { maximumFractionDigits: 1 })}
+      </Badge>
+      {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
+        <div className="text-muted-foreground text-[11px]">
+          {getAnalyticsCodeLabel(t, riskRow.risk_trend)}
+          {riskRow.risk_score_delta !== null && riskRow.risk_score_delta !== undefined
+            ? ` (${format.number(riskRow.risk_score_delta, { maximumFractionDigits: 1, signDisplay: 'exceptZero' })})`
+            : ''}
+        </div>
+      )}
+      {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
+      <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
+        {[
+          [t('atRisk.riskComponents.inactivity'), c.inactivity],
+          [t('atRisk.riskComponents.progress'), c.progress],
+          [t('atRisk.riskComponents.failures'), c.failures],
+          [t('atRisk.riskComponents.missing'), c.missing],
+          [t('atRisk.riskComponents.grading'), c.grading],
+        ]
+          .filter(([, v]) => (v as number) > 0)
+          .map(([label, v]) => `${label} ${Math.round(v as number)}`)
+          .join(' · ')}
+      </div>
+    </div>
+  )
+}
+
+function ReasonsCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  return (
+    <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
+      {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
+      {row.original.why_now && <div className="mt-1 text-[11px]">{getAnalyticsCodeLabel(t, row.original.why_now)}</div>}
+    </div>
+  )
+}
+
+function ActionCell({ row }: AtRiskCellProps) {
+  const t = useTranslations('TeacherAnalytics')
+  const query = useContext(AtRiskQueryContext)
+  const riskRow = row.original
+  const hasGradingBlock = riskRow.open_grading_blocks > 0
+  const gradingHref = riskRow.course_id ? `/dash/analytics/courses/${riskRow.course_id}` : '/dash/courses'
+  return (
+    <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
+      <span>{getAnalyticsCodeLabel(t, riskRow.recommended_action)}</span>
+      <div className="text-[11px]">
+        {riskRow.intervention_count
+          ? t('atRisk.interventionsCount', { count: riskRow.intervention_count })
+          : t('atRisk.noInterventions')}
+      </div>
+      <InterventionStateBadge row={riskRow} />
+      {hasGradingBlock && gradingHref && (
+        <Link href={gradingHref} className="text-primary block text-xs hover:underline">
+          {t('atRisk.gradeSubmissions', {
+            count: riskRow.open_grading_blocks,
+          })}{' '}
+          →
+        </Link>
+      )}
+      <LearnerInterventionDialog row={riskRow} query={query} />
+    </div>
+  )
+}
+
 export default function AtRiskLearnersTable({
   title,
   description,
@@ -96,121 +196,23 @@ export default function AtRiskLearnersTable({
   const t = useTranslations('TeacherAnalytics')
   const resolvedTitle = title ?? t('atRisk.defaultTitle')
   const resolvedDescription = description ?? t('atRisk.defaultDescription')
-  const columns: DataTableColumnDef<AtRiskLearnerRow>[] = [
-    {
-      accessorKey: 'user_display_name',
-      header: t('atRisk.colLearner'),
-      cell: ({ row }) => {
-        const courseHref = row.original.course_uuid ? `/dash/analytics/courses/${row.original.course_uuid}` : undefined
-        return (
-          <div>
-            <div className="text-foreground font-medium">{row.original.user_display_name}</div>
-            <div className="text-muted-foreground text-xs">
-              {t('atRisk.userNumber', { userId: row.original.user_id })}
-            </div>
-            {courseHref && (
-              <Link href={courseHref} className="text-primary mt-0.5 block text-xs hover:underline">
-                {row.original.course_name}
-              </Link>
-            )}
-          </div>
-        )
-      },
-    },
-    { accessorKey: 'course_name', header: t('atRisk.colCourse') },
-    {
-      accessorKey: 'progress_pct',
-      header: t('atRisk.colProgress'),
-      cell: ({ row }) => `${row.original.progress_pct}%`,
-    },
-    {
-      accessorKey: 'days_since_last_activity',
-      header: t('atRisk.colInactivity'),
-      cell: ({ row }) =>
-        row.original.days_since_last_activity === null ? t('atRisk.na') : `${row.original.days_since_last_activity}d`,
-    },
-    {
-      accessorKey: 'risk_score',
-      header: t('atRisk.colRisk'),
-      cell: ({ row }) => {
-        const riskRow = row.original
-        const c = riskRow.risk_components ?? {
-          inactivity: 0,
-          progress: 0,
-          failures: 0,
-          missing: 0,
-          grading: 0,
-        }
-        return (
-          <div className="space-y-1">
-            <Badge variant={riskVariant(riskRow.risk_level)}>
-              {getAnalyticsRiskLevelLabel(t, riskRow.risk_level)} · {riskRow.risk_score}
-            </Badge>
-            {riskRow.risk_trend && riskRow.risk_trend !== 'stable' && (
-              <div className="text-muted-foreground text-[11px]">
-                {riskRow.risk_trend.replaceAll('_', ' ')}
-                {riskRow.risk_score_delta !== null && riskRow.risk_score_delta !== undefined
-                  ? ` (${riskRow.risk_score_delta > 0 ? '+' : ''}${riskRow.risk_score_delta})`
-                  : ''}
-              </div>
-            )}
-            {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
-            <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
-              {[
-                [t('atRisk.riskComponents.inactivity'), c.inactivity],
-                [t('atRisk.riskComponents.progress'), c.progress],
-                [t('atRisk.riskComponents.failures'), c.failures],
-                [t('atRisk.riskComponents.missing'), c.missing],
-                [t('atRisk.riskComponents.grading'), c.grading],
-              ]
-                .filter(([, v]) => (v as number) > 0)
-                .map(([label, v]) => `${label} ${Math.round(v as number)}`)
-                .join(' · ')}
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'reason_codes',
-      header: t('atRisk.colReasons'),
-      cell: ({ row }) => (
-        <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
-          {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
-          {row.original.why_now && <div className="mt-1 text-[11px]">{row.original.why_now}</div>}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'recommended_action',
-      header: t('atRisk.colAction'),
-      cell: ({ row }) => {
-        const riskRow = row.original
-        const hasGradingBlock = riskRow.open_grading_blocks > 0
-        const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses'
-        return (
-          <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
-            <span>{riskRow.recommended_action}</span>
-            <div className="text-[11px]">
-              {riskRow.intervention_count
-                ? t('atRisk.interventionsCount', { count: riskRow.intervention_count })
-                : t('atRisk.noInterventions')}
-            </div>
-            <InterventionStateBadge row={riskRow} />
-            {hasGradingBlock && gradingHref && (
-              <Link href={gradingHref} className="text-primary block text-xs hover:underline">
-                {t('atRisk.gradeSubmissions', {
-                  count: riskRow.open_grading_blocks,
-                })}{' '}
-                →
-              </Link>
-            )}
-            <LearnerInterventionDialog row={riskRow} query={query} />
-          </div>
-        )
-      },
-    },
-  ]
+  // UX-114: `cell` functions render as components (`<Cell />`). The cells are
+  // module-level components, so a new columns array (a refreshed `t` after
+  // `router.refresh()`, a new `query` object) never remounts a cell — the
+  // intervention dialog's trigger included; the rows update in place. The
+  // headers stay strings: the CSV export and the column menu read them.
+  const columns = useMemo(
+    (): DataTableColumnDef<AtRiskLearnerRow>[] => [
+      { accessorKey: 'user_display_name', header: t('atRisk.colLearner'), cell: LearnerCell },
+      { accessorKey: 'course_name', header: t('atRisk.colCourse') },
+      { accessorKey: 'progress_pct', header: t('atRisk.colProgress'), cell: ProgressCell },
+      { accessorKey: 'days_since_last_activity', header: t('atRisk.colInactivity'), cell: InactivityCell },
+      { accessorKey: 'risk_score', header: t('atRisk.colRisk'), cell: RiskCell },
+      { accessorKey: 'reason_codes', header: t('atRisk.colReasons'), cell: ReasonsCell },
+      { accessorKey: 'recommended_action', header: t('atRisk.colAction'), cell: ActionCell },
+    ],
+    [t],
+  )
 
   return (
     <Card className="shadow-sm">
@@ -219,24 +221,28 @@ export default function AtRiskLearnersTable({
         <CardDescription>{resolvedDescription}</CardDescription>
       </CardHeader>
       <CardContent>
-        <AnalyticsDataTable
-          columns={columns}
-          data={rows}
-          {...(storageKey ? { storageKey } : {})}
-          {...(serverPaginated === undefined ? {} : { serverPaginated })}
-          searchPlaceholder={t('atRisk.searchPlaceholder')}
-          emptyMessage={t('atRisk.emptyMessage')}
-        />
+        <AtRiskQueryContext value={query}>
+          <AnalyticsDataTable
+            columns={columns}
+            data={rows}
+            {...(storageKey ? { storageKey } : {})}
+            {...(serverPaginated === undefined ? {} : { serverPaginated })}
+            searchPlaceholder={t('atRisk.searchPlaceholder')}
+            emptyMessage={t('atRisk.emptyMessage')}
+          />
+        </AtRiskQueryContext>
       </CardContent>
     </Card>
   )
 }
 
-function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
-  if (row.risk_trend === 'recovered' || row.last_intervention_outcome?.toLowerCase().includes('recovered')) {
+export function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
+  const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
+  if (row.risk_trend === 'recovered' || row.last_intervention_type === 'learner_recovered') {
     return (
       <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-        {INTERVENTION_COPY.resolved}
+        {t('intervention.resolved')}
       </Badge>
     )
   }
@@ -244,16 +250,21 @@ function InterventionStateBadge({ row }: { row: EnhancedAtRiskLearnerRow }) {
   if (typeof row.risk_score_delta === 'number' && row.risk_score_delta < 0) {
     return (
       <Badge variant="outline" className="border-blue-300 text-blue-700 dark:text-blue-300">
-        {INTERVENTION_COPY.improving} {row.risk_score_delta}
+        {t('intervention.improving')} {format.number(row.risk_score_delta, { maximumFractionDigits: 1 })}
       </Badge>
     )
   }
 
-  if (row.intervention_count && row.intervention_count > 0) {
-    return <Badge variant="warning">{INTERVENTION_COPY.interventionOpen}</Badge>
+  // Status is fixed at creation by the type (no PATCH on the wire): messages complete at once, meetings/drafts stay planned.
+  if (row.last_intervention_type === 'meeting_scheduled' || row.last_intervention_type === 'extension_granted') {
+    return <Badge variant="warning">{t('intervention.open')}</Badge>
   }
 
-  return <Badge variant="outline">{INTERVENTION_COPY.noIntervention}</Badge>
+  if (row.intervention_count && row.intervention_count > 0) {
+    return <Badge variant="outline">{t('intervention.completed')}</Badge>
+  }
+
+  return <Badge variant="outline">{t('intervention.none')}</Badge>
 }
 
 function LearnerInterventionDialog({
@@ -264,10 +275,27 @@ function LearnerInterventionDialog({
   row: EnhancedAtRiskLearnerRow
 }) {
   const t = useTranslations('TeacherAnalytics')
+  const router = useRouter()
   const queryClient = useQueryClient()
+  const { toastApiError } = useApiError()
   const [open, setOpen] = useState(false)
+  const [logged, setLogged] = useState(false)
   const [pendingType, setPendingType] = useState<TeacherInterventionCreate['intervention_type'] | null>(null)
-  const [draft, setDraft] = useState(() => buildRemediationDraft(row))
+  const [confirming, setConfirming] = useState<{
+    label: string
+    payload: Parameters<typeof logIntervention>[0]
+  } | null>(null)
+  const [draft, setDraft] = useState(() =>
+    t('intervention.draftTemplate', {
+      learner: row.user_display_name,
+      course: row.course_name,
+      reasons:
+        row.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ') ||
+        getAnalyticsCodeLabel(t, row.top_contributing_factor) ||
+        t('intervention.needsReview'),
+      action: getAnalyticsCodeLabel(t, row.recommended_action),
+    }),
+  )
   const auditOptions = teacherInterventionsQueryOptions(row, query, open)
   const audit = useQuery(auditOptions)
 
@@ -285,9 +313,16 @@ function LearnerInterventionDialog({
         query,
       )
       await queryClient.invalidateQueries({ queryKey: auditOptions.queryKey })
+      setLogged(true)
       toast.success(t('atRisk.interventionLogged'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('atRisk.interventionLogFailed'))
+      // UX-114 / UX-217: the learner left the course or joined its staff while the dialog was open.
+      const code = isApiError(error) ? error.fieldErrors.find(f => f.field === 'user_id')?.code : undefined
+      if (code === 'not-in-course' || code === 'staff') {
+        toast.error(t(code === 'staff' ? 'atRisk.learnerIsStaff' : 'atRisk.learnerNotEnrolled'))
+      } else {
+        toastApiError(error, { fallback: t('atRisk.interventionLogFailed') })
+      }
     } finally {
       setPendingType(null)
     }
@@ -304,7 +339,7 @@ function LearnerInterventionDialog({
       payload: {
         intervention_type: 'message_sent',
         status: 'completed',
-        outcome: 'Learner contacted',
+        outcome: 'learner_contacted',
         notes: row.recommended_action,
       },
     },
@@ -314,17 +349,17 @@ function LearnerInterventionDialog({
       payload: {
         intervention_type: 'meeting_scheduled',
         status: 'planned',
-        outcome: 'Teacher check-in scheduled',
+        outcome: 'check_in_scheduled',
         notes: row.why_now ?? row.recommended_action,
       },
     },
     {
       icon: <Route className="size-3.5" />,
-      label: INTERVENTION_COPY.remediationDraftLabel,
+      label: t('intervention.saveDraft'),
       payload: {
         intervention_type: 'extension_granted',
         status: 'planned',
-        outcome: INTERVENTION_COPY.remediationDraftOutcome,
+        outcome: 'remediation_draft_prepared',
         notes: draft,
         payload: {
           reason_codes: row.reason_codes,
@@ -339,19 +374,38 @@ function LearnerInterventionDialog({
       payload: {
         intervention_type: 'learner_recovered',
         status: 'resolved',
-        outcome: 'Recovered from risk',
-        notes: INTERVENTION_COPY.resolvedNotes,
+        outcome: 'recovered_from_risk',
+        notes: 'risk_resolved_after_review',
       },
     },
   ]
-  const dialogDescription = [row.course_name, `${INTERVENTION_COPY.risk} ${row.risk_score}`, row.risk_level].join(' · ')
+  const dialogDescription = t('intervention.riskDescription', {
+    course: row.course_name,
+    score: row.risk_score,
+    level: getAnalyticsRiskLevelLabel(t, row.risk_level),
+  })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={next => {
+        setOpen(next)
+        // The at-risk rows come from the server component: refresh them once
+        // the dialog closes so the count and state badge update without a
+        // reload (refreshing while open would reset the dialog's state).
+        if (!next && logged) {
+          setLogged(false)
+          router.refresh()
+        }
+      }}
+    >
       <DialogTrigger render={<Button type="button" variant="outline" size="sm" className="mt-1 h-7 px-2 text-xs" />}>
-        {INTERVENTION_COPY.dialogTrigger}
+        {t('intervention.manage')}
       </DialogTrigger>
-      <DialogContent className="max-w-3xl">
+      {/* The base popup caps at `sm:max-w-sm`; without the breakpoint prefix the
+          wider grid squeezed the buttons to 22 px and the dialog grew past the
+          viewport with nothing to scroll. */}
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{row.user_display_name}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
@@ -359,14 +413,16 @@ function LearnerInterventionDialog({
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="space-y-4">
             <div className="rounded-lg border p-3">
-              <div className="mb-2 text-sm font-medium">{INTERVENTION_COPY.recommendedAction}</div>
-              <p className="text-muted-foreground text-sm leading-relaxed">{row.recommended_action}</p>
-              {row.why_now ? <p className="text-muted-foreground mt-2 text-xs">{row.why_now}</p> : null}
+              <div className="mb-2 text-sm font-medium">{t('intervention.recommendedAction')}</div>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {getAnalyticsCodeLabel(t, row.recommended_action)}
+              </p>
+              {row.why_now ? (
+                <p className="text-muted-foreground mt-2 text-xs">{getAnalyticsCodeLabel(t, row.why_now)}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`remediation-${row.course_id}-${row.user_id}`}>
-                {INTERVENTION_COPY.remediationDraft}
-              </Label>
+              <Label htmlFor={`remediation-${row.course_id}-${row.user_id}`}>{t('intervention.draftLabel')}</Label>
               <Textarea
                 id={`remediation-${row.course_id}-${row.user_id}`}
                 value={draft}
@@ -382,15 +438,42 @@ function LearnerInterventionDialog({
                   variant={action.payload.status === 'resolved' ? 'default' : 'outline'}
                   disabled={
                     pendingType === action.payload.intervention_type ||
-                    (action.label === INTERVENTION_COPY.remediationDraftLabel && draft.trim().length < 12)
+                    (action.payload.intervention_type === 'extension_granted' && draft.trim().length < 12)
                   }
-                  onClick={() => void logIntervention(action.payload)}
+                  // UX-264: saving the plan is the textarea's own action; the
+                  // «Отметить: …» records ask first — they log a completed step.
+                  onClick={() =>
+                    action.payload.intervention_type === 'extension_granted'
+                      ? void logIntervention(action.payload)
+                      : setConfirming(action)
+                  }
                 >
                   {action.icon}
                   {action.label}
                 </Button>
               ))}
             </div>
+            <AlertDialog open={confirming !== null} onOpenChange={next => !next && setConfirming(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{confirming?.label}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('intervention.confirmDescription', { learner: row.user_display_name })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel />
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (confirming) void logIntervention(confirming.payload)
+                      setConfirming(null)
+                    }}
+                  >
+                    {t('intervention.confirmAction')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
           <InterventionAuditLog
             error={audit.error}
@@ -412,49 +495,39 @@ function InterventionAuditLog({
   loading: boolean
   rows: TeacherInterventionRow[]
 }) {
+  const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
+  const { handleApiError } = useApiError()
   return (
     <aside className="rounded-lg border p-3">
-      <div className="mb-3 text-sm font-medium">{INTERVENTION_COPY.auditLog}</div>
-      {error ? <InlineError description={error.message} error={error} /> : null}
-      {loading ? <p className="text-muted-foreground text-sm">{INTERVENTION_COPY.loadingAudit}</p> : null}
+      <div className="mb-3 text-sm font-medium">{t('intervention.auditLog')}</div>
+      {error ? <InlineError description={handleApiError(error).message} error={error} /> : null}
+      {loading ? <p className="text-muted-foreground text-sm">{t('intervention.loadingAudit')}</p> : null}
       {!error && !loading && rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">{INTERVENTION_COPY.emptyAudit}</p>
+        <p className="text-muted-foreground text-sm">{t('intervention.emptyAudit')}</p>
       ) : null}
       <div className="space-y-3">
         {rows.map(row => (
           <div key={row.id} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Badge variant={row.status === 'resolved' ? 'secondary' : 'outline'}>{row.status}</Badge>
-              <span className="text-muted-foreground text-xs">{formatAuditDate(row.created_at)}</span>
+              <Badge variant={row.status === 'resolved' ? 'secondary' : 'outline'}>
+                {getAnalyticsCodeLabel(t, row.status)}
+              </Badge>
+              <span className="text-muted-foreground text-xs">
+                {formatDate(fromUnix(row.created_at_unix), locale, DATE_TIME_OPTIONS)}
+              </span>
             </div>
-            <div className="text-sm font-medium">{row.intervention_type.replaceAll('_', ' ')}</div>
-            {row.outcome ? <p className="text-muted-foreground text-xs">{row.outcome}</p> : null}
-            {row.notes ? <p className="text-muted-foreground line-clamp-3 text-xs">{row.notes}</p> : null}
+            <div className="text-sm font-medium">{getAnalyticsCodeLabel(t, row.intervention_type)}</div>
+            {row.outcome ? (
+              <p className="text-muted-foreground text-xs">{getAnalyticsCodeLabel(t, row.outcome)}</p>
+            ) : null}
+            {row.notes ? (
+              <p className="text-muted-foreground line-clamp-3 text-xs">{getAnalyticsCodeLabel(t, row.notes)}</p>
+            ) : null}
             <Separator />
           </div>
         ))}
       </div>
     </aside>
   )
-}
-
-function buildRemediationDraft(row: EnhancedAtRiskLearnerRow) {
-  const reasons = row.reason_codes.map((code: string) => code.replaceAll('_', ' ')).join(', ')
-  return [
-    `Goal: reduce ${row.user_display_name}'s risk in ${row.course_name}.`,
-    `Risk drivers: ${reasons || row.top_contributing_factor || 'needs teacher review'}.`,
-    `Teacher action: ${row.recommended_action}`,
-    'Draft support: assign a short catch-up task, message the learner with one concrete next step, and review progress after the next activity.',
-  ].join('\n')
-}
-
-function formatAuditDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 }

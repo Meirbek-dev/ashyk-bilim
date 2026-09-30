@@ -14,7 +14,7 @@ import {
   CommandShortcut,
 } from '@/components/ui/command'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { ErrorState, InlineError } from '@/components/ui/error-state'
+import { InlineError } from '@/components/ui/error-state'
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import {
   useCodeChallengeSubmissions,
@@ -22,7 +22,6 @@ import {
   useRunCodeChallengeTests,
   useRunCustomTest,
 } from '@/features/assessments/hooks/code-challenge'
-import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
 import { cn } from '@/lib/utils'
 import type {
@@ -42,6 +41,14 @@ import { ResultsDock } from './ResultsDock'
 import { CodeArenaHeader } from './CodeArenaHeader'
 import { HintDrawer } from './HintDrawer'
 import { useApiError } from '@/hooks/useApiError'
+import { useIsMobile } from '@/hooks/use-mobile'
+
+/** What the attempt shell needs to drive the arena's submit button. */
+export interface CodeChallengeSubmitControl {
+  canSubmit: boolean
+  isSubmitting: boolean
+  submit: () => Promise<void> | void
+}
 
 interface CodeArenaWorkspaceProps {
   problem: CodeChallengeProblem
@@ -51,7 +58,8 @@ interface CodeArenaWorkspaceProps {
   initialCode: string
   disabled?: boolean
   onAnswerChange: (answer: Extract<ItemAnswer, { kind: 'CODE' }>) => void
-  onSubmit: () => Promise<void> | void
+  /** Resolves with the handed-in attempt (its status says whether it is already graded). */
+  onSubmit: () => Promise<{ status: string } | void> | void
   onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void
 }
 
@@ -83,22 +91,27 @@ export function CodeArenaWorkspace({
   const [runError, setRunError] = useState<unknown>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { preferences, setPreferences, monacoOptions } = useEditorPreferences()
+  const isMobile = useIsMobile()
   const { handleApiError, toastApiError } = useApiError()
   const languagesQuery = useJudge0Languages()
   const submissionsQuery = useCodeChallengeSubmissions(problem.activityUuid)
-  const judge0Languages = useMemo(() => languagesQuery.data ?? [], [languagesQuery.data])
   const submissionsData = submissionsQuery.data
   const runCustom = useRunCustomTest(problem.activityUuid)
   const runTests = useRunCodeChallengeTests(problem.activityUuid)
   const submissions = Array.isArray(submissionsData) ? submissionsData : []
   const allowedLanguages = useMemo(() => settings.allowed_languages ?? [], [settings.allowed_languages])
-  const languages = useMemo(
-    () =>
-      allowedLanguages.length
-        ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
-        : judge0Languages,
-    [allowedLanguages, judge0Languages],
-  )
+  const languages = useMemo(() => {
+    const judge0Languages = languagesQuery.data
+    // Judge0 down (503 `code-runner-degraded`): keep the editor usable on the item's own language ids.
+    if (!judge0Languages) {
+      return languagesQuery.isError
+        ? allowedLanguages.map(id => ({ id, name: t('languageIdFallback', { id }), monaco_language: 'plaintext' }))
+        : []
+    }
+    return allowedLanguages.length
+      ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
+      : judge0Languages
+  }, [allowedLanguages, languagesQuery.data, languagesQuery.isError, t])
   const isRunning = runCustom.isPending || runTests.isPending || isSubmitting
   const starterCode = normalizeStarterCode(settings, languageId)
 
@@ -216,14 +229,15 @@ export function CodeArenaWorkspace({
     setIsSubmitting(true)
     try {
       updateAnswer(languageId, code)
-      await onSubmit()
-      toast.success(t('submissionQueued'))
-    } catch (error) {
-      toastApiError(error, { fallback: t('submissionFailed') })
+      const submitted = await onSubmit()
+      // UX-288: an auto-graded attempt is not «queued» — its result card says the rest.
+      if (submitted?.status === 'PENDING') toast.success(t('submissionQueued'))
+    } catch {
+      // The submission hook already toasted the localized failure.
     } finally {
       setIsSubmitting(false)
     }
-  }, [code, languageId, onSubmit, t, toastApiError, updateAnswer])
+  }, [code, languageId, onSubmit, t, updateAnswer])
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
@@ -259,26 +273,9 @@ export function CodeArenaWorkspace({
     return () => globalThis.removeEventListener('keydown', onKeyDown)
   }, [handleRunTests, handleSubmit])
 
-  if (languagesQuery.isError) {
-    const processed = handleApiError(languagesQuery.error, { fallback: t('codeExecutionFailed') })
-    return (
-      <ErrorState
-        actionLabel={processed.actionLabel}
-        description={processed.message}
-        error={languagesQuery.error}
-        {...(processed.showRetry
-          ? {
-              onAction: () => {
-                void languagesQuery.refetch()
-              },
-            }
-          : {})}
-        title={t('codeExecutionFailed')}
-        variant="section"
-      />
-    )
-  }
-
+  const languagesError = languagesQuery.isError
+    ? handleApiError(languagesQuery.error, { fallback: t('languageServiceUnavailableTitle') })
+    : null
   const submissionsError = submissionsQuery.isError
     ? handleApiError(submissionsQuery.error, { fallback: t('codeExecutionFailed') })
     : null
@@ -295,6 +292,15 @@ export function CodeArenaWorkspace({
         disabled={disabled}
       />
 
+      {languagesError ? (
+        <InlineError
+          className="m-3"
+          description={`${languagesError.message} ${t('languagesUnavailable')}`}
+          error={languagesQuery.error}
+          title={t('languageServiceUnavailableTitle')}
+        />
+      ) : null}
+
       {submissionsError ? (
         <InlineError
           className="m-3"
@@ -304,12 +310,18 @@ export function CodeArenaWorkspace({
         />
       ) : null}
 
-      <ResizablePanelGroup id="code-arena-main-layout" orientation="horizontal" className="min-h-0 flex-1">
+      {/* UX-290: a phone stacks the problem above the editor instead of squeezing them side by side. */}
+      <ResizablePanelGroup
+        id="code-arena-main-layout"
+        orientation={isMobile ? 'vertical' : 'horizontal'}
+        className="min-h-0 flex-1"
+      >
         <ResizablePanel defaultSize={34} minSize={24} className={cn('min-w-0')}>
           <ProblemPane
             problem={problem}
             settings={settings}
             submissions={submissions}
+            languages={languages}
             activeTab={problemTab}
             onTabChange={tab => {
               if (tab === 'hints') {

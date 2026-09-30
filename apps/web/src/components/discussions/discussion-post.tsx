@@ -2,8 +2,9 @@
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Reply, Send, Trash2 } from 'lucide-react'
 import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
-import { useFormatter, useNow, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
+import RelativeTime from './relative-time'
 import { Card, CardContent } from '@/components/ui/card'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { Separator } from '@/components/ui/separator'
@@ -56,13 +57,10 @@ export default function DiscussionPost({
   const [replyContent, setReplyContent] = useState('')
   const [editingPost, setEditingPost] = useState(false)
   const [editContent, setEditContent] = useState(post.postMessage)
-  const format = useFormatter()
-  const now = useNow()
 
   // Use backend permission metadata
   const canUpdate = post.can_update ?? false
   const canDelete = post.can_delete ?? false
-  const canModerate = post.can_moderate ?? false
   const isOwner = post.is_owner ?? false
 
   const netScore = post.upvotes - post.downvotes
@@ -101,24 +99,14 @@ export default function DiscussionPost({
                 <div className="flex flex-wrap items-center gap-2">
                   <h4 className="text-foreground font-semibold">{getUserDisplayName(post.firstName, post.lastName)}</h4>
                   <span className="text-muted-foreground text-sm">@{post.username}</span>
-                  {canModerate && (
-                    <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
-                      {t('moderator')}
-                    </Badge>
-                  )}
                   {isOwner && (
                     <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
-                      {t('author')}
+                      {t('you')}
                     </Badge>
                   )}
                   <div className="text-muted-foreground flex items-center gap-1 text-xs">
                     <Clock size={12} />
-                    <span>{format.relativeTime(new Date(post.createDate), now)}</span>
-                    {post.updateDate &&
-                      post.createDate &&
-                      new Date(post.updateDate).getTime() !== new Date(post.createDate).getTime() && (
-                        <span className="text-muted-foreground text-xs">({t('edited')})</span>
-                      )}
+                    <RelativeTime date={post.createDate} />
                   </div>
                 </div>
                 {(canDelete || canUpdate) && !editingPost && (
@@ -132,6 +120,7 @@ export default function DiscussionPost({
                           setEditContent(post.postMessage)
                         }}
                         disabled={!canUpdate}
+                        aria-label={t('edit')}
                         className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                       >
                         <Edit size={12} />
@@ -143,6 +132,7 @@ export default function DiscussionPost({
                         size="sm"
                         onClick={() => onDeletePost(post.id)}
                         disabled={!canDelete}
+                        aria-label={t('delete')}
                         className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
                       >
                         <Trash2 size={12} />
@@ -190,6 +180,8 @@ export default function DiscussionPost({
                       variant="ghost"
                       size="sm"
                       onClick={() => onVotePost(post.id, 'up')}
+                      aria-pressed={post.userVote === 'up'}
+                      aria-label={t('upvote')}
                       className={cn(
                         'h-8 rounded-none border-border border-r px-3 transition-all',
                         post.userVote === 'up'
@@ -205,6 +197,8 @@ export default function DiscussionPost({
                       variant="ghost"
                       size="sm"
                       onClick={() => onVotePost(post.id, 'down')}
+                      aria-pressed={post.userVote === 'down'}
+                      aria-label={t('downvote')}
                       className={cn(
                         'h-8 rounded-none px-3 transition-all',
                         post.userVote === 'down'
@@ -306,7 +300,6 @@ export default function DiscussionPost({
                   key={reply.id}
                   reply={reply}
                   postId={post.id}
-                  currentUser={currentUser}
                   onVoteReply={onVoteReply}
                   onDeleteReply={onDeleteReply}
                   onEditReply={onEditReply}

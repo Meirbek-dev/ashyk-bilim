@@ -54,12 +54,29 @@ export const COURSE = {
 export const FIXTURES_DIR = path.join(__dirname, '../fixtures/files')
 export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf')
 
-/** A simple Python function used in the coding challenge test */
-export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`
+/**
+ * The code challenge authored in spec 03 and solved in spec 04: the arena
+ * grades stdin → stdout, so the solution reads «a b» and prints the sum. One
+ * line on purpose — Monaco's auto-indent would reshape typed multi-line code.
+ */
+export const CORRECT_PYTHON_SOLUTION = 'print(sum(map(int, input().split())))'
 
-/** Passing exam: answer indices that should yield a passing score */
+export const CODE_CHALLENGE = {
+  title: COURSE.activities.codeChallenge,
+  prompt: 'Read two integers a and b from one line and print their sum.',
+  /** Judge0 language button in the studio's Languages tab */
+  language: /^Python \(3/,
+  starterCode: '# read a and b, print a + b',
+  referenceSolution: CORRECT_PYTHON_SOLUTION,
+  tests: [
+    { input: '2 3', expectedOutput: '5', visible: true },
+    { input: '10 -4', expectedOutput: '6', visible: false },
+  ],
+} as const
+
+/** Passing exam: the correct answers (v2 shuffles questions and options, so answer by text) */
 export const EXAM_ANSWERS = {
-  question0ChoiceIndex: 0, // First question, first choice (set as correct)
-  question1IsTrue: true, // True/False — True
-  question2MultiSelectIndices: [0, 2], // Multi-select: choices 0 and 2
+  singleChoice: { question: 'What does HTML stand for?', answer: 'HyperText Markup Language' },
+  trueFalse: { question: 'JavaScript is a statically typed language.', answer: 'False' },
+  multiSelect: { question: 'Which of the following are JavaScript frameworks?', answers: ['React', 'Vue'] },
 }

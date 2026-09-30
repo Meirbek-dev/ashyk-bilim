@@ -2,10 +2,11 @@
 
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { useCreateExamWithActivity, useExamConfig } from '@/features/assessments/hooks/exam'
+import { useCreateExamWithActivity } from '@/features/assessments/hooks/exam'
 import { useTranslations } from 'next-intl'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
-import { useEffect } from 'react'
+import { useRouter } from '@/i18n/navigation'
+import { useApiError } from '@/hooks/useApiError'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -15,14 +16,16 @@ import { Switch } from '@components/ui/switch'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 
-const createValidationSchema = (t: (key: string) => string, limits?: { time_limit?: { min?: number; max?: number } }) =>
+// v2 has no `assessments/exam/config`; the time limit range is a fixed 1–180 minutes.
+const TIME_LIMIT_MIN = 1
+const TIME_LIMIT_MAX = 180
+const DEFAULT_TIME_LIMIT = 50
+
+const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    exam_title: v.pipe(v.string(), v.minLength(1, t('examTitleRequired'))),
-    activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
-    exam_description: v.pipe(v.string(), v.minLength(1, t('examDescriptionRequired'))),
-    time_limit: v.optional(
-      v.pipe(v.number(), v.minValue(limits?.time_limit?.min ?? 1), v.maxValue(limits?.time_limit?.max ?? 180)),
-    ),
+    activity_name: v.pipe(v.string(), v.trim(), v.minLength(1, t('activityNameRequired'))),
+    exam_description: v.pipe(v.string(), v.trim(), v.minLength(1, t('examDescriptionRequired'))),
+    time_limit: v.optional(v.pipe(v.number(), v.minValue(TIME_LIMIT_MIN), v.maxValue(TIME_LIMIT_MAX))),
     has_time_limit: v.boolean(),
     shuffle_questions: v.boolean(),
     allow_result_review: v.boolean(),
@@ -30,9 +33,6 @@ const createValidationSchema = (t: (key: string) => string, limits?: { time_limi
 
 type FormValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
-
-const getDefaultTimeLimit = (limits?: { time_limit?: { min?: number; max?: number } }) =>
-  Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
 
 type ExamCourseInput = AppActivityModalProps['course']
 
@@ -46,19 +46,24 @@ const getCreatedActivityUuid = (data: AppPayload): string | null =>
   data?.data?.activity?.activity_uuid ??
   null
 
-const navigateTo = (url: string) => {
-  globalThis.location.href = url
+type NewExamProps = Pick<AppActivityModalProps, 'chapterId' | 'course' | 'closeModal'> & {
+  /** `quiz` keeps the server's quiz preset (no attempt cap, no proctoring); `exam` applies the exam preset. */
+  kind: 'quiz' | 'exam'
 }
 
-function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
+function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const validationT = useTranslations('Validation')
-  const t = useTranslations('Components.NewExamModal')
+  // Locale-aware navigation (UX-029): a bare `/dash/…` would 307 through the proxy.
+  const router = useRouter()
+  const tModal = useTranslations('Components.NewExamModal')
+  const t = (key: string) => tModal(key)
+  const tk = (key: string) => tModal(`${kind}.${key}`)
 
-  const { data: limits } = useExamConfig()
-  const validationSchema = createValidationSchema(validationT, limits)
+  const validationSchema = createValidationSchema(validationT)
   const withUnpublishedActivities =
     typeof course?.withUnpublishedActivities === 'boolean' ? course.withUnpublishedActivities : false
   const courseUuid = getCourseUuid(course)
+  const { handleApiError } = useApiError<{ title: string; description: string }>()
   const createExamMutation = useCreateExamWithActivity(courseUuid, {
     withUnpublishedActivities,
   })
@@ -66,11 +71,10 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
   const form = useForm<FormValues, unknown, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
-      exam_title: '',
       activity_name: '',
       exam_description: '',
       has_time_limit: true,
-      time_limit: getDefaultTimeLimit(limits),
+      time_limit: DEFAULT_TIME_LIMIT,
       shuffle_questions: true,
       allow_result_review: true,
     },
@@ -82,58 +86,37 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
     defaultValue: true,
   })
 
-  useEffect(() => {
-    if (!limits) return
-
-    const currentValue = form.getValues('time_limit')
-    const nextValue =
-      currentValue === undefined
-        ? getDefaultTimeLimit(limits)
-        : Math.min(Math.max(currentValue, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
-
-    form.setValue('time_limit', nextValue, {
-      shouldDirty: false,
-      shouldValidate: false,
-    })
-  }, [form, limits])
-
   const onSubmit = async (values: SubmitValues) => {
-    const toastLoading = toast.loading(t('creatingExam'))
+    const toastLoading = toast.loading(tk('creatingExam'))
     try {
-      const courseId = course?.courseStructure?.id
-      if (typeof courseId !== 'number') {
-        throw new Error('Course metadata is missing for exam creation')
-      }
-
       const settings = {
         time_limit: values.has_time_limit ? values.time_limit : null,
-        attempt_limit: 1,
         shuffle_questions: values.shuffle_questions,
         shuffle_answers: true,
-        question_limit: null,
-        access_mode: 'NO_ACCESS',
-        whitelist_user_ids: [],
         allow_result_review: values.allow_result_review,
-        show_correct_answers: values.allow_result_review,
-        copy_paste_protection: true,
-        tab_switch_detection: true,
-        devtools_detection: true,
-        right_click_disable: true,
-        fullscreen_enforcement: true,
-        violation_threshold: 3,
+        ...(kind === 'exam'
+          ? {
+              attempt_limit: 1,
+              copy_paste_protection: true,
+              tab_switch_detection: true,
+              devtools_detection: true,
+              right_click_disable: true,
+              fullscreen_enforcement: true,
+              violation_threshold: 3,
+            }
+          : {}),
       }
 
       const data = await createExamMutation.mutateAsync({
+        kind,
         activityName: values.activity_name,
-        courseId,
         chapterId,
-        examTitle: values.exam_title,
         examDescription: values.exam_description,
         settings,
       })
 
       toast.dismiss(toastLoading)
-      toast.success(t('examCreatedSuccessfully'))
+      toast.success(tk('examCreatedSuccessfully'))
 
       const createdActivityUuid = getCreatedActivityUuid(data)
       if (createdActivityUuid) {
@@ -152,21 +135,29 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
 
         if (courseUuidClean) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid)
-          navigateTo(
-            `/course/${courseUuidClean}/activity/${activityUuidClean}${
-              withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
-            }`,
-          )
+          // A fresh assessment is unpublished, so the learner activity page
+          // (which reads the published outline) cannot show it — go to the studio.
+          router.push(`/dash/courses/${courseUuidClean}/activity/${activityUuidClean}/studio`)
         } else {
-          navigateTo('/courses')
+          router.push('/courses')
         }
       }
 
       closeModal()
     } catch (error: unknown) {
       toast.dismiss(toastLoading)
-      toast.error(t('errorCreatingExam'))
-      console.error('Error creating exam:', error)
+      // UX-228: the server's field errors (problem+json) land on the inputs they name.
+      let inline = false
+      const processed = handleApiError(error, {
+        fallback: tk('errorCreatingExam'),
+        setError: (field, fieldError) => {
+          const name = field === 'title' ? 'activity_name' : field === 'description' ? 'exam_description' : null
+          if (!name) return
+          inline = true
+          form.setError(name, fieldError)
+        },
+      })
+      if (!inline) toast.error(processed.message)
     }
   }
 
@@ -174,22 +165,16 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Field>
         <FieldLabel htmlFor="activity_name">{t('activityName')}</FieldLabel>
-        <Input id="activity_name" placeholder={t('activityNamePlaceholder')} {...form.register('activity_name')} />
+        <Input id="activity_name" placeholder={tk('activityNamePlaceholder')} {...form.register('activity_name')} />
         <FieldDescription>{t('activityNameDescription')}</FieldDescription>
         <FieldError errors={[form.formState.errors.activity_name]} />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="exam_title">{t('examTitle')}</FieldLabel>
-        <Input id="exam_title" placeholder={t('examTitlePlaceholder')} {...form.register('exam_title')} />
-        <FieldError errors={[form.formState.errors.exam_title]} />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="exam_description">{t('examDescription')}</FieldLabel>
+        <FieldLabel htmlFor="exam_description">{tk('examDescription')}</FieldLabel>
         <Textarea
           id="exam_description"
-          placeholder={t('examDescriptionPlaceholder')}
+          placeholder={tk('examDescriptionPlaceholder')}
           {...form.register('exam_description')}
         />
         <FieldError errors={[form.formState.errors.exam_description]} />
@@ -219,8 +204,8 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
               <Input
                 id={field.name}
                 type="number"
-                min={limits?.time_limit?.min ?? 1}
-                max={limits?.time_limit?.max ?? 180}
+                min={TIME_LIMIT_MIN}
+                max={TIME_LIMIT_MAX}
                 placeholder="60"
                 {...field}
                 value={field.value ?? ''}
@@ -268,7 +253,7 @@ function NewExam({ chapterId, course, closeModal }: AppActivityModalProps) {
           {t('cancel')}
         </Button>
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? t('creating') : t('createExam')}
+          {form.formState.isSubmitting ? t('creating') : tk('createExam')}
         </Button>
       </div>
     </form>

@@ -3,9 +3,12 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { IS_DEVELOPMENT } from '@/services/config/env'
+import { cleanCourseUuid } from '@/lib/course-management'
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content'
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+/** `conflict`: another editor saved first (412); that activity's autosave is off until the page reloads. */
+/** `forbidden` (UX-214): a 403 — the author lost access; autosave stops like a conflict. */
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'conflict' | 'forbidden'
 
 interface ConflictState {
   isOpen: boolean
@@ -20,8 +23,14 @@ interface CourseEditorState {
   lastKnownUpdateDate: string | null
   dirtySections: Partial<Record<CourseDirtySection, boolean>>
   conflict: ConflictState
-  activitySaveStatus: SaveStatus
-  lastActivitySavedAt: number | null
+  /** BUG-282: the autosave state of one activity — another activity reads `idle`. */
+  activitySave: ActivitySaveState
+}
+
+interface ActivitySaveState {
+  activityUuid: string | null
+  status: SaveStatus
+  savedAt: number | null
 }
 
 interface CourseEditorActions {
@@ -36,7 +45,7 @@ interface CourseEditorActions {
   }) => void
   dismissConflict: () => void
   saveAnyway: () => Promise<void>
-  setActivitySaveStatus: (status: SaveStatus) => void
+  setActivitySaveStatus: (activityUuid: string, status: SaveStatus) => void
 }
 
 const createInitialConflictState = (): ConflictState => ({
@@ -51,8 +60,7 @@ const initialState: CourseEditorState = {
   lastKnownUpdateDate: null,
   dirtySections: {},
   conflict: createInitialConflictState(),
-  activitySaveStatus: 'idle',
-  lastActivitySavedAt: null,
+  activitySave: { activityUuid: null, status: 'idle', savedAt: null },
 }
 
 export const useCourseEditorStore = create<CourseEditorState & CourseEditorActions>()(
@@ -60,8 +68,12 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
     (set, get) => ({
       ...initialState,
 
-      openEditor: (courseUuid, lastKnownUpdateDate) =>
+      openEditor: (rawCourseUuid, lastKnownUpdateDate) =>
         set(state => {
+          // Providers pass both `course_<id>` and the bare v2 id for the same
+          // course; compare normalized so a nested provider does not reset the
+          // editor state (activity save status) on every structure refetch.
+          const courseUuid = cleanCourseUuid(rawCourseUuid)
           if (state.activeCourseUuid === courseUuid) {
             return {
               activeCourseUuid: courseUuid,
@@ -113,10 +125,10 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
         }
       },
 
-      setActivitySaveStatus: status =>
-        set({
-          activitySaveStatus: status,
-          lastActivitySavedAt: status === 'saved' ? Date.now() : get().lastActivitySavedAt,
+      setActivitySaveStatus: (activityUuid, status) =>
+        set(state => {
+          const previous = state.activitySave.activityUuid === activityUuid ? state.activitySave.savedAt : null
+          return { activitySave: { activityUuid, status, savedAt: status === 'saved' ? Date.now() : previous } }
         }),
     }),
     {

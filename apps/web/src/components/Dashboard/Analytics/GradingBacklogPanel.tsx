@@ -1,5 +1,7 @@
 'use client'
 
+import { getAnalyticsMessage } from '@/lib/analytics/labels'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AlertItem } from '@/types/analytics'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +15,7 @@ interface GradingBacklogPanelProps {
 
 export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBacklogPanelProps) {
   const t = useTranslations('TeacherAnalytics')
-  const gradingAlerts = alerts.filter(alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo')
+  const gradingAlerts = alerts.filter(alert => alert.kind === 'grading_backlog' || alert.kind === 'grading_slo')
   return (
     <Card>
       <CardHeader>
@@ -29,7 +31,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
           {gradingAlerts.length ? (
             gradingAlerts.map(alert => (
               <Badge key={alert.id} variant={alert.severity === 'critical' ? 'destructive' : 'warning'}>
-                {alert.title}
+                {getAnalyticsMessage(t, alert).title}
               </Badge>
             ))
           ) : (

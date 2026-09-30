@@ -30,7 +30,7 @@ export default function OperationsTab({ query, data }: OperationsTabProps) {
         <TeacherWorkloadPanel workload={data.workload} />
       </Suspense>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Suspense fallback={<SectionFallback height="h-[320px]" />}>
           <DrillThroughAuditPanel query={query} assessmentPreview={data.assessment_preview} />
         </Suspense>
@@ -39,7 +39,7 @@ export default function OperationsTab({ query, data }: OperationsTabProps) {
         </Suspense>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Suspense fallback={<SectionFallback height="h-[420px]" />}>
           <DataQualityPanel quality={data.data_quality} />
         </Suspense>

@@ -4,6 +4,7 @@ import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import Link from '@components/ui/AppLink'
 import { useSyncExternalStore } from 'react'
 import type React from 'react'
@@ -13,6 +14,7 @@ const emptySubscribe = () => () => {}
 const UserCertificates: React.FC = () => {
   const format = useFormatter()
   const t = useTranslations('Certificates.UserCertificates')
+  const tTypes = useTranslations('Certificates.CourseEndView.certificationTypes')
 
   const { data: certificates, error, isLoading } = useUserCertificates()
 
@@ -102,7 +104,7 @@ const UserCertificates: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Award className="text-primary h-4 w-4" />
                   <h3 className="text-foreground truncate text-sm font-semibold">
-                    {certificate.certification.config.certification_name}
+                    {certificate.certification.config.certification_name || certificate.course.name}
                   </h3>
                 </div>
 
@@ -127,19 +129,29 @@ const UserCertificates: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border-border flex items-center justify-between border-t pt-2">
-                  <div className="text-muted-foreground text-xs capitalize">
-                    {certificate.certification.config.certification_type.replace('_', ' ')}
+                <div className="border-border flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+                  <div className="text-muted-foreground text-xs">
+                    {certificate.certification.config.certification_type &&
+                    tTypes.has(certificate.certification.config.certification_type)
+                      ? tTypes(certificate.certification.config.certification_type)
+                      : tTypes('completion')}
                   </div>
-                  <Link
-                    href={verificationLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/80 inline-flex items-center gap-1 text-xs font-medium"
-                  >
-                    <span>{t('verifyCertificate')}</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <CertificatePdfDownloadButton
+                      verifyCode={certificate.certificate_user.user_certification_uuid}
+                      size="sm"
+                      variant="outline"
+                    />
+                    <Link
+                      href={verificationLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 inline-flex items-center gap-1 text-xs font-medium"
+                    >
+                      <span>{t('verifyCertificate')}</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

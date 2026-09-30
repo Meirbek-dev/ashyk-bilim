@@ -32,7 +32,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     () => (codeItem ? codeItemToSettings(codeItem, vm?.title, vm?.description ?? undefined) : null),
     [codeItem, vm?.description, vm?.title],
   )
-  const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid)
+  const submissionState = useAssessmentSubmission(assessmentUuid)
   const saveDraft = submissionState.save
   const { saveState } = submissionState
   const submissionStatus = submissionState.status
@@ -106,9 +106,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     return () => clearTimeout(timeout)
   }, [saveDraft, saveState, submissionStatus, vm?.canSaveDraft])
 
-  const handleCanonicalSubmit = useCallback(async () => {
-    await submitAssessment()
-  }, [submitAssessment])
+  const handleCanonicalSubmit = useCallback(() => submitAssessment(), [submitAssessment])
 
   if (submissionState.isLoading) {
     return <CodeItemLoading />
@@ -140,7 +138,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   )
 }
 
-function codeItemToSettings(
+export function codeItemToSettings(
   item: AssessmentItem,
   title?: string | null,
   description?: string | null,
@@ -150,6 +148,8 @@ function codeItemToSettings(
   const hiddenTests = item.body.tests.filter(test => !test.is_visible).map(toCodeChallengeTestCase)
   const timeLimit = item.body.time_limit_seconds ?? 5
   const memoryLimit = item.body.memory_limit_mb ?? 256
+  // UX-306: difficulty lives on the item metadata, lower-case on the wire.
+  const difficulty = item.metadata?.difficulty?.toUpperCase() as CodeChallengeSettings['difficulty']
 
   return {
     uuid: item.item_uuid,
@@ -163,6 +163,7 @@ function codeItemToSettings(
     time_limit_ms: timeLimit * 1000,
     memory_limit_kb: memoryLimit * 1024,
     grading_strategy: 'PARTIAL_CREDIT',
+    ...(difficulty ? { difficulty } : {}),
     allowed_languages: item.body.languages,
     visible_tests: visibleTests,
     hidden_tests: hiddenTests,

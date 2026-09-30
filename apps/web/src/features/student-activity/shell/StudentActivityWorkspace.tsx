@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { Activity } from '@components/Contexts/CourseContext'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
@@ -43,9 +43,10 @@ export default function StudentActivityWorkspace({
     runtime.primary_action.enabled &&
     !runtime.progress.complete &&
     isReadingActivityType(activityType)
+  const [contentElement, setContentElement] = useState<HTMLElement | null>(null)
   const contentReadComplete = useContentReadCompletion({
     enabled: shouldRequireContentRead,
-    targetId: 'activity-main-content',
+    target: contentElement,
     resetKey: activityUuid,
   })
 
@@ -174,8 +175,10 @@ export default function StudentActivityWorkspace({
         panel={aiEnabled ? <CourseAIHub courseUuid={courseUuid} scope={aiScope} variant="panel" /> : null}
         className="relative flex flex-1"
       >
-        <main
+        {/* The layout already owns the <main> landmark; this is a region inside it (UX-052). */}
+        <section
           id="activity-main-content"
+          ref={setContentElement}
           className={cn(
             'min-w-0 flex-1 px-4 sm:px-6 lg:px-8',
             contentFrameClassName,
@@ -185,7 +188,7 @@ export default function StudentActivityWorkspace({
           {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
-        </main>
+        </section>
       </ActivityAIDockLayout>
 
       <BottomActionBar
@@ -218,20 +221,14 @@ function isReadingActivityType(activityType: string) {
 function useContentReadCompletion({
   enabled,
   resetKey,
-  targetId,
+  target,
 }: {
   enabled: boolean
   resetKey: string
-  targetId: string
+  /** The content region; a new activity renders a new element, which re-arms the observers. */
+  target: HTMLElement | null
 }) {
   const [complete, setComplete] = useState(!enabled)
-  const completeRef = useRef(!enabled)
-
-  const setCompleteOnce = useCallback((nextComplete: boolean) => {
-    if (completeRef.current === nextComplete) return
-    completeRef.current = nextComplete
-    setComplete(nextComplete)
-  }, [])
 
   const [prevResetKey, setPrevResetKey] = useState<string>(resetKey)
   const [prevEnabled, setPrevEnabled] = useState<boolean>(enabled)
@@ -243,24 +240,14 @@ function useContentReadCompletion({
   }
 
   useEffect(() => {
-    completeRef.current = !enabled
-  }, [enabled, resetKey])
-
-  useEffect(() => {
-    if (!enabled) return
-
-    const target = document.getElementById(targetId)
-    if (!target) {
-      setCompleteOnce(true)
-      return
-    }
+    if (!enabled || !target) return
 
     let frame = 0
     const checkReadCompletion = () => {
       frame = 0
       const { bottom } = target.getBoundingClientRect()
       const viewportBottom = window.innerHeight
-      setCompleteOnce(bottom <= viewportBottom + CONTENT_READ_TOLERANCE_PX)
+      setComplete(bottom <= viewportBottom + CONTENT_READ_TOLERANCE_PX)
     }
     const scheduleCheck = () => {
       if (frame) return
@@ -280,7 +267,8 @@ function useContentReadCompletion({
       window.removeEventListener('resize', scheduleCheck)
       resizeObserver.disconnect()
     }
-  }, [enabled, resetKey, setCompleteOnce, targetId])
+  }, [enabled, target])
 
-  return complete
+  // No content region on the page: nothing to read.
+  return target ? complete : true
 }

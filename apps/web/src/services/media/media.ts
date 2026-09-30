@@ -1,33 +1,43 @@
 import { APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { getPublicConfig } from '@services/config/env'
-import { resolveAvatarUrl } from './avatar'
+
+/**
+ * Public media resolution for the v2 storage layout.
+ *
+ * Every public object is addressed by its storage `key` (`Platform.logo_key`,
+ * `UserProfile.avatar_key`, course `thumbnail_key`, block `file_key`, …) and
+ * served anonymously at `/content/<key>` (nginx → the `ab-public` bucket,
+ * immutable cache; DECISIONS "Same-origin object storage routing").
+ */
 
 const getMediaUrl = () => getPublicConfig().mediaUrl
-const EMPTY_COURSE_THUMBNAIL_PATH = '/empty_thumbnail.avif'
-const EMPTY_COURSE_THUMBNAIL_FILE = EMPTY_COURSE_THUMBNAIL_PATH.slice(1)
 
-export function getCourseThumbnailMediaDirectory(courseUUID?: string | null, fileId?: string | null): string {
-  const normalizedCourseUUID = courseUUID?.trim()
-  const normalizedFileId = fileId?.trim()
+export const EMPTY_COURSE_THUMBNAIL_PATH = '/empty_thumbnail.avif'
 
-  if (
-    !normalizedCourseUUID ||
-    !normalizedFileId ||
-    normalizedFileId === EMPTY_COURSE_THUMBNAIL_FILE ||
-    normalizedFileId === EMPTY_COURSE_THUMBNAIL_PATH
-  ) {
-    return EMPTY_COURSE_THUMBNAIL_PATH
+const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
+
+/** Absolute URL for a public storage key; `null`/empty keys yield `null`. */
+export function getContentUrl(key: string | null | undefined): string | null {
+  const normalized = key?.trim()
+  if (!normalized) return null
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('blob:') || normalized.startsWith('data:')) {
+    return normalized
   }
-
-  return `${getMediaUrl()}content/platform/courses/${normalizedCourseUUID}/thumbnails/${normalizedFileId}`
+  return `${getMediaUrl()}content/${trimSlashes(normalized)}`
 }
 
-export function getLandingMediaDirectory(fileId: string): string {
-  return `${getMediaUrl()}content/platform/landing/${fileId}`
+export function getCourseThumbnailUrl(thumbnailKey?: string | null): string {
+  return getContentUrl(thumbnailKey) ?? EMPTY_COURSE_THUMBNAIL_PATH
 }
 
-export function getUserAvatarMediaDirectory(userUUID: string, fileId: string): string {
-  return resolveAvatarUrl({ avatarUrl: fileId, user: { user_uuid: userUUID } })
+/** @deprecated legacy signature kept for call sites not yet on keys — resolves the key only. */
+export function getCourseThumbnailMediaDirectory(_courseId?: string | null, thumbnailKey?: string | null): string {
+  return getCourseThumbnailUrl(thumbnailKey)
+}
+
+/** @deprecated v2 avatar values are complete storage keys; the user id is ignored. */
+export function getUserAvatarMediaDirectory(_userId: string, avatarKey: string): string {
+  return getContentUrl(avatarKey) ?? ''
 }
 
 export interface ActivityBlockMediaDirectoryParams {
@@ -38,14 +48,9 @@ export interface ActivityBlockMediaDirectoryParams {
   type: string
 }
 
-export function getActivityBlockMediaDirectory({
-  courseId,
-  activityId,
-  blockId,
-  fileId,
-  type,
-}: ActivityBlockMediaDirectoryParams): string {
-  return `${getMediaUrl()}content/platform/courses/${courseId}/activities/${activityId}/dynamic/blocks/${type}/${blockId}/${fileId}`
+/** @deprecated v2 block file values are complete storage keys. */
+export function getActivityBlockMediaDirectory({ fileId }: ActivityBlockMediaDirectoryParams): string {
+  return getContentUrl(fileId) ?? ''
 }
 
 export interface ActivityMediaDirectoryParams {
@@ -55,33 +60,18 @@ export interface ActivityMediaDirectoryParams {
   activityType: string
 }
 
-export function getActivityMediaDirectory({
-  courseUUID,
-  activityUUID,
-  fileId,
-  activityType,
-}: ActivityMediaDirectoryParams): string | undefined {
-  if (activityType === 'video') {
-    return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/video/${fileId}`
-  }
-  if (activityType === 'documentpdf') {
-    return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/documentpdf/${fileId}`
-  }
-  return undefined
+/** @deprecated v2 activity file values are complete storage keys. */
+export function getActivityMediaDirectory({ fileId }: ActivityMediaDirectoryParams): string | undefined {
+  return getContentUrl(fileId) ?? undefined
 }
 
-export function getLogoMediaDirectory(fileId: string): string {
-  return `${getMediaUrl()}content/platform/logos/${fileId}`
+export function getPlatformLogoUrl(logoKey?: string | null): string | null {
+  return getContentUrl(logoKey)
 }
 
-export function getThumbnailMediaDirectory(fileId: string): string {
-  return `${getMediaUrl()}content/platform/thumbnails/${fileId}`
-}
-
-export function getPlatformThumbnailImage(fileId?: string | null): string {
-  if (fileId) {
-    return getThumbnailMediaDirectory(fileId)
-  }
+export function getPlatformThumbnailImage(thumbnailKey?: string | null): string {
+  const resolved = getContentUrl(thumbnailKey)
+  if (resolved) return resolved
 
   const thumbnailPath = APP_THUMBNAIL_IMAGE_PATH.startsWith('/')
     ? APP_THUMBNAIL_IMAGE_PATH.slice(1)
@@ -90,6 +80,12 @@ export function getPlatformThumbnailImage(fileId?: string | null): string {
   return `${getPublicConfig().siteUrl}${thumbnailPath}`
 }
 
-export function getPreviewMediaDirectory(fileId: string): string {
-  return `${getMediaUrl()}content/platform/previews/${fileId}`
+/** @deprecated use `getPlatformLogoUrl(logo_key)`. */
+export function getLogoMediaDirectory(logoKey: string): string {
+  return getContentUrl(logoKey) ?? ''
+}
+
+/** @deprecated use `getPlatformThumbnailImage(thumbnail_key)`. */
+export function getThumbnailMediaDirectory(thumbnailKey: string): string {
+  return getContentUrl(thumbnailKey) ?? ''
 }

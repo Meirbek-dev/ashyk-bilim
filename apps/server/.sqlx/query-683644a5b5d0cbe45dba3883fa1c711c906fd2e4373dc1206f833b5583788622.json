@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM trail_steps WHERE trail_id = $1 AND activity_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "683644a5b5d0cbe45dba3883fa1c711c906fd2e4373dc1206f833b5583788622"
+}

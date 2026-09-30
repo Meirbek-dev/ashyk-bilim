@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM learner_risk_snapshots WHERE id IN (\n            SELECT id FROM learner_risk_snapshots\n            WHERE snapshot_date < current_date - interval '2 years' LIMIT 5000)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "f98149bc921fa2398476a90916b72b45062eb0f84a91b8f97e1e29c7309013cf"
+}

@@ -1,0 +1,119 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", kind AS \"kind: AssessmentKind\", title,\n                  lifecycle AS \"lifecycle: Lifecycle\", grading_mode AS \"grading_mode: GradingMode\",\n                  passing_score, (extract(epoch FROM due_at))::bigint AS \"due_at?\"\n           FROM assessments WHERE course_id = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind: AssessmentKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "lifecycle: Lifecycle",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "lifecycle"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "grading_mode: GradingMode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "grading_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "passing_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "passing_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "66153b5d7b757ce8e483b5cb2ac8d7c2d03075771e92d83ac7d0acc055702af4"
+}

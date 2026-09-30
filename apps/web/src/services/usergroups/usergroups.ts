@@ -1,113 +1,35 @@
-'use server'
-
+// Plain isomorphic functions, NOT server actions: problem+json codes and
+// field errors must reach the client `useApiError` (GAUNTLET BUG-035, UX-242).
+// Nothing reads these cache tags (no `cacheTag()` consumer), so nothing is revalidated.
 import { apiResult } from '@/lib/api-client'
-import { courseTag, tags } from '@/lib/cacheTags'
+import type { CreateUsergroupRequest, UpdateUsergroupRequest, Usergroup } from '@/lib/api/generated/zod'
 
-export async function createUserGroup(body: AppPayload) {
-  const data = await apiResult('usergroups/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+const json = (body: unknown) => ({ headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-
-  return data
+export async function createUserGroup(body: CreateUsergroupRequest) {
+  return apiResult<Usergroup>('usergroups', { method: 'POST', ...json(body) })
 }
 
-export async function linkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const data = await apiResult(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, {
-    method: 'POST',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-  revalidateTag(tags.users, 'max')
-
-  return data
+export async function linkUserToUserGroup(usergroup_id: string, user_id: string) {
+  return apiResult<void>(`usergroups/${usergroup_id}/members`, { method: 'POST', ...json({ user_ids: [user_id] }) })
 }
 
-export async function unLinkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const data = await apiResult(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, {
-    method: 'DELETE',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-  revalidateTag(tags.users, 'max')
-
-  return data
+export async function unLinkUserToUserGroup(usergroup_id: string, user_id: string) {
+  return apiResult<void>(`usergroups/${usergroup_id}/members`, { method: 'DELETE', ...json({ user_ids: [user_id] }) })
 }
 
-export async function updateUserGroup(usergroup_id: number, data: AppPayload) {
-  const response = await apiResult(`usergroups/${usergroup_id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-
-  return response
+export async function updateUserGroup(usergroup_id: string, data: UpdateUsergroupRequest) {
+  return apiResult<Usergroup>(`usergroups/${usergroup_id}`, { method: 'PATCH', ...json(data) })
 }
 
-export async function deleteUserGroup(usergroup_id: number) {
-  const data = await apiResult(`usergroups/${usergroup_id}`, {
-    method: 'DELETE',
-  })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-
-  return data
+export async function deleteUserGroup(usergroup_id: string) {
+  return apiResult<void>(`usergroups/${usergroup_id}`, { method: 'DELETE' })
 }
 
-interface UserGroupCourseInvalidationOptions {
-  courseUuid?: string
+export async function linkResourcesToUserGroup(usergroup_id: string, course_ids: string[]) {
+  return apiResult<void>(`usergroups/${usergroup_id}/courses`, { method: 'POST', ...json({ course_ids }) })
 }
 
-async function revalidateUserGroupCourseTags(options?: UserGroupCourseInvalidationOptions) {
-  const { revalidateTag } = await import('next/cache')
-  const tagsToRevalidate = new Set<string>([tags.platform])
-
-  if (options?.courseUuid) {
-    tagsToRevalidate.add(courseTag.detail(options.courseUuid))
-    tagsToRevalidate.add(courseTag.access(options.courseUuid))
-  }
-
-  tagsToRevalidate.add(tags.courses)
-
-  for (const tag of tagsToRevalidate) {
-    revalidateTag(tag, 'max')
-  }
-}
-
-export async function linkResourcesToUserGroup(
-  usergroup_id: number,
-  resource_uuids: string[],
-  options?: UserGroupCourseInvalidationOptions,
-) {
-  const data = await apiResult(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
-    method: 'POST',
-  })
-
-  await revalidateUserGroupCourseTags(options)
-
-  return data
-}
-
-export async function unLinkResourcesToUserGroup(
-  usergroup_id: number,
-  resource_uuids: string[],
-  options?: UserGroupCourseInvalidationOptions,
-) {
-  const data = await apiResult(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
-    method: 'DELETE',
-  })
-
-  await revalidateUserGroupCourseTags(options)
-
-  return data
+export async function unLinkResourcesToUserGroup(usergroup_id: string, course_ids: string[]) {
+  return apiResult<void>(`usergroups/${usergroup_id}/courses`, { method: 'DELETE', ...json({ course_ids }) })
 }

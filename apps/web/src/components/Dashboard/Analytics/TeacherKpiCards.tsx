@@ -6,6 +6,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import type { MetricCard } from '@/types/analytics'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 interface TeacherKpiCardsProps {
   cards: { metric: MetricCard; sparkline: number[]; definition?: string }[]
@@ -69,36 +70,39 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
           metric.unit === '%' ? `${numberFormatter.format(metric.value)}%` : numberFormatter.format(metric.value)
 
         let deltaLabel: string
-        if (metric.delta_pct === null && metric.delta_value === null) {
+        if (metric.delta_pct == null && metric.delta_value == null) {
           deltaLabel = t('kpi.noComparison')
-        } else if (metric.delta_pct === null && metric.delta_value !== null) {
+        } else if (metric.delta_pct == null && metric.delta_value != null) {
           deltaLabel = `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}`
-        } else if (metric.delta_pct !== null) {
+        } else if (metric.delta_pct != null) {
           deltaLabel = `${metric.delta_pct > 0 ? '+' : ''}${numberFormatter.format(metric.delta_pct)}%`
         } else {
           deltaLabel = t('kpi.stable')
         }
 
         const badgeLabel =
-          metric.delta_value === null
+          metric.delta_value == null
             ? t('kpi.noComparison')
-            : metric.delta_pct === null && metric.delta_value === 0
+            : metric.delta_pct == null && metric.delta_value === 0
               ? t('kpi.stable')
-              : metric.delta_pct === null
+              : metric.delta_pct == null
                 ? t('kpi.noData')
                 : deltaLabel
 
+        // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
         return (
           <Card key={metric.label}>
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  {metric.label}
+                  {getAnalyticsCodeLabel(t, metric.label)}
                 </div>
-                <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
-                {metric.benchmark !== null && metric.benchmark !== undefined && (
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {metric.benchmark_label}:{' '}
+                <CardTitle className="text-foreground mt-3 text-3xl font-semibold" suppressHydrationWarning>
+                  {displayValue}
+                </CardTitle>
+                {metric.benchmark != null && metric.benchmark !== undefined && (
+                  <div className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
+                    {getAnalyticsCodeLabel(t, metric.benchmark_label)}:{' '}
                     {metric.unit === '%'
                       ? `${numberFormatter.format(metric.benchmark)}%`
                       : numberFormatter.format(metric.benchmark)}
@@ -106,16 +110,19 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 )}
                 <Sparkline values={sparkline} positive={metric.is_higher_better ?? true} />
               </div>
-              {metric.delta_value !== null && (
-                <Badge variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)}>
+              {metric.delta_value != null && (
+                <Badge
+                  variant={badgeVariant(metric.direction, metric.is_higher_better ?? true)}
+                  suppressHydrationWarning
+                >
                   {iconForDirection(metric.direction)}
                   {badgeLabel}
                 </Badge>
               )}
             </CardHeader>
             <CardContent className="space-y-1">
-              <div className="text-muted-foreground text-sm">
-                {metric.delta_value === null
+              <div className="text-muted-foreground text-sm" suppressHydrationWarning>
+                {metric.delta_value == null
                   ? t('kpi.noComparison')
                   : t('kpi.changePeriod', {
                       delta: `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}${metric.unit ?? ''}`,

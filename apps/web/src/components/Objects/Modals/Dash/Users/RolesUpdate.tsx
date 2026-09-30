@@ -2,18 +2,21 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
 import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac'
+import { APIError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
 import { Field, FieldError, FieldLabel } from '@components/ui/field'
 import { BarLoader } from '@components/Objects/Loaders/BarLoader'
 import { Alert, AlertDescription } from '@components/ui/alert'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
+import { allMembersQueryOptions } from '@/features/users/queries/users.query'
 import { useRoles } from '@/features/users/hooks/useUsers'
+import { useRoleLabels } from '@/features/users/hooks/useRoleLabels'
 import { Controller, useForm } from 'react-hook-form'
 import { useState } from 'react'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import type { FC } from 'react'
-import type { Role } from '@/types/permissions'
+import type { Role } from '@/lib/api/generated/zod'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -39,6 +42,11 @@ const RolesUpdate: FC<Props> = props => {
   const t = useTranslations('Components.RolesUpdate')
   const validationSchema = createValidationSchema(validationT)
   const [error, setError] = useState<string | null>(null)
+  const { handleApiError } = useApiError()
+  // The role the user holds as far as this dialog knows (BUG-347): once the
+  // old role is removed, a failed assign must not make the retry remove it
+  // again — the retry only assigns.
+  const [heldRole, setHeldRole] = useState(props.alreadyAssignedRole)
 
   const form = useForm<FormData, unknown, RoleFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -49,6 +57,7 @@ const RolesUpdate: FC<Props> = props => {
 
   // Fetch available platform roles and sort them by system flag + priority
   const { data: roles, error: rolesError } = useRoles()
+  const { roleName } = useRoleLabels(roles)
 
   const sortedRoles = (roles ?? []).toSorted((a: Role, b: Role) => {
     // System roles first, then by descending priority, then by name
@@ -58,36 +67,43 @@ const RolesUpdate: FC<Props> = props => {
     const aPriority = (a.priority ?? 0) * -1
     const bPriority = (b.priority ?? 0) * -1
     if (aPriority !== bPriority) return aPriority - bPriority
-    return (a.name || '').localeCompare(b.name || '')
+    return a.slug.localeCompare(b.slug)
   })
   const handleSubmit = async (values: FormData) => {
     setError(null)
+    // Same role as before: nothing to change, no DELETE + POST round-trip.
+    if (values.role === heldRole) {
+      props.setRolesModal(false)
+      return
+    }
 
     const toastId = toast.loading(t('toastLoading'))
     try {
-      const newRoleId = Number.parseInt(values.role, 10)
-      const oldRoleId = Number.parseInt(props.alreadyAssignedRole, 10)
       const userId = props.user.user?.id ?? props.user.id ?? props.user.user_id
-      if (typeof userId !== 'number') {
+      if (!userId) {
         throw new Error('User ID is missing')
       }
 
-      if (!Number.isNaN(oldRoleId)) {
-        await removeRoleFromUser(userId, oldRoleId)
+      if (heldRole) {
+        try {
+          await removeRoleFromUser(userId, heldRole)
+        } catch (removeError: unknown) {
+          // 404: already gone (a lost response, another admin) — the goal of this step.
+          if (!(removeError instanceof APIError && removeError.status === 404)) throw removeError
+        }
+        setHeldRole('')
       }
-      await assignRoleToUser(userId, newRoleId)
+      await assignRoleToUser(userId, values.role)
 
       await queryClient.invalidateQueries({
-        queryKey: membersQueryOptions(1, 20).queryKey.slice(0, 2),
-      })
-      await queryClient.invalidateQueries({
-        queryKey: userRoleAssignmentsQueryOptions().queryKey,
+        queryKey: allMembersQueryOptions().queryKey,
       })
       props.setRolesModal(false)
       toast.success(t('toastSuccess'), { id: toastId })
     } catch (submitError: unknown) {
-      const detail = submitError instanceof Error ? submitError.message : 'Unknown error'
-      setError(detail)
+      // A half-done replacement changed the user's roles: show the real ones.
+      void queryClient.invalidateQueries({ queryKey: allMembersQueryOptions().queryKey })
+      setError(handleApiError(submitError).description)
       toast.error(t('toastError'), { id: toastId })
     }
   }
@@ -97,10 +113,7 @@ const RolesUpdate: FC<Props> = props => {
       {error && (
         <Alert variant="destructive">
           <AlertDescription>
-            <strong>
-              {t('errorPrefix')} {error.split(':')[0]}:{' '}
-            </strong>
-            {error.split(':').slice(1).join(':')}
+            <strong>{t('errorPrefix')}:</strong> {error}
           </AlertDescription>
         </Alert>
       )}
@@ -125,8 +138,8 @@ const RolesUpdate: FC<Props> = props => {
                   </NativeSelectOption>
                 ) : (
                   sortedRoles.map((role: Role) => (
-                    <NativeSelectOption key={role.id} value={role.id.toString()}>
-                      {role.name}
+                    <NativeSelectOption key={role.slug} value={role.slug}>
+                      {roleName(role)}
                     </NativeSelectOption>
                   ))
                 )}

@@ -2,6 +2,7 @@
 
 import { Check, Copy } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -15,11 +16,14 @@ interface MarkdownCodeBlockProps {
 }
 
 export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers = false }: MarkdownCodeBlockProps) {
+  const t = useTranslations('Features.ContentMarkdown')
   const [copied, setCopied] = useState(false)
   const [highlighted, setHighlighted] = useState<string | null>(null)
 
   const lang = language ?? 'text'
-  const displayName = getLanguageDisplayName(lang)
+  const languageName = getLanguageDisplayName(lang)
+  // UX-309: plain-text blocks get a localized caption, not the English «Text».
+  const displayName = languageName === 'Text' ? t('plainText') : languageName
   const isDiff = lang === 'diff'
 
   const [prevCode, setPrevCode] = useState(code)
@@ -73,7 +77,7 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
           variant="ghost"
           className="size-6 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           onClick={copy}
-          aria-label={copied ? 'Copied code' : 'Copy code'}
+          aria-label={copied ? t('copiedCode') : t('copyCode')}
         >
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </Button>

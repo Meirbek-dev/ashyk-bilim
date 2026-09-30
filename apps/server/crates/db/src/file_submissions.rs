@@ -1,0 +1,861 @@
+//! File-submission queries (compile-checked). Timestamps as epoch seconds.
+
+use ab_core::Result;
+use ab_core::assessments::{
+    FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, ScanStatus,
+};
+use ab_core::id::{
+    ActivityId, CourseId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId,
+};
+use sqlx::PgPool;
+
+/// `to_timestamp($n)` wants double precision; epoch seconds fit exactly.
+#[allow(clippy::cast_precision_loss)]
+const fn epoch(t: Option<i64>) -> Option<f64> {
+    match t {
+        Some(v) => Some(v as f64),
+        None => None,
+    }
+}
+
+// ── Activities ──────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct FileSubmissionRow {
+    pub id: FileSubmissionId,
+    pub activity_id: ActivityId,
+    pub course_id: CourseId,
+    pub instructions: String,
+    pub rubric: serde_json::Value,
+    pub allowed_mime_types: Vec<String>,
+    pub max_files: i32,
+    pub max_file_size_mb: Option<i32>,
+    pub due_at: Option<i64>,
+    pub allow_late: bool,
+    pub late_policy_kind: LatePolicyKind,
+    pub late_penalty_percent_per_day: Option<f64>,
+    pub late_penalty_max_days: Option<i32>,
+    pub late_cutoff_at: Option<i64>,
+    pub max_attempts: Option<i32>,
+    pub grade_release_mode: GradeReleaseMode,
+    pub lifecycle: FileSubmissionLifecycle,
+    pub published_at: Option<i64>,
+    pub archived_at: Option<i64>,
+    pub settings: serde_json::Value,
+    pub creator_id: Option<UserId>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// The whole configuration block (replaced wholesale).
+pub struct FileSubmissionValues<'a> {
+    pub instructions: &'a str,
+    pub rubric: &'a serde_json::Value,
+    pub allowed_mime_types: &'a [String],
+    pub max_files: i32,
+    pub max_file_size_mb: Option<i32>,
+    pub due_at: Option<i64>,
+    pub allow_late: bool,
+    pub late_policy_kind: LatePolicyKind,
+    pub late_penalty_percent_per_day: Option<f64>,
+    pub late_penalty_max_days: Option<i32>,
+    pub late_cutoff_at: Option<i64>,
+    pub max_attempts: Option<i32>,
+    pub grade_release_mode: GradeReleaseMode,
+    pub settings: &'a serde_json::Value,
+}
+
+pub async fn insert_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    activity_id: ActivityId,
+    course_id: CourseId,
+    creator_id: UserId,
+    v: FileSubmissionValues<'_>,
+) -> Result<FileSubmissionId> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO file_submissions
+               (activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,
+                max_file_size_mb, due_at, allow_late, late_policy_kind,
+                late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
+                max_attempts, grade_release_mode, settings, creator_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10, $11, $12,
+                   to_timestamp($13), $14, $15, $16, $17)
+           RETURNING id AS "id: FileSubmissionId""#,
+        activity_id.0,
+        course_id.0,
+        v.instructions,
+        v.rubric,
+        v.allowed_mime_types,
+        v.max_files,
+        v.max_file_size_mb,
+        epoch(v.due_at),
+        v.allow_late,
+        v.late_policy_kind.as_str(),
+        v.late_penalty_percent_per_day,
+        v.late_penalty_max_days,
+        epoch(v.late_cutoff_at),
+        v.max_attempts,
+        v.grade_release_mode.as_str(),
+        v.settings,
+        creator_id.0
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(id)
+}
+
+pub async fn get_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: FileSubmissionId,
+) -> Result<Option<FileSubmissionRow>> {
+    let row = sqlx::query_as!(
+        FileSubmissionRow,
+        r#"SELECT id AS "id: FileSubmissionId", activity_id AS "activity_id: ActivityId",
+                  course_id AS "course_id: CourseId", instructions, rubric, allowed_mime_types,
+                  max_files, max_file_size_mb,
+                  (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
+                  late_policy_kind AS "late_policy_kind: LatePolicyKind",
+                  late_penalty_percent_per_day, late_penalty_max_days,
+                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  (extract(epoch FROM published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  settings, creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submissions WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row)
+}
+
+pub async fn get_file_submission_by_activity<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    activity_id: ActivityId,
+) -> Result<Option<FileSubmissionRow>> {
+    let row = sqlx::query_as!(
+        FileSubmissionRow,
+        r#"SELECT id AS "id: FileSubmissionId", activity_id AS "activity_id: ActivityId",
+                  course_id AS "course_id: CourseId", instructions, rubric, allowed_mime_types,
+                  max_files, max_file_size_mb,
+                  (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
+                  late_policy_kind AS "late_policy_kind: LatePolicyKind",
+                  late_penalty_percent_per_day, late_penalty_max_days,
+                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  (extract(epoch FROM published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  settings, creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submissions WHERE activity_id = $1"#,
+        activity_id.0
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row)
+}
+
+/// BUG-229: `SELECT … FOR UPDATE` on the config row, then the row as the
+/// previous writer left it — publish, the config PATCH and the curriculum
+/// publish toggle serialize here.
+pub async fn lock_file_submission(
+    conn: &mut sqlx::PgConnection,
+    id: FileSubmissionId,
+) -> Result<Option<FileSubmissionRow>> {
+    sqlx::query!(
+        "SELECT id FROM file_submissions WHERE id = $1 FOR UPDATE",
+        id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    get_file_submission(conn, id).await
+}
+
+/// [`lock_file_submission`] by the activity it backs (BUG-232).
+pub async fn lock_file_submission_by_activity(
+    conn: &mut sqlx::PgConnection,
+    activity_id: ActivityId,
+) -> Result<Option<FileSubmissionRow>> {
+    sqlx::query!(
+        "SELECT id FROM file_submissions WHERE activity_id = $1 FOR UPDATE",
+        activity_id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    get_file_submission_by_activity(conn, activity_id).await
+}
+
+pub async fn update_file_submission<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: FileSubmissionId,
+    v: FileSubmissionValues<'_>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE file_submissions SET
+               instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,
+               max_file_size_mb = $6, due_at = to_timestamp($7), allow_late = $8,
+               late_policy_kind = $9, late_penalty_percent_per_day = $10,
+               late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),
+               max_attempts = $13, grade_release_mode = $14, settings = $15
+           WHERE id = $1"#,
+        id.0,
+        v.instructions,
+        v.rubric,
+        v.allowed_mime_types,
+        v.max_files,
+        v.max_file_size_mb,
+        epoch(v.due_at),
+        v.allow_late,
+        v.late_policy_kind.as_str(),
+        v.late_penalty_percent_per_day,
+        v.late_penalty_max_days,
+        epoch(v.late_cutoff_at),
+        v.max_attempts,
+        v.grade_release_mode.as_str(),
+        v.settings
+    )
+    .execute(db)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// Publishing stamps `published_at` once; archiving stamps `archived_at`;
+/// going back to draft clears `archived_at` only.
+pub async fn set_file_submission_lifecycle<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: FileSubmissionId,
+    lifecycle: FileSubmissionLifecycle,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE file_submissions SET
+               lifecycle = $2,
+               published_at = CASE WHEN $2 = 'published' THEN COALESCE(published_at, now())
+                                   ELSE published_at END,
+               archived_at = CASE WHEN $2 = 'archived' THEN now() ELSE NULL END
+           WHERE id = $1"#,
+        id.0,
+        lifecycle.as_str()
+    )
+    .execute(db)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// A file-submission activity as a gradebook column.
+#[derive(Debug, Clone)]
+pub struct GradebookFileSubmissionRow {
+    pub id: FileSubmissionId,
+    pub activity_id: ActivityId,
+    pub title: String,
+    pub due_at: Option<i64>,
+}
+
+/// Every file-submission activity of a course (any lifecycle), curriculum order.
+pub async fn list_for_course(
+    pool: &PgPool,
+    course_id: CourseId,
+) -> Result<Vec<GradebookFileSubmissionRow>> {
+    let rows = sqlx::query_as!(
+        GradebookFileSubmissionRow,
+        r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
+                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS "due_at?"
+           FROM file_submissions f JOIN activities a ON a.id = f.activity_id
+           WHERE f.course_id = $1
+           ORDER BY a.position, f.id"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+// ── Attempts ────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct AttemptRow {
+    pub id: FileAttemptId,
+    pub file_submission_id: FileSubmissionId,
+    pub course_id: CourseId,
+    pub user_id: UserId,
+    pub status: FileAttemptStatus,
+    pub attempt_number: i32,
+    pub started_at: Option<i64>,
+    pub submitted_at: Option<i64>,
+    pub graded_at: Option<i64>,
+    pub is_late: bool,
+    pub late_penalty_pct: f64,
+    /// The grader's score before the late penalty (UX-121).
+    pub raw_score: Option<f64>,
+    pub final_score: Option<f64>,
+    pub feedback: String,
+    pub rubric_scores: serde_json::Value,
+    pub graded_by: Option<UserId>,
+    pub version: i64,
+    /// A staff preview (UX-182).
+    pub preview: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+impl AttemptRow {
+    /// File attempts are revisions: the latest released one is the grade of
+    /// record (`crate::submissions::GradeKey`).
+    #[must_use]
+    pub fn grade_key(&self) -> crate::submissions::GradeKey {
+        crate::submissions::GradeKey {
+            released: self.status == FileAttemptStatus::Published,
+            score: None,
+            attempt_number: self.attempt_number,
+        }
+    }
+}
+
+/// Open a draft (started now). `None` when the learner already has an open
+/// (draft or returned) attempt — the partial unique index absorbs the race.
+pub async fn insert_attempt(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    course_id: CourseId,
+    user_id: UserId,
+    attempt_number: i32,
+    preview: bool,
+) -> Result<Option<FileAttemptId>> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO file_submission_attempts
+               (file_submission_id, course_id, user_id, attempt_number, preview, started_at)
+           VALUES ($1, $2, $3, $4, $5, now())
+           ON CONFLICT (file_submission_id, user_id) WHERE status IN ('draft', 'returned')
+           DO NOTHING
+           RETURNING id AS "id: FileAttemptId""#,
+        file_submission_id.0,
+        course_id.0,
+        user_id.0,
+        attempt_number,
+        preview
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(id)
+}
+
+pub async fn get_attempt(pool: &PgPool, id: FileAttemptId) -> Result<Option<AttemptRow>> {
+    let row = sqlx::query_as!(
+        AttemptRow,
+        r#"SELECT id AS "id: FileAttemptId",
+                  file_submission_id AS "file_submission_id: FileSubmissionId",
+                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
+                  status AS "status: FileAttemptStatus", attempt_number,
+                  (extract(epoch FROM started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  graded_by AS "graded_by: UserId", version, preview,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submission_attempts WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// The learner's editable attempt: a draft, or a returned one.
+pub async fn open_attempt(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+) -> Result<Option<AttemptRow>> {
+    let row = sqlx::query_as!(
+        AttemptRow,
+        r#"SELECT id AS "id: FileAttemptId",
+                  file_submission_id AS "file_submission_id: FileSubmissionId",
+                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
+                  status AS "status: FileAttemptStatus", attempt_number,
+                  (extract(epoch FROM started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  graded_by AS "graded_by: UserId", version, preview,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submission_attempts
+           WHERE file_submission_id = $1 AND user_id = $2 AND status IN ('draft', 'returned')
+           ORDER BY attempt_number DESC LIMIT 1"#,
+        file_submission_id.0,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Every attempt of one learner, newest first.
+/// `include_preview: false` drops staff previews (UX-182) — the progress
+/// projection's view, which must never count them (UX-186).
+pub async fn list_user_attempts<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+    include_preview: bool,
+) -> Result<Vec<AttemptRow>> {
+    let rows = sqlx::query_as!(
+        AttemptRow,
+        r#"SELECT id AS "id: FileAttemptId",
+                  file_submission_id AS "file_submission_id: FileSubmissionId",
+                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
+                  status AS "status: FileAttemptStatus", attempt_number,
+                  (extract(epoch FROM started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  graded_by AS "graded_by: UserId", version, preview,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submission_attempts
+           WHERE file_submission_id = $1 AND user_id = $2 AND (NOT preview OR $3)
+           ORDER BY attempt_number DESC"#,
+        file_submission_id.0,
+        user_id.0,
+        include_preview
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
+/// Every learner attempt of the activity (no staff preview, UX-182), newest
+/// submission first (export).
+pub async fn list_attempts(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+) -> Result<Vec<AttemptRow>> {
+    let rows = sqlx::query_as!(
+        AttemptRow,
+        r#"SELECT id AS "id: FileAttemptId",
+                  file_submission_id AS "file_submission_id: FileSubmissionId",
+                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
+                  status AS "status: FileAttemptStatus", attempt_number,
+                  (extract(epoch FROM started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
+                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  graded_by AS "graded_by: UserId", version, preview,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM file_submission_attempts
+           WHERE file_submission_id = $1 AND NOT preview
+           ORDER BY submitted_at DESC NULLS LAST, id DESC"#,
+        file_submission_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Attempts past draft. `include_preview: false` is the learner's cap —
+/// staff previews never count toward it (BUG-285).
+pub async fn count_completed_attempts(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+    include_preview: bool,
+) -> Result<i64> {
+    let count = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!" FROM file_submission_attempts
+           WHERE file_submission_id = $1 AND user_id = $2 AND status <> 'draft'
+             AND (NOT preview OR $3)"#,
+        file_submission_id.0,
+        user_id.0,
+        include_preview
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(count)
+}
+
+/// Bump the lock after a file change. `false` = version mismatch.
+pub async fn touch_attempt<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: FileAttemptId,
+    expected_version: i64,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        "UPDATE file_submission_attempts SET version = version + 1 WHERE id = $1 AND version = $2",
+        id.0,
+        expected_version
+    )
+    .execute(db)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// Draft/returned → submitted under the lock.
+pub async fn submit_attempt(
+    pool: &PgPool,
+    id: FileAttemptId,
+    expected_version: i64,
+    is_late: bool,
+    late_penalty_pct: f64,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE file_submission_attempts SET
+               status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4,
+               version = version + 1
+           WHERE id = $1 AND version = $2 AND status IN ('draft', 'returned')"#,
+        id.0,
+        expected_version,
+        is_late,
+        late_penalty_pct
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// What a grader writes.
+pub struct GradeWrite<'a> {
+    pub status: FileAttemptStatus,
+    pub raw_score: Option<f64>,
+    pub final_score: Option<f64>,
+    /// `None` keeps the stored feedback.
+    pub feedback: Option<&'a str>,
+    /// `None` keeps the stored rubric scores.
+    pub rubric_scores: Option<&'a serde_json::Value>,
+    pub graded_by: UserId,
+}
+
+/// Grader write under the lock.
+pub async fn grade_attempt(
+    pool: &PgPool,
+    id: FileAttemptId,
+    expected_version: i64,
+    grade: GradeWrite<'_>,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE file_submission_attempts SET
+               status = $3, final_score = $4, feedback = COALESCE($5, feedback),
+               rubric_scores = COALESCE($6, rubric_scores),
+               graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8
+           WHERE id = $1 AND version = $2"#,
+        id.0,
+        expected_version,
+        grade.status.as_str(),
+        grade.final_score,
+        grade.feedback,
+        grade.rubric_scores,
+        grade.graded_by.0,
+        grade.raw_score
+    )
+    .execute(pool)
+    .await?;
+    Ok(updated.rows_affected() == 1)
+}
+
+/// BUG-316: `(is_late, late_penalty_pct, raw_score)` of one attempt under
+/// `FOR UPDATE` — the lateness settle's read, which a grade save contends for.
+pub async fn lock_attempt_lateness(
+    conn: &mut sqlx::PgConnection,
+    id: FileAttemptId,
+) -> Result<Option<(bool, f64, Option<f64>)>> {
+    let row = sqlx::query!(
+        "SELECT is_late, late_penalty_pct, raw_score FROM file_submission_attempts
+         WHERE id = $1 FOR UPDATE",
+        id.0
+    )
+    .fetch_optional(conn)
+    .await?;
+    Ok(row.map(|r| (r.is_late, r.late_penalty_pct, r.raw_score)))
+}
+
+/// BUG-316: re-judged lateness and the final score it prices; the version
+/// bumps, so a grade save that priced the old penalty is stale (412).
+pub async fn set_attempt_lateness(
+    conn: &mut sqlx::PgConnection,
+    id: FileAttemptId,
+    is_late: bool,
+    late_penalty_pct: f64,
+    final_score: Option<f64>,
+) -> Result<()> {
+    sqlx::query!(
+        "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3,
+             final_score = $4, version = version + 1
+         WHERE id = $1",
+        id.0,
+        is_late,
+        late_penalty_pct,
+        final_score
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+// ── Review queue ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct ReviewAttemptRow {
+    pub id: FileAttemptId,
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub email: String,
+    pub status: FileAttemptStatus,
+    pub attempt_number: i32,
+    pub submitted_at: Option<i64>,
+    pub graded_at: Option<i64>,
+    pub is_late: bool,
+    pub final_score: Option<f64>,
+    pub version: i64,
+    pub file_count: i64,
+}
+
+/// Non-draft attempts, newest first (keyset on id), filtered by status and
+/// a learner-name/email substring.
+pub async fn list_for_review(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    status: Option<FileAttemptStatus>,
+    search: Option<&str>,
+    cursor: Option<FileAttemptId>,
+    limit: i64,
+) -> Result<Vec<ReviewAttemptRow>> {
+    let pattern = search.map(|s| format!("%{}%", crate::like_escape(s)));
+    let rows = sqlx::query_as!(
+        ReviewAttemptRow,
+        r#"SELECT a.id AS "id: FileAttemptId", a.user_id AS "user_id: UserId",
+                  u.username, u.display_name, u.email,
+                  a.status AS "status: FileAttemptStatus", a.attempt_number,
+                  (extract(epoch FROM a.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM a.graded_at))::bigint AS "graded_at?",
+                  a.is_late, a.final_score, a.version,
+                  (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
+                      AS "file_count!"
+           FROM file_submission_attempts a JOIN users u ON u.id = a.user_id
+           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
+             AND ($2::text IS NULL OR a.status = $2)
+             AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\' OR u.display_name ILIKE $3 ESCAPE '\'
+                  OR u.email ILIKE $3 ESCAPE '\')
+             AND ($4::uuid IS NULL OR a.id < $4)
+           ORDER BY a.id DESC
+           LIMIT $5"#,
+        file_submission_id.0,
+        status.map(FileAttemptStatus::as_str),
+        pattern.as_deref(),
+        cursor.map(|c| c.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+// ── Files ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct FileRow {
+    pub id: FileAttemptFileId,
+    pub attempt_id: FileAttemptId,
+    pub upload_id: uuid::Uuid,
+    pub display_name: String,
+    pub content_type: String,
+    pub size_bytes: Option<i64>,
+    pub storage_key: String,
+    pub position: i32,
+    pub scan_status: ScanStatus,
+    pub created_at: i64,
+}
+
+pub struct NewFile<'a> {
+    pub upload_id: uuid::Uuid,
+    pub display_name: &'a str,
+    pub content_type: &'a str,
+    pub size_bytes: Option<i64>,
+    pub storage_key: &'a str,
+}
+
+pub async fn list_files<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    attempt_id: FileAttemptId,
+) -> Result<Vec<FileRow>> {
+    let rows = sqlx::query_as!(
+        FileRow,
+        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
+                  upload_id, display_name, content_type, size_bytes, storage_key, position,
+                  scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM file_submission_files WHERE attempt_id = $1 ORDER BY position, id"#,
+        attempt_id.0
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
+/// Files of many attempts at once (review pages, exports).
+pub async fn list_files_for_attempts(
+    pool: &PgPool,
+    attempt_ids: &[FileAttemptId],
+) -> Result<Vec<FileRow>> {
+    let ids: Vec<uuid::Uuid> = attempt_ids.iter().map(|a| a.0).collect();
+    let rows = sqlx::query_as!(
+        FileRow,
+        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
+                  upload_id, display_name, content_type, size_bytes, storage_key, position,
+                  scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM file_submission_files WHERE attempt_id = ANY($1) ORDER BY attempt_id, position, id"#,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn get_file(pool: &PgPool, id: FileAttemptFileId) -> Result<Option<FileRow>> {
+    let row = sqlx::query_as!(
+        FileRow,
+        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
+                  upload_id, display_name, content_type, size_bytes, storage_key, position,
+                  scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM file_submission_files WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// Replace an attempt's file list wholesale (positions follow the slice),
+/// on the caller's transaction (BUG-241: with the reference counts).
+pub async fn replace_files(
+    conn: &mut sqlx::PgConnection,
+    attempt_id: FileAttemptId,
+    files: &[NewFile<'_>],
+) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM file_submission_files WHERE attempt_id = $1",
+        attempt_id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    for (position, f) in files.iter().enumerate() {
+        sqlx::query!(
+            r#"INSERT INTO file_submission_files
+                   (attempt_id, upload_id, display_name, content_type, size_bytes, storage_key,
+                    position)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+            attempt_id.0,
+            f.upload_id,
+            f.display_name,
+            f.content_type,
+            f.size_bytes,
+            f.storage_key,
+            i32::try_from(position).unwrap_or(i32::MAX)
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
+    Ok(())
+}
+
+/// Delete the submitted-file rows under locked activities.
+///
+/// One upload reference is released per row the DELETE returned (BUG-259:
+/// the activity → file-submission → attempt cascade drops the rows, not the
+/// counts). Lock order activity (caller) → file submissions → attempts → uploads by
+/// key: the file-submission row lock keeps new attempts out and the
+/// attempt locks keep a racing draft swap (`touch_attempt`) out of the set.
+pub async fn delete_files_releasing(
+    conn: &mut sqlx::PgConnection,
+    activity_ids: &[uuid::Uuid],
+    grace_secs: f64,
+) -> Result<u64> {
+    let submissions = sqlx::query_scalar!(
+        "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+        activity_ids
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let attempts = sqlx::query_scalar!(
+        "SELECT id FROM file_submission_attempts WHERE file_submission_id = ANY($1)
+         ORDER BY id FOR UPDATE",
+        &submissions
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    delete_attempt_files_releasing(conn, &attempts, grace_secs).await
+}
+
+/// BUG-295: drop a learner's open preview attempts (made while staff).
+///
+/// Draft or returned — a learner never resumes one. Their file rows go with
+/// one upload reference released each, as in [`delete_files_releasing`].
+pub async fn discard_preview_attempts(
+    conn: &mut sqlx::PgConnection,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+    grace_secs: f64,
+) -> Result<()> {
+    let attempts = sqlx::query_scalar!(
+        "SELECT id FROM file_submission_attempts
+         WHERE file_submission_id = $1 AND user_id = $2 AND preview
+           AND status IN ('draft', 'returned')
+         ORDER BY id FOR UPDATE",
+        file_submission_id.0,
+        user_id.0
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    delete_attempt_files_releasing(&mut *conn, &attempts, grace_secs).await?;
+    sqlx::query!(
+        "DELETE FROM file_submission_attempts WHERE id = ANY($1)",
+        &attempts
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// Delete the file rows of locked attempts, releasing one upload reference
+/// per row (uploads locked in key order first).
+async fn delete_attempt_files_releasing(
+    conn: &mut sqlx::PgConnection,
+    attempts: &[uuid::Uuid],
+    grace_secs: f64,
+) -> Result<u64> {
+    let uploads = sqlx::query_scalar!(
+        "SELECT DISTINCT upload_id FROM file_submission_files WHERE attempt_id = ANY($1)",
+        attempts
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    crate::uploads::lock_in_key_order(&mut *conn, &uploads).await?;
+    let deleted = sqlx::query_scalar!(
+        r#"WITH gone AS (
+               DELETE FROM file_submission_files WHERE attempt_id = ANY($1)
+               RETURNING upload_id
+           ), refs AS (
+               SELECT upload_id, count(*)::int AS n FROM gone GROUP BY upload_id
+           ), released AS (
+               UPDATE uploads u
+               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
+                   expires_at = CASE WHEN u.referenced_count <= refs.n
+                                     THEN now() + make_interval(secs => $2)
+                                     ELSE u.expires_at END
+               FROM refs WHERE u.id = refs.upload_id AND u.referenced_count > 0
+           )
+           SELECT count(*) AS "n!" FROM gone"#,
+        attempts,
+        grace_secs
+    )
+    .fetch_one(conn)
+    .await?;
+    Ok(u64::try_from(deleted).unwrap_or(0))
+}

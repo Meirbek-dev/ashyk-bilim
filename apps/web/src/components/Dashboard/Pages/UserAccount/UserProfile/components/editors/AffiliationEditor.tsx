@@ -1,10 +1,10 @@
 import type { FC } from 'react'
-import { MapPin, Plus, Trash2 } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { Label } from '@components/ui/label'
 import { Input } from '@components/ui/input'
-import { Button } from '@components/ui/button'
 import { Textarea } from '@components/ui/textarea'
-import type { AffiliationSection, ProfileAffiliation } from '../../types'
+import type { AffiliationSection } from '../../types'
+import { AddItemButton, RemoveItemButton, SectionFrame, patchAt } from './SectionFrame'
 
 interface AffiliationEditorProps {
   t: AppTranslator
@@ -13,119 +13,75 @@ interface AffiliationEditorProps {
 }
 
 export const AffiliationEditor: FC<AffiliationEditorProps> = ({ t, section, onChange }) => {
+  const patch = (index: number, changes: Partial<AffiliationSection['affiliations'][number]>) =>
+    onChange({ ...section, affiliations: patchAt(section.affiliations, index, changes) })
+
   return (
-    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
-      <div className="flex items-center space-x-2">
-        <MapPin className="text-muted-foreground h-5 w-5" />
-        <h3 className="text-lg font-medium">{t('AffiliationEditor.title')}</h3>
-      </div>
-
-      <div className="space-y-4">
-        {/* Title */}
-        <div>
-          <Label htmlFor="title">{t('Common.sectionTitle')}</Label>
-          <Input
-            id="title"
-            value={section.title}
-            onChange={e => {
-              onChange({ ...section, title: e.target.value })
-            }}
-            placeholder={t('Common.enterSectionTitlePlaceholder')}
-          />
-        </div>
-
-        {/* Affiliations */}
-        <div>
-          <Label>{t('AffiliationEditor.affiliationsLabel')}</Label>
-          <div className="mt-2 space-y-3">
-            {section.affiliations.map((affiliation, index) => (
-              <div key={index} className="space-y-4 rounded-lg border p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t('AffiliationEditor.nameLabel')}</Label>
-                    <Input
-                      value={affiliation.name}
-                      onChange={e => {
-                        const newAffiliations = [...section.affiliations]
-                        newAffiliations[index] = {
-                          ...affiliation,
-                          name: e.target.value,
-                        }
-                        onChange({ ...section, affiliations: newAffiliations })
-                      }}
-                      placeholder={t('AffiliationEditor.namePlaceholder')}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t('AffiliationEditor.logoUrlLabel')}</Label>
-                    <Input
-                      value={affiliation.logoUrl}
-                      onChange={e => {
-                        const newAffiliations = [...section.affiliations]
-                        newAffiliations[index] = {
-                          ...affiliation,
-                          logoUrl: e.target.value,
-                        }
-                        onChange({ ...section, affiliations: newAffiliations })
-                      }}
-                      placeholder={t('AffiliationEditor.logoUrlPlaceholder')}
-                    />
-                  </div>
-                </div>
-
+    <SectionFrame
+      t={t}
+      icon={MapPin}
+      heading={t('AffiliationEditor.title')}
+      title={section.title}
+      onTitleChange={title => onChange({ ...section, title })}
+    >
+      <div>
+        <Label>{t('AffiliationEditor.affiliationsLabel')}</Label>
+        <div className="mt-2 space-y-3">
+          {section.affiliations.map((affiliation, index) => (
+            <div key={index} className="space-y-4 rounded-lg border p-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>{t('AffiliationEditor.descriptionLabel')}</Label>
-                  <Textarea
-                    value={affiliation.description}
-                    onChange={e => {
-                      const newAffiliations = [...section.affiliations]
-                      newAffiliations[index] = {
-                        ...affiliation,
-                        description: e.target.value,
-                      }
-                      onChange({ ...section, affiliations: newAffiliations })
-                    }}
-                    placeholder={t('AffiliationEditor.descriptionPlaceholder')}
-                    className="min-h-[100px]"
+                  <Label htmlFor={`aff-name-${index}`}>{t('AffiliationEditor.nameLabel')}</Label>
+                  <Input
+                    id={`aff-name-${index}`}
+                    value={affiliation.name}
+                    onChange={e => patch(index, { name: e.target.value })}
+                    placeholder={t('AffiliationEditor.namePlaceholder')}
                   />
                 </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      const newAffiliations = section.affiliations.filter((_, i) => i !== index)
-                      onChange({ ...section, affiliations: newAffiliations })
-                    }}
-                    className="text-red-500 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('AffiliationEditor.removeButton')}
-                  </Button>
+                <div>
+                  <Label htmlFor={`aff-logo-${index}`}>{t('AffiliationEditor.logoUrlLabel')}</Label>
+                  <Input
+                    id={`aff-logo-${index}`}
+                    value={affiliation.logoUrl}
+                    onChange={e => patch(index, { logoUrl: e.target.value })}
+                    placeholder={t('AffiliationEditor.logoUrlPlaceholder')}
+                  />
                 </div>
               </div>
-            ))}
-            <Button
-              variant="outline"
-              onClick={() => {
-                const newAffiliation: ProfileAffiliation = {
-                  name: '',
-                  description: '',
-                  logoUrl: '',
-                }
-                onChange({
-                  ...section,
-                  affiliations: [...section.affiliations, newAffiliation],
-                })
-              }}
-              className="w-full"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t('AffiliationEditor.addAffiliationButton')}
-            </Button>
-          </div>
+
+              <div>
+                <Label htmlFor={`aff-desc-${index}`}>{t('AffiliationEditor.descriptionLabel')}</Label>
+                <Textarea
+                  id={`aff-desc-${index}`}
+                  value={affiliation.description}
+                  onChange={e => patch(index, { description: e.target.value })}
+                  placeholder={t('AffiliationEditor.descriptionPlaceholder')}
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <RemoveItemButton
+                  label={t('AffiliationEditor.removeButton')}
+                  onClick={() =>
+                    onChange({ ...section, affiliations: section.affiliations.filter((_, i) => i !== index) })
+                  }
+                />
+              </div>
+            </div>
+          ))}
+          <AddItemButton
+            label={t('AffiliationEditor.addAffiliationButton')}
+            onClick={() =>
+              onChange({
+                ...section,
+                affiliations: [...section.affiliations, { name: '', description: '', logoUrl: '' }],
+              })
+            }
+          />
         </div>
       </div>
-    </div>
+    </SectionFrame>
   )
 }

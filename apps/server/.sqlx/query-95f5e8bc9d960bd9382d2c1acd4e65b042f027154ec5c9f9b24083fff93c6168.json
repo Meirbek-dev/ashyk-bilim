@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH ins AS (\n               INSERT INTO gamification_completions (user_id, kind, source_id)\n               VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING kind)\n           UPDATE gamification_profiles SET\n               total_activities_completed = total_activities_completed\n                   + (SELECT count(*) FROM ins WHERE kind = 'activity')::int,\n               total_courses_completed = total_courses_completed\n                   + (SELECT count(*) FROM ins WHERE kind = 'course')::int\n           WHERE user_id = $1\n           RETURNING EXISTS (SELECT 1 FROM ins) AS \"counted!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "counted!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "95f5e8bc9d960bd9382d2c1acd4e65b042f027154ec5c9f9b24083fff93c6168"
+}

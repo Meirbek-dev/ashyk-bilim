@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
-import { createNewCourse, getCourseMetadata } from '@services/courses/courses'
+import { useTranslations } from 'next-intl'
+import { createNewCourse } from '@services/courses/course-writes'
+import { getCourseMetadata } from '@services/courses/courses'
 import { createChapter } from '@services/courses/chapters'
 import {
   cleanCourseUuid,
@@ -11,19 +13,14 @@ import type { CourseCreatePayload, CourseCreateResult } from './course-create-ty
 
 export function useCreateCourseMutation() {
   const [isPending, setIsPending] = useState(false)
+  const tStarterChapters = useTranslations('DashPage.CourseManagement.Wizard.starterChapters')
 
   const mutate = useCallback(
     async (payload: CourseCreatePayload, destination: 'overview' | 'curriculum'): Promise<CourseCreateResult> => {
       setIsPending(true)
       try {
-        // Map structureMode to API template param
-        const apiTemplate =
-          payload.structureMode === 'copy-outline'
-            ? undefined // handled client-side
-            : payload.structureMode === 'starter'
-              ? 'starter'
-              : 'blank'
-
+        // `template` has no v2 contract (`CreateCourseRequest` is `{name, description?, about?, tags?}`);
+        // 'starter' and 'copy-outline' seed chapters client-side after the plain `POST courses` below.
         const result = await createNewCourse(
           {
             name: payload.title.trim(),
@@ -31,7 +28,6 @@ export function useCreateCourseMutation() {
             learnings: JSON.stringify([]),
             tags: JSON.stringify([]),
             visibility: false,
-            template: apiTemplate,
           },
           null,
         )
@@ -40,14 +36,7 @@ export function useCreateCourseMutation() {
         const createdCourseUuid = typeof created?.course_uuid === 'string' ? created.course_uuid : null
 
         if (!created || !createdCourseUuid) {
-          const detail =
-            created && typeof created === 'object' && 'detail' in (created as Record<string, unknown>)
-              ? (created as Record<string, unknown>).detail
-              : undefined
-          return {
-            status: 'error',
-            message: typeof detail === 'string' ? detail : 'Course creation failed.',
-          }
+          return { status: 'error', error: null }
         }
 
         const courseUuid = cleanCourseUuid(createdCourseUuid)
@@ -72,14 +61,8 @@ export function useCreateCourseMutation() {
                 }))
               : []
           } catch {
-            // source fetch failed — treat as partial success with 0 chapters
-            return {
-              status: 'partial',
-              courseUuid,
-              importedChapterCount: 0,
-              failedChapterCount: 0,
-              destinationPath,
-            }
+            // The course exists but the outline could not be read: say so (UX-235).
+            return { status: 'partial', courseUuid, destinationPath, sourceFetchFailed: true }
           }
 
           const results = await Promise.allSettled(
@@ -114,6 +97,45 @@ export function useCreateCourseMutation() {
           }
         }
 
+        // For starter: seed the two promised starter chapters (Introduction, Core lessons)
+        if (payload.structureMode === 'starter') {
+          const starterChapters = [
+            { name: tStarterChapters('introduction.name'), description: tStarterChapters('introduction.description') },
+            { name: tStarterChapters('coreLessons.name'), description: tStarterChapters('coreLessons.description') },
+          ]
+
+          const results = await Promise.allSettled(
+            starterChapters.map(chapter =>
+              createChapter({
+                name: chapter.name,
+                description: chapter.description,
+                thumbnail_image: '',
+                course_uuid: createdCourseUuid,
+              }),
+            ),
+          )
+
+          const succeeded = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.filter(r => r.status === 'rejected').length
+
+          if (failed > 0) {
+            return {
+              status: 'partial',
+              courseUuid,
+              importedChapterCount: succeeded,
+              failedChapterCount: failed,
+              destinationPath,
+            }
+          }
+
+          return {
+            status: 'success',
+            courseUuid,
+            importedChapterCount: succeeded,
+            destinationPath,
+          }
+        }
+
         return {
           status: 'success',
           courseUuid,
@@ -121,13 +143,12 @@ export function useCreateCourseMutation() {
           destinationPath,
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unable to create course.'
-        return { status: 'error', message }
+        return { status: 'error', error }
       } finally {
         setIsPending(false)
       }
     },
-    [],
+    [tStarterChapters],
   )
 
   return { mutate, isPending }

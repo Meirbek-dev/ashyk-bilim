@@ -16,7 +16,8 @@ const queryMocks = vi.hoisted(() => ({
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en-US',
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useTranslations: (namespace: string) =>
+    Object.assign((key: string) => `${namespace}.${key}`, { has: (key: string) => key.startsWith('features.') }),
 }))
 
 vi.mock('@/features/ai-admin/api/use-ai-usage', () => ({
@@ -46,19 +47,19 @@ vi.mock('@/features/course-qa/components/qa-panel', () => ({
 }))
 
 const run: AIOperationRun = {
-  completed_at: '2026-07-17T10:01:00Z',
+  completed_at_unix: 1_784_282_460,
   context: {},
   cost_estimate: 0.01,
   duration_ms: 1000,
   error_code: null,
-  feature: 'course-summary',
+  feature: 'course_analysis',
   input_tokens: 20,
   model_name: 'test-model',
   output_tokens: 30,
   retry_count: 0,
-  run_uuid: 'run-1',
-  started_at: '2026-07-17T10:00:00Z',
-  status: 'finished',
+  id: '01a09100-0000-7000-8000-000000000001',
+  started_at_unix: 1_784_282_400,
+  status: 'succeeded',
   stuck: false,
   time_to_first_text_ms: 100,
 }
@@ -69,6 +70,7 @@ function queryState(data?: unknown) {
     error: null,
     isError: false,
     isLoading: false,
+    isPending: false,
     refetch: vi.fn(),
   }
 }
@@ -81,7 +83,7 @@ describe('AIOperationsConsole query states', () => {
   })
 
   it('shows a loading placeholder', () => {
-    queryMocks.runs = { ...queryState(), isLoading: true }
+    queryMocks.runs = { ...queryState(), isLoading: true, isPending: true }
 
     const { container } = render(<AIOperationsConsole />)
 
@@ -116,8 +118,24 @@ describe('AIOperationsConsole query states', () => {
 
     render(<AIOperationsConsole />)
 
-    expect(screen.getByText('course-summary')).toBeInTheDocument()
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'AiExperience.operationsConsole.inspect' })).toBeInTheDocument()
+  })
+
+  it('shows localized labels on the closed filter triggers and status badges', () => {
+    queryMocks.runs = queryState([run])
+
+    render(<AIOperationsConsole />)
+
+    expect(screen.getByRole('combobox', { name: 'AiExperience.operationsConsole.timeRange' })).toHaveTextContent(
+      'AiExperience.operationsConsole.days',
+    )
+    expect(screen.getByRole('combobox', { name: 'AiExperience.operationsConsole.statusFilter' })).toHaveTextContent(
+      'AiExperience.operationsConsole.statuses.all',
+    )
+    expect(screen.getByText('AiExperience.operationsConsole.statuses.succeeded')).toBeInTheDocument()
+    // UX-094: feature codes and the draft-mode provider are localized.
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
   })
 
   it('keeps stale data visible when a background refresh fails', () => {
@@ -130,7 +148,7 @@ describe('AIOperationsConsole query states', () => {
     render(<AIOperationsConsole />)
 
     expect(screen.getByRole('alert')).toHaveTextContent('Errors.somethingWentWrong')
-    expect(screen.getByText('course-summary')).toBeInTheDocument()
+    expect(screen.getByText('AiExperience.operationsConsole.features.course_analysis')).toBeInTheDocument()
   })
 })
 
@@ -189,5 +207,21 @@ describe('CourseAIHub panel query states', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('AiExperience.courseAIHub.capabilityError')
     expect(screen.getByText('qa-panel')).toBeInTheDocument()
+  })
+})
+
+// UX-099: the inline hub on the course overview hides the course-review tab
+// (and its «Анализировать» that 403s for learners) unless the scope offers `analyze`.
+describe('CourseAIHub inline review tab', () => {
+  it('hides the review tab for a learner scope', () => {
+    queryMocks.capabilities = queryState({ modes: ['ask', 'explain', 'practice'] })
+    render(<CourseAIHub courseUuid="course-1" />)
+    expect(screen.queryByRole('tab', { name: /tabReview/ })).toBeNull()
+  })
+
+  it('shows the review tab when the scope offers analyze', () => {
+    queryMocks.capabilities = queryState({ modes: ['ask', 'analyze'] })
+    render(<CourseAIHub courseUuid="course-1" />)
+    expect(screen.getByRole('tab', { name: /tabReview/ })).toBeInTheDocument()
   })
 })

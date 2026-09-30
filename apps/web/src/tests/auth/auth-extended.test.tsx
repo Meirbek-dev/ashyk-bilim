@@ -16,6 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const mockRefresh = vi.fn()
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/dash',
   useRouter: () => ({
     refresh: mockRefresh,
     push: mockPush,
@@ -42,14 +43,23 @@ const queryClient = new QueryClient({
 })
 
 const mockSession: Session = {
-  user: { id: 1, email: 'test@example.com', username: 'test' } as any,
+  user: {
+    id: '0198c0ae-0000-7000-8000-000000000001',
+    email: 'test@example.com',
+    username: 'test',
+    display_name: 'Test',
+    bio: '',
+    locale: 'en-US',
+    avatar_key: null,
+    mfa_enabled: false,
+    has_password: true,
+    google_linked: false,
+    profile: { sections: [] },
+    theme: null,
+  },
+  userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: [],
   permissions: [],
-  permissions_timestamp: Date.now(),
-  expires_at: Date.now() + 3600,
-  session_version: 1,
-  expiresAt: Date.now() + 3_600_000,
-  sessionVersion: 1,
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -101,7 +111,7 @@ describe('Auth Extended Scenarios', () => {
     })
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/login')
+      expect(mockPush).toHaveBeenCalledWith('/auth/login')
     })
   })
 

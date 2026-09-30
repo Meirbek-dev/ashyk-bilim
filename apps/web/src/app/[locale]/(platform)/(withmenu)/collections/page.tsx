@@ -1,6 +1,6 @@
 import NewCollectionButton from '@/components/Objects/Elements/Buttons/NewCollectionButton'
 import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle'
-import CollectionThumbnail from '@components/Objects/Thumbnails/CollectionThumbnail'
+import CollectionsGrid from '@/app/_shared/withmenu/collections/CollectionsGrid'
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import { PermissionGuard } from '@components/Security/PermissionGuard'
 import ProtectedText from '@components/Objects/ContentPlaceHolder'
@@ -57,18 +57,11 @@ interface PageProps {
   params: Promise<{ locale: string }>
 }
 
-export default async function PlatformCollectionsPage(props: PageProps) {
-  const { locale } = await props.params
-  const t = await getTranslations({ locale, namespace: 'PageLoading' })
-
+// Params are awaited inside the boundary (Next 16: uncached data outside
+// <Suspense> blocks the route — UX-231).
+export default function PlatformCollectionsPage(props: PageProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="text-muted-foreground flex h-[200px] w-full items-center justify-center text-sm">
-          {t('loading')}
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
       <CollectionsContent params={props.params} />
     </Suspense>
   )
@@ -92,38 +85,36 @@ async function CollectionsContent({ params }: PageProps) {
           </PermissionGuard>
         </div>
         <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4">
-          {collections.map((collection: AppCollection) => (
-            <div key={collection.collection_uuid} className="p-3">
-              <CollectionThumbnail collection={collection} />
-            </div>
-          ))}
-          {collections.length === 0 && (
-            <div className="col-span-full flex items-center justify-center py-8">
-              <div className="text-center">
-                <h2 className="mb-2 text-xl font-bold text-gray-600">{t('noContent')}</h2>
-                <p className="text-base text-gray-400">
-                  <ProtectedText
-                    text={t('noContentUserAdmin')}
-                    action={Actions.CREATE}
-                    resource={Resources.COLLECTION}
-                    scope={Scopes.APP}
-                  />
-                </p>
-                <div className="mt-4 flex justify-center">
-                  <PermissionGuard
-                    action={Actions.CREATE}
-                    resource={Resources.COLLECTION}
-                    scope={Scopes.APP}
-                    fallback={null}
-                  >
-                    <Link href={getAbsoluteUrl('/collections/new')}>
-                      <NewCollectionButton />
-                    </Link>
-                  </PermissionGuard>
+          <CollectionsGrid
+            initialCollections={collections}
+            empty={
+              <div className="col-span-full flex items-center justify-center py-8">
+                <div className="text-center">
+                  <h2 className="mb-2 text-xl font-bold text-gray-600">{t('noContent')}</h2>
+                  <p className="text-base text-gray-400">
+                    <ProtectedText
+                      text={t('noContentUserAdmin')}
+                      action={Actions.CREATE}
+                      resource={Resources.COLLECTION}
+                      scope={Scopes.APP}
+                    />
+                  </p>
+                  <div className="mt-4 flex justify-center">
+                    <PermissionGuard
+                      action={Actions.CREATE}
+                      resource={Resources.COLLECTION}
+                      scope={Scopes.APP}
+                      fallback={null}
+                    >
+                      <Link href={getAbsoluteUrl('/collections/new')}>
+                        <NewCollectionButton />
+                      </Link>
+                    </PermissionGuard>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            }
+          />
         </div>
       </div>
     </GeneralWrapper>

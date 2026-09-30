@@ -1,10 +1,17 @@
 'use client'
 
+import { useLocale } from 'next-intl'
+import { aiLanguageFor } from '@/i18n/config'
+
 import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { createAGUIAgent } from '@/lib/ag-ui-transport'
+import { isApiError } from '@/lib/api/assertSuccess'
+import type { QaForwardedProps } from '@/lib/api/generated/zod'
 import type { AICitation } from '@/features/ai-experience'
+
+import { qaThreadQueryOptions } from './use-ask-question'
 
 interface CourseQAChatOptions {
   activityUuid?: string | null
@@ -14,6 +21,8 @@ interface CourseQAChatOptions {
 }
 
 interface CourseQAChatSnapshot {
+  /** When the pending question was asked (epoch seconds), for the optimistic messages. */
+  askedAtUnix: number | null
   citations: AICitation[]
   errorCode: string | null
   partialAnswer: string
@@ -22,6 +31,7 @@ interface CourseQAChatSnapshot {
 }
 
 const initialSnapshot: CourseQAChatSnapshot = {
+  askedAtUnix: null,
   citations: [],
   errorCode: null,
   partialAnswer: '',
@@ -29,14 +39,28 @@ const initialSnapshot: CourseQAChatSnapshot = {
   status: 'idle',
 }
 
-function runResultThreadUuid(value: unknown): string | null {
-  if (!value || typeof value !== 'object' || !('thread_uuid' in value)) return null
-  return typeof value.thread_uuid === 'string' ? value.thread_uuid : null
+/** `RUN_FINISHED.result.thread_id` (`ai_agents.rs`). */
+function runResultThreadId(value: unknown): string | null {
+  if (!value || typeof value !== 'object' || !('thread_id' in value)) return null
+  return typeof value.thread_id === 'string' ? value.thread_id : null
 }
 
-function citationResult(value: string): AICitation[] {
+function citationResult(value: unknown): AICitation[] {
+  const text =
+    typeof value === 'string'
+      ? value
+      : Array.isArray(value)
+        ? value
+            .filter(
+              (part): part is { text: string; type: 'text' } =>
+                !!part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string',
+            )
+            .map(part => part.text)
+            .join('')
+        : ''
+
   try {
-    const parsed: unknown = JSON.parse(value)
+    const parsed: unknown = JSON.parse(text)
     if (!parsed || typeof parsed !== 'object' || !('citations' in parsed) || !Array.isArray(parsed.citations)) return []
     return parsed.citations as AICitation[]
   } catch {
@@ -50,6 +74,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
   const abortRef = useRef<AbortController | null>(null)
   const lastTurnRef = useRef<{ clientTurnId: string; question: string } | null>(null)
   const [snapshot, setSnapshot] = useState(initialSnapshot)
+  const locale = useLocale()
 
   const submit = useCallback(
     async (rawQuestion: string, retryClientTurnId?: string) => {
@@ -60,11 +85,18 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
       const abortController = new AbortController()
       const agent = createAGUIAgent(`ai/qa/${courseUuid}/chat`)
       agent.threadId = threadUuid ?? clientTurnId
+      const forwardedProps: QaForwardedProps = {
+        activity_id: activityUuid || null,
+        client_turn_id: clientTurnId,
+        language: aiLanguageFor(locale),
+        thread_id: threadUuid || null,
+      }
       agent.setMessages([{ id: clientTurnId, role: 'user', content: question }])
       agentRef.current = agent
       abortRef.current = abortController
       lastTurnRef.current = { clientTurnId, question }
       setSnapshot({
+        askedAtUnix: Math.floor(Date.now() / 1000),
         citations: [],
         errorCode: null,
         partialAnswer: '',
@@ -75,15 +107,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
       try {
         let protocolError: string | null = null
         const response = await agent.runAgent(
-          {
-            abortController,
-            forwardedProps: {
-              activity_uuid: activityUuid || undefined,
-              client_turn_id: clientTurnId,
-              language: 'auto',
-              thread_uuid: threadUuid || undefined,
-            },
-          },
+          { abortController, forwardedProps },
           {
             onTextMessageContentEvent: ({ textMessageBuffer }) => {
               setSnapshot(current => ({ ...current, partialAnswer: textMessageBuffer }))
@@ -100,7 +124,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
               if (!abortController.signal.aborted) {
                 setSnapshot(current => ({
                   ...current,
-                  errorCode: error.message || 'COURSE_QA_FAILED',
+                  errorCode: isApiError(error) ? error.code : error.message || 'COURSE_QA_FAILED',
                   status: 'failed',
                 }))
               }
@@ -108,12 +132,14 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
           },
         )
         if (protocolError) throw new Error(protocolError)
-        const nextThreadUuid = runResultThreadUuid(response.result) ?? threadUuid
+        const nextThreadUuid = runResultThreadId(response.result) ?? threadUuid
         if (nextThreadUuid) onThread(nextThreadUuid)
+        // UX-299: the optimistic question + answer stay until the saved thread is in the cache —
+        // dropping them first flashed the empty state while the thread loaded.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),
           ...(nextThreadUuid
-            ? [queryClient.invalidateQueries({ queryKey: ['course-qa-thread', courseUuid, nextThreadUuid] })]
+            ? [queryClient.fetchQuery(qaThreadQueryOptions(courseUuid, nextThreadUuid)).catch(() => undefined)]
             : []),
         ])
         setSnapshot(initialSnapshot)
@@ -123,7 +149,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         } else {
           setSnapshot(current => ({
             ...current,
-            errorCode: error instanceof Error ? error.message : 'COURSE_QA_FAILED',
+            errorCode: isApiError(error) ? error.code : error instanceof Error ? error.message : 'COURSE_QA_FAILED',
             status: 'failed',
           }))
         }
@@ -132,7 +158,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         if (agentRef.current === agent) agentRef.current = null
       }
     },
-    [activityUuid, courseUuid, onThread, queryClient, threadUuid],
+    [activityUuid, courseUuid, locale, onThread, queryClient, threadUuid],
   )
 
   const stop = useCallback(() => {

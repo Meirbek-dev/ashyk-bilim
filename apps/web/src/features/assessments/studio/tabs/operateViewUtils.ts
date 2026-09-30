@@ -1,20 +1,10 @@
 export type ItemActionPrompt = 'reviewContent' | 'tooEasy' | 'tooHard' | 'healthy'
 
 export interface OperateItemAnalytics {
-  item_uuid: string
+  item_id: string
   response_count: number
-  correct_pct: number | null
-  discrimination_index: number | null
-}
-
-export interface SubmissionQueueParams {
-  status: string
-  search: string
-  sortBy: string
-  sortDir: 'asc' | 'desc'
-  page: number
-  pageSize: number
-  lateOnly: boolean
+  correct_pct?: number | null | undefined
+  discrimination_index?: number | null | undefined
 }
 
 export interface SubmissionWithMetadata {
@@ -28,23 +18,11 @@ export interface IntegrityEventSummary {
   topKind: string | null
 }
 
-export function buildSubmissionQueuePath(assessmentUuid: string, params: SubmissionQueueParams): string {
-  const searchParams = new URLSearchParams()
-  if (params.status !== 'ALL') searchParams.set('status', params.status)
-  if (params.search.trim()) searchParams.set('search', params.search.trim())
-  if (params.lateOnly) searchParams.set('late_only', 'true')
-  searchParams.set('sort_by', params.sortBy)
-  searchParams.set('sort_dir', params.sortDir)
-  searchParams.set('page', String(params.page))
-  searchParams.set('page_size', String(params.pageSize))
-  return `assessments/${assessmentUuid}/submissions?${searchParams.toString()}`
-}
-
 export function getItemActionPrompt(item: OperateItemAnalytics): ItemActionPrompt {
   if (item.response_count === 0) return 'healthy'
-  if (item.discrimination_index !== null && item.discrimination_index < 0.1) return 'reviewContent'
-  if (item.correct_pct !== null && item.correct_pct >= 90) return 'tooEasy'
-  if (item.correct_pct !== null && item.correct_pct <= 35) return 'tooHard'
+  if (typeof item.discrimination_index === 'number' && item.discrimination_index < 0.1) return 'reviewContent'
+  if (typeof item.correct_pct === 'number' && item.correct_pct >= 90) return 'tooEasy'
+  if (typeof item.correct_pct === 'number' && item.correct_pct <= 35) return 'tooHard'
   return 'healthy'
 }
 

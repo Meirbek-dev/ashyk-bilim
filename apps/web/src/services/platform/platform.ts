@@ -1,17 +1,12 @@
 'use server'
 
-import { apiJson, apiResult } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 import { getServerAPIUrl } from '@services/config/config'
-import type { components } from '@/lib/api/generated'
-import { tags } from '@/lib/cacheTags'
-import { requireSession } from '@/lib/auth/session'
+import type { Platform } from '@/lib/api/generated/zod'
 
-type PlatformRead = components['schemas']['PlatformRead']
-type PlatformDetailResponse = components['schemas']['PlatformDetailResponse']
-
-async function fetchPlatform(): Promise<PlatformRead | null> {
+async function fetchPlatform(): Promise<Platform | null> {
   try {
-    return await apiJson<PlatformRead>('platform', {
+    return await apiJson<Platform>('platform', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       baseUrl: getServerAPIUrl(),
@@ -28,15 +23,4 @@ async function fetchPlatform(): Promise<PlatformRead | null> {
  */
 export async function getPlatform() {
   return fetchPlatform()
-}
-
-export async function removeUser(user_id: number) {
-  await requireSession()
-  const data = await apiResult<PlatformDetailResponse>(`members/${user_id}`, { method: 'DELETE' })
-
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag(tags.platform, 'max')
-  revalidateTag(tags.users, 'max')
-
-  return data
 }

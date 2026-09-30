@@ -3,8 +3,10 @@
 import { useActivityAutosave } from '@/hooks/useActivityAutosave'
 
 import { PlatformContextProvider } from '@/components/Contexts/PlatformContext'
+import { stripEmptyFileBlocks } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core'
 import { useTranslations } from 'next-intl'
+import { useApiError } from '@/hooks/useApiError'
 import type { JSX } from 'react'
 import { toast } from 'sonner'
 
@@ -17,7 +19,7 @@ import { CourseAIHub } from '@/features/course-qa'
 
 interface EditorWrapperProps {
   content: unknown
-  activity: ActivityRef
+  activity: ActivityRef & { version?: number }
   course: {
     course_uuid: string
     name: string
@@ -28,24 +30,29 @@ interface EditorWrapperProps {
 
 function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   const t = useTranslations('DashPage.Editor.EditorWrapper')
+  const { handleApiError } = useApiError()
   const activityAutosave = useActivityAutosave({
     activityUuid: props.activity.activity_uuid,
     courseUuid: props.course.course_uuid,
+    loadedContent: props.content,
+  })
+
+  // BUG-376: content and the lock only — the loaded name/published flag are
+  // stale once the curriculum edits them, and a rebased save must not undo that.
+  const contentPayload = (content: unknown) => ({
+    content: stripEmptyFileBlocks(structuredClone(content)),
+    version: props.activity.version,
   })
 
   async function setContent(content: unknown) {
-    const { activity } = props
-
-    const plainContent = structuredClone(content)
-    const updatedActivity = { ...activity, content: plainContent }
-
-    toast.promise(activityAutosave.flush(updatedActivity), {
+    // The header already shows the conflict notice; nothing may overwrite the other tab's save.
+    if (activityAutosave.saveStatus === 'conflict' || activityAutosave.saveStatus === 'forbidden') return
+    toast.promise(activityAutosave.flush(contentPayload(content)), {
       loading: t('saving'),
       success: () => <b>{t('saveSuccess')}</b>,
       error: err => {
-        const errorMessage = err?.data?.detail || err?.data?.message || t('saveError')
-        const status = err?.status
-        return <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>
+        if (err?.status === 403) return <b>{t('noAccess')}</b>
+        return <b>{handleApiError(err, undefined, t('saveError')).message}</b>
       },
     })
   }
@@ -70,9 +77,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
           activity={props.activity}
           content={props.content}
           onContentChange={content => {
-            const plainContent = structuredClone(content)
-            const updatedActivity = { ...props.activity, content: plainContent }
-            activityAutosave.onChange(updatedActivity)
+            activityAutosave.onChange(contentPayload(content))
           }}
           saveState={activityAutosave.saveStatus}
           setContent={setContent}

@@ -10,8 +10,10 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import { apiJson } from '@/lib/api-client'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { cn } from '@/lib/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
@@ -22,6 +24,8 @@ import {
   localItemValidationIssues,
 } from '@/features/assessments/domain/readiness'
 import { InlineIssueMessage } from './ValidationIssues'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import type { ItemBody } from '@/features/assessments/domain/items'
 import { buildDefaultItemPayload } from '../utils'
 import type { SupportedStudioItemKind } from '../utils'
 
@@ -50,32 +54,37 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
     validationIssues,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const { toastApiError } = useApiError()
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
   const kindLabels: Record<SupportedStudioItemKind, string> = {
-    CHOICE: t('kindLabels.choice'),
-    OPEN_TEXT: t('kindLabels.openText'),
-    FORM: t('kindLabels.form'),
-    MATCHING: t('kindLabels.matching'),
+    CHOICE: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.CHOICE}`),
+    OPEN_TEXT: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.OPEN_TEXT}`),
+    FORM: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.FORM}`),
+    MATCHING: t(`kindLabels.${ITEM_KIND_LABEL_KEYS.MATCHING}`),
   }
   const [isCreating, startTransition] = useTransition()
 
   const createItem = (kind: SupportedStudioItemKind) => {
     startTransition(async () => {
       try {
-        const created = await apiJson<{ item_uuid?: string }>(`assessments/${assessment.assessment_uuid}/items`, {
+        // v2 `CreateItemRequest` is `{title, max_score, body}` with a lowercase-tagged body
+        const payload = buildDefaultItemPayload(kind, t('defaultItemTitle'))
+        const created = await apiJson<{ id?: string }>(`assessments/${assessment.assessment_uuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildDefaultItemPayload(kind, t('defaultItemTitle'))),
+          body: JSON.stringify({
+            title: payload.title,
+            max_score: payload.max_score,
+            body: itemBodyToWire(payload.body as ItemBody),
+          }),
         })
         toast.success(t('itemCreated', { itemNoun: displayItemNoun }))
         await refresh()
-        if (typeof created.item_uuid === 'string') {
-          setSelectedItemUuid(created.item_uuid)
+        if (typeof created.id === 'string') {
+          setSelectedItemUuid(created.id)
         }
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }) })
       }
     })
   }
@@ -104,7 +113,7 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
               {allowedKinds.map(kind => {
                 const Icon = KIND_ICONS[kind]
                 return (
-                  <DropdownMenuItem key={kind} onSelect={() => createItem(kind)}>
+                  <DropdownMenuItem key={kind} onClick={() => createItem(kind)}>
                     <Icon className="mr-2 size-4" />
                     {kindLabels[kind]}
                   </DropdownMenuItem>

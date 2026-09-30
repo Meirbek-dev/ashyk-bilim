@@ -150,7 +150,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     },
     items: [
       {
-        id: 1,
+        id: '00000000-0000-4000-8000-000000000001',
         item_uuid: 'item_manual_assessment',
         order: 1,
         kind: 'OPEN_TEXT',
@@ -161,6 +161,8 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
         updated_at: '2026-05-05T10:00:00Z',
       },
     ],
+    itemScores: {},
+    attemptReviews: [],
     canEdit: true,
     canSaveDraft: true,
     canSubmit: true,
@@ -168,10 +170,16 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     canContinue: false,
     canViewResult: false,
     canStartRevision: true,
+    nextAttemptCapPercent: null,
+    attemptCapPercent: null,
+    latePenaltyPct: null,
+    autoSubmitReason: null,
+    generalFeedback: null,
     recommendedAction: 'startRevision',
     primaryButtonLabelKey: 'startRevision',
     isReturnedForRevision: true,
     isResultVisible: true,
+    passingScore: 60,
     disabledActionReasons: [],
     serverNow: null,
     startedAt: null,
@@ -182,6 +190,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     timeRemainingSeconds: null,
     contentVersion: 1,
     policyVersion: 1,
+    pendingAttemptNumber: null,
   } satisfies AttemptViewModel
   return { ...vm, ...overrides }
 }

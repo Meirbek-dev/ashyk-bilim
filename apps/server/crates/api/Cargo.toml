@@ -1,0 +1,41 @@
+[package]
+name = "ab-api"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ab-core = { workspace = true }
+ab-db = { workspace = true }
+ab-domain = { workspace = true }
+axum = { workspace = true }
+async-stream = { workspace = true }
+axum-extra = { workspace = true }
+futures = { workspace = true }
+garde = { workspace = true }
+secrecy = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+sqlx = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
+utoipa-scalar = { workspace = true }
+uuid = { workspace = true }
+ab-clients = { workspace = true }
+
+[dev-dependencies]
+ab-testkit = { workspace = true }
+base64.workspace = true
+insta = { workspace = true }
+redis = { workspace = true }
+reqwest.workspace = true
+wiremock = { workspace = true }

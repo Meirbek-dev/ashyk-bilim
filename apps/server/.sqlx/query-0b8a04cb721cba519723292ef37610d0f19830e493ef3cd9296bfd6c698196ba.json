@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM submissions\n                          WHERE assessment_id = $1 AND NOT preview) AS \"any!\",\n                  EXISTS (SELECT 1 FROM submissions\n                          WHERE assessment_id = $1 AND status <> 'draft' AND NOT preview)\n                      AS \"non_draft!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "any!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "non_draft!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "0b8a04cb721cba519723292ef37610d0f19830e493ef3cd9296bfd6c698196ba"
+}

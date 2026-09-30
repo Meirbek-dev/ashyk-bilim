@@ -7,6 +7,8 @@ import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { NextIntlClientProvider } from 'next-intl'
 import { defaultLocale } from '@/i18n/config'
+import { APP_NAME } from '@/lib/constants'
+import DocumentTitle from '@components/ui/document-title'
 
 export default async function NotFound() {
   const messages = await getMessages()
@@ -16,6 +18,7 @@ export default async function NotFound() {
   return (
     <NextIntlClientProvider locale={defaultLocale} messages={messages}>
       <div className="flex min-h-screen w-full flex-col items-center justify-center">
+        <DocumentTitle title={`${t('title')} - ${APP_NAME}`} />
         <div className="flex items-center pb-20 hover:opacity-75">
           <Image
             quality={100}

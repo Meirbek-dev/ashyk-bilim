@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch FROM min(created_at)))::bigint\n           FROM trail_steps WHERE activity_id = $1 AND user_id = $2 AND complete",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "extract",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "cc8df331b125041ee8ecc818617730c6836c10f1db4d1f884ae6aba53358e5ad"
+}

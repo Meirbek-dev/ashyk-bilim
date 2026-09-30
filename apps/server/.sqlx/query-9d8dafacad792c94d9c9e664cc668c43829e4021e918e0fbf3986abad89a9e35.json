@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) FILTER (WHERE status <> 'draft') AS \"total!\",\n                  count(*) FILTER (WHERE status = 'pending') AS \"pending!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'published') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE status <> 'draft' AND is_late) AS \"late!\"\n           FROM submissions WHERE assessment_id = $1 AND NOT preview",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "pending!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "graded!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "published!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "returned!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "late!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "9d8dafacad792c94d9c9e664cc668c43829e4021e918e0fbf3986abad89a9e35"
+}

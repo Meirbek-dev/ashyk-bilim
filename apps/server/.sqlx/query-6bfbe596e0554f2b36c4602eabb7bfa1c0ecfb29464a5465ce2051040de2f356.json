@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessment_overrides\n               (assessment_id, user_id, max_attempts_override, due_at_override,\n                waive_late_penalty, note, expires_at, granted_by)\n           VALUES ($1, $2, $3, to_timestamp($4), $5, $6, to_timestamp($7), $8)\n           ON CONFLICT (assessment_id, user_id) DO NOTHING\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Float8",
+        "Bool",
+        "Text",
+        "Float8",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6bfbe596e0554f2b36c4602eabb7bfa1c0ecfb29464a5465ce2051040de2f356"
+}

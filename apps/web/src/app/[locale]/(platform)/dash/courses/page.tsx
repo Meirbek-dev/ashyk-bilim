@@ -1,9 +1,13 @@
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
-import { getEditableCourses } from '@services/courses/courses'
+import { getEditableCourses } from '@services/courses/editable'
 import type { PageSearchParams } from '@/lib/search-params'
-import { Actions, Resources, Scopes } from '@/types/permissions'
-import { requireAnyPermission } from '@/lib/auth/permissions'
+import type { Action, Resource, Scope } from '@/types/permissions'
+import { requireSession } from '@/lib/auth/session'
+import { sessionCan } from '@/lib/auth/permissions'
+import { canSeeCourses } from '@/lib/rbac/navigation-policy'
+import { redirect } from '@/i18n/navigation'
+import { getLocale } from 'next-intl/server'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
@@ -41,9 +45,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { General } = getStaticMetadataMessages(locale)
 
   return {
-    title: `${General.courses} - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
-    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
+    title: General.courses,
+    description: General.appDescription,
+    keywords: `${APP_NAME}, ${General.appDescription}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
     robots: {
       index: true,
       follow: true,
@@ -55,8 +59,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       },
     },
     openGraph: {
-      title: `${General.courses} - ${APP_NAME}`,
-      description: APP_DESCRIPTION,
+      title: General.courses,
+      description: General.appDescription,
       type: 'website',
     },
   }
@@ -71,13 +75,10 @@ export default function PlatformDashCoursesPage(props: { searchParams: Promise<P
 }
 
 async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageSearchParams> }) {
-  await requireAnyPermission([
-    { action: Actions.CREATE, resource: Resources.COURSE, scope: Scopes.APP },
-    { action: Actions.UPDATE, resource: Resources.COURSE, scope: Scopes.APP },
-    { action: Actions.UPDATE, resource: Resources.COURSE, scope: Scopes.OWN },
-    { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.APP },
-    { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.OWN },
-  ])
+  const session = await requireSession()
+  const permsSet = new Set<string>(session.permissions)
+  const can = (resource: Resource, action: Action, scope: Scope): boolean =>
+    sessionCan(session, resource, action, scope, permsSet)
 
   const searchParams = await props.searchParams
   const currentPage = parsePage(searchParams.page)
@@ -87,9 +88,16 @@ async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageS
 
   const { courses, total, summary } = await getEditableCourses(currentPage, COURSES_PER_PAGE, query, sortBy, preset)
 
+  // Authorship is the `:own` scope: a `user`-role co-author has no course
+  // grant but a non-empty `mine` set (the summary counts the whole editable
+  // set regardless of the filters).
+  if (!canSeeCourses(can) && summary.total === 0) {
+    redirect({ href: '/unauthorized', locale: await getLocale() })
+  }
+
   return (
     <CoursesHome
-      courses={courses}
+      courses={courses.map(course => Object.assign(course, { name: course.name ?? '' }))}
       totalCourses={total}
       currentPage={currentPage}
       searchQuery={query}

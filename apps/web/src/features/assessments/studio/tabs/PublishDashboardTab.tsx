@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Archive,
   BookOpen,
   CalendarClock,
   CheckCircle2,
@@ -18,14 +19,25 @@ import {
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useQuery, queryOptions } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
+import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
 import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
-import { apiJson } from '@/lib/api-client'
+import { assessmentAccessQueryOptions } from '@/features/assessments/queries'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -68,19 +80,12 @@ interface PublishDashboardTabProps {
   publishedAt?: string | null
   archivedAt?: string | null
   onSwitchToBuilder: (itemUuid?: string) => void
-  onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => void
+  onLifecycleChange: (
+    lifecycle: AssessmentLifecycle,
+    scheduledAt?: string | null,
+    auditNote?: string | null,
+  ) => void | Promise<void>
 }
-
-interface AccessRead {
-  effective_user_count: number
-}
-
-const assessmentAccessQueryOptions = (assessmentUuid: string) =>
-  queryOptions({
-    queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
-    queryFn: () => apiJson<AccessRead>(`assessments/${assessmentUuid}/access`),
-    staleTime: 30_000,
-  })
 
 export default function PublishDashboardTab({
   assessmentUuid,
@@ -99,9 +104,14 @@ export default function PublishDashboardTab({
   onLifecycleChange,
 }: PublishDashboardTabProps) {
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const tStudio = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
+  // UX-128: the server refuses a publish date past the policy due date
+  // (422 `schedule.after_due_at`); the picker says so before and after.
+  const [scheduleRefused, setScheduleRefused] = useState(false)
   const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
+  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false)
   const [auditNote, setAuditNote] = useState('')
   const [isPending, startTransition] = useTransition()
   const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
@@ -125,6 +135,7 @@ export default function PublishDashboardTab({
   const timeLimitMinutes = assessmentState.timeLimitMinutes ? Number(assessmentState.timeLimitMinutes) : null
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
+  const isArchived = lifecycle === 'ARCHIVED'
   const highStakes = isHighStakesAssessment(assessmentState)
   const canConfirmGate =
     canConfirmLifecycleChange({
@@ -139,17 +150,27 @@ export default function PublishDashboardTab({
     })
   }
 
+  const scheduleAfterDue = Boolean(
+    scheduledAt && assessmentState.dueAt && new Date(scheduledAt) >= new Date(assessmentState.dueAt),
+  )
+
   const handleSchedule = () => {
     if (!scheduledAt) return
-    startTransition(() => {
-      onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString(), auditNote)
-      setScheduleOpen(false)
+    startTransition(async () => {
       setPendingAction(null)
-      setScheduledAt('')
+      try {
+        await onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString(), auditNote)
+        setScheduleOpen(false)
+        setScheduledAt('')
+      } catch {
+        setScheduleRefused(true)
+        setScheduleOpen(true)
+      }
     })
   }
 
   const handleUnpublish = () => {
+    setRevertConfirmOpen(false)
     startTransition(() => {
       onLifecycleChange('DRAFT')
     })
@@ -162,16 +183,20 @@ export default function PublishDashboardTab({
           'flex items-center justify-between gap-4 rounded-lg border p-5 shadow-sm',
           isPublished
             ? 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30'
-            : isScheduled
-              ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
-              : hasIssues
-                ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
-                : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
+            : isArchived
+              ? 'border-border bg-muted/40'
+              : isScheduled
+                ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
+                : hasIssues
+                  ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+                  : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
         )}
       >
         <div className="flex items-center gap-3">
           {isPublished ? (
             <CheckCircle2 className="size-6 text-lime-600 dark:text-lime-400" />
+          ) : isArchived ? (
+            <Archive className="text-muted-foreground size-6" />
           ) : isScheduled ? (
             <CalendarClock className="size-6 text-blue-600 dark:text-blue-400" />
           ) : hasIssues ? (
@@ -183,32 +208,59 @@ export default function PublishDashboardTab({
             <p className="font-semibold">
               {isPublished
                 ? tPublish('statusPublished')
-                : isScheduled
-                  ? tPublish('statusScheduled')
-                  : hasIssues
-                    ? tPublish('statusHasIssues', {
-                        count: classifiedIssues.length,
-                      })
-                    : tPublish('statusReadyToPublish')}
+                : isArchived
+                  ? tPublish('statusArchived')
+                  : isScheduled
+                    ? tPublish('statusScheduled')
+                    : hasIssues
+                      ? tPublish('statusHasIssues', {
+                          count: classifiedIssues.length,
+                        })
+                      : tPublish('statusReadyToPublish')}
             </p>
             <p className="text-muted-foreground text-sm">
               {isPublished
                 ? tPublish('statusPublishedDesc')
-                : isScheduled
-                  ? tPublish('statusScheduledDesc')
-                  : hasIssues
-                    ? tPublish('statusHasIssuesDesc')
-                    : tPublish('statusReadyDesc')}
+                : isArchived
+                  ? tPublish('statusArchivedDesc')
+                  : isScheduled
+                    ? tPublish('statusScheduledDesc')
+                    : hasIssues
+                      ? tPublish('statusHasIssuesDesc')
+                      : tPublish('statusReadyDesc')}
             </p>
           </div>
         </div>
 
         {/* Publish actions */}
         <div className="flex items-center gap-2">
-          {isPublished || isScheduled ? (
-            <Button variant="outline" size="sm" disabled={isPending} onClick={handleUnpublish}>
-              {tPublish('revertToDraft')}
-            </Button>
+          {isPublished || isScheduled || isArchived ? (
+            // BUG-171: archived → draft is the only way out of the archive (the API allows it).
+            // UX-200: a published one goes dark for learners — confirm first.
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={isPublished ? () => setRevertConfirmOpen(true) : handleUnpublish}
+              >
+                {tPublish(isArchived ? 'restoreToDraft' : 'revertToDraft')}
+              </Button>
+              <AlertDialog open={revertConfirmOpen} onOpenChange={setRevertConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{tPublish('revertConfirmTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>{tPublish('revertConfirmMessage')}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isPending} />
+                    <AlertDialogAction variant="destructive" disabled={isPending} onClick={handleUnpublish}>
+                      {tPublish('revertToDraft')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           ) : (
             <>
               <Button
@@ -231,11 +283,24 @@ export default function PublishDashboardTab({
                 />
                 <PopoverContent align="end" className="w-64 space-y-3 p-3">
                   <p className="text-sm font-medium">{tPublish('schedulePublication')}</p>
-                  <CalendarDateTimePicker value={scheduledAt} onChange={setScheduledAt} />
+                  {/* UX-112: a publication date is in the future — no 1900–2077 year list. */}
+                  <CalendarDateTimePicker
+                    value={scheduledAt}
+                    onChange={value => {
+                      setScheduledAt(value)
+                      setScheduleRefused(false)
+                    }}
+                    minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                  />
+                  {(scheduleAfterDue || scheduleRefused) && (
+                    <p role="alert" className="text-destructive text-xs">
+                      {tStudio('validation.schedule_after_due_at')}
+                    </p>
+                  )}
                   <Button
                     size="sm"
                     className="w-full"
-                    disabled={isPending || !scheduledAt || !canSchedule}
+                    disabled={isPending || !scheduledAt || !canSchedule || scheduleAfterDue}
                     onClick={() => {
                       setPendingAction('schedule')
                       setScheduleOpen(false)
@@ -294,7 +359,9 @@ export default function PublishDashboardTab({
                   return (
                     <div key={kind} className="flex items-center gap-2">
                       <Icon className="text-muted-foreground size-3.5 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate text-xs">{kind.replaceAll('_', ' ')}</span>
+                      <span className="min-w-0 flex-1 truncate text-xs">
+                        {tStudio(`kindLabels.${ITEM_KIND_LABEL_KEYS[kind]}`)}
+                      </span>
                       <Badge variant="secondary" className="text-xs">
                         {count}
                       </Badge>
@@ -502,6 +569,7 @@ function LifecycleConfirmationDialog({
   onConfirm: () => void
 }) {
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const locale = useLocale()
   const isSchedule = action === 'schedule'
 
   return (
@@ -516,10 +584,9 @@ function LifecycleConfirmationDialog({
 
         <div className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-2">
-            <ImpactRow
-              label={tPublish('impactLearners')}
-              value={effectiveLearnerCount === null ? tPublish('unknown') : String(effectiveLearnerCount)}
-            />
+            {effectiveLearnerCount === null ? null : (
+              <ImpactRow label={tPublish('impactLearners')} value={String(effectiveLearnerCount)} />
+            )}
             <ImpactRow label={tPublish('impactQuestions')} value={String(itemCount)} />
             <ImpactRow label={tPublish('impactPoints')} value={String(totalPoints)} />
             <ImpactRow
@@ -532,7 +599,8 @@ function LifecycleConfirmationDialog({
             {isSchedule ? (
               <ImpactRow
                 label={tPublish('impactSchedule')}
-                value={scheduledAt ? new Date(scheduledAt).toLocaleString() : tPublish('unknown')}
+                // UX-120: same format as the schedule picker and the audit trail.
+                value={scheduledAt ? formatAuditDate(scheduledAt, locale) : tPublish('unknown')}
               />
             ) : null}
           </div>

@@ -3,7 +3,7 @@
 import { ChartContainer, ChartEmptyState, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 interface KpiActiveLearnerLineChartProps {
   data: { bucket: string; active: number }[]
@@ -11,6 +11,7 @@ interface KpiActiveLearnerLineChartProps {
 
 export default function KpiActiveLearnerLineChart({ data }: KpiActiveLearnerLineChartProps) {
   const t = useTranslations('TeacherAnalytics')
+  const format = useFormatter()
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -25,14 +26,19 @@ export default function KpiActiveLearnerLineChart({ data }: KpiActiveLearnerLine
               active: {
                 label: t('kpiCharts.activeLearners'),
                 color: 'var(--chart-3)',
-                valueFormatter: value => `${value ?? 0} ${t('scoreChart.learners')}`,
+                valueFormatter: value => `${format.number(Number(value ?? 0))} ${t('scoreChart.learners')}`,
               },
             }}
           >
             <LineChart data={data}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="bucket" tickLine={false} axisLine={false} minTickGap={20} />
-              <YAxis tickLine={false} axisLine={false} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickFormatter={(v: number) => format.number(v)}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line
                 type="monotone"

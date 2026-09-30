@@ -1,0 +1,1376 @@
+//! Curriculum flows: chapter/activity CRUD, legacy ordering semantics
+//! (1-based contiguous positions, clamp-and-renumber moves), access control.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use ab_testkit::{MintedSession, TestApp, wait_until};
+use axum::http::StatusCode;
+use sqlx::PgPool;
+
+async fn instructor(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:create:platform",
+            "course:read:all",
+            "course:update:own",
+            "course:delete:own",
+        ],
+    )
+    .await
+}
+
+async fn create_course(app: &TestApp, session: &MintedSession, name: &str) -> String {
+    let res = app
+        .post_as(
+            session,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": name }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED);
+    res.json()["id"].as_str().unwrap().to_owned()
+}
+
+async fn create_chapter(
+    app: &TestApp,
+    session: &MintedSession,
+    course_id: &str,
+    name: &str,
+) -> String {
+    let res = app
+        .post_as(
+            session,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": name }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED);
+    res.json()["id"].as_str().unwrap().to_owned()
+}
+
+async fn create_activity(
+    app: &TestApp,
+    session: &MintedSession,
+    chapter_id: &str,
+    name: &str,
+) -> String {
+    let res = app
+        .post_as(
+            session,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({
+                "name": name,
+                "activity_type": "video",
+                "activity_sub_type": "video_youtube",
+            }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CREATED);
+    res.json()["id"].as_str().unwrap().to_owned()
+}
+
+/// Chapter names in curriculum order.
+async fn chapter_names(app: &TestApp, session: &MintedSession, course_id: &str) -> Vec<String> {
+    let res = app
+        .get_as(session, &format!("/api/v2/courses/{course_id}/curriculum"))
+        .await;
+    assert_eq!(res.status, StatusCode::OK);
+    res.json()["chapters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn chapters_append_move_and_renumber(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Rust 101").await;
+
+    let ch_a = create_chapter(&app, &teacher, &course, "A").await;
+    create_chapter(&app, &teacher, &course, "B").await;
+    let ch_c = create_chapter(&app, &teacher, &course, "C").await;
+    assert_eq!(
+        chapter_names(&app, &teacher, &course).await,
+        ["A", "B", "C"]
+    );
+
+    // Move C to the front; positions stay 1-based contiguous.
+    let moved = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{ch_c}/move"),
+            &serde_json::json!({ "position": 1 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::NO_CONTENT);
+    assert_eq!(
+        chapter_names(&app, &teacher, &course).await,
+        ["C", "A", "B"]
+    );
+
+    // Out-of-range positions clamp to the end (legacy semantics).
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/chapters/{ch_c}/move"),
+        &serde_json::json!({ "position": 99 }),
+    )
+    .await;
+    assert_eq!(
+        chapter_names(&app, &teacher, &course).await,
+        ["A", "B", "C"]
+    );
+
+    // Rename, then delete: the gap closes.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/chapters/{ch_a}"),
+            &serde_json::json!({ "name": "A2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK);
+    assert_eq!(renamed.json()["name"], "A2");
+
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/chapters/{ch_a}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let res = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course}/curriculum"))
+        .await;
+    let chapters = res.json()["chapters"].as_array().unwrap().clone();
+    assert_eq!(chapters.len(), 2);
+    let positions: Vec<_> = chapters
+        .iter()
+        .map(|c| c["position"].as_i64().unwrap())
+        .collect();
+    assert_eq!(positions, [1, 2], "delete must renumber contiguously");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn activities_order_within_and_across_chapters(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Rust 101").await;
+    let ch1 = create_chapter(&app, &teacher, &course, "One").await;
+    let ch2 = create_chapter(&app, &teacher, &course, "Two").await;
+
+    let v1 = create_activity(&app, &teacher, &ch1, "v1").await;
+    let v2 = create_activity(&app, &teacher, &ch1, "v2").await;
+    create_activity(&app, &teacher, &ch1, "v3").await;
+
+    // Type/subtype pairs outside the closed set are rejected.
+    let invalid = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{ch1}/activities"),
+            &serde_json::json!({
+                "name": "bad",
+                "activity_type": "video",
+                "activity_sub_type": "exam_standard",
+            }),
+        )
+        .await;
+    assert_eq!(invalid.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Publish flag flips via PATCH.
+    let published = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{v1}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK);
+    assert_eq!(published.json()["published"], true);
+
+    // Move v2 into chapter two; both chapters renumber contiguously.
+    let moved = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/activities/{v2}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": ch2 }),
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::NO_CONTENT);
+
+    let res = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course}/curriculum"))
+        .await;
+    let body = res.json();
+    let chapters = body["chapters"].as_array().unwrap();
+    let acts = |name: &str| -> Vec<(String, i64)> {
+        chapters.iter().find(|c| c["name"] == name).unwrap()["activities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| {
+                (
+                    a["name"].as_str().unwrap().to_owned(),
+                    a["position"].as_i64().unwrap(),
+                )
+            })
+            .collect()
+    };
+    assert_eq!(acts("One"), [("v1".into(), 1), ("v3".into(), 2)]);
+    assert_eq!(acts("Two"), [("v2".into(), 1)]);
+
+    // A move to a chapter of another course is refused.
+    let other = create_course(&app, &teacher, "Other").await;
+    let foreign = create_chapter(&app, &teacher, &other, "Foreign").await;
+    let refused = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/activities/{v2}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": foreign }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Deleting an activity closes the gap.
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{v1}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let res = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course}/curriculum"))
+        .await;
+    let body = res.json();
+    let one = body["chapters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "One")
+        .unwrap();
+    assert_eq!(
+        one["activities"].as_array().unwrap()[0]["position"]
+            .as_i64()
+            .unwrap(),
+        1,
+        "delete must renumber contiguously"
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn curriculum_respects_course_access(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Private").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+
+    // A rival instructor cannot see the draft (`course:read:all` is the
+    // public-catalogue grant), so authoring on it is a 404 — no existence
+    // leak; a learner can't see the private curriculum either.
+    let rival = instructor(&app, "rival").await;
+    let denied = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/courses/{course}/chapters"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::NOT_FOUND);
+    let denied = app
+        .patch_as(
+            &rival,
+            &format!("/api/v2/chapters/{chapter}"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::NOT_FOUND);
+
+    // BUG-208 nit: moving one's own activity into a chapter of an invisible
+    // course is the same 404 as a random id — not the same-course 422.
+    let rivals_course = create_course(&app, &rival, "Rival").await;
+    let rivals_chapter = create_chapter(&app, &rival, &rivals_course, "R1").await;
+    let rivals_activity = create_activity(&app, &rival, &rivals_chapter, "Clip").await;
+    let probe = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/activities/{rivals_activity}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": chapter }),
+        )
+        .await;
+    assert_eq!(probe.status, StatusCode::NOT_FOUND, "{}", probe.text());
+    // BUG-209 nit: … with the same detail, so the 404 is not an oracle.
+    let random = app
+        .post_as(
+            &rival,
+            &format!("/api/v2/activities/{rivals_activity}/move"),
+            &serde_json::json!({ "position": 1, "chapter_id": uuid::Uuid::now_v7() }),
+        )
+        .await;
+    assert_eq!(random.status, StatusCode::NOT_FOUND);
+    assert_eq!(probe.json()["detail"], random.json()["detail"]);
+    // UX-147: an activity of an invisible course reads and edits like an
+    // unknown one — one detail on every `/activities/{id}` route.
+    let unknown_activity = uuid::Uuid::now_v7();
+    let invisible = app
+        .get_as(&teacher, &format!("/api/v2/activities/{rivals_activity}"))
+        .await;
+    let unknown = app
+        .get_as(&teacher, &format!("/api/v2/activities/{unknown_activity}"))
+        .await;
+    assert_eq!(
+        invisible.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        invisible.text()
+    );
+    assert_eq!(invisible.json()["detail"], unknown.json()["detail"]);
+    let invisible = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{rivals_activity}"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    let unknown = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{unknown_activity}"),
+            &serde_json::json!({ "name": "Hijack" }),
+        )
+        .await;
+    assert_eq!(
+        invisible.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        invisible.text()
+    );
+    assert_eq!(invisible.json()["detail"], unknown.json()["detail"]);
+    // UX-145: creating an assessment / file submission in that chapter is
+    // the same 404 as a random id (one `authorable_chapter`).
+    for (path, body) in [
+        (
+            "/api/v2/assessments",
+            serde_json::json!({ "kind": "quiz", "title": "Probe" }),
+        ),
+        (
+            "/api/v2/file-submissions",
+            serde_json::json!({ "title": "Probe" }),
+        ),
+    ] {
+        let mut hidden = body.clone();
+        hidden["chapter_id"] = serde_json::json!(chapter);
+        let probe = app.post_as(&rival, path, &hidden).await;
+        assert_eq!(
+            probe.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            probe.text()
+        );
+        let mut unknown = body;
+        unknown["chapter_id"] = serde_json::json!(uuid::Uuid::now_v7());
+        let random = app.post_as(&rival, path, &unknown).await;
+        assert_eq!(
+            random.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            random.text()
+        );
+        assert_eq!(probe.json()["detail"], random.json()["detail"], "{path}");
+    }
+
+    let learner = app.mint_session(&[]).await;
+    let hidden = app
+        .get_as(&learner, &format!("/api/v2/courses/{course}/curriculum"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND);
+
+    // Published course → learners read the curriculum.
+    app.publish_course(&course).await;
+    let visible = app
+        .get_as(&learner, &format!("/api/v2/courses/{course}/curriculum"))
+        .await;
+    assert_eq!(visible.status, StatusCode::OK);
+    assert_eq!(visible.json()["chapters"].as_array().unwrap().len(), 1);
+}
+
+/// The raw activity toggle refuses to publish a file-submission activity
+/// whose config is still a draft (409 `activity-not-ready`); publishing the
+/// config flips both.
+#[sqlx::test(migrations = "../../migrations")]
+async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("files", "files@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Files").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({
+                "chapter_id": chapter_id, "title": "Essay",
+                "instructions": "Upload your essay.",
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let config_id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "activity-not-ready");
+
+    // Readiness names the activity while the config is a draft — once it
+    // is published through the file-submission route, the course is ready.
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{config_id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let readiness = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/readiness"))
+        .await;
+    assert_eq!(readiness.json()["ready"], true, "{}", readiness.text());
+
+    // Renaming (no publish flip) is untouched by the gate.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Essay v2", "published": true }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+
+    // UX-112: the published config keeps the type attached (the UX-104
+    // guard covers file submissions too) — 409 `conflict`.
+    let detached = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
+    assert_eq!(detached.json()["code"], "conflict");
+}
+
+/// The raw publish toggle refuses an assessment-backed activity whose
+/// assessment is not `published` (BUG-102), and the gate reads the type
+/// this PATCH sets, not the stored one (BUG-104).
+#[sqlx::test(migrations = "../../migrations")]
+async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("exams", "exams@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Exams").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "exam", "title": "Final" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let assessment_id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    // Draft assessment → the activity cannot go live on its own.
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "activity-not-ready");
+    assert_eq!(refused.json()["details"]["reason"], "assessment-not-ready");
+
+    // Published assessment → the toggle is a no-op that succeeds.
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{assessment_id}/items"),
+        &serde_json::json!({
+            "title": "1+1?", "max_score": 5,
+            "body": { "kind": "choice", "prompt": "1+1?",
+                      "options": [{ "id": "a", "text": "2", "is_correct": true },
+                                  { "id": "b", "text": "3", "is_correct": false }] }
+        }),
+    )
+    .await;
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "published", "note": "go" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let toggled = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
+
+    // UX-104: the live exam stays attached — the type cannot move away
+    // from it (409 `conflict`) until the assessment is unpublished.
+    let detached = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
+    assert_eq!(detached.json()["code"], "conflict");
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+            .await
+            .json()["activity_type"],
+        "exam"
+    );
+
+    // UX-112: one name — a curriculum rename also renames the assessment.
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Final v2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
+            .await
+            .json()["title"],
+        "Final v2"
+    );
+
+    // Type change + publish in one body: the gate sees the NEW type.
+    let draft = create_activity(&app, &teacher, &chapter_id, "Essay").await;
+    let bypass = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{draft}"),
+            &serde_json::json!({
+                "activity_type": "file_submission",
+                "activity_sub_type": "file_submission_standard",
+                "published": true,
+            }),
+        )
+        .await;
+    assert_eq!(bypass.status, StatusCode::CONFLICT, "{}", bypass.text());
+    assert_eq!(
+        bypass.json()["details"]["reason"],
+        "file-submission-unpublished"
+    );
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{draft}"))
+        .await;
+    assert_eq!(detail.json()["published"], false);
+    assert_eq!(detail.json()["activity_type"], "video");
+
+    // BUG-135: a type change on an already-published activity runs the same
+    // gate — a live page cannot silently become a quiz with no assessment.
+    let live = create_activity(&app, &teacher, &chapter_id, "Live").await;
+    let toggled = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
+    let retyped = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "activity_type": "quiz", "activity_sub_type": "quiz_standard" }),
+        )
+        .await;
+    assert_eq!(retyped.status, StatusCode::CONFLICT, "{}", retyped.text());
+    assert_eq!(retyped.json()["code"], "activity-not-ready");
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{live}"))
+        .await;
+    assert_eq!(detail.json()["published"], true);
+    assert_eq!(detail.json()["activity_type"], "video");
+}
+
+/// Unpublished activities exist for editors only: learners and anonymous
+/// callers get a curriculum without them and a 404 for the activity and
+/// its blocks (BUG-099).
+#[sqlx::test(migrations = "../../migrations")]
+async fn drafts_are_visible_to_editors_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Public").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let live = create_activity(&app, &teacher, &chapter, "Live").await;
+    let draft = create_activity(&app, &teacher, &chapter, "Draft").await;
+    let published = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{live}"),
+            &serde_json::json!({ "published": true }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    app.publish_course(&course).await;
+
+    let names = |res: ab_testkit::TestResponse| -> Vec<String> {
+        res.json()["chapters"][0]["activities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let curriculum = format!("/api/v2/courses/{course}/curriculum");
+    let activity = format!("/api/v2/activities/{draft}");
+    let blocks = format!("/api/v2/activities/{draft}/blocks");
+
+    // Editor: everything.
+    assert_eq!(
+        names(app.get_as(&teacher, &curriculum).await),
+        ["Live", "Draft"]
+    );
+    assert_eq!(app.get_as(&teacher, &activity).await.status, StatusCode::OK);
+
+    // Learner: filtered + 404s.
+    let learner = app.mint_session(&[]).await;
+    assert_eq!(names(app.get_as(&learner, &curriculum).await), ["Live"]);
+    for path in [&activity, &blocks] {
+        let hidden = app.get_as(&learner, path).await;
+        assert_eq!(
+            hidden.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            hidden.text()
+        );
+        assert_eq!(hidden.json()["code"], "not-found");
+    }
+    // Anonymous: the same.
+    assert_eq!(names(app.get(&curriculum).await), ["Live"]);
+    assert_eq!(app.get(&activity).await.status, StatusCode::NOT_FOUND);
+}
+
+/// UX-027: the editor autosave (`content`) is an optimistic-lock write —
+/// `If-Match` required, stale version 412, new version in the body + `ETag`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn content_writes_are_version_locked(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Locked").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+
+    let loaded = app.get_as(&teacher, &path).await;
+    assert_eq!(loaded.status, StatusCode::OK);
+    assert_eq!(loaded.json()["version"], 1);
+    assert_eq!(loaded.headers[header::ETAG], "\"1\"");
+
+    let save = |if_match: Option<&str>, text: &str| {
+        let mut builder = Request::builder()
+            .method("PATCH")
+            .uri(&path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie);
+        if let Some(version) = if_match {
+            builder = builder.header(header::IF_MATCH, version);
+        }
+        let body = serde_json::json!({ "content": { "type": "doc", "text": text } });
+        builder.body(Body::from(body.to_string())).unwrap()
+    };
+
+    // Content without a version: refused, nothing written.
+    let missing = app.send(save(None, "no lock")).await;
+    assert_eq!(missing.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(missing.json()["field_errors"][0]["field"], "If-Match");
+
+    // Tab A saves with the loaded version → version 2.
+    let first = app.send(save(Some("\"1\""), "AAA")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["version"], 2);
+    assert_eq!(first.headers[header::ETAG], "\"2\"");
+
+    // Tab B still holds version 1 → 412, AAA survives.
+    let stale = app.send(save(Some("\"1\""), "BBB")).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["code"], "precondition-failed");
+    assert_eq!(stale.json()["details"]["expected"], 1);
+    assert_eq!(stale.json()["details"]["actual"], 2);
+    assert_eq!(
+        app.get_as(&teacher, &path).await.json()["content"]["text"],
+        "AAA"
+    );
+
+    // Name/publish edits from the curriculum need no version — but BUG-358:
+    // they are row writes too, so they bump it (an open editor tab then
+    // sees 412 instead of overwriting the rename).
+    let rename = app
+        .patch_as(&teacher, &path, &serde_json::json!({ "name": "Renamed" }))
+        .await;
+    assert_eq!(rename.status, StatusCode::OK, "{}", rename.text());
+    assert_eq!(rename.json()["version"], 3);
+    assert_eq!(rename.headers[header::ETAG], "\"3\"");
+
+    // UX-313: a delete honours `If-Match` too — the stale tab's is 412 and
+    // the activity stays; the current version deletes it.
+    let delete = |version: &str| {
+        Request::builder()
+            .method("DELETE")
+            .uri(&path)
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, version)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let stale = app.send(delete("\"2\"")).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["details"]["actual"], 3);
+    assert_eq!(app.get_as(&teacher, &path).await.status, StatusCode::OK);
+    let gone = app.send(delete("\"3\"")).await;
+    assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.text());
+}
+
+/// UX-317: an activity delete that loses the race to another delete is
+/// 404 — never a 412 whose `expected` equals its `actual`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Raced").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+    let version = app.get_as(&teacher, &path).await.json()["version"]
+        .as_i64()
+        .unwrap();
+
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&activity).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let loser = app.send(
+        Request::builder()
+            .method("DELETE")
+            .uri(&path)
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, format!("\"{version}\""))
+            .body(Body::empty())
+            .unwrap(),
+    );
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (lost, ()) = tokio::join!(loser, commit);
+    assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
+}
+
+/// BUG-358: a metadata PATCH honours `If-Match` under the row lock — two
+/// renames racing with the same version end 200 + 412, never 200 + 200.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Race").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let activity = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{activity}");
+    let rename = |name: &str| {
+        Request::builder()
+            .method("PATCH")
+            .uri(&path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, "\"1\"")
+            .body(Body::from(serde_json::json!({ "name": name }).to_string()))
+            .unwrap()
+    };
+    let waiting = |n: i64| {
+        let pool = app.pool.clone();
+        async move || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM pg_stat_activity
+                 WHERE datname = current_database() AND wait_event_type = 'Lock'",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+                >= n
+        }
+    };
+    // Both renames pass the unlocked pre-check (version 1) and queue on the
+    // held row lock; the guarded UPDATE decides once it is released.
+    let mut holder = app.pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM activities WHERE id = $1::uuid FOR UPDATE")
+        .bind(&activity)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let first = app.send(rename("A"));
+    let second = app.send(rename("B"));
+    let release = async {
+        wait_until("both renames queued on the row lock", waiting(2)).await;
+        holder.rollback().await.unwrap();
+    };
+    let (first, second, ()) = tokio::join!(first, second, release);
+    let mut statuses = [first.status, second.status];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::OK, StatusCode::PRECONDITION_FAILED],
+        "{} / {}",
+        first.text(),
+        second.text()
+    );
+    let loaded = app.get_as(&teacher, &path).await;
+    assert_eq!(loaded.json()["version"], 2);
+    let winner = if first.status == StatusCode::OK {
+        "A"
+    } else {
+        "B"
+    };
+    assert_eq!(loaded.json()["name"], winner);
+}
+
+/// UX-295 + BUG-358: `activities.version` moves on every write that changes
+/// the row — the curriculum PATCH (type pair included), the assessment
+/// title sync, lifecycle transitions, the auto-publish sweep and the
+/// file-submission title/publish — and on none that changes nothing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("versions", "versions@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course = create_course(&app, &teacher, "Versions").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    app.publish_course(&course).await;
+    let version = async |activity: &str| {
+        let res = app
+            .get_as(&teacher, &format!("/api/v2/activities/{activity}"))
+            .await;
+        res.json()["version"].as_i64().unwrap()
+    };
+
+    let page = create_activity(&app, &teacher, &chapter, "Page").await;
+    let path = format!("/api/v2/activities/{page}");
+    let no_ops = [
+        serde_json::json!({}),
+        serde_json::json!({ "published": false }),
+        serde_json::json!({ "name": "Page" }),
+        serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_youtube" }),
+    ];
+    for body in no_ops {
+        let res = app.patch_as(&teacher, &path, &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{body}: {}", res.text());
+        assert_eq!(res.json()["version"], 1, "{body}");
+    }
+    let retyped = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_hosted" }),
+        )
+        .await;
+    assert_eq!(retyped.json()["version"], 2, "{}", retyped.text());
+
+    // Assessments: title sync, transition, auto-publish.
+    let choice = serde_json::json!({
+        "title": "Q", "max_score": 1,
+        "body": { "kind": "choice", "prompt": "Q", "options": [
+            { "id": "a", "text": "yes", "is_correct": true },
+            { "id": "b", "text": "no", "is_correct": false } ] }
+    });
+    let mut quizzes = Vec::new();
+    for title in ["Now", "Later"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/assessments",
+                &serde_json::json!({ "chapter_id": chapter, "kind": "quiz", "title": title }),
+            )
+            .await;
+        let id = created.json()["id"].as_str().unwrap().to_owned();
+        let activity = created.json()["activity_id"].as_str().unwrap().to_owned();
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice,
+        )
+        .await;
+        quizzes.push((id, activity));
+    }
+    let (now, now_activity) = &quizzes[0];
+    let before = version(now_activity).await;
+    app.patch_as(
+        &teacher,
+        &format!("/api/v2/assessments/{now}"),
+        &serde_json::json!({ "title": "Now v2" }),
+    )
+    .await;
+    assert_eq!(version(now_activity).await, before + 1, "title sync");
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{now}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(version(now_activity).await, before + 2, "transition");
+
+    let (later, later_activity) = &quizzes[1];
+    let in_an_hour = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        + 3600;
+    let scheduled = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{later}/lifecycle"),
+            &serde_json::json!({ "to": "scheduled", "scheduled_at_unix": in_an_hour }),
+        )
+        .await;
+    assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
+    // Scheduling keeps the activity unpublished — nothing changed.
+    let before = version(later_activity).await;
+    sqlx::query("UPDATE assessments SET scheduled_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(later).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let swept = ab_domain::assessments::AssessmentsService::publish_due(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(swept, 1);
+    assert_eq!(version(later_activity).await, before + 1, "publish_due");
+
+    // File submissions: title update + publish.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter, "title": "Essay",
+                                  "instructions": "Upload it." }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let before = version(&activity).await;
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}"),
+            &serde_json::json!({ "title": "Essay v2" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert_eq!(
+        version(&activity).await,
+        before + 1,
+        "file-submission title"
+    );
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    assert_eq!(
+        version(&activity).await,
+        before + 2,
+        "file-submission publish"
+    );
+}
+
+/// BUG-168: blank names (`""` / `"   "`) are 422 `name`/`required` on
+/// create and update, and stored names are trimmed.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = create_course(&app, &teacher, "  Trim me  ").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Ch").await;
+    let activity_id = create_activity(&app, &teacher, &chapter_id, "Act").await;
+    let course = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}"))
+        .await;
+    assert_eq!(course.json()["name"], "Trim me");
+
+    let blank = serde_json::json!({ "name": "   " });
+    let creates = [
+        app.post_as(&teacher, "/api/v2/courses", &blank).await,
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &blank,
+        )
+        .await,
+        app.post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({
+                "name": "",
+                "activity_type": "video",
+                "activity_sub_type": "video_youtube",
+            }),
+        )
+        .await,
+        app.patch_as(&teacher, &format!("/api/v2/courses/{course_id}"), &blank)
+            .await,
+        app.patch_as(&teacher, &format!("/api/v2/chapters/{chapter_id}"), &blank)
+            .await,
+        app.patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &blank,
+        )
+        .await,
+    ];
+    for res in creates {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], "name");
+        assert_eq!(res.json()["field_errors"][0]["code"], "required");
+    }
+}
+
+/// Create → one item → publish; returns (assessment_id, activity_id).
+async fn published_quiz(
+    app: &TestApp,
+    teacher: &MintedSession,
+    chapter_id: &str,
+) -> (String, String) {
+    let created = app
+        .post_as(
+            teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &serde_json::json!({
+                "title": "1+1?", "max_score": 5,
+                "body": { "kind": "choice", "prompt": "1+1?",
+                          "options": [{ "id": "a", "text": "2", "is_correct": true },
+                                      { "id": "b", "text": "3", "is_correct": false }] }
+            }),
+        )
+        .await;
+    assert_eq!(item.status, StatusCode::CREATED, "{}", item.text());
+    let published = app
+        .post_as(
+            teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    (id, activity_id)
+}
+
+/// BUG-186: a refused PATCH writes nothing. An archived quiz is read-only;
+/// renaming it together with a type change is refused (409 `conflict`)
+/// before the activity write runs — the row keeps its type and name.
+#[sqlx::test(migrations = "../../migrations")]
+async fn refused_activity_patch_writes_nothing(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("archiver", "archiver@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Archive").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let (assessment_id, activity_id) = published_quiz(&app, &teacher, &chapter_id).await;
+    let archived = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{assessment_id}/lifecycle"),
+            &serde_json::json!({ "to": "archived" }),
+        )
+        .await;
+    assert_eq!(archived.status, StatusCode::OK, "{}", archived.text());
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({
+                "name": "Renamed",
+                "activity_type": "dynamic",
+                "activity_sub_type": "dynamic_page",
+            }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "conflict");
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(detail.json()["activity_type"], "quiz");
+    assert_eq!(detail.json()["name"], "Quiz");
+}
+
+/// BUG-186 (test task): deleting the activity of a published quiz with a
+/// hand-in cascades the assessment and its submissions (204, both gone).
+#[sqlx::test(migrations = "../../migrations")]
+async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("deleter", "deleter@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Cascade").await;
+    app.publish_course(&course_id).await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let (assessment_id, activity_id) = published_quiz(&app, &teacher, &chapter_id).await;
+
+    let alice = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice,
+            &["assessment:submit:assigned", "assessment:read:assigned"],
+        )
+        .await;
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{assessment_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let submission_id = started.json()["id"].as_str().unwrap().to_owned();
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{submission_id}/submit"),
+            &serde_json::json!({ "answers": {} }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+
+    let deleted = app
+        .delete_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let assessment = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
+        .await;
+    assert_eq!(assessment.status, StatusCode::NOT_FOUND);
+    let submission = app
+        .get_as(&alice, &format!("/api/v2/submissions/{submission_id}"))
+        .await;
+    assert_eq!(submission.status, StatusCode::NOT_FOUND);
+}
+
+/// BUG-201: a draft (or archived) assessment pins its activity's type just
+/// like a live one — otherwise its later `published` transition would flip a
+/// `dynamic` activity live with a quiz behind it (409 `conflict`, row
+/// untouched). Archived: BUG-186's `refused_activity_patch_writes_nothing`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("drafter", "drafter@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Drafts").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+
+    let refused = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "conflict");
+    assert_eq!(
+        app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+            .await
+            .json()["activity_type"],
+        "quiz"
+    );
+}
+
+/// BUG-233: the chapter vanishes between the authoring check and the
+/// insert (a DELETE holds the row until the create's FK check lines up
+/// behind it). The create is one transaction: 404 on the chapter, no
+/// orphan activity left behind, never a 500.
+#[sqlx::test(migrations = "../../migrations")]
+async fn create_against_a_vanishing_chapter_is_a_404_without_an_orphan(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("teacher", "teacher@example.com", &["instructor"])
+        .await;
+    let teacher = app
+        .mint_session_for(
+            user,
+            &[
+                "course:create:platform",
+                "course:read:all",
+                "course:update:own",
+                "assessment:*:own",
+            ],
+        )
+        .await;
+    let course_id = create_course(&app, &teacher, "Race").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Doomed").await;
+    let chapter_uuid = uuid::Uuid::parse_str(&chapter_id).unwrap();
+
+    // The uncommitted DELETE is invisible to the create's chapter read but
+    // blocks its activity insert; committing it makes that insert fail.
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM chapters WHERE id = $1")
+        .bind(chapter_uuid)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let body = serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Quiz" });
+    let create = app.post_as(&teacher, "/api/v2/assessments", &body);
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (created, ()) = tokio::join!(create, commit);
+    assert_eq!(created.status, StatusCode::NOT_FOUND, "{}", created.text());
+
+    let orphans: i64 = sqlx::query_scalar("SELECT count(*) FROM activities WHERE course_id = $1")
+        .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(orphans, 0, "no activity may outlive its create");
+}

@@ -70,7 +70,7 @@ export default function SettingsTabs({
 
     if (getHref) {
       return (
-        <Link key={tab.id} href={getHref(tab)}>
+        <Link key={tab.id} href={getHref(tab)} className="shrink-0">
           {inner}
         </Link>
       )
@@ -81,7 +81,8 @@ export default function SettingsTabs({
 
   return (
     <Tabs value={value} className={className}>
-      <TabsList className="h-auto w-full justify-start rounded-none border-b-0 bg-transparent p-0">
+      {/* UX-177: on a phone the tab row scrolls inside its own box instead of widening the page. */}
+      <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto overflow-y-hidden rounded-none border-b-0 bg-transparent p-0">
         {tabs.map(tab => render(tab))}
       </TabsList>
     </Tabs>

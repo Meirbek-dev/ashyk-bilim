@@ -1,22 +1,36 @@
 'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, CheckCircle2, ExternalLink, Eye, Loader2 } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { CourseStatusBadge, courseWorkflowCardClass, courseWorkflowSummaryCardClass } from './courseWorkflowUi'
+import {
+  CourseStatusBadge,
+  courseReadinessQueryOptions,
+  courseWorkflowCardClass,
+  courseWorkflowSummaryCardClass,
+  useReadinessIssueMessage,
+} from './courseWorkflowUi'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
-import { getAbsoluteUrl } from '@services/config/config'
-import { getCourseReadiness } from '@services/courses/courses'
-import type { CourseReadiness } from '@services/courses/courses'
+import type { CourseReadiness } from '@services/courses/readiness'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import AppLink from '@/components/ui/AppLink'
 
 export default function CourseReviewPublish({
@@ -32,20 +46,29 @@ export default function CourseReviewPublish({
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const readinessQuery = useQuery(
-    queryOptions({
-      queryKey: ['courses', course.courseStructure.course_uuid, 'readiness'],
-      queryFn: () => getCourseReadiness(course.courseStructure.course_uuid),
-    }),
-  )
+  const [privateConfirmOpen, setPrivateConfirmOpen] = useState(false)
+  const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
   const readiness = readinessQuery.data
   const blockers = readiness?.issues.filter(issue => issue.severity === 'blocker') ?? []
   const warnings = readiness?.issues.filter(issue => issue.severity === 'warning') ?? []
   const isPublic = course.courseStructure.public
+  // UX-206 (as UX-202/203): the visibility button is disabled while the request
+  // runs, so focus falls to <body> after publish / the make-private confirm —
+  // hand it back to the button once it is enabled again.
+  const isBusy = isPending || isRefreshing
+  const visibilityButtonRef = useRef<HTMLButtonElement>(null)
+  const refocusVisibilityButton = useRef(false)
+  useEffect(() => {
+    if (isBusy || !refocusVisibilityButton.current) return
+    refocusVisibilityButton.current = false
+    visibilityButtonRef.current?.focus()
+  }, [isBusy])
 
   const toggleVisibility = () => {
     if (!capabilities.canManageAccess) return
     const nextPublic = !isPublic
+    setPrivateConfirmOpen(false)
+    refocusVisibilityButton.current = true
 
     startTransition(() => {
       void (async () => {
@@ -92,8 +115,8 @@ export default function CourseReviewPublish({
               variant="outline"
               nativeButton={false}
               render={
-                <a
-                  href={`${getAbsoluteUrl(`/course/${courseuuid}`)}?preview=learner`}
+                <AppLink
+                  href={`/course/${courseuuid}?preview=learner`}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t('openLearnerPreview')}
@@ -104,11 +127,34 @@ export default function CourseReviewPublish({
               {t('openLearnerPreview')}
             </Button>
             {capabilities.canManageAccess ? (
-              <Button onClick={toggleVisibility} disabled={isPending || isRefreshing || publishDisabled}>
+              // UX-200: going private cuts off learners outside the linked groups — confirm first.
+              <Button
+                onClick={isPublic ? () => setPrivateConfirmOpen(true) : toggleVisibility}
+                ref={visibilityButtonRef}
+                disabled={isBusy || publishDisabled}
+              >
                 {isPending || isRefreshing ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
                 {isPublic ? t('movePrivate') : t('publishCourse')}
               </Button>
             ) : null}
+            <AlertDialog open={privateConfirmOpen} onOpenChange={setPrivateConfirmOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('movePrivateConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('movePrivateConfirmMessage')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isPending || isRefreshing} />
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={toggleVisibility}
+                    disabled={isPending || isRefreshing}
+                  >
+                    {t('movePrivate')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </section>
@@ -149,8 +195,6 @@ export default function CourseReviewPublish({
             <CourseStatusBadge status={isPublic ? 'live' : 'private'} />
           </div>
           <dl className="mt-4 grid gap-3 text-sm">
-            <ImpactRow label={t('activeContent')} value={String(readiness?.active_content_count ?? 0)} />
-            <ImpactRow label={t('scheduledContent')} value={String(readiness?.scheduled_content_count ?? 0)} />
             <ImpactRow label={t('openBlockers')} value={String(blockers.length)} />
             <ImpactRow label={t('warnings')} value={String(warnings.length)} />
           </dl>
@@ -162,19 +206,7 @@ export default function CourseReviewPublish({
 
 function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
   const t = useTranslations('DashPage.CourseManagement.Review')
-  const issueMessage = (code: string): string => {
-    const messages: Record<string, string> = {
-      COURSE_NO_LEARNER_VISIBLE_ACTIVITIES: t('issues.noVisibleActivities'),
-      COURSE_REQUIRED_ACTIVITY_UNPUBLISHED: t('issues.requiredActivityUnpublished'),
-      COURSE_ASSESSMENT_UNREADY: t('issues.assessmentUnready'),
-      COURSE_FILE_SUBMISSION_UNREADY: t('issues.fileSubmissionUnready'),
-      COURSE_THUMBNAIL_MISSING: t('issues.thumbnailMissing'),
-      COURSE_OUTCOMES_MISSING: t('issues.outcomesMissing'),
-      COURSE_CERTIFICATE_NOT_CONFIGURED: t('issues.certificateMissing'),
-      COURSE_CONTRIBUTOR_NOT_CONFIGURED: t('issues.contributorMissing'),
-    }
-    return messages[code] ?? t('issues.unknown')
-  }
+  const issueMessage = useReadinessIssueMessage()
   if (readiness.issues.length === 0) {
     return (
       <Alert className="mt-4">
@@ -189,13 +221,13 @@ function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
     <div className="mt-4 flex flex-col gap-3">
       {readiness.issues.map(issue => (
         <Alert
-          key={`${issue.code}-${issue.activity_uuid ?? issue.scope}`}
+          key={`${issue.code}-${issue.activity_id ?? 'course'}`}
           variant={issue.severity === 'blocker' ? 'destructive' : 'default'}
         >
           {issue.severity === 'blocker' ? <AlertTriangle aria-hidden /> : <CheckCircle2 aria-hidden />}
           <AlertTitle>{issue.severity === 'blocker' ? t('blockerLabel') : t('warningLabel')}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span>{issueMessage(issue.code)}</span>
+            <span>{issueMessage(issue)}</span>
             {issue.path ? (
               <Button variant="outline" size="sm" nativeButton={false} render={<AppLink href={issue.path} />}>
                 {t('resolveIssue')}

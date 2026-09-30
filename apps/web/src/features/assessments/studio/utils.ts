@@ -1,6 +1,9 @@
 import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice'
+import type { AssessmentDetail } from '@/lib/api/generated/zod'
+import { itemFromWire, lifecycleFromWire } from '@/features/assessments/domain/assessment-wire'
+import { toUnix, unixToIso } from '@/lib/api/contract'
 import type {
   AssessmentEditorState,
   AssessmentWorkspaceView,
@@ -69,6 +72,69 @@ export interface AssessmentStudioDetail {
   grading_type: 'NUMERIC' | 'PERCENTAGE'
   items: AssessmentItem[]
   assessment_policy?: AssessmentPolicyDetail | null
+  /** The full v2 policy block, kept so a policy edit can `PUT` a complete replacement. */
+  raw_policy: AssessmentDetail['policy']
+}
+
+const KIND_FROM_WIRE: Record<AssessmentDetail['kind'], AssessmentStudioDetail['kind']> = {
+  exam: 'EXAM',
+  code_challenge: 'CODE_CHALLENGE',
+  quiz: 'QUIZ',
+}
+const GRADING_TYPE_FROM_WIRE: Record<AssessmentDetail['grading_type'], AssessmentStudioDetail['grading_type']> = {
+  numeric: 'NUMERIC',
+  percentage: 'PERCENTAGE',
+}
+const REVIEW_VISIBILITY_FROM_WIRE: Record<
+  AssessmentDetail['policy']['review_visibility'],
+  NonNullable<AssessmentCanonicalPolicyDetail['review_visibility']>
+> = { none: 'NONE', score_only: 'SCORE_ONLY', full: 'FULL' }
+const REVIEW_VISIBILITY_TO_WIRE: Record<
+  NonNullable<AssessmentCanonicalPolicyDetail['review_visibility']>,
+  AssessmentDetail['policy']['review_visibility']
+> = { NONE: 'none', SCORE_ONLY: 'score_only', FULL: 'full' }
+
+/** Maps `GET activities/{id}/assessment` / `GET assessments/{id}` onto the studio's local shape. */
+export function studioDetailFromWire(assessment: AssessmentDetail): AssessmentStudioDetail {
+  const policy = assessment.policy
+  return {
+    assessment_uuid: assessment.id,
+    activity_uuid: assessment.activity_id,
+    course_uuid: assessment.course_id,
+    kind: KIND_FROM_WIRE[assessment.kind],
+    title: assessment.title,
+    description: assessment.description,
+    lifecycle: lifecycleFromWire[assessment.lifecycle],
+    scheduled_at: unixToIso(assessment.scheduled_at_unix),
+    published_at: unixToIso(assessment.published_at_unix),
+    archived_at: unixToIso(assessment.archived_at_unix),
+    grading_type: GRADING_TYPE_FROM_WIRE[assessment.grading_type],
+    items: assessment.items.map(itemFromWire),
+    raw_policy: policy,
+    assessment_policy: {
+      canonical_policy: {
+        due_at: unixToIso(policy.due_at_unix),
+        max_attempts: policy.max_attempts ?? null,
+        time_limit_seconds: policy.time_limit_seconds ?? null,
+        passing_score: policy.passing_score,
+        review_visibility: REVIEW_VISIBILITY_FROM_WIRE[policy.review_visibility],
+        integrity: {
+          copy_paste_protection: policy.copy_paste_protection,
+          tab_switch_detection: policy.tab_switch_detection,
+          devtools_detection: policy.devtools_detection,
+          right_click_disabled: policy.right_click_disabled,
+          fullscreen_required: policy.fullscreen_required,
+          violation_threshold: policy.violation_threshold,
+        },
+        delivery: {
+          randomize_questions: policy.randomize_questions,
+          randomize_options: policy.randomize_options,
+          partial_credit: policy.partial_credit,
+          negative_marking_percent: policy.negative_marking_percent,
+        },
+      },
+    },
+  }
 }
 
 export function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: string) {
@@ -126,36 +192,45 @@ export function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTi
   }
 }
 
+/**
+ * v2 splits assessment metadata (`PATCH assessments/{id}`) from policy
+ * (`PUT assessments/{id}/policy`, which replaces the whole block — so
+ * fields the editor doesn't expose are carried forward from `raw_policy`).
+ */
 export function buildAssessmentPatch(
   _mode: StudioMode,
-  _assessment: AssessmentStudioDetail,
+  assessment: AssessmentStudioDetail,
   state: AssessmentEditorState,
 ) {
-  const dueAt = state.dueAt ? new Date(state.dueAt).toISOString() : null
-  const payload: Record<string, unknown> = {
+  const details = {
     title: state.title,
     description: state.description,
   }
 
-  payload.policy = {
-    due_at: dueAt,
+  const base = assessment.raw_policy
+  const policy: AssessmentDetail['policy'] = {
+    ...base,
+    due_at_unix: state.dueAt ? toUnix(state.dueAt) : null,
     max_attempts: state.maxAttempts ? Number(state.maxAttempts) : null,
     time_limit_seconds: state.timeLimitMinutes ? Number(state.timeLimitMinutes) * 60 : null,
-    passing_score: state.passThreshold ? Number(state.passThreshold) : null,
-    review_visibility: reviewVisibilityForState(state),
+    passing_score: state.passThreshold ? Number(state.passThreshold) : base.passing_score,
+    review_visibility: REVIEW_VISIBILITY_TO_WIRE[reviewVisibilityForState(state)],
     randomize_questions: state.randomizeQuestions,
     randomize_options: state.randomizeOptions,
     partial_credit: state.partialCredit,
     negative_marking_percent: state.negativeMarkingPercent ? Number(state.negativeMarkingPercent) : 0,
-    grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
+    grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : base.grace_period_minutes,
     copy_paste_protection: state.copyPasteProtection,
     tab_switch_detection: state.tabSwitchDetection,
     devtools_detection: state.devtoolsDetection,
     right_click_disabled: state.rightClickDisable,
     fullscreen_required: state.fullscreenEnforcement,
-    violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : null,
+    violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : base.violation_threshold,
   }
-  return payload
+
+  // BUG-170: `policy` is null when nothing in it changed — a description-only
+  // edit must not PUT the policy (and never a value the teacher did not set).
+  return { details, policy: JSON.stringify(policy) === JSON.stringify(base) ? null : policy }
 }
 
 export function toAssessmentEditorState(assessment: AssessmentStudioDetail): AssessmentEditorState {
@@ -171,7 +246,8 @@ export function toAssessmentEditorState(assessment: AssessmentStudioDetail): Ass
     description: assessment.description ?? '',
     dueAt: toDateTimeLocal(dueAt),
     gradingType: assessment.grading_type ?? 'PERCENTAGE',
-    maxAttempts: typeof maxAttempts === 'number' ? String(maxAttempts) : '1',
+    // BUG-170: `null` is unlimited — an empty field, never a silent «1».
+    maxAttempts: typeof maxAttempts === 'number' ? String(maxAttempts) : '',
     timeLimitMinutes: typeof timeLimitSeconds === 'number' ? String(Math.max(1, Math.ceil(timeLimitSeconds / 60))) : '',
     copyPasteProtection: canonicalIntegrity?.copy_paste_protection === true,
     tabSwitchDetection: canonicalIntegrity?.tab_switch_detection === true,
@@ -275,6 +351,9 @@ export function fromChoiceAuthorValue(
   }
 }
 
+/** Server cap on `max_attempts` (`ab_domain::assessments::MAX_ATTEMPTS`). */
+export const MAX_ATTEMPTS = 10
+
 export function getAssessmentEditorIssues(
   mode: StudioMode,
   state: AssessmentEditorState,
@@ -290,10 +369,11 @@ export function getAssessmentEditorIssues(
   }
 
   if (mode === 'exam') {
-    if (state.maxAttempts && Number(state.maxAttempts) < 1) {
+    const attempts = Number(state.maxAttempts)
+    if (state.maxAttempts && (attempts < 1 || attempts > MAX_ATTEMPTS)) {
       issues.push({
         code: 'policy.max_attempts_invalid',
-        message: t('validation.policy_max_attempts_invalid'),
+        message: t('validation.policy_max_attempts_invalid', { max: MAX_ATTEMPTS }),
         field: 'maxAttempts',
       })
     }

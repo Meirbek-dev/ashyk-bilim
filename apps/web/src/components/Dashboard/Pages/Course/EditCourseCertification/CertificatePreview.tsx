@@ -13,12 +13,16 @@ import QRCode from 'qrcode'
 interface CertificatePreviewProps {
   certificationName: string
   certificationDescription: string
-  certificationType: string
+  certificationType?: string | undefined
   certificatePattern: string
   certificateInstructor?: string | undefined
   certificateId?: string | undefined
   awardedDate?: string | undefined
   qrCodeLink?: string | undefined
+  /** Whose certificate it is (UX-312); the PDF prints the same name. */
+  recipientName?: string | undefined
+  /** Editor live preview: blanks show sample data. Issued certificates never do (UX-131). */
+  sample?: boolean
 }
 
 type CertificateLayout = 'classic' | 'double' | 'minimal' | 'split'
@@ -80,12 +84,16 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   certificateId,
   awardedDate,
   qrCodeLink,
+  recipientName,
+  sample = false,
 }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState('')
   const platform = usePlatform()
   const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes')
   const t = useTranslations('Certificates.CertificatePreview')
   const layout = getCertificateLayout(certificatePattern)
+  const typeLabel =
+    certificationType && tTypes.has(certificationType) ? tTypes(certificationType) : tTypes('completion')
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -132,7 +140,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <Hash className="size-3.5" />
                   <span>
                     {t('certificateIdInline', {
-                      id: certificateId || 'OU-2025-001',
+                      id: certificateId || (sample ? 'OU-2025-001' : ''),
                     })}
                   </span>
                 </div>
@@ -164,20 +172,24 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 <div className="bg-border h-px w-8" />
               </div>
 
+              {recipientName || sample ? (
+                <div className="mb-6 max-w-xl">
+                  <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">{t('recipient')}</div>
+                  <div className="mt-1 text-xl font-semibold tracking-tight break-words sm:text-3xl">
+                    {recipientName || t('recipientSample')}
+                  </div>
+                </div>
+              ) : null}
               <h4 className="max-w-xl text-lg font-semibold tracking-tight sm:text-2xl">
-                {certificationName || t('certificationName')}
+                {certificationName || (sample ? t('certificationName') : '')}
               </h4>
               <p className="text-muted-foreground mt-4 max-w-2xl text-sm leading-7 sm:text-base">
-                {certificationDescription || t('certificationDescriptionPlaceholder')}
+                {certificationDescription || (sample ? t('certificationDescriptionPlaceholder') : '')}
               </p>
 
               <div className="bg-muted mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
                 <CheckCircle className="size-4" />
-                <span>
-                  {tTypes(certificationType, {
-                    defaultValue: tTypes('completion'),
-                  })}
-                </span>
+                <span>{typeLabel}</span>
               </div>
             </div>
 
@@ -188,15 +200,15 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <span>{t('instructor')}</span>
                 </div>
                 <div className="text-foreground text-sm font-medium">
-                  {certificateInstructor || t('instructorName')}
+                  {certificateInstructor || (sample ? t('instructorName') : '—')}
                 </div>
               </div>
 
               <div className="space-y-2 text-center">
                 <div className="flex items-center justify-center">
-                  {platform?.logo_image ? (
+                  {platform?.logo_key ? (
                     <Image
-                      src={getLogoMediaDirectory(platform.logo_image)}
+                      src={getLogoMediaDirectory(platform.logo_key)}
                       alt={t('organizationLogoAlt')}
                       className="h-10 w-10 object-contain"
                       width={40}
@@ -217,7 +229,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <Calendar className="size-3.5" />
                   <span>{t('awardedLabel')}</span>
                 </div>
-                <div className="text-foreground text-sm font-medium">{awardedDate || t('completedOn')}</div>
+                <div className="text-foreground text-sm font-medium">
+                  {awardedDate || (sample ? t('completedOn') : '')}
+                </div>
               </div>
             </div>
           </div>

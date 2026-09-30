@@ -1,7 +1,7 @@
 'use client'
 
 import { BookOpen, CheckCircle2, FileText, Lightbulb, ListChecks } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
@@ -10,13 +10,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MarkdownCodeBlock, MarkdownContent, extractMarkdownSummary } from '@/features/content-markdown'
 import { cn } from '@/lib/utils'
-import type { CodeArenaTab, CodeChallengeProblem, CodeChallengeSettings, CodeSubmission } from '../domain'
+import type {
+  CodeArenaTab,
+  CodeChallengeProblem,
+  CodeChallengeSettings,
+  CodeSubmission,
+  Judge0Language,
+} from '../domain'
 import { SubmissionTimeline } from './SubmissionTimeline'
 
 interface ProblemPaneProps {
   problem: CodeChallengeProblem
   settings: CodeChallengeSettings
   submissions: CodeSubmission[]
+  languages: Judge0Language[]
   activeTab: CodeArenaTab
   onTabChange: (tab: CodeArenaTab) => void
   onUseInput: (input: string) => void
@@ -27,6 +34,7 @@ export function ProblemPane({
   problem,
   settings,
   submissions,
+  languages,
   activeTab,
   onTabChange,
   onUseInput,
@@ -37,10 +45,7 @@ export function ProblemPane({
   const hiddenCount = settings.hidden_tests?.length ?? 0
   const [revealedHints, setRevealedHints] = useState<Set<string>>(() => new Set())
 
-  const promptFallback = useMemo(() => {
-    if (problem.prompt.trim()) return problem.prompt
-    return 'No problem statement has been written yet.'
-  }, [problem.prompt])
+  const promptFallback = problem.prompt.trim() ? problem.prompt : t('noProblemStatement')
 
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
@@ -81,7 +86,9 @@ export function ProblemPane({
               <header className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   {problem.difficulty ? (
-                    <Badge variant={difficultyTone(problem.difficulty)}>{problem.difficulty}</Badge>
+                    <Badge variant={difficultyTone(problem.difficulty)}>
+                      {t(`difficulty.${problem.difficulty.toLowerCase()}`)}
+                    </Badge>
                   ) : null}
                   {typeof problem.points === 'number' ? (
                     <Badge variant="outline">
@@ -203,7 +210,11 @@ export function ProblemPane({
         </TabsContent>
 
         <TabsContent value="submissions" className="min-h-0 flex-1 overflow-hidden">
-          <SubmissionTimeline submissions={submissions} {...(onRestoreSubmission ? { onRestoreSubmission } : {})} />
+          <SubmissionTimeline
+            submissions={submissions}
+            languages={languages}
+            {...(onRestoreSubmission ? { onRestoreSubmission } : {})}
+          />
         </TabsContent>
       </Tabs>
     </div>

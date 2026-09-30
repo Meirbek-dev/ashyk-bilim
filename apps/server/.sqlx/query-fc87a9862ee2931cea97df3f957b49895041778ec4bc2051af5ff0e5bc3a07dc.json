@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT course_id AS \"course_id!: CourseId\"\n           FROM usergroup_courses WHERE usergroup_id = $1\n           UNION\n           SELECT s.course_id FROM assessment_access_usergroups g\n           JOIN assessments s ON s.id = g.assessment_id WHERE g.usergroup_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fc87a9862ee2931cea97df3f957b49895041778ec4bc2051af5ff0e5bc3a07dc"
+}

@@ -1,0 +1,169 @@
+//! Analytics scope resolution (legacy `services/analytics/scope.py`).
+//!
+//! Teacher scope = courses the actor created or actively co-authors, gated
+//! by `analytics:<action>:assigned`; `analytics:<action>:platform` / `:all`
+//! see every course and may inspect another teacher via `teacher_user_id`.
+//! Explicitly requested `course_ids` outside the scope are a 403 (the caller
+//! asked for something it may not see); path ids outside the scope are 404s
+//! at the call sites (no existence leak).
+
+use ab_core::id::{CourseId, UserId, UsergroupId};
+use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::{Error, FieldError, Result};
+use sqlx::PgPool;
+
+use super::filters::AnalyticsFilters;
+use crate::identity::Actor;
+
+#[derive(Debug, Clone)]
+pub struct TeacherScope {
+    /// The teacher the dashboard is about (the caller, or the inspected
+    /// teacher under platform scope).
+    pub teacher_user_id: UserId,
+    pub course_ids: Vec<CourseId>,
+    pub cohort_ids: Vec<UsergroupId>,
+    pub has_platform_scope: bool,
+}
+
+impl TeacherScope {
+    #[must_use]
+    pub fn contains(&self, course_id: CourseId) -> bool {
+        self.course_ids.contains(&course_id)
+    }
+
+    /// 404 when the course is not in scope (path ids never leak existence).
+    pub fn ensure_course(&self, course_id: CourseId) -> Result<()> {
+        if self.contains(course_id) {
+            Ok(())
+        } else {
+            Err(Error::not_found("course"))
+        }
+    }
+}
+
+const fn perm(action: Action, scope: Scope) -> Permission {
+    Permission {
+        resource: ResourceType::Analytics,
+        action,
+        scope: Some(scope),
+    }
+}
+
+fn has_scope(actor: &Actor, action: Action, scope: Scope) -> bool {
+    actor.has(perm(action, scope))
+}
+
+/// Any of `analytics:<action>:{assigned,platform,all}` (wildcards included).
+pub fn ensure_access(actor: &Actor, action: Action) -> Result<()> {
+    if [Scope::Assigned, Scope::Platform, Scope::All]
+        .into_iter()
+        .any(|scope| has_scope(actor, action, scope))
+    {
+        Ok(())
+    } else {
+        Err(Error::forbidden(format!(
+            "missing permission analytics:{}",
+            action.as_str()
+        )))
+    }
+}
+
+#[must_use]
+pub fn has_platform_scope(actor: &Actor, action: Action) -> bool {
+    has_scope(actor, action, Scope::Platform) || has_scope(actor, action, Scope::All)
+}
+
+/// Legacy `resolve_teacher_scope`.
+pub async fn resolve(
+    pool: &PgPool,
+    actor: &Actor,
+    filters: &AnalyticsFilters,
+    action: Action,
+) -> Result<TeacherScope> {
+    if actor.is_anonymous() {
+        return Err(Error::unauthenticated());
+    }
+    ensure_access(actor, action)?;
+    let platform = has_platform_scope(actor, action);
+    // Inspecting another teacher needs platform scope (DECISIONS: legacy
+    // silently ignored the filter; a filter that does not apply is a 403).
+    if !platform && filters.teacher_user_id.is_some_and(|t| t != actor.user_id) {
+        // `details.filter` names the filter so the client can say which one
+        // does not apply (UX-096) without parsing the English message.
+        return Err(Error::app_with_details(
+            ab_core::ErrorCode::Forbidden,
+            "teacher_user_id requires analytics:read:platform",
+            serde_json::json!({ "filter": "teacher_user_id" }),
+        ));
+    }
+    let target = if platform {
+        filters.teacher_user_id.unwrap_or(actor.user_id)
+    } else {
+        actor.user_id
+    };
+    // An inspected teacher must exist (BUG-145): an unknown id would
+    // otherwise read as a real teacher with an empty scope.
+    if target != actor.user_id && ab_db::identity::user_status(pool, target).await?.is_none() {
+        return Err(Error::validation(vec![FieldError {
+            field: "teacher_user_id".into(),
+            code: "unknown".into(),
+            message: format!("user {target} does not exist"),
+        }]));
+    }
+    if !filters.cohort_ids.is_empty() {
+        // Cohort composition is usergroup data: the caller must be able to
+        // read usergroups, and every id must exist (BUG-121).
+        actor.require(Permission {
+            resource: ResourceType::Usergroup,
+            action: Action::Read,
+            scope: Some(Scope::Platform),
+        })?;
+        let known = ab_db::usergroups::existing_ids(pool, &filters.cohort_ids).await?;
+        let errors: Vec<FieldError> = filters
+            .cohort_ids
+            .iter()
+            .filter(|id| !known.contains(id))
+            .map(|id| FieldError {
+                field: "cohort_ids".into(),
+                code: "unknown".into(),
+                message: format!("usergroup {id} does not exist"),
+            })
+            .collect();
+        if !errors.is_empty() {
+            return Err(Error::validation(errors));
+        }
+    }
+    let mut course_ids = if platform && filters.teacher_user_id.is_none() {
+        ab_db::analytics::all_course_ids(pool).await?
+    } else {
+        ab_db::analytics::teacher_course_ids(pool, target).await?
+    };
+    course_ids.sort_unstable();
+    course_ids.dedup();
+
+    if !filters.course_ids.is_empty() {
+        let unauthorized: Vec<String> = filters
+            .course_ids
+            .iter()
+            .filter(|id| !course_ids.contains(id))
+            .map(ToString::to_string)
+            .collect();
+        if !unauthorized.is_empty() {
+            return Err(Error::forbidden(format!(
+                "requested courses are outside the analytics scope: {}",
+                unauthorized.join(", ")
+            )));
+        }
+        let mut requested = filters.course_ids.clone();
+        requested.sort_unstable();
+        requested.dedup();
+        course_ids = requested;
+    }
+
+    Ok(TeacherScope {
+        teacher_user_id: target,
+        course_ids,
+        cohort_ids: filters.cohort_ids.clone(),
+        has_platform_scope: platform,
+    })
+}

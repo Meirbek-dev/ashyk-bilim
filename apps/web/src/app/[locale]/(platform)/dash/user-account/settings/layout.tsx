@@ -10,7 +10,7 @@ const TABS = [
   { id: 'general', labelKey: 'general', icon: Info },
   { id: 'profile', labelKey: 'profile', icon: UserIcon },
   { id: 'gamification', labelKey: 'gamification', icon: Trophy },
-  { id: 'security', labelKey: 'password', icon: Lock },
+  { id: 'security', labelKey: 'security', icon: Lock },
 ]
 
 export default function UserAccountSettingsLayout({ children }: { children: ReactNode }) {

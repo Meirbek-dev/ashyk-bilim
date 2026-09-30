@@ -69,7 +69,7 @@ export function LanguageSelector({
             disabled={disabled}
             className={cn('w-[200px] justify-between', className)}
           >
-            {selectedLanguage?.name || t('selectLanguage')}
+            <span className="truncate">{selectedLanguage?.name || t('selectLanguage')}</span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         )}

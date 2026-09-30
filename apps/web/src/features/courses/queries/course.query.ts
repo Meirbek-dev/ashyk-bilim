@@ -1,20 +1,34 @@
 import { getCourseEditorBundle } from '@services/courses/editor'
+import { getCourseMetadata } from '@services/courses/courses'
+import { getCourseDiscussions } from '@services/courses/discussions'
 import { apiJson, apiResult } from '@/lib/api-client'
 import { queryOptions } from '@tanstack/react-query'
+import { z } from 'zod'
+import {
+  AssessmentDetail,
+  CoursePage,
+  CourseUpdate,
+  IssuedCertificate,
+  Leaderboard,
+  Trail,
+  VerifiedCertificate,
+} from '@/lib/api/generated/zod'
+import { unixToIso } from '@/lib/api/contract'
 import type { CourseListKeyOptions } from '@/hooks/courses/courseKeys'
-import { courseEndpoints, courseKeys } from '@/hooks/courses/courseKeys'
+import {
+  courseEndpoints,
+  courseKeys,
+  stripEntityPrefix,
+  toAppCertification,
+  toAppCourse,
+  toAppTrail,
+} from '@/hooks/courses/courseKeys'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import type { PlatformLeaderboard } from '@/types/gamification'
+import { normalizeLeaderboard } from '@/services/gamification/normalize'
 
 interface CourseListResponse<TCourse> {
   courses: TCourse[]
-  total: number
-  summary?: {
-    total: number
-    ready: number
-    private: number
-    attention: number
-  }
+  next_cursor?: string | null
 }
 
 export function courseQueryOptions<TCourse = unknown>(courseUuid: string) {
@@ -31,14 +45,30 @@ export function courseMetadataQueryOptions<TCourse = unknown>(courseUuid: string
   })
 }
 
+/** Course + curriculum merged into the `AppCourse` shape (see `getCourseMetadata`). */
 export function courseStructureQueryOptions<TCourseStructure = unknown>(
   courseUuid: string,
   withUnpublishedActivities = false,
 ) {
   return queryOptions({
     queryKey: courseKeys.structure(courseUuid, withUnpublishedActivities),
-    queryFn: () => apiJson<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
+    queryFn: () => getCourseMetadata(courseUuid, undefined, withUnpublishedActivities) as Promise<TCourseStructure>,
     staleTime: 5000,
+  })
+}
+
+/**
+ * The learner course page outline: teachers publish while the learner reads,
+ * and the page seeds the query from the server prop, so it refetches on every
+ * focus and every 30 s regardless of staleness (UX-104).
+ */
+export function learnerCourseStructureQueryOptions<TCourseStructure = unknown>(courseUuid: string) {
+  return queryOptions({
+    ...courseStructureQueryOptions<TCourseStructure>(courseUuid),
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   })
 }
 
@@ -56,124 +86,106 @@ export function courseEditorBundleQueryOptions(courseUuid: string) {
   })
 }
 
+async function fetchCoursePage<TCourse>(options: CourseListKeyOptions): Promise<CourseListResponse<TCourse>> {
+  const page = await apiJson(courseEndpoints.list(options), {}, value => CoursePage.parse(value))
+  return { courses: page.items.map(toAppCourse) as TCourse[], next_cursor: page.next_cursor ?? null }
+}
+
 export function courseListQueryOptions<TCourse = unknown>(options: CourseListKeyOptions = {}) {
   return queryOptions({
     queryKey: courseKeys.list(options),
-    queryFn: async (): Promise<CourseListResponse<TCourse>> => {
-      const response = await apiResult(courseEndpoints.list(options))
-      const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
-      return {
-        courses,
-        total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
-      }
-    },
+    queryFn: () => fetchCoursePage<TCourse>(options),
   })
-}
-
-export function editableCourseListQueryOptions<TCourse = unknown>(options: CourseListKeyOptions = {}) {
-  return queryOptions({
-    queryKey: courseKeys.editable(options),
-    queryFn: async (): Promise<CourseListResponse<TCourse>> => {
-      const response = await apiResult(courseEndpoints.editable(options))
-      const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
-      return {
-        courses,
-        total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
-        summary: {
-          total: Number.parseInt(response.headers['x-summary-total'] ?? response.headers['x-total-count'] ?? '0', 10),
-          ready: Number.parseInt(response.headers['x-summary-ready'] ?? '0', 10),
-          private: Number.parseInt(response.headers['x-summary-private'] ?? '0', 10),
-          attention: Number.parseInt(response.headers['x-summary-attention'] ?? '0', 10),
-        },
-      }
-    },
-  })
-}
-
-interface CourseUpdateRead {
-  id: number
-  title: string
-  content: string
-  creation_date: string
-  courseupdate_uuid: number
 }
 
 export function courseUpdatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.updates(courseUuid),
-    queryFn: () => apiJson<CourseUpdateRead[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
+    queryFn: async () => {
+      const updates = await apiJson(`${courseEndpoints.detail(courseUuid)}/updates`, {}, value =>
+        z.array(CourseUpdate).parse(value),
+      )
+      return updates.map(update =>
+        Object.assign(update, { courseupdate_uuid: update.id, creation_date: unixToIso(update.created_at_unix) ?? '' }),
+      )
+    },
   })
 }
 
-export function courseDiscussionsQueryOptions(
-  courseUuid: string,
-  options: { includeReplies?: boolean; limit?: number; offset?: number } = {},
-) {
-  const { includeReplies = false, limit = 50, offset = 0 } = options
-
+export function courseDiscussionsQueryOptions(courseUuid: string) {
   return queryOptions({
-    queryKey: queryKeys.discussions.list(courseUuid, includeReplies, limit, offset),
-    queryFn: () => {
-      const queryString = new URLSearchParams({
-        include_replies: String(includeReplies),
-        limit: String(limit),
-        offset: String(offset),
-      }).toString()
-
-      return apiJson<unknown[]>(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`)
-    },
+    queryKey: queryKeys.discussions.list(courseUuid, true),
+    queryFn: () => getCourseDiscussions(courseUuid, true, 50),
+    // UX-062: a thread left open follows the other side's posts and replies —
+    // refetch on focus and every 15 s while the tab is visible.
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
   })
 }
 
 export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
-    queryFn: () => apiJson<AppTrailData>(`trail`),
+    queryFn: async () => toAppTrail(await apiJson('trail', {}, value => Trail.parse(value))),
+    // UX-133: a course left in another tab / unpublished by the teacher must
+    // drop off `/trail` on focus — same policy as learner-state (UX-050).
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   })
 }
 
 export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
-    queryFn: () => apiJson<PlatformLeaderboard>(`gamification/leaderboard?limit=${limit}`),
+    queryFn: async () =>
+      normalizeLeaderboard(
+        await apiJson(`gamification/leaderboard?limit=${limit}`, {}, value => Leaderboard.parse(value)),
+      ),
   })
 }
 
 export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
-    queryFn: () => apiJson<AppCertification[]>(`certifications/user/all`),
+    queryFn: async () =>
+      (await apiJson('me/certificates', {}, value => z.array(IssuedCertificate).parse(value))).map(toAppCertification),
   })
 }
 
 export function userCourseCertificatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.course(courseUuid),
-    queryFn: () => apiResult<AppCertification[]>(`certifications/user/course/${courseUuid}`),
+    queryFn: async () => {
+      const result = await apiResult(`courses/${stripEntityPrefix(courseUuid)}/certificates/me`, {}, value =>
+        z.array(IssuedCertificate).parse(value),
+      )
+      return { ...result, data: result.data.map(toAppCertification) }
+    },
   })
 }
 
-export function certificateDetailQueryOptions(certificateUuid: string) {
+/** Public verification by `verify_code` (`GET certificates/{code}`, no session needed). */
+export function certificateDetailQueryOptions(verifyCode: string) {
   return queryOptions({
-    queryKey: queryKeys.certifications.detail(certificateUuid),
-    queryFn: () => apiResult<AppCertification>(`certifications/certificate/${certificateUuid}`),
-  })
-}
-
-export function courseContributorsQueryOptions(courseUuid: string) {
-  return queryOptions({
-    queryKey: queryKeys.courses.contributors(courseUuid),
-    queryFn: () => apiResult<AppCourseAuthor[]>(`courses/${courseUuid}/contributors`),
+    queryKey: queryKeys.certifications.detail(verifyCode),
+    queryFn: async () => {
+      const result = await apiResult(`certificates/${verifyCode}`, {}, value => VerifiedCertificate.parse(value))
+      return { ...result, data: toAppCertification(result.data) }
+    },
   })
 }
 
 export function activityAssessmentUuidQueryOptions(activityUuid: string) {
   return queryOptions({
-    queryKey: queryKeys.assessments.activity(activityUuid),
+    queryKey: queryKeys.assessments.activityAssessmentId(activityUuid),
     queryFn: async () => {
       try {
-        const data = await apiJson<{ assessment_uuid?: string }>(`assessments/activity/${activityUuid}`)
-        return data?.assessment_uuid ?? null
+        const data = await apiJson(`activities/${stripEntityPrefix(activityUuid)}/assessment`, {}, value =>
+          AssessmentDetail.parse(value),
+        )
+        return data.id
       } catch {
         return null
       }
@@ -184,13 +196,6 @@ export function activityAssessmentUuidQueryOptions(activityUuid: string) {
 export function platformCoursesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.platform.courses(),
-    queryFn: async () => {
-      const { data, headers } = await apiResult(courseEndpoints.list({ page: 1, limit: 20 }))
-      const courses = Array.isArray(data) ? (data as AppCourse[]) : []
-      return {
-        courses,
-        total: Number.parseInt(headers['x-total-count'] ?? '0', 10),
-      }
-    },
+    queryFn: () => fetchCoursePage<AppCourse>({ limit: 20 }),
   })
 }

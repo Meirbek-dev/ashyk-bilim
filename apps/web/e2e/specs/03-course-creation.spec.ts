@@ -19,10 +19,11 @@
 
 import { testAsTeacher as test, expect } from '../fixtures'
 import { getEnv, setEnv } from '../env'
-import { COURSE } from '../fixtures/test-data'
+import { JUDGE0_SKIP_REASON, judge0Missing } from '../fixtures/environment'
+import { CODE_CHALLENGE, COURSE } from '../fixtures/test-data'
 import { ActivityStudioPage } from '../page-objects/ActivityStudioPage'
 
-// Persist course UUID across serial tests
+// Persist course UUID across serial tests (setEnv also writes e2e/.auth/state.json)
 let courseUuid = ''
 
 test.describe.serial('Teacher – Course Creation', () => {
@@ -39,16 +40,14 @@ test.describe.serial('Teacher – Course Creation', () => {
   test('teacher can create a new course via the wizard', async ({ page, courseCreatePage }) => {
     await courseCreatePage.goto()
 
-    courseUuid = await courseCreatePage.createCourse({
-      title: COURSE.title,
-      description: COURSE.description,
-    })
+    courseUuid = await courseCreatePage.createCourse({ title: COURSE.title })
 
     // Store globally for downstream specs to read
     setEnv('E2E_COURSE_UUID', courseUuid)
 
     expect(courseUuid).toBeTruthy()
-    expect(page.url()).toContain(`/courses/${courseUuid}/curriculum`)
+    // v2 lands on the Course Studio overview, not the curriculum stage
+    expect(page.url()).toContain(`/courses/${courseUuid}`)
   })
 
   // ── 2. Curriculum – create chapters ────────────────────────────────────
@@ -74,49 +73,30 @@ test.describe.serial('Teacher – Course Creation', () => {
    * feature correctness. If the block editor's slash-command menu fails to show
    * a particular block type, the test MUST remain failing.
    */
-  test('teacher can add a dynamic (lecture) activity to the Lectures chapter', async ({
-    page,
-    curriculumEditorPage,
-  }) => {
+  test('teacher can add a dynamic (lecture) activity to the Lectures chapter', async ({ curriculumEditorPage }) => {
     await curriculumEditorPage.goto(courseUuid)
 
+    // v2: "Dynamic Page" is quick-created ("New Dynamic Page") and renamed inline
     await curriculumEditorPage.addActivityToChapter(
       COURSE.chapters.lectures,
       'Dynamic', // TYPE_DYNAMIC / SUBTYPE_DYNAMIC_PAGE
+      COURSE.activities.dynamicLecture,
     )
 
     // The new activity should appear in the chapter
-    await expect(page.getByText(/activity name|dynamic/i).first()).toBeVisible({
+    await expect(curriculumEditorPage.activityRow(COURSE.activities.dynamicLecture)).toBeVisible({
       timeout: 10_000,
     })
   })
 
-  test('teacher can populate the lecture with a heading block', async ({ page }) => {
-    // Navigate directly to the activity studio
-    // NOTE: we look for any activity under the Lectures chapter and navigate
-    // to its studio. The exact activityId will be extracted from the URL.
-    await page.goto(`/en/dash/courses/${courseUuid}/curriculum`)
-    await page.waitForLoadState('networkidle')
-
-    // Find the Configure button for the activity we just created
-    const configureBtn = page
-      .locator('[data-activity-element], li')
-      .filter({ hasText: /introduction|dynamic|lecture/i })
-      .getByRole('button', { name: /configure/i })
-      .first()
-
-    await expect(configureBtn).toBeVisible({ timeout: 10_000 })
-    await configureBtn.click()
-
-    await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 })
-    const match = /\/activity\/([^/]+)\/studio/.exec(page.url())
-    if (!match) {
-      throw new Error('Could not extract lecture activity id from the studio URL.')
-    }
-    const activityId = match[1]
-    if (!activityId) {
-      throw new Error('Lecture activity id capture group was empty.')
-    }
+  test('teacher can populate the lecture with a heading block', async ({ page, curriculumEditorPage }) => {
+    // The first visit compiles the studio route under `next dev` (> 30 s on a cold
+    // server — the whole suite then cascades); a later visit is fast.
+    test.setTimeout(90_000)
+    // v2: the activity row's "Open edit page" link carries the activity id;
+    // the studio route renders the page editor for dynamic activities.
+    await curriculumEditorPage.goto(courseUuid)
+    const activityId = await curriculumEditorPage.configureActivity(COURSE.activities.dynamicLecture)
     setEnv('E2E_LECTURE_ACTIVITY_ID', activityId)
 
     const studio = new ActivityStudioPage(page)
@@ -142,52 +122,47 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   // ── 4. File submission activity ─────────────────────────────────────────
 
-  test('teacher can add a File Submission activity', async ({ page, curriculumEditorPage }) => {
+  test('teacher can add a File Submission activity', async ({ curriculumEditorPage }) => {
     await curriculumEditorPage.goto(courseUuid)
-    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'File Submission')
-    await expect(page.getByText(/file submission|file/i).first()).toBeVisible({
+    await curriculumEditorPage.addActivityToChapter(
+      COURSE.chapters.assessments,
+      'File Submission',
+      COURSE.activities.fileSubmission,
+    )
+    await expect(curriculumEditorPage.activityRow(COURSE.activities.fileSubmission)).toBeVisible({
       timeout: 10_000,
     })
+  })
+
+  test('teacher can publish the File Submission from its studio', async ({ page, curriculumEditorPage }) => {
+    // v2: a file submission stays invisible to learners (404) until published
+    await curriculumEditorPage.goto(courseUuid)
+    const activityId = await curriculumEditorPage.configureActivity(COURSE.activities.fileSubmission)
+    setEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID', activityId)
+    await new ActivityStudioPage(page).publishFileSubmission(courseUuid, activityId)
   })
 
   // ── 5. Exam activity with 3 question types ──────────────────────────────
 
   test('teacher can add an Exam activity', async ({ page, curriculumEditorPage }) => {
     await curriculumEditorPage.goto(courseUuid)
-    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'Exam')
-    await expect(page.getByText(/exam/i).first()).toBeVisible({ timeout: 10_000 })
+    // v2: the exam modal lands on the new assessment's studio
+    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'Exam', COURSE.activities.exam)
+    await expect(page).toHaveURL(/\/activity\/[^/]+\/studio/)
+    await curriculumEditorPage.goto(courseUuid)
+    await expect(curriculumEditorPage.activityRow(COURSE.activities.exam)).toBeVisible({ timeout: 10_000 })
   })
 
-  test('teacher can add a multiple-choice question to the exam', async ({ page }) => {
-    await page.goto(`/en/dash/courses/${courseUuid}/curriculum`)
-    await page.waitForLoadState('networkidle')
-
-    // Find the Exam activity Configure button
-    const configureBtn = page
-      .locator('[data-activity-element], li')
-      .filter({ hasText: /final exam|exam/i })
-      .getByRole('button', { name: /configure/i })
-      .first()
-
-    await expect(configureBtn).toBeVisible({ timeout: 10_000 })
-    await configureBtn.click()
-    await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 })
-
-    const match = /\/activity\/([^/]+)\/studio/.exec(page.url())
-    if (!match) {
-      throw new Error('Could not extract exam activity id from the studio URL.')
-    }
-    const examActivityId = match[1]
-    if (!examActivityId) {
-      throw new Error('Exam activity id capture group was empty.')
-    }
+  test('teacher can add a multiple-choice question to the exam', async ({ page, curriculumEditorPage }) => {
+    await curriculumEditorPage.goto(courseUuid)
+    const examActivityId = await curriculumEditorPage.configureActivity(COURSE.activities.exam)
     setEnv('E2E_EXAM_ACTIVITY_ID', examActivityId)
 
     const studio = new ActivityStudioPage(page)
 
     // Add multiple-choice question
     await studio.addExamQuestion({
-      type: 'Multiple choice',
+      kind: 'single',
       questionText: 'What does HTML stand for?',
       choices: [
         'HyperText Markup Language',
@@ -198,7 +173,7 @@ test.describe.serial('Teacher – Course Creation', () => {
       correctIndex: 0,
     })
 
-    await expect(page.getByText('What does HTML stand for?')).toBeVisible()
+    await expect(page.getByText('What does HTML stand for?').first()).toBeVisible()
   })
 
   test('teacher can add a True/False question to the exam', async ({ page }) => {
@@ -212,13 +187,12 @@ test.describe.serial('Teacher – Course Creation', () => {
     await studio.goto(courseUuid, examActivityId)
 
     await studio.addExamQuestion({
-      type: 'True.*False',
+      kind: 'trueFalse',
       questionText: 'JavaScript is a statically typed language.',
-      choices: ['True', 'False'],
       correctIndex: 1,
     })
 
-    await expect(page.getByText('JavaScript is a statically typed language.')).toBeVisible()
+    await expect(page.getByText('JavaScript is a statically typed language.').first()).toBeVisible()
   })
 
   test('teacher can add a multi-select question to the exam', async ({ page }) => {
@@ -232,26 +206,94 @@ test.describe.serial('Teacher – Course Creation', () => {
     await studio.goto(courseUuid, examActivityId)
 
     await studio.addExamQuestion({
-      type: 'Multi.*(select|choice)',
+      kind: 'multiple',
       questionText: 'Which of the following are JavaScript frameworks?',
       choices: ['React', 'Django', 'Vue', 'Laravel'],
       correctIndices: [0, 2],
     })
 
-    await expect(page.getByText('Which of the following are JavaScript frameworks?')).toBeVisible()
+    await expect(page.getByText('Which of the following are JavaScript frameworks?').first()).toBeVisible()
+  })
+
+  test('teacher can publish the exam from the studio', async ({ page }) => {
+    const examActivityId = getEnv('E2E_EXAM_ACTIVITY_ID')
+    if (!examActivityId) {
+      test.skip(true, 'Exam activity not created in prior test')
+      return
+    }
+    // v2: attempts are only allowed once the assessment lifecycle is "published"
+    const studio = new ActivityStudioPage(page)
+    await studio.publishAssessment(courseUuid, examActivityId)
   })
 
   // ── 6. Code challenge activity ──────────────────────────────────────────
 
-  test('teacher can add a Code Challenge activity', async ({ page, curriculumEditorPage }) => {
+  test('teacher can add a Code Challenge activity', async ({ curriculumEditorPage }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
     await curriculumEditorPage.goto(courseUuid)
-    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'Code Challenge')
-    await expect(page.getByText(/code challenge|coding/i).first()).toBeVisible({
+    await curriculumEditorPage.addActivityToChapter(
+      COURSE.chapters.assessments,
+      'Code Challenge',
+      COURSE.activities.codeChallenge,
+    )
+    await expect(curriculumEditorPage.activityRow(COURSE.activities.codeChallenge)).toBeVisible({
       timeout: 10_000,
     })
   })
 
+  // BUG-385: the studio's «Publish now» is the only way a code challenge goes
+  // live (the curriculum toggle refuses a draft assessment). The tests match
+  // CORRECT_PYTHON_SOLUTION, which the learner submits in spec 04.
+  test('teacher can author and publish the Code Challenge from its studio', async ({ page, curriculumEditorPage }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
+    test.setTimeout(120_000)
+    await curriculumEditorPage.goto(courseUuid)
+    await curriculumEditorPage.configureActivity(COURSE.activities.codeChallenge)
+    await new ActivityStudioPage(page).authorCodeChallenge(CODE_CHALLENGE)
+
+    await curriculumEditorPage.goto(courseUuid)
+    const row = curriculumEditorPage.activityRow(COURSE.activities.codeChallenge)
+    await expect(row.getByRole('button', { name: /^unpublish$/i })).toBeVisible({ timeout: 10_000 })
+  })
+
+  // ── 6b. Certificate template ────────────────────────────────────────────
+
+  test('teacher can enable a course certificate', async ({ page }) => {
+    // v2 issues certificates only from a configured certification template
+    // (`POST certifications`); without one the learner never gets a download.
+    await page.goto(`/en/dash/courses/${courseUuid}/certificate`)
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: /enable certification/i }).click()
+    await page.getByRole('textbox', { name: /certification name/i }).fill(`${COURSE.title} certificate`)
+    await page
+      .getByRole('textbox', { name: /certification description/i })
+      .fill('Awarded for completing every activity of the E2E course.')
+
+    // createCertification is a server action (no `/api/v2` response to watch)
+    await page.getByRole('button', { name: /^save( draft)?$/i }).click()
+    await expect(page.getByText(/certification created/i).first()).toBeVisible({ timeout: 15_000 })
+
+    // The template must survive a reload (it is what `certificates/me` issues from)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('switch')).toBeChecked({ timeout: 15_000 })
+  })
+
   // ── 7. Publish the course ───────────────────────────────────────────────
+
+  test('teacher can make every activity learner-visible', async ({ curriculumEditorPage }) => {
+    // v2 publish gate: the course needs at least one published activity, and
+    // the learner outline only lists published ones. Without Judge0 the code
+    // challenge stays an unauthored draft (its studio cannot pick languages),
+    // so it is left out — published unauthored it would be a required
+    // activity the learner can never complete.
+    await curriculumEditorPage.goto(courseUuid)
+    const { codeChallenge, ...rest } = COURSE.activities
+    const learnerVisible = judge0Missing() ? Object.values(rest) : [...Object.values(rest), codeChallenge]
+    for (const name of learnerVisible) {
+      await curriculumEditorPage.publishActivity(name)
+    }
+  })
 
   test('teacher can navigate to the course review & publish page', async ({ page }) => {
     await page.goto(`/en/dash/courses/${courseUuid}/review`)

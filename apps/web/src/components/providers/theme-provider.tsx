@@ -12,8 +12,7 @@ import {
   themes,
 } from '@/lib/themes'
 import type { Theme, ThemeMode } from '@/lib/themes'
-import { useSession } from '@/hooks/useSession'
-import { useThemeSynchronizer } from '@/hooks/useThemeSync'
+import { useSessionBroadcastListener } from '@/components/providers/session-provider'
 import type { ReactNode } from 'react'
 
 interface ThemeContextValue {
@@ -36,16 +35,14 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME, initialMode }: ThemeProviderProps) {
-  const { user } = useSession()
-  const userTheme = user?.theme ?? null
-  const [theme, setThemeState] = useState(() =>
-    getTheme(userTheme || defaultThemeName, initialMode ?? DEFAULT_THEME_MODE),
-  )
+  // The signed-in user's server theme is applied by <UserThemeSync/> under the
+  // platform SessionProvider (BUG-362); anonymous visitors keep localStorage.
+  const [theme, setThemeState] = useState(() => getTheme(defaultThemeName, initialMode ?? DEFAULT_THEME_MODE))
   const themeName = theme.name
   const mode = theme.resolvedTheme
 
   useEffect(() => {
-    const effectiveThemeName = getStoredTheme() || userTheme || defaultThemeName || DEFAULT_THEME_NAME
+    const effectiveThemeName = getStoredTheme() || defaultThemeName || DEFAULT_THEME_NAME
     const effectiveThemeMode = getStoredThemeMode() || initialMode || getSystemThemeMode()
     const effectiveTheme = getTheme(effectiveThemeName, effectiveThemeMode)
 
@@ -53,7 +50,7 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     globalThis.setTimeout(() => {
       setThemeState(effectiveTheme)
     }, 0)
-  }, [defaultThemeName, initialMode, userTheme])
+  }, [defaultThemeName, initialMode])
 
   const setTheme = useCallback(
     (nextThemeName: string) => {
@@ -63,6 +60,15 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     },
     [mode],
   )
+
+  // UX-318: `logout()` resets the page (BUG-380); the state goes too, or the
+  // next light/dark toggle re-applies the signed-out account's theme.
+  const resetOnLogout = useCallback(() => {
+    const nextTheme = getTheme(DEFAULT_THEME_NAME, mode)
+    setThemeState(nextTheme)
+    applyTheme(nextTheme)
+  }, [mode])
+  useSessionBroadcastListener(resetOnLogout)
 
   const setMode = useCallback(
     (nextMode: ThemeMode) => {
@@ -95,8 +101,6 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     },
     [mode, setMode],
   )
-
-  useThemeSynchronizer(themeName)
 
   const contextValue: ThemeContextValue = useMemo(
     () => ({

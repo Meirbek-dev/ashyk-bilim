@@ -1,11 +1,10 @@
 'use client'
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react'
-import { useFormatter, useNow, useTranslations } from 'next-intl'
-import { Actions, Resources, Scopes } from '@/types/permissions'
+import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
+import RelativeTime from './relative-time'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { useSession } from '@/hooks/useSession'
 import { Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +28,6 @@ import type { DiscussionReplyData } from './types'
 interface DiscussionReplyProps {
   reply: DiscussionReplyData
   postId: string
-  currentUser: AppUserSummary
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
@@ -38,7 +36,6 @@ interface DiscussionReplyProps {
 export default function DiscussionReply({
   reply,
   postId,
-  currentUser,
   onVoteReply,
   onDeleteReply,
   onEditReply,
@@ -47,12 +44,12 @@ export default function DiscussionReply({
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(reply.replyMessage)
   const [_isPending, startTransition] = useTransition()
-  const format = useFormatter()
-  const now = useNow()
-  const { can } = useSession()
-  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.APP)
+  // Capabilities come from the wire (`can_update` / `can_delete` are already
+  // resolved against the viewer's grants server-side).
+  const canUpdate = reply.can_update ?? false
+  const canDelete = reply.can_delete ?? false
+  const isOwner = reply.is_owner ?? false
 
-  const isOwnReply = reply.username === currentUser?.username
   const netScore = reply.upvotes - reply.downvotes
 
   const getUserDisplayName = (firstName?: string, lastName?: string) => {
@@ -71,13 +68,6 @@ export default function DiscussionReply({
     })
   }
 
-  // Helper to check if a given user is a platform admin
-  const isAuthorAdmin = (username: string) => {
-    if (!reply?.username) return false
-    // If current user is admin and is the author, show badge
-    return canModerateDiscussion && username === currentUser?.username
-  }
-
   return (
     <div className="group border-border hover:border-muted-foreground relative ml-6 border-l-2 py-4 pl-6 transition-colors">
       {/* Connection line dot */}
@@ -94,26 +84,21 @@ export default function DiscussionReply({
                 {getUserDisplayName(reply.firstName, reply.lastName)}
               </span>
               <span className="text-muted-foreground truncate text-sm">@{reply.username}</span>
-              {isAuthorAdmin(reply.username) && (
-                <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
-                  {t('admin')}
+              {isOwner && (
+                <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
+                  {t('you')}
                 </Badge>
               )}
               <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
                 <Clock size={12} />
-                <span>{format.relativeTime(new Date(reply.createDate), now)}</span>
-                {reply.updateDate &&
-                  reply.createDate &&
-                  new Date(reply.updateDate).getTime() !== new Date(reply.createDate).getTime() && (
-                    <span className="text-muted-foreground text-xs">({t('edited')})</span>
-                  )}
+                <RelativeTime date={reply.createDate} />
               </div>
             </div>
 
             {/* Action buttons */}
-            {(canModerateDiscussion || isOwnReply) && !editing && (
+            {(canUpdate || canDelete) && !editing && (
               <div className="mr-5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                {isOwnReply && (
+                {canUpdate && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -121,19 +106,23 @@ export default function DiscussionReply({
                       setEditing(true)
                       setEditContent(reply.replyMessage)
                     }}
+                    aria-label={t('edit')}
                     className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                   >
                     <Edit size={12} />
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteReply(postId, reply.id)}
-                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
-                >
-                  <Trash2 size={12} />
-                </Button>
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDeleteReply(postId, reply.id)}
+                    aria-label={t('delete')}
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
+                  >
+                    <Trash2 size={12} />
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -179,6 +168,8 @@ export default function DiscussionReply({
                     variant="ghost"
                     size="sm"
                     onClick={() => onVoteReply(postId, reply.id, 'up')}
+                    aria-pressed={reply.userVote === 'up'}
+                    aria-label={t('upvote')}
                     className={cn(
                       'h-8 rounded-none border-border border-r px-3 transition-all',
                       reply.userVote === 'up'
@@ -194,6 +185,8 @@ export default function DiscussionReply({
                     variant="ghost"
                     size="sm"
                     onClick={() => onVoteReply(postId, reply.id, 'down')}
+                    aria-pressed={reply.userVote === 'down'}
+                    aria-label={t('downvote')}
                     className={cn(
                       'h-8 rounded-none px-3 transition-all',
                       reply.userVote === 'down'

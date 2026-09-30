@@ -1,4 +1,5 @@
 import { CheckCircle2, CircleDashed, Clock3, FileClock, ShieldCheck } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -11,30 +12,31 @@ export function AIArtifactLifecycle({
   className,
   state,
 }: {
-  artifact?: AIArtifactPayload | null | undefined
+  artifact?: Pick<AIArtifactPayload, 'final'> | null | undefined
   className?: string | undefined
   state: AIWorkState
 }) {
+  const t = useTranslations('AiExperience.artifactLifecycle')
   const steps = [
     {
       complete: state !== 'idle' && state !== 'confirming',
       icon: Clock3,
-      label: 'Queued',
+      label: t('queued'),
     },
     {
       complete: ['checking_evidence', 'needs_human_review', 'complete'].includes(state),
       icon: ShieldCheck,
-      label: 'Evidence checked',
+      label: t('evidenceChecked'),
     },
     {
       complete: Boolean(artifact),
       icon: FileClock,
-      label: artifact?.final ? 'Final artifact' : 'Draft artifact',
+      label: artifact?.final ? t('finalArtifact') : t('draftArtifact'),
     },
     {
       complete: state === 'complete',
       icon: CheckCircle2,
-      label: 'Ready',
+      label: t('ready'),
     },
   ]
 

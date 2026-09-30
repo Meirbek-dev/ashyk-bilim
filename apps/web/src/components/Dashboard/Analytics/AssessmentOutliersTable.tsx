@@ -1,13 +1,18 @@
 'use client'
 
-import { getAnalyticsAssessmentTypeLabel, getAnalyticsReasonCodeLabel } from '@/lib/analytics/labels'
+import {
+  getAnalyticsAssessmentTypeLabel,
+  getAnalyticsCodeLabel,
+  getAnalyticsReasonCodeLabel,
+} from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AssessmentOutlierRow } from '@/types/analytics'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 
 interface AssessmentOutliersTableProps {
   rows: AssessmentOutlierRow[]
@@ -17,6 +22,10 @@ interface AssessmentOutliersTableProps {
 
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
+  const percent = usePercentFormat()
+  const format = useFormatter()
+  // UX-149: one precision per column set — rates (submission, pass, difficulty) 1 dp, scores ≤ 2 dp via `percent`.
+  const rate = (value: number) => `${format.number(value, { maximumFractionDigits: 1 })}%`
   const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [
     {
       accessorKey: 'title',
@@ -42,17 +51,17 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
     {
       accessorKey: 'submission_rate',
       header: t('assessmentOutliers.colSubmission'),
-      cell: ({ row }) => (row.original.submission_rate === null ? t('atRisk.na') : `${row.original.submission_rate}%`),
+      cell: ({ row }) => (row.original.submission_rate == null ? t('atRisk.na') : rate(row.original.submission_rate)),
     },
     {
       accessorKey: 'pass_rate',
       header: t('assessmentOutliers.colPass'),
-      cell: ({ row }) => (row.original.pass_rate === null ? t('atRisk.na') : `${row.original.pass_rate}%`),
+      cell: ({ row }) => (row.original.pass_rate == null ? t('atRisk.na') : rate(row.original.pass_rate)),
     },
     {
       accessorKey: 'median_score',
       header: t('assessmentOutliers.colMedian'),
-      cell: ({ row }) => (row.original.median_score === null ? t('atRisk.na') : `${row.original.median_score}%`),
+      cell: ({ row }) => (row.original.median_score == null ? t('atRisk.na') : percent(row.original.median_score)),
     },
     {
       accessorKey: 'difficulty_score',
@@ -60,17 +69,17 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
       cell: ({ row }) => {
         const assessment = row.original
         const v = assessment.difficulty_score
-        if (v === null) return t('atRisk.na')
+        if (v == null) return t('atRisk.na')
         // difficulty_score = round(100 - pass_rate, 2) → already on a 0–100 scale.
         return (
           <div>
-            <div>{Math.round(v ?? 0)}%</div>
+            <div>{rate(v)}</div>
             {assessment.discrimination_index !== null && assessment.discrimination_index !== undefined && (
               <div className="text-muted-foreground text-[11px]">D {assessment.discrimination_index}</div>
             )}
             {assessment.suspicious_flag && (
               <Badge variant="warning" className="mt-1">
-                {assessment.suspicious_flag.replaceAll('_', ' ')}
+                {getAnalyticsCodeLabel(t, assessment.suspicious_flag)}
               </Badge>
             )}
           </div>

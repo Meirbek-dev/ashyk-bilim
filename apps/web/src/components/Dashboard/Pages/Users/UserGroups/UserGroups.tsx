@@ -24,15 +24,17 @@ import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
 import DataTable from '@components/ui/data-table'
 import type { DataTableColumnDef } from '@components/ui/data-table'
+import type { Usergroup } from '@/lib/api/generated/zod'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 import { Button } from '@/components/ui/button'
 
 interface DeleteUserGroupButtonProps {
-  usergroupId: number
-  onDelete: (usergroupId: number) => Promise<void>
+  usergroupId: string
+  onDelete: (usergroupId: string) => Promise<void>
   t: (key: string) => string
 }
 
@@ -79,34 +81,34 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
 
 function UserGroups() {
   const t = useTranslations('DashPage.UserSettings.usergroupsSection')
+  const { toastApiError } = useApiError()
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false)
   const [editUserGroupModal, setEditUserGroupModal] = useState(false)
-  const [selectedUserGroup, setSelectedUserGroup] = useState<AppUserGroup | null>(null)
-  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
-  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null)
+  const [selectedUserGroup, setSelectedUserGroup] = useState<Usergroup | null>(null)
+  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<string | null>(null)
+  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  // `can_write` is the server's verdict (`usergroup:manage:platform`, or the
+  // creator holding `usergroup:create:platform`): no dead clicks into a 403.
+  const canWrite = (group: Usergroup) => group.can_write
 
-  const { data: usergroups, error, isLoading } = useUserGroups()
+  const { data: usergroups, error, isPending } = useUserGroups()
 
-  const deleteUserGroupUI = async (usergroup_id: number) => {
+  const deleteUserGroupUI = async (usergroup_id: string) => {
     const toastId = toast.loading(t('deletingUserGroup'))
     try {
-      const res = await deleteUserGroup(usergroup_id)
-      if (res.status === 200) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.userGroups.all(),
-        })
-        toast.success(t('userGroupDeletedSuccess'), { id: toastId })
-      } else {
-        toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
-      }
-    } catch {
-      toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
+      await deleteUserGroup(usergroup_id)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userGroups.all(),
+      })
+      toast.success(t('userGroupDeletedSuccess'), { id: toastId })
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.deleteUserGroupFailed'), toastId })
     }
   }
 
-  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: AppUserGroup) => {
+  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: Usergroup) => {
     setSelectedUserGroup(userGroup)
     if (modalType === 'manage') {
       setSelectedUserGroupIdForManage(userGroup.id ?? null)
@@ -130,12 +132,7 @@ function UserGroups() {
     }
   }
 
-  if (isLoading) {
-    return <Loader2 size={16} className="mr-2 animate-spin" />
-  }
-  if (error) return <div>{t('errorLoadingUserGroups')}</div>
-
-  const columns: DataTableColumnDef<AppUserGroup>[] = [
+  const columns: DataTableColumnDef<Usergroup>[] = [
     {
       accessorKey: 'name',
       header: t('userGroupHeader'),
@@ -147,48 +144,50 @@ function UserGroups() {
       cell: ({ row }) => row.original.description || '—',
     },
     {
+      accessorKey: 'member_count',
+      header: t('membersHeader'),
+      cell: ({ row }) => <span className="tabular-nums">{row.original.member_count}</span>,
+    },
+    {
       id: 'manageUsers',
       header: t('manageUsersHeader'),
       enableSorting: false,
-      cell: ({ row }) => (
-        <Modal
-          isDialogOpen={userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false}
-          onOpenChange={isOpen => {
-            if (!isOpen) handleCloseModal('manage')
-          }}
-          minHeight="lg"
-          minWidth="lg"
-          dialogContent={
-            selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
-              <ManageUsers usergroup_id={selectedUserGroup.id} />
-            ) : null
-          }
-          dialogTitle={t('manageUsersModalTitle')}
-          dialogDescription={t('manageUsersModalDescription')}
-          dialogTrigger={
-            <span>
+      cell: ({ row }) =>
+        canWrite(row.original) ? (
+          <Modal
+            isDialogOpen={userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false}
+            onOpenChange={isOpen => {
+              if (!isOpen) handleCloseModal('manage')
+            }}
+            minHeight="lg"
+            minWidth="lg"
+            dialogContent={selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null}
+            dialogTitle={t('manageUsersModalTitle')}
+            dialogDescription={t('manageUsersModalDescription')}
+            dialogTrigger={
               <Button variant="outline" size="sm" onClick={() => handleOpenModal('manage', row.original)} type="button">
                 <Users className="size-3.5" />
                 {t('manageUsersButton')}
               </Button>
-            </span>
-          }
-        />
-      ),
+            }
+          />
+        ) : (
+          <span className="text-muted-foreground text-xs">{t('readOnlyGroup')}</span>
+        ),
     },
     {
       id: 'actions',
       header: t('actionsHeader'),
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Modal
-            isDialogOpen={editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false}
-            onOpenChange={isOpen => {
-              if (!isOpen) handleCloseModal('edit')
-            }}
-            dialogTrigger={
-              <span>
+      cell: ({ row }) =>
+        canWrite(row.original) ? (
+          <div className="flex items-center gap-2">
+            <Modal
+              isDialogOpen={editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false}
+              onOpenChange={isOpen => {
+                if (!isOpen) handleCloseModal('edit')
+              }}
+              dialogTrigger={
                 <Button
                   variant="secondary"
                   size="sm"
@@ -198,27 +197,27 @@ function UserGroups() {
                   <Pencil className="size-3.5" />
                   {t('editButton')}
                 </Button>
-              </span>
-            }
-            minHeight="sm"
-            minWidth="sm"
-            dialogContent={
-              selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
-                <EditUserGroup
-                  usergroup={{
-                    id: selectedUserGroup.id,
-                    name: selectedUserGroup.name ?? '',
-                    description: selectedUserGroup.description ?? '',
-                  }}
-                />
-              ) : null
-            }
-          />
-          {typeof row.original.id === 'number' && (
+              }
+              minHeight="sm"
+              minWidth="sm"
+              dialogTitle={t('editUserGroupModalTitle')}
+              dialogDescription={t('editUserGroupModalDescription')}
+              dialogContent={
+                selectedUserGroup ? (
+                  <EditUserGroup
+                    usergroup={{
+                      id: selectedUserGroup.id,
+                      name: selectedUserGroup.name ?? '',
+                      description: selectedUserGroup.description ?? '',
+                    }}
+                    onSaved={() => handleCloseModal('edit')}
+                  />
+                ) : null
+              }
+            />
             <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
-          )}
-        </div>
-      ),
+          </div>
+        ) : null,
     },
   ]
 
@@ -242,24 +241,34 @@ function UserGroups() {
                 dialogTitle={t('createUserGroupModalTitle')}
                 dialogDescription={t('createUserGroupModalDescription')}
                 dialogTrigger={
-                  <span>
-                    <Button size="sm">
-                      <SquareUserRound className="size-3.5" />
-                      {t('createUserGroupButton')}
-                    </Button>
-                  </span>
+                  <Button size="sm" type="button">
+                    <SquareUserRound className="size-3.5" />
+                    {t('createUserGroupButton')}
+                  </Button>
                 }
               />
             </CardAction>
           </CardHeader>
           <CardContent className="pt-4">
-            <DataTable
-              columns={columns}
-              data={usergroups ?? []}
-              pageSize={10}
-              storageKey="platform-usergroups"
-              labels={{ emptyMessage: t('noUserGroupsFound') }}
-            />
+            {/* `isPending`, not `isLoading`: while the persisted cache is
+                restoring the client is pending-but-idle, so `isLoading` is
+                false on the client and true on the server (hydration mismatch). */}
+            {isPending ? (
+              <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm" role="status">
+                <Loader2 size={16} className="animate-spin" aria-hidden />
+                {t('loading')}
+              </div>
+            ) : error ? (
+              <div className="text-destructive py-6 text-sm">{t('errorLoadingUserGroups')}</div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={usergroups ?? []}
+                pageSize={10}
+                storageKey="platform-usergroups"
+                labels={{ emptyMessage: t('noUserGroupsFound') }}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

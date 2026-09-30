@@ -5,7 +5,10 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
+import type { FieldValues, UseFormSetError } from 'react-hook-form'
 
 type SaveResponse = { success?: boolean; status?: number; data?: unknown } | void
 
@@ -26,9 +29,12 @@ function normalizeResponse(response: SaveResponse): NormalizedSaveResponse {
   return { success: true, data: response as NormalizedSaveResponse['data'] }
 }
 
-interface SaveSectionOptions {
+interface SaveSectionOptions<TFieldValues extends FieldValues> {
   onSuccess?: () => void
+  /** The section shows the message itself (an inline alert): no toast, one message (UX-242). */
   onError?: (message: string) => void
+  /** Binds problem+json `field_errors` to the form (`Errors.fields.<code>`). */
+  setError?: UseFormSetError<TFieldValues>
   successMessage?: string
   errorMessage?: string
   section?: CourseDirtySection
@@ -52,8 +58,13 @@ interface SaveInvocationOptions {
  *  - calling onSuccess (e.g. markClean)
  *  - refreshing cached course queries when the caller is not already using an optimistic mutation flow
  */
-export function useSaveSection(options?: SaveSectionOptions) {
+export function useSaveSection<TFieldValues extends FieldValues = FieldValues>(
+  options?: SaveSectionOptions<TFieldValues>,
+) {
   const [isSaving, setIsSaving] = useState(false)
+  const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
+  const { handleApiError, toastApiError } = useApiError<TFieldValues>()
   const { refreshCourseMeta, refreshCourseEditor } = useCourse()
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const syncLastKnownUpdateDate = useCourseEditorStore(state => state.syncLastKnownUpdateDate)
@@ -81,10 +92,10 @@ export function useSaveSection(options?: SaveSectionOptions) {
           }
           const message = getApiErrorMessage(
             response.data,
-            invocationOptions?.errorMessage || options?.errorMessage || 'Failed to save. Please try again.',
+            invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
           )
-          options?.onError?.(message)
-          toast.error(message)
+          if (options?.onError) options.onError(message)
+          else toast.error(message)
           return
         }
 
@@ -97,7 +108,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
         syncLastKnownUpdateDate(response.data?.update_date)
 
-        const successMessage = invocationOptions?.successMessage || options?.successMessage || 'Изменения сохранены'
+        const successMessage = invocationOptions?.successMessage || options?.successMessage || tCommon('saved')
         if (successMessage) toast.success(successMessage)
 
         invocationOptions?.onSuccess?.()
@@ -114,19 +125,29 @@ export function useSaveSection(options?: SaveSectionOptions) {
           })
           return
         }
-        const message =
-          apiError.message ||
-          invocationOptions?.errorMessage ||
-          options?.errorMessage ||
-          'Failed to save. Please try again.'
+        // Localized problem+json copy (`Errors.codes.<code>`), never the raw English message.
+        const present = options?.onError ? handleApiError : toastApiError
+        const { message } = present(error, {
+          fallback: invocationOptions?.errorMessage || options?.errorMessage || tErrors('defaultError'),
+          ...(options?.setError ? { setError: options.setError } : {}),
+        })
         options?.onError?.(message)
-        toast.error(message)
       } finally {
         setIsSaving(false)
       }
     },
 
-    [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate],
+    [
+      options,
+      refreshCourseEditor,
+      refreshCourseMeta,
+      setConflict,
+      syncLastKnownUpdateDate,
+      tCommon,
+      tErrors,
+      handleApiError,
+      toastApiError,
+    ],
   )
 
   useEffect(() => {

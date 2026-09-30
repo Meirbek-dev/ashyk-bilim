@@ -8,3 +8,10 @@ export const localePrefixes = {
   'kk-KZ': '/kz',
   'en-US': '/en',
 } as const satisfies Record<Locale, `/${string}`>
+
+/** The AI `language` for a UI locale — the active locale, never `auto` (UX-037: a ru-RU account on /kz wants Kazakh). */
+export function aiLanguageFor(locale: string): 'ru' | 'kk' | 'en' {
+  if (locale.startsWith('kk')) return 'kk'
+  if (locale.startsWith('en')) return 'en'
+  return 'ru'
+}

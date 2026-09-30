@@ -13,7 +13,7 @@ const ELLIPSIS_TEXT = '···'
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[]
-  currentUserId?: number
+  currentUserId?: string
   userRank?: number | null
   className?: string
 }
@@ -26,28 +26,32 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const [showFull, setShowFull] = useState(false)
 
-  const userEntry = entries.find(e => e.user_id === currentUserId)
+  // Ranks are competition ranks (UX-172): tied users share one, so place the
+  // viewer by their row, not by `userRank - 1`.
+  const userIndex = entries.findIndex(e => e.user_id === currentUserId)
+  const userEntry = entries[userIndex]
 
   let displayEntries: LeaderboardEntry[],
-    rankContext: null | { rank: number; xpToNext: number; nextRankUsername: string | null }
+    rankContext: null | { rank: number; xpToNext: number; nextRankName: string | null }
 
   if (!userEntry || !userRank || showFull) {
     displayEntries = entries.slice(0, showFull ? undefined : 10)
-    rankContext = null
+    // UX-185: the viewer's row lies beyond the loaded page — still say where they stand.
+    rankContext = !userEntry && userRank ? { rank: userRank, xpToNext: 0, nextRankName: null } : null
   } else {
     const top3 = entries.slice(0, 3)
-    const userRankIndex = userRank - 1
-    const contextStart = Math.max(3, userRankIndex - 2)
-    const contextEnd = Math.min(entries.length, userRankIndex + 3)
+    const contextStart = Math.max(3, userIndex - 2)
+    const contextEnd = Math.min(entries.length, userIndex + 3)
     const contextEntries = entries.slice(contextStart, contextEnd)
-    const nextRankEntry = entries[userRankIndex - 1]
+    const nextRankEntry = entries.findLast(e => e.total_xp > userEntry.total_xp)
     const xpToNext = nextRankEntry ? nextRankEntry.total_xp - userEntry.total_xp : 0
 
-    displayEntries = userRank <= 3 ? top3 : [...top3, ...contextEntries]
+    displayEntries = userIndex < 3 ? top3 : [...top3, ...contextEntries]
     rankContext = {
       rank: userRank,
       xpToNext,
-      nextRankUsername: nextRankEntry?.username || null,
+      // UX-197: named as the rows name them.
+      nextRankName: nextRankEntry?.display_name || nextRankEntry?.username || null,
     }
   }
 
@@ -78,7 +82,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
             <p className="text-muted-foreground mt-0.5 text-xs">
               {t('leaderboard.xpToNextRank', {
                 xp: rankContext.xpToNext.toLocaleString(),
-                username: rankContext.nextRankUsername || '',
+                username: rankContext.nextRankName || '',
               })}
             </p>
           )}
@@ -91,7 +95,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
           {displayEntries.map((entry, index) => {
             const isCurrentUser = entry.user_id === currentUserId
             const isTop3 = entry.rank <= 3
-            const showSeparator = !showFull && index === 3 && userRank && userRank > 3
+            const showSeparator = !showFull && index === 3 && userIndex >= 3
 
             return (
               <div key={entry.user_id}>
@@ -134,7 +138,10 @@ function LeaderboardRow({
       {/* Rank indicator */}
       <div className="flex w-7 shrink-0 items-center justify-center">
         {entry.rank === 1 ? (
-          <Crown className="text-foreground h-4 w-4" aria-label="1st" />
+          <>
+            <Crown className="text-foreground h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">#1</span>
+          </>
         ) : isTop3 ? (
           <span
             className={cn(
@@ -152,7 +159,7 @@ function LeaderboardRow({
       {/* Avatar */}
       <GamifiedUserAvatar
         size="md"
-        {...(entry.avatar_url ? { avatar_url: entry.avatar_url } : {})}
+        avatar_url={entry.avatar_url}
         {...(entry.username ? { username: entry.username } : {})}
         userId={entry.user_id}
         showProfilePopup
@@ -180,9 +187,7 @@ function LeaderboardRow({
       {/* User info */}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-sm font-medium', isCurrentUser && 'text-primary')}>
-          {entry.first_name && entry.last_name
-            ? [entry.first_name, entry.middle_name, entry.last_name].filter(Boolean).join(' ')
-            : entry.username || t('leaderboard.anonymous')}
+          {entry.display_name || entry.username || t('leaderboard.anonymous')}
           {isCurrentUser && (
             <span className="text-muted-foreground ml-1.5 text-xs font-normal">({t('leaderboard.you')})</span>
           )}

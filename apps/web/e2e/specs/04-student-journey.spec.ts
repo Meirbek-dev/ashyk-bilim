@@ -19,7 +19,8 @@
 
 import { testAsStudent as test, expect } from '../fixtures'
 import { getEnv, setEnv } from '../env'
-import { COURSE, CORRECT_PYTHON_SOLUTION, SAMPLE_PDF } from '../fixtures/test-data'
+import { JUDGE0_SKIP_REASON, judge0Missing } from '../fixtures/environment'
+import { COURSE, CORRECT_PYTHON_SOLUTION, EXAM_ANSWERS, SAMPLE_PDF } from '../fixtures/test-data'
 import { ensureFixtureFiles } from '../utils/fixtures'
 
 test.describe.serial('Student – Learning Journey', () => {
@@ -39,8 +40,24 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.goto(`/en/course/${courseUuid}`)
     await page.waitForLoadState('networkidle')
 
-    // Course title or content must be visible
-    await expect(page.getByText(COURSE.title)).toBeVisible({ timeout: 15_000 })
+    // Course title must be visible (v2 landing shows it in the breadcrumb; the
+    // hero card was removed deliberately, see 80bbe59 / c0a7bdf)
+    await expect(page.getByRole('link', { name: COURSE.title })).toBeVisible({ timeout: 15_000 })
+  })
+
+  // BUG-248: the phone landing crashed on `course.authors` (absent from the
+  // v2 Course) and replaced the whole page with the course-load error.
+  test('course landing renders on a phone viewport', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`/en/course/${courseUuid}`)
+    const cta = page
+      .getByRole('button', { name: /start course|continue learning/i })
+      .or(page.getByText(/no published lessons yet/i))
+    await expect(cta.first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/course failed to load/i)).toHaveCount(0)
+    expect(errors).toEqual([])
   })
 
   test('student can enroll in the course', async ({ page, coursePlayerPage }) => {
@@ -61,32 +78,15 @@ test.describe.serial('Student – Learning Journey', () => {
 
   test('student can open the Introduction Lecture activity', async ({ page, coursePlayerPage }) => {
     await coursePlayerPage.gotoCourseLanding(courseUuid)
-
-    // Find the lecture in the sidebar and click it
-    const lectureLink = page
-      .locator('nav a, aside a, [role="link"]')
-      .filter({ hasText: /introduction|lecture/i })
-      .first()
-
-    await expect(lectureLink).toBeVisible({ timeout: 10_000 })
-    await lectureLink.click()
-    await page.waitForURL(/\/activity\//, { timeout: 10_000 })
+    // v2: the landing outline ("Course Lessons") links each activity
+    await coursePlayerPage.openActivity(new RegExp(COURSE.activities.dynamicLecture, 'i'))
+    // The lecture content typed in spec 03 must render for the learner
+    await expect(page.getByText('Introduction to the Course')).toBeVisible({ timeout: 10_000 })
   })
 
   test('student can mark the lecture activity as complete', async ({ page, coursePlayerPage }) => {
-    // Navigate to the first activity in the course
-    await page.goto(`/en/course/${courseUuid}`)
-    await page.waitForLoadState('networkidle')
-
-    const firstActivityLink = page
-      .locator('nav a, aside a, [role="link"]')
-      .filter({ hasText: /introduction|lecture|dynamic/i })
-      .first()
-
-    if (await firstActivityLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await firstActivityLink.click()
-      await page.waitForURL(/\/activity\//, { timeout: 10_000 })
-    }
+    await coursePlayerPage.gotoCourseLanding(courseUuid)
+    await coursePlayerPage.openActivity(new RegExp(COURSE.activities.dynamicLecture, 'i'))
 
     // The "Mark as complete" button should be visible
     await expect(coursePlayerPage.markCompleteButton).toBeVisible({
@@ -94,31 +94,27 @@ test.describe.serial('Student – Learning Journey', () => {
     })
     await coursePlayerPage.markComplete()
 
-    // A visual indication of completion should appear (checkmark, "Completed" text, etc.)
-    await expect(page.getByText(/completed|done|marked/i).first()).toBeVisible({
+    // v2 feedback: the "Activity completed" toast, the CTA stops offering
+    // "Mark as complete" and the outline counts the chapter as 1/1 done
+    await expect(page.getByText(/activity completed/i).first()).toBeVisible({ timeout: 10_000 })
+    await expect(coursePlayerPage.markCompleteButton).toBeHidden({ timeout: 10_000 })
+    await expect(
+      page
+        .getByRole('navigation', { name: /course content/i })
+        .getByText(/^1\/1$/)
+        .first(),
+    ).toBeVisible({
       timeout: 10_000,
     })
   })
 
   // ── 3. File submission ──────────────────────────────────────────────────
 
-  test('student can navigate to the File Submission activity', async ({ page }) => {
-    await page.goto(`/en/course/${courseUuid}`)
-    await page.waitForLoadState('networkidle')
-
-    const fileSubmissionLink = page
-      .locator('nav a, aside a, [role="link"]')
-      .filter({ hasText: /file|project|upload/i })
-      .first()
-
-    await expect(fileSubmissionLink).toBeVisible({ timeout: 10_000 })
-    await fileSubmissionLink.click()
-    await page.waitForURL(/\/activity\//, { timeout: 10_000 })
-
+  test('student can navigate to the File Submission activity', async ({ coursePlayerPage }) => {
+    await coursePlayerPage.gotoCourseLanding(courseUuid)
+    const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.fileSubmission, 'i'))
     // Store the activity id for grading spec
-    const match = /\/activity\/([^/]+)/.exec(page.url())
-    const activityId = match?.[1]
-    if (activityId) setEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID', activityId)
+    setEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID', activityId)
   })
 
   /**
@@ -141,29 +137,21 @@ test.describe.serial('Student – Learning Journey', () => {
 
   // ── 4. Exam ─────────────────────────────────────────────────────────────
 
-  test('student can navigate to the Final Exam activity', async ({ page }) => {
-    await page.goto(`/en/course/${courseUuid}`)
-    await page.waitForLoadState('networkidle')
-
-    const examLink = page
-      .locator('nav a, aside a, [role="link"]')
-      .filter({ hasText: /exam|quiz/i })
-      .first()
-
-    await expect(examLink).toBeVisible({ timeout: 10_000 })
-    await examLink.click()
-    await page.waitForURL(/\/activity\//, { timeout: 10_000 })
-
-    const match = /\/activity\/([^/]+)/.exec(page.url())
-    const activityId = match?.[1]
-    if (activityId) setEnv('E2E_EXAM_STUDENT_ACTIVITY_ID', activityId)
+  test('student can navigate to the Final Exam activity', async ({ coursePlayerPage }) => {
+    await coursePlayerPage.gotoCourseLanding(courseUuid)
+    const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.exam, 'i'))
+    setEnv('E2E_EXAM_STUDENT_ACTIVITY_ID', activityId)
   })
 
   /**
    * BUG PROTOCOL: The exam start button must be visible and clickable.
    * If the assessment shell fails to render, the test MUST fail.
+   *
+   * v2: starting, answering and submitting happen in ONE test on purpose — the
+   * exam's anti-cheat treats a page reload mid-attempt as leaving the exam and
+   * auto-submits it, and the attempt limit is 1.
    */
-  test('student can start an exam attempt', async ({ page, assessmentPage }) => {
+  test('student can start an exam attempt, answer the questions and submit', async ({ page, assessmentPage }) => {
     const activityId = getEnv('E2E_EXAM_STUDENT_ACTIVITY_ID')
     if (!activityId) {
       test.skip(true, 'Exam activity ID not captured in prior test')
@@ -177,95 +165,61 @@ test.describe.serial('Student – Learning Journey', () => {
     await assessmentPage.startAttempt()
 
     // After starting, question content must be visible
-    await expect(page.locator('[data-question], .question-block, fieldset').first()).toBeVisible({
-      timeout: 10_000,
-    })
-  })
+    await expect(page.getByRole('group').first()).toBeVisible({ timeout: 10_000 })
 
-  test('student can answer exam questions and submit', async ({ page, assessmentPage }) => {
-    const activityId = getEnv('E2E_EXAM_STUDENT_ACTIVITY_ID')
-    if (!activityId) {
-      test.skip(true, 'Exam activity ID not captured in prior test')
-      return
-    }
-
-    await page.goto(`/en/course/${courseUuid}/activity/${activityId}`)
-    await page.waitForLoadState('networkidle')
-
-    // Start attempt if not already in progress
-    if (await assessmentPage.startButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await assessmentPage.startAttempt()
-    }
-
-    // Answer question 1 – Multiple choice (correct answer is index 0)
-    await assessmentPage.answerChoiceQuestion(0, 0)
-
-    // Answer question 2 – True/False (correct answer is False = index 1)
-    await assessmentPage.answerChoiceQuestion(1, 1)
-
-    // Answer question 3 – Multi-select (correct: 0 and 2)
-    await assessmentPage.answerMultiSelectQuestion(2, [0, 2])
+    // Questions and options are shuffled — answer by text
+    const exact = (text: string) => new RegExp(`^${text}$`)
+    await assessmentPage.answerChoice(EXAM_ANSWERS.singleChoice.question, exact(EXAM_ANSWERS.singleChoice.answer))
+    await assessmentPage.answerChoice(EXAM_ANSWERS.trueFalse.question, exact(EXAM_ANSWERS.trueFalse.answer))
+    await assessmentPage.answerMultiSelect(
+      EXAM_ANSWERS.multiSelect.question,
+      EXAM_ANSWERS.multiSelect.answers.map(exact),
+    )
 
     // Submit the exam
     await assessmentPage.submitAttempt()
 
-    // A result / score should be displayed after submission
-    await expect(page.getByText(/score|result|passed|completed/i).first()).toBeVisible({
+    // A result / receipt should be displayed after submission
+    await expect(page.getByText(/submission received|score|result|passed/i).first()).toBeVisible({
       timeout: 15_000,
     })
   })
 
-  // ── 5. Code challenge ───────────────────────────────────────────────────
-
-  test('student can navigate to and submit the coding challenge', async ({ page, assessmentPage }) => {
-    await page.goto(`/en/course/${courseUuid}`)
-    await page.waitForLoadState('networkidle')
-
-    const codeLink = page
-      .locator('nav a, aside a, [role="link"]')
-      .filter({ hasText: /code|coding|challenge/i })
-      .first()
-
-    if (!(await codeLink.isVisible({ timeout: 5000 }).catch(() => false))) {
-      // BUG: Code challenge activity not visible in sidebar — leave test failing
-      await expect(codeLink).toBeVisible({
-        timeout: 1,
-      }) // will throw
-    }
-
-    await codeLink.click()
-    await page.waitForURL(/\/activity\//, { timeout: 10_000 })
-
-    const match = /\/activity\/([^/]+)/.exec(page.url())
-    const activityId = match?.[1]
-    if (activityId) setEnv('E2E_CODE_ACTIVITY_ID', activityId)
-
-    // Fill and submit the code solution
-    if (await assessmentPage.codeEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await assessmentPage.fillCodeEditor(CORRECT_PYTHON_SOLUTION)
-      await assessmentPage.submitCode()
-
-      // Wait for evaluation result
-      await expect(page.getByText(/passed|correct|submitted/i).first()).toBeVisible({
-        timeout: 30_000,
-      })
-    } else {
-      // BUG PROTOCOL: Code editor not visible — test must fail
-      await expect(assessmentPage.codeEditor).toBeVisible({ timeout: 1 })
-    }
-  })
-
-  // ── 6. Certificate check ────────────────────────────────────────────────
+  // ── 5. Certificate check ────────────────────────────────────────────────
 
   /**
    * Certificate should NOT be available before the teacher grades the submission.
    * This test documents the expected (correct) state.
    */
   test('certificate is not yet available before teacher grades work', async ({ coursePlayerPage }) => {
-    await coursePlayerPage.gotoCourseLanding(courseUuid)
+    // v2: certificates are offered on the Progress page (/trail) course card;
+    // nothing must be offered while the file submission and exam are ungraded
+    await coursePlayerPage.assertCertificateNotAvailable(courseUuid)
+  })
 
-    // The download certificate button should NOT be present yet
-    const certBtn = coursePlayerPage.downloadCertButton
-    await expect(certBtn).not.toBeVisible({ timeout: 5000 })
+  // ── 6. Code challenge ───────────────────────────────────────────────────
+  // Last on purpose: without Judge0 the teacher cannot author the challenge
+  // (spec 03 leaves it an unpublished draft) and this step skips.
+
+  test('student can navigate to and submit the coding challenge', async ({
+    page,
+    assessmentPage,
+    coursePlayerPage,
+  }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
+    test.setTimeout(120_000)
+    await coursePlayerPage.gotoCourseLanding(courseUuid)
+    const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.codeChallenge, 'i'))
+    setEnv('E2E_CODE_ACTIVITY_ID', activityId)
+
+    await assessmentPage.startAttempt()
+    // BUG PROTOCOL: the arena editor must render — no fallback
+    await expect(assessmentPage.codeEditor).toBeVisible({ timeout: 30_000 })
+    await assessmentPage.fillCodeEditor(CORRECT_PYTHON_SOLUTION)
+    // Judge0 grades the hand-in inside the submit: both tests pass → 100, released at once
+    const submitted = await assessmentPage.submitCode()
+    expect(submitted).toMatchObject({ status: 'published', final_score: 100 })
+    await expect(page.getByText('Assessment submitted · 100%', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Passed', { exact: true }).first()).toBeVisible()
   })
 })

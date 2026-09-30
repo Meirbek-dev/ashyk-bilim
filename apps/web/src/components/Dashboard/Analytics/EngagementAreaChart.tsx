@@ -1,10 +1,12 @@
 'use client'
 
+import { fromUnix } from '@/lib/api/contract'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import type { TimeSeriesPoint } from '@/types/analytics'
-import { useLocale } from 'next-intl'
+import { useFormatter, useLocale } from 'next-intl'
 
 interface EngagementAreaChartProps {
   title: string
@@ -14,8 +16,9 @@ interface EngagementAreaChartProps {
 
 export default function EngagementAreaChart({ title, description, data }: EngagementAreaChartProps) {
   const locale = useLocale()
+  const format = useFormatter()
   const chartData = data.map(point => ({
-    bucket: new Date(point.bucket_start).toLocaleDateString(locale, {
+    bucket: fromUnix(point.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
     }),
@@ -35,15 +38,22 @@ export default function EngagementAreaChart({ title, description, data }: Engage
             value: {
               label: title,
               color: 'var(--chart-1)',
-              valueFormatter: value => `${value ?? 0}`,
+              valueFormatter: value => format.number(Number(value ?? 0)),
             },
           }}
         >
           <AreaChart data={chartData}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} />
-            <ChartTooltip content={<ChartTooltipContent nameKey="value" formatter={v => [String(v), title]} />} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+              tickFormatter={(v: number) => format.number(v)}
+            />
+            <ChartTooltip
+              content={<ChartTooltipContent nameKey="value" formatter={v => [format.number(Number(v)), title]} />}
+            />
             <Area
               dataKey="value"
               type="monotone"

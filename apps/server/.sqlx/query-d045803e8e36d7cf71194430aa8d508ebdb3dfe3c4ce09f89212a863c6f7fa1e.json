@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_token_ledger (month, user_id, input_tokens, output_tokens, run_count)\n           VALUES (date_trunc('month', now())::date, $1, $2, $3, 1)\n           ON CONFLICT (month, user_id) DO UPDATE SET\n               input_tokens = ai_token_ledger.input_tokens + EXCLUDED.input_tokens,\n               output_tokens = ai_token_ledger.output_tokens + EXCLUDED.output_tokens,\n               run_count = ai_token_ledger.run_count + 1,\n               updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d045803e8e36d7cf71194430aa8d508ebdb3dfe3c4ce09f89212a863c6f7fa1e"
+}

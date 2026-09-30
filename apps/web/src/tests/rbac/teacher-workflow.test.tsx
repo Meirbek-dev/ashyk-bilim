@@ -10,6 +10,7 @@ import type { Session } from '@/lib/auth/types'
 
 // Mock useRouter
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/dash',
   useRouter: () => ({
     refresh: vi.fn(),
     push: vi.fn(),
@@ -36,26 +37,22 @@ vi.mock('@/lib/api-client', () => ({
 
 const createMockSession = (permissions: string[]): Session => ({
   user: {
-    id: 1,
-    user_uuid: 'user-123',
+    id: '0198c0ae-0000-7000-8000-000000000001',
     username: 'testuser',
     email: 'test@example.com',
-    first_name: 'Test',
-    last_name: 'User',
-    middle_name: null,
-    avatar_image: null,
-    bio: null,
-    details: null,
-    profile: null,
+    display_name: 'Test User',
+    bio: '',
+    locale: 'en-US',
+    avatar_key: null,
+    mfa_enabled: false,
+    has_password: true,
+    google_linked: false,
+    profile: { sections: [] },
     theme: null,
   },
+  userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: [],
   permissions,
-  permissions_timestamp: Date.now(),
-  expires_at: Date.now() + 3_600_000,
-  session_version: 1,
-  expiresAt: Date.now() + 3_600_000,
-  sessionVersion: 1,
 })
 
 describe('Teacher (Instructor) Workflow', () => {
@@ -175,8 +172,8 @@ describe('Security Invariants', () => {
     expect(screen.queryByTestId('secret')).toBeNull()
   })
 
-  it('should allow everything for super-admins with wildcard (*)', () => {
-    const adminSession = createMockSession(['*'])
+  it('should allow everything for super-admins with wildcard (*:*:*)', () => {
+    const adminSession = createMockSession(['*:*:*'])
     const AdminWrapper = ({ children }: { children: React.ReactNode }) => (
       <SessionProvider initialSession={adminSession}>{children}</SessionProvider>
     )

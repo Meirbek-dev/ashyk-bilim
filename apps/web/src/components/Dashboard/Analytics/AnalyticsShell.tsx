@@ -25,6 +25,7 @@ interface AnalyticsShellProps {
   activeTab: 'overview' | 'watchlist' | 'performance' | 'operations' | 'admin'
   courseOptions?: AnalyticsFilterOption[]
   cohortOptions?: AnalyticsFilterOption[]
+  sortKeys?: readonly string[] | undefined
   children: React.ReactNode
 }
 
@@ -40,6 +41,7 @@ export default function AnalyticsShell({
   activeTab,
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
+  sortKeys,
   children,
 }: AnalyticsShellProps) {
   const t = useTranslations('TeacherAnalytics')
@@ -95,7 +97,7 @@ export default function AnalyticsShell({
         breadcrumbType="analytics"
         title={t('pages.shellTitle')}
         actions={
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />
             <AnalyticsExportButton
               href={getAnalyticsExportUrl('grading-backlog', query)}
@@ -114,7 +116,7 @@ export default function AnalyticsShell({
       </DashHeader>
 
       {/* Main Content Area - Full width with padding */}
-      <main className="min-w-0 flex-1 space-y-6 px-4 py-6 lg:px-8">
+      <section className="min-w-0 flex-1 space-y-6 px-4 py-6 lg:px-8">
         {/* Global Filters Section (Above Tabs) */}
         <div className="w-full">
           <TeacherFilterBar
@@ -123,13 +125,14 @@ export default function AnalyticsShell({
             courseCount={overview.scope.course_ids.length}
             courseOptions={(courseOptions.length ? courseOptions : overview.course_options) ?? []}
             cohortOptions={(cohortOptions.length ? cohortOptions : overview.cohort_options) ?? []}
+            sortKeys={sortKeys}
           />
-          <SavedViewsBar query={query} />
+          <SavedViewsBar query={query} viewType={activeTab} />
         </div>
 
         {/* Tab Panel content */}
         <div className="space-y-6">{children}</div>
-      </main>
+      </section>
     </div>
   )
 }

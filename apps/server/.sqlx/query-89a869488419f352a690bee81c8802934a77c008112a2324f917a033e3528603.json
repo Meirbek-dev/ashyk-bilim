@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO course_discussions (course_id, user_id, parent_id, kind, content)\n           VALUES ($1, $2, $3, CASE WHEN $3::uuid IS NULL THEN 'post' ELSE 'reply' END, $4)\n           RETURNING id AS \"id: DiscussionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: DiscussionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "89a869488419f352a690bee81c8802934a77c008112a2324f917a033e3528603"
+}

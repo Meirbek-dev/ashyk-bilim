@@ -3,92 +3,40 @@
 import { Bookmark, BookmarkCheck } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { ChoiceItemAttempt } from '@/features/assessments/items/choice'
-import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
+import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
+import { CanonicalAttemptItem } from '@/features/assessments/shared/canonical-item-rendering'
 import { MarkdownContent } from '@/features/content-markdown'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { Button } from '@components/ui/button'
 import { cn } from '@/lib/utils'
 
-interface QuestionData {
-  id: string
-  question_uuid: string
-  question_text: string
-  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING'
-  points: number
-  explanation?: string
-  answer_options: {
-    text: string
-    is_correct?: boolean
-    left?: string
-    right?: string
-    option_id?: string | number
-  }[]
-}
-
 interface ExamQuestionCardProps {
-  question: QuestionData
+  item: AssessmentItem
   questionNumber: number
-  answer: Record<string, unknown>
+  answer: ItemAnswer | undefined
   isFlagged?: boolean
-  onAnswerChange: (questionId: string, answer: unknown) => void
+  onAnswerChange: (itemId: string, answer: ItemAnswer) => void
   onToggleFlag?: () => void
+  /** Read-only once the server stops accepting draft saves (UX-196). */
+  disabled?: boolean
 }
 
-function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): string | number {
-  return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex
-}
-
-function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
-  if (question.question_type === 'MATCHING') {
-    return {
-      id: question.id,
-      kind: 'MATCHING',
-      prompt: question.question_text,
-      points: question.points,
-      pairs: question.answer_options.map((option, index) => ({
-        id: option.option_id ?? index,
-        left: option.left ?? '',
-        right: option.right ?? '',
-      })),
-    }
-  }
-
-  return {
-    id: question.id,
-    kind:
-      question.question_type === 'SINGLE_CHOICE'
-        ? 'CHOICE_SINGLE'
-        : question.question_type === 'MULTIPLE_CHOICE'
-          ? 'CHOICE_MULTIPLE'
-          : 'TRUE_FALSE',
-    prompt: question.question_text,
-    points: question.points,
-    options: question.answer_options.map((option, index) =>
-      option.is_correct === undefined
-        ? {
-            id: getAnswerOptionId(option, index),
-            text: option.text,
-          }
-        : {
-            id: getAnswerOptionId(option, index),
-            text: option.text,
-            isCorrect: option.is_correct,
-          },
-    ),
-  }
-}
-
+/**
+ * One exam question: header (number, points, flag, prompt) plus the canonical
+ * answer control for the item's kind — every kind the server can return
+ * (choice, matching, open text, form, code) renders here (BUG-110).
+ */
 export default function ExamQuestionCard({
-  question,
+  item,
   questionNumber,
   answer,
   isFlagged = false,
   onAnswerChange,
   onToggleFlag,
+  disabled = false,
 }: ExamQuestionCardProps) {
   const t = useTranslations('Activities.ExamActivity')
-  const questionId = question.id
+  const questionId = item.item_uuid
 
   return (
     <Card
@@ -101,7 +49,7 @@ export default function ExamQuestionCard({
           <span id={`question-title-${questionId}`}>{t('questionNumber', { number: questionNumber })}</span>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-sm font-normal">
-              {t('points', { count: question.points ?? 0 })}
+              {t('points', { count: item.max_score ?? 0 })}
             </span>
             {onToggleFlag ? (
               <Button
@@ -122,17 +70,19 @@ export default function ExamQuestionCard({
         </CardTitle>
         <div className="mt-2">
           <MarkdownContent
-            content={question.question_text}
+            content={item.body.prompt}
             mode="prompt"
             className="text-foreground text-base leading-relaxed"
           />
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <ChoiceItemAttempt
-          item={toChoiceItem(question)}
-          answer={answer[questionId] as ChoiceAnswer}
-          onAnswerChange={nextAnswer => onAnswerChange(questionId, nextAnswer)}
+        {/* The prompt is in the header; the control renders only the answer. */}
+        <CanonicalAttemptItem
+          item={{ ...item, body: { ...item.body, prompt: '' } }}
+          answer={answer}
+          disabled={disabled}
+          onChange={next => onAnswerChange(questionId, next)}
         />
       </CardContent>
     </Card>

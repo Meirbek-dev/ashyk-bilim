@@ -18,7 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useUserByIdQuery, useUserByUsernameQuery } from '@/features/users/hooks/useUsers'
-import type { components } from '@/lib/api/generated'
+import type { PublicUser } from '@/lib/users/client'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -32,7 +32,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
-type UserData = components['schemas']['UserRead']
+type UserData = PublicUser
 interface UserDetail {
   id: string
   label: string
@@ -89,7 +89,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   const [error, setError] = useState<string | null>(null)
 
   const { updateAttributes, node } = props
-  const userId = typeof node.attrs.user_id === 'number' ? node.attrs.user_id : null
+  const userId = typeof node.attrs.user_id === 'string' ? node.attrs.user_id : null
   const userByIdQuery = useUserByIdQuery(userId, { enabled: userId !== null })
   const userByUsernameQuery = useUserByUsernameQuery(submittedUsername, {
     enabled: Boolean(submittedUsername && submittedUsername.trim().length > 0),
@@ -108,14 +108,14 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
       return
     }
 
+    // A failed lookup never clears `user_id`: only picking another user changes
+    // the stored link, so a save cannot drop it (migrated blocks, a disabled
+    // account, a network blip).
     if (userByIdQuery.error) {
       console.error('Error fetching user by ID:', userByIdQuery.error)
-      queueMicrotask(() => {
-        setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
-        updateAttributes({ user_id: null })
-      })
+      queueMicrotask(() => setError(t('errorNotFound')))
     }
-  }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId])
+  }, [t, userByIdQuery.data, userByIdQuery.error, userId])
 
   useEffect(() => {
     if (!submittedUsername) return
@@ -226,9 +226,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                   <UserAvatar
                     size="xl"
                     avatar_url={
-                      userData.avatar_image
-                        ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image)
-                        : ''
+                      userData.avatar_image ? getUserAvatarMediaDirectory(userData.id, userData.avatar_image) : ''
                     }
                     {...(!userData.avatar_image ? { predefined_avatar: 'empty' } : {})}
                     userId={userData.id}
@@ -253,7 +251,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-gray-600 hover:text-gray-900"
-                    onClick={() => userData.username && router.push(`/user/${userData.username}`)}
+                    onClick={() => userData.username && router.push(`/user/${encodeURIComponent(userData.username)}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>

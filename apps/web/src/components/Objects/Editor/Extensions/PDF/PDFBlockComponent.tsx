@@ -1,11 +1,12 @@
 import { FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput } from '../../FileUploadBlock'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { AlertTriangle, Download, Expand, FileText } from 'lucide-react'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
+import { getBlockFileUrl } from '@services/blocks/upload'
+import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavailable'
+import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
@@ -22,10 +23,7 @@ const MAX_HEIGHT = 1200
 
 interface PdfBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 interface PdfBlockSize {
@@ -51,7 +49,6 @@ function normalizeSize(size?: Partial<PdfBlockSize> | null): PdfBlockSize {
 
 function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) {
   const t = useTranslations('DashPage.Editor.PDFBlock')
-  const course = useCourse()
   const [pdf, setPDF] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [blockObject, setblockObject] = useState(props.node.attrs.blockObject)
@@ -71,7 +68,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
 
   const [availableWidth, setAvailableWidth] = useState<number | null>(null)
   const nodeSize = props.node.attrs.size
-  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
+  const pdfUrl = getBlockFileUrl(blockObject?.content)
   const editorState = useEditorProvider()
   const { isEditable } = editorState
   const sizeRef = useRef(size)
@@ -113,10 +110,6 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     props.updateAttributes({ size: sizeRef.current })
   }, [props])
 
-  const handlePDFChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPDF(event.target.files?.[0] ?? null)
-  }
-
   const handleSubmit = async () => {
     if (!pdf) return // Guard: only proceed if pdf is not null
     setIsLoading(true)
@@ -129,15 +122,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   }
 
   const handleDownload = () => {
-    if (!(fileId && blockObject)) return
-
-    const pdfUrl = getActivityBlockMediaDirectory({
-      courseId: course?.courseStructure.course_uuid || '',
-      activityId: props.extension.options.activity.activity_uuid,
-      blockId: blockObject.block_uuid,
-      fileId,
-      type: 'pdfBlock',
-    })
+    if (!(pdfUrl && blockObject)) return
 
     const link = document.createElement('a')
     link.href = pdfUrl || ''
@@ -152,6 +137,12 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
 
   const handleExpand = () => {
     setIsModalOpen(true)
+  }
+
+  // BUG-263: like the image block — the save that drops the node releases
+  // the upload server-side; undo before or after it keeps the file.
+  const handleRemove = () => {
+    props.deleteNode()
   }
 
   const handleWidthResize = useCallback(
@@ -208,16 +199,6 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     }
   }, [targetHeight, targetWidth])
 
-  const pdfUrl = blockObject
-    ? getActivityBlockMediaDirectory({
-        courseId: course?.courseStructure.course_uuid || '',
-        activityId: props.extension.options.activity.activity_uuid,
-        blockId: blockObject.block_uuid,
-        fileId: fileId || '',
-        type: 'pdfBlock',
-      })
-    : null
-
   const viewerStyle = {
     width: `${visibleWidth}px`,
     height: `${visibleHeight}px`,
@@ -227,7 +208,12 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     <>
       <NodeViewWrapper className="block-pdf w-full py-2">
         <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={FileText}>
-          <FileUploadBlockInput onChange={handlePDFChange} accept={SUPPORTED_FILES} />
+          <FileUploadBlockInput
+            onFileSelect={setPDF}
+            file={pdf}
+            accept={SUPPORTED_FILES}
+            hint={t('supportedFormats')}
+          />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!pdf} />
         </FileUploadBlock>
         {blockObject ? (
@@ -266,11 +252,13 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
                       groupResizeBehavior="preserve-pixel-size"
                       onResize={handleHeightResize}
                     >
-                      <iframe
-                        className="h-full w-full rounded-lg bg-black shadow-sm"
-                        src={pdfUrl || ''}
-                        title={t('pdfViewer')}
-                      />
+                      <CheckedMedia url={pdfUrl} kind="pdf">
+                        <iframe
+                          className="h-full w-full rounded-lg bg-black shadow-sm"
+                          src={pdfUrl || ''}
+                          title={t('pdfViewer')}
+                        />
+                      </CheckedMedia>
                     </ResizablePanel>
                     {isEditable && <ResizableHandle withHandle className="bg-white/70 hover:bg-white/90" />}
                     <ResizablePanel minSize={0} />
@@ -290,6 +278,16 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
                 >
                   <Expand className="h-4 w-4 text-white" />
                 </button>
+                {isEditable ? (
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="rounded-full bg-black/50 p-2 transition-colors hover:bg-red-600/80"
+                    title={t('remove')}
+                  >
+                    <Trash2 className="h-4 w-4 text-white" />
+                  </button>
+                ) : null}
                 {!isEditable && (
                   <button
                     type="button"

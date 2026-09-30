@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { buildAIStages, isTerminalAIState } from '@/features/ai-experience'
 import type { AIWorkState } from '@/features/ai-experience'

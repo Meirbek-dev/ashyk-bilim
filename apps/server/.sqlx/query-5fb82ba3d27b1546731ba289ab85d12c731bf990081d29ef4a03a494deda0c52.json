@@ -1,0 +1,163 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT f.id AS \"id: ItemFeedbackId\",\n                  f.grading_entry_id AS \"grading_entry_id: GradingEntryId\",\n                  f.submission_id AS \"submission_id: SubmissionId\",\n                  f.item_id AS \"item_id: AssessmentItemId\", f.item_ref, f.comment, f.score,\n                  f.max_score, f.annotation_type AS \"annotation_type: AnnotationType\",\n                  f.annotation_key, f.graded_by AS \"graded_by: UserId\",\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM f.updated_at))::bigint AS \"updated_at!\"\n           FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id\n           WHERE f.submission_id = $1 AND (NOT $2 OR g.published_at IS NOT NULL)\n           ORDER BY f.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ItemFeedbackId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "grading_entry_id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "grading_entry_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "item_id: AssessmentItemId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "item_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "item_ref",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "item_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "comment",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "comment"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "max_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "max_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "annotation_type: AnnotationType",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "annotation_type"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "annotation_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "annotation_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "graded_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "item_feedback",
+            "name": "graded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "5fb82ba3d27b1546731ba289ab85d12c731bf990081d29ef4a03a494deda0c52"
+}

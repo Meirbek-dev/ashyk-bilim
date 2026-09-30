@@ -1,15 +1,30 @@
-import {
-  Award,
-  BookOpen,
-  Briefcase,
-  GraduationCap,
-  ImageIcon,
-  Link as LinkIcon,
-  MapPin,
-  TextIcon,
-  Trophy,
-} from 'lucide-react'
+import { Award, BookOpen, Briefcase, GraduationCap, ImageIcon, Link as LinkIcon, MapPin, TextIcon } from 'lucide-react'
+import type { ProfileSection, ProfileSections } from '@/lib/api/generated/zod'
 
+/**
+ * The profile builder document is the server's `ProfileSections`
+ * (`users.profile`, BUG-361): the section kinds and item shapes come from the
+ * generated contract; this module only adds the editor's labels and icons.
+ */
+export type { ProfileSection, ProfileSections as ProfileData }
+
+export type ImageGallerySection = Extract<ProfileSection, { type: 'image-gallery' }>
+export type TextSection = Extract<ProfileSection, { type: 'text' }>
+export type LinksSection = Extract<ProfileSection, { type: 'links' }>
+export type SkillsSection = Extract<ProfileSection, { type: 'skills' }>
+export type ExperienceSection = Extract<ProfileSection, { type: 'experience' }>
+export type EducationSection = Extract<ProfileSection, { type: 'education' }>
+export type AffiliationSection = Extract<ProfileSection, { type: 'affiliation' }>
+export type CoursesSection = Extract<ProfileSection, { type: 'courses' }>
+
+export type ProfileImage = ImageGallerySection['images'][number]
+export type ProfileLink = LinksSection['links'][number]
+export type ProfileSkill = SkillsSection['skills'][number]
+export type ProfileExperience = ExperienceSection['experiences'][number]
+export type ProfileEducation = EducationSection['education'][number]
+export type ProfileAffiliation = AffiliationSection['affiliations'][number]
+
+/** The kinds the editor offers (the contract also carries the legacy `gamification` kind, which has no editor). */
 export const SECTION_TYPE_KEYS = {
   'image-gallery': 'imageGallery',
   text: 'text',
@@ -19,8 +34,9 @@ export const SECTION_TYPE_KEYS = {
   education: 'education',
   affiliation: 'affiliation',
   courses: 'courses',
-  gamification: 'gamification',
 } as const
+
+export type SectionKind = keyof typeof SECTION_TYPE_KEYS
 
 export const getSectionTypesConfig = (t: AppTranslator) => ({
   'image-gallery': {
@@ -63,12 +79,13 @@ export const getSectionTypesConfig = (t: AppTranslator) => ({
     label: t('SectionTypes.courses.label'),
     description: t('SectionTypes.courses.description'),
   },
-  gamification: {
-    icon: Trophy,
-    label: t('SectionTypes.gamification.label'),
-    description: t('SectionTypes.gamification.description'),
-  },
 })
+
+/** Icon + label for any stored kind (`gamification` falls back to the trophy-less generic entry). */
+export function sectionMeta(t: AppTranslator, type: ProfileSection['type']) {
+  const config = getSectionTypesConfig(t)
+  return type in config ? config[type as SectionKind] : { icon: Award, label: type, description: '' }
+}
 
 export const skillLevelItems = (t: AppTranslator) => [
   { value: 'beginner', label: t('SkillsEditor.levelBeginner') },
@@ -77,114 +94,35 @@ export const skillLevelItems = (t: AppTranslator) => [
   { value: 'expert', label: t('SkillsEditor.levelExpert') },
 ]
 
-export interface ProfileImage {
-  url: string
-  caption?: string
-}
-
-export interface ProfileLink {
-  title: string
-  url: string
-  icon?: string
-}
-
-export interface ProfileSkill {
-  name: string
-  level?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
-  category?: string
-}
-
-export interface ProfileExperience {
-  title: string
-  organization: string
-  startDate: string
-  endDate?: string
-  current: boolean
-  description: string
-}
-
-export interface ProfileEducation {
-  institution: string
-  degree: string
-  field: string
-  startDate: string
-  endDate?: string
-  current: boolean
-  description?: string
-}
-
-export interface ProfileAffiliation {
-  name: string
-  description: string
-  logoUrl: string
-}
-
-export interface BaseSection {
-  id: string
-  type: keyof typeof SECTION_TYPE_KEYS
-  title: string
-}
-
-export type ImageGallerySection = {
-  type: 'image-gallery'
-  images: ProfileImage[]
-} & BaseSection
-
-export type TextSection = {
-  type: 'text'
-  content: string
-} & BaseSection
-
-export type LinksSection = {
-  type: 'links'
-  links: ProfileLink[]
-} & BaseSection
-
-export type SkillsSection = {
-  type: 'skills'
-  skills: ProfileSkill[]
-} & BaseSection
-
-export type ExperienceSection = {
-  type: 'experience'
-  experiences: ProfileExperience[]
-} & BaseSection
-
-export type EducationSection = {
-  type: 'education'
-  education: ProfileEducation[]
-} & BaseSection
-
-export type AffiliationSection = {
-  type: 'affiliation'
-  affiliations: ProfileAffiliation[]
-} & BaseSection
-
-export type CoursesSection = {
-  type: 'courses'
-} & BaseSection
-
-export type GamificationSection = {
-  type: 'gamification'
-  settings: {
-    showLevel: boolean
-    showXP: boolean
-    showStreaks: boolean
-    showLeaderboard: boolean
+export function createEmptySection(t: AppTranslator, type: SectionKind): ProfileSection {
+  const base = {
+    id: `section-${Date.now()}`,
+    title: t('EmptySections.defaultTitle', { sectionName: getSectionTypesConfig(t)[type].label }),
   }
-} & BaseSection
-
-export type ProfileSection =
-  | ImageGallerySection
-  | TextSection
-  | LinksSection
-  | SkillsSection
-  | ExperienceSection
-  | EducationSection
-  | AffiliationSection
-  | CoursesSection
-  | GamificationSection
-
-export interface ProfileData {
-  sections: ProfileSection[]
+  switch (type) {
+    case 'image-gallery': {
+      return { ...base, type, images: [] }
+    }
+    case 'text': {
+      return { ...base, type, content: '' }
+    }
+    case 'links': {
+      return { ...base, type, links: [] }
+    }
+    case 'skills': {
+      return { ...base, type, skills: [] }
+    }
+    case 'experience': {
+      return { ...base, type, experiences: [] }
+    }
+    case 'education': {
+      return { ...base, type, education: [] }
+    }
+    case 'affiliation': {
+      return { ...base, type, affiliations: [] }
+    }
+    case 'courses': {
+      return { ...base, type }
+    }
+  }
 }

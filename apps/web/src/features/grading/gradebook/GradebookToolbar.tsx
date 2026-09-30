@@ -14,7 +14,7 @@ export default function GradebookToolbar({
   data,
   filters,
   activityTypes,
-  selectedCount,
+  visibleStudentCount,
   onFiltersChange,
   onExport,
   onRefresh,
@@ -22,12 +22,15 @@ export default function GradebookToolbar({
   data: CourseGradebookResponse
   filters: GradebookFilters
   activityTypes: string[]
-  selectedCount: number
+  /** Rows the table shows after the filters; the learners tile counts those. */
+  visibleStudentCount: number
   onFiltersChange: (filters: GradebookFilters) => void
   onExport: () => void
   onRefresh: () => void
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const filtered = filters.savedFilter !== 'all' || filters.activityType !== 'all' || filters.search.trim() !== ''
+  const totalStudents = data.page_info?.total_students ?? data.summary.student_count
 
   return (
     <div className="space-y-5">
@@ -36,18 +39,22 @@ export default function GradebookToolbar({
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
           <p className="text-muted-foreground text-sm">{data.course_name}</p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="flex flex-wrap gap-2">
           <SummaryTile
-            label={t('summary.learners')}
-            value={data.page_info?.total_students ?? data.summary.student_count}
+            label={filtered ? t('summary.learnersFiltered', { total: totalStudents }) : t('summary.learners')}
+            value={filtered ? visibleStudentCount : totalStudents}
           />
           <SummaryTile
             label={t('summary.activities')}
             value={data.page_info?.total_activities ?? data.summary.activity_count}
           />
-          <SummaryTile label={t('summary.needsGrading')} value={data.summary.needs_grading_count} tone="amber" />
+          <SummaryTile
+            label={t('summary.needsGrading')}
+            value={data.summary.needs_grading_count - data.summary.awaiting_release_count}
+            tone="amber"
+          />
+          <SummaryTile label={t('summary.awaitingRelease')} value={data.summary.awaiting_release_count} tone="amber" />
           <SummaryTile label={t('summary.overdue')} value={data.summary.overdue_count} tone="rose" />
-          <SummaryTile label={t('summary.selected')} value={selectedCount} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
@@ -62,8 +69,8 @@ export default function GradebookToolbar({
       </div>
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-3 xl:grid-cols-5">
-          <div className="relative md:col-span-2 xl:col-span-1">
+        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+          <div className="relative min-w-60 flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               value={filters.search}
@@ -116,7 +123,7 @@ function SummaryTile({
   return (
     <div
       className={cn(
-        'border-border rounded-md border px-3 py-2',
+        'border-border min-w-28 rounded-md border px-3 py-2 whitespace-nowrap',
         tone === 'amber' && 'border-amber-200 bg-amber-50/60',
         tone === 'rose' && 'border-rose-200 bg-rose-50/60',
       )}
@@ -127,12 +134,19 @@ function SummaryTile({
   )
 }
 
+/** Gradebook activity kind → `activityTypes.*` catalog key; accepts wire kinds (`quiz`) and legacy `TYPE_*` tokens. */
+const ACTIVITY_TYPE_LABEL_KEYS: Record<string, string> = {
+  exam: 'exam',
+  code_challenge: 'codeChallenge',
+  quiz: 'quiz',
+  custom: 'quiz',
+  dynamic: 'quiz',
+  form: 'form',
+  file_submission: 'file',
+  file: 'file',
+}
+
 export function labelActivityType(t: (key: string) => string, type: string) {
-  const key = type.toLowerCase()
-  if (key === 'type_exam' || key === 'exam') return t('activityTypes.exam')
-  if (key === 'type_code_challenge' || key === 'code_challenge') return t('activityTypes.codeChallenge')
-  if (key === 'type_custom' || key === 'type_dynamic' || key === 'quiz') return t('activityTypes.quiz')
-  if (key === 'type_form' || key === 'form') return t('activityTypes.form')
-  if (key === 'type_file_submission' || key === 'type_file' || key === 'file') return t('activityTypes.file')
-  return type.replace('TYPE_', '').replaceAll('_', ' ')
+  const key = ACTIVITY_TYPE_LABEL_KEYS[type.toLowerCase().replace(/^type_/, '')]
+  return key ? t(`activityTypes.${key}`) : type.replace('TYPE_', '').replaceAll('_', ' ')
 }

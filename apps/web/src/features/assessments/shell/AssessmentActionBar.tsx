@@ -149,6 +149,18 @@ interface AssessmentActionBarProps {
 }
 
 /**
+ * The primary button always fires `controls.onSubmit`, so the runtime's
+ * recommended entry action ("Continue" / "Start") may only label it while no
+ * attempt content has registered a submit handler.
+ */
+export function resolvePrimaryButtonLabelKey(
+  controls: Pick<AttemptShellRegistration, 'primaryButtonLabelKey' | 'onSubmit'>,
+  recommendedLabelKey: string | null | undefined,
+): string | null {
+  return controls.primaryButtonLabelKey ?? (controls.onSubmit ? null : (recommendedLabelKey ?? null))
+}
+
+/**
  * Fixed bottom action bar for all assessment attempt surfaces.
  *
  * Contains (left-to-right): save-state badge, progress counter, optional
@@ -172,7 +184,7 @@ export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey 
           />
           {navigation ? (
             <span className="text-muted-foreground text-sm">
-              {navigation.answered !== undefined ? `${navigation.answered} answered · ` : ''}
+              {navigation.answered !== undefined ? `${t('answeredSummary', { count: navigation.answered })} · ` : ''}
               {navigation.current} / {navigation.total}
             </span>
           ) : null}

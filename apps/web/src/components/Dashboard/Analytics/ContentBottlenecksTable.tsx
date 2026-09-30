@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { ContentBottleneckRow } from '@/types/analytics'
 import { RouteOff } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import { getAnalyticsCodeLabel } from '@/lib/analytics/labels'
 
 interface ContentBottlenecksTableProps {
   rows: ContentBottleneckRow[]
@@ -14,6 +15,7 @@ interface ContentBottlenecksTableProps {
 export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTableProps) {
   const locale = useLocale()
   const t = useTranslations('Components.DashboardAnalytics')
+  const tA = useTranslations('TeacherAnalytics')
   const numberFormatter = new Intl.NumberFormat(locale)
   const signalLabel = (signal: ContentBottleneckRow['signal']) => t(`contentBottlenecksTable.signals.${signal}`)
 
@@ -53,14 +55,15 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
                     {signalLabel(row.signal)}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+                <TableCell suppressHydrationWarning>
                   {row.completion_rate === null || row.completion_rate === undefined
                     ? t('contentBottlenecksTable.na')
                     : `${numberFormatter.format(row.completion_rate)}%`}
                 </TableCell>
-                <TableCell>{numberFormatter.format(row.exit_count ?? 0)}</TableCell>
+                <TableCell suppressHydrationWarning>{numberFormatter.format(row.exit_count ?? 0)}</TableCell>
                 <TableCell className="text-muted-foreground max-w-[360px] text-sm whitespace-normal">
-                  {row.note}
+                  {getAnalyticsCodeLabel(tA, row.note)}
                 </TableCell>
               </TableRow>
             ))}

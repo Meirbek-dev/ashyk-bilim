@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM assessment_access_users WHERE assessment_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5655841c3d0c7c811fc05d2ea1ec40da5ae6cb997a06020479df1dfdbd8db119"
+}

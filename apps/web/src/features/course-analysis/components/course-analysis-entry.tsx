@@ -2,10 +2,13 @@
 
 import { BrainCircuit, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { useApiError } from '@/hooks/useApiError'
 import {
   AIArtifactLifecycle,
+  AIEmptyState,
   AIErrorRecovery,
   AIPrivacyNotice,
   AIRunProgress,
@@ -30,6 +33,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
     queue,
   })
   const publish = usePublishCourseAnalysis(courseUuid)
+  const { toastApiError } = useApiError()
   const analysis = latest.data ?? null
 
   return (
@@ -50,16 +54,23 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
       <AIPrivacyNotice aiRole="teacher" />
       <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
       <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
-      {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
+      {run.error ? <AIErrorRecovery error={run.error} onRetry={() => void run.start('auto')} /> : null}
       {analysis ? (
         <CourseAnalysisResultShell
           analysis={analysis}
           courseUuid={courseUuid}
           publishing={publish.isPending}
-          onPublish={() => publish.mutate(analysis.analysis_uuid)}
+          onPublish={() =>
+            publish.mutate(analysis.id, {
+              onSuccess: () => toast.success(t('publishedToast')),
+              onError: error => toastApiError(error, { fallback: t('publishFailed') }),
+            })
+          }
         />
+      ) : latest.error ? (
+        <AIErrorRecovery error={latest.error} onRetry={() => void latest.refetch()} />
       ) : (
-        <p className="text-muted-foreground text-sm">{t('defaultStatus')}</p>
+        <AIEmptyState title={t('emptyTitle')} description={t('defaultStatus')} />
       )}
     </section>
   )

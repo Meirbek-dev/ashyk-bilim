@@ -4,7 +4,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 import AssessmentOperationsPanel from '@/components/Dashboard/Analytics/AssessmentOperationsPanel'
-import type { TeacherAssessmentDetailResponse } from '@/types/analytics'
+import { TeacherAssessmentDetailResponse } from '@/lib/api/generated/zod'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -24,11 +25,12 @@ Object.defineProperty(globalThis, 'URL', {
 })
 
 function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}): TeacherAssessmentDetailResponse {
-  return {
-    course_id: overrides.course_id ?? 1,
-    generated_at: '2026-05-05T12:00:00Z',
-    assessment_type: 'manual_assessment',
-    assessment_id: 42,
+  return TeacherAssessmentDetailResponse.parse({
+    activity_id: '00000000-0000-4000-8000-000000000003',
+    course_id: '00000000-0000-4000-8000-000000000001',
+    generated_at_unix: 1777982400,
+    assessment_type: 'exam',
+    assessment_id: '00000000-0000-4000-8000-000000000042',
     title: 'Operational analytics',
     summary: {
       eligible_learners: 24,
@@ -65,11 +67,11 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         id: 'bulk-action-1',
         source: 'bulk_action',
         action: 'release_grades',
-        actor_user_id: 1,
+        actor_user_id: '00000000-0000-4000-8000-000000000001',
         actor_display_name: 'Teacher Analytics',
-        occurred_at: '2026-05-05T10:00:00Z',
+        occurred_at_unix: 1777975200,
         status: 'completed',
-        summary: 'Release Grades for 8 learners',
+        final_score: null,
         affected_count: 8,
         submission_id: null,
       },
@@ -83,21 +85,12 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
       overdue_backlog_count: 2,
       note: 'Backlog is approaching the release target for manual grading.',
     },
-    migration: {
-      is_canonical: true,
-      canonical_row_count: 18,
-      cutover_ready: true,
-      compatibility_mode: 'canonical',
-      note: 'Assessment analytics detail is backed by canonical submission and grading records.',
-    },
     support: {
-      analytics_mode: 'live',
       scoped_eligible_learners: 24,
       scoped_visible_learners: 18,
       scoped_cohort_count: 2,
       cohort_filter_applied: false,
       audit_event_count: 1,
-      cutover_blockers: [],
       alerts: [
         {
           code: 'grading_slo_breached',
@@ -109,7 +102,7 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
     },
     cohort_analytics: [
       {
-        cohort_id: 10,
+        cohort_id: '00000000-0000-4000-8000-000000000010',
         cohort_name: 'Alpha Cohort',
         eligible_learners: 12,
         submitted_learners: 10,
@@ -131,7 +124,8 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         impacted_count: 4,
         impact_rate: 22.2,
         signal: 'critical',
-        note: 'Manual review is still pending for these learners.',
+        note: 'manual_review_pending',
+        accuracy_pct: null,
       },
       {
         item_key: 'q1',
@@ -141,15 +135,16 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         impacted_count: 9,
         impact_rate: 50,
         signal: 'watch',
-        note: 'Accuracy 50.0%',
+        note: null,
+        accuracy_pct: 50,
       },
     ],
     ...overrides,
-  }
+  })
 }
 
 describe('AssessmentOperationsPanel', () => {
-  it('renders diagnostics, slo, migration, and audit details', () => {
+  it('renders v2 diagnostics, slo, and epoch-second audit details', () => {
     render(<AssessmentOperationsPanel detail={createDetail()} />)
 
     expect(screen.getByText('pages.assessmentOpsTitle')).toBeInTheDocument()
@@ -157,18 +152,20 @@ describe('AssessmentOperationsPanel', () => {
       screen.getByText('ManualAssessments use canonical submission states and grading ledger history.'),
     ).toBeInTheDocument()
     expect(screen.getByText('Backlog is approaching the release target for manual grading.')).toBeInTheDocument()
+    expect(screen.queryByText('pages.assessmentOpsMigrationTitle')).not.toBeInTheDocument()
+    // UX-096: audit rows use the shared `DATE_TIME_OPTIONS` style («May 5, 03:00 PM»-like, tz-dependent).
     expect(
-      screen.getByText('Assessment analytics detail is backed by canonical submission and grading records.'),
+      screen.getByText(formatDate(new Date('2026-05-05T10:00:00Z'), 'en-US', DATE_TIME_OPTIONS)),
     ).toBeInTheDocument()
     expect(screen.getByText('Support follow-up is recommended for the active alerts.')).toBeInTheDocument()
     expect(screen.getByText('Grading latency is outside the current service target.')).toBeInTheDocument()
     expect(screen.getByText('Alpha Cohort')).toBeInTheDocument()
     expect(screen.getByText('Awaiting teacher grading')).toBeInTheDocument()
     expect(screen.getByText('Question 1')).toBeInTheDocument()
-    expect(screen.getByText('Release Grades for 8 learners')).toBeInTheDocument()
+    // Bulk-action summaries are rebuilt from `action` + `affected_count` (F32).
+    expect(screen.getByText('pages.assessmentOpsAuditBulkSummary')).toBeInTheDocument()
     expect(screen.getByText('Teacher Analytics')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentOpsAuditRowCount')).toBeInTheDocument()
-    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument()
   })
 
   it('shows the empty audit state when no operational events are available', () => {
@@ -176,13 +173,6 @@ describe('AssessmentOperationsPanel', () => {
       <AssessmentOperationsPanel
         detail={createDetail({
           audit_history: [],
-          migration: {
-            is_canonical: true,
-            canonical_row_count: 18,
-            cutover_ready: true,
-            compatibility_mode: 'canonical',
-            note: 'ManualAssessments are reading only canonical submission rows.',
-          },
           slo: {
             status: 'healthy',
             target_hours: 24,
@@ -193,13 +183,11 @@ describe('AssessmentOperationsPanel', () => {
             note: 'Current grading latency is within target.',
           },
           support: {
-            analytics_mode: 'live',
             scoped_eligible_learners: 18,
             scoped_visible_learners: 18,
             scoped_cohort_count: 0,
             cohort_filter_applied: false,
             audit_event_count: 0,
-            cutover_blockers: [],
             alerts: [],
             note: 'Support diagnostics are within the current operational envelope.',
           },
@@ -210,16 +198,14 @@ describe('AssessmentOperationsPanel', () => {
     )
 
     expect(screen.getByText('pages.assessmentOpsAuditEmpty')).toBeInTheDocument()
-    expect(screen.getByText('ManualAssessments are reading only canonical submission rows.')).toBeInTheDocument()
     expect(screen.getByText('Current grading latency is within target.')).toBeInTheDocument()
     expect(screen.getByText('Support diagnostics are within the current operational envelope.')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentSupportAlertsEmpty')).toBeInTheDocument()
-    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentItemEmpty')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentCohortEmpty')).toBeInTheDocument()
   })
 
-  it('filters and exports audit history from the current payload', () => {
+  it('filters and exports audit history from the current payload', async () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
     render(
@@ -230,25 +216,25 @@ describe('AssessmentOperationsPanel', () => {
               id: 'bulk-action-1',
               source: 'bulk_action',
               action: 'release_grades',
-              actor_user_id: 1,
+              actor_user_id: '00000000-0000-4000-8000-000000000001',
               actor_display_name: 'Teacher Analytics',
-              occurred_at: '2026-05-05T10:00:00Z',
+              occurred_at_unix: 1777975200,
               status: 'completed',
-              summary: 'Release Grades for 8 learners',
+              final_score: null,
               affected_count: 8,
               submission_id: null,
             },
             {
               id: 'grading-entry-1',
               source: 'grading_entry',
-              action: 'save_feedback',
-              actor_user_id: 1,
+              action: 'save_grade',
+              actor_user_id: '00000000-0000-4000-8000-000000000001',
               actor_display_name: 'Teacher Analytics',
-              occurred_at: '2026-05-05T09:00:00Z',
-              status: 'pending',
-              summary: 'Saved draft feedback for Dana',
+              occurred_at_unix: 1777971600,
+              status: 'draft_saved',
+              final_score: 87.5,
               affected_count: 1,
-              submission_id: 4,
+              submission_id: '00000000-0000-4000-8000-000000000004',
             },
           ],
         })}
@@ -259,13 +245,26 @@ describe('AssessmentOperationsPanel', () => {
       target: { value: 'draft' },
     })
 
-    expect(screen.getByText('Saved draft feedback for Dana')).toBeInTheDocument()
-    expect(screen.queryByText('Release Grades for 8 learners')).not.toBeInTheDocument()
+    // The summary is rebuilt from `action` + `final_score`, never server prose.
+    expect(screen.getByText('codes.save_grade: 87.5%')).toBeInTheDocument()
+    expect(screen.queryByText('pages.assessmentOpsAuditBulkSummary')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('pages.assessmentOpsAuditExport'))
 
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickSpy).toHaveBeenCalledTimes(1)
+    // UX-142: the panel's own labels (never `grading_entry` / `draft_saved` /
+    // `save_grade`), BOM + CRLF like the server CSVs, every cell quoted.
+    const bytes = new Uint8Array(await (createObjectUrlMock.mock.calls[0] as unknown as [Blob])[0].arrayBuffer())
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    const csv = new TextDecoder().decode(bytes)
+    expect(csv.startsWith('"pages.assessmentOpsAuditColumnOccurredAt",')).toBe(true)
+    expect(csv.endsWith('\r\n')).toBe(true)
+    expect(csv.split('\r\n')).toHaveLength(3)
+    expect(csv).toContain(
+      ',"codes.grading_entry","codes.draft_saved","codes.save_grade","Teacher Analytics","1","codes.save_grade: 87.5%"',
+    )
+    expect(csv).not.toMatch(/"(grading_entry|draft_saved|save_grade)"/)
 
     clickSpy.mockRestore()
   })

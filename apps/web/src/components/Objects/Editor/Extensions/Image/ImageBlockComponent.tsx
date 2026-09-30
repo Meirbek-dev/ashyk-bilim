@@ -8,18 +8,19 @@ import {
   GripHorizontal,
   ImageIcon,
   Loader2,
+  Trash2,
   Upload,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import NextImage from '@components/ui/NextImage'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
-import { getActivityBlockMediaDirectory } from '@services/media/media'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewImageFile } from '@services/blocks/Image/images'
-import { useCourse } from '@components/Contexts/CourseContext'
+import { getBlockFileUrl } from '@services/blocks/upload'
+import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -33,10 +34,7 @@ type Alignment = 'left' | 'center' | 'right'
 
 interface BlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 interface ImageBlockProps {
@@ -48,6 +46,7 @@ interface ImageBlockProps {
     }
   }
   updateAttributes: (attrs: Partial<ImageBlockProps['node']['attrs']>) => void
+  deleteNode: () => void
   extension: {
     options: {
       activity: { activity_uuid: string }
@@ -96,8 +95,9 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
         return
       }
 
-      // Validate file type
-      if (!selectedFile.type.startsWith('image/')) {
+      // Exact allowlist (the server's `block-image` policy): `image/*` would
+      // let a dropped SVG through — `accept` is only a hint for drag-and-drop.
+      if (!SUPPORTED_FILES.split(',').includes(selectedFile.type)) {
         setError(t('invalidImageFile'))
         return
       }
@@ -261,7 +261,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
   if (preview) {
     return (
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <div className="mx-auto h-48 w-full overflow-hidden rounded-md">
+        <div className="relative mx-auto h-48 w-full overflow-hidden rounded-md">
           <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
         <div className="mt-4 flex justify-center gap-2">
@@ -338,10 +338,11 @@ interface ImageToolbarProps {
   alignment: Alignment
   onAlignmentChange: (alignment: Alignment) => void
   onExpand: () => void
+  onRemove: () => void
   t: ReturnType<typeof useTranslations>
 }
 
-function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolbarProps) {
+function ImageToolbar({ alignment, onAlignmentChange, onExpand, onRemove, t }: ImageToolbarProps) {
   return (
     <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/95 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
       {(Object.keys(ALIGNMENT_CONFIG) as Alignment[]).map(align => {
@@ -358,6 +359,7 @@ function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolba
       })}
       <div className="mx-1 h-4 w-px bg-gray-200" />
       <IconButton onClick={onExpand} icon={Expand} title={t('expand')} />
+      <IconButton onClick={onRemove} icon={Trash2} title={t('remove')} className="hover:text-red-600" />
     </div>
   )
 }
@@ -401,10 +403,9 @@ function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
 // Main Component
 // ============================================================================
 
-export default function ImageBlockComponent({ node, updateAttributes, extension }: ImageBlockProps) {
+export default function ImageBlockComponent({ node, updateAttributes, deleteNode, extension }: ImageBlockProps) {
   const t = useTranslations('DashPage.Editor.ImageBlock')
   usePlatform()
-  const course = useCourse()
   const { isEditable } = useEditorProvider()
   const [blockObject, setBlockObject] = useState(node.attrs.blockObject)
   const [alignment, setAlignment] = useState<Alignment>(node.attrs.alignment || 'center')
@@ -413,19 +414,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
   const activityUuid = extension.options.activity.activity_uuid
   const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH
 
-  // Image URL computation
-  const imageUrl = useMemo(() => {
-    if (!blockObject || !course) return null
-
-    const fileId = `${blockObject.content.file_id}.${blockObject.content.file_format}`
-    return getActivityBlockMediaDirectory({
-      courseId: course.courseStructure.course_uuid,
-      activityId: activityUuid,
-      blockId: blockObject.block_uuid,
-      fileId,
-      type: 'imageBlock',
-    })
-  }, [blockObject, course, activityUuid])
+  const imageUrl = getBlockFileUrl(blockObject?.content)
 
   // Upload handling
   const { preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
@@ -455,6 +444,13 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
     },
     [updateAttributes],
   )
+
+  // BUG-263: removing only drops the node — undo can bring it back. The
+  // upload is released by the next save that no longer shows the block
+  // (and re-claimed if an undo is saved later), server-side.
+  const handleRemove = useCallback(() => {
+    deleteNode()
+  }, [deleteNode])
 
   // Download handler
   const handleDownload = useCallback(() => {
@@ -504,6 +500,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
               alignment={alignment}
               onAlignmentChange={handleAlignmentChange}
               onExpand={() => setIsModalOpen(true)}
+              onRemove={handleRemove}
               t={t}
             />
             <ResizeHandle onResizeStart={handleResizeStart} isResizing={isResizing} />

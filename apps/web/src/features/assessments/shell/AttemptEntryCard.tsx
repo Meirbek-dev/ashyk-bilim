@@ -2,40 +2,48 @@
 
 import type { ReactNode } from 'react'
 import { AlertTriangle, BookOpen, Clock, Eye, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
-
-function formatSeconds(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  if (h > 0) return `${h}h ${m}m`
-  return `${m} min`
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
+import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
 
 interface AttemptEntryCardProps {
   vm: AttemptViewModel
   isTeacher?: boolean
+  /** UX-097: the retake while the last hand-in awaits the teacher — secondary here, the bar stays neutral. */
+  onStartNewAttempt?: () => void
+  startPending?: boolean
 }
 
-export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
+export default function AttemptEntryCard({
+  vm,
+  isTeacher = false,
+  onStartNewAttempt,
+  startPending = false,
+}: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const locale = useLocale()
+  const tKinds = useTranslations('Features.Assessments.Studio.kinds')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const formatTimeLimit = useTimeLimitLabel()
+  const percent = usePercentFormat()
 
   const { recommendedAction, policy, items } = vm
   const isBlocked = recommendedAction === 'blocked'
   const isWaiting = recommendedAction === 'waitForRelease'
   const isRevision = recommendedAction === 'startRevision'
+  // Unlimited attempts + batch release: the learner may start again, but the
+  // last hand-in is still awaiting the teacher — say so instead of «Готовы начать».
+  // A PENDING hand-in (essay awaiting the teacher) is «received» too, even though its release state is still hidden.
+  const isAwaitingRelease = vm.releaseState === 'AWAITING_RELEASE' || vm.submissionStatus === 'PENDING'
 
   const questionCount = items.length
   const { timeLimitSeconds } = policy
@@ -48,7 +56,15 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <Lock className="text-destructive size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
-        <p className="text-muted-foreground max-w-md text-sm">{t('assessmentBlocked')}</p>
+        {vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
+          <RemediationGate activityId={vm.activityUuid} />
+        ) : (
+          <p className="text-muted-foreground max-w-md text-sm">
+            {vm.disabledActionReasons.find(r => tReasons.has(r))
+              ? tReasons(vm.disabledActionReasons.find(r => tReasons.has(r)) as never)
+              : t('assessmentBlocked')}
+          </p>
+        )}
       </div>
     )
   }
@@ -78,7 +94,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  {getKindLabel(vm.kind)}
+                  {tKinds(vm.kind)}
                 </span>
                 {isRevision ? (
                   <Badge variant="secondary" className="gap-1 text-xs">
@@ -103,7 +119,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
             <MetricCard
               icon={<Clock className="size-4" />}
               label={t('timeLimit')}
-              value={timeLimitSeconds ? formatSeconds(timeLimitSeconds) : t('unlimited')}
+              value={timeLimitSeconds ? formatTimeLimit(timeLimitSeconds) : t('unlimited')}
             />
             <MetricCard
               icon={<FileEdit className="size-4" />}
@@ -151,8 +167,30 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
               </>
             ) : (
               <>
-                <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
-                <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
+                <div className="text-sm font-semibold">
+                  {isRevision ? t('revision') : isAwaitingRelease ? t('pendingGrade') : t('readyToStart')}
+                </div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
+                </p>
+                {typeof vm.nextAttemptCapPercent === 'number' ? (
+                  <p className="text-muted-foreground mt-1 text-sm" data-testid="attempt-cap-note">
+                    {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
+                  </p>
+                ) : null}
+                {onStartNewAttempt ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    disabled={startPending}
+                    onClick={onStartNewAttempt}
+                    data-testid="start-new-attempt"
+                  >
+                    <RotateCcw className="size-4" />
+                    {t('startNewAttempt')}
+                  </Button>
+                ) : null}
               </>
             )}
           </div>
@@ -163,7 +201,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
               <div
                 className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
               >
-                {formatDate(policy.dueAt)}
+                {formatDate(policy.dueAt, locale, DATE_TIME_LONG_OPTIONS)}
               </div>
             </div>
           ) : null}
@@ -193,24 +231,4 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
       <span className="text-muted-foreground text-xs">{label}</span>
     </div>
   )
-}
-
-function getKindLabel(kind: string): string {
-  switch (kind) {
-    case 'TYPE_EXAM': {
-      return 'Тест'
-    }
-    case 'TYPE_CUSTOM': {
-      return 'Квиз'
-    }
-    case 'TYPE_CODE_CHALLENGE': {
-      return 'Задача по программированию'
-    }
-    case 'TYPE_FILE_SUBMISSION': {
-      return 'Отправка файла'
-    }
-    default: {
-      return kind
-    }
-  }
 }

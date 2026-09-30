@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { redirect } from '@/i18n/navigation'
 import { getCourseMetadata } from '@services/courses/courses'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
@@ -20,10 +20,10 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-const EditActivity = async (props: { params: Promise<{ courseid: string; activityuuid: string }> }) => {
-  const params = await props.params
-  const { activityuuid, courseid } = params
-  redirect(`/dash/courses/${courseid}/activity/${activityuuid}/studio`)
+const EditActivity = async (props: { params: Promise<{ locale: string; courseid: string; activityuuid: string }> }) => {
+  const { activityuuid, courseid, locale } = await props.params
+  // Locale-aware: a bare `/dash/…` costs a second 307 through the proxy (UX-029).
+  redirect({ href: `/dash/courses/${courseid}/activity/${activityuuid}/studio`, locale })
 }
 
 export default EditActivity

@@ -1,18 +1,15 @@
 'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
+  adminUsersInfiniteQueryOptions,
   allMembersQueryOptions,
-  basicUsersQueryOptions,
-  membersQueryOptions,
-  roleAuditLogQueryOptions,
   rolesQueryOptions,
   userByIdQueryOptions,
   userByUsernameQueryOptions,
   userCoursesQueryOptions,
   userGroupUsersQueryOptions,
   userGroupsQueryOptions,
-  userRoleAssignmentsQueryOptions,
 } from '../queries/users.query'
 
 function userGroupsHookOptions(enabled = true) {
@@ -22,17 +19,15 @@ function userGroupsHookOptions(enabled = true) {
   })
 }
 
-function userGroupUsersHookOptions(userGroupId: number | null | undefined) {
-  const normalizedUserGroupId = userGroupId ?? 0
-
+function userGroupUsersHookOptions(userGroupId: string | null | undefined) {
   return queryOptions({
-    ...userGroupUsersQueryOptions(normalizedUserGroupId),
+    ...userGroupUsersQueryOptions(userGroupId ?? ''),
     enabled: Boolean(userGroupId),
   })
 }
 
-function userByIdHookOptions(userId: number | null | undefined, enabled = true) {
-  const normalizedUserId = userId ?? 0
+function userByIdHookOptions(userId: string | null | undefined, enabled = true) {
+  const normalizedUserId = userId ?? '__disabled__'
 
   return queryOptions({
     ...userByIdQueryOptions(normalizedUserId),
@@ -49,33 +44,12 @@ function userByUsernameHookOptions(username: string | null | undefined, enabled 
   })
 }
 
-function userCoursesHookOptions(userId: number | null | undefined, enabled = true) {
-  const normalizedUserId = userId ?? 0
+function userCoursesHookOptions(username: string | null | undefined, enabled = true) {
+  const normalized = username?.trim() ?? ''
 
   return queryOptions({
-    ...userCoursesQueryOptions(normalizedUserId),
-    enabled: enabled && userId !== null && userId !== undefined,
-  })
-}
-
-function userRoleAssignmentsHookOptions(enabled = true) {
-  return queryOptions({
-    ...userRoleAssignmentsQueryOptions(),
-    enabled,
-  })
-}
-
-function basicUsersHookOptions(limit = 100, enabled = true) {
-  return queryOptions({
-    ...basicUsersQueryOptions(limit),
-    enabled,
-  })
-}
-
-function roleAuditLogHookOptions(page: number, pageSize = 20, enabled = true) {
-  return queryOptions({
-    ...roleAuditLogQueryOptions(page, pageSize),
-    enabled,
+    ...userCoursesQueryOptions(normalized || '__disabled__'),
+    enabled: enabled && normalized.length > 0,
   })
 }
 
@@ -83,39 +57,27 @@ export function useUserGroups(options?: { enabled?: boolean }) {
   return useQuery(userGroupsHookOptions(options?.enabled ?? true))
 }
 
-export function useUserGroupUsers(userGroupId: number | null | undefined) {
+export function useUserGroupUsers(userGroupId: string | null | undefined) {
   return useQuery(userGroupUsersHookOptions(userGroupId))
 }
 
-export function useAllMembers() {
-  return useQuery(allMembersQueryOptions())
+export function useAllMembers(options?: { enabled?: boolean }) {
+  return useQuery(queryOptions({ ...allMembersQueryOptions(), enabled: options?.enabled ?? true }))
 }
 
-export function useMembers(page: number, perPage: number) {
-  return useQuery(membersQueryOptions(page, perPage))
+export function useAdminUsers(q: string) {
+  return useInfiniteQuery(adminUsersInfiniteQueryOptions(q))
 }
 
 export function useRoles() {
   return useQuery(rolesQueryOptions())
 }
 
-export function useRoleAuditLog(page: number, pageSize = 20, options?: { enabled?: boolean }) {
-  return useQuery(roleAuditLogHookOptions(page, pageSize, options?.enabled ?? true))
+export function useUserCourses(username: string | null | undefined, options?: { enabled?: boolean }) {
+  return useQuery(userCoursesHookOptions(username, options?.enabled ?? true))
 }
 
-export function useUserRoleAssignments(options?: { enabled?: boolean }) {
-  return useQuery(userRoleAssignmentsHookOptions(options?.enabled ?? true))
-}
-
-export function useBasicUsers(limit = 100, options?: { enabled?: boolean }) {
-  return useQuery(basicUsersHookOptions(limit, options?.enabled ?? true))
-}
-
-export function useUserCourses(userId: number | null | undefined, options?: { enabled?: boolean }) {
-  return useQuery(userCoursesHookOptions(userId, options?.enabled ?? true))
-}
-
-export function useUserByIdQuery(userId: number | null | undefined, options?: { enabled?: boolean }) {
+export function useUserByIdQuery(userId: string | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(userByIdHookOptions(userId, options?.enabled ?? true))
 }
 

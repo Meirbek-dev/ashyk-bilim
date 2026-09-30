@@ -1,6 +1,7 @@
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
+import type { BlockFileContent } from '@services/blocks/upload'
 
 import ImageBlockComponent from './ImageBlockComponent'
 
@@ -8,10 +9,7 @@ export type ImageBlockAlignment = 'left' | 'center' | 'right'
 
 export interface ImageBlockObject {
   block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
+  content: BlockFileContent
 }
 
 export interface ImageBlockAttrs {

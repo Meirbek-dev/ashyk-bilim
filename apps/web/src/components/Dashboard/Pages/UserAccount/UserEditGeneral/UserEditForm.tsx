@@ -3,31 +3,11 @@
 import { useRef } from 'react'
 import type { ChangeEvent } from 'react'
 import { useTranslations } from 'next-intl'
-import { Controller, useWatch } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import type { UseFormReturn } from 'react-hook-form'
 import type { FormValues } from './schema'
-import { DetailCard } from './DetailCard'
 import { SUPPORTED_FILES } from './avatar-utils'
-import {
-  AlertTriangle,
-  Award,
-  BookOpen,
-  Briefcase,
-  Building2,
-  Calendar,
-  Check,
-  FileWarning,
-  Globe,
-  GraduationCap,
-  Info,
-  Laptop2,
-  Lightbulb,
-  Link,
-  Loader2,
-  MapPin,
-  UploadCloud,
-  Users,
-} from 'lucide-react'
+import { Check, FileWarning, Info, Loader2, Trash2, UploadCloud } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
 import { Card, CardContent } from '@components/ui/card'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
@@ -47,112 +27,15 @@ interface UserEditFormProps {
     isLoading: boolean
     localAvatar: File | null
     previewUrl: string | null
+    hasAvatar: boolean
     handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+    handleRemove: () => Promise<void>
   }
 }
 
 export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const tIcons = useTranslations('Components.UserProfilePopup.Icons')
-  const tTemplates = useTranslations('DashPage.UserAccountSettings.generalSection.detailTemplateLabels')
   const t = useTranslations('DashPage.UserAccountSettings.generalSection')
-
-  const AVAILABLE_ICONS = [
-    { name: 'briefcase', label: tIcons('briefcase'), component: Briefcase },
-    {
-      name: 'graduation-cap',
-      label: tIcons('graduation-cap'),
-      component: GraduationCap,
-    },
-    { name: 'map-pin', label: tIcons('map-pin'), component: MapPin },
-    { name: 'building-2', label: tIcons('building-2'), component: Building2 },
-    { name: 'speciality', label: tIcons('speciality'), component: Lightbulb },
-    { name: 'globe', label: tIcons('globe'), component: Globe },
-    { name: 'laptop-2', label: tIcons('laptop-2'), component: Laptop2 },
-    { name: 'award', label: tIcons('award'), component: Award },
-    { name: 'book-open', label: tIcons('book-open'), component: BookOpen },
-    { name: 'link', label: tIcons('link'), component: Link },
-    { name: 'users', label: tIcons('users'), component: Users },
-    { name: 'calendar', label: tIcons('calendar'), component: Calendar },
-  ] as const
-
-  const DETAIL_TEMPLATES = {
-    general: [
-      { id: 'title', label: tTemplates('title'), icon: 'briefcase', text: '' },
-      {
-        id: 'affiliation',
-        label: tTemplates('affiliation'),
-        icon: 'building-2',
-        text: '',
-      },
-      {
-        id: 'location',
-        label: tTemplates('location'),
-        icon: 'map-pin',
-        text: '',
-      },
-      { id: 'website', label: tTemplates('website'), icon: 'globe', text: '' },
-      { id: 'linkedin', label: tTemplates('linkedin'), icon: 'link', text: '' },
-    ],
-    academic: [
-      {
-        id: 'institution',
-        label: tTemplates('institution'),
-        icon: 'building-2',
-        text: '',
-      },
-      {
-        id: 'department',
-        label: tTemplates('department'),
-        icon: 'graduation-cap',
-        text: '',
-      },
-      {
-        id: 'research',
-        label: tTemplates('research'),
-        icon: 'book-open',
-        text: '',
-      },
-      {
-        id: 'academic-title',
-        label: tTemplates('academic-title'),
-        icon: 'award',
-        text: '',
-      },
-    ],
-    professional: [
-      {
-        id: 'company',
-        label: tTemplates('company'),
-        icon: 'building-2',
-        text: '',
-      },
-      {
-        id: 'industry',
-        label: tTemplates('industry'),
-        icon: 'briefcase',
-        text: '',
-      },
-      {
-        id: 'expertise',
-        label: tTemplates('expertise'),
-        icon: 'laptop-2',
-        text: '',
-      },
-      {
-        id: 'community',
-        label: tTemplates('community'),
-        icon: 'users',
-        text: '',
-      },
-    ],
-  } as const
-
-  const details = useWatch({
-    control: form.control,
-    name: 'details',
-    defaultValue: {},
-  })
 
   return (
     <div className="flex flex-col gap-6 px-4 pb-8 md:px-8">
@@ -167,13 +50,9 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                 <Field>
                   <FieldLabel htmlFor={field.name}>{t('email')}</FieldLabel>
                   <FieldContent>
-                    <Input id={field.name} type="email" placeholder={t('emailPlaceholder')} {...field} />
+                    <Input id={field.name} type="email" readOnly placeholder={t('emailPlaceholder')} {...field} />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
-                  <Alert className="mt-2 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <AlertDescription>{t('emailChangeWarning')}</AlertDescription>
-                  </Alert>
                 </Field>
               )}
             />
@@ -185,7 +64,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                 <Field>
                   <FieldLabel htmlFor={field.name}>{t('username')}</FieldLabel>
                   <FieldContent>
-                    <Input id={field.name} placeholder={t('usernamePlaceholder')} {...field} />
+                    <Input id={field.name} readOnly placeholder={t('usernamePlaceholder')} {...field} />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
@@ -195,40 +74,12 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Controller
                 control={form.control}
-                name="first_name"
+                name="display_name"
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>{t('firstName')}</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>{t('displayName')}</FieldLabel>
                     <FieldContent>
                       <Input id={field.name} placeholder={t('firstNamePlaceholder')} {...field} />
-                    </FieldContent>
-                    <FieldError errors={[fieldState.error]} />
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="middle_name"
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>{t('middleName')}</FieldLabel>
-                    <FieldContent>
-                      <Input id={field.name} placeholder={t('middleNamePlaceholder')} {...field} />
-                    </FieldContent>
-                    <FieldError errors={[fieldState.error]} />
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="last_name"
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>{t('lastName')}</FieldLabel>
-                    <FieldContent>
-                      <Input id={field.name} placeholder={t('lastNamePlaceholder')} {...field} />
                     </FieldContent>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
@@ -273,115 +124,6 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
               <ThemeModeToggle className="ml-4" />
             </div>
           </div>
-
-          <div className="space-y-4">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">{t('additionalDetails')}</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      form.setValue('details', {})
-                    }}
-                  >
-                    {t('clearAll')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const newDetails = { ...details }
-                      const id = `detail-${Date.now()}`
-                      newDetails[id] = {
-                        id,
-                        label: t('newDetail'),
-                        icon: '',
-                        text: '',
-                      }
-                      form.setValue('details', newDetails)
-                    }}
-                  >
-                    {t('addDetail')}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(DETAIL_TEMPLATES).map(([key, template]) => (
-                  <Button
-                    key={key}
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={() => {
-                      const currentIds = new Set(Object.keys(details || {}))
-                      const newDetails = { ...details }
-
-                      for (const item of template) {
-                        if (!currentIds.has(item.id)) {
-                          newDetails[item.id] = { ...item }
-                        }
-                      }
-
-                      form.setValue('details', newDetails)
-                    }}
-                  >
-                    {key === 'general' && <Briefcase className="h-4 w-4" />}
-                    {key === 'academic' && <GraduationCap className="h-4 w-4" />}
-                    {key === 'professional' && <Building2 className="h-4 w-4" />}
-                    {t(`add${key.charAt(0).toUpperCase() + key.slice(1)}Info`)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {Object.entries(details || {}).map(([id, detail]) => (
-                <DetailCard
-                  key={id}
-                  id={id}
-                  detail={detail}
-                  onUpdate={(targetId, field, value) => {
-                    const newDetails = { ...details }
-                    const existingDetail = newDetails[targetId]
-                    newDetails[targetId] = {
-                      id: existingDetail?.id || targetId,
-                      label: existingDetail?.label || '',
-                      icon: existingDetail?.icon || '',
-                      text: existingDetail?.text || '',
-                      ...existingDetail,
-                      [field]: value,
-                    }
-                    form.setValue('details', newDetails)
-                  }}
-                  onRemove={targetId => {
-                    const newDetails = { ...details }
-                    delete newDetails[targetId]
-                    form.setValue('details', newDetails)
-                  }}
-                  onLabelChange={(targetId, newLabel) => {
-                    const newDetails = { ...details }
-                    const existingDetail = newDetails[targetId]
-                    newDetails[targetId] = {
-                      id: existingDetail?.id || targetId,
-                      label: newLabel,
-                      icon: existingDetail?.icon || '',
-                      text: existingDetail?.text || '',
-                      ...existingDetail,
-                    }
-                    form.setValue('details', newDetails)
-                  }}
-                  availableIcons={AVAILABLE_ICONS}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Profile Picture Section */}
@@ -401,7 +143,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
               {profilePicture.success && (
                 <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-200">
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <AlertDescription>{t('avatarSuccess')}</AlertDescription>
+                  <AlertDescription>{profilePicture.success}</AlertDescription>
                 </Alert>
               )}
 
@@ -410,6 +152,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   size="3xl"
                   variant="outline"
                   {...(profilePicture.previewUrl ? { avatar_url: profilePicture.previewUrl } : {})}
+                  {...(profilePicture.hasAvatar ? {} : { predefined_avatar: 'empty' as const })}
                   className="ring-background shadow-xl ring-4"
                   imageProps={{ loading: 'eager' }}
                 />
@@ -441,6 +184,18 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   <UploadCloud className="mr-2 h-4 w-4" />
                   {t('changeAvatar')}
                 </Button>
+                {profilePicture.hasAvatar && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => void profilePicture.handleRemove()}
+                    className="w-full"
+                    disabled={profilePicture.isLoading}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('removeAvatar')}
+                  </Button>
+                )}
 
                 <div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg p-3 text-xs">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />

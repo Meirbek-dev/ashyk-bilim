@@ -1,8 +1,11 @@
+'use client'
+
 import { Badge } from '@/components/ui/badge'
 import type { ComponentProps } from 'react'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
-import { getLmsStatusModel } from './types'
+import { getLmsStatusLabel, getLmsStatusModel } from './types'
 import type { LmsStatus, LmsStatusTone } from './types'
 
 const badgeVariantByTone = {
@@ -21,11 +24,12 @@ export function LmsStatusBadge({
   label?: string
   className?: string
 }) {
+  const t = useTranslations('LmsStatus')
   const model = getLmsStatusModel(status)
 
   return (
     <Badge variant={badgeVariantByTone[model.tone]} className={cn(className)}>
-      {label ?? model.label}
+      {label ?? getLmsStatusLabel(status, t)}
     </Badge>
   )
 }

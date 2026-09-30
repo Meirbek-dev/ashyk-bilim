@@ -1,5 +1,6 @@
 import { getUserByUsername } from '@/lib/users/server'
 import { getTranslations } from 'next-intl/server'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import type { Metadata } from 'next'
 
 import UserProfileClient from './UserProfileClient'
@@ -19,18 +20,14 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
   try {
     const resolvedParams = await params
     const userData = await getUserByUsername(resolvedParams.username)
+    if (!userData) {
+      const tErrors = await getTranslations('Errors')
+      return { title: tErrors('userNotFound'), robots: { index: false } }
+    }
 
     return {
-      title: t('metaTitle', {
-        firstName: userData.first_name ?? '',
-        lastName: userData.last_name ?? '',
-      }),
-      description:
-        userData.bio ||
-        t('metaDescriptionFallback', {
-          firstName: userData.first_name ?? '',
-          lastName: userData.last_name ?? '',
-        }),
+      title: t('metaTitle', { name: userData.display_name }),
+      description: userData.bio || t('metaDescriptionFallback', { name: userData.display_name }),
     }
   } catch {
     return {
@@ -45,20 +42,16 @@ async function UserPage({ params }: UserPageProps) {
   const { username } = resolvedParams
 
   let userData
-  let profile
   let hasError = false
 
   try {
     userData = await getUserByUsername(username)
-    profile = userData.profile
-      ? typeof userData.profile === 'string'
-        ? JSON.parse(userData.profile)
-        : userData.profile
-      : { sections: [] }
   } catch (error) {
     console.error('Error fetching user data:', error)
     hasError = true
   }
+
+  if (!hasError && !userData) return <ResourceNotFound type="user" />
 
   if (hasError || !userData) {
     return (
@@ -72,7 +65,7 @@ async function UserPage({ params }: UserPageProps) {
 
   return (
     <div>
-      <UserProfileClient userData={userData} profile={profile} />
+      <UserProfileClient userData={userData} profile={userData.profile} />
     </div>
   )
 }

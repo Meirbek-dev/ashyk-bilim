@@ -11,6 +11,7 @@ import {
 import { createFileActivity } from '@services/courses/activity-uploads'
 import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activitySchemas'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 export function updateActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
@@ -31,13 +32,12 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
-                Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).map((activity: AppActivity) =>
-                    activity.activity_uuid === activityUuid ? Object.assign(activity, payload) : activity,
-                  ),
-                }),
-              ),
+              chapters: current.chapters?.map((chapter: AppChapter) => ({
+                ...chapter,
+                activities: chapter.activities?.map((activity: AppActivity) =>
+                  activity.activity_uuid === activityUuid ? { ...activity, ...payload } : activity,
+                ),
+              })),
             }
           : current,
       )
@@ -75,6 +75,9 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
         queryClient.invalidateQueries({
           queryKey: courseKeys.activity(variables.activityUuid),
         }),
+        // Publishing/unpublishing changes the course readiness verdict
+        // (`structureKey` = ['courses', 'structure', courseUuid, …]).
+        queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(String(structureKey[2] ?? '')) }),
       ])
     },
   })
@@ -91,13 +94,12 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
-                Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).filter(
-                    (activity: AppActivity) => activity.activity_uuid !== activityUuid,
-                  ),
-                }),
-              ),
+              chapters: current.chapters?.map((chapter: AppChapter) => ({
+                ...chapter,
+                activities: chapter.activities?.filter(
+                  (activity: AppActivity) => activity.activity_uuid !== activityUuid,
+                ),
+              })),
             }
           : current,
       )
@@ -119,7 +121,7 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
 
 export function createActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({ chapterId, payload }: { chapterId: number; payload: ActivityCreateValues }) => {
+    mutationFn: async ({ chapterId, payload }: { chapterId: string; payload: ActivityCreateValues }) => {
       const data: AppPayload = {
         ...payload,
         details: payload.details as AppPayload['details'],
@@ -141,7 +143,7 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
       payload,
       type,
     }: {
-      chapterId: number
+      chapterId: string
       file: File
       onProgress?: (progress: { percentage: number }) => void
       payload: Partial<ActivityCreateValues>
@@ -151,7 +153,7 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
         ...payload,
         details: payload.details as AppPayload['details'],
       }
-      return createFileActivity(file, type, data, chapterId, undefined, onProgress)
+      return createFileActivity(file, type, data, chapterId, onProgress)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })
@@ -167,7 +169,7 @@ export function createExternalVideoMutationOptions(queryClient: QueryClient, str
       externalVideoData,
     }: {
       activityPayload: Partial<ActivityCreateValues>
-      chapterId: number
+      chapterId: string
       externalVideoData: Record<string, unknown>
     }) => createExternalVideoActivity(externalVideoData, activityPayload, chapterId),
     onSuccess: async () => {

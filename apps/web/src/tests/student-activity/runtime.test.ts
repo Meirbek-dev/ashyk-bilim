@@ -50,17 +50,16 @@ describe('gradebook rollup taxonomy', () => {
     const kind: GradebookRollupKind = 'activity_category'
     const data = {
       course_uuid: 'course_1',
-      course_id: 1,
+      course_id: 'course_1',
       course_name: 'Course',
       students: [],
       activities: [
         {
-          id: 1,
+          id: 'activity_1',
           activity_uuid: 'activity_1',
           name: 'Quiz',
           activity_type: 'TYPE_DYNAMIC',
           assessment_type: 'QUIZ',
-          order: 0,
         },
       ],
       cells: [],
@@ -69,6 +68,7 @@ describe('gradebook rollup taxonomy', () => {
         student_count: 0,
         activity_count: 1,
         needs_grading_count: 0,
+        awaiting_release_count: 0,
         overdue_count: 0,
         not_started_count: 0,
         completed_count: 0,
@@ -76,5 +76,85 @@ describe('gradebook rollup taxonomy', () => {
     } satisfies CourseGradebookResponse
 
     expect(buildGradebookRollups(data, kind)[0]?.label).toBe('QUIZ')
+  })
+
+  it('counts «На проверке» like the toolbar tile: a row awaiting release is not owed a grade (UX-215)', () => {
+    const cell = (user_id: string, awaiting_release: boolean) => ({
+      activity_id: 'activity_1',
+      user_id,
+      state: 'NEEDS_GRADING' as const,
+      attempt_count: 1,
+      is_late: false,
+      teacher_action_required: true,
+      latest_submission_uuid: `sub_${user_id}`,
+      awaiting_release,
+    })
+    const data = {
+      course_uuid: 'course_1',
+      course_id: 'course_1',
+      course_name: 'Course',
+      students: [],
+      activities: [
+        { id: 'activity_1', activity_uuid: 'activity_1', name: 'Quiz', activity_type: 'quiz', assessment_type: 'QUIZ' },
+      ],
+      cells: [cell('u1', false), cell('u2', true)],
+      teacher_actions: [],
+      summary: {
+        student_count: 2,
+        activity_count: 1,
+        needs_grading_count: 2,
+        awaiting_release_count: 1,
+        overdue_count: 0,
+        not_started_count: 0,
+        completed_count: 0,
+      },
+    } satisfies CourseGradebookResponse
+
+    const tile = data.summary.needs_grading_count - data.summary.awaiting_release_count
+    expect(buildGradebookRollups(data, 'activity')[0]?.needsGrading).toBe(tile)
+  })
+
+  it('counts a student×activity pair with no returned cell as «not started»', () => {
+    const activity = { id: 'a1', activity_uuid: 'a1', name: 'Quiz', activity_type: 'quiz', assessment_type: 'QUIZ' }
+    const student = (id: string) => ({
+      id,
+      display_name: id,
+      username: id,
+      email: `${id}@x`,
+      first_name: id,
+      last_name: '',
+    })
+    const data = {
+      course_uuid: 'course_1',
+      course_id: 'course_1',
+      course_name: 'Course',
+      students: [student('u1'), student('u2'), student('u3')],
+      activities: [activity],
+      cells: [
+        {
+          activity_id: 'a1',
+          user_id: 'u1',
+          state: 'PASSED' as const,
+          attempt_count: 1,
+          is_late: false,
+          teacher_action_required: false,
+          score: 80,
+        },
+      ],
+      teacher_actions: [],
+      summary: {
+        student_count: 3,
+        activity_count: 1,
+        needs_grading_count: 0,
+        awaiting_release_count: 0,
+        overdue_count: 0,
+        not_started_count: 2,
+        completed_count: 1,
+      },
+    } satisfies CourseGradebookResponse
+
+    const [row] = buildGradebookRollups(data, 'activity')
+    expect(row).toMatchObject({ notStarted: 2, total: 3, averageScore: 80 })
+    expect(buildGradebookRollups(data, 'learner').map(r => r.notStarted)).toEqual([0, 1, 1])
   })
 })

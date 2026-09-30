@@ -1,0 +1,166 @@
+//! The authenticated caller.
+//!
+//! Every mutating domain service method takes an [`Actor`] and calls
+//! [`Actor::require`] before touching data — enforcement lives in the domain
+//! layer, not in HTTP handlers (ARCHITECTURE §7).
+
+use ab_core::id::UserId;
+use ab_core::permission::{Permission, PermissionSet};
+use ab_core::{Error, Result};
+
+use crate::identity::sessions::SessionRecord;
+
+#[derive(Debug, Clone)]
+pub struct Actor {
+    pub user_id: UserId,
+    pub zitadel_user_id: String,
+    pub session_id: String,
+    pub roles: Vec<String>,
+    pub permissions: PermissionSet,
+    /// Raw grant strings — exposed to the frontend for client-side gating
+    /// (mirrors the legacy `Session.permissions: string[]` contract).
+    pub permission_strings: Vec<String>,
+    pub rbac_version: i64,
+    pub mfa_enabled: bool,
+    /// See [`SessionRecord::has_password`].
+    pub has_password: bool,
+    pub google_linked: bool,
+}
+
+impl Actor {
+    /// Build from a validated session record. Fails only if the stored grant
+    /// strings no longer parse (registry drift — a deploy-time bug).
+    pub fn from_session(session_id: String, record: &SessionRecord) -> Result<Self> {
+        Ok(Self {
+            user_id: record.user_id,
+            zitadel_user_id: record.zitadel_user_id.clone(),
+            session_id,
+            roles: record.roles.clone(),
+            permissions: PermissionSet::parse(record.permissions.iter().map(String::as_str))?,
+            permission_strings: record.permissions.clone(),
+            rbac_version: record.rbac_version,
+            mfa_enabled: record.mfa_enabled,
+            has_password: record.has_password,
+            google_linked: record.google_linked,
+        })
+    }
+
+    /// The user's standing as of now — status, roles and grants read from
+    /// the database, no session behind it. For queued work that re-checks
+    /// its performer at execution (UX-136: an enqueue-time grant may be gone
+    /// by the time the worker runs); requests keep using the session actor.
+    /// A disabled account has no grants (its sessions are revoked already).
+    pub async fn current(pool: &sqlx::PgPool, user_id: UserId) -> Result<Self> {
+        let active = ab_db::identity::user_status(pool, user_id)
+            .await?
+            .is_some_and(|s| s == "active");
+        let (roles, permission_strings) = if active {
+            ab_db::identity::load_user_grants(pool, user_id).await?
+        } else {
+            (Vec::new(), Vec::new())
+        };
+        Ok(Self {
+            user_id,
+            zitadel_user_id: String::new(),
+            session_id: String::new(),
+            permissions: PermissionSet::parse(permission_strings.iter().map(String::as_str))?,
+            roles,
+            permission_strings,
+            rbac_version: 0,
+            mfa_enabled: false,
+            has_password: false,
+            google_linked: false,
+        })
+    }
+
+    /// The unauthenticated viewer: nil user id, zero grants. Catalog read
+    /// services treat it like any other actor — nothing is owned and nothing
+    /// is granted, so only public data is visible. Mutations always fail
+    /// [`Actor::require`].
+    #[must_use]
+    pub fn anonymous() -> Self {
+        Self {
+            user_id: UserId(uuid::Uuid::nil()),
+            zitadel_user_id: String::new(),
+            session_id: String::new(),
+            roles: Vec::new(),
+            permissions: ab_core::permission::PermissionSet::default(),
+            permission_strings: Vec::new(),
+            rbac_version: 0,
+            mfa_enabled: false,
+            has_password: false,
+            google_linked: false,
+        }
+    }
+
+    #[must_use]
+    pub const fn is_anonymous(&self) -> bool {
+        self.user_id.0.is_nil()
+    }
+
+    /// The single enforcement point: `actor.require(perm!(Course, Update, Own))?`.
+    pub fn require(&self, permission: Permission) -> Result<()> {
+        if self.permissions.grants(&permission) {
+            Ok(())
+        } else {
+            Err(Error::forbidden(format!(
+                "missing permission {}:{}{}",
+                permission.resource.as_str(),
+                permission.action.as_str(),
+                permission
+                    .scope
+                    .map(|s| format!(":{}", s.as_str()))
+                    .unwrap_or_default(),
+            )))
+        }
+    }
+
+    #[must_use]
+    pub fn has(&self, permission: Permission) -> bool {
+        self.permissions.grants(&permission)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+    use ab_core::permission::{Action, ResourceType, Scope};
+
+    fn record(perms: &[&str]) -> SessionRecord {
+        SessionRecord {
+            user_id: UserId::new(),
+            zitadel_user_id: "z-1".into(),
+            zitadel_session_id: "zs-1".into(),
+            zitadel_session_token: "tok".into(),
+            roles: vec!["instructor".into()],
+            permissions: perms.iter().map(ToString::to_string).collect(),
+            rbac_version: 1,
+            mfa_enabled: false,
+            has_password: true,
+            google_linked: false,
+            created_at_unix: 0,
+            last_seen_unix: 0,
+            ip: None,
+            user_agent: None,
+        }
+    }
+
+    #[test]
+    fn require_enforces_grants() {
+        let actor = Actor::from_session("s-1".into(), &record(&["course:update:own"])).unwrap();
+        let allowed = Permission {
+            resource: ResourceType::Course,
+            action: Action::Update,
+            scope: Some(Scope::Own),
+        };
+        let denied = Permission {
+            resource: ResourceType::Course,
+            action: Action::Delete,
+            scope: Some(Scope::Own),
+        };
+        actor.require(allowed).unwrap();
+        let err = actor.require(denied).unwrap_err();
+        assert_eq!(err.code(), ab_core::ErrorCode::Forbidden);
+    }
+}

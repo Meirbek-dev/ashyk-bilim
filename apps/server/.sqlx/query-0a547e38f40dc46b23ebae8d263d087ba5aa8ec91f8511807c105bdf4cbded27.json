@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions\n           SET answers = $2, draft_version = draft_version + 1\n           WHERE id = $1 AND status = 'draft' AND draft_version = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0a547e38f40dc46b23ebae8d263d087ba5aa8ec91f8511807c105bdf4cbded27"
+}

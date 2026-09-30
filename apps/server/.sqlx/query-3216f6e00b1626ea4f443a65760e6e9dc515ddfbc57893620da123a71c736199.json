@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentId\" FROM assessments\n           WHERE lifecycle = 'scheduled' AND scheduled_at <= now()\n           ORDER BY scheduled_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3216f6e00b1626ea4f443a65760e6e9dc515ddfbc57893620da123a71c736199"
+}

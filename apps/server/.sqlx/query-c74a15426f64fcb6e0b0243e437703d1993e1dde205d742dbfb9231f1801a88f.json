@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessment_items SET\n               title = COALESCE($2, title),\n               kind = COALESCE($3, kind),\n               body = COALESCE($4, body),\n               max_score = COALESCE($5, max_score),\n               section_label = CASE WHEN $6 THEN $7 ELSE section_label END,\n               difficulty = CASE WHEN $6 THEN $8 ELSE difficulty END,\n               tags = CASE WHEN $6 THEN $9 ELSE tags END,\n               outcome_ids = CASE WHEN $6 THEN $10 ELSE outcome_ids END,\n               estimated_minutes = CASE WHEN $6 THEN $11 ELSE estimated_minutes END\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Float8",
+        "Bool",
+        "Text",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c74a15426f64fcb6e0b0243e437703d1993e1dde205d742dbfb9231f1801a88f"
+}

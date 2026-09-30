@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO course_progress\n               (course_id, user_id, completed_required_count, total_required_count,\n                progress_pct, grade_average, weighted_grade_average, missing_required_count,\n                needs_grading_count, last_activity_at, completed_at, certificate_eligible)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, to_timestamp($10), to_timestamp($11), $12)\n           ON CONFLICT (course_id, user_id) DO UPDATE SET\n               completed_required_count = EXCLUDED.completed_required_count,\n               total_required_count = EXCLUDED.total_required_count,\n               progress_pct = EXCLUDED.progress_pct, grade_average = EXCLUDED.grade_average,\n               weighted_grade_average = EXCLUDED.weighted_grade_average,\n               missing_required_count = EXCLUDED.missing_required_count,\n               needs_grading_count = EXCLUDED.needs_grading_count,\n               last_activity_at = EXCLUDED.last_activity_at,\n               completed_at = EXCLUDED.completed_at,\n               certificate_eligible = EXCLUDED.certificate_eligible",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0b5816cade3cfb7f269412e5f8d1c61260a81e91beaa4f85e5c2ad8e19fc2f18"
+}

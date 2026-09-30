@@ -80,11 +80,12 @@ interface InlineErrorProps {
   title?: ReactNode
 }
 
-export function InlineError({ className, description, error, title = 'Request failed' }: InlineErrorProps) {
+export function InlineError({ className, description, error, title }: InlineErrorProps) {
+  const t = useTranslations('Errors')
   return (
     <Alert variant="destructive" className={className}>
       <AlertTriangle className="size-4" />
-      <AlertTitle>{title}</AlertTitle>
+      <AlertTitle>{title ?? t('requestFailed')}</AlertTitle>
       <AlertDescription>
         <div className="space-y-2">
           <div>{description}</div>

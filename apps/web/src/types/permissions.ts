@@ -1,6 +1,3 @@
-// AUTO-GENERATED - do not edit manually.
-// Run: python scripts/sync-permissions.py
-
 /**
  * Permission types - single source of truth for the frontend RBAC system.
  *
@@ -22,6 +19,8 @@ export const Actions = {
   EXPORT: 'export',
   GRADE: 'grade',
   SUBMIT: 'submit',
+  AUTHOR: 'author',
+  PUBLISH: 'publish',
   ENROLL: 'enroll',
 } as const
 
@@ -75,97 +74,20 @@ export type RoleSlug = (typeof RoleSlugs)[keyof typeof RoleSlugs]
 /** Permission string format: "resource:action:scope" */
 export type PermissionString = `${Resource}:${Action}:${Scope}`
 
-export interface Role {
-  id: number
-  name: string
-  slug: string
-  description?: string
-  is_system: boolean
-  priority: number
-}
+const VOCABULARY: readonly (readonly string[])[] = [
+  Object.values(Resources),
+  Object.values(Actions),
+  Object.values(Scopes),
+]
 
-/** Canonical type for user RBAC data from the API. */
-export interface UserRBACData {
-  roles: Role[]
-  permissions: string[]
-}
-
-/** Backend Permission entity. */
-export interface Permission {
-  id: number
-  name: string
-  resource_type: string
-  action: string
-  scope: string
-  description: string | null
-  created_at: string
-}
-
-/** Role with its assigned permissions. */
-export interface RoleWithPermissions extends Role {
-  permissions: Permission[]
-  permissions_count?: number
-  users_count?: number
-}
-
-export interface RoleAuditEvent {
-  timestamp: string
-  actor_id: number | null
-  action: string
-  target_role_id: number | null
-  target_role_slug: string | null
-  diff_summary: string | null
-}
-
-export interface RoleAuditListResponse {
-  items: RoleAuditEvent[]
-  total: number
-  page: number
-  page_size: number
-}
-
-export interface UserBasic {
-  id: number
-  user_uuid?: string
-  email: string
-  username: string
-  first_name?: string
-  last_name?: string
-  avatar_image?: string
-}
-
-/** A user↔role assignment record. */
-export interface UserRoleAssignment {
-  user_id: number
-  role_id: number
-  assigned_at: string
-  assigned_by: number | null
-  user?: {
-    id: number
-    user_uuid?: string
-    email: string
-    username: string
-    first_name?: string
-    last_name?: string
-    avatar_image?: string
-  }
-  role?: Role
-}
-
-/** Body for creating a role. */
-export interface CreateRoleBody {
-  name: string
-  slug: string
-  description?: string
-  priority?: number
-}
-
-/** Body for updating a role. */
-export interface UpdateRoleBody {
-  name: string
-  slug?: string
-  description?: string
-  priority?: number
+/**
+ * `resource:action[:scope]` where every segment is `*` or a name the server
+ * registry knows (`ab_core::permission`); mirrors `Grant::parse`.
+ */
+export function isKnownGrant(grant: string): boolean {
+  const parts = grant.split(':')
+  if (parts.length < 2 || parts.length > 3) return false
+  return parts.every((part, index) => part === '*' || VOCABULARY[index]!.includes(part))
 }
 
 // ============================================================================
@@ -176,3 +98,8 @@ export interface UpdateRoleBody {
 export function perm(resource: Resource, action: Action, scope: Scope): PermissionString {
   return `${resource}:${action}:${scope}`
 }
+
+/** Grant vocabulary the permission picker offers (`resource:action:scope`). */
+export const KNOWN_GRANTS: readonly PermissionString[] = Object.values(Resources).flatMap(resource =>
+  Object.values(Actions).flatMap(action => Object.values(Scopes).map(scope => perm(resource, action, scope))),
+)

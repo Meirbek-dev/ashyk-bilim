@@ -47,13 +47,8 @@ export default function ActivityHeader({
     return { current: index !== -1 ? index + 1 : 1, total: items.length || 1 }
   }, [runtime.activity, runtime.outline])
 
-  const percent = useMemo(() => {
-    const items = (runtime.outline ?? []).flatMap(chapter => chapter.activities ?? [])
-    if (items.length === 0) return 0
-
-    const done = items.filter(item => item.complete || item.state === 'complete' || item.state === 'passed').length
-    return Math.round((done / items.length) * 100)
-  }, [runtime.outline])
+  // BUG-318: the server's aggregate, not a recount of every outline item.
+  const percent = runtime.course.progress_pct ?? 0
 
   const courseHref = `/course/${cleanUuid(runtime.course.uuid, 'course_')}`
 

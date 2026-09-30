@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
+import { CalendarOff, ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
+import { useApiError } from '@/hooks/useApiError'
+import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
+import { toUnix } from '@/lib/api/contract'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useAssessmentStudioContext } from '../context'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import {
@@ -20,6 +27,8 @@ import ResultsReviewTab from '../tabs/ResultsReviewTab'
 import type { AssessmentEditorState, EditableItem, StudioTab } from '../studioTypes'
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
 import { AssessmentWorkspaceShell } from '../workspace/AssessmentWorkspaceShell'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import type { AssessmentWorkspaceNavItem } from '../workspace/AssessmentWorkspaceShell'
 import {
   buildAssessmentPatch,
@@ -61,7 +70,9 @@ export function NativeItemAuthor({
     clearSaveLedgerEntry,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tStudio = useTranslations('Features.Assessments.Studio')
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
+  const { toastApiError } = useApiError()
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
   const [prevItems, setPrevItems] = useState(items)
@@ -128,34 +139,43 @@ export function NativeItemAuthor({
     async (nextState: AssessmentEditorState) => {
       setAssessmentSaveState('saving')
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildAssessmentPatch(mode, assessment, nextState)),
-        })
+        const { details, policy } = buildAssessmentPatch(mode, assessment, nextState)
+        await Promise.all([
+          apiJson(`assessments/${assessment.assessment_uuid}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(details),
+          }),
+          policy
+            ? apiJson(`assessments/${assessment.assessment_uuid}/policy`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(policy),
+              })
+            : null,
+        ])
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState)
         setAssessmentSaveState('saved')
         await refresh()
       } catch (error) {
         setAssessmentSaveState('error')
-        toast.error(error instanceof Error ? error.message : t('failedToSaveSettings'))
+        toastApiError(error, { fallback: t('failedToSaveSettings') })
       }
     },
-    [assessment, mode, refresh, t],
+    [assessment, mode, refresh, t, toastApiError],
   )
 
   const saveItem = useCallback(
     async (nextItem: EditableItem) => {
       setItemSaveState('saving')
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`, {
+        await apiJson(`assessment-items/${nextItem.item_uuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            kind: nextItem.kind,
             title: nextItem.title,
             max_score: nextItem.max_score,
-            body: nextItem.body,
+            body: itemBodyToWire(nextItem.body),
             metadata: nextItem.metadata,
           }),
         })
@@ -164,12 +184,10 @@ export function NativeItemAuthor({
         await refresh()
       } catch (error) {
         setItemSaveState('error')
-        toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }) })
       }
     },
-    [assessment.assessment_uuid, displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t, toastApiError],
   )
 
   useEffect(() => {
@@ -177,17 +195,24 @@ export function NativeItemAuthor({
     const serialized = serializeAssessmentState(assessmentState)
     if (serialized === lastSavedAssessmentRef.current) return
     setAssessmentSaveState('dirty')
+    // UX-120/UX-292: a blank title or an out-of-range policy value is flagged inline;
+    // the server would only 422 it, so nothing is PATCHed until it is fixed.
+    if (getAssessmentEditorIssues(mode, assessmentState, t).length > 0) return
     const timeout = setTimeout(() => {
       void saveAssessment(assessmentState)
     }, 900)
     return () => clearTimeout(timeout)
-  }, [assessmentState, isEditable, saveAssessment])
+  }, [assessmentState, isEditable, mode, saveAssessment, t])
 
   useEffect(() => {
     if (!isEditable || !itemState) return
     const serialized = serializeItemState(itemState)
     if (serialized === lastSavedItemRef.current) return
     setItemSaveState('dirty')
+    // UX-143 (UX-120 pattern): a blank item title is flagged inline
+    // (`item.title_missing`); the server would only 422 it, so nothing is
+    // PATCHed until it is back.
+    if (!itemState.title.trim()) return
     const timeout = setTimeout(() => {
       void saveItem(itemState)
     }, 900)
@@ -220,44 +245,40 @@ export function NativeItemAuthor({
       const previousOrder = localOrderedUuids
       setLocalOrderedUuids(orderedUuids)
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items:reorder`, {
+        await apiJson(`assessments/${assessment.assessment_uuid}/items/reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: orderedUuids.map((item_uuid, index) => ({
-              item_uuid,
-              order: index + 1,
-            })),
-          }),
+          body: JSON.stringify({ items: orderedUuids }),
         })
         await refresh()
       } catch (error) {
         setLocalOrderedUuids(previousOrder)
-        toast.error(error instanceof Error ? error.message : t('reorderFailed'))
+        toastApiError(error, { fallback: t('reorderFailed') })
+        // UX-293: a refused move means this tab's list is stale — refetch it, or every later move 422s.
+        await refresh()
       }
     },
-    [assessment.assessment_uuid, localOrderedUuids, refresh, t],
+    [assessment.assessment_uuid, localOrderedUuids, refresh, t, toastApiError],
   )
 
   const updateItemMetadata = useCallback(
     async (itemUuid: string, metadata: EditableItem['metadata']) => {
       try {
-        await apiJson(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
+        await apiJson(`assessment-items/${itemUuid}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ metadata }),
         })
         await refresh()
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-        )
+        toastApiError(error, { fallback: t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }) })
         throw error
       }
     },
-    [assessment.assessment_uuid, displayItemNoun, refresh, t],
+    [displayItemNoun, refresh, t, toastApiError],
   )
 
+  const queryClient = useQueryClient()
   const setLifecycle = useCallback(
     async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => {
       try {
@@ -265,18 +286,37 @@ export function NativeItemAuthor({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: lifecycle,
-            scheduled_at: scheduledAt ?? null,
-            audit_note: auditNote?.trim() || null,
+            to: lifecycle.toLowerCase(),
+            scheduled_at_unix: toUnix(scheduledAt),
+            note: auditNote?.trim() || null,
           }),
         })
+        // UX-200: the result shows as soon as the transition lands, not after the refetches.
+        toast.success(tStudio('lifecycleChanged', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
         await refresh()
-        toast.success(t('lifecycleChanged', { state: lifecycle }))
+        // The transition (un)publishes the activity: the learner-facing
+        // outline, the curriculum and the course readiness verdict move (UX-085).
+        if (assessment.course_uuid) {
+          const courseUuid = assessment.course_uuid.replace(/^course_/, '')
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: courseKeys.structure(courseUuid).slice(0, 3) }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(courseUuid) }),
+          ])
+        }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
+        // BUG-171: a 409 names the refused stage in the page language and re-syncs the view.
+        if (hasErrorCode(error, 'conflict')) {
+          await refresh()
+          toast.error(tStudio('lifecycleConflict', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
+          return
+        }
+        // UX-128: `schedule.after_due_at` belongs on the date field — the
+        // publish tab shows it there and keeps the picked date.
+        if (isApiError(error) && error.fieldErrors.some(e => e.code === 'schedule.after_due_at')) throw error
+        toastApiError(error, { fallback: tStudio('updateLifecycleFailed') })
       }
     },
-    [assessment.assessment_uuid, refresh, t],
+    [assessment.assessment_uuid, assessment.course_uuid, queryClient, refresh, tStudio, toastApiError],
   )
 
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)
@@ -380,7 +420,15 @@ export function NativeItemAuthor({
         />
       )}
 
-      {view === 'ACCESS' && <AccessManagementTab assessmentUuid={assessment.assessment_uuid} disabled={!isEditable} />}
+      {view === 'ACCESS' && (
+        // Audience + accommodations are live-assessment policy (v2 gates
+        // neither on lifecycle), not content: only an archived one is frozen.
+        <AccessManagementTab
+          assessmentUuid={assessment.assessment_uuid}
+          courseUuid={assessment.course_uuid ?? null}
+          disabled={assessment.lifecycle === 'ARCHIVED'}
+        />
+      )}
 
       {view === 'RESULTS' && (
         <ResultsReviewTab
@@ -392,5 +440,20 @@ export function NativeItemAuthor({
     </>
   )
 
-  return <AssessmentWorkspaceShell navItems={navItems} renderView={view => renderView(view)} />
+  // BUG-171: a scheduled assessment is read-only on the server — say so
+  // instead of letting every autosave 409.
+  const banner =
+    assessment.lifecycle === 'SCHEDULED' ? (
+      <Alert className="rounded-none border-x-0 border-t-0">
+        <CalendarOff className="size-4" />
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+          <span>{tStudio('scheduledReadOnly')}</span>
+          <Button size="sm" variant="outline" onClick={() => void setLifecycle('DRAFT')}>
+            {tStudio('unschedule')}
+          </Button>
+        </AlertDescription>
+      </Alert>
+    ) : null
+
+  return <AssessmentWorkspaceShell navItems={navItems} banner={banner} renderView={view => renderView(view)} />
 }

@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO chapters (course_id, name, description, creator_id, position)\n           VALUES ($1, $2, $3, $4,\n                   (SELECT COALESCE(MAX(position), 0) + 1 FROM chapters WHERE course_id = $1))\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "chapters",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "46a97d3128d16e8929c7d720c199445f3546f9d244ca11e761ea2b96ac5a09ea"
+}

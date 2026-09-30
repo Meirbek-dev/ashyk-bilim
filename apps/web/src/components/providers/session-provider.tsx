@@ -1,8 +1,10 @@
 'use client'
 
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { apiJson } from '@/lib/api-client'
+import { SessionInfo } from '@/lib/api/generated/zod'
 import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'
 import type { ReactNode } from 'react'
 import type { Action, Resource, Scope } from '@/types/permissions'
@@ -52,9 +54,17 @@ export interface SessionContextValue {
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined)
 
+const SESSION_PROBE_MIN_INTERVAL_MS = 5_000
+
+const sameGrants = (a: Pick<Session, 'roles' | 'permissions'>, b: Pick<SessionInfo, 'roles' | 'permissions'>) =>
+  a.roles.length === b.roles.length &&
+  a.permissions.length === b.permissions.length &&
+  a.roles.every((role, i) => role === b.roles[i]) &&
+  a.permissions.every((p, i) => p === b.permissions[i])
+
 // ── Cross-tab broadcast listener ──────────────────────────────────────────────
 
-function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () => void) {
+export function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh?: () => void) {
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return
 
@@ -64,7 +74,7 @@ function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () 
         onLogout()
       }
       if (event.data.type === 'session_refresh') {
-        onSessionRefresh()
+        onSessionRefresh?.()
       }
     }
 
@@ -100,11 +110,45 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
 
   const status: SessionStatus = session ? 'authenticated' : 'unauthenticated'
 
+  // Grants change under a live session (an admin assigns or revokes a role) and the
+  // layout that seeded `initialSession` is not re-rendered on client navigation, so
+  // re-probe the cheap `GET auth/session` on window focus and on every route change
+  // (throttled) and adopt new roles/permissions. A 401 already redirects to /login.
+  const pathname = usePathname()
+  const userId = session?.userId
+  const lastProbeRef = useRef(0)
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    const probe = async () => {
+      if (Date.now() - lastProbeRef.current < SESSION_PROBE_MIN_INTERVAL_MS) return
+      lastProbeRef.current = Date.now()
+      try {
+        const info = await apiJson('auth/session', {}, data => SessionInfo.parse(data))
+        if (cancelled) return
+        setSession(current =>
+          current && current.userId === info.user_id && !sameGrants(current, info)
+            ? { ...current, roles: info.roles, permissions: info.permissions }
+            : current,
+        )
+      } catch {
+        // Offline or signed out (the 401 path redirects); keep what we have.
+      }
+    }
+    void probe()
+    window.addEventListener('focus', probe)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', probe)
+    }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- UX-076: `pathname` is the trigger (re-probe on every client navigation), not an input.
+  }, [pathname, userId])
+
   // ── Cross-tab session sync via BroadcastChannel ───────────────────────────
   const handleBroadcastLogout = useCallback(() => {
     setSession(null)
     queryClient.clear()
-    router.push('/login')
+    router.push('/auth/login')
   }, [queryClient, router])
 
   const handleBroadcastRefresh = useCallback(() => {

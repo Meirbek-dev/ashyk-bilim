@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO roles (slug, display_name_key, description_key, display_name, description,\n                              priority, is_system)\n           VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', $2, $3, $4, false)\n           ON CONFLICT (slug) DO NOTHING\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "roles",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f63dd819ca1dd060ffb75b9f14ad56a9ae47f99f0d967ae2a89bd23f715ff8ef"
+}

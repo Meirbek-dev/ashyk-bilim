@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM assessment_overrides o USING assessments s\n           WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2\n           RETURNING o.assessment_id AS \"id: AssessmentId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_overrides",
+            "name": "assessment_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "47247e9794bc11507b4663a9e5a5854cbf8064024b57187dde93c54048236bf0"
+}

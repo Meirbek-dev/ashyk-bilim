@@ -52,7 +52,7 @@ function DashMobileMenu() {
     ...(canSeeUsers
       ? [
           {
-            href: '/dash/users/settings/users',
+            href: '/dash/users/settings',
             icon: Users,
             label: t('mobile.users'),
             tooltip: t('tooltips.users'),

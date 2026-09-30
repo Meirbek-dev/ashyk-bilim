@@ -1,9 +1,10 @@
+import type { Action, Resource, Scope } from '@/types/permissions'
+import { isCourseAuthor } from '@/lib/course-management'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
 import { Actions, Resources, Scopes } from '@/types/permissions'
-import { getCourseUserRights } from '@services/courses/courses'
+import { getCourseMetadata } from '@services/courses/courses'
 import { requireSession } from '@/lib/auth/session'
 import { sessionCan } from '@/lib/auth/permissions'
-import { cleanCourseUuid } from '@/lib/course-management'
 import { redirect } from '@/i18n/navigation'
 import { getLocale } from 'next-intl/server'
 
@@ -22,38 +23,63 @@ export interface CourseWorkspaceCapabilities {
 
 type AuthSession = Awaited<ReturnType<typeof requireSession>>
 
-function hasCreateCoursePermission(session: AuthSession) {
-  return sessionCan(session, Resources.COURSE, Actions.CREATE, Scopes.APP)
+function can(session: AuthSession, permsSet: Set<string>, resource: Resource, action: Action, scope: Scope) {
+  return sessionCan(session, resource, action, scope, permsSet)
 }
 
-interface CourseRightsResponse {
-  permissions?: {
-    read?: boolean
-    update?: boolean
-    delete?: boolean
-    update_content?: boolean
-    manage_contributors?: boolean
-    manage_access?: boolean
-    create_certifications?: boolean
-  }
-}
-
-function mapCourseRightsToCapabilities(
+/**
+ * Authorship IS the `:own` scope: the creator and every active maintainer /
+ * contributor (`isCourseAuthor`, `contributor_ids` on the wire) write on the
+ * course without any role grant — a plain `user`-role co-author edits like
+ * the creator; a `:platform`-scoped grant covers every course. Mirrors
+ * `CoursesService::require_write` / `AssessmentsService::require_scoped` in
+ * `apps/server/crates/domain`.
+ */
+function canOwnOrPlatform(
   session: AuthSession,
-  rights: CourseRightsResponse,
+  permsSet: Set<string>,
+  isAuthor: boolean,
+  resource: Resource,
+  action: Action,
+) {
+  return isAuthor || can(session, permsSet, resource, action, Scopes.APP)
+}
+
+function hasCreateCoursePermission(session: AuthSession, permsSet: Set<string>) {
+  return can(session, permsSet, Resources.COURSE, Actions.CREATE, Scopes.APP)
+}
+
+export function deriveCourseWorkspaceCapabilities(
+  session: AuthSession,
+  course: AppCourse,
 ): CourseWorkspaceCapabilities {
-  const canEditDetails = Boolean(rights.permissions?.update)
-  const canEditCurriculum = Boolean(rights.permissions?.update_content ?? rights.permissions?.update)
-  const canManageAccess = Boolean(rights.permissions?.manage_access)
-  const canManageCollaboration = Boolean(rights.permissions?.manage_contributors)
+  const permsSet = new Set(session.permissions)
+  const isCreator = typeof course.creator_id === 'string' && course.creator_id === session.userId
+  const isAuthor = isCourseAuthor(course, session.userId)
+
+  const canEditDetails = canOwnOrPlatform(session, permsSet, isAuthor, Resources.COURSE, Actions.UPDATE)
+  const canEditCurriculum =
+    canOwnOrPlatform(session, permsSet, isAuthor, Resources.CHAPTER, Actions.UPDATE) ||
+    canOwnOrPlatform(session, permsSet, isAuthor, Resources.ACTIVITY, Actions.UPDATE)
+  const canManage = canOwnOrPlatform(session, permsSet, isAuthor, Resources.COURSE, Actions.MANAGE)
+  const canManageAccess = canManage
+  // The roster is managed by the creator, an active maintainer or a platform
+  // manager; the page itself is readable by every author (the server 403s
+  // the mutations for plain contributors).
+  const canManageCollaboration = canManage || isAuthor
   const canManageSettings = canManageAccess || canManageCollaboration
-  const canManageCertificate = Boolean(rights.permissions?.create_certifications)
-  const canDeleteCourse = Boolean(rights.permissions?.delete)
-  const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate
+  const canManageCertificate = canOwnOrPlatform(session, permsSet, isAuthor, Resources.CERTIFICATE, Actions.CREATE)
+  // Delete stays creator-only on the server.
+  const canDeleteCourse = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.DELETE)
+  // Gradebook / review need the server's grading gate (`assessment:grade` platform
+  // or authorship). UX-258: the instructor role's `certificate:create:platform`
+  // is not course access — it used to open the workspace of every course.
+  const canGrade = canOwnOrPlatform(session, permsSet, isAuthor, Resources.ASSESSMENT, Actions.GRADE)
+  const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canGrade
 
   return {
     canViewWorkspace: canReviewCourse || canManageSettings,
-    canCreateCourse: hasCreateCoursePermission(session),
+    canCreateCourse: hasCreateCoursePermission(session, permsSet),
     canEditDetails,
     canEditCurriculum,
     canManageAccess,
@@ -68,10 +94,9 @@ function mapCourseRightsToCapabilities(
 export async function getCourseWorkspaceCapabilitiesForCourse(
   courseuuid: string,
 ): Promise<CourseWorkspaceCapabilities> {
-  const session = await requireSession()
+  const [session, course] = await Promise.all([requireSession(), getCourseMetadata(courseuuid)])
 
-  const rights = (await getCourseUserRights(`course_${cleanCourseUuid(courseuuid)}`)) as CourseRightsResponse
-  const capabilities = mapCourseRightsToCapabilities(session, rights)
+  const capabilities = deriveCourseWorkspaceCapabilities(session, course)
 
   if (!capabilities.canViewWorkspace) {
     const locale = await getLocale()

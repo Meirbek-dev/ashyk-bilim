@@ -3,28 +3,47 @@
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import StudentActivityWorkspace from '@/features/student-activity/shell/StudentActivityWorkspace'
-import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import { getStudentActivityRuntime, type StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { ActivityLayoutProvider } from '@/features/assessments/shell/ActivityLayoutContext'
 import { ActivityContentRenderer } from './ActivityContentRenderer'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 interface ActivityClientProps {
   activityid: string
   courseuuid: string
   activity: Activity | null
   course: CourseStructure
-  runtime: StudentActivityRuntime | null
+  runtime: StudentActivityRuntime
 }
 
-export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
-  const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
-
+export default function ActivityClient({
+  activityid,
+  courseuuid,
+  activity,
+  course,
+  runtime: initialRuntime,
+}: ActivityClientProps) {
+  // The server-rendered runtime seeds the query the action bar invalidates; it
+  // then follows learner-state's focus policy so the sidebar sees a lesson
+  // published meanwhile (UX-080). Unpublished under us → keep the last runtime.
+  const { data } = useQuery({
+    queryKey: queryKeys.studentActivity.runtime(courseuuid, activityid),
+    queryFn: () => getStudentActivityRuntime(courseuuid, activityid),
+    initialData: initialRuntime,
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  })
+  const runtime = data ?? initialRuntime
+  // The server already fetched the (published-only) structure; seeding it skips one client round trip.
   return (
-    <CourseProvider courseuuid={course.course_uuid}>
+    <CourseProvider courseuuid={course.course_uuid} initialCourse={course}>
       <ActivityLayoutProvider>
-        <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={resolvedRuntime}>
+        <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={runtime}>
           <ActivityContentRenderer
             activity={activity}
-            canView={resolvedRuntime.permissions.can_view}
+            canView={runtime.permissions.can_view}
             course={course}
             courseuuid={courseuuid}
             isCourseEnd={activityid === 'end'}
@@ -33,66 +52,4 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
       </ActivityLayoutProvider>
     </CourseProvider>
   )
-}
-
-function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime {
-  const courseRecord = course as Record<string, unknown>
-  const outline = (course.chapters ?? []).map((chapter, chapterIndex: number) => ({
-    id: Number(chapter.id ?? chapterIndex),
-    title: chapter.name ?? `Chapter ${chapterIndex + 1}`,
-    index: chapterIndex,
-    activities: (chapter.activities ?? []).map(activity => ({
-      id: Number(activity.id ?? 0),
-      uuid: activity.activity_uuid ?? '',
-      title: activity.name ?? '',
-      type: activity.activity_type ?? '',
-      published: activity.published === true,
-      complete: true,
-      state: 'complete' as const,
-    })),
-  }))
-
-  return {
-    course: {
-      id: Number(courseRecord.id ?? 0),
-      uuid: course.course_uuid,
-      title: course.name ?? '',
-      public: Boolean(courseRecord.public),
-    },
-    activity: null,
-    content: null,
-    outline,
-    permissions: {
-      is_authenticated: true,
-      can_view: true,
-      can_contribute: false,
-      can_update: false,
-    },
-    policy: null,
-    previous: null,
-    next: null,
-    primary_action: {
-      id: 'back_to_course',
-      enabled: true,
-      reason: null,
-      target_activity_uuid: null,
-    },
-    progress: {
-      state: 'course_end',
-      canonical_state: null,
-      complete: true,
-      score: null,
-      passed: null,
-      due_at: null,
-      is_late: false,
-      teacher_action_required: false,
-      attempt_count: 0,
-      latest_submission_uuid: null,
-      latest_submission_status: null,
-      submitted_at: null,
-      graded_at: null,
-      completed_at: null,
-      status_reason: null,
-    },
-  }
 }

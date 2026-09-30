@@ -2,17 +2,22 @@
 
 import type { ComponentType } from 'react'
 import { LoaderCircle, ShieldAlert } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { buildSubmissionReviewViewModel, getSubmissionDisplayName } from '@/features/grading/domain'
 import type { Submission } from '@/features/grading/domain'
-import { getSubmissionPlagiarismState, getSubmissionViolations } from '@/features/grading/domain/types'
+import { getSubmissionViolations } from '@/features/grading/domain/types'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import type { KindReviewDetailProps } from '@/features/assessments/registry'
-import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment'
+import { useQuery } from '@tanstack/react-query'
+import { assessmentByActivityQueryOptions } from '@/features/assessments/queries'
+import { itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
+import { itemKindLabelKey } from '@/features/assessments/domain/items'
 import { CanonicalReviewAnswer } from '@/features/assessments/shared/canonical-item-rendering'
 import { useGradingPanel } from '@/hooks/useGradingPanel'
+import { useApiError } from '@/hooks/useApiError'
 import { useAnnotations } from '../AnnotationContext'
 import AnnotatableText from './AnnotatableText'
 import { Badge } from '@/components/ui/badge'
@@ -31,8 +36,11 @@ export default function SubmissionInspector({
   activityUuid?: string
   ReviewDetail?: ComponentType<KindReviewDetailProps>
 }) {
-  const { submission, isLoading } = useGradingPanel(selectedUuid, assessmentUuid)
+  const { submission, isLoading, error } = useGradingPanel(selectedUuid, assessmentUuid)
+  const { handleApiError } = useApiError()
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
+  const percent = usePercentFormat()
   const current = submission ?? fallbackSubmission
 
   if (!selectedUuid) {
@@ -52,6 +60,16 @@ export default function SubmissionInspector({
     )
   }
 
+  // UX-196: a refused review (e.g. `grade-own-attempt`) shows only the
+  // reason — never the list row's blank «Отправленная работа» placeholders.
+  if (error && !submission) {
+    return (
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm" role="status">
+        {handleApiError(error).message}
+      </div>
+    )
+  }
+
   if (!current) {
     return (
       <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
@@ -61,10 +79,9 @@ export default function SubmissionInspector({
   }
 
   const reviewVm = buildSubmissionReviewViewModel(current)
-  const plagiarismState = getSubmissionPlagiarismState(current)
 
   return (
-    <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
+    <div className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
       <div className="mx-auto max-w-4xl space-y-5">
         <div className="bg-card rounded-lg border p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -74,7 +91,7 @@ export default function SubmissionInspector({
                 {t('submissionInspector.attemptNumber', {
                   number: current.attempt_number,
                 })}{' '}
-                · {formatDate(current.submitted_at)}
+                · {formatDate(format, current.submitted_at)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -89,22 +106,6 @@ export default function SubmissionInspector({
                       : t('releaseStateReturned')}
               </Badge>
               {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
-              <Badge
-                variant={plagiarismState.status === 'failed' || plagiarismState.flagged ? 'destructive' : 'secondary'}
-                className="font-mono text-[10px]"
-              >
-                {plagiarismState.status === 'failed'
-                  ? t('submissionInspector.plagiarism.failed')
-                  : plagiarismState.status === 'checking'
-                    ? t('submissionInspector.plagiarism.checking')
-                    : plagiarismState.status === 'pending'
-                      ? t('submissionInspector.plagiarism.pending')
-                      : plagiarismState.flagged
-                        ? t('submissionInspector.plagiarism.match', {
-                            score: Math.round((plagiarismState.score ?? 0) * 100),
-                          })
-                        : t('submissionInspector.plagiarism.clear')}
-              </Badge>
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
@@ -130,7 +131,7 @@ export default function SubmissionInspector({
             />
             <HistoryItem
               label={t('submissionInspector.score')}
-              value={typeof current.final_score === 'number' ? `${Math.round(current.final_score)}%` : '--'}
+              value={typeof current.final_score === 'number' ? percent(current.final_score) : '--'}
             />
           </div>
         </div>
@@ -163,7 +164,7 @@ export default function SubmissionInspector({
           </TabsContent>
         </Tabs>
       </div>
-    </main>
+    </div>
   )
 }
 
@@ -180,6 +181,7 @@ function getViolationCount(submission: Submission): number {
 
 function ViolationLog({ submission }: { submission: Submission }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
   const violations = getSubmissionViolations(submission)
 
   if (violations.length === 0) {
@@ -209,7 +211,7 @@ function ViolationLog({ submission }: { submission: Submission }) {
                 {kind}
               </Badge>
               <span className="text-muted-foreground grow text-right">
-                {occurredAt ? formatDate(occurredAt) : '—'}
+                {occurredAt ? formatDate(format, occurredAt) : '—'}
                 {count !== null && count > 1 ? ` ×${count}` : ''}
               </span>
             </li>
@@ -222,14 +224,15 @@ function ViolationLog({ submission }: { submission: Submission }) {
 
 function AttemptHistory({ submission }: { submission: Submission }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
 
   return (
     <section className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">{t('submissionInspector.attemptHistory')}</h3>
       <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <HistoryItem label={t('submissionInspector.started')} value={formatDate(submission.started_at)} />
-        <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(submission.submitted_at)} />
-        <HistoryItem label={t('submissionInspector.graded')} value={formatDate(submission.graded_at)} />
+        <HistoryItem label={t('submissionInspector.started')} value={formatDate(format, submission.started_at)} />
+        <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(format, submission.submitted_at)} />
+        <HistoryItem label={t('submissionInspector.graded')} value={formatDate(format, submission.graded_at)} />
         <HistoryItem label={t('submissionInspector.version')} value={`v${submission.version}`} />
       </div>
     </section>
@@ -246,8 +249,14 @@ export function SubmittedAnswers({
   answersByItem?: Record<string, ItemAnswer>
 }) {
   const t = useTranslations('Features.Grading.Review')
-  const { vm } = useAssessmentAttempt(activityUuid ?? null)
-  const items = vm?.surface === 'ATTEMPT' ? vm.vm.items : []
+  const tKinds = useTranslations('Features.Assessments.Studio.NativeItemStudio.kindLabels')
+  // The grader needs the items only; the learner attempt hook would also
+  // fetch the *teacher's* attempt state for this assessment.
+  const { data: assessment } = useQuery({
+    ...assessmentByActivityQueryOptions(activityUuid ?? ''),
+    enabled: Boolean(activityUuid),
+  })
+  const items: AssessmentItem[] = assessment ? assessment.items.map(itemFromWire) : []
   const canonicalAnswers = answersByItem ?? getCanonicalAnswersByItem(submission)
   const { annotationsByItem, addAnnotation, removeAnnotation } = useAnnotations()
 
@@ -280,7 +289,7 @@ export function SubmittedAnswers({
             <div key={item.item_uuid ?? index} className="bg-card rounded-lg border p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
-                <Badge variant="outline">{item.kind}</Badge>
+                <Badge variant="outline">{tKinds(itemKindLabelKey(item.kind) ?? 'unknown')}</Badge>
               </div>
               <p className="mb-3 text-sm font-medium">
                 {item.title ||
@@ -338,14 +347,9 @@ function HistoryItem({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatDate(value?: string | null) {
+function formatDate(format: ReturnType<typeof useFormatter>, value?: string | null) {
   if (!value) return '--'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '--'
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return format.dateTime(date, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }

@@ -7,7 +7,66 @@ import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { queryOptions } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { getCourseReadiness } from '@services/courses/readiness'
+import type { CourseReadinessIssue } from '@services/courses/readiness'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+
+/**
+ * Server readiness (`GET courses/{id}/readiness`) — the single source for the
+ * workspace header badge and the review tab, so both read the same verdict.
+ */
+export function courseReadinessQueryOptions(courseUuid: string) {
+  return queryOptions({
+    queryKey: queryKeys.courses.readiness(courseUuid),
+    queryFn: () => getCourseReadiness(courseUuid),
+    // UX-137: a blocker fixed in another tab (the studio) clears «Исправить»
+    // when the teacher comes back — the client disables focus refetch globally.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  })
+}
+
+/**
+ * Localizes a readiness code (`DashPage.CourseManagement.Review.issues`);
+ * activity-scoped codes carry the activity name.
+ */
+export function useReadinessIssueMessage() {
+  const t = useTranslations('DashPage.CourseManagement.Review.issues')
+  return (issue: CourseReadinessIssue): string => {
+    const title = issue.title ?? ''
+    switch (issue.code) {
+      case 'no-live-activity': {
+        return t('noVisibleActivities')
+      }
+      case 'activity-unpublished': {
+        return t('activityUnpublished', { title })
+      }
+      case 'assessment-not-ready': {
+        return t('assessmentUnready', { title })
+      }
+      case 'code-challenge-unconfigured': {
+        return t('codeChallengeUnconfigured', { title })
+      }
+      case 'file-submission-unpublished': {
+        return t('fileSubmissionUnpublished', { title })
+      }
+      case 'file-submission-not-ready': {
+        return t('fileSubmissionUnready', { title })
+      }
+      case 'thumbnail-missing': {
+        return t('thumbnailMissing')
+      }
+      case 'certificate-not-configured': {
+        return t('certificateMissing')
+      }
+      default: {
+        return t('unknown')
+      }
+    }
+  }
+}
 
 type CourseWorkflowBadgeTone = 'default' | 'info' | 'success' | 'warning' | 'danger'
 
@@ -48,7 +107,17 @@ export function CourseStatusBadge({
   status,
   className,
 }: {
-  status: 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'unsaved' | 'live' | 'draft'
+  status:
+    | 'public'
+    | 'private'
+    | 'ready'
+    | 'needs-review'
+    | 'attention'
+    | 'unsaved'
+    | 'live'
+    | 'scheduled'
+    | 'draft'
+    | 'archived'
   className?: string
 }) {
   const t = useTranslations('DashPage.CourseManagement.Workflow.status')
@@ -69,7 +138,9 @@ export function CourseStatusBadge({
       status: LmsStatuses.UNSAVED,
     },
     live: { label: t('live'), status: LmsStatuses.PUBLISHED },
+    scheduled: { label: t('scheduled'), status: LmsStatuses.IN_PROGRESS },
     draft: { label: t('draft'), status: LmsStatuses.DRAFT },
+    archived: { label: t('archived'), status: LmsStatuses.UNAVAILABLE },
   }[status]
 
   return (

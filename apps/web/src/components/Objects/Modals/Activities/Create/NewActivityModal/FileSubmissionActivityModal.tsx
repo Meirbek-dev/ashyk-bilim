@@ -4,23 +4,26 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import { toUnix } from '@/lib/api/contract'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
+import type { MimeCategoryKey } from '@/features/file-submissions/mime-categories'
 
-const MIME_PRESETS = [
-  { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
+const MIME_PRESETS: { id: string; labelKey: MimeCategoryKey; mimes: string[] }[] = [
+  { id: 'pdf', labelKey: 'pdf', mimes: ['application/pdf'] },
   {
     id: 'documents',
-    label: 'Документы',
+    labelKey: 'documents',
     mimes: [
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -32,12 +35,12 @@ const MIME_PRESETS = [
   },
   {
     id: 'images',
-    label: 'Изображения',
+    labelKey: 'images',
     mimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'],
   },
   {
     id: 'spreadsheets',
-    label: 'Таблицы',
+    labelKey: 'spreadsheets',
     mimes: [
       'text/csv',
       'application/vnd.ms-excel',
@@ -47,7 +50,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'archives',
-    label: 'Архивы',
+    labelKey: 'archives',
     mimes: [
       'application/zip',
       'application/x-zip-compressed',
@@ -61,7 +64,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'text',
-    label: 'Текст и код',
+    labelKey: 'textAndCode',
     mimes: [
       'text/plain',
       'text/markdown',
@@ -81,6 +84,8 @@ const MIME_PRESETS = [
 
 export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: AppActivityModalProps) {
   const t = useTranslations('Components.NewFileSubmissionModal')
+  const tMime = useTranslations('FileSubmission.mimeCategories')
+  const { toastApiError } = useApiError()
   const queryClient = useQueryClient()
   const [title, setTitle] = useState('')
   const [instructions, setInstructions] = useState('')
@@ -89,6 +94,8 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   const [maxSize, setMaxSize] = useState<number | ''>(25)
   const [selectedMimes, setSelectedMimes] = useState<string[]>(() => MIME_PRESETS.flatMap(preset => preset.mimes))
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // `Validation.*` keys, rendered inline by `FieldError` (UX-084).
+  const [errors, setErrors] = useState<{ title?: string; instructions?: string }>({})
 
   const ALL_MIMES = MIME_PRESETS.flatMap(preset => preset.mimes)
   const allMimesSelected = ALL_MIMES.every(mime => selectedMimes.includes(mime))
@@ -115,25 +122,21 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!title.trim() || isMarkdownStructurallyEmpty(instructions)) {
-      toast.error(t('requiredFields'))
-      return
+    const nextErrors = {
+      ...(title.trim() ? {} : { title: 'titleRequired' }),
+      ...(isMarkdownStructurallyEmpty(instructions) ? { instructions: 'instructionsRequired' } : {}),
     }
-    const courseId = course?.courseStructure?.id
-    if (typeof courseId !== 'number') {
-      toast.error(t('createError'))
-      return
-    }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
     setIsSubmitting(true)
     try {
       await createFileSubmissionActivity({
         title,
         instructions,
-        due_at: dueAt || null,
+        due_at_unix: dueAt ? toUnix(new Date(dueAt)) : null,
         max_files: maxFiles,
         max_file_size_mb: maxSize === '' ? null : maxSize,
         allowed_mime_types: selectedMimes,
-        course_id: courseId,
         chapter_id: chapterId,
       })
       toast.success(t('createSuccess'))
@@ -144,7 +147,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       }
       closeModal()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('createError'))
+      toastApiError(error, { fallback: t('createError') })
     } finally {
       setIsSubmitting(false)
     }
@@ -153,10 +156,16 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   return (
     <form onSubmit={submit} className="space-y-4">
       <Field>
-        <FieldLabel>{t('title')}</FieldLabel>
+        <FieldLabel htmlFor="file-submission-title">{t('title')}</FieldLabel>
         <FieldContent>
-          <Input value={title} onChange={event => setTitle(event.target.value)} />
+          <Input
+            id="file-submission-title"
+            value={title}
+            aria-invalid={errors.title ? true : undefined}
+            onChange={event => setTitle(event.target.value)}
+          />
         </FieldContent>
+        <FieldError errors={[errors.title ? { message: errors.title } : undefined]} />
       </Field>
 
       <Field>
@@ -170,6 +179,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
             required
           />
         </FieldContent>
+        <FieldError errors={[errors.instructions ? { message: errors.instructions } : undefined]} />
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -222,7 +232,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
             return (
               <Label key={preset.id} className="hover:bg-muted/50 cursor-pointer rounded-md border p-3 transition">
                 <Checkbox checked={checked} onCheckedChange={value => togglePreset(preset.mimes, value)} />
-                {preset.label}
+                {tMime(preset.labelKey)}
               </Label>
             )
           })}

@@ -35,7 +35,7 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
     if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket)
     if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids)
     if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids)
-    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', String(scopedQuery.teacher_user_id))
+    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', scopedQuery.teacher_user_id)
     if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone)
     if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start)
     if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by)
@@ -70,7 +70,7 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
       </div>
 
       {/* Assessment Outliers & Bottlenecks */}
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <div className="flex items-center gap-2 pl-1">
             <Badge variant="outline" className="text-xs font-semibold">

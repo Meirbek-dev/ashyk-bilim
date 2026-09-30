@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status AS \"status: AiRunStatus\" FROM ai_runs WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status: AiRunStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2eb07845f3b80f3105da9c4da52b475a0ee28aed7eab02e40ddbe324dfdc4c3b"
+}

@@ -3,19 +3,27 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { apiJson } from '@/lib/api-client'
+import { createIdempotencyKey } from '@/lib/api/headers'
+import {
+  getAssessmentDraft,
+  getMyAssessmentSubmissions,
+  getMySubmission,
+  startAssessmentSubmission,
+  saveAssessmentDraft,
+  submitAssessmentDraft,
+} from '../submission-client'
+import type { AssessmentSubmissionRead } from '../domain/submission-wire'
 import { isApiError } from '@/lib/api/assertSuccess'
-import type { components } from '@/lib/api/generated'
+import { useApiError } from '@/hooks/useApiError'
+import { disabledReasonOf } from '../domain/disabled-reason'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import { refreshLearnerCourseState } from '@/features/learner-course/api'
 import { reportClientError } from '@/services/telemetry/client'
 import type { ItemAnswer } from '../domain/items'
-
-export type AssessmentSubmissionRead = components['schemas']['StudentSubmissionRead'] & {
-  draft_version?: number
-}
 
 interface DraftRead {
   assessment_uuid: string
@@ -32,26 +40,50 @@ interface ConflictState {
   localAnswers: Record<string, ItemAnswer>
 }
 
+/** BUG-204: pause before re-checking a submit the server reported as still in progress. */
+const IN_PROGRESS_RETRY_MS = 1000
+
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error'
 
 function answersFromSubmission(submission: AssessmentSubmissionRead | null | undefined): Record<string, ItemAnswer> {
   const answers = submission?.answers_json?.answers
-  return answers && typeof answers === 'object' ? (answers as Record<string, ItemAnswer>) : {}
+  return answers ?? {}
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
+// UX-212: a save or submit refused with 401 (the session ended — cap
+// eviction, logout elsewhere) sends the learner to the login page. The
+// answers the draft does not hold yet wait in this tab's sessionStorage,
+// keyed by the attempt, and come back (then save) when the draft reopens.
+const KEPT_ANSWERS_PREFIX = 'ashyq:kept-answers:'
+
+function isSessionEnded(error: unknown): boolean {
+  return isApiError(error) && error.status === 401
 }
 
-function latestSubmissionFromConflict(error: unknown): AssessmentSubmissionRead | null {
-  if (!isApiError(error)) return null
-  const details = asRecord(error.details)
-  const directLatest = details?.latest
-  if (directLatest && typeof directLatest === 'object') return directLatest as AssessmentSubmissionRead
+function keepAnswers(submissionId: string | null, answers: Record<string, ItemAnswer>): void {
+  if (!submissionId) return
+  try {
+    sessionStorage.setItem(KEPT_ANSWERS_PREFIX + submissionId, JSON.stringify(answers))
+  } catch {
+    // Storage blocked or full: nothing more to keep them in.
+  }
+}
 
-  const legacyDetail = asRecord(asRecord(error.data)?.detail)
-  const legacyLatest = legacyDetail?.latest
-  return legacyLatest && typeof legacyLatest === 'object' ? (legacyLatest as AssessmentSubmissionRead) : null
+function peekKeptAnswers(submissionId: string): Record<string, ItemAnswer> | null {
+  try {
+    const kept = sessionStorage.getItem(KEPT_ANSWERS_PREFIX + submissionId)
+    return kept === null ? null : (JSON.parse(kept) as Record<string, ItemAnswer>)
+  } catch {
+    return null
+  }
+}
+
+function dropKeptAnswers(submissionId: string): void {
+  try {
+    sessionStorage.removeItem(KEPT_ANSWERS_PREFIX + submissionId)
+  } catch {
+    // Storage blocked: nothing was kept there either.
+  }
 }
 
 function isOfflineRecoverable(error: unknown): boolean {
@@ -59,43 +91,59 @@ function isOfflineRecoverable(error: unknown): boolean {
   return error.status === 0 || error.code === 'CLIENT_TIMEOUT' || error.code === 'NETWORK_UNAVAILABLE'
 }
 
-export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
+export function useAssessmentSubmission(assessmentUuid: string | null | undefined) {
   const t = useTranslations('Features.ActivityWorkspace')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
+  const { toastApiError } = useApiError()
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle')
   const [conflictState, setConflictState] = useState<ConflictState | null>(null)
   const reportedLoadErrorRef = useRef<string | null>(null)
   const localAnswersRef = useRef<Record<string, ItemAnswer>>({})
-  const versionRef = useRef<number | undefined>(undefined)
   const draftVersionRef = useRef<number | undefined>(undefined)
+  const submissionIdRef = useRef<string | null>(null)
+  const assessmentScopeRef = useRef(assessmentUuid)
+  const saveInFlightRef = useRef<Promise<AssessmentSubmissionRead> | null>(null)
+  const submitRetryRef = useRef<{ fingerprint: string; key: string } | null>(null)
   const lastSaveTimeRef = useRef<number>(0)
   const nextSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingAnswersRef = useRef<Record<string, ItemAnswer> | null>(null)
   const saveRef = useRef<() => void>(() => {})
 
   useEffect(() => {
+    assessmentScopeRef.current = assessmentUuid
+    submissionIdRef.current = null
+    draftVersionRef.current = undefined
+    submitRetryRef.current = null
+    lastSaveTimeRef.current = 0
+    pendingAnswersRef.current = null
     return () => {
       if (nextSaveTimeoutRef.current) {
         clearTimeout(nextSaveTimeoutRef.current)
       }
     }
-  }, [])
-  const submissionsQueryKey = useMemo(
-    () => ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
-    [assessmentUuid],
-  )
-  const normalizedActivityUuid = activityUuid?.replace(/^activity_/, '') ?? null
+  }, [assessmentUuid])
+  const submissionsQueryKey = useMemo(() => queryKeys.assessments.mySubmissions(assessmentUuid), [assessmentUuid])
 
   const draftQueryOptions = useMemo(
     () =>
       queryOptions({
         queryKey: queryKeys.assessments.draft(assessmentUuid),
         queryFn: async () => {
-          return apiJson<DraftRead>(`assessments/${assessmentUuid}/draft`)
+          if (!assessmentUuid) throw new Error('Assessment is not ready')
+          // A submit swaps the draft row for the submitted one before the
+          // observer re-renders with `enabled: false`; an invalidation in that
+          // window must not turn into a `submissions/draft` 404.
+          const known = queryClient.getQueryData<AssessmentSubmissionRead[]>(submissionsQueryKey)
+          if (known && !known.some(row => row.status === 'DRAFT')) {
+            return { assessment_uuid: assessmentUuid, submission: null } satisfies DraftRead
+          }
+          return { assessment_uuid: assessmentUuid, submission: await getAssessmentDraft(assessmentUuid) }
         },
       }),
-    [assessmentUuid],
+    [assessmentUuid, queryClient, submissionsQueryKey],
   )
 
   const invalidateAssessmentState = useCallback(async () => {
@@ -103,35 +151,45 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey }),
       queryClient.invalidateQueries({ queryKey: submissionsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(assessmentUuid) }),
       queryClient.invalidateQueries({
         queryKey: queryKeys.assessments.detail(assessmentUuid),
       }),
-      normalizedActivityUuid
-        ? queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-          })
-        : Promise.resolve(),
+      // BUG-238: the items live under the *activity's* key; match every
+      // cached copy by the assessment it carries, so no caller has to pass
+      // (or normalize) the activity id for a re-sync to reload them.
+      queryClient.invalidateQueries({
+        queryKey: ['assessments', 'activity'],
+        predicate: query => (query.state.data as { id?: unknown } | undefined)?.id === assessmentUuid,
+      }),
     ])
-  }, [assessmentUuid, draftQueryOptions.queryKey, normalizedActivityUuid, queryClient, submissionsQueryKey])
-
-  const draftQuery = useQuery({
-    ...draftQueryOptions,
-    enabled: Boolean(assessmentUuid),
-  })
+  }, [assessmentUuid, draftQueryOptions.queryKey, queryClient, submissionsQueryKey])
 
   const submissionsQuery = useQuery({
     ...queryOptions({
       queryKey: submissionsQueryKey,
       queryFn: async () => {
-        return apiJson<AssessmentSubmissionRead[]>(`assessments/${assessmentUuid}/me`)
+        if (!assessmentUuid) throw new Error('Assessment is not ready')
+        return getMyAssessmentSubmissions(assessmentUuid)
       },
       enabled: Boolean(assessmentUuid),
     }),
   })
 
-  const draft = draftQuery.data?.submission ?? null
+  // `submissions/draft` answers 404 when no attempt is open; only ask once the
+  // attempt list says there is one (saves/starts seed the cache directly).
+  const hasOpenDraft = submissionsQuery.data?.some(row => row.status === 'DRAFT') === true
+  const draftQuery = useQuery({
+    ...draftQueryOptions,
+    enabled: Boolean(assessmentUuid) && hasOpenDraft,
+  })
+
+  // The attempt list is the source of truth for «is a draft open»: a submit
+  // that landed while the reply was lost leaves the draft cache one row behind
+  // (BUG-212 nit) — the list's refetch must swap the form for the result.
+  const draft = hasOpenDraft ? (draftQuery.data?.submission ?? null) : null
   const submission = draft ?? submissionsQuery.data?.[0] ?? null
-  const version = submission?.version
+  const version = submission?.draft_version
   const draftVersion = submission?.draft_version
 
   useEffect(() => {
@@ -139,12 +197,20 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   }, [localAnswers])
 
   useEffect(() => {
-    versionRef.current = version
-  }, [version])
-
-  useEffect(() => {
     draftVersionRef.current = draftVersion
-  }, [draftVersion])
+    submissionIdRef.current = draft?.submission_uuid ?? null
+  }, [draftVersion, draft?.submission_uuid])
+
+  const ensureDraft = useCallback(async () => {
+    if (!assessmentUuid) throw new Error('Assessment is not ready')
+    if (submissionIdRef.current && draftVersionRef.current !== undefined) {
+      return { id: submissionIdRef.current, version: draftVersionRef.current }
+    }
+    const opened = await startAssessmentSubmission(assessmentUuid)
+    submissionIdRef.current = opened.id
+    draftVersionRef.current = opened.draft_version
+    return { id: opened.id, version: opened.draft_version }
+  }, [assessmentUuid])
 
   const syncLatestSubmission = useCallback(
     (latest: AssessmentSubmissionRead) => {
@@ -163,11 +229,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         } else {
           next.unshift(latest)
         }
-        next.sort((left, right) => {
-          const leftTime = new Date(left.created_at ?? left.updated_at).getTime()
-          const rightTime = new Date(right.created_at ?? right.updated_at).getTime()
-          return rightTime - leftTime
-        })
+        next.sort((left, right) => right.attempt_number - left.attempt_number)
         return next
       })
     },
@@ -186,38 +248,67 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     [syncLatestSubmission],
   )
 
-  const saveMutation = useMutation({
-    mutationFn: async (answers: Record<string, ItemAnswer>) => {
-      if (!assessmentUuid) throw new Error('Assessment is not ready')
-      return apiJson<AssessmentSubmissionRead>(`assessments/${assessmentUuid}/draft`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(draftVersionRef.current ? { 'If-Match': String(draftVersionRef.current) } : {}),
-        },
-        body: JSON.stringify({
-          answers: Object.entries(answers).map(([item_uuid, answer]) => ({
-            item_uuid,
-            answer,
-          })),
-        }),
-      })
-    },
-    onMutate: () => setSaveState('saving'),
-    onSuccess: async latest => {
-      draftVersionRef.current = latest.draft_version
-      versionRef.current = latest.version
-      syncLatestSubmission(latest)
-      setConflictState(null)
+  // UX-103 / UX-196: the attempt's window closed under the open form
+  // (PAST_DUE, TIME_LIMIT_EXPIRED, REMEDIATION_REQUIRED, …) — whether the
+  // autosave or the submit hit it. Say why, drop the unsaved edits the server
+  // refused (the form shows what is on record), and refetch attempt-state so
+  // the form turns read-only.
+  const closeOnGate = useCallback(
+    async (reason: string) => {
+      toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
+      if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+      nextSaveTimeoutRef.current = null
+      pendingAnswersRef.current = null
+      const onRecord = answersFromSubmission(
+        queryClient.getQueryData<DraftRead>(draftQueryOptions.queryKey)?.submission,
+      )
+      localAnswersRef.current = onRecord
+      setLocalAnswers(onRecord)
       setSaveState('saved')
       await invalidateAssessmentState()
+      await refreshLearnerCourseState(queryClient, router)
     },
-    onError: (error: unknown) => {
+    [draftQueryOptions.queryKey, invalidateAssessmentState, queryClient, router, tReasons],
+  )
+
+  const saveMutation = useMutation({
+    mutationFn: async (answers: Record<string, ItemAnswer>) => {
+      const active = await ensureDraft()
+      const pending = saveAssessmentDraft(active.id, active.version, answers)
+      saveInFlightRef.current = pending
+      try {
+        const latest = await pending
+        if (assessmentScopeRef.current === assessmentUuid) draftVersionRef.current = latest.draft_version
+        saveInFlightRef.current = null
+        return latest
+      } catch (error) {
+        saveInFlightRef.current = null
+        throw error
+      }
+    },
+    onMutate: () => setSaveState('saving'),
+    onSuccess: async (latest, savedAnswers) => {
+      if (assessmentScopeRef.current !== assessmentUuid) return
+      draftVersionRef.current = latest.draft_version
+
+      syncLatestSubmission(latest)
+      setConflictState(null)
+      setSaveState(areAnswersEqual(localAnswersRef.current, savedAnswers) ? 'saved' : 'dirty')
+      await invalidateAssessmentState()
+    },
+    onError: async (error: unknown) => {
+      if (assessmentScopeRef.current !== assessmentUuid) return
+      if (isSessionEnded(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('sessionEnded'))
+        return
+      }
       if (isApiError(error) && error.status === 409) {
-        const latest = latestSubmissionFromConflict(error)
+        const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
         if (latest) {
           draftVersionRef.current = latest.draft_version
-          versionRef.current = latest.version
+
           const latestAnswers = answersFromSubmission(latest)
           if (areAnswersEqual(localAnswersRef.current, latestAnswers)) {
             syncLatestSubmission(latest)
@@ -239,6 +330,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         setSaveState('dirty')
         return
       }
+      const reason = disabledReasonOf(error)
+      if (reason) {
+        await closeOnGate(reason)
+        return
+      }
       setSaveState('error')
       void reportClientError({
         scope: 'assessment-flow',
@@ -247,7 +343,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         error: error instanceof Error ? error.message : 'Failed to save draft',
         ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
       }).catch(() => undefined)
-      toast.error(error instanceof Error ? error.message : 'Failed to save draft')
+      toastApiError(error)
     },
   })
 
@@ -255,57 +351,117 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     mutationFn: async ({
       answers,
       violationCount,
-      autoSubmit,
     }: {
       answers: Record<string, ItemAnswer>
       violationCount?: number
       autoSubmit?: boolean
     }) => {
-      if (!assessmentUuid) throw new Error('Assessment is not ready')
-      const params = new URLSearchParams()
-      if (typeof violationCount === 'number' && violationCount > 0) {
-        params.set('violation_count', String(violationCount))
+      if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+      pendingAnswersRef.current = null
+      if (saveInFlightRef.current) await saveInFlightRef.current
+      const active = await ensureDraft()
+      const fingerprint = JSON.stringify([active.id, active.version, answers, violationCount])
+      if (submitRetryRef.current?.fingerprint !== fingerprint) {
+        submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
       }
-      if (autoSubmit) {
-        params.set('auto_submit', 'true')
+      try {
+        return await submitAssessmentDraft(
+          active.id,
+          active.version,
+          answers,
+          submitRetryRef.current.key,
+          violationCount,
+        )
+      } catch (error) {
+        if (!isApiError(error)) throw error
+        if (isOfflineRecoverable(error)) {
+          // The reply was lost, not necessarily the submit (BUG-204 keeps the
+          // action running server-side): if the attempt already landed, that
+          // is the result — otherwise the BUG-178 re-queue below.
+          const latest = await getMySubmission(active.id).catch(() => null)
+          if (latest && latest.status !== 'DRAFT') return latest
+          throw error
+        }
+        if (error.code !== 'idempotency-in-progress') throw error
+        // BUG-204: the earlier submit under this key is still running (or its
+        // reservation is stranded). Give it a moment; if it landed, that is
+        // the result — otherwise mint a fresh key and submit again. Never the
+        // draft-conflict dialog for this.
+        await new Promise(resolve => setTimeout(resolve, IN_PROGRESS_RETRY_MS))
+        const latest = await getMySubmission(active.id)
+        if (latest.status !== 'DRAFT') return latest
+        submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
+        return submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
       }
-      const suffix = params.size > 0 ? `?${params.toString()}` : ''
-      return apiJson<AssessmentSubmissionRead>(`assessments/${assessmentUuid}/submit${suffix}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(draftVersionRef.current ? { 'If-Match': String(draftVersionRef.current) } : {}),
-        },
-        body: JSON.stringify({
-          answers: Object.entries(answers).map(([item_uuid, answer]) => ({
-            item_uuid,
-            answer,
-          })),
-        }),
-      })
     },
     onSuccess: async latest => {
+      submitRetryRef.current = null
       draftVersionRef.current = latest.draft_version
-      versionRef.current = latest.version
+
       syncLatestSubmission(latest)
       setConflictState(null)
       setSaveState('saved')
       if (assessmentUuid) {
         await invalidateAssessmentState()
       }
+      await refreshLearnerCourseState(queryClient, router)
     },
-    onError: (error: unknown) => {
+    onError: async (error: unknown) => {
+      if (isSessionEnded(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('sessionEnded'))
+        return
+      }
+      if (isApiError(error) && error.status === 409 && error.details?.field === 'content_version' && assessmentUuid) {
+        // BUG-238: the teacher changed the questions under this draft. `start`
+        // re-syncs it to the current content; reload the items and keep the
+        // learner's answers — no draft-conflict dialog, nothing to merge.
+        submitRetryRef.current = null
+        const reopened = await startAssessmentSubmission(assessmentUuid).catch(() => null)
+        if (reopened) {
+          draftVersionRef.current = reopened.draft_version
+          syncLatestSubmission(reopened)
+        }
+        setSaveState(areAnswersEqual(localAnswersRef.current, answersFromSubmission(reopened)) ? 'saved' : 'dirty')
+        toast.warning(t('assessmentChanged'))
+        await invalidateAssessmentState()
+        return
+      }
       if (isApiError(error) && error.status === 409) {
-        const latest = latestSubmissionFromConflict(error)
+        const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
         if (latest) {
           draftVersionRef.current = latest.draft_version
-          versionRef.current = latest.version
+
           openConflict(latest)
         }
         toast.error(t('answersUpdatedElsewhere'))
         return
       }
-      setSaveState('error')
+      const reason = disabledReasonOf(error)
+      if (reason) {
+        await closeOnGate(reason)
+        return
+      }
+      // BUG-178: the submit carried the latest answers, but the draft on the
+      // server may not — the mutation cleared the throttled autosave. Put the
+      // answers back on the draft path (autosave / pagehide flush / «Сохранить»)
+      // so a 429 / 5xx / offline submit never loses them.
+      const draftAnswers = answersFromSubmission(
+        queryClient.getQueryData<DraftRead>(draftQueryOptions.queryKey)?.submission,
+      )
+      if (areAnswersEqual(localAnswersRef.current, draftAnswers)) {
+        setSaveState('saved')
+      } else {
+        pendingAnswersRef.current = localAnswersRef.current
+        setSaveState('dirty')
+        if (!nextSaveTimeoutRef.current) {
+          nextSaveTimeoutRef.current = setTimeout(() => {
+            nextSaveTimeoutRef.current = null
+            saveRef.current()
+          }, 100)
+        }
+      }
       if (!isApiError(error) || error.status !== 429) {
         void reportClientError({
           scope: 'assessment-flow',
@@ -315,7 +471,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
         }).catch(() => undefined)
       }
-      toast.error(error instanceof Error ? error.message : t('submitFailed'))
+      // UX-111: every remaining failure is localized by code — a 429 says
+      // «Слишком много попыток…» with the Retry-After window, never the
+      // server's English detail.
+      toastApiError(error, { fallback: t('submitFailed') })
     },
   })
 
@@ -353,11 +512,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     !submissionsQuery.isLoading &&
     saveState !== 'dirty' &&
     saveState !== 'conflict' &&
+    saveState !== 'error' &&
     !saveMutation.isPending &&
     !submitMutation.isPending
   ) {
     const currentSubmissionId = submission
-      ? `${submission.submission_uuid}:${submission.updated_at ?? submission.created_at ?? ''}`
+      ? `${submission.submission_uuid}:${submission.draft_version}:${submission.status}`
       : 'none'
     if (currentSubmissionId !== lastSyncedSubmissionId) {
       setLastSyncedSubmissionId(currentSubmissionId)
@@ -369,7 +529,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   }
 
   const setItemAnswer = useCallback((itemUuid: string, answer: ItemAnswer) => {
-    setLocalAnswers(current => ({ ...current, [itemUuid]: answer }))
+    const next = { ...localAnswersRef.current, [itemUuid]: answer }
+    localAnswersRef.current = next
+    setLocalAnswers(next)
     setSaveState('dirty')
   }, [])
 
@@ -380,7 +542,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 
   const useServerVersion = useCallback(() => {
     if (!conflictState) return
-    setLocalAnswers(answersFromSubmission(conflictState.latest))
+    const answers = answersFromSubmission(conflictState.latest)
+    localAnswersRef.current = answers
+    setLocalAnswers(answers)
     setConflictState(null)
     setSaveState(conflictState.latest.status === 'DRAFT' ? 'saved' : 'idle')
   }, [conflictState])
@@ -389,6 +553,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation
 
   const save = useCallback(() => {
+    if (isSubmitting) return
     if (nextSaveTimeoutRef.current) {
       clearTimeout(nextSaveTimeoutRef.current)
       nextSaveTimeoutRef.current = null
@@ -424,7 +589,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           saveRef.current()
         }
       },
-      onError: (error: unknown) => {
+      onError: async (error: unknown) => {
         if (isApiError(error) && error.status === 429) {
           lastSaveTimeRef.current = 0
           setSaveState('dirty')
@@ -437,11 +602,35 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
       },
     })
-  }, [saveMutate, saveMutation.isPending])
+  }, [saveMutate, saveMutation.isPending, isSubmitting])
 
   useEffect(() => {
     saveRef.current = save
   }, [save])
+
+  // UX-212: back from the login page — the answers a 401 kept for this
+  // attempt replace the draft's (adopted here, after the seeding above) and
+  // are saved straight away by the effect. Checked once per opened draft: a
+  // 401 in this mount keeps them for the next one.
+  const openDraftId = draft?.status === 'DRAFT' ? draft.submission_uuid : null
+  const [keptCheckedId, setKeptCheckedId] = useState<string | null>(null)
+  const [restoredDraftId, setRestoredDraftId] = useState<string | null>(null)
+  if (openDraftId && openDraftId !== keptCheckedId) {
+    setKeptCheckedId(openDraftId)
+    const kept = peekKeptAnswers(openDraftId)
+    if (kept) {
+      setLocalAnswers(kept)
+      setSaveState('dirty')
+      setRestoredDraftId(openDraftId)
+    }
+  }
+  useEffect(() => {
+    if (!restoredDraftId) return
+    // `localAnswersRef` already mirrors the adopted answers (its sync effect runs first).
+    dropKeptAnswers(restoredDraftId)
+    toast.info(t('sessionEndedRestored'))
+    saveRef.current()
+  }, [restoredDraftId, t])
 
   const submit = useCallback(
     (options?: SubmitOptions) =>
@@ -456,13 +645,41 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     if (typeof globalThis.window === 'undefined') return
     const handleOnline = () => {
-      if (localAnswersRef.current && Object.keys(localAnswersRef.current).length > 0) {
+      if (saveState === 'dirty' && Object.keys(localAnswersRef.current).length > 0) {
         save()
       }
     }
     globalThis.addEventListener('online', handleOnline)
     return () => globalThis.removeEventListener('online', handleOnline)
-  }, [save])
+  }, [save, saveState])
+
+  // UX-090: answers typed inside the 5 s throttle window must not die with
+  // the page. On unload / route change, send the pending draft straight
+  // away (`keepalive` outlives the document); the server's own 5 s window
+  // may still 429 it — the unsaved-changes guard is the learner's warning.
+  const saveStateRef = useRef(saveState)
+  useEffect(() => {
+    saveStateRef.current = saveState
+  }, [saveState])
+  const flushPending = useCallback(() => {
+    if (saveStateRef.current !== 'dirty' && pendingAnswersRef.current === null) return
+    if (!submissionIdRef.current || draftVersionRef.current === undefined) return
+    if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+    nextSaveTimeoutRef.current = null
+    pendingAnswersRef.current = null
+    // The unmount flush and the `pagehide` one must not send the same draft twice.
+    saveStateRef.current = 'saving'
+    void saveAssessmentDraft(submissionIdRef.current, draftVersionRef.current, localAnswersRef.current, {
+      keepalive: true,
+    }).catch(() => undefined)
+  }, [])
+  useEffect(() => {
+    globalThis.addEventListener('pagehide', flushPending)
+    return () => {
+      globalThis.removeEventListener('pagehide', flushPending)
+      flushPending()
+    }
+  }, [flushPending])
 
   return useMemo(
     () => ({
@@ -479,7 +696,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       conflict:
         conflictState !== null
           ? {
-              latestVersion: conflictState.latest.draft_version ?? conflictState.latest.version,
+              latestVersion: conflictState.latest.draft_version,
               latestSavedAt: conflictState.latest.updated_at,
               localAnswerCount: Object.keys(conflictState.localAnswers).length,
               serverAnswerCount: Object.keys(answersFromSubmission(conflictState.latest)).length,

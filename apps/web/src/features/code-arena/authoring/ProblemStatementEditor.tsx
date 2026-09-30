@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
+import { CODE_LIMITS } from './PublishReadinessPanel'
 
 interface ProblemStatementEditorProps {
   draft: CodeChallengeSettings
@@ -92,6 +93,42 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   value={draft.points ?? 100}
                   onChange={e => onChange({ points: Number(e.target.value) })}
                 />
+              </div>
+            </div>
+
+            {/* UX-282: the item's sandbox limits (body.time_limit_seconds / body.memory_limit_mb). */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="code-time-limit" className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('timeLimit')}
+                </Label>
+                <Input
+                  id="code-time-limit"
+                  type="number"
+                  min={CODE_LIMITS.timeSeconds.min}
+                  max={CODE_LIMITS.timeSeconds.max}
+                  value={draft.time_limit ?? ''}
+                  onChange={e => onChange({ time_limit: Number(e.target.value) })}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t('timeLimitDescription')} ({CODE_LIMITS.timeSeconds.min}–{CODE_LIMITS.timeSeconds.max})
+                </p>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="code-memory-limit" className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('memoryLimit')}
+                </Label>
+                <Input
+                  id="code-memory-limit"
+                  type="number"
+                  min={CODE_LIMITS.memoryMb.min}
+                  max={CODE_LIMITS.memoryMb.max}
+                  value={draft.memory_limit ?? ''}
+                  onChange={e => onChange({ memory_limit: Number(e.target.value) })}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t('memoryLimitDescription')} ({CODE_LIMITS.memoryMb.min}–{CODE_LIMITS.memoryMb.max})
+                </p>
               </div>
             </div>
 

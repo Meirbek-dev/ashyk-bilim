@@ -1,0 +1,507 @@
+//! `ab-testkit` — the shared test harness (dev-dependency only).
+//!
+//! [`TestApp`] wraps the real router (full middleware stack) around a test
+//! database pool, the test Redis, and a wiremock Zitadel — pair it with
+//! `#[sqlx::test]` for a fresh migrated DB per test. Requests go through
+//! `tower::ServiceExt::oneshot`; no sockets.
+//!
+//! Tests may use `unwrap`/`expect`/`panic` freely — this crate is never in a
+//! production dependency graph, and panics ARE test failures here.
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::missing_panics_doc
+)]
+
+pub mod judge0;
+pub mod llm;
+
+use std::sync::Arc;
+use std::time::Duration;
+
+use ab_clients::judge0::Judge0Client;
+use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
+use ab_core::config::{
+    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ResendConfig,
+    ServerConfig, TelemetryConfig,
+};
+use ab_core::id::UserId;
+use ab_domain::code::CodeRunner;
+use ab_domain::identity::IdentityService;
+use axum::Router;
+use axum::body::Body;
+use axum::http::{HeaderMap, Request, StatusCode, header};
+use secrecy::SecretString;
+use sqlx::PgPool;
+use tower::ServiceExt;
+use wiremock::MockServer;
+
+/// Redis for tests: CI sets `TEST_REDIS_URL` (service on 6379); locally the
+/// podman container maps 6380 (see AGENTS.md).
+#[must_use]
+pub fn test_redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into())
+}
+
+/// A deterministic development config for tests. The database URL is unused —
+/// the pool is injected directly.
+#[must_use]
+pub fn test_config() -> Config {
+    Config {
+        environment: Environment::Development,
+        server: ServerConfig {
+            host: "127.0.0.1".into(),
+            port: 0,
+            cors_origins: vec![],
+            web_url: None,
+        },
+        database: DatabaseConfig {
+            url: SecretString::from("postgres://injected-pool-unused"),
+            max_connections: 5,
+            min_connections: 0,
+        },
+        redis: RedisConfig { url: None },
+        zitadel: None,
+        google: None,
+        resend: None,
+        storage: None,
+        judge0: None,
+        telemetry: TelemetryConfig {
+            json_logs: false,
+            otlp_endpoint: None,
+        },
+        ai: AiConfig::default(),
+    }
+}
+
+pub struct TestApp {
+    router: Router,
+    ai: ab_domain::ai::AiService,
+    pub pool: PgPool,
+    pub sessions: ab_domain::identity::SessionStore,
+    /// Wiremock standing in for Zitadel — mount fixtures per test.
+    pub zitadel: MockServer,
+    /// Wiremock standing in for Google's OAuth endpoints.
+    pub google: MockServer,
+    /// Wiremock standing in for Resend (`POST /emails`). Unmounted = the
+    /// send fails and the flow logs-and-continues, like an outage.
+    pub resend: MockServer,
+    /// Wiremock standing in for Judge0 — see [`judge0::FakeJudge`].
+    pub judge0: MockServer,
+    /// Wiremock standing in for the OpenAI-compatible chat completions
+    /// endpoint — see [`llm`] for the reply helpers.
+    pub llm: MockServer,
+    judge0_client: Arc<Judge0Client>,
+}
+
+/// The Google OAuth client id used by the test app (id_token `aud` must match).
+pub const TEST_GOOGLE_CLIENT_ID: &str = "test-google-client";
+
+impl TestApp {
+    /// Build the full application (real router, real middleware) over the
+    /// given pool + test Redis + fresh Zitadel/Google mocks. Use with
+    /// `#[sqlx::test]`.
+    pub async fn spawn(pool: PgPool) -> Self {
+        Self::spawn_with(pool, |_| {}).await
+    }
+
+    /// [`Self::spawn`] with a hook to adjust the config first (feature
+    /// flags, budgets, disabled providers).
+    pub async fn spawn_with(pool: PgPool, adjust: impl FnOnce(&mut Config)) -> Self {
+        let zitadel = MockServer::start().await;
+        let google = MockServer::start().await;
+        let judge0 = MockServer::start().await;
+        let llm = MockServer::start().await;
+        let resend = MockServer::start().await;
+        let mut config = test_config();
+        config.ai = llm::test_ai_config(&llm);
+        config.resend = Some(ResendConfig {
+            api_key: SecretString::from("re_test"),
+            from: "Ashyq Bilim <noreply@test.local>".into(),
+            base_url: resend.uri(),
+        });
+        adjust(&mut config);
+        let judge0_client = Arc::new(
+            Judge0Client::new(ab_clients::judge0::Judge0Config {
+                base_url: judge0.uri(),
+                api_key: None,
+                request_timeout: Duration::from_secs(5),
+                poll_interval: Duration::from_millis(10),
+                poll_max_wait: Duration::from_secs(3),
+                max_concurrency: 4,
+            })
+            .expect("test judge0 client"),
+        );
+        let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
+            .await
+            .expect("test redis reachable (see AGENTS.md local dev stack)");
+        let zitadel_client = Arc::new(
+            ZitadelClient::new(ZitadelConfig {
+                base_url: zitadel.uri(),
+                pat: SecretString::from("test-pat"),
+            })
+            .expect("test zitadel client"),
+        );
+        let google_client = Arc::new(
+            ab_clients::google::GoogleClient::new(ab_clients::google::GoogleConfig {
+                client_id: TEST_GOOGLE_CLIENT_ID.into(),
+                client_secret: SecretString::from("test-google-secret"),
+                redirect_uri: "http://localhost/api/v2/auth/google/callback".into(),
+                token_endpoint: Some(format!("{}/token", google.uri())),
+                userinfo_endpoint: Some(format!("{}/userinfo", google.uri())),
+                authorization_endpoint: Some(format!("{}/authorize", google.uri())),
+            })
+            .expect("test google client"),
+        );
+        let mailer = config.resend.clone().map(|c| {
+            Arc::new(ab_clients::resend::ResendClient::new(c).expect("test resend client"))
+        });
+        let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone())
+            .with_mailer(mailer, config.server.web_url.clone());
+        let google_auth = ab_domain::identity::GoogleAuthService::new(
+            pool.clone(),
+            sessions.clone(),
+            zitadel_client,
+            google_client,
+        );
+        let storage = Arc::new(
+            ab_clients::storage::StorageClient::new(&ab_clients::storage::StorageConfig {
+                endpoint: std::env::var("TEST_S3_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:9002".into()),
+                access_key: "ashyq-dev".into(),
+                secret_key: SecretString::from("ashyq-dev-secret"),
+                public_bucket: "ab-public".into(),
+                private_bucket: "ab-private".into(),
+            })
+            .expect("test storage client"),
+        );
+        let state = ab_api::AppState::new(
+            pool.clone(),
+            config,
+            identity,
+            Some(google_auth),
+            storage,
+            Some(judge0_client.clone()),
+        );
+        let state = state.expect("test state must build");
+        let ai = state.ai.clone();
+        let router = ab_api::build_router(state).expect("test router must build");
+        Self {
+            router,
+            ai,
+            pool,
+            sessions,
+            zitadel,
+            google,
+            resend,
+            judge0,
+            llm,
+            judge0_client,
+        }
+    }
+
+    /// The same AI service the app uses — for driving queued runs the way
+    /// the worker handler does.
+    #[must_use]
+    pub fn ai_service(&self) -> ab_domain::ai::AiService {
+        self.ai.clone()
+    }
+
+    /// Serve the router on an ephemeral port for tests that need a real
+    /// socket (streaming responses). Returns the base URL.
+    pub async fn serve(&self) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral port");
+        let addr = listener.local_addr().expect("local addr");
+        let router = self.router.clone();
+        tokio::spawn(async move {
+            let _ = axum::serve(
+                listener,
+                router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .await;
+        });
+        format!("http://{addr}")
+    }
+
+    /// The same runner the app uses — for driving the auto-submit sweep.
+    #[must_use]
+    pub fn code_runner(&self) -> CodeRunner {
+        CodeRunner::new(
+            self.pool.clone(),
+            Some(self.judge0_client.clone()),
+            Judge0Limits::default(),
+        )
+    }
+
+    /// Insert a user row (Zitadel-linked) with the given system roles.
+    pub async fn create_user(&self, username: &str, email: &str, roles: &[&str]) -> UserId {
+        let id: uuid::Uuid = sqlx::query_scalar(
+            "INSERT INTO users (zitadel_user_id, username, email, display_name)
+             VALUES ($1, $2, $3, $2) RETURNING id",
+        )
+        .bind(format!("z-{username}"))
+        .bind(username)
+        .bind(email)
+        .fetch_one(&self.pool)
+        .await
+        .expect("insert user");
+        for role in roles {
+            sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id)
+                 SELECT $1, id FROM roles WHERE slug = $2",
+            )
+            .bind(id)
+            .bind(role)
+            .execute(&self.pool)
+            .await
+            .expect("assign role");
+        }
+        UserId(id)
+    }
+
+    /// Fixture-level publish: flip `courses.public` directly, skipping the
+    /// readiness gate of `POST /courses/{id}/lifecycle` (which refuses a
+    /// course without a live activity — most fixtures have none).
+    pub async fn publish_course(&self, course_id: &str) {
+        let id: uuid::Uuid = course_id.parse().expect("course id");
+        sqlx::query("UPDATE courses SET public = true WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .expect("publish course");
+    }
+
+    /// Mint a live session with the given grants; returns the `Cookie` header
+    /// value for authenticated requests.
+    pub async fn mint_session(&self, permissions: &[&str]) -> MintedSession {
+        let user_id = UserId::new();
+        self.mint_session_for(user_id, permissions).await
+    }
+
+    pub async fn mint_session_for(&self, user_id: UserId, permissions: &[&str]) -> MintedSession {
+        let epoch = self.sessions.epoch(user_id).await.expect("user epoch");
+        let session_id = self
+            .sessions
+            .create(ab_domain::identity::NewSession {
+                user_id,
+                zitadel_user_id: format!("z-{user_id}"),
+                zitadel_session_id: "zs-test".into(),
+                zitadel_session_token: "ztok-test".into(),
+                roles: vec!["test".into()],
+                permissions: permissions.iter().map(ToString::to_string).collect(),
+                rbac_version: 1,
+                mfa_enabled: false,
+                has_password: true,
+                google_linked: false,
+                ip: None,
+                user_agent: Some("testkit".into()),
+                epoch,
+            })
+            .await
+            .expect("mint session")
+            .expect("session fenced");
+        MintedSession {
+            user_id,
+            cookie: format!("{}={session_id}", ab_api::extract::SESSION_COOKIE),
+        }
+    }
+
+    pub async fn get(&self, path: &str) -> TestResponse {
+        self.send(
+            Request::builder()
+                .uri(path)
+                .body(Body::empty())
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn get_as(&self, session: &MintedSession, path: &str) -> TestResponse {
+        self.send(
+            Request::builder()
+                .uri(path)
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::empty())
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn post_json(&self, path: &str, body: &serde_json::Value) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("POST")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn post_as(
+        &self,
+        session: &MintedSession,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("POST")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn patch_as(
+        &self,
+        session: &MintedSession,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("PATCH")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
+    pub async fn delete_as(&self, session: &MintedSession, path: &str) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("DELETE")
+                .uri(path)
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::empty())
+                .expect("request build"),
+        )
+        .await
+    }
+
+    /// Escape hatch for custom requests (headers, methods, raw bodies).
+    pub async fn send(&self, request: Request<Body>) -> TestResponse {
+        let response = self
+            .router
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("infallible");
+        let (parts, body) = response.into_parts();
+        let bytes = axum::body::to_bytes(body, 8 * 1024 * 1024)
+            .await
+            .expect("read body");
+        TestResponse {
+            status: parts.status,
+            headers: parts.headers,
+            body: bytes.to_vec(),
+        }
+    }
+}
+
+pub struct MintedSession {
+    pub user_id: UserId,
+    /// Ready-to-use `Cookie` header value.
+    pub cookie: String,
+}
+
+pub struct TestResponse {
+    pub status: StatusCode,
+    pub headers: HeaderMap,
+    body: Vec<u8>,
+}
+
+impl TestResponse {
+    /// Parse the body as JSON, panicking with the raw body on failure.
+    #[must_use]
+    pub fn json(&self) -> serde_json::Value {
+        serde_json::from_slice(&self.body).unwrap_or_else(|err| {
+            panic!(
+                "response body is not JSON ({err}): {:?}",
+                String::from_utf8_lossy(&self.body)
+            )
+        })
+    }
+
+    #[must_use]
+    pub fn content_type(&self) -> &str {
+        self.headers
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_default()
+    }
+
+    /// The `ab_session=<value>` pair from `Set-Cookie`, as a `Cookie` header
+    /// value — for continuing an authenticated flow after login.
+    #[must_use]
+    pub fn session_cookie(&self) -> Option<String> {
+        self.headers
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .find_map(|v| {
+                let raw = v.to_str().ok()?;
+                let pair = raw.split(';').next()?.trim();
+                pair.starts_with(ab_api::extract::SESSION_COOKIE)
+                    .then(|| pair.to_owned())
+            })
+    }
+}
+
+impl TestResponse {
+    /// Raw body as text — for assertion messages when a status surprises.
+    #[must_use]
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.body).into_owned()
+    }
+
+    /// Raw body bytes (binary responses: PDF, CSV with BOM).
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        &self.body
+    }
+}
+
+/// Polls `reached` every 200 µs while `request` runs and drops the request
+/// future the moment it reports true.
+///
+/// A request that completes first is
+/// asserted with `on_done` instead — a client hanging up mid-request.
+pub async fn drop_request_when<R>(
+    request: impl std::future::Future<Output = R>,
+    mut reached: impl AsyncFnMut() -> bool,
+    on_done: impl FnOnce(R),
+) {
+    let mut request = std::pin::pin!(request);
+    loop {
+        tokio::select! {
+            biased;
+            () = tokio::time::sleep(std::time::Duration::from_micros(200)) => {
+                if reached().await { break; }
+            }
+            response = &mut request => { on_done(response); break; }
+        }
+    }
+}
+
+/// Polls `done` every 20 ms for up to 5 s; panics with `what` otherwise.
+///
+/// # Panics
+/// When `done` is still false at the deadline.
+pub async fn wait_until(what: &str, mut done: impl AsyncFnMut() -> bool) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !done().await {
+        assert!(tokio::time::Instant::now() < deadline, "{what}");
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+}

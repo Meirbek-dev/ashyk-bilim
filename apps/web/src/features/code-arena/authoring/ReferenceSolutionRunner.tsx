@@ -8,18 +8,23 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { apiJson } from '@/lib/api-client'
 import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges'
 import { cn } from '@/lib/utils'
+import { referenceCheck } from '@/lib/api/generated/code/code'
+import { useApiError } from '@/hooks/useApiError'
+import { caseVerdict, verdictFromRun, verdictLabelKey } from '../domain'
 
 interface ReferenceSolutionRunnerProps {
   draft: CodeChallengeSettings
   languages: Judge0Language[]
+  /** Saves the draft; the check runs against the stored solutions. `false` aborts. */
+  onBeforeValidate: () => Promise<boolean>
 }
 
 interface ValidationResultDetail {
   test_id: string
   passed: boolean
+  status_id: number | null
   status_description: string
   time?: number
   memory?: number
@@ -36,8 +41,9 @@ interface ValidationResultLanguage {
   details?: ValidationResultDetail[]
 }
 
-export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionRunnerProps) {
+export function ReferenceSolutionRunner({ draft, languages, onBeforeValidate }: ReferenceSolutionRunnerProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const { toastApiError } = useApiError()
   const [isValidating, setIsValidating] = useState(false)
   const [results, setResults] = useState<Record<number, ValidationResultLanguage> | null>(null)
 
@@ -53,16 +59,35 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
     setIsValidating(true)
     setResults(null)
     try {
-      const data = await apiJson<{ results: Record<number, ValidationResultLanguage> }>(
-        `assessments/${draft.uuid}/code-challenge/validate`,
-        {
-          method: 'POST',
-        },
-      )
-      setResults(data.results)
+      if (!(await onBeforeValidate())) return
+      const data = await referenceCheck(draft.uuid)
+      const results: Record<number, ValidationResultLanguage> = {}
+      for (const check of data.results) {
+        results[check.language_id] = {
+          ok: check.ok,
+          status: check.status,
+          passed: check.passed,
+          total: check.total,
+          ...(check.score !== undefined && check.score !== null ? { score: check.score } : {}),
+          ...(check.compile_output ? { compile_output: check.compile_output } : {}),
+          ...(check.message ? { message: check.message } : {}),
+          details: check.cases.map(caseResult => {
+            const detail: ValidationResultDetail = {
+              test_id: caseResult.test_id,
+              passed: caseResult.passed,
+              status_id: caseResult.status_id ?? null,
+              status_description: caseResult.status_description,
+            }
+            if (caseResult.time_seconds != null) detail.time = caseResult.time_seconds
+            if (caseResult.memory_kb != null) detail.memory = caseResult.memory_kb
+            return detail
+          }),
+        }
+      }
+      setResults(results)
       toast.success(t('referenceValidationFinished'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('referenceValidationFailed'))
+      toastApiError(error, { fallback: t('referenceValidationFailed') })
     } finally {
       setIsValidating(false)
     }
@@ -130,7 +155,13 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                             ) : (
                               <Badge variant="destructive" className="gap-1 text-[10px] font-bold">
                                 <XCircle className="size-3" />
-                                {runResult.status}
+                                {runResult.status === 'missing_solution'
+                                  ? `${t('solutionStatus')}: ${t('missing')}`
+                                  : t(
+                                      verdictLabelKey(
+                                        verdictFromRun(runResult.status, runResult.passed ?? 0, runResult.total ?? 0),
+                                      ),
+                                    )}
                               </Badge>
                             )}
                             {typeof runResult.passed === 'number' && (
@@ -193,7 +224,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                                     className="truncate text-[10px] opacity-75"
                                     title={caseDetail.status_description}
                                   >
-                                    {caseDetail.passed ? t('passed') : caseDetail.status_description}
+                                    {caseDetail.passed ? t('passed') : t(verdictLabelKey(caseVerdict(caseDetail)))}
                                   </div>
                                   {typeof caseDetail.time === 'number' && (
                                     <div className="mt-1 font-mono text-[9px] opacity-60">

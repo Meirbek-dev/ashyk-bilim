@@ -28,7 +28,7 @@ export function AIAdminPanel() {
         <h2 className="text-lg font-semibold tracking-tight">{t('title')}</h2>
         <p className="text-muted-foreground text-sm">{t('description')}</p>
       </div>
-      {error ? <AIErrorRecovery message={error.message} /> : null}
+      {error ? <AIErrorRecovery error={error} /> : null}
       <AIOperationsConsole />
       {usage.data ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_24rem]">

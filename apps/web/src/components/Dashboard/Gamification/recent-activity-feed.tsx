@@ -62,7 +62,7 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
                 </div>
                 <div className="shrink-0 text-right">
                   <span className="text-sm font-semibold tabular-nums">+{transaction.amount}</span>
-                  <p className="text-muted-foreground text-xs">XP</p>
+                  <p className="text-muted-foreground text-xs">{t('leaderboard.stats.xp')}</p>
                 </div>
               </div>
             )

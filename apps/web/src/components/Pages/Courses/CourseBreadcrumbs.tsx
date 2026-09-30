@@ -34,7 +34,7 @@ export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="first-letter:uppercase">{course.name}</BreadcrumbPage>
+            <BreadcrumbPage>{course.name}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

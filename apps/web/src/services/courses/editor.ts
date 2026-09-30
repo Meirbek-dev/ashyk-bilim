@@ -1,5 +1,7 @@
 import { apiResult } from '@/lib/api-client'
 import { getApiErrorMessage, isApiError } from '@/lib/api/assertSuccess'
+import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
+import type { Contributor } from '@/lib/api/generated/zod'
 
 export interface CourseEditorResource<T> {
   data: T | null
@@ -9,7 +11,7 @@ export interface CourseEditorResource<T> {
 }
 
 export interface CourseEditorBundle {
-  contributors: CourseEditorResource<AppCourseAuthor[]>
+  contributors: CourseEditorResource<Contributor[]>
   linkedUserGroups: CourseEditorResource<unknown[]>
   certifications: CourseEditorResource<unknown[]>
 }
@@ -27,7 +29,7 @@ const createResource = <T>(
 })
 
 export const createEmptyCourseEditorBundle = (): CourseEditorBundle => ({
-  contributors: createResource<AppCourseAuthor[]>(null, 0, null, false),
+  contributors: createResource<Contributor[]>(null, 0, null, false),
   linkedUserGroups: createResource<unknown[]>(null, 0, null, false),
   certifications: createResource<unknown[]>(null, 0, null, false),
 })
@@ -48,15 +50,12 @@ const fetchArrayResource = async <T>(path: string): Promise<CourseEditorResource
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
+  const id = stripEntityPrefix(courseUuid)
   const [contributors, linkedUserGroups, certifications] = await Promise.all([
-    fetchArrayResource<AppCourseAuthor>(`courses/${courseUuid}/contributors`),
-    fetchArrayResource<unknown>(`usergroups/resource/${courseUuid}`),
-    fetchArrayResource<unknown>(`certifications/course/${courseUuid}`),
+    fetchArrayResource<Contributor>(`courses/${id}/contributors`),
+    fetchArrayResource<unknown>(`courses/${id}/usergroups`),
+    fetchArrayResource<unknown>(`courses/${id}/certifications`),
   ])
 
-  return {
-    contributors,
-    linkedUserGroups,
-    certifications,
-  }
+  return { contributors, linkedUserGroups, certifications }
 }

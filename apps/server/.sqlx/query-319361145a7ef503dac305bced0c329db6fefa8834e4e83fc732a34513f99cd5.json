@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM ai_remediation_sessions\n           WHERE student_user_id = $1 AND activity_id = $2 AND gate_mode\n             AND status IN ('assigned', 'in_progress', 'failed')\n           ORDER BY created_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_remediation_sessions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "319361145a7ef503dac305bced0c329db6fefa8834e4e83fc732a34513f99cd5"
+}

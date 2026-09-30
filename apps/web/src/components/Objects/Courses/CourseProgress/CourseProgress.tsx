@@ -9,33 +9,21 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { useMemo, useState } from 'react'
 import type { FC } from 'react'
+import { learnerCourseProgress } from '@/features/learner-course/api'
+import type { LearnerCourseState } from '@/features/learner-course/api'
 
 interface CourseProgressProps {
   course: AppCourse
   isOpen: boolean
   onClose: () => void
-  trailData?: AppTrailData | undefined
+  learnerState?: LearnerCourseState | null | undefined
 }
 
-const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trailData }) => {
+const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, learnerState }) => {
   const t = useTranslations('Courses.CoursesActions')
   const [expandedChapters, setExpandedChapters] = useState(new Set())
-  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
-  const completedActivityIds = useMemo(() => {
-    const run = trailData?.runs?.find((candidateRun: AppTrailRun) => {
-      const runCourseUuid =
-        candidateRun.course?.course_uuid ??
-        (typeof candidateRun.course_uuid === 'string' ? candidateRun.course_uuid : undefined)
-      return runCourseUuid?.replace('course_', '') === cleanCourseUuid
-    })
-
-    return new Set(
-      (run?.steps ?? [])
-        .filter((step: AppTrailStep) => step.complete === true && typeof step.activity_id === 'number')
-        .map((step: AppTrailStep) => step.activity_id),
-    )
-  }, [cleanCourseUuid, trailData])
+  const completedActivityIds = useMemo(() => learnerCourseProgress(learnerState).completedIds, [learnerState])
 
   const { chapterProgress, totalActivities, completedActivities } = useMemo(() => {
     let nextTotalActivities = 0
@@ -48,9 +36,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       let chapterCompleted = 0
 
       chapterActivities.forEach((activity: AppActivity) => {
-        if (activity.id !== null && completedActivityIds.has(activity.id)) {
-          chapterCompleted += 1
-        }
+        if (completedActivityIds.has(activity.activity_uuid.replace('activity_', ''))) chapterCompleted += 1
       })
 
       nextTotalActivities += chapterTotal
@@ -70,9 +56,8 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
     }
   }, [completedActivityIds, course.chapters])
 
-  function isActivityDone(activity: AppActivity) {
-    return activity.id !== null && completedActivityIds.has(activity.id)
-  }
+  const isActivityDone = (activity: AppActivity) =>
+    completedActivityIds.has(activity.activity_uuid.replace('activity_', ''))
 
   const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
 

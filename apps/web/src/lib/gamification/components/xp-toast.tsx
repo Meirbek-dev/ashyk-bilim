@@ -77,7 +77,7 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
               className={cn('text-lg font-bold tabular-nums', theme.color)}
               format={v => Math.round(v).toLocaleString()}
             />
-            <span className="text-muted-foreground text-sm">XP</span>
+            <span className="text-muted-foreground text-sm">{t('leaderboard.stats.xp')}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2">
             <p className="text-muted-foreground truncate text-xs">

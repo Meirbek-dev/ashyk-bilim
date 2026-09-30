@@ -1,0 +1,195 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: GamificationProfileId\", user_id AS \"user_id: UserId\", total_xp, level,\n                  daily_xp_earned, login_streak, learning_streak, longest_login_streak,\n                  longest_learning_streak, total_activities_completed, total_courses_completed,\n                  (extract(epoch FROM last_xp_award_at))::bigint AS \"last_xp_award_at?\",\n                  (extract(epoch FROM last_login_at))::bigint AS \"last_login_at?\",\n                  (extract(epoch FROM last_learning_at))::bigint AS \"last_learning_at?\",\n                  preferences,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM gamification_profiles WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GamificationProfileId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "total_xp",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "total_xp"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "daily_xp_earned",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "daily_xp_earned"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "login_streak",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "login_streak"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "learning_streak",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "learning_streak"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "longest_login_streak",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "longest_login_streak"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "longest_learning_streak",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "longest_learning_streak"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "total_activities_completed",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "total_activities_completed"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "total_courses_completed",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "total_courses_completed"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "last_xp_award_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "last_login_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 13,
+        "name": "last_learning_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "preferences",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "preferences"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 16,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "80134247c9bc438e06cd097c8d024b3002002b4b83acf9ed78321cfd7069e0b8"
+}

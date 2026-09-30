@@ -1,0 +1,262 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: FileSubmissionId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", instructions, rubric, allowed_mime_types,\n                  max_files, max_file_size_mb,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\", allow_late,\n                  late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  max_attempts, grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  lifecycle AS \"lifecycle: FileSubmissionLifecycle\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  settings, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submissions WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "instructions",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "instructions"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "rubric",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "rubric"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "allowed_mime_types",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "allowed_mime_types"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "max_files",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "max_files"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "max_file_size_mb",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "max_file_size_mb"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "allow_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "allow_late"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "late_policy_kind: LatePolicyKind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "late_policy_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "late_penalty_percent_per_day",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "late_penalty_percent_per_day"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "late_penalty_max_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "late_penalty_max_days"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "late_cutoff_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "max_attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "max_attempts"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "grade_release_mode: GradeReleaseMode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "grade_release_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "lifecycle: FileSubmissionLifecycle",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "lifecycle"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "published_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 18,
+        "name": "archived_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 19,
+        "name": "settings",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "settings"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "creator_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "creator_id"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 22,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      null,
+      false,
+      false,
+      true,
+      true,
+      null,
+      true,
+      false,
+      false,
+      null,
+      null,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "0a2a5bb2d705f4721e7d9602009f6e79d055bf97c76e7c8fbc879d51f6c303aa"
+}

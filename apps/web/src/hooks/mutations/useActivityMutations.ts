@@ -22,12 +22,12 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
   const createExternalVideoMutation = useMutation(createExternalVideoMutationOptions(queryClient, structureKey))
 
   return {
-    createActivity: async (payload: ActivityCreateValues, chapterId: number) =>
+    createActivity: async (payload: ActivityCreateValues, chapterId: string) =>
       createActivityMutation.mutateAsync({ chapterId, payload }),
     createExternalVideo: async (
       externalVideoData: Record<string, unknown>,
       activityPayload: Partial<ActivityCreateValues>,
-      chapterId: number,
+      chapterId: string,
     ) =>
       createExternalVideoMutation.mutateAsync({
         activityPayload,
@@ -38,7 +38,7 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
       file: File,
       type: string,
       payload: Partial<ActivityCreateValues>,
-      chapterId: number,
+      chapterId: string,
       onProgress?: (progress: { percentage: number }) => void,
     ) => {
       const mutationInput = {

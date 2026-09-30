@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNodeViewProps } from '@tiptap/react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'cnfast'
+import { twMerge } from 'cn'
 
 // ============================================================================
 // Types

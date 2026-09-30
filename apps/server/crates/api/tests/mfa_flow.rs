@@ -1,0 +1,728 @@
+//! TOTP MFA flows — fixtures replicate shapes captured from live Zitadel
+//! (2026-08-16): registration `{details,uri,secret}`, method listing
+//! `authMethodTypes`, wrong code = code 3 with a plain detail.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use ab_testkit::TestApp;
+use axum::http::StatusCode;
+use sqlx::PgPool;
+use wiremock::matchers::{body_partial_json, method, path};
+use wiremock::{Mock, ResponseTemplate};
+
+async fn mock_session_ok(app: &TestApp) {
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-session-1",
+            "sessionToken": "zit-token-1",
+            "details": {}
+        })))
+        .mount(&app.zitadel)
+        .await;
+}
+
+fn methods_body(with_totp: bool) -> serde_json::Value {
+    let mut methods = vec!["AUTHENTICATION_METHOD_TYPE_PASSWORD"];
+    if with_totp {
+        methods.push("AUTHENTICATION_METHOD_TYPE_TOTP");
+    }
+    serde_json::json!({ "details": { "totalResult": "2" }, "authMethodTypes": methods })
+}
+
+/// TOTP registration at Zitadel: signals each call as it arrives, then
+/// answers after `delay` with a new secret per call (`S1`, `S2`, …), as
+/// Zitadel replaces the pending secret on every registration.
+struct Register {
+    calls: std::sync::atomic::AtomicUsize,
+    tx: tokio::sync::mpsc::UnboundedSender<usize>,
+    delay: std::time::Duration,
+}
+impl wiremock::Respond for Register {
+    fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
+        let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+        let _ = self.tx.send(n);
+        ResponseTemplate::new(200)
+            .set_delay(self.delay)
+            .set_body_json(serde_json::json!({
+                "details": {},
+                "uri": format!("otpauth://totp/ZITADEL:r@example.com?secret=S{n}"),
+                "secret": format!("S{n}")
+            }))
+    }
+}
+
+/// Mounts [`Register`] for `session`'s user; the receiver sees each call.
+async fn mount_register(
+    app: &TestApp,
+    session: &ab_testkit::MintedSession,
+    delay: std::time::Duration,
+) -> tokio::sync::mpsc::UnboundedReceiver<usize> {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
+        .respond_with(Register {
+            calls: 0.into(),
+            tx,
+            delay,
+        })
+        .mount(&app.zitadel)
+        .await;
+    rx
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    mock_session_ok(&app).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+    // The pre-MFA zitadel session must be discarded.
+    Mock::given(method("DELETE"))
+        .and(path("/v2/sessions/zit-session-1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(res.json()["code"], "mfa-required");
+    assert!(res.session_cookie().is_none());
+}
+
+/// Branch #13: discarding the pre-MFA Zitadel session is best effort — a
+/// Zitadel failure there is logged, and the caller still gets `mfa-required`
+/// with no cookie (never a 503 that would leak the enrolment state).
+#[sqlx::test(migrations = "../../migrations")]
+async fn pre_mfa_session_discard_failure_still_demands_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    mock_session_ok(&app).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path("/v2/sessions/zit-session-1"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(serde_json::json!({
+            "code": 13, "message": "boom"
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
+    assert_eq!(res.json()["code"], "mfa-required");
+    assert!(res.session_cookie().is_none());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn totp_code_completes_the_login_in_one_shot(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    // The one-shot request must include the totp check; the methods listing
+    // must NOT be consulted when a code is supplied.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "totp": { "code": "123456" } }
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-session-2",
+            "sessionToken": "zit-token-2",
+            "details": {}
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .expect(0)
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw", "totp_code": "123456" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK);
+    assert!(res.session_cookie().is_some());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    // Captured live: TOTP failure is code 3 with a plain detail (no
+    // failedAttempts) — unlike password failures.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Invalid code (EVENT-8isk2)",
+            "details": [{ "id": "EVENT-8isk2", "message": "Invalid code" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw", "totp_code": "999999" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::BAD_REQUEST);
+    assert_eq!(res.json()["code"], "invalid-totp-code");
+}
+
+/// A code sent for an account with no authenticator: Zitadel answers code 9
+/// "Multifactor OTP (OneTimePassword) isn't ready" (COMMAND-3Mif9s, captured
+/// live 2026-09-13) — a bad second factor, not an outage.
+#[sqlx::test(migrations = "../../migrations")]
+async fn totp_code_for_an_unenrolled_account_is_invalid_not_an_outage(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("nototp", "nototp@example.com", &["user"])
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 9,
+            "message": "Multifactor OTP (OneTimePassword) isn't ready (COMMAND-3Mif9s)",
+            "details": [{ "id": "COMMAND-3Mif9s", "message": "Multifactor OTP (OneTimePassword) isn't ready" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "nototp", "password": "pw", "totp_code": "123456" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::BAD_REQUEST, "{}", res.text());
+    assert_eq!(res.json()["code"], "invalid-totp-code");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn enrollment_activation_and_removal(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("enrollee", "e@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{user}");
+
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {},
+            "uri": "otpauth://totp/ZITADEL:e@example.com?secret=SECRET32",
+            "secret": "SECRET32"
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .and(body_partial_json(serde_json::json!({ "code": "654321" })))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path(format!("/v2/users/{zid}/totp")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+
+    let enroll = app
+        .post_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
+        .await;
+    assert_eq!(enroll.status, StatusCode::OK);
+    assert_eq!(enroll.json()["secret"], "SECRET32");
+    // The authenticator app lists the platform, not the identity provider.
+    assert_eq!(
+        enroll.json()["uri"],
+        "otpauth://totp/Ashyq%20Bilim:e@example.com?secret=SECRET32&issuer=Ashyq%20Bilim"
+    );
+
+    let verify = app
+        .post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "654321" }),
+        )
+        .await;
+    assert_eq!(verify.status, StatusCode::NO_CONTENT);
+
+    let removed = app.delete_as(&session, "/api/v2/auth/mfa/totp").await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT);
+
+    let events: Vec<String> = sqlx::query_scalar(
+        "SELECT event FROM auth_audit_log WHERE event LIKE 'mfa-%' ORDER BY created_at",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(events, vec!["mfa-enrolled", "mfa-removed"]);
+}
+
+// ── `mfa_enabled` on the wire (DECISIONS 2026-09-12, Q-7) ───────────────────
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("mfauser", "mfa@example.com", &["user"])
+        .await;
+    mock_session_ok(&app).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfauser/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(false)))
+        .mount(&app.zitadel)
+        .await;
+
+    // Password-only login: not enrolled.
+    let login = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw" }),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK);
+    assert_eq!(login.json()["mfa_enabled"], false);
+    let cookie = login.session_cookie().unwrap();
+    let session = ab_testkit::MintedSession {
+        user_id: ab_core::id::UserId(uuid::Uuid::nil()),
+        cookie,
+    };
+    assert_eq!(
+        app.get_as(&session, "/api/v2/users/me").await.json()["mfa_enabled"],
+        false
+    );
+
+    // Enroll + activate: the live session flips without re-login.
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-mfauser/totp"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {}, "uri": "otpauth://totp/x", "secret": "SECRET"
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-mfauser/totp/verify"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    assert_eq!(
+        app.post_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        app.post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "123456" })
+        )
+        .await
+        .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.json()["mfa_enabled"],
+        true
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/users/me").await.json()["mfa_enabled"],
+        true
+    );
+
+    // A one-shot login with a code is enrolled by definition.
+    let login = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "mfauser", "password": "pw", "totp_code": "123456" }),
+        )
+        .await;
+    assert_eq!(login.status, StatusCode::OK);
+    assert_eq!(login.json()["mfa_enabled"], true);
+
+    // Removal flips it back.
+    Mock::given(method("DELETE"))
+        .and(path("/v2/users/z-mfauser/totp"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    assert_eq!(
+        app.delete_as(&session, "/api/v2/auth/mfa/totp")
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.json()["mfa_enabled"],
+        false
+    );
+}
+
+/// BUG-132: activating with no enrolment started answers Zitadel code 5
+/// "Multifactor OTP (OneTimePassword) doesn't exist" (COMMAND-3Mif9s,
+/// captured live 2026-09-13) — the caller's state, a 409, not a 503.
+#[sqlx::test(migrations = "../../migrations")]
+async fn verifying_without_a_pending_enrolment_is_a_conflict(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp/verify", session.user_id)))
+        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+            "code": 5,
+            "message": "Multifactor OTP (OneTimePassword) doesn't exist (COMMAND-3Mif9s)",
+            "details": [{ "id": "COMMAND-3Mif9s", "message": "Multifactor OTP (OneTimePassword) doesn't exist" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "123456" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.text());
+    assert_eq!(res.json()["code"], "conflict");
+}
+
+/// Branch #56: enrolling an already-active authenticator is a 409 (Zitadel
+/// code 6 "Multifactor OTP is already set up", COMMAND-do9se).
+#[sqlx::test(migrations = "../../migrations")]
+async fn enrolling_twice_is_a_conflict(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp", session.user_id)))
+        .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
+            "code": 6,
+            "message": "Multifactor OTP is already set up (COMMAND-do9se)",
+            "details": [{ "id": "COMMAND-do9se", "message": "Multifactor OTP is already set up" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
+        .await;
+    assert_eq!(res.status, StatusCode::CONFLICT, "{}", res.text());
+    assert_eq!(res.json()["code"], "conflict");
+}
+
+/// UX-254: two enrolment starts in flight at once — the second answers
+/// `idempotency-in-progress` while the first is at Zitadel (never registering
+/// a secret of its own), and its retry gets the first tab's pending secret.
+/// Only activation ends the pending enrolment: the next start registers anew.
+#[sqlx::test(migrations = "../../migrations")]
+async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("racer", "racer@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    // Answers slowly: the second start lands while the first is at Zitadel.
+    let mut rx = mount_register(&app, &session, std::time::Duration::from_secs(1)).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{}/totp/verify", session.user_id)))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({});
+    let enrol = || app.post_as(&session, "/api/v2/auth/mfa/totp", &body);
+
+    let (first, second) = tokio::join!(enrol(), async {
+        assert_eq!(rx.recv().await, Some(1), "the first start is at Zitadel");
+        enrol().await
+    });
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["secret"], "S1");
+    assert_eq!(second.status, StatusCode::CONFLICT, "{}", second.text());
+    assert_eq!(second.json()["code"], "idempotency-in-progress");
+    assert!(
+        rx.try_recv().is_err(),
+        "the loser never registered a secret of its own"
+    );
+
+    // The loser's retry (any later tab) sees the first tab's secret.
+    let retry = enrol().await;
+    assert_eq!(retry.status, StatusCode::OK, "{}", retry.text());
+    assert_eq!(retry.json()["secret"], "S1");
+    assert_eq!(retry.json()["uri"], first.json()["uri"]);
+
+    let verify = app
+        .post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": "654321" }),
+        )
+        .await;
+    assert_eq!(verify.status, StatusCode::NO_CONTENT, "{}", verify.text());
+    let fresh = enrol().await;
+    assert_eq!(fresh.status, StatusCode::OK, "{}", fresh.text());
+    assert_eq!(fresh.json()["secret"], "S2");
+}
+
+/// UX-158: a TOTP login fenced by a role rewrite mid-flight retries without
+/// resending the (now replayed) code — the first attempt verified it — and
+/// opens the session instead of answering `invalid-totp-code`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("mfaroler", "mfaroler@example.com", &["user"])
+        .await;
+    // First use of the code: accepted, slowly (the role rewrite lands).
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "totp": { "code": "123456" } }
+        })))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(400))
+                .set_body_json(serde_json::json!({
+                    "sessionId": "zit-session-1",
+                    "sessionToken": "zit-token-1",
+                    "details": {}
+                })),
+        )
+        .up_to_n_times(1)
+        .with_priority(1)
+        .mount(&app.zitadel)
+        .await;
+    // A replay of the same code is refused, as live Zitadel does.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "totp": { "code": "123456" } }
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Invalid code (EVENT-8isk2)",
+            "details": [{ "id": "EVENT-8isk2", "message": "Invalid code" }]
+        })))
+        .expect(0)
+        .with_priority(2)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-session-2",
+            "sessionToken": "zit-token-2",
+            "details": {}
+        })))
+        .expect(1)
+        .with_priority(3)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-mfaroler/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+
+    let body = serde_json::json!({ "login": "mfaroler", "password": "pw", "totp_code": "123456" });
+    let (login, ()) = tokio::join!(app.post_json("/api/v2/auth/login", &body), async {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        app.sessions
+            .rewrite_user_sessions(user, &["user".into()], &[], 2)
+            .await
+            .unwrap();
+    });
+    assert_eq!(login.status, StatusCode::OK, "{}", login.text());
+    assert_eq!(login.json()["mfa_enabled"], true);
+    assert!(login.session_cookie().is_some());
+    let fenced: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM auth_audit_log WHERE event = 'login-fenced'")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(fenced, 1, "the retry ran");
+}
+
+/// BUG-368: a burst of enrolment starts registers exactly one secret. The
+/// lock used to go before the pending secret was stored, and the pending
+/// key was not re-read under it: a start in that gap re-registered at
+/// Zitadel and every secret handed out before it died.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_burst_of_enrolment_starts_registers_one_secret(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    let mut calls = mount_register(&app, &session, std::time::Duration::from_millis(20)).await;
+    let body = serde_json::json!({});
+    let starts = futures::future::join_all((0..40_u64).map(|i| {
+        let (app, session, body) = (&app, &session, &body);
+        async move {
+            tokio::time::sleep(std::time::Duration::from_millis(i)).await;
+            app.post_as(session, "/api/v2/auth/mfa/totp", body).await
+        }
+    }))
+    .await;
+    let mut secrets: Vec<String> = starts
+        .iter()
+        .filter(|res| res.status == StatusCode::OK)
+        .map(|res| res.json()["secret"].as_str().unwrap().to_owned())
+        .collect();
+    secrets.sort();
+    secrets.dedup();
+    assert_eq!(secrets, vec!["S1"]);
+    assert_eq!(calls.recv().await, Some(1));
+    assert!(calls.try_recv().is_err(), "a second secret was registered");
+}
+
+/// The pending secret survives a wrong code, and ends on a verify conflict
+/// (no enrolment at Zitadel) and on removal: each next start registers anew.
+#[sqlx::test(migrations = "../../migrations")]
+async fn pending_enrolment_outlives_a_wrong_code_only(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("pending", "pending@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    let zid = format!("z-{}", session.user_id);
+    mount_register(&app, &session, std::time::Duration::ZERO).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .and(body_partial_json(serde_json::json!({ "code": "000000" })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3, "message": "Code is invalid", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/{zid}/totp/verify")))
+        .and(body_partial_json(serde_json::json!({ "code": "111111" })))
+        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+            "code": 5, "message": "Multifactor OTP (OneTimePassword) doesn't exist", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("DELETE"))
+        .and(path(format!("/v2/users/{zid}/totp")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({});
+    let secret = async || {
+        let res = app.post_as(&session, "/api/v2/auth/mfa/totp", &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        res.json()["secret"].as_str().unwrap().to_owned()
+    };
+    let verify = async |code: &str| {
+        app.post_as(
+            &session,
+            "/api/v2/auth/mfa/totp/verify",
+            &serde_json::json!({ "code": code }),
+        )
+        .await
+        .status
+    };
+
+    assert_eq!(secret().await, "S1");
+    assert_eq!(verify("000000").await, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        secret().await,
+        "S1",
+        "a wrong code keeps the pending secret"
+    );
+    assert_eq!(verify("111111").await, StatusCode::CONFLICT);
+    assert_eq!(secret().await, "S2", "a verify conflict ends it");
+    let removed = app.delete_as(&session, "/api/v2/auth/mfa/totp").await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT);
+    assert_eq!(secret().await, "S3", "removal ends it");
+}
+
+/// A start whose client hangs up at Zitadel still stores the secret and
+/// hands the lock back (the route is detached): the next start gets that
+/// secret, not `idempotency-in-progress` or a new one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn aborted_enrolment_start_still_stores_and_unlocks(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    let mut calls = mount_register(&app, &session, std::time::Duration::from_millis(300)).await;
+    let body = serde_json::json!({});
+    let enrol = || app.post_as(&session, "/api/v2/auth/mfa/totp", &body);
+    ab_testkit::drop_request_when(
+        enrol(),
+        async || calls.try_recv().is_ok(),
+        |res| panic!("the start finished before the hang-up: {}", res.text()),
+    )
+    .await;
+    let mut retry = enrol().await;
+    for _ in 0..50 {
+        if retry.status != StatusCode::CONFLICT {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        retry = enrol().await;
+    }
+    assert_eq!(retry.status, StatusCode::OK, "{}", retry.text());
+    assert_eq!(retry.json()["secret"], "S1");
+    assert!(calls.try_recv().is_err(), "a second secret was registered");
+}
+
+/// An unreadable pending entry is no enrolment: the start registers anew
+/// and replaces it instead of answering 500 for the whole TTL.
+#[sqlx::test(migrations = "../../migrations")]
+async fn corrupt_pending_enrolment_is_replaced(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let session = app.mint_session(&[]).await;
+    mount_register(&app, &session, std::time::Duration::ZERO).await;
+    let mut redis = app.sessions.redis();
+    let () = redis::AsyncCommands::set_ex(
+        &mut redis,
+        format!("totp_pending:{}", session.user_id),
+        "not json",
+        600,
+    )
+    .await
+    .unwrap();
+    let body = serde_json::json!({});
+    for _ in 0..2 {
+        let res = app.post_as(&session, "/api/v2/auth/mfa/totp", &body).await;
+        assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        assert_eq!(res.json()["secret"], "S1");
+    }
+}

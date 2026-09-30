@@ -14,6 +14,7 @@ export interface UseEditorInstanceOptions {
   content: unknown
   onUpdate?: (json: object) => void
   overrides?: Partial<UseEditorOptions>
+  placeholder?: string
 }
 
 /**
@@ -21,14 +22,19 @@ export interface UseEditorInstanceOptions {
  * initialization across all editor surfaces (authoring, interactive, discussion).
  */
 export function useEditorInstance(options: UseEditorInstanceOptions) {
-  const { preset, activity, content, onUpdate, overrides } = options
+  const { preset, activity, content, onUpdate, overrides, placeholder } = options
 
   const presetDef = getEditorPresetDefinition(preset)
 
   // Memoize extensions — only recompute when preset or activity identity changes
   const extensions = useMemo(
-    () => createEditorExtensions({ preset, ...(activity === undefined ? {} : { activity }) }),
-    [preset, activity],
+    () =>
+      createEditorExtensions({
+        preset,
+        ...(activity === undefined ? {} : { activity }),
+        ...(placeholder === undefined ? {} : { placeholder }),
+      }),
+    [preset, activity, placeholder],
   )
 
   const editor = useEditor(
@@ -45,15 +51,23 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
     [preset, activity?.activity_uuid],
   )
 
-  // Keep editor content in sync when `content` prop changes
+  // Keep editor content in sync when `content` prop changes.
+  // Deferred out of the commit phase: replacing content mounts React node views
+  // (image/video blocks), and tiptap's ReactRenderer renders those with
+  // flushSync, which React rejects from inside an effect.
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
 
     const newContent = resolveEditorContent(content)
-    const currentContent = editor.getJSON()
+    if (JSON.stringify(editor.getJSON()) === JSON.stringify(newContent)) return
 
-    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled || editor.isDestroyed) return
       editor.commands.setContent(newContent, { emitUpdate: false })
+    })
+    return () => {
+      cancelled = true
     }
   }, [editor, content])
 

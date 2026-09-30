@@ -1,17 +1,16 @@
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
-import {
-  downloadPdfBlob,
-  generateCertificatePdfBlob,
-  sanitizePdfFileName,
-} from '@/features/certifications/utils/pdfmeCertificate'
-import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react'
+import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
+import { ArrowLeft, BookOpen, Loader2, Shield, Target, Trophy } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
+import { getUserDisplayName } from '@services/media/avatar'
+import { useSession } from '@/hooks/useSession'
 import { useGamificationStore } from '@/stores/gamification'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import { useQuery } from '@tanstack/react-query'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 // Gamification imports
 import { LevelProgress } from '@/lib/gamification'
 import NextImage from '@components/ui/NextImage'
@@ -23,51 +22,34 @@ interface CourseEndViewProps {
   courseName: string
   courseUuid: string
   thumbnailImage: string
-  course: AppCourse
-  trailData: AppTrailData
 }
 
-const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
+const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage }) => {
   const locale = useLocale()
+  const { user } = useSession()
   const t = useTranslations('Certificates.CourseEndView')
-  const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
-  const [dialogAlertMessage, setDialogAlertMessage] = useState('')
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const gamificationRefetch = useGamificationStore(s => s.refetch)
+  // The real award, not a hard-coded «+100 XP» (UX-102): the server grants
+  // `course_completion` XP once per course (and none past the daily cap).
+  const cleanCourseId = courseUuid.replace('course_', '')
+  const courseCompletionXp = useGamificationStore(
+    s =>
+      s.dashboard?.recent_transactions.find(
+        transaction => transaction.source === 'course_completion' && transaction.source_id === cleanCourseId,
+      )?.amount ?? null,
+  )
 
   const refetchedOnMountRef = useRef(false)
   const refetchedOnCertificateRef = useRef(false)
 
-  // Check if course is actually completed
-  const isCourseCompleted = (() => {
-    if (!(trailData && course)) return false
-
-    // Flatten all activities
-    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
-    )
-
-    // Check if all activities are completed
-    const isActivityDone = (activity: AppActivity) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
-
-      if (run) {
-        return (run.steps ?? []).find(
-          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
-        )
-      }
-      return false
-    }
-
-    const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
-    return totalActivities > 0 && completedActivities === totalActivities
-  })()
+  // Completed + «N из M» come from learner-state, the same projection the
+  // sidebar and course page read (BUG-165): trail runs only carry lesson-type
+  // steps, so a course with a quiz never reached the completed view.
+  const { data: learnerState } = useQuery(learnerCourseStateQueryOptions(courseUuid.replace('course_', '')))
+  const isCourseCompleted =
+    learnerState?.enrollment_state === 'completed' || learnerState?.progress.completed_at_unix != null
   const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
   const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null)
   const userCertificate = certificateQuery.data?.data?.[0] ?? null
@@ -184,121 +166,20 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }
   }, [isCourseCompleted])
 
-  const getCertificationTypeLabel = (type: string) => {
-    switch (type) {
-      case 'completion': {
-        return t('certificationTypes.completion')
+  const progressInfo = learnerState
+    ? {
+        completed: learnerState.progress.completed_required_count,
+        total: learnerState.progress.total_required_count,
+        percentage: Math.round(learnerState.progress.progress_pct),
+        percentageString: `${Math.round(learnerState.progress.progress_pct)}%`,
       }
-      case 'achievement': {
-        return t('certificationTypes.achievement')
-      }
-      case 'assessment': {
-        return t('certificationTypes.assessment')
-      }
-      case 'participation': {
-        return t('certificationTypes.participation')
-      }
-      case 'mastery': {
-        return t('certificationTypes.mastery')
-      }
-      case 'professional': {
-        return t('certificationTypes.professional')
-      }
-      case 'continuing': {
-        return t('certificationTypes.continuing')
-      }
-      case 'workshop': {
-        return t('certificationTypes.workshop')
-      }
-      case 'specialization': {
-        return t('certificationTypes.specialization')
-      }
-      default: {
-        return t('certificationTypes.completion')
-      }
-    }
-  }
-
-  const downloadCertificate = async () => {
-    if (!userCertificate) return
-
-    try {
-      const certificateId = userCertificate.certificate_user.user_certification_uuid
-      const certificationName = userCertificate.certification.config.certification_name
-      const blob = await generateCertificatePdfBlob({
-        awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        certificateId,
-        certificationDescription:
-          userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
-        certificationName,
-        certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
-        instructor: userCertificate.certification.config.certificate_instructor ?? null,
-        labels: {
-          authenticityGuaranteed: t('verifyCertificate'),
-          awarded: t('labelAwarded'),
-          badgeCheckIcon: t('badgeCheckIcon'),
-          certificate: t('certificate'),
-          certificateId: t('certificateId'),
-          instructor: t('instructor'),
-          verificationNote: t('certificateCanBeVerified'),
-        },
-        pattern: userCertificate.certification.config.certificate_pattern ?? '',
-        verificationUrl: qrCodeLink,
-      })
-
-      downloadPdfBlob(blob, `${sanitizePdfFileName(certificationName)}_Certificate.pdf`)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      setDialogAlertMessage(t('errorGeneratingPDF'))
-      setDialogAlertOpen(true)
-    }
-  }
-
-  // Calculate progress for incomplete courses
-  const progressInfo = (() => {
-    if (!(trailData && course) || isCourseCompleted) return null
-
-    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
-    )
-
-    const isActivityDone = (activity: AppActivity) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-        return cleanRunCourseUuid === cleanCourseUuid
-      })
-
-      if (run) {
-        return (run.steps ?? []).find(
-          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
-        )
-      }
-      return false
-    }
-
-    const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
-    const progressPercentage = Math.round((completedActivities / totalActivities) * 100)
-
-    return {
-      completed: completedActivities,
-      total: totalActivities,
-      percentage: progressPercentage,
-      percentageString: `${progressPercentage}%`,
-    }
-  })()
+    : null
 
   if (isCourseCompleted) {
     const congratsText = `${t('congratulations')} 🎉`
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
         <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
@@ -326,6 +207,11 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </p>
 
           <p className="text-gray-500">{t('completionDescription')}</p>
+          {progressInfo ? (
+            <p className="text-sm text-gray-500">
+              {t('progressCompleted', { completed: progressInfo.completed, total: progressInfo.total })}
+            </p>
+          ) : null}
 
           {/* Gamification Celebration */}
           {gamificationProfile && (
@@ -345,10 +231,12 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center space-x-2 text-green-600">
-                    <Target className="h-5 w-5" />
-                    <span className="font-semibold">{t('xpBonusMessage')}</span>
-                  </div>
+                  {courseCompletionXp !== null && (
+                    <div className="flex items-center justify-center space-x-2 text-green-600">
+                      <Target className="h-5 w-5" />
+                      <span className="font-semibold">{t('xpBonusMessage', { xp: courseCompletionXp })}</span>
+                    </div>
+                  )}
                   <div className="text-center text-sm text-gray-600">{t('keepLearningMessage')}</div>
                 </div>
               </div>
@@ -371,11 +259,14 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
-                    certificationName={userCertificate.certification.config.certification_name}
+                    certificationName={
+                      userCertificate.certification.config.certification_name || userCertificate.course.name || ''
+                    }
                     certificationDescription={userCertificate.certification.config.certification_description ?? ''}
                     certificationType={userCertificate.certification.config.certification_type}
                     certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
-                    certificateInstructor={userCertificate.certification.config.certificate_instructor ?? undefined}
+                    certificateInstructor={userCertificate.instructor_name ?? undefined}
+                    recipientName={getUserDisplayName(user) || undefined}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',
@@ -387,13 +278,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 </div>
               </div>
               <div className="flex justify-center space-x-4">
-                <button
-                  onClick={downloadCertificate}
-                  className="inline-flex items-center space-x-2 rounded-full bg-green-600 px-6 py-3 text-white transition duration-200 hover:bg-green-700"
-                >
-                  <Download className="h-5 w-5" />
-                  <span>{t('downloadCertificate')}</span>
-                </button>
+                {/* The server PDF names the holder; the old in-browser pdfme copy did not. */}
+                <CertificatePdfDownloadButton
+                  verifyCode={userCertificate.certificate_user.user_certification_uuid}
+                  size="default"
+                  variant="default"
+                  className="rounded-full bg-green-600 px-6 py-3 text-white hover:bg-green-700"
+                />
                 <AppLink
                   href={getAbsoluteUrl(
                     `/certificates/${userCertificate.certificate_user.user_certification_uuid}/verify`,
@@ -427,12 +318,24 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     )
   }
 
-  const keepGoingText = `${t('keepGoing')} 💪`
+  // UX-109: after «Покинуть курс» the landing says «Готовы начать?» — the
+  // end page must not keep celebrating a stale «40 %».
+  const notEnrolled = learnerState?.enrollment_state === 'not_enrolled'
+  // UX-127: promise a certificate only when the course has one configured;
+  // at 0/0 live activities there is nothing to continue (or, UX-133, to
+  // start — the landing shows no CTA either): the action bar's «Назад к
+  // курсу» stays the single primary.
+  const certificateConfigured = learnerState?.certificate.configured === true
+  const noLiveActivities = progressInfo?.total === 0
+  const keepGoingText = noLiveActivities
+    ? t('noPublishedActivities')
+    : notEnrolled
+      ? t('readyToBegin')
+      : `${t('keepGoing')} 💪`
 
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
       <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (
@@ -455,11 +358,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         <h1 className="text-4xl font-bold text-gray-900">{keepGoingText}</h1>
 
         <p className="text-xl text-gray-600">
-          {t('youAreMakingProgress')}
+          {noLiveActivities
+            ? null
+            : notEnrolled
+              ? t(certificateConfigured ? 'notEnrolledMessage' : 'notEnrolledMessageNoCertificate')
+              : t('youAreMakingProgress')}
           <span className="font-semibold text-gray-900"> {courseName}</span>
         </p>
 
-        {progressInfo ? (
+        {progressInfo && !notEnrolled && !noLiveActivities ? (
           <div className="space-y-4 rounded-lg bg-gray-50 p-6">
             <div className="flex items-center justify-center space-x-2">
               <BookOpen className="h-5 w-5 text-gray-600" />
@@ -489,17 +396,25 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         ) : null}
 
-        <p className="text-gray-500">{t('encouragementMessage')}</p>
+        {notEnrolled || noLiveActivities ? null : (
+          <p className="text-gray-500">
+            {t(certificateConfigured ? 'encouragementMessage' : 'encouragementMessageNoCertificate')}
+          </p>
+        )}
 
-        <div className="pt-6">
-          <AppLink
-            href={getAbsoluteUrl(`/course/${courseUuid.replace('course_', '')}`)}
-            className="inline-flex items-center space-x-2 rounded-full bg-blue-600 px-6 py-3 text-white transition duration-200 hover:bg-blue-700"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>{t('continueActivity')}</span>
-          </AppLink>
-        </div>
+        {/* UX-140: not enrolled → the link is navigation to the landing (which
+            enrols), never a «Начать обучение» promise that only navigates. */}
+        {noLiveActivities ? null : (
+          <div className="pt-6">
+            <AppLink
+              href={getAbsoluteUrl(`/course/${courseUuid.replace('course_', '')}`)}
+              className="inline-flex items-center space-x-2 rounded-full bg-blue-600 px-6 py-3 text-white transition duration-200 hover:bg-blue-700"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>{notEnrolled ? t('goToCourse') : t('continueActivity')}</span>
+            </AppLink>
+          </div>
+        )}
       </div>
     </div>
   )

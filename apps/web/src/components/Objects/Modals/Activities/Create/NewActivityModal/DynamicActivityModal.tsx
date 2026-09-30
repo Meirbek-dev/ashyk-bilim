@@ -11,8 +11,8 @@ import * as v from 'valibot'
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
-    name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
-    description: v.pipe(v.string(), v.minLength(1, t('activityDescriptionRequired'))),
+    name: v.pipe(v.string(), v.trim(), v.minLength(1, t('activityNameRequired'))),
+    description: v.pipe(v.string(), v.trim(), v.minLength(1, t('activityDescriptionRequired'))),
   })
 
 interface FormValues {

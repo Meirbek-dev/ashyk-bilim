@@ -8,6 +8,13 @@
 import { Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
 import type { LevelInfo } from '@/types/gamification/profile'
 
+/** The server's level curve (`ab_domain::gamification::xp_for_level`): total XP at which `level` starts. */
+export function xpForLevel(level: number): number {
+  if (level <= 1) return 0
+  const n = level - 1
+  return 50 * n * n + 50 * n
+}
+
 // Level configuration with RPG-style progression (translation keys)
 const LEVEL_CONFIG: Record<number, LevelInfo> = {
   1: {
@@ -15,7 +22,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'novice',
     color: 'text-gray-500',
     icon: Target,
-    minXP: 0,
+    minXP: xpForLevel(1),
     unlocks: ['basicProfile'],
   },
   5: {
@@ -23,7 +30,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'apprentice',
     color: 'text-blue-500',
     icon: Star,
-    minXP: 1000,
+    minXP: xpForLevel(5),
     unlocks: ['avatarFrames'],
   },
   10: {
@@ -31,7 +38,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'scholar',
     color: 'text-purple-500',
     icon: GraduationCap,
-    minXP: 3000,
+    minXP: xpForLevel(10),
     unlocks: ['customAvatarHat'],
   },
   15: {
@@ -39,7 +46,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'expert',
     color: 'text-green-500',
     icon: Trophy,
-    minXP: 6000,
+    minXP: xpForLevel(15),
     unlocks: ['avatarAccessories'],
   },
   25: {
@@ -47,7 +54,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'master',
     color: 'text-orange-500',
     icon: Crown,
-    minXP: 12_000,
+    minXP: xpForLevel(25),
     unlocks: ['exclusiveThemes'],
   },
   50: {
@@ -55,7 +62,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     title: 'grandmaster',
     color: 'text-red-500',
     icon: Crown,
-    minXP: 30_000,
+    minXP: xpForLevel(50),
     unlocks: ['legendaryStatus'],
   },
 }

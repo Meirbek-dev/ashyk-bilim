@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO submissions\n               (assessment_id, course_id, user_id, attempt_number, content_version,\n                policy_version, preview, started_at)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, now())\n           ON CONFLICT (assessment_id, user_id) WHERE status = 'draft' DO NOTHING\n           RETURNING id AS \"id: SubmissionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e8e644c847c1c5808ced3862f2791e3c40f91d9d26b11b577749b340e3e28dd9"
+}

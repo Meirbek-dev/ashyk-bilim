@@ -1,0 +1,601 @@
+//! Collection flows: CRUD, membership replacement, viewer-filtered courses,
+//! visibility rules.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use ab_testkit::{MintedSession, TestApp};
+use axum::http::StatusCode;
+use sqlx::PgPool;
+
+async fn curator(app: &TestApp, name: &str) -> MintedSession {
+    let user = app
+        .create_user(name, &format!("{name}@example.com"), &["instructor"])
+        .await;
+    app.mint_session_for(
+        user,
+        &[
+            "course:create:platform",
+            "course:update:own",
+            "collection:create:platform",
+            "collection:read:all",
+            "collection:update:own",
+            "collection:delete:own",
+            "usergroup:create:platform",
+        ],
+    )
+    .await
+}
+
+async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: bool) -> String {
+    let res = app
+        .post_as(
+            session,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": name }),
+        )
+        .await;
+    let id = res.json()["id"].as_str().unwrap().to_owned();
+    if publish {
+        app.publish_course(&id).await;
+    }
+    id
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn crud_membership_and_visibility(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let public_course = course(&app, &owner, "Public course", true).await;
+    let draft_course = course(&app, &owner, "Draft course", false).await;
+
+    // Creation attaches both (the owner can read their own draft).
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({
+                "name": "Starter pack",
+                "public": true,
+                "courses": [public_course, draft_course],
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED);
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(created.json()["courses"].as_array().unwrap().len(), 2);
+    // UX-124: the creator sees the delete affordance …
+    assert_eq!(created.json()["can_delete"], true);
+
+    // UX-102: `Idempotency-Key` replays the 201 — one row, not two.
+    let keyed = serde_json::json!({ "name": "Keyed", "public": false });
+    let send = || {
+        app.send(
+            axum::http::Request::builder()
+                .method("POST")
+                .uri("/api/v2/collections")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header("Idempotency-Key", "collection-keyed-1")
+                .body(axum::body::Body::from(keyed.to_string()))
+                .unwrap(),
+        )
+    };
+    let first = send().await;
+    assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
+    let replay = send().await;
+    assert_eq!(replay.status, StatusCode::CREATED, "{}", replay.text());
+    assert_eq!(replay.json()["id"], first.json()["id"]);
+
+    // A learner sees the public collection but only its public courses.
+    let learner = app.mint_session(&[]).await;
+    let seen = app
+        .get_as(&learner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK);
+    // … a learner does not (UX-124).
+    assert_eq!(seen.json()["can_delete"], false);
+    let names: Vec<_> = seen.json()["courses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(names, ["Public course"]);
+
+    // Update replaces the membership wholesale.
+    let third = course(&app, &owner, "Third", true).await;
+    let updated = app
+        .patch_as(
+            &owner,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "courses": [third] }),
+        )
+        .await;
+    assert_eq!(updated.status, StatusCode::OK);
+    let names: Vec<_> = updated.json()["courses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(names, ["Third"]);
+
+    // A rival with update:own can't touch someone else's collection.
+    let rival = curator(&app, "rival").await;
+    let denied = app
+        .patch_as(
+            &rival,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "name": "Hijacked" }),
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+
+    // Private collections are invisible to strangers without read:all.
+    let hidden_created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Secret", "public": false }),
+        )
+        .await;
+    let hidden_id = hidden_created.json()["id"].as_str().unwrap().to_owned();
+    let invisible = app
+        .get_as(&learner, &format!("/api/v2/collections/{hidden_id}"))
+        .await;
+    assert_eq!(invisible.status, StatusCode::NOT_FOUND);
+
+    // Listing: the learner sees only the public one; deletion cascades the
+    // membership rows but keeps courses.
+    let listed = app.get_as(&learner, "/api/v2/collections").await;
+    assert_eq!(listed.json()["items"].as_array().unwrap().len(), 1);
+    // UX-156: an out-of-range page size is a 422, not a silent clamp.
+    let refused = app.get_as(&learner, "/api/v2/collections?limit=101").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        refused.text()
+    );
+
+    let deleted = app
+        .delete_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let course_alive = app
+        .get_as(&learner, &format!("/api/v2/courses/{third}"))
+        .await;
+    assert_eq!(course_alive.status, StatusCode::OK);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let foreign_draft = course(&app, &owner, "Foreign draft", false).await;
+
+    // Another curator without read access to the draft can't attach it —
+    // and learns nothing about its existence (404).
+    let other_user = app
+        .create_user("other", "other@example.com", &["instructor"])
+        .await;
+    let other = app
+        .mint_session_for(
+            other_user,
+            &["collection:create:platform", "collection:update:own"],
+        )
+        .await;
+    let refused = app
+        .post_as(
+            &other,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Steal", "courses": [foreign_draft] }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::NOT_FOUND);
+}
+
+/// BUG-192: an update is validated before anything is written — an
+/// unreadable course in `courses` is a 404 and the name stays; and a
+/// collection the caller cannot read is a 404 on PATCH/DELETE too (not a
+/// 403 existence oracle).
+#[sqlx::test(migrations = "../../migrations")]
+async fn update_validates_before_writing_and_hides_unreadable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Empty", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let path = format!("/api/v2/collections/{id}");
+
+    let refused = app
+        .patch_as(
+            &owner,
+            &path,
+            &serde_json::json!({
+                "name": "RENAMED",
+                "description": "changed",
+                "courses": [uuid::Uuid::now_v7()],
+            }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::NOT_FOUND, "{}", refused.text());
+    let after = app.get_as(&owner, &path).await;
+    assert_eq!(after.json()["name"], "Empty");
+    assert_eq!(after.json()["description"], "");
+
+    let learner_user = app
+        .create_user("learner", "learner@example.com", &["student"])
+        .await;
+    let learner = app
+        .mint_session_for(learner_user, &["collection:update:own"])
+        .await;
+    let patched = app
+        .patch_as(&learner, &path, &serde_json::json!({ "name": "Mine" }))
+        .await;
+    assert_eq!(patched.status, StatusCode::NOT_FOUND, "{}", patched.text());
+    let deleted = app.delete_as(&learner, &path).await;
+    assert_eq!(deleted.status, StatusCode::NOT_FOUND, "{}", deleted.text());
+    assert_eq!(app.get_as(&owner, &path).await.status, StatusCode::OK);
+}
+
+/// BUG-168: a whitespace-only name is 422 `name`/`required` on create and
+/// update; stored names are trimmed.
+#[sqlx::test(migrations = "../../migrations")]
+async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "  Pack  " }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["name"], "Pack");
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let blank = serde_json::json!({ "name": "   " });
+    for res in [
+        app.post_as(&owner, "/api/v2/collections", &blank).await,
+        app.patch_as(&owner, &format!("/api/v2/collections/{id}"), &blank)
+            .await,
+    ] {
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+        assert_eq!(res.json()["field_errors"][0]["field"], "name");
+        assert_eq!(res.json()["field_errors"][0]["code"], "required");
+    }
+}
+
+/// UX-140: `length(max = 500)` counted UTF-8 bytes, so a 260-char Cyrillic
+/// name (520 bytes) was refused as «length is greater than 500». Text limits
+/// count chars.
+#[sqlx::test(migrations = "../../migrations")]
+async fn text_limits_count_chars_not_bytes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let name = "я".repeat(260);
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": name }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["name"], name);
+}
+
+/// UX-119: a public collection whose attached courses are all invisible to
+/// the viewer is left out of the list (it would render as «0 courses»),
+/// and so is an empty one (UX-127); the creator still sees both.
+#[sqlx::test(migrations = "../../migrations")]
+async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let draft_course = course(&app, &owner, "Draft only", false).await;
+    let hidden = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Drafts", "public": true, "courses": [draft_course] }),
+        )
+        .await;
+    assert_eq!(hidden.status, StatusCode::CREATED, "{}", hidden.text());
+    let empty = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Empty", "public": true }),
+        )
+        .await;
+    assert_eq!(empty.status, StatusCode::CREATED, "{}", empty.text());
+
+    let learner = app.mint_session(&[]).await;
+    let listed = app.get_as(&learner, "/api/v2/collections").await;
+    assert!(
+        listed.json()["items"].as_array().unwrap().is_empty(),
+        "{}",
+        listed.text()
+    );
+
+    // UX-131: the direct read applies the same rule (404, not «0 courses»);
+    // the creator still opens it.
+    let empty_id = empty.json()["id"].as_str().unwrap().to_owned();
+    let direct = app
+        .get_as(&learner, &format!("/api/v2/collections/{empty_id}"))
+        .await;
+    assert_eq!(direct.status, StatusCode::NOT_FOUND, "{}", direct.text());
+    assert_eq!(
+        app.get_as(&owner, &format!("/api/v2/collections/{empty_id}"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+
+    let mine = app.get_as(&owner, "/api/v2/collections").await;
+    assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
+}
+
+/// BUG-190: `collection_listable` shares the course-visibility predicate —
+/// a public collection whose only course is usergroup-shared is listed,
+/// searchable and shows the course for the cohort member; anon sees nothing.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let draft_course = course(&app, &owner, "Cohort draft", false).await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Cohort path", "public": true, "courses": [draft_course] }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let collection_id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let member_id = app
+        .create_user("member", "member@example.com", &["user"])
+        .await;
+    let member = app.mint_session_for(member_id, &[]).await;
+    let group = app
+        .post_as(
+            &owner,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &owner,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [member_id] }),
+    )
+    .await;
+    app.post_as(
+        &owner,
+        &format!("/api/v2/usergroups/{group_id}/courses"),
+        &serde_json::json!({ "course_ids": [draft_course] }),
+    )
+    .await;
+
+    let listed = app.get_as(&member, "/api/v2/collections").await;
+    assert_eq!(
+        listed.json()["items"][0]["id"],
+        collection_id,
+        "{}",
+        listed.text()
+    );
+    let found = app.get_as(&member, "/api/v2/search?q=cohort").await;
+    assert_eq!(
+        found.json()["collections"][0]["id"],
+        collection_id,
+        "{}",
+        found.text()
+    );
+    let page = app
+        .get_as(&member, &format!("/api/v2/collections/{collection_id}"))
+        .await;
+    assert_eq!(
+        page.json()["courses"][0]["id"],
+        draft_course,
+        "{}",
+        page.text()
+    );
+
+    let anon = app.get("/api/v2/collections").await;
+    assert!(
+        anon.json()["items"].as_array().unwrap().is_empty(),
+        "{}",
+        anon.text()
+    );
+    // UX-131: the direct read hides it too, not «0 courses».
+    let anon_page = app
+        .get(&format!("/api/v2/collections/{collection_id}"))
+        .await;
+    assert_eq!(
+        anon_page.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        anon_page.text()
+    );
+}
+
+/// UX-279: collections carry a version; `PATCH` bumps it and answers the new
+/// one as `ETag`, a stale `If-Match` is 412 with nothing written, and a
+/// `PATCH` without `If-Match` still lands (last writer wins by choice).
+#[sqlx::test(migrations = "../../migrations")]
+async fn stale_if_match_is_refused(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Tabbed", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let loaded = created.json()["version"].as_i64().unwrap();
+    let patch = |version: i64, name: &str| {
+        app.send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/collections/{id}"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "name": name }).to_string(),
+                ))
+                .unwrap(),
+        )
+    };
+
+    let first = patch(loaded, "Tab one").await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["version"], loaded + 1);
+    assert_eq!(first.headers["etag"], format!("\"{}\"", loaded + 1));
+
+    // The second tab still holds the loaded version.
+    let stale = patch(loaded, "Tab two").await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["code"], "precondition-failed");
+    let after = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(after.json()["name"], "Tab one");
+    assert_eq!(after.json()["version"], loaded + 1);
+
+    let unguarded = app
+        .patch_as(
+            &owner,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "name": "No header" }),
+        )
+        .await;
+    assert_eq!(unguarded.status, StatusCode::OK, "{}", unguarded.text());
+    assert_eq!(unguarded.json()["version"], loaded + 2);
+
+    // UX-313: the read carries the version as `ETag`, and a delete from a
+    // stale tab is 412 with the collection kept; the current one deletes.
+    let read = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(read.headers["etag"], format!("\"{}\"", loaded + 2));
+    let delete = |version: i64| {
+        app.send(
+            axum::http::Request::builder()
+                .method("DELETE")
+                .uri(format!("/api/v2/collections/{id}"))
+                .header(axum::http::header::COOKIE, &owner.cookie)
+                .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+    };
+    let stale = delete(loaded).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    assert_eq!(stale.json()["details"]["actual"], loaded + 2);
+    let kept = app
+        .get_as(&owner, &format!("/api/v2/collections/{id}"))
+        .await;
+    assert_eq!(kept.status, StatusCode::OK);
+    let current = delete(loaded + 2).await;
+    assert_eq!(current.status, StatusCode::NO_CONTENT, "{}", current.text());
+}
+
+/// UX-317: a delete that loses the race to another delete is 404 — the row
+/// is gone — never a 412 claiming the version moved (`expected == actual`).
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Raced", "public": false }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let version = created.json()["version"].as_i64().unwrap();
+
+    // The winner's uncommitted DELETE: invisible to the loser's read, but
+    // it holds the row until it commits.
+    let mut tx = app.pool.begin().await.unwrap();
+    sqlx::query("DELETE FROM collections WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let loser = app.send(
+        axum::http::Request::builder()
+            .method("DELETE")
+            .uri(format!("/api/v2/collections/{id}"))
+            .header(axum::http::header::COOKIE, &owner.cookie)
+            .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+            .body(axum::body::Body::empty())
+            .unwrap(),
+    );
+    let commit = async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tx.commit().await.unwrap();
+    };
+    let (lost, ()) = tokio::join!(loser, commit);
+    assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
+}
+
+// UX-322: a curator holding `collection:update:own` who does not own this
+// public collection gets 403 before the body is read — never a 422 that
+// lists the accepted fields.
+#[sqlx::test(migrations = "../../migrations")]
+async fn foreign_patch_is_refused_before_the_body(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let other = curator(&app, "other").await;
+    let visible = course(&app, &owner, "Visible", true).await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Mine", "public": true, "courses": [visible] }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let res = app
+        .patch_as(
+            &other,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "zz_bogus_field": 1 }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::FORBIDDEN, "{}", res.text());
+    assert!(!res.text().contains("expected one of"), "{}", res.text());
+}

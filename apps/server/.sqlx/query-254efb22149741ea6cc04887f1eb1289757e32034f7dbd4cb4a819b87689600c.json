@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE code_runs SET status = $2, passed = $3, score = $4, compile_output = $5,\n               error_message = $6, finished_at = now()\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Float8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "254efb22149741ea6cc04887f1eb1289757e32034f7dbd4cb4a819b87689600c"
+}

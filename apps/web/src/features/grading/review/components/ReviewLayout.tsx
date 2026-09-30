@@ -1,19 +1,13 @@
 'use client'
 
 import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
-import type { Submission } from '@/features/grading/domain'
+import type { Submission, SubmissionStats } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
+import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import ReviewBulkActionBar from './ReviewBulkActionBar'
-
-interface SubmissionStats {
-  total: number
-  needs_grading_count: number
-  avg_score: number | null
-  pass_rate: number | null
-}
 
 interface ReviewQueueSummary {
   awaitingRelease: number
@@ -21,17 +15,12 @@ interface ReviewQueueSummary {
   slaHours: number
 }
 
-const reviewLayoutCopy = {
-  awaitingRelease: 'Awaiting release',
-  slaBreaches: 'SLA breaches',
-  slaWindow: '{hours}h target',
-}
-
 export default function ReviewLayout({
   activityId,
   assessmentUuid,
   title,
   total,
+  hasMore = false,
   stats,
   reviewQueueSummary,
   selectedSubmissions,
@@ -42,6 +31,8 @@ export default function ReviewLayout({
   assessmentUuid?: string
   title?: string
   total: number
+  /** `total` is the queue's lower bound (more pages remain). */
+  hasMore?: boolean
   stats?: SubmissionStats | null
   reviewQueueSummary: ReviewQueueSummary
   selectedSubmissions: Submission[]
@@ -61,7 +52,9 @@ export default function ReviewLayout({
               <p className="text-muted-foreground text-sm">
                 {t('layout.queueDescription', {
                   count: stats?.needs_grading_count ?? 0,
-                  total,
+                  // Both figures are the assessment's (stats); until they
+                  // load, the queue's own count — «20+» while more pages remain.
+                  total: stats ? stats.total : hasMore ? `${total}+` : total,
                 })}
               </p>
             </div>
@@ -92,29 +85,31 @@ function StatsGrid({
   reviewQueueSummary: ReviewQueueSummary
 }) {
   const t = useTranslations('Features.Grading.Review')
+  const format = useFormatter()
+  const formatPercent = usePercentFormat()
   if (!stats) return null
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
       <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
-      <StatTile label={reviewLayoutCopy.awaitingRelease} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
+      <StatTile label={t('layout.stats.awaitingRelease')} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
       <StatTile
-        label={reviewLayoutCopy.slaBreaches}
+        label={t('layout.stats.slaBreaches')}
         value={reviewQueueSummary.slaBreaches}
         icon={Clock4}
-        detail={reviewLayoutCopy.slaWindow.replace('{hours}', String(reviewQueueSummary.slaHours))}
+        detail={t('layout.stats.slaTarget', { hours: reviewQueueSummary.slaHours })}
         accent="amber"
       />
       <StatTile
         label={t('layout.stats.avgScore')}
-        value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
+        value={stats.avg_score != null ? formatPercent(stats.avg_score) : '--'}
         icon={TrendingUp}
         accent="blue"
       />
       <StatTile
         label={t('layout.stats.passRate')}
-        value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+        value={stats.pass_rate != null ? `${format.number(stats.pass_rate, { maximumFractionDigits: 0 })}%` : '--'}
         icon={BookOpenCheck}
         accent="lime"
       />

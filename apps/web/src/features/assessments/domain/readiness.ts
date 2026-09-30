@@ -72,6 +72,26 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
   }
 }
 
+/**
+ * Readiness codes are a closed registry (`assessment.empty`, `choice.prompt_missing`, …);
+ * every code has a catalog entry under `NativeItemStudio.validation` keyed as
+ * `assessment_empty`. The server's English `message` is only a fallback for a code
+ * the catalog does not know yet — and that is logged so the gap gets fixed.
+ */
+export function validationIssueMessageKey(code: string): string {
+  return code.replaceAll('.', '_')
+}
+
+export function localizeValidationIssue(
+  issue: Pick<ValidationIssue, 'code' | 'message'>,
+  resolve: (key: string) => string | undefined,
+): string {
+  const localized = resolve(validationIssueMessageKey(issue.code))
+  if (localized !== undefined) return localized
+  console.warn(`[assessments] no catalog entry for readiness code "${issue.code}"`)
+  return issue.message
+}
+
 export function issuesForArea(
   issues: ValidationIssue[],
   area: ValidationArea,
@@ -142,6 +162,16 @@ export function localItemValidationIssues(
       issues.push({
         code: 'choice.option_duplicate',
         message: 'Choice options should be unique.',
+        itemUuid: item.item_uuid,
+        field: 'options',
+      })
+    }
+    // BUG-199: the grader matches by option id — shared ids never grade right.
+    const optionIds = item.body.options.map(option => option.id.trim().toLowerCase())
+    if (new Set(optionIds).size !== optionIds.length) {
+      issues.push({
+        code: 'choice.option_id_duplicate',
+        message: 'Choice option ids must be unique.',
         itemUuid: item.item_uuid,
         field: 'options',
       })
@@ -267,7 +297,8 @@ function readinessFieldForIssueCode(code: string): string | undefined {
   if (
     code === 'choice.options_missing' ||
     code === 'choice.option_text_missing' ||
-    code === 'choice.option_duplicate'
+    code === 'choice.option_duplicate' ||
+    code === 'choice.option_id_duplicate'
   ) {
     return 'options'
   }

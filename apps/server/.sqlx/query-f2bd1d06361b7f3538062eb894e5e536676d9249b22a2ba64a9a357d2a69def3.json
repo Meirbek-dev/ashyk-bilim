@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)\n           SELECT a.course_id, a.id, $2,\n                  (a.settings->>'required') IS DISTINCT FROM 'false',\n                  COALESCE(s.due_at, f.due_at)\n           FROM activities a\n           LEFT JOIN assessments s ON s.activity_id = a.id\n           LEFT JOIN file_submissions f ON f.activity_id = a.id\n           WHERE a.course_id = $1 AND a.published\n           ON CONFLICT (activity_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2bd1d06361b7f3538062eb894e5e536676d9249b22a2ba64a9a357d2a69def3"
+}

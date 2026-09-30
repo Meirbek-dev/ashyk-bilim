@@ -1,20 +1,6 @@
-import { apiJson } from '@/lib/api-client'
+import { uploadBlockFile } from '@services/blocks/upload'
+import type { BlockFileObject } from '@services/blocks/upload'
 
-export interface UploadedImageBlockObject {
-  block_uuid: string
-  content: {
-    file_id: string
-    file_format: string
-  }
-}
+export type UploadedImageBlockObject = BlockFileObject
 
-export async function uploadNewImageFile(file: File, activity_uuid: string): Promise<UploadedImageBlockObject> {
-  const formData = new FormData()
-  formData.append('file_object', file)
-  formData.append('activity_uuid', activity_uuid)
-
-  return apiJson<UploadedImageBlockObject>('blocks/image', {
-    method: 'POST',
-    body: formData,
-  })
-}
+export const uploadNewImageFile = (file: File, activityId: string) => uploadBlockFile(file, activityId, 'image')

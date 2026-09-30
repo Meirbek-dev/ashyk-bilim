@@ -1,13 +1,16 @@
+import { Suspense } from 'react'
 import { getTranslations } from 'next-intl/server'
 
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import { requireSession } from '@/lib/auth/session'
 import { sessionCan } from '@/lib/auth/permissions'
 import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/rbac/navigation-policy'
-import { getEditableCourses } from '@services/courses/courses'
+import { getEditableCourses } from '@services/courses/editable'
 import { getAdminAnalyticsOverview, getTeacherOverview } from '@services/analytics/teacher'
-import { buildDashboardWorkQueue, DashboardWorkQueue } from '@/features/work-queue'
+import { buildDashboardWorkQueue, DashboardWorkQueue, WorkQueueAutoRefresh } from '@/features/work-queue'
 import { apiJson } from '@/lib/api-client'
+import { unixToIso } from '@/lib/api/contract'
+import type { WorkItem, WorkQueue } from '@/lib/api/generated/zod'
 
 import type { Action, Resource, Scope } from '@/types/permissions'
 import type { AdminAnalyticsResponse, TeacherOverviewResponse } from '@/types/analytics'
@@ -24,24 +27,19 @@ interface AIUsageSummary {
   remaining_budget: number
 }
 
-interface WorkQueueApiResponse {
-  items: {
-    id: string
-    role: 'learner' | 'teacher'
-    kind: string
-    status: string
-    priority: 'critical' | 'high' | 'normal' | 'low'
-    title: string
-    description: string
-    href: string
-    primary_action: string
-    course_title?: string | null
-    activity_title?: string | null
-    due_at?: string | null
-    created_at?: string | null
-  }[]
-  total: number
-  next_cursor?: string | null
+/** `WorkItem` with `*_unix` timestamps rendered as ISO for `buildDashboardWorkQueue`. */
+type WorkQueueApiResponse = Omit<WorkQueue, 'items'> & {
+  items: (WorkItem & { due_at: string | null; created_at: string | null })[]
+}
+
+async function fetchWork(role: WorkQueue['items'][number]['role']): Promise<WorkQueueApiResponse> {
+  const queue = await apiJson<WorkQueue>(`work?role=${role}&limit=50`)
+  return {
+    ...queue,
+    items: queue.items.map(item =>
+      Object.assign(item, { due_at: unixToIso(item.due_at_unix), created_at: unixToIso(item.created_at_unix) }),
+    ),
+  }
 }
 
 const analyticsQueueQuery = {
@@ -54,10 +52,21 @@ const analyticsQueueQuery = {
   timezone: 'UTC',
 } as const
 
-export default async function PlatformDashHomePage() {
-  const [tGeneral, tQueue, session] = await Promise.all([
+// The layout's Suspense is already revealed on client navigations, so the
+// per-user queue needs its own boundary for the route to show instantly.
+export default function PlatformDashHomePage() {
+  return (
+    <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>
+      <DashHome />
+    </Suspense>
+  )
+}
+
+async function DashHome() {
+  const [tGeneral, tQueue, tAdmin, session] = await Promise.all([
     getTranslations('General'),
     getTranslations('DashboardWorkQueue'),
+    getTranslations('DashPage.Admin'),
     requireSession(),
   ])
   const permsSet = new Set<string>(session.permissions)
@@ -65,32 +74,27 @@ export default async function PlatformDashHomePage() {
   const can = (resource: Resource, action: Action, scope: Scope): boolean =>
     sessionCan(session, resource, action, scope, permsSet)
 
+  // Authorship is the `:own` scope: a `user`-role co-author has no course
+  // grant, so the editable summary is probed for everyone and a non-empty
+  // `mine` set opens the courses area.
+  const courseSummaryResult = await getSafeEditableCourseSummary()
   const access = {
-    hasCoursesAccess: canSeeCourses(can),
+    hasCoursesAccess: canSeeCourses(can) || (courseSummaryResult.data?.total ?? 0) > 0,
     hasAnalyticsAccess: canSeeAnalytics(can),
     hasUsersAccess: canSeeUsers(can),
     hasAdminAccess: canSeeAdmin(can),
   } satisfies DashboardAccess
 
-  const [
-    courseSummaryResult,
-    teacherOverviewResult,
-    adminOverviewResult,
-    aiUsageResult,
-    learnerWorkResult,
-    teacherWorkResult,
-  ] = await Promise.all([
-    access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve({ data: null, error: null }),
-    access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
-    access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
-    access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
-    getSafeLearnerWork(),
-    access.hasCoursesAccess || access.hasAnalyticsAccess
-      ? getSafeTeacherWork()
-      : Promise.resolve({ data: null, error: null }),
-  ])
+  const [teacherOverviewResult, adminOverviewResult, aiUsageResult, learnerWorkResult, teacherWorkResult] =
+    await Promise.all([
+      access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
+      access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
+      access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
+      getSafeLearnerWork(),
+      access.hasCoursesAccess ? getSafeTeacherWork() : Promise.resolve({ data: null, error: null }),
+    ])
 
-  const courseSummary = courseSummaryResult.data
+  const courseSummary = access.hasCoursesAccess ? courseSummaryResult.data : null
   const teacherOverview = teacherOverviewResult.data
   const adminOverview = adminOverviewResult.data
   const aiUsage = aiUsageResult.data
@@ -106,7 +110,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.returned.title', { activity }),
           description: tQueue('items.returned.description', { course }),
           primary_action: tQueue('items.returned.action'),
-          groupLabel: tQueue('groups.returned'),
         }
       }
       case 'waiting_for_grade': {
@@ -115,7 +118,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.waiting.title', { activity }),
           description: tQueue('items.waiting.description', { course }),
           primary_action: tQueue('items.waiting.action'),
-          groupLabel: tQueue('groups.waiting'),
         }
       }
       case 'feedback_released': {
@@ -124,7 +126,6 @@ export default async function PlatformDashHomePage() {
           title: tQueue('items.feedback.title', { activity }),
           description: tQueue('items.feedback.description', { course }),
           primary_action: tQueue('items.feedback.action'),
-          groupLabel: tQueue('groups.released'),
         }
       }
       case 'overdue':
@@ -136,7 +137,6 @@ export default async function PlatformDashHomePage() {
             course,
           }),
           primary_action: tQueue('items.inProgress.action'),
-          groupLabel: tQueue(item.kind === 'overdue' ? 'groups.today' : 'groups.dueSoon'),
         }
       }
       case 'awaiting_release': {
@@ -168,6 +168,7 @@ export default async function PlatformDashHomePage() {
   }
 
   const queue = buildDashboardWorkQueue({
+    t: tQueue,
     access,
     learnerSignal: learnerWork
       ? { items: learnerWork.items.map(localizeWorkItem), signalAvailable: true }
@@ -191,11 +192,12 @@ export default async function PlatformDashHomePage() {
     teacherSignal: teacherOverview
       ? {
           atRiskTotal: teacherOverview.at_risk_total ?? 0,
+          atRiskMetric: tAdmin('enrollments', { count: teacherOverview.at_risk_total ?? 0 }),
           gradingBacklogTotal: teacherOverview.workload.backlog_total ?? 0,
           slaBreaches: teacherOverview.workload.sla_breaches ?? 0,
           forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d ?? 0,
           medianFeedbackLatencyHours: teacherOverview.workload.median_feedback_latency_hours ?? null,
-          backlogItems: teacherOverview.workload.backlog_by_manual_assessment.map(item => ({
+          backlogItems: teacherOverview.workload.backlog_by_assessment.map(item => ({
             assessmentId: item.assessment_id,
             awaitingReview: item.awaiting_review,
             courseName: item.course_name,
@@ -204,7 +206,6 @@ export default async function PlatformDashHomePage() {
           })),
           signalAvailable: true,
           errorMessage: null,
-          workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
         }
       : access.hasAnalyticsAccess
         ? {
@@ -216,9 +217,9 @@ export default async function PlatformDashHomePage() {
             backlogItems: [],
             signalAvailable: false,
             errorMessage: teacherOverviewResult.error,
-            workItems: teacherWork?.items.map(localizeWorkItem) ?? [],
           }
         : null,
+    teacherWorkItems: teacherWork?.items.map(localizeWorkItem) ?? [],
     adminSignal: adminOverview
       ? {
           aiMonthlyBudget: aiUsage?.monthly_budget ?? null,
@@ -250,7 +251,8 @@ export default async function PlatformDashHomePage() {
     <div className="bg-background flex min-h-screen w-full flex-col">
       <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
-      <main className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
+      <section className="container mx-auto flex-1 px-4 py-8 md:py-10 lg:px-8">
+        <WorkQueueAutoRefresh />
         <DashboardWorkQueue
           sections={queue.sections}
           tools={queue.tools}
@@ -264,7 +266,7 @@ export default async function PlatformDashHomePage() {
             openLabel: tQueue('openLabel'),
           }}
         />
-      </main>
+      </section>
     </div>
   )
 }
@@ -314,7 +316,7 @@ async function getSafeAIUsageSummary(): Promise<{ data: AIUsageSummary | null; e
 
 async function getSafeLearnerWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
   try {
-    const data = await apiJson<WorkQueueApiResponse>('me/work?role=learner&limit=50')
+    const data = await fetchWork('learner')
     return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load learner work:', error)
@@ -324,7 +326,7 @@ async function getSafeLearnerWork(): Promise<{ data: WorkQueueApiResponse | null
 
 async function getSafeTeacherWork(): Promise<{ data: WorkQueueApiResponse | null; error: string | null }> {
   try {
-    const data = await apiJson<WorkQueueApiResponse>('me/work?role=teacher&limit=50')
+    const data = await fetchWork('teacher')
     return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load teacher work:', error)

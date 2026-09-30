@@ -2,7 +2,10 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { IS_PRODUCTION } from '@/services/config/env'
 
-const MAX_BODY_BYTES = 8192 // 8 KB cap to prevent log-spam / memory exhaustion
+// The browser's `keepalive` ceiling: no report the reporter sends (strings
+// clipped to 2000 characters) is refused — 8 KB turned a Cyrillic crash report
+// into a 413 (BUG-366). Spam is bounded by the per-IP rate limit below.
+const MAX_BODY_BYTES = 64 * 1024
 
 /**
  * Simple in-process sliding-window rate limiter keyed by IP address.

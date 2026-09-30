@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2 } from 'lucide-react'
+import { Check, Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -12,14 +12,20 @@ import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 
 import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
-import type { MatchPair } from '../../domain/items'
+import { matchingColumns } from '../../domain/items'
+import type { MatchOption, MatchPair } from '../../domain/items'
+export { matchingColumns }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MatchingBody {
   kind: 'MATCHING'
   prompt: string
+  /** The author's key; empty on the learner read. */
   pairs: MatchPair[]
+  /** The learner read: both columns, right one shuffled by the server. */
+  left?: MatchOption[]
+  right?: MatchOption[]
 }
 
 export interface MatchingAnswer {
@@ -121,39 +127,62 @@ export function MatchingItemAttempt({
     onAnswerChange(next)
   }
 
-  const rightOptions = item.pairs.map(p => p.right)
+  const { left, right } = matchingColumns(item)
+  const usedRight = new Set(Object.values(currentMatches))
 
   return (
     <div className="space-y-3">
       {item.prompt ? <MarkdownContent content={item.prompt} mode="prompt" /> : null}
-      <div className="space-y-2">
-        {item.pairs.map((pair, index) => {
-          const selected = currentMatches[pair.left] ?? ''
-          return (
-            <div
-              key={index}
-              className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
-            >
-              <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
-              <NativeSelect
-                value={selected}
-                disabled={disabled}
-                onChange={e => updateMatch(pair.left, e.target.value)}
-                aria-label={t('matchForLabel', { term: pair.left })}
-                className={cn('sm:max-w-xs', !selected && 'text-muted-foreground')}
+      {/* Two visible columns: the terms (each with its match picker) and the
+          full list of options in the server's order, ticked as they get used. */}
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="space-y-2">
+          <div className="text-muted-foreground px-1 text-xs font-medium">{t('leftLabel')}</div>
+          {left.map(option => {
+            const selected = currentMatches[option.id] ?? ''
+            return (
+              <div
+                key={option.id}
+                className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
               >
-                <NativeSelectOption value="" disabled hidden>
-                  {t('selectMatch')}
-                </NativeSelectOption>
-                {rightOptions.map(right => (
-                  <NativeSelectOption key={right} value={right}>
-                    {right}
+                <span className="min-w-0 flex-1 text-sm font-medium">{option.text}</span>
+                <NativeSelect
+                  value={selected}
+                  disabled={disabled}
+                  onChange={e => updateMatch(option.id, e.target.value)}
+                  aria-label={t('matchForLabel', { term: option.text })}
+                  className={cn('sm:max-w-xs', !selected && 'text-muted-foreground')}
+                >
+                  <NativeSelectOption value="" disabled hidden>
+                    {t('selectMatch')}
                   </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </div>
-          )
-        })}
+                  {right.map(choice => (
+                    <NativeSelectOption key={choice.id} value={choice.id}>
+                      {choice.text}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
+            )
+          })}
+        </div>
+        <div className="space-y-2">
+          <div className="text-muted-foreground px-1 text-xs font-medium">{t('rightLabel')}</div>
+          <ul className="space-y-2" aria-label={t('rightLabel')}>
+            {right.map(choice => (
+              <li
+                key={choice.id}
+                className={cn(
+                  'flex items-center gap-2 rounded-md border px-3 py-2 text-sm',
+                  usedRight.has(choice.id) ? 'bg-muted/60 text-muted-foreground' : 'bg-background',
+                )}
+              >
+                {usedRight.has(choice.id) ? <Check className="text-primary size-3.5 shrink-0" aria-hidden /> : null}
+                <span className="min-w-0 flex-1">{choice.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   )

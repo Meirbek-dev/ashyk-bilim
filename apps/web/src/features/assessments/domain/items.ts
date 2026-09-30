@@ -1,5 +1,22 @@
 export type UnifiedItemKind = 'CHOICE' | 'OPEN_TEXT' | 'FORM' | 'CODE' | 'MATCHING'
 
+/**
+ * The one item-kind → catalog-key map. Labels live under
+ * `Features.Assessments.Studio.NativeItemStudio.kindLabels.<key>`; every surface
+ * (studio outline, canvas, publish breakdown, grading inspector) resolves through it.
+ */
+export const ITEM_KIND_LABEL_KEYS: Record<UnifiedItemKind, string> = {
+  CHOICE: 'choice',
+  OPEN_TEXT: 'openText',
+  FORM: 'form',
+  MATCHING: 'matching',
+  CODE: 'code',
+}
+
+export function itemKindLabelKey(kind: string): string | undefined {
+  return ITEM_KIND_LABEL_KEYS[kind as UnifiedItemKind]
+}
+
 export interface ChoiceOption {
   id: string
   text: string
@@ -9,6 +26,12 @@ export interface ChoiceOption {
 export interface MatchPair {
   left: string
   right: string
+}
+
+/** One column entry of the learner's matching read; `id` is what the answer carries. */
+export interface MatchOption {
+  id: string
+  text: string
 }
 
 export interface FormField {
@@ -62,9 +85,28 @@ export type ItemBody =
   | {
       kind: 'MATCHING'
       prompt: string
+      /** The author's key; empty on the learner read. */
       pairs: MatchPair[]
+      /** The learner read (`MatchingLearnerBody`): both columns, right one shuffled. */
+      left?: MatchOption[]
+      right?: MatchOption[]
       explanation?: string | null
     }
+
+/**
+ * The columns a matching attempt renders: the learner read's (`left`/`right`,
+ * right shuffled by the server) or, for authors previewing, the pairs' texts.
+ */
+export function matchingColumns(body: { pairs: MatchPair[]; left?: MatchOption[]; right?: MatchOption[] }): {
+  left: MatchOption[]
+  right: MatchOption[]
+} {
+  if (body.left && body.right) return { left: body.left, right: body.right }
+  return {
+    left: body.pairs.map(p => ({ id: p.left, text: p.left })),
+    right: body.pairs.map(p => ({ id: p.right, text: p.right })),
+  }
+}
 
 export interface AssessmentItemMetadata {
   section_label?: string | null
@@ -92,7 +134,7 @@ export type ItemAnswer =
   | { kind: 'MATCHING'; matches: MatchPair[] }
 
 export interface AssessmentItem {
-  id: number
+  id: string
   item_uuid: string
   order: number
   kind: UnifiedItemKind
@@ -100,8 +142,8 @@ export interface AssessmentItem {
   body: ItemBody
   metadata?: AssessmentItemMetadata
   max_score: number
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export function isAnswered(answer: ItemAnswer | null | undefined): boolean {

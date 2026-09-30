@@ -161,7 +161,10 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
           {timestamp ? (
             <time className="text-muted-foreground mt-1 flex items-center gap-1 text-xs" dateTime={timestamp}>
               <CalendarClock className="size-3.5" aria-hidden />
-              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(timestamp))}
+              {/* Chromium ships no kk ICU data («2026 M09 11» vs Node's «2026 ж. 11 қыр.»); keep the server text. */}
+              <span suppressHydrationWarning>
+                {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(timestamp))}
+              </span>
             </time>
           ) : null}
         </div>
@@ -171,7 +174,7 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
             <LmsStatusBadge status={item.status} />
             {item.metric ? (
               <Badge variant="secondary" className="font-mono tabular-nums">
-                {item.metric.value} {item.metric.label}
+                {item.metric}
               </Badge>
             ) : null}
           </div>

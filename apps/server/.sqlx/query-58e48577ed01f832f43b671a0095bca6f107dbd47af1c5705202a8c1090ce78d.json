@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: UsergroupId\" FROM usergroups WHERE id = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: UsergroupId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "58e48577ed01f832f43b671a0095bca6f107dbd47af1c5705202a8c1090ce78d"
+}
