@@ -2930,7 +2930,8 @@
       "edited": "Changes saved",
       "deleted": "Message deleted"
     },
-    "quiz": "Quiz"
+    "quiz": "Quiz",
+    "editCourse": "Edit course"
   },
   "Courses": {
     "CourseActionsMobile": {

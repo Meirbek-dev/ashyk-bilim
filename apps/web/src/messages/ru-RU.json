@@ -2928,7 +2928,8 @@
       "edited": "Изменения сохранены",
       "deleted": "Сообщение удалено"
     },
-    "quiz": "Тест"
+    "quiz": "Тест",
+    "editCourse": "Редактировать"
   },
   "Courses": {
     "CourseActionsMobile": {

@@ -2929,7 +2929,8 @@
       "edited": "Өзгерістер сақталды",
       "deleted": "Хабарлама жойылды"
     },
-    "quiz": "Тест"
+    "quiz": "Тест",
+    "editCourse": "Өңдеу"
   },
   "Courses": {
     "CourseActionsMobile": {

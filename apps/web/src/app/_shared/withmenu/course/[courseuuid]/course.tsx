@@ -14,6 +14,7 @@ import {
   FileArchive,
   ImageIcon,
   Layers,
+  Pencil,
   StickyNote,
   Video,
 } from 'lucide-react'
@@ -37,6 +38,8 @@ import { useMemo, useState } from 'react'
 // Import existing components and utilities
 import NextImage from '@components/ui/NextImage'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { buildCourseOverviewPath, isCourseAuthor } from '@/lib/course-management'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
@@ -232,7 +235,21 @@ function CourseClient(props: CourseClientProps) {
             <div className="flex flex-col gap-10 md:flex-row md:items-start">
               {/* Main content */}
               <div className="w-full min-w-0 flex-1 space-y-8">
-                <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{course.name}</h1>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{course.name}</h1>
+                  {/* Authors land here from «Предпросмотр» / the catalog: one click back to the editor. */}
+                  {isCourseAuthor(course, currentUser?.id) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link href={buildCourseOverviewPath(course.course_uuid)} />}
+                    >
+                      <Pencil />
+                      {t('editCourse')}
+                    </Button>
+                  ) : null}
+                </div>
                 {/* CSS, not useIsMobile: the phone CTA is in the server HTML (no pop-in after hydration). */}
                 <div className={cn('md:hidden', !hasActivities && 'hidden')}>
                   <CourseActionsMobile
