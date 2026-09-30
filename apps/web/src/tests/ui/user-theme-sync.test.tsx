@@ -66,7 +66,7 @@ describe('UserThemeSync (BUG-362)', () => {
     user = { id: 'u1', theme: null }
     const { unmount } = render(<UserThemeSync />)
     await vi.advanceTimersByTimeAsync(THEME_SYNC_DELAY_MS * 2)
-    expect(setTheme).not.toHaveBeenCalled()
+    expect(setTheme).toHaveBeenCalledWith('modern-minimal')
     expect(updateProfile).not.toHaveBeenCalled()
     unmount()
 
@@ -75,5 +75,29 @@ describe('UserThemeSync (BUG-362)', () => {
     render(<UserThemeSync />)
     await vi.advanceTimersByTimeAsync(THEME_SYNC_DELAY_MS * 2)
     expect(updateProfile).not.toHaveBeenCalled()
+  })
+
+  it("never saves the previous account's local theme onto the next one (BUG-380)", async () => {
+    // A (vintage-paper) signs in, then signs out: the sign-in shell unmounts
+    // and the theme stays behind in this browser.
+    user = { id: 'a', theme: 'vintage-paper' }
+    const first = render(<UserThemeSync />)
+    first.rerender(<UserThemeSync />)
+    first.unmount()
+    expect(themeName).toBe('vintage-paper')
+
+    // C has no server theme and signs in on the same browser.
+    user = { id: 'c', theme: null }
+    const { rerender } = render(<UserThemeSync />)
+    expect(setTheme).toHaveBeenLastCalledWith('modern-minimal')
+    rerender(<UserThemeSync />)
+    await vi.advanceTimersByTimeAsync(THEME_SYNC_DELAY_MS * 2)
+    expect(updateProfile).not.toHaveBeenCalled()
+
+    // C's own choice is still saved.
+    themeName = 'cyberpunk'
+    rerender(<UserThemeSync />)
+    await vi.advanceTimersByTimeAsync(THEME_SYNC_DELAY_MS)
+    expect(updateProfile).toHaveBeenCalledExactlyOnceWith({ theme: 'cyberpunk' })
   })
 })

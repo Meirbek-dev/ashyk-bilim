@@ -1,6 +1,7 @@
 import { logoutAction } from '@/app/actions/auth'
 import { apiJson } from '@/lib/api-client'
 import { broadcastLogout } from '@/components/providers/session-provider'
+import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, applyTheme, getStoredThemeMode, getTheme } from '@/lib/themes'
 import { SessionInfo, SessionSummary, TotpEnrollment } from '@/lib/api/generated/zod'
 import type {
   SessionInfo as SessionInfoType,
@@ -14,6 +15,9 @@ interface LogoutOptions {
 
 export async function logout(options?: LogoutOptions): Promise<void> {
   broadcastLogout()
+  // The account's theme leaves with it (BUG-380): the next visitor of this
+  // browser starts from the default, not from the signed-out user's choice.
+  applyTheme(getTheme(DEFAULT_THEME_NAME, getStoredThemeMode() ?? DEFAULT_THEME_MODE))
   await logoutAction(options?.redirectTo ?? '/login')
 }
 

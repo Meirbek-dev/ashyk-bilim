@@ -16,7 +16,9 @@ export const THEME_SYNC_DELAY_MS = 1000
  * `PATCH /users/me { theme }` after a short debounce (the selector's
  * prev/next/random buttons fire in bursts). Anonymous visitors keep the
  * provider's localStorage fast path. An unset server theme equals the app
- * default, so a user who never chose one is never written.
+ * default, so a user who never chose one is never written — and signing in
+ * adopts that default too, so a theme left in this browser by a previous
+ * account is never saved onto the next one (BUG-380).
  */
 export function UserThemeSync() {
   const { user } = useSession()
@@ -32,7 +34,7 @@ export function UserThemeSync() {
 
   useEffect(() => {
     syncedRef.current = syncedName
-    if (userId && serverTheme) adoptTheme(serverTheme)
+    if (userId) adoptTheme(serverTheme ?? DEFAULT_THEME_NAME)
   }, [userId, serverTheme, syncedName])
 
   useEffect(() => {
