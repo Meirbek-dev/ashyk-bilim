@@ -3,7 +3,7 @@ import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
 import { getSession } from '@/lib/auth/session'
-import { getSearchParam } from '@/lib/search-params'
+import { getPageParam } from '@/lib/search-params'
 import type { PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'
 import { Actions, Resources, Scopes, perm } from '@/types/permissions'
@@ -57,58 +57,15 @@ interface CoursesContentProps {
   searchParams: Promise<PageSearchParams>
 }
 
-function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | null) {
-  if (!trailData?.runs) return courses
-
-  return [...courses].toSorted((a, b) => {
-    const aCleanUuid = a.course_uuid?.replace('course_', '')
-    const bCleanUuid = b.course_uuid?.replace('course_', '')
-
-    const aRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
-
-    const getProgress = (run: AppTrailRun | undefined, course: AppCourse) => {
-      if (!run) return 0
-      const total =
-        run.course_total_steps ||
-        course.chapters?.reduce((acc: number, chap: AppChapter) => acc + (chap.activities?.length || 0), 0) ||
-        0
-      const completed = run.steps?.filter((s: AppTrailStep) => s.complete === true)?.length || 0
-      return total > 0 ? Math.round((completed / total) * 100) : 0
-    }
-
-    const aProgress = getProgress(aRun, a)
-    const bProgress = getProgress(bRun, b)
-
-    const aInProgress = aProgress > 0 && aProgress < 100
-    const bInProgress = bProgress > 0 && bProgress < 100
-
-    // 1. In-progress courses first
-    if (aInProgress !== bInProgress) return bInProgress ? 1 : -1
-
-    // 2. Higher progress first
-    if (aProgress !== bProgress) return bProgress - aProgress
-
-    // 3. Fallback to newest
-    const aDate = new Date(a.creation_date || a.created_at || a.update_date || 0).getTime()
-    const bDate = new Date(b.creation_date || b.created_at || b.update_date || 0).getTime()
-    return bDate - aDate
-  })
-}
-
 async function CoursesContent({ searchParams }: CoursesContentProps) {
-  const params = await searchParams
-  const pageStr = getSearchParam(params, 'page')
-  const page = pageStr ? Number.parseInt(pageStr, 10) : 1
+  const page = getPageParam(await searchParams)
 
   const session = await getSession()
+  // UX-274: the server orders the caller's in-progress courses first across pages.
   const [coursesData, trailData] = await Promise.all([
-    getCourses(undefined, page, 20),
+    getCourses(undefined, page, 20, 'progress'),
     session ? getCurrentTrail() : Promise.resolve(null),
   ])
-
-  // Pre-sort courses on the server
-  const sortedCourses = sortCoursesByProgress(coursesData.courses, trailData)
 
   // Calculate permissions server-side
   const permissionsSet = new Set<string>(session?.permissions)
@@ -117,7 +74,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
 
   return (
     <Courses
-      courses={sortedCourses}
+      courses={coursesData.courses}
       hasNextPage={Boolean(coursesData.next_cursor)}
       trailData={trailData}
       currentPage={page}

@@ -42,34 +42,6 @@ function logLandingFetchError(scope: string, error: unknown) {
   })
 }
 
-/** Course as returned by `getCourses` (v2 `Course` + the legacy `course_uuid` alias). */
-type CatalogCourse = Awaited<ReturnType<typeof getCourses>>['courses'][number]
-
-/** Percent of a run's published steps that are complete (0 when the course is not on the trail). */
-function runProgress(run: AppTrailRun | undefined): number {
-  const total = run?.course_total_steps ?? 0
-  const completed = run?.steps?.filter(step => step.complete).length ?? 0
-  return total > 0 ? Math.round((completed / total) * 100) : 0
-}
-
-/** In-progress courses first, then by progress, then newest (`created_at_unix`). */
-export function sortCoursesByProgress<T extends CatalogCourse>(courses: T[], trailData: AppTrailData | null): T[] {
-  if (!trailData?.runs?.length) return courses
-
-  const progressById = new Map(trailData.runs.map(run => [run.course.id, runProgress(run)]))
-
-  return courses.toSorted((a, b) => {
-    const aProgress = progressById.get(a.id) ?? 0
-    const bProgress = progressById.get(b.id) ?? 0
-    const aInProgress = aProgress > 0 && aProgress < 100
-    const bInProgress = bProgress > 0 && bProgress < 100
-
-    if (aInProgress !== bInProgress) return bInProgress ? 1 : -1
-    if (aProgress !== bProgress) return bProgress - aProgress
-    return b.created_at_unix - a.created_at_unix
-  })
-}
-
 export async function LandingContent({ page = 1 }: { page?: number }) {
   const tDegraded = await getTranslations('LandingDegraded')
   let coursesData, collections, gamificationData, trailData, session
@@ -98,7 +70,8 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
 
     // Only the platform and the course catalog are fatal; the side sections degrade on their own.
     const [resCoursesData, resCollections, resGamificationData, resTrailData] = await Promise.all([
-      getCourses(undefined, page, 20),
+      // UX-274: the server orders the caller's in-progress courses first across pages.
+      getCourses(undefined, page, 20, 'progress'),
       getCollections().catch((error: unknown) => {
         logLandingFetchError('Collections fetch failed', error)
         return [] as AppCollection[]
@@ -129,11 +102,9 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
     return <LandingDegradedState isAuthenticated={Boolean(session)} t={tDegraded} />
   }
 
-  const sortedCourses = sortCoursesByProgress(coursesData.courses, trailData)
-
   return (
     <LandingClassic
-      courses={sortedCourses}
+      courses={coursesData.courses}
       hasNextPage={Boolean(coursesData.next_cursor)}
       collections={collections}
       gamificationData={gamificationData}

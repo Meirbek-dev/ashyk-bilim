@@ -116,7 +116,8 @@ pub struct CourseFilter<'a> {
     pub mine: bool,
     /// Case-insensitive substring over name + description.
     pub q: Option<&'a str>,
-    /// `name` (ascending) or anything else = `updated_at` descending.
+    /// `name` (ascending), `progress` (the viewer's in-progress courses
+    /// first, UX-274) or anything else = `updated_at` descending.
     pub sort: &'a str,
     /// `drafts` | `published` | `recent` | `attention` | anything else = all.
     pub preset: &'a str,
@@ -137,11 +138,22 @@ pub async fn list_courses(
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
     let by_name = filter.sort == "name";
+    // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on a
+    // trail run) first, then by `course_progress.progress_pct`, then newest
+    // update — one keyset over the whole catalog, not a per-page re-sort.
+    let by_progress = filter.sort == "progress";
     // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
     let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
     let rows = sqlx::query_as!(
         CourseRow,
-        r#"SELECT id AS "id: CourseId", name, description, about, tags,
+        r#"WITH pct AS (
+               SELECT cp.course_id, cp.progress_pct,
+                      cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
+               FROM course_progress cp
+               JOIN trail_runs tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
+               WHERE $11 AND cp.user_id = $2
+           )
+           SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
@@ -151,6 +163,7 @@ pub async fn list_courses(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
+           LEFT JOIN pct ON pct.course_id = courses.id
            WHERE course_visible(courses, $2, $1)
              AND (NOT $5 OR $1 OR creator_id = $2
                   OR EXISTS (SELECT 1 FROM resource_authors ra
@@ -167,12 +180,19 @@ pub async fn list_courses(
                      OR (NOT public AND created_at < now() - interval '30 days')
                    ELSE true
                  END
-             AND ($3::uuid IS NULL OR CASE WHEN $8::bool
+             AND ($3::uuid IS NULL OR CASE
+                   WHEN $8::bool
                    THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)
+                   WHEN $11::bool
+                   THEN (coalesce(pct.in_progress, false), coalesce(pct.progress_pct, 0), updated_at, id)
+                        < (SELECT coalesce(p.in_progress, false), coalesce(p.progress_pct, 0), c.updated_at, c.id
+                           FROM courses c LEFT JOIN pct p ON p.course_id = c.id WHERE c.id = $3)
                    ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)
                  END)
            ORDER BY CASE WHEN $8 THEN name END ASC,
                     CASE WHEN $8 THEN id END ASC,
+                    CASE WHEN $11 THEN coalesce(pct.in_progress, false) END DESC,
+                    CASE WHEN $11 THEN coalesce(pct.progress_pct, 0) END DESC,
                     CASE WHEN NOT $8 THEN updated_at END DESC,
                     id DESC
            LIMIT $4"#,
@@ -185,7 +205,8 @@ pub async fn list_courses(
         filter.preset,
         by_name,
         &patterns.letters,
-        &patterns.excluded
+        &patterns.excluded,
+        by_progress
     )
     .fetch_all(pool)
     .await?;

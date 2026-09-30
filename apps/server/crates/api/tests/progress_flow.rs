@@ -2192,3 +2192,103 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .unwrap();
     assert_eq!(certs, 1, "the certificate itself is kept");
 }
+
+/// UX-250 edges: a run with no `course_progress` row (a migrated run before
+/// the backfill) reports `progress_pct: null`, not a guessed 0; the batch
+/// query takes an empty id list (a trail whose runs are all hidden).
+#[sqlx::test(migrations = "../../migrations")]
+async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "No projection").await;
+    lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let alice = learner(&app, "alice").await;
+    let added = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    sqlx::query("DELETE FROM course_progress WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let trail = app.get_as(&alice, "/api/v2/trail").await;
+    assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
+    assert_eq!(trail.json()["runs"][0]["course"]["id"], course_id.as_str());
+    assert!(trail.json()["runs"][0]["progress_pct"].is_null());
+
+    let none = ab_db::progress::course_progress_pcts(&app.pool, alice.user_id, &[])
+        .await
+        .unwrap();
+    assert!(none.is_empty());
+}
+
+/// UX-274: `GET /courses?sort=progress` puts the caller's in-progress
+/// courses first (by `course_progress.progress_pct`), then the rest by
+/// progress and newest update — one keyset across pages, so an in-progress
+/// course never hides on page 2 behind courses the learner never opened.
+#[sqlx::test(migrations = "../../migrations")]
+async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (half, half_chapter) = public_course(&app, &teacher, "Half").await;
+    let h1 = lesson(&app, &teacher, &half_chapter, "H1").await;
+    lesson(&app, &teacher, &half_chapter, "H2").await;
+    let (done, done_chapter) = public_course(&app, &teacher, "Done").await;
+    let d1 = lesson(&app, &teacher, &done_chapter, "D1").await;
+    let (older, _) = public_course(&app, &teacher, "Older").await;
+    let (newer, _) = public_course(&app, &teacher, "Newer").await;
+    let alice = learner(&app, "alice").await;
+    for (course, activity) in [(&half, &h1), (&done, &d1)] {
+        let added = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/trail/courses/{course}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+        let marked = app
+            .post_as(
+                &alice,
+                &format!("/api/v2/trail/activities/{activity}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    }
+
+    // One course per page: the cursor carries the progress key.
+    let mut order = Vec::new();
+    let mut cursor: Option<String> = None;
+    loop {
+        let url = cursor.as_ref().map_or_else(
+            || "/api/v2/courses?sort=progress&limit=1".to_owned(),
+            |c| format!("/api/v2/courses?sort=progress&limit=1&cursor={c}"),
+        );
+        let page = app.get_as(&alice, &url).await;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+        let body = page.json();
+        order.extend(
+            body["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c["id"].as_str().unwrap().to_owned()),
+        );
+        match body["next_cursor"].as_str() {
+            Some(next) => cursor = Some(next.to_owned()),
+            None => break,
+        }
+    }
+    assert_eq!(order, vec![half, done, newer.clone(), older.clone()]);
+
+    // Anonymous callers have no progress: plain newest-update order.
+    let anon = app.get("/api/v2/courses?sort=progress").await;
+    assert_eq!(anon.status, StatusCode::OK, "{}", anon.text());
+    assert_eq!(anon.json()["items"][0]["id"], newer.as_str());
+}

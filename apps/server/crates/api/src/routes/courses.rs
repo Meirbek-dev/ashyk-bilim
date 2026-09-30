@@ -60,7 +60,7 @@ pub async fn create_course(
         ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
         ("mine" = Option<bool>, Query, description = "Only courses the caller may edit (adds `summary`)"),
         ("q" = Option<String>, Query, description = "Substring filter over name/description"),
-        ("sort" = Option<String>, Query, description = "`updated` (default) or `name`"),
+        ("sort" = Option<String>, Query, description = "`updated` (default), `name`, or `progress` (caller's in-progress courses first)"),
         ("preset" = Option<String>, Query, description = "`all` | `drafts` | `published` | `recent` | `attention`"),
     ),
     responses((status = 200, description = "Page of courses", body = CoursePage)),

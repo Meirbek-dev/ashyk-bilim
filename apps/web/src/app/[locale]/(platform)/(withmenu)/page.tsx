@@ -1,4 +1,5 @@
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
+import { getPageParam } from '@/lib/search-params'
 import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getPlatformThumbnailImage } from '@services/media/media'
@@ -97,9 +98,5 @@ async function LandingContentWrapper({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const resolvedParams = await searchParams
-  const pageParam = resolvedParams?.page
-  const page = typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) || 1 : 1
-
-  return <LandingContent page={page} />
+  return <LandingContent page={getPageParam(await searchParams)} />
 }

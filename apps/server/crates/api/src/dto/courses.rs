@@ -207,7 +207,9 @@ pub struct CourseListQuery {
     /// Words matched like `/search` (word-start prefix, one letter whole,
     /// `-word` excludes) over name, description and about.
     pub q: Option<String>,
-    /// `updated` (default, newest update first) or `name` (A→Z).
+    /// `updated` (default, newest update first), `name` (A→Z) or `progress`
+    /// (the caller's in-progress courses first by `progress_pct`, then
+    /// newest update — UX-274).
     pub sort: Option<String>,
     /// `all` (default) | `drafts` (unpublished) | `published` | `recent`
     /// (updated in the last 7 days) | `attention` — published with no live

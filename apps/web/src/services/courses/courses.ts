@@ -30,14 +30,16 @@ export async function revalidateCourse(course_uuid?: string) {
  * Public catalog page. The v2 listing is keyset (`{items, next_cursor}`) with
  * no total; `page` is emulated by walking `page - 1` cursor hops so the
  * page-numbered callers keep working, and `next_cursor` is the only "is there
- * a next page" signal (UX-133).
+ * a next page" signal (UX-133). `sort: 'progress'` puts the caller's
+ * in-progress courses first, ordered by the server (UX-274).
  * ponytail: drop `page` once callers pass `next_cursor` back as `cursor`.
  */
-export async function getCourses(_next?: unknown, page = 1, limit = 20) {
+export async function getCourses(_next?: unknown, page = 1, limit = 20, sort?: 'progress') {
   let cursor: string | null | undefined
   let result: Page<Course> = emptyPage()
   for (let hop = 1; hop <= page; hop += 1) {
     const params = new URLSearchParams({ limit: String(limit) })
+    if (sort) params.set('sort', sort)
     if (cursor) params.set('cursor', cursor)
     result = await apiJson(`courses?${params}`, serverGet(), value => CoursePage.parse(value))
     cursor = result.next_cursor
