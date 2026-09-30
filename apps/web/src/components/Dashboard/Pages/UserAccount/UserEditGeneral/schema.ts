@@ -14,6 +14,12 @@ export const createValidationSchema = (t: AppTranslator, tLabels: AppTranslator)
       v.trim(),
       v.minLength(1, t('Form.requiredField', { fieldName: tLabels('displayName') })),
     ),
+    organization: v.pipe(
+      v.string(),
+      v.trim(),
+      v.minLength(1, t('Form.requiredField', { fieldName: tLabels('organization') })),
+      v.maxLength(200, t('Form.maxChars', { count: 200 })),
+    ),
     bio: v.optional(v.pipe(v.string(), v.maxLength(400, t('Form.maxChars', { count: 400 })))),
   })
 

@@ -33,6 +33,9 @@ pub struct RegisterRequest {
     pub first_name: String,
     #[garde(length(chars, min = 1, max = 100))]
     pub last_name: String,
+    /// School, university or company the user comes from.
+    #[garde(length(chars, min = 1, max = 200))]
+    pub organization: String,
 }
 
 /// Confirm the emailed verification code.

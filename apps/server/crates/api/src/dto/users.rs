@@ -13,6 +13,9 @@ pub struct UserProfile {
     pub bio: String,
     pub avatar_key: Option<String>,
     pub locale: String,
+    /// School / university / company; `""` = not given yet (the dashboard
+    /// asks for it).
+    pub organization: String,
     /// The profile builder document (`{"sections": []}` when unset).
     #[schema(value_type = ProfileSections)]
     pub profile: serde_json::Value,
@@ -54,6 +57,7 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             bio: p.bio,
             avatar_key: p.avatar_key,
             locale: p.locale,
+            organization: p.organization,
             profile: p.profile,
             theme: p.theme,
             mfa_enabled: false,
@@ -122,6 +126,9 @@ pub struct UpdateProfileRequest {
     /// One of the platform locales.
     #[garde(custom(valid_locale))]
     pub locale: Option<String>,
+    /// School / university / company; a blank value is 422 `required`.
+    #[garde(length(chars, max = 200))]
+    pub organization: Option<String>,
     /// Finalized `avatar` upload to claim as the new avatar; `null`
     /// removes the current one.
     #[garde(skip)]
@@ -148,6 +155,8 @@ pub struct AdminUser {
     pub username: String,
     pub email: String,
     pub display_name: String,
+    /// `""` = not given yet.
+    pub organization: String,
     /// `active` or `disabled`.
     pub status: String,
     pub roles: Vec<String>,
@@ -161,6 +170,7 @@ impl From<ab_domain::identity::rbac_admin::AdminUser> for AdminUser {
             username: u.username,
             email: u.email,
             display_name: u.display_name,
+            organization: u.organization,
             status: u.status,
             roles: u.roles,
             created_at_unix: u.created_at,
@@ -177,7 +187,7 @@ pub struct AdminUserPage {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AdminUserListQuery {
-    /// Substring filter over username/display name/email.
+    /// Substring filter over username/display name/email/organization.
     pub q: Option<String>,
     pub cursor: Option<UserId>,
     /// 1..=100, default 20.

@@ -917,7 +917,9 @@
       "successDescription": "Your account is ready to use — you can sign in right away. An email verification code has been sent to your address.",
       "failed": "Could not create the account. Please try again.",
       "haveAccount": "Already have an account?",
-      "login": "Sign in"
+      "login": "Sign in",
+      "organization": "Organization",
+      "organizationPlaceholder": "University, school, college or company"
     },
     "VerifyEmail": {
       "title": "Verify email - Ashyk Bilim",
@@ -6492,7 +6494,9 @@
         "title": "Account Settings",
         "uploadingAvatar": "Uploading",
         "username": "Username",
-        "usernamePlaceholder": "Enter your username"
+        "usernamePlaceholder": "Enter your username",
+        "organization": "Organization",
+        "organizationPlaceholder": "University, school, college or company"
       },
       "profile": "Profile",
       "profileSection": {
@@ -6868,7 +6872,13 @@
       },
       "usersTitle": "Users"
     },
-    "gamification": "Gamification"
+    "gamification": "Gamification",
+    "OrganizationPrompt": {
+      "title": "Enter your organization",
+      "description": "To continue, tell us where you are from: a university, school, college or company.",
+      "save": "Save",
+      "error": "Could not save the organization"
+    }
   },
   "Errors": {
     "errorLabel": "Error:",

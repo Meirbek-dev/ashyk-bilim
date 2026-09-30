@@ -13475,6 +13475,7 @@
           "username",
           "email",
           "display_name",
+          "organization",
           "status",
           "roles",
           "created_at_unix"
@@ -13492,6 +13493,10 @@
           },
           "id": {
             "$ref": "#/components/schemas/UserId"
+          },
+          "organization": {
+            "type": "string",
+            "description": "`\"\"` = not given yet."
           },
           "roles": {
             "type": "array",
@@ -21995,7 +22000,8 @@
           "email",
           "password",
           "first_name",
-          "last_name"
+          "last_name",
+          "organization"
         ],
         "properties": {
           "email": {
@@ -22006,6 +22012,10 @@
           },
           "last_name": {
             "type": "string"
+          },
+          "organization": {
+            "type": "string",
+            "description": "School, university or company the user comes from."
           },
           "password": {
             "type": "string"
@@ -25165,6 +25175,13 @@
             ],
             "description": "One of the platform locales."
           },
+          "organization": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "School / university / company; a blank value is 422 `required`."
+          },
           "profile": {
             "oneOf": [
               {
@@ -25308,6 +25325,7 @@
           "display_name",
           "bio",
           "locale",
+          "organization",
           "profile",
           "mfa_enabled",
           "has_password",
@@ -25346,6 +25364,10 @@
           "mfa_enabled": {
             "type": "boolean",
             "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer)."
+          },
+          "organization": {
+            "type": "string",
+            "description": "School / university / company; `\"\"` = not given yet (the dashboard\nasks for it)."
           },
           "profile": {
             "$ref": "#/components/schemas/ProfileSections",

@@ -174,6 +174,9 @@ pub struct NewAccount {
     pub password: Option<SecretString>,
     pub first_name: String,
     pub last_name: String,
+    /// School / university / company. Required at self-registration; `""`
+    /// on the admin path (the dashboard asks the user for it).
+    pub organization: String,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
     /// UI language of the signer: prefixes the verification link and seeds
@@ -672,6 +675,7 @@ impl IdentityService {
             &account.email,
             &format!("{first_name} {last_name}"),
             account.language.map(Language::locale),
+            &profile_name(&account.organization).unwrap_or_default(),
         )
         .await;
         let user_id = match inserted {
@@ -722,6 +726,7 @@ impl IdentityService {
         let ip = account.ip.as_deref();
         self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
             .await?;
+        required_name("organization", &account.organization)?;
         // Only registrations that get past the uniqueness check count toward
         // the tight cap (`create_account` re-checks; two index lookups).
         self.require_unique(&account.username, &account.email)

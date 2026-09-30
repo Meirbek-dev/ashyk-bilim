@@ -54,6 +54,7 @@ function UserEditGeneral() {
       username: '',
       display_name: '',
       email: '',
+      organization: '',
       bio: '',
     },
     mode: 'onChange',
@@ -72,6 +73,7 @@ function UserEditGeneral() {
             username: userDataResponse.username || '',
             display_name: userDataResponse.display_name || '',
             email: userDataResponse.email || '',
+            organization: userDataResponse.organization || '',
             bio: userDataResponse.bio || '',
           })
         } catch (fetchError) {
@@ -174,7 +176,11 @@ function UserEditGeneral() {
     const loadingToast = toast.loading(t('updating'))
 
     try {
-      await updateProfile({ display_name: values.display_name, bio: values.bio ?? '' })
+      await updateProfile({
+        display_name: values.display_name,
+        organization: values.organization,
+        bio: values.bio ?? '',
+      })
       setUserData(current => (current ? { ...current, ...values } : null))
 
       toast.dismiss(loadingToast)

@@ -150,6 +150,7 @@ pub async fn register(
                         password: Some(SecretString::from(request.password)),
                         first_name: request.first_name,
                         last_name: request.last_name,
+                        organization: request.organization,
                         ip,
                         user_agent: user_agent(&headers),
                         language,

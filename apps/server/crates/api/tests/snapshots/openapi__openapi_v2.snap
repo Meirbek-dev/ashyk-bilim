@@ -781,6 +781,10 @@ expression: json
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "organization": {
+            "description": "`\"\"` = not given yet.",
+            "type": "string"
+          },
           "roles": {
             "items": {
               "type": "string"
@@ -800,6 +804,7 @@ expression: json
           "username",
           "email",
           "display_name",
+          "organization",
           "status",
           "roles",
           "created_at_unix"
@@ -9298,6 +9303,10 @@ expression: json
           "last_name": {
             "type": "string"
           },
+          "organization": {
+            "description": "School, university or company the user comes from.",
+            "type": "string"
+          },
           "password": {
             "type": "string"
           },
@@ -9311,7 +9320,8 @@ expression: json
           "email",
           "password",
           "first_name",
-          "last_name"
+          "last_name",
+          "organization"
         ],
         "type": "object"
       },
@@ -12463,6 +12473,13 @@ expression: json
               "null"
             ]
           },
+          "organization": {
+            "description": "School / university / company; a blank value is 422 `required`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "profile": {
             "oneOf": [
               {
@@ -12632,6 +12649,10 @@ expression: json
             "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).",
             "type": "boolean"
           },
+          "organization": {
+            "description": "School / university / company; `\"\"` = not given yet (the dashboard\nasks for it).",
+            "type": "string"
+          },
           "profile": {
             "$ref": "#/components/schemas/ProfileSections",
             "description": "The profile builder document (`{\"sections\": []}` when unset)."
@@ -12654,6 +12675,7 @@ expression: json
           "display_name",
           "bio",
           "locale",
+          "organization",
           "profile",
           "mfa_enabled",
           "has_password",

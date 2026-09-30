@@ -139,6 +139,7 @@ interface RegisterActionInput {
   password: string
   firstName: string
   lastName: string
+  organization: string
   /** Active UI locale (`kk-KZ`, …): the verification link opens under it. */
   locale?: string | null
 }
@@ -176,6 +177,7 @@ export async function registerAction(input: RegisterActionInput): Promise<Regist
         password: input.password,
         first_name: input.firstName.trim(),
         last_name: input.lastName.trim(),
+        organization: input.organization.trim(),
       },
       {
         includeAuthCookies: false,

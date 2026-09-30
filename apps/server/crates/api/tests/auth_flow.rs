@@ -428,6 +428,7 @@ fn register_body(username: &str, email: &str) -> serde_json::Value {
         "password": "correct horse battery",
         "first_name": "Aigerim",
         "last_name": "Test",
+        "organization": "КазНУ",
     })
 }
 
@@ -476,6 +477,7 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
     let body = res.json();
     assert_eq!(body["username"], "aigerim");
     assert_eq!(body["display_name"], "Aigerim Test");
+    assert_eq!(body["organization"], "КазНУ");
     assert_eq!(body["mfa_enabled"], false);
     assert_eq!(body["has_password"], true, "UX-198");
     assert!(res.session_cookie().is_none(), "no session is opened");
@@ -875,6 +877,7 @@ async fn registration_body_is_validated(pool: PgPool) {
                 "password": "short",
                 "first_name": "",
                 "last_name": "X",
+                "organization": "",
             }),
         )
         .await;
@@ -885,7 +888,13 @@ async fn registration_body_is_validated(pool: PgPool) {
         .iter()
         .map(|e| e["field"].as_str().unwrap().to_owned())
         .collect();
-    for field in ["username", "email", "password", "first_name"] {
+    for field in [
+        "username",
+        "email",
+        "password",
+        "first_name",
+        "organization",
+    ] {
         assert!(
             fields.contains(&field.to_owned()),
             "{field} flagged: {fields:?}"
@@ -1541,6 +1550,18 @@ async fn blank_names_are_required_field_errors_on_register_and_admin_create(pool
         res.text()
     );
     assert_eq!(res.json()["field_errors"][0]["field"], "first_name");
+    assert_eq!(res.json()["field_errors"][0]["code"], "required");
+
+    let mut body = register_body("blankorg", "blankorg@example.com");
+    body["organization"] = serde_json::json!(" \u{200B} ");
+    let res = app.post_json("/api/v2/auth/register", &body).await;
+    assert_eq!(
+        res.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        res.text()
+    );
+    assert_eq!(res.json()["field_errors"][0]["field"], "organization");
     assert_eq!(res.json()["field_errors"][0]["code"], "required");
 
     let admin_user = app

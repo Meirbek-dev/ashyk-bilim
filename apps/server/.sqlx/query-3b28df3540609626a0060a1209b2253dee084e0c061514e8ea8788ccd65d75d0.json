@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: UserId\", username, email, display_name, bio, avatar_key, locale, profile, theme,\n                  profile_version\n           FROM users WHERE id = $1",
+  "query": "UPDATE users SET\n               display_name = COALESCE($2, display_name),\n               bio = COALESCE($3, bio),\n               locale = COALESCE($4, locale),\n               profile = COALESCE($5, profile),\n               theme = CASE WHEN $6 THEN $7 ELSE theme END,\n               profile_version = profile_version + CASE WHEN $5::jsonb IS NULL THEN 0 ELSE 1 END,\n               organization = COALESCE($9, organization)\n           WHERE id = $1 AND ($8::int4 IS NULL OR profile_version = $8)\n           RETURNING id AS \"id: UserId\", username, email, display_name, bio, avatar_key, locale, organization,\n                     profile, theme, profile_version",
   "describe": {
     "columns": [
       {
@@ -82,6 +82,17 @@
       },
       {
         "ordinal": 7,
+        "name": "organization",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "organization"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "profile",
         "type_info": "Jsonb",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "theme",
         "type_info": "Text",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "profile_version",
         "type_info": "Int4",
         "origin": {
@@ -116,7 +127,15 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Bool",
+        "Text",
+        "Int4",
+        "Text"
       ]
     },
     "nullable": [
@@ -128,9 +147,10 @@
       true,
       false,
       false,
+      false,
       true,
       false
     ]
   },
-  "hash": "e36a295090ddba8303823a8905614fdf4acbbda8b5400e5076c8217b9068aef6"
+  "hash": "3b28df3540609626a0060a1209b2253dee084e0c061514e8ea8788ccd65d75d0"
 }

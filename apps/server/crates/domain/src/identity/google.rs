@@ -284,6 +284,7 @@ impl GoogleAuthService {
                 &identity.email,
                 &display_name,
                 None,
+                "",
             )
             .await?
             {

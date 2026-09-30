@@ -23,6 +23,9 @@ export const UserProfile = zod.object({
   mfa_enabled: zod
     .boolean()
     .describe('TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).'),
+  organization: zod
+    .string()
+    .describe('School / university / company; `""` = not given yet (the dashboard\nasks for it).'),
   profile: zod
     .object({
       sections: zod.array(

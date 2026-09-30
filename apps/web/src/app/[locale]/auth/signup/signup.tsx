@@ -17,7 +17,7 @@ import { registerAction } from '@/app/actions/auth'
 import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 
 const USERNAME_RE = /^[A-Za-z0-9._-]{3,48}$/u
-const FIELDS = ['username', 'email', 'password', 'confirmPassword', 'firstName', 'lastName'] as const
+const FIELDS = ['username', 'email', 'password', 'confirmPassword', 'firstName', 'lastName', 'organization'] as const
 type FieldName = (typeof FIELDS)[number]
 
 interface SignupState {
@@ -35,6 +35,7 @@ const EMPTY_VALUES: SignupState['values'] = {
   confirmPassword: '',
   firstName: '',
   lastName: '',
+  organization: '',
 }
 const INITIAL_STATE: SignupState = { values: EMPTY_VALUES, error: null, fieldErrors: {}, version: 0 }
 
@@ -45,6 +46,7 @@ const WIRE_TO_FIELD: Record<string, FieldName> = {
   password: 'password',
   first_name: 'firstName',
   last_name: 'lastName',
+  organization: 'organization',
 }
 
 /**
@@ -63,6 +65,7 @@ function SignupClient() {
     v.object({
       firstName: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(100)),
       lastName: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(100)),
+      organization: v.pipe(v.string(), v.trim(), v.minLength(1, validationT('required')), v.maxLength(200)),
       username: v.pipe(
         v.string(),
         v.trim(),
@@ -184,6 +187,17 @@ function SignupClient() {
             />,
           )}
         </div>
+        {field(
+          'organization',
+          t('organization'),
+          <Input
+            name="organization"
+            defaultValue={state.values.organization}
+            autoComplete="organization"
+            placeholder={t('organizationPlaceholder')}
+            className="w-full"
+          />,
+        )}
         {field(
           'username',
           t('username'),

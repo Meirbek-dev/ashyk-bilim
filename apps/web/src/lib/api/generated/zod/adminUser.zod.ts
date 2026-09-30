@@ -13,6 +13,7 @@ export const AdminUser = zod
     display_name: zod.string(),
     email: zod.string(),
     id: zod.uuid(),
+    organization: zod.string().describe('`""` = not given yet.'),
     roles: zod.array(zod.string()),
     status: zod.string().describe('`active` or `disabled`.'),
     username: zod.string(),
