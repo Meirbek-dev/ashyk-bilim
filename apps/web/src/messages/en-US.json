@@ -3806,7 +3806,7 @@
         }
       },
       "Review": {
-        "description": "This page centralizes the last-mile checks that used to be scattered across tabs. Use it to confirm content quality, visibility, and launch state without hunting through the editor.",
+        "description": "Fix the blockers below, check the course as a learner, then publish.",
         "errors": {
           "accessUpdate": "Unable to update course access.",
           "visibilityUpdate": "Failed to update course visibility."
@@ -3833,10 +3833,10 @@
         "publishingNotes": "Publishing notes",
         "readinessChecklist": "Readiness checklist",
         "readyTitle": "This course is structurally ready.",
-        "publishedTitle": "This course is published.",
+        "publishedTitle": "This course is published",
         "openLearnerPreview": "Open learner preview",
-        "serverReadinessTitle": "Server readiness",
-        "serverReadinessDescription": "These checks are re-run by the server when you publish.",
+        "serverReadinessTitle": "Pre-publish checks",
+        "serverReadinessDescription": "Blockers stop publishing; warnings do not.",
         "readinessUnavailable": "Readiness could not be checked. Publishing is disabled until the check succeeds.",
         "loadingReadiness": "Checking readiness…",
         "previewTitle": "Preview is inspection, not verification",
@@ -3899,7 +3899,7 @@
         "formLabel": "Create course",
         "quickCreateTitleHelp": "Create a private draft now. Description, access, media, certificate, and publishing stay in Course Studio.",
         "header": {
-          "description": "Set the title, starting structure, and where to go after creation.",
+          "description": "The course starts as a private draft — refine and publish it later.",
           "title": "Create Course"
         },
         "review": {

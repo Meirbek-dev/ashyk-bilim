@@ -182,4 +182,3 @@ export function CourseChoiceCard({
   )
 }
 
-export const courseWorkflowSummaryCardClass = `${courseWorkflowCardClass} p-5`

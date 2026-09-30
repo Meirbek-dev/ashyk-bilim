@@ -110,12 +110,6 @@ function EditCourseAccess() {
         onSave={handleAccessSave}
         onDiscard={discard}
       >
-        <CourseEditorNotice
-          icon={Globe}
-          title={t('accessPolicyStagedTitle')}
-          description={t('accessPolicyStagedDescription')}
-        />
-
         {draftPublic === true && readinessQuery.data ? (
           <CourseReadinessSummary readiness={readinessQuery.data} />
         ) : null}

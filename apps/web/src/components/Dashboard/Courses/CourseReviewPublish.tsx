@@ -10,7 +10,6 @@ import {
   CourseStatusBadge,
   courseReadinessQueryOptions,
   courseWorkflowCardClass,
-  courseWorkflowSummaryCardClass,
   useReadinessIssueMessage,
 } from './courseWorkflowUi'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
@@ -49,8 +48,6 @@ export default function CourseReviewPublish({
   const [privateConfirmOpen, setPrivateConfirmOpen] = useState(false)
   const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
   const readiness = readinessQuery.data
-  const blockers = readiness?.issues.filter(issue => issue.severity === 'blocker') ?? []
-  const warnings = readiness?.issues.filter(issue => issue.severity === 'warning') ?? []
   const isPublic = course.courseStructure.public
   // UX-206 (as UX-202/203): the visibility button is disabled while the request
   // runs, so focus falls to <body> after publish / the make-private confirm —
@@ -129,6 +126,7 @@ export default function CourseReviewPublish({
             {capabilities.canManageAccess ? (
               // UX-200: going private cuts off learners outside the linked groups — confirm first.
               <Button
+                variant={isPublic ? 'outline' : 'default'}
                 onClick={isPublic ? () => setPrivateConfirmOpen(true) : toggleVisibility}
                 ref={visibilityButtonRef}
                 disabled={isBusy || publishDisabled}
@@ -182,24 +180,6 @@ export default function CourseReviewPublish({
         ) : null}
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Alert>
-          <Eye aria-hidden />
-          <AlertTitle>{t('previewTitle')}</AlertTitle>
-          <AlertDescription>{t('previewHonesty')}</AlertDescription>
-        </Alert>
-
-        <aside className={courseWorkflowSummaryCardClass}>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold">{t('publishImpact')}</h2>
-            <CourseStatusBadge status={isPublic ? 'live' : 'private'} />
-          </div>
-          <dl className="mt-4 grid gap-3 text-sm">
-            <ImpactRow label={t('openBlockers')} value={String(blockers.length)} />
-            <ImpactRow label={t('warnings')} value={String(warnings.length)} />
-          </dl>
-        </aside>
-      </div>
     </div>
   )
 }
@@ -237,15 +217,6 @@ function ReadinessIssues({ readiness }: { readiness: CourseReadiness }) {
           </AlertDescription>
         </Alert>
       ))}
-    </div>
-  )
-}
-
-function ImpactRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
     </div>
   )
 }

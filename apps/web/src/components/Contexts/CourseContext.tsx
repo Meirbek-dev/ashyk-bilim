@@ -152,7 +152,8 @@ export function CourseProvider({
     ],
   )
 
-  if (isLoading || !isMounted) return <PageLoading />
+  // Server-seeded pages render straight away; only a cold client fetch shows the spinner.
+  if (!courseStructureData && (isLoading || !isMounted)) return <PageLoading />
   if (error) return <CourseLoadError />
 
   if (contextValue) {

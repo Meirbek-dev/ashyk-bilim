@@ -156,12 +156,6 @@ function EditCourseContributors() {
         onSave={handleContributorAccessSave}
         onDiscard={discard}
       >
-        <CourseEditorNotice
-          icon={UserPen}
-          title={t('contributorPolicyStagedTitle')}
-          description={t('contributorPolicyStagedDescription')}
-        />
-
         <RadioGroup
           value={isOpenToContributors === true ? 'open' : isOpenToContributors === false ? 'closed' : undefined}
           onValueChange={val => setIsOpenToContributors(val === 'open')}
