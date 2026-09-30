@@ -148,7 +148,10 @@ function RuntimeCTA({
         title={disabledReason}
       >
         {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
+        {/* A disabled button says why: «Дочитайте до конца», not a dead «Отметить». */}
+        <span className="min-w-0 truncate">
+          {waitingForReadCompletion ? t('readToEnd') : getPrimaryActionText(action.id, t)}
+        </span>
       </Button>
     )
   }

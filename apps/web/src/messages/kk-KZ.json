@@ -835,7 +835,8 @@
     "lockedReasonLocked": "Бұл материалға қатынасу үшін алдыңғы міндетті тапсырмаларды аяқтаңыз.",
     "attemptsUsed": "{max} әрекеттің {used} пайдаланылды",
     "attemptsUnlimited": "Өлшеусіз әрекет",
-    "dueDate": "Тапсыру мерзімі"
+    "dueDate": "Тапсыру мерзімі",
+    "readToEnd": "Соңына дейін оқыңыз"
   },
   "AdminUtils": {
     "priority": {

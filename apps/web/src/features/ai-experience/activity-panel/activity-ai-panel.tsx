@@ -105,7 +105,6 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
               <BotIcon data-icon="inline-start" aria-hidden="true" />
               <span className="truncate">{t('title')}</span>
             </h2>
-            <p className="text-muted-foreground text-sm leading-normal">{t('contextDescription')}</p>
           </div>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={t('closePanel')} onClick={closePanel}>
             <PanelRightCloseIcon aria-hidden="true" />
@@ -161,13 +160,16 @@ function PanelBody({
             <p className="text-muted-foreground text-xs">{t('sourceCount', { count: context?.source_count ?? 0 })}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
-            <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {t(`visibility.${visibility}`)}
-          </Badge>
-          <span className="text-muted-foreground text-xs">{t('approvalBoundary')}</span>
-        </div>
+        {/* Learners need the context line, not the staff-facing visibility/approval notes. */}
+        {visibility === 'student' ? null : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">
+              <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
+              {t(`visibility.${visibility}`)}
+            </Badge>
+            <span className="text-muted-foreground text-xs">{t('approvalBoundary')}</span>
+          </div>
+        )}
         <Separator />
         <ScrollArea className="max-w-full">
           <ToggleGroup
@@ -189,7 +191,7 @@ function PanelBody({
         </ScrollArea>
       </div>
       {layout === 'chat' ? (
-        <div className="flex min-h-0 flex-1 flex-col p-4">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">{children}</div>
       ) : (
         <ScrollArea className="min-h-0 flex-1 overscroll-contain">
           <div className={cn('flex min-h-full flex-col gap-4 p-4', layout === 'wide' ? 'max-w-none' : 'max-w-[30rem]')}>

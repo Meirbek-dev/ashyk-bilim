@@ -85,10 +85,10 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   }
 
   return (
-    <section className="@container/qa-panel grid h-full min-h-0 gap-4 @[28rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem]">
+    <section className="@container/qa-panel grid min-h-full shrink-0 gap-4 @min-[40rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem] @min-[40rem]/qa-panel:grid-rows-1">
       <div className="flex min-h-0 flex-col gap-4">
         <AICommandList surface="course" disabled={chat.pending} onCommand={command => submitQuestion(command.prompt)} />
-        <ScrollArea className="bg-background min-h-0 flex-1 rounded-lg border p-3 [content-visibility:auto]">
+        <ScrollArea className="bg-background min-h-40 flex-1 rounded-lg border p-3 [content-visibility:auto]">
           {threadQuery.isError ? (
             <InlineError description={threadQuery.error.message} error={threadQuery.error} />
           ) : messages.length === 0 ? (
@@ -124,7 +124,10 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
             </Button>
           </div>
         ) : null}
-        <QAInput pending={chat.pending} onStop={chat.stop} onSubmit={submitQuestion} />
+        {/* The question box stays in reach while the panel scrolls. */}
+        <div className="bg-background sticky bottom-0 z-10 pt-1">
+          <QAInput pending={chat.pending} onStop={chat.stop} onSubmit={submitQuestion} />
+        </div>
       </div>
       <QAThreadList
         error={threadsQuery.error}
@@ -243,7 +246,7 @@ function QAThreadList({
   )
 
   return (
-    <aside className="flex min-h-0 flex-col gap-3 rounded-lg border p-3">
+    <aside className="flex max-h-44 min-h-0 flex-col gap-3 rounded-lg border p-3 @min-[40rem]/qa-panel:max-h-none">
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex min-w-0 items-center gap-2 text-sm font-medium">
           <HistoryIcon data-icon="inline-start" aria-hidden="true" />
