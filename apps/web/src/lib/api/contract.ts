@@ -54,10 +54,3 @@ export function unixToIso(seconds: number | null | undefined): string | null {
   const date = fromUnix(seconds)
   return date ? date.toISOString() : null
 }
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu
-
-/** True for a v2 entity id (UUID string). */
-export function isEntityId(value: unknown): value is string {
-  return typeof value === 'string' && UUID_RE.test(value)
-}

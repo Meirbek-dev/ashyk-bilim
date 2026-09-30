@@ -55,21 +55,6 @@ export function useLatestRemediation(submissionId: string) {
   return useQuery(latestRemediationQueryOptions(submissionId))
 }
 
-export function useGenerateRemediation(submissionId: string) {
-  return useMutation({
-    mutationFn: (payload: RemediationRequest) =>
-      apiJson(
-        `ai/remediation/${submissionId}/generate`,
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-          headers: { 'content-type': 'application/json' },
-        },
-        value => RemediationSessionView.parse(value),
-      ),
-  })
-}
-
 /** `202 RunStatus`; the run controller streams the run and reads the lecture from its final artifact. */
 export function useQueueRemediation(submissionId: string) {
   return useMutation({

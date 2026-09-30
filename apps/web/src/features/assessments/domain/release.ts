@@ -36,12 +36,3 @@ export function getReleaseState(status: SubmissionStatus): ReleaseState {
     }
   }
 }
-
-export function isVisibleToStudent(status: SubmissionStatus): boolean {
-  const state = getReleaseState(status)
-  return state === 'VISIBLE' || state === 'RETURNED_FOR_REVISION'
-}
-
-export function hasStudentFeedback(status: SubmissionStatus): boolean {
-  return isVisibleToStudent(status)
-}

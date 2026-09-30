@@ -1,5 +1,4 @@
 import type { UserGamificationProfile } from './profile'
-import * as v from 'valibot'
 
 /**
  * XP Transactions and Award Types
@@ -49,21 +48,3 @@ export interface XPAwardResponse {
   triggered_level_up: boolean
   previous_level: number
 }
-
-const XPTransactionSchema = v.object({
-  id: v.string(),
-  user_id: v.string(),
-  amount: v.number(),
-  source: v.string(),
-  source_id: v.nullable(v.string()),
-  triggered_level_up: v.boolean(),
-  previous_level: v.number(),
-  created_at: v.string(),
-})
-
-export const XPAwardResponseSchema = v.object({
-  transaction: XPTransactionSchema,
-  profile: v.any(), // Import would create circular dependency; validate separately
-  triggered_level_up: v.boolean(),
-  previous_level: v.number(),
-})

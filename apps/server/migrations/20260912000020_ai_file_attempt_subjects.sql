@@ -1,5 +1,5 @@
 -- AI analysis and remediation accept file-submission attempts (DECISIONS
--- 2026-09-12, Q-2026-09-12-2 #7): a record is about exactly one subject -
+-- 2026-09-12, Q-2026-09-12-2 #7): a record is about exactly one subject —
 -- an assessment submission or a file-submission attempt.
 
 ALTER TABLE ai_submission_analyses

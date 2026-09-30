@@ -157,29 +157,6 @@ export function getCourseReadinessSummary(course: AppCourse, editorData?: Course
   }
 }
 
-export function getCourseManagementBadges(
-  course: AppCourse,
-  editorData?: CourseEditorBundle | null,
-): CourseManagementBadgeId[] {
-  const summary = getCourseReadinessSummary(course, editorData)
-  const stats = getCourseContentStats(course)
-  const badges: CourseManagementBadgeId[] = []
-
-  badges.push(course?.public ? 'public' : 'private')
-
-  if (summary.readyToPublish) {
-    badges.push('readyToPublish')
-  } else if (summary.issues.length > 0) {
-    badges.push('needsAttention')
-  }
-
-  if (stats.activities === 0) {
-    badges.push('noActivitiesYet')
-  }
-
-  return badges
-}
-
 export function courseNeedsAttention(course: AppCourse): boolean {
   const stats = getCourseContentStats(course)
   return !course.thumbnail_image || !course.description?.trim() || stats.activities === 0

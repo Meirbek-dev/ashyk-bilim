@@ -35,32 +35,6 @@ export const courseTag = {
   publicList: () => 'courses:platform:public',
 } as const
 
-interface CourseListTagOptions {
-  includeEditable?: boolean
-  includePublic?: boolean
-}
-
-export function getCourseListTags(options: CourseListTagOptions = {}): string[] {
-  const { includeEditable = true, includePublic = true } = options
-  const scopedTags: string[] = []
-
-  if (includeEditable) {
-    scopedTags.push(courseTag.editableList())
-  }
-
-  if (includePublic) {
-    scopedTags.push(courseTag.publicList())
-  }
-
-  return scopedTags
-}
-
-export async function revalidateGamification() {
-  // Dynamically import to keep this file usable on both server and client
-  const { revalidateTag } = await import('next/cache')
-  for (const tag of gamificationTags()) revalidateTag(tag, 'max')
-}
-
 export async function revalidateTags(...tagList: string[]) {
   const { revalidateTag } = await import('next/cache')
   for (const tag of tagList) revalidateTag(tag, 'max')

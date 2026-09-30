@@ -1,19 +1,21 @@
-name: App Build
+name: Web Image
 on:
   push:
-    branches:
-      - openu
+    branches: [main]
     paths:
-      - '**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/docker-build.yaml'
   pull_request:
     paths:
-      - '**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'bun.lock'
 jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build API Docker image
-        run: docker build -f apps/api/Dockerfile -t ashyq-bilim-api apps/api
       - name: Build Web Docker image
         run: docker build -f apps/web/Dockerfile -t ashyq-bilim-web .

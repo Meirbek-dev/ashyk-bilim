@@ -1,3 +1,3 @@
 'use client'
 
-export { useCreateExamWithActivity, useExamConfig } from '@/features/assessments/registry/exam/hooks'
+export { useCreateExamWithActivity } from '@/features/assessments/registry/exam/hooks'

@@ -204,8 +204,6 @@ const resolveServerConfig = (): ResolutionResult<ServerConfig> => {
 }
 
 let publicConfigCache: PublicConfig | null = null
-let serverConfigCache: ServerConfig | null = null
-let appConfigCache: AppConfig | null = null
 
 export const getPublicConfigResult = () => resolvePublicConfig()
 
@@ -249,46 +247,6 @@ export const getPublicConfig = (): PublicConfig => {
 
   publicConfigCache = result.config
   return publicConfigCache
-}
-
-export const getServerConfig = (): ServerConfig => {
-  if (serverConfigCache) return serverConfigCache
-
-  const result = resolveServerConfig()
-  if (!result.success) {
-    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'Server configuration is invalid', {
-      details: configIssueDetails(result.errors),
-      path: 'config/server',
-    })
-  }
-
-  serverConfigCache = result.config
-  return serverConfigCache
-}
-
-export const getAppConfig = (): AppConfig => {
-  if (appConfigCache) return appConfigCache
-
-  const result = getAppConfigResult()
-  if (!result.success) {
-    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'Application configuration is invalid', {
-      details: configIssueDetails(result.errors),
-      path: 'config/app',
-    })
-  }
-
-  appConfigCache = result.config
-  return appConfigCache
-}
-
-export const getServerEnv = () => {
-  const serverConfig = getServerConfig()
-
-  return {
-    INTERNAL_API_URL: serverConfig.internalApiUrl,
-    APP_URL: serverConfig.appUrl,
-    COOKIE_DOMAIN: serverConfig.cookieDomain,
-  }
 }
 
 export const IS_PRODUCTION = process.env.NODE_ENV === 'production'

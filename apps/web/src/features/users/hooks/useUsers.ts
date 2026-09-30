@@ -8,7 +8,6 @@ import {
   userByIdQueryOptions,
   userByUsernameQueryOptions,
   userCoursesQueryOptions,
-  userGroupUsersQueryOptions,
   userGroupsQueryOptions,
 } from '../queries/users.query'
 
@@ -16,13 +15,6 @@ function userGroupsHookOptions(enabled = true) {
   return queryOptions({
     ...userGroupsQueryOptions(),
     enabled,
-  })
-}
-
-function userGroupUsersHookOptions(userGroupId: string | null | undefined) {
-  return queryOptions({
-    ...userGroupUsersQueryOptions(userGroupId ?? ''),
-    enabled: Boolean(userGroupId),
   })
 }
 
@@ -55,10 +47,6 @@ function userCoursesHookOptions(username: string | null | undefined, enabled = t
 
 export function useUserGroups(options?: { enabled?: boolean }) {
   return useQuery(userGroupsHookOptions(options?.enabled ?? true))
-}
-
-export function useUserGroupUsers(userGroupId: string | null | undefined) {
-  return useQuery(userGroupUsersHookOptions(userGroupId))
 }
 
 export function useAllMembers(options?: { enabled?: boolean }) {

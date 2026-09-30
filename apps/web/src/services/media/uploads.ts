@@ -76,11 +76,6 @@ export async function finalizeUpload(uploadId: string): Promise<FinalizedUploadT
   )
 }
 
-/** Presigned download for a private upload (302 → short-lived URL). */
-export function getUploadDownloadPath(uploadId: string): string {
-  return `uploads/${encodeURIComponent(uploadId)}/download`
-}
-
 async function putWithProgress(url: string, file: Blob, options: UploadFileOptions): Promise<void> {
   const contentType = file.type || 'application/octet-stream'
 

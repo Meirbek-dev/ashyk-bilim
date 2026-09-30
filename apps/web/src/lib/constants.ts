@@ -27,11 +27,7 @@ export const ACCEPTED_FILE_FORMATS = {
   txt: 'text/plain',
 } as const
 
-export const SESSION_CACHE_TTL_MS = 1 * 60 * 1000
-export const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000
-export const SESSION_CACHE_MAX_SIZE = 1000
 export const APP_NAME = 'Ashyk Bilim'
-export const APP_LABEL = 'ashyq-bilim'
 export const APP_THUMBNAIL_IMAGE_PATH = '/app_logo_full.svg'
 export const NAVBAR_HEIGHT = 60
 

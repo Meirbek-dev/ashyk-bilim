@@ -1,7 +1,6 @@
 export * from './api/use-ask-question'
 export * from './api/use-qa-threads'
 export * from './api/use-delete-thread'
-export * from './api/use-qa-stream'
 export * from './components/qa-input'
 export * from './components/qa-message'
 export * from './components/qa-panel'

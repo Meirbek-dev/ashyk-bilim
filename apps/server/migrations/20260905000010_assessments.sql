@@ -2,7 +2,7 @@
 --
 -- Redesign vs legacy (docs/rewrite/DECISIONS.md, 2026-09-05):
 --   * `assessment` + lazily-created `assessment_policy` (nullable back-link,
---     created inside GET handlers) collapse into ONE row - a policy always
+--     created inside GET handlers) collapse into ONE row — a policy always
 --     exists, so no lazy writes on read paths.
 --   * Every scalar the legacy stuffed into settings_json / anti_cheat_json /
 --     late_policy_json is a real column with a CHECK, one canonical spelling.
@@ -132,13 +132,13 @@ CREATE TABLE assessment_items (
     id                uuid PRIMARY KEY DEFAULT uuidv7(),
     legacy_uuid       text UNIQUE,
     assessment_id     uuid NOT NULL REFERENCES assessments (id) ON DELETE CASCADE,
-    -- 1-based, contiguous per assessment (renumbered on every reorder/delete -
+    -- 1-based, contiguous per assessment (renumbered on every reorder/delete —
     -- legacy wrote client integers verbatim).
     position          integer NOT NULL DEFAULT 1,
     kind              text NOT NULL
                       CHECK (kind IN ('choice', 'open_text', 'form', 'code', 'matching')),
     title             text NOT NULL DEFAULT '',
-    -- {schema_version, kind, ...} - the internally-tagged ItemBody enum on
+    -- {schema_version, kind, ...} — the internally-tagged ItemBody enum on
     -- the Rust side; `kind` here mirrors body.kind and is what SQL filters on.
     body              jsonb NOT NULL DEFAULT '{}'::jsonb,
     max_score         double precision NOT NULL DEFAULT 0 CHECK (max_score >= 0),

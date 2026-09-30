@@ -1,4 +1,4 @@
-# Gauntlet loop brief — Ashyq Bilim v2 (Rust rewrite)
+# Gauntlet loop brief — Ashyq Bilim v2
 
 ## Mission
 
@@ -9,7 +9,7 @@ role, every locale. Find and fix all bugs. Audit and fix every weird UX moment. 
 locally, test it in a real browser, prove each fix from a fresh session.
 
 You are autonomous. Owner is solo, busy, not watching. No "shall I", no review requests,
-no PRs — direct commits to `rewrite`. Machine gates replace human review. Owner-only
+no PRs — direct commits to `main`. Machine gates replace human review. Owner-only
 decisions go to `QUESTIONS.md` at the repo root and you keep going on everything else.
 
 ## Budget
@@ -28,7 +28,7 @@ decisions go to `QUESTIONS.md` at the repo root and you keep going on everything
 
 ## Step 0 — resume, then stand up the stack
 
-1. `git log -3 --oneline`, then read `docs/rewrite/GAUNTLET.md` **Setup facts** and the
+1. `git log -3 --oneline`, then read `docs/GAUNTLET.md` **Setup facts** and the
    top of **Pass log**. That is the resume point. Every quirk of this machine is already
    recorded there and in `apps/server/AGENTS.md` — do not rediscover them.
 2. Every shell: `$env:CARGO_TARGET_DIR='E:\dev-caches\cargo-target\ashyq-server'`.
@@ -39,8 +39,7 @@ decisions go to `QUESTIONS.md` at the repo root and you keep going on everything
    password `GauntletDev!2026`) via Zitadel + `users`/`user_roles` rows or the v2
    admin route.
 4. Processes: `ashyq serve` :8000 **and** `ashyq worker` (same env from
-   `scratchpad/abenv.sh`), web via `preview_start {name:"web"}` :3000. Never the `api`
-   launch entry (legacy Python).
+   `scratchpad/abenv.sh`), web via `preview_start {name:"web"}` :3000.
 5. Prove it: `GET /api/v2/health` → ok; log in as each role once in the browser.
    Record any new setup fact in the ledger before the first pass.
 
@@ -69,7 +68,7 @@ Write the pass plan as one line in the pass log (`in progress`) and commit.
 Brief template — fill the brackets, nothing else:
 
 ```
-Role: critic. Rows: [F..]. Account: [role]. Read only docs/rewrite/GAUNTLET.md rows
+Role: critic. Rows: [F..]. Account: [role]. Read only docs/GAUNTLET.md rows
 [ids] + Setup facts. Do not edit source. Report ≤40 lines in the table
 | row | step | expected | actual | evidence | severity |.
 Evidence = status code + server log line, or screenshot name, or DOM text.
@@ -109,7 +108,7 @@ with symptom, root-cause hypothesis, file:line. Decide the lane:
 
 - **fix** (default),
 - **DECISIONS** when the legacy semantics and the v2 contract disagree — record the
-  choice in `docs/rewrite/DECISIONS.md` then fix,
+  choice in `docs/DECISIONS.md` then fix,
 - **QUESTIONS** only when the owner must choose money, data, or product scope — append
   to `QUESTIONS.md`, mark the row `blocked`, keep going,
 - **blocked/environment** (F14 Judge0 class) — setup fact, not a bug.
@@ -120,7 +119,7 @@ bug go to the same builder.
 ### 4. Builder (subagent, one batch each)
 
 ```
-Role: builder. Fix [BUG-/UX- ids] listed in docs/rewrite/GAUNTLET.md. Files: [paths].
+Role: builder. Fix [BUG-/UX- ids] listed in docs/GAUNTLET.md. Files: [paths].
 Rules: root cause, not symptom — grep every caller before editing; server bugs are fixed
 in the server, never masked in the client; no legacy shims; every user-facing string in
 all three catalogs (ru, kk, en); problem+json codes reach the client via apiJson, not
@@ -156,7 +155,7 @@ Then `just openapi` (server stopped) if routes changed, commit, push, and watch 
 
 Ledger: feature row verdicts (`pass N (role): one-line evidence`), bug rows with commit
 shas, UX rows, new setup facts, pass-log line (features probed / found / fixed / gate
-numbers / commit). One line in `EXECUTION-PLAN.md` session log. Commit
+numbers / commit). Commit
 `docs(gauntlet): pass N — …`. Update the pass plan for N+1 and loop.
 
 ## Stop condition
@@ -168,7 +167,7 @@ stays `blocked` and why, open QUESTIONS, CI run id. That is the last message.
 
 ## Never
 
-- Edit `apps/api` (frozen reference). Commit `temp-restore/`, `.env*`, keys, PATs.
+- Commit `temp-restore/`, `.env*`, keys, PATs.
 - Run full nextest or two Playwright suites concurrently with builders (page-file and
   `e2e/.auth` hazards). Run `vp check` repo-wide (3 286 pre-existing formatting hits).
 - Mark a row `pass` from a builder report, from `javascript_tool`, or from the browser

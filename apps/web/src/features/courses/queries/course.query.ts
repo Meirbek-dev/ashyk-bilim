@@ -5,7 +5,6 @@ import { apiJson, apiResult } from '@/lib/api-client'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import {
-  AssessmentDetail,
   CoursePage,
   CourseUpdate,
   IssuedCertificate,
@@ -29,20 +28,6 @@ import { normalizeLeaderboard } from '@/services/gamification/normalize'
 interface CourseListResponse<TCourse> {
   courses: TCourse[]
   next_cursor?: string | null
-}
-
-export function courseQueryOptions<TCourse = unknown>(courseUuid: string) {
-  return queryOptions({
-    queryKey: courseKeys.detail(courseUuid),
-    queryFn: () => apiJson<TCourse>(courseEndpoints.detail(courseUuid)),
-  })
-}
-
-export function courseMetadataQueryOptions<TCourse = unknown>(courseUuid: string) {
-  return queryOptions({
-    queryKey: queryKeys.courses.metadata(courseUuid),
-    queryFn: () => apiJson<TCourse>(courseEndpoints.detail(courseUuid)),
-  })
 }
 
 /** Course + curriculum merged into the `AppCourse` shape (see `getCourseMetadata`). */
@@ -69,13 +54,6 @@ export function learnerCourseStructureQueryOptions<TCourseStructure = unknown>(c
     refetchOnMount: 'always',
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
-  })
-}
-
-export function courseRightsQueryOptions<TRights = unknown>(courseUuid: string) {
-  return queryOptions({
-    queryKey: courseKeys.rights(courseUuid),
-    queryFn: () => apiJson<TRights>(courseEndpoints.rights(courseUuid)),
   })
 }
 
@@ -174,28 +152,5 @@ export function certificateDetailQueryOptions(verifyCode: string) {
       const result = await apiResult(`certificates/${verifyCode}`, {}, value => VerifiedCertificate.parse(value))
       return { ...result, data: toAppCertification(result.data) }
     },
-  })
-}
-
-export function activityAssessmentUuidQueryOptions(activityUuid: string) {
-  return queryOptions({
-    queryKey: queryKeys.assessments.activityAssessmentId(activityUuid),
-    queryFn: async () => {
-      try {
-        const data = await apiJson(`activities/${stripEntityPrefix(activityUuid)}/assessment`, {}, value =>
-          AssessmentDetail.parse(value),
-        )
-        return data.id
-      } catch {
-        return null
-      }
-    },
-  })
-}
-
-export function platformCoursesQueryOptions() {
-  return queryOptions({
-    queryKey: queryKeys.platform.courses(),
-    queryFn: () => fetchCoursePage<AppCourse>({ limit: 20 }),
   })
 }

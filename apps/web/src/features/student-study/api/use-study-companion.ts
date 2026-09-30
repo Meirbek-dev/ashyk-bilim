@@ -15,17 +15,6 @@ export interface StudyCompanionAnswer {
   follow_up_suggestions?: string[]
 }
 
-export function useStudyCompanion(courseUuid: string) {
-  return useMutation({
-    mutationFn: (payload: { question: string; mode: StudyCompanionMode; language: string }) =>
-      apiJson<StudyCompanionAnswer>(`ai/study/${courseUuid}/ask`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'content-type': 'application/json' },
-      }),
-  })
-}
-
 export function useQueueStudyCompanion(courseUuid: string) {
   return useMutation({
     mutationFn: (payload: { question: string; mode: StudyCompanionMode; language: string }) =>

@@ -47,27 +47,6 @@ export function useLatestCourseAnalysis(courseId: string) {
   return useQuery(latestCourseAnalysisQueryOptions(courseId))
 }
 
-export function useRunCourseAnalysis(courseId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (language: string) =>
-      apiJson(
-        `ai/course-analysis/${courseId}/analyze`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ language }),
-          headers: { 'content-type': 'application/json' },
-          timeoutMs: 120_000,
-        },
-        value => CourseAnalysisView.parse(value),
-      ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: latestCourseAnalysisQueryOptions(courseId).queryKey,
-      }),
-  })
-}
-
 /** `202 RunStatus`; the run controller polls/streams the run and invalidates `latest`. */
 export function useQueueCourseAnalysis(courseId: string) {
   return useMutation({

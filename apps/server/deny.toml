@@ -23,14 +23,14 @@ allow = [
   "Unicode-3.0",
   "OpenSSL",
   "CDLA-Permissive-2.0",
-  # Boost Software License (permissive, OSI-approved) - xxhash-rust via redis.
+  # Boost Software License (permissive, OSI-approved) — xxhash-rust via redis.
   "BSL-1.0",
 ]
 
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
-# Workspace path dependencies carry no version - that's fine, they're ours.
+# Workspace path dependencies carry no version — that's fine, they're ours.
 allow-wildcard-paths = true
 
 [sources]

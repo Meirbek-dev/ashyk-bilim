@@ -20,16 +20,6 @@ export interface OpenTextAnswer {
   text?: string
 }
 
-export function normalizeOpenText(raw: Record<string, unknown> | null | undefined): OpenTextValue {
-  const body = raw?.body && typeof raw.body === 'object' ? (raw.body as Record<string, unknown>) : {}
-  return {
-    kind: 'OPEN_TEXT',
-    body: {
-      prompt: typeof body.prompt === 'string' ? body.prompt : '',
-    },
-  }
-}
-
 export function OpenTextAuthor({ value, disabled, onChange }: ItemAuthorProps<OpenTextValue>) {
   const t = useTranslations('Features.Assessments.Items.OpenText')
 

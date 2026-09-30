@@ -2,7 +2,7 @@ import type { GradedItem } from './types'
 
 import { parseScoreInput } from '@/features/assessments/domain/score'
 
-export { formatPercent as formatPercentScore, parseScoreInput } from '@/features/assessments/domain/score'
+export { parseScoreInput } from '@/features/assessments/domain/score'
 
 /** A non-empty score the grader typed that is not a number within 0..=max — shown as a field error. */
 export function isScoreInputInvalid(value: string, maxScore = 100): boolean {

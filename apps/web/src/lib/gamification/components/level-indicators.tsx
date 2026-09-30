@@ -15,12 +15,10 @@ import type { UserGamificationProfile } from '@/types/gamification'
 import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { motion, useAnimationControls } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { Award, Star } from 'lucide-react'
 import { getLevelInfo } from '../levels'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_PARTICLE_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899']
-const DEFAULT_MILESTONES = [5, 10, 25, 50]
 
 // ============================================================================
 // Compact Level Progress
@@ -257,126 +255,5 @@ export function GlowingLevelBadge({ level, size = 'md', animated = true, classNa
         <span className={cn('font-semibold tabular-nums', levelInfo.color)}>{level}</span>
       </div>
     </motion.div>
-  )
-}
-
-// ============================================================================
-// Compact XP Gain Animation
-// ============================================================================
-
-interface XPGainAnimationProps {
-  amount: number
-  trigger: boolean
-  position?: { x: number; y: number }
-  onComplete?: () => void
-}
-
-export function XPGainAnimation({ amount, trigger, position, onComplete }: XPGainAnimationProps) {
-  const tXp = useTranslations('DashPage.UserAccountSettings.Gamification')
-  const [isVisible, setIsVisible] = useState(false)
-  const onCompleteRef = useRef(onComplete)
-  const showRafRef = useRef<number | null>(null)
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prefersReducedMotion = useReducedMotion()
-
-  useEffect(() => {
-    onCompleteRef.current = onComplete
-  }, [onComplete])
-
-  useEffect(() => {
-    if (trigger) {
-      // Skip animation if reduced motion preferred, but still call callback
-      if (prefersReducedMotion) {
-        const rafId = requestAnimationFrame(() => onCompleteRef.current?.())
-        return () => cancelAnimationFrame(rafId)
-      }
-
-      // Use rAF to break out of render phase and schedule hide after duration
-      if (showRafRef.current) cancelAnimationFrame(showRafRef.current)
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
-
-      showRafRef.current = requestAnimationFrame(() => setIsVisible(true))
-      hideTimeoutRef.current = globalThis.setTimeout(() => {
-        setIsVisible(false)
-        onCompleteRef.current?.()
-      }, 1200)
-
-      return () => {
-        if (showRafRef.current) cancelAnimationFrame(showRafRef.current)
-        if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
-      }
-    }
-    return
-  }, [trigger, prefersReducedMotion])
-
-  if (!isVisible) return null
-
-  return (
-    <motion.div
-      className="pointer-events-none fixed z-50"
-      style={{
-        left: position?.x ?? '50%',
-        top: position?.y ?? '50%',
-      }}
-      initial={{ opacity: 0, y: 0, scale: 0.8 }}
-      animate={{ opacity: [0, 1, 1, 0], y: -40, scale: [0.8, 1, 1] }}
-      transition={{
-        duration: 1.2,
-        times: [0, 0.2, 0.8, 1],
-        ease: [0.4, 0, 0.2, 1],
-      }}
-    >
-      <div className="border-primary/20 bg-primary/10 text-primary flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-sm">
-        <Award className="h-3 w-3" />+{amount} {tXp('leaderboard.stats.xp')}
-      </div>
-    </motion.div>
-  )
-}
-
-// ============================================================================
-// Compact Milestone Progress
-// ============================================================================
-
-interface MilestoneProgressProps {
-  currentLevel: number
-  milestones?: number[]
-  className?: string
-}
-
-export function MilestoneProgress({
-  currentLevel,
-  milestones = DEFAULT_MILESTONES,
-  className,
-}: MilestoneProgressProps) {
-  return (
-    <div className={cn('flex items-center gap-1.5', className)}>
-      {milestones.map((milestone, index) => {
-        const isReached = currentLevel >= milestone
-        const isNext = !isReached && (index === 0 || currentLevel >= (milestones[index - 1] ?? 0))
-
-        return (
-          <>
-            <motion.div
-              key={milestone}
-              className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
-                isReached && 'border-primary/30 bg-primary text-primary-foreground',
-                isNext && 'border-primary bg-primary/5 text-primary',
-                !isReached && !isNext && 'border-border/50 bg-muted/30 text-muted-foreground',
-              )}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: index * 0.08, duration: 0.3 }}
-              whileHover={{ scale: 1.1 }}
-            >
-              {isReached ? <Star className="h-3.5 w-3.5 fill-current" /> : milestone}
-            </motion.div>
-            {index < milestones.length - 1 && (
-              <div className={cn('h-px w-3 transition-colors', isReached ? 'bg-primary/40' : 'bg-border/30')} />
-            )}
-          </>
-        )
-      })}
-    </div>
   )
 }

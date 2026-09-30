@@ -16,7 +16,6 @@ export const queryKeys = {
     review: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'review'] as const,
     access: (assessmentUuid: string) => ['assessments', 'access', assessmentUuid] as const,
     overrides: (assessmentUuid: string) => ['assessments', 'overrides', assessmentUuid] as const,
-    activityAssessmentId: (activityUuid: string) => ['assessments', 'activity', activityUuid, 'id'] as const,
     activityDetail: (activityUuid: string, assessmentUuid: string | null | undefined) =>
       ['assessments', 'activity', activityUuid, assessmentUuid || 'missing'] as const,
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
@@ -52,15 +51,6 @@ export const queryKeys = {
       ['courses', 'discussions', courseUuid, { includeReplies }] as const,
     replies: (courseUuid: string, discussionUuid: string, limit = 50, offset = 0) =>
       ['courses', 'discussion-replies', courseUuid, discussionUuid, { limit, offset }] as const,
-  },
-  exams: {
-    activity: (activityUuid: string) => ['exams', 'activity', activityUuid] as const,
-    allAttempts: (examUuid: string) => ['exams', 'attempts', 'all', examUuid] as const,
-    attempts: (examUuid: string) => ['exams', 'attempts', examUuid] as const,
-    config: () => ['exams', 'config'] as const,
-    detail: (examUuid: string) => ['exams', 'detail', examUuid] as const,
-    myAttempt: (examUuid: string) => ['exams', 'attempts', 'me', examUuid] as const,
-    questions: (examUuid: string) => ['exams', 'questions', examUuid] as const,
   },
   grading: {
     detail: (submissionUuid: string, assessmentUuid: string) =>

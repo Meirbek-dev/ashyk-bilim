@@ -1,4 +1,4 @@
--- UX-186: backfill 20260924000003 - attempts made before it (and legacy ones
+-- UX-186: backfill 20260924000003 — attempts made before it (and legacy ones
 -- imported at cutover) by the course's staff are previews too. Same rule as
 -- `is_teacher_preview`: the course creator, an active non-reporter
 -- resource author, or a holder of `assessment:author:platform` (wildcards

@@ -914,7 +914,7 @@
       "submit": "Sign up",
       "submitting": "Creating your account...",
       "success": "Account created",
-      "successDescription": "Your account is ready to use - you can sign in right away. An email verification code has been sent to your address.",
+      "successDescription": "Your account is ready to use — you can sign in right away. An email verification code has been sent to your address.",
       "failed": "Could not create the account. Please try again.",
       "haveAccount": "Already have an account?",
       "login": "Sign in",
@@ -1978,7 +1978,7 @@
       "descriptionPlaceholder": "What this role can do",
       "createdRole": "Role created",
       "updatedRole": "Role updated",
-      "roleGone": "This role was already deleted in another tab - the list has been refreshed.",
+      "roleGone": "This role was already deleted in another tab — the list has been refreshed.",
       "deletedRole": "Role deleted",
       "permissionsSaved": "Role permissions saved",
       "deleteRoleTitle": "Delete the “{roleName}” role?",
@@ -2026,7 +2026,7 @@
       "label": "Pagination",
       "next": "Next",
       "nextAria": "Go to next page",
-      "pastEnd": "This page is empty - there is nothing further.",
+      "pastEnd": "This page is empty — there is nothing further.",
       "previous": "Previous",
       "previousAria": "Go to previous page"
     },
@@ -2641,7 +2641,7 @@
       "cancel": "Cancel",
       "unpublishConfirmTitle": "Unpublish \"{name}\"?",
       "unpublishConfirmMessage": "Learners will lose access to this activity and their submitted work in it until you publish it again.",
-      "unpublishedToast": "Activity unpublished - learners no longer see it."
+      "unpublishedToast": "Activity unpublished — learners no longer see it."
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Chapter name",
@@ -3013,7 +3013,7 @@
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
       "applicationWithdrawn": "Application withdrawn",
-      "applicationAlreadyReviewed": "The application was already reviewed - status updated",
+      "applicationAlreadyReviewed": "The application was already reviewed — status updated",
       "reviewCompletion": "Review course completion",
       "withdrawApplication": "Withdraw application",
       "withdrawApplicationError": "Could not withdraw the application. Please try again later.",
@@ -3862,7 +3862,7 @@
           "certificateMissing": "No certificate is configured. This does not block publishing.",
           "contributorMissing": "No active contributor is configured. This does not block publishing.",
           "unknown": "A publication requirement still needs attention.",
-          "activityUnpublished": "Activity “{title}” is still unpublished - learners cannot see it.",
+          "activityUnpublished": "Activity “{title}” is still unpublished — learners cannot see it.",
           "codeChallengeUnconfigured": "Code checking is not configured for “{title}”."
         },
         "sectionLabel": "Review & publish",
@@ -4297,7 +4297,7 @@
       "removeSelectedConfirmMessage": "This will remove {count, plural, one {# contributor} other {# contributors}} from the course.",
       "removeSelectedConfirmTitle": "Remove {count, plural, one {# contributor} other {# contributors}}?",
       "failedToUpdateContributor": "Failed to update contributor",
-      "rowAlreadyGone": "The application was already withdrawn - the list has been refreshed",
+      "rowAlreadyGone": "The application was already withdrawn — the list has been refreshed",
       "inactive": "Inactive",
       "maintainer": "Maintainer",
       "manageContributorsTitle": "Manage Contributors",
@@ -4385,7 +4385,7 @@
         "saving": "Saving...",
         "conflict": "This activity was changed in another tab. Autosave stopped so it is not overwritten.",
         "reload": "Reload page",
-        "noAccess": "You no longer have access to this course - changes are not saved."
+        "noAccess": "You no longer have access to this course — changes are not saved."
       },
       "EmbedObjects": {
         "addEmbedCodeTitle": "Add Embed Code",
@@ -4925,11 +4925,11 @@
           },
           "rutube": {
             "label": "RuTube",
-            "description": "Russian state-accessible video - mirrors or supplements YouTube."
+            "description": "Russian state-accessible video — mirrors or supplements YouTube."
           },
           "vk-video": {
             "label": "VK Video",
-            "description": "VKontakte video - widely watched across Russia and Kazakhstan."
+            "description": "VKontakte video — widely watched across Russia and Kazakhstan."
           },
           "vk-clips": {
             "label": "VK Clips / Posts",
@@ -5022,7 +5022,7 @@
           },
           "wordwall": {
             "label": "Wordwall",
-            "description": "Gamified vocabulary and grammar activities - popular in CIS classrooms."
+            "description": "Gamified vocabulary and grammar activities — popular in CIS classrooms."
           },
           "poll-everywhere": {
             "label": "Poll Everywhere",
@@ -6376,7 +6376,7 @@
           "sessionAlreadyEnded": "This session had already ended",
           "totpTitle": "Two-factor authentication",
           "totpDescription": "Protect password sign-in with one-time codes from an authenticator app (TOTP).",
-          "totpGoogleNote": "Signing in with Google does not ask for the code - your Google account protects it.",
+          "totpGoogleNote": "Signing in with Google does not ask for the code — your Google account protects it.",
           "totpScanHint": "Add the secret to your authenticator app and enter the first code to activate it.",
           "totpSecretLabel": "TOTP secret",
           "totpOpenAuthenticator": "Open in authenticator app",
@@ -6395,7 +6395,7 @@
           "invalidCode": "Invalid code. Try again.",
           "passwordTitle": "Password",
           "passwordDescription": "Change your sign-in password. Your other sessions will be signed out.",
-          "passwordNotSet": "This account has no password: you sign in with Google. A password cannot be set here - keep signing in with Google.",
+          "passwordNotSet": "This account has no password: you sign in with Google. A password cannot be set here — keep signing in with Google.",
           "currentPassword": "Current password",
           "newPassword": "New password",
           "confirmPassword": "Confirm new password",
@@ -8403,7 +8403,7 @@
           "noAnswerPayload": "No answer payload recorded.",
           "itemLabel": "Item {index}",
           "rubricGuidance": "Rubric guidance",
-          "unknownSubmissionParam": "The submission from the link was not found - the first one in the list is shown."
+          "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown."
         },
         "bulkActions": {
           "selectedCount": "{count} selected",
@@ -8436,7 +8436,7 @@
             "published": "Selected grades published",
             "returned": "Selected submissions returned",
             "bulkActionFailed": "Bulk action failed",
-            "bulkPartialFailure": "{failed} submission(s) could not be updated - see details below.",
+            "bulkPartialFailure": "{failed} submission(s) could not be updated — see details below.",
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
             "deadlineExtended": "Deadline extended for {count, plural, one {# learner} other {# learners}}",
@@ -8446,7 +8446,7 @@
             "returnedWithSkipped": "Returned: {count}. Skipped without a grade: {skipped}.",
             "exported": "CSV saved",
             "exportFailed": "Could not export the CSV",
-            "notEnrolled": "Not enrolled in the course: {names}. They were left out - queue the extension again."
+            "notEnrolled": "Not enrolled in the course: {names}. They were left out — queue the extension again."
           },
           "summaries": {
             "publishFinished": "Bulk publish finished",
@@ -8473,11 +8473,11 @@
             "notSet": "Not set",
             "noReason": "No reason provided",
             "dueDatePast": "The new due date must be in the future.",
-            "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned - skipped.",
-            "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released - regardless of what is selected in the list.",
+            "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
+            "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
             "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}",
-            "notEnrolled": "Not enrolled in the course - the extension skips them: {names}",
-            "staff": "Course staff - the extension skips them: {names}"
+            "notEnrolled": "Not enrolled in the course — the extension skips them: {names}",
+            "staff": "Course staff — the extension skips them: {names}"
           },
           "dialogs": {
             "publishTitle": "Publish selected grades",
@@ -9717,7 +9717,7 @@
           "releaseTitle": "Release control",
           "releaseBody": "Keep grades hidden while reviewing, then publish results when the cohort is ready.",
           "itemAnalyticsTitle": "Per-question analytics",
-          "noAnalyticsData": "No graded submissions yet - analytics will appear after students complete and are graded.",
+          "noAnalyticsData": "No graded submissions yet — analytics will appear after students complete and are graded.",
           "loadingQueue": "Loading submissions...",
           "emptyQueue": "No submissions match the current filters.",
           "selectSubmission": "Select submission from {name}",
@@ -9905,7 +9905,7 @@
       "fullscreenExited": "Fullscreen was exited.",
       "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
       "assessmentChanged": "The assessment changed. Review your answers and submit again.",
-      "sessionEnded": "Your session ended. Your unsaved answers are kept on this device - sign in to continue.",
+      "sessionEnded": "Your session ended. Your unsaved answers are kept on this device — sign in to continue.",
       "sessionEndedRestored": "Your session had ended. The answers kept on this device are restored and being saved.",
       "submitFailed": "Failed to submit",
       "timeLimitMinutes": "{minutes} min",
@@ -10526,7 +10526,7 @@
     "description": "Grade each item individually. The final score is calculated automatically.",
     "overrideScore": "Override score",
     "overrideScoreDescription": "Set a custom final score instead of the calculated total.",
-    "annulledOverrideHint": "Attempt annulled (violations) - score 0 unless overridden.",
+    "annulledOverrideHint": "Attempt annulled (violations) — score 0 unless overridden.",
     "finalScore": "Final score",
     "overrideReason": "Override reason",
     "overallFeedback": "Overall feedback",
@@ -10689,9 +10689,9 @@
     "scan_clean": "scanned",
     "scan_flagged": "flagged",
     "scan_error": "scan error",
-    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned - only a re-publish is possible.",
+    "publishedIsFinal": "The grade is published and final: the score cannot be changed and the work cannot be returned — only a re-publish is possible.",
     "ownAttempt": "Your attempt",
-    "unknownSubmissionParam": "The submission from the link was not found - the first one in the list is shown.",
+    "unknownSubmissionParam": "The submission from the link was not found — the first one in the list is shown.",
     "csvSaved": "CSV saved",
     "csvFailed": "Could not download the CSV."
   },
@@ -10712,7 +10712,7 @@
     "allowedFileTypes": "Allowed file types",
     "selectAll": "Select all",
     "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
-    "dueChangeReprices": "A new due date re-prices lateness and the late penalty of work already handed in - grades may change.",
+    "dueChangeReprices": "A new due date re-prices lateness and the late penalty of work already handed in — grades may change.",
     "collectionRules": "Collection rules",
     "attempts": "Attempts",
     "lateWork": "Late work",

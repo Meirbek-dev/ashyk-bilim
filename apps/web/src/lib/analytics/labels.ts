@@ -83,15 +83,6 @@ const severityKeys: Record<string, string> = {
   critical: 'labels.severity.critical',
 }
 
-const alertTypeKeys: Record<string, string> = {
-  risk_spike: 'labels.alertType.riskSpike',
-  engagement_drop: 'labels.alertType.engagementDrop',
-  grading_backlog: 'labels.alertType.gradingBacklog',
-  grading_slo: 'labels.alertType.gradingSlo',
-  assessment_outlier: 'labels.alertType.assessmentOutlier',
-  content_stale: 'labels.alertType.contentStale',
-}
-
 const riskLevelKeys: Record<string, string> = {
   low: 'labels.riskLevel.low',
   medium: 'labels.riskLevel.medium',
@@ -171,10 +162,6 @@ export function getAnalyticsSortLabel(t: Translator, sortKey: string): string {
 
 export function getAnalyticsSeverityLabel(t: Translator, severity: string): string {
   return resolveLabel(t, severityKeys, severity, severity)
-}
-
-export function getAnalyticsAlertTypeLabel(t: Translator, alertType: string): string {
-  return resolveLabel(t, alertTypeKeys, alertType, alertType.replaceAll('_', ' '))
 }
 
 export function getAnalyticsRiskLevelLabel(t: Translator, riskLevel: string): string {

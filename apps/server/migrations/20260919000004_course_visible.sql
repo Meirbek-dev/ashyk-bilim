@@ -2,7 +2,7 @@
 -- collection listing / contents and direct reads all decide «can this
 -- viewer see this course» here: public, platform manager (p_see_all), the
 -- creator, an active resource_authors row (any authorship), or membership
--- of a usergroup linked to the course (cohort access). Inlinable SQL -
+-- of a usergroup linked to the course (cohort access). Inlinable SQL —
 -- callers pass the row: course_visible(courses, $viewer, $see_all).
 CREATE FUNCTION course_visible(c courses, p_viewer uuid, p_see_all boolean)
 RETURNS boolean LANGUAGE sql STABLE AS $$

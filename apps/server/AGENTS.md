@@ -1,29 +1,27 @@
-# Agent Playbook — ashyq server (Rust rewrite)
+# Agent Playbook — ashyq server (Rust)
 
-You are a coding agent working on the Rust backend. This file is your operating
-manual. The design rationale lives in `docs/rewrite/ARCHITECTURE.md` (read it once
-per session); the work queue lives in `docs/rewrite/EXECUTION-PLAN.md` (keep it
-updated); this file tells you **how to work**.
+You are a coding agent working on the Rust backend — the production API since
+the 2026-09-30 cutover (the legacy Python API is gone; tag `legacy-final` keeps
+it in git history). The design rationale lives in `docs/rewrite/ARCHITECTURE.md`
+(read it once per session); this file tells you **how to work**.
 
 ## Ground rules
 
-1. **Branch `rewrite`, direct commits.** No PRs. The branch must be green
-   (`just ci`) at the end of every session. If you break it, fixing it is your
-   next task — nothing else.
+1. **Branch `main`, direct commits.** No PRs; `main` is the only branch. It
+   must be green (`just ci`) at the end of every session. If you break it,
+   fixing it is your next task — nothing else.
 2. **`just` is the only entry point.** Never invent ad-hoc cargo invocations in
    docs, CI, or scripts — add a recipe instead. `just ci` locally is byte-for-byte
    what CI runs.
-3. **Update the plan.** Before starting: mark your slice `in-progress` in
-   EXECUTION-PLAN.md. After landing: `done <sha>`, plus new rows for any
-   discovered work. Append one line to the session log.
-4. **Deviations from ARCHITECTURE.md** require an entry in
-   `docs/rewrite/DECISIONS.md` (create on first use): date, what, why, what it
-   replaces. Silent divergence is the one unforgivable sin here — the next agent
-   trusts these documents.
-5. The legacy Python API (`apps/api`) is **read-only reference material**. Port
-   semantics from it (especially: grading pipeline order, policy resolution,
-   session limits, validation rules, AI prompts — copy prompts verbatim first).
-   Never edit it; it is feature-frozen and dies at cutover.
+3. **Deviations from ARCHITECTURE.md** require an entry in
+   `docs/rewrite/DECISIONS.md`: date, what, why, what it replaces. Silent
+   divergence is the one unforgivable sin here — the next agent trusts these
+   documents.
+4. **Production data is migrated legacy data.** Keep the code paths that serve
+   it (legacy uuids, legacy video thumbnails, the `custom` activity kind,
+   legacy certificate code layouts, trail steps without projection rows).
+   Imported users log in with their argon2/bcrypt hashes, verified by
+   Zitadel's passwap (`ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS`).
 
 ## Commands
 
@@ -32,7 +30,7 @@ just check        # fmt-check + clippy(-D warnings) + sqlx offline check   — f
 just test         # nextest: unit + db + http suites (needs services up)
 just test-unit    # nextest: unit only — works with no DB/Docker (Windows sessions)
 just ci           # everything CI runs, in CI order
-just services     # compose up: db redis zitadel rustfs (dev profile)
+just services     # compose up: db redis zitadel rustfs (../../docker-compose.dev.yml)
 just migrate      # sqlx migrate run (dev DB)
 just migration NAME  # create a new migration file pair
 just prepare      # cargo sqlx prepare — run after ANY .sql or query! change
@@ -67,7 +65,7 @@ podman run -d --rm --name ashyq-test-pg --network ashyq-dev -p 5433:5432 `
 $env:DATABASE_URL='postgres://ashyq:ashyq@localhost:5433/ashyq_test'; cargo test --workspace
 ```
 
-Zitadel (for auth-slice work; version pinned in docker-compose.rewrite.yml —
+Zitadel (for auth work; version pinned in docker-compose.dev.yml —
 boots healthy in ~10s, writes a provisioning PAT to the mounted dir):
 
 ```
@@ -121,7 +119,7 @@ ashyq_dev"` then `cargo sqlx migrate run` with `DATABASE_URL` pointing at it.
   machine; the workspace build never needs it.
 
 Validated against it (keep these working): `GET /debug/healthz`;
-`POST /v2/users/human` (password + pre-verified email — the ETL import path);
+`POST /v2/users/human` (password + pre-verified email);
 `POST /v2/sessions` with `checks.user.loginName` + `checks.password` → returns
 `sessionId`/`sessionToken`, wrong password → typed `CredentialsCheckError` with
 `failedAttempts`. Auth: `Authorization: Bearer <PAT from pat.txt>`.
@@ -158,9 +156,8 @@ validates them. Never skip writing the tests.
 
 ## How to build a slice (the standard loop)
 
-1. Read the legacy implementation (router + service + models) for the domain.
-   Write down the behaviors as a checklist in the test file's doc comment —
-   this is the port contract.
+1. Write down the behaviors as a checklist in the test file's doc comment —
+   this is the contract.
 2. Migration: new numbered SQL in `migrations/` (schema per ARCHITECTURE §8 rules:
    uuidv7 PK, timestamptz pair, text+CHECK enums, deliberate FKs).
 3. `ab-db` queries module: typed row structs + query fns. `just prepare`.
@@ -207,8 +204,8 @@ async fn teacher_publishes_grades() {
 ## sqlx 0.9 gotchas (will bite you)
 
 - The `query!` macros parse **every ancestor `.env`** up to the drive root and
-  hard-error if any is unparseable — including the legacy production `.env` at
-  the repo root. Unquoted values with backslashes break dotenvy; quote such
+  hard-error if any is unparseable — including the production `.env` at the
+  repo root. Unquoted values with backslashes break dotenvy; quote such
   values with single quotes (compose semantics unchanged). Fixed once
   2026-08-16 (`PLATFORM_ALLOWED_REGEXP`).
 
@@ -216,16 +213,3 @@ async fn teacher_publishes_grades() {
 - Runtime-built SQL needs `AssertSqlSafe` (+ `// SAFETY:`).
 - `query!` without a live `DATABASE_URL` uses the committed `.sqlx/` cache; if you
   changed SQL and see stale-cache errors, run `just prepare` (needs services up).
-
-## Legacy → new quick map (where to look when porting)
-
-| Legacy (apps/api)                     | New home                                                               |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `src/routers/X.py`                    | `crates/api/src/routes/x.rs` (+ `dto/x.rs`)                            |
-| `src/services/X/`                     | `crates/domain/src/x/`                                                 |
-| `src/db/X.py` (SQLModel)              | `migrations/*.sql` + `crates/db/src/x.rs`                              |
-| `src/worker/tasks/*.py`               | `crates/jobs/src/handlers/*.rs`                                        |
-| `src/security/rbac.py`                | `crates/core/src/permission.rs` + `crates/domain/src/identity/rbac.rs` |
-| `src/app/errors.py` envelope          | `crates/core/src/error/` + `crates/api/src/error.rs` (problem+json)    |
-| `src/services/ai/agents/*.py` prompts | `crates/domain/src/ai/agents/*` (prompts verbatim first)               |
-| `config/config.py` `PLATFORM_*`       | `crates/core/src/config.rs` `AB__*`                                    |

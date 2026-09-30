@@ -48,11 +48,6 @@ export interface ActivityBlockMediaDirectoryParams {
   type: string
 }
 
-/** @deprecated v2 block file values are complete storage keys. */
-export function getActivityBlockMediaDirectory({ fileId }: ActivityBlockMediaDirectoryParams): string {
-  return getContentUrl(fileId) ?? ''
-}
-
 export interface ActivityMediaDirectoryParams {
   courseUUID: string
   activityUUID: string
@@ -83,9 +78,4 @@ export function getPlatformThumbnailImage(thumbnailKey?: string | null): string 
 /** @deprecated use `getPlatformLogoUrl(logo_key)`. */
 export function getLogoMediaDirectory(logoKey: string): string {
   return getContentUrl(logoKey) ?? ''
-}
-
-/** @deprecated use `getPlatformThumbnailImage(thumbnail_key)`. */
-export function getThumbnailMediaDirectory(thumbnailKey: string): string {
-  return getContentUrl(thumbnailKey) ?? ''
 }

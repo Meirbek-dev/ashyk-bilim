@@ -1,12 +1,7 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createExamWithActivityMutationOptions } from './mutations'
-import { examConfigQueryOptions } from './queries'
-
-export function useExamConfig() {
-  return useQuery(examConfigQueryOptions())
-}
 
 export function useCreateExamWithActivity(
   courseUuid?: string | null,

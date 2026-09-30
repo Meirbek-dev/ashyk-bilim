@@ -25,7 +25,7 @@ You are a senior QA engineer and backend/frontend security specialist. Your task
 
 Cover BOTH:
 
-### 1. Backend (Python, pytest)
+### 1. Backend (Rust, `apps/server`: `#[sqlx::test]` + `ab_testkit::TestApp`)
 
 Test the full auth pipeline:
 

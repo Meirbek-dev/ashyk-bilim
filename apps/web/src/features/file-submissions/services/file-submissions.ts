@@ -59,7 +59,6 @@ const id = (value: string) => encodeURIComponent(value)
 
 const parseFileSubmission = (data: unknown) => FileSubmissionView.parse(data)
 const parseAttempt = (data: unknown) => AttemptView.parse(data)
-const parseAttempts = (data: unknown) => AttemptView.array().parse(data)
 const parseReviewPage = (data: unknown) => FileReviewPage.parse(data)
 const parseSignedDownload = (data: unknown) => SignedDownload.parse(data)
 
@@ -119,10 +118,6 @@ export async function submitFileSubmission(
 /** Presigned upload for one learner file; the returned `id` is what the draft attaches. */
 export async function uploadSubmissionFile(file: File, onProgress?: (progress: UploadProgress) => void) {
   return uploadFile(file, 'file-submission', onProgress ? { onProgress } : {})
-}
-
-export async function getMyFileSubmissionAttempts(fileSubmissionId: string): Promise<FileSubmissionAttempt[]> {
-  return apiJson(`file-submissions/${id(fileSubmissionId)}/me`, {}, parseAttempts)
 }
 
 export interface FileSubmissionReviewQueueParams {

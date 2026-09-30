@@ -49,40 +49,6 @@ export interface PartialGamificationPreferences {
   display?: Partial<DisplayPreferences>
 }
 
-// Default preferences factory - optimized for less intrusive experience
-const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  levelUp: true, // Important milestone
-  xpGain: false, // Too noisy by default
-  streakReminder: false, // Can cause anxiety
-  weeklyReport: true, // Good summary
-  achievements: true, // Meaningful events
-  leaderboardPosition: false, // Opt-in only
-}
-
-const DEFAULT_PRIVACY_PREFERENCES: PrivacyPreferences = {
-  showOnLeaderboard: true,
-  publicProfileStats: true,
-  shareProgress: false,
-  showAvatar: true,
-  showUsername: true,
-}
-
-const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
-  animatedEffects: true, // Will respect prefers-reduced-motion
-  compactMode: true, // Less intrusive by default
-  showLevelIndicator: true,
-  autoHideToasts: true, // Auto-dismiss for cleaner UX
-  soundEffects: false, // Opt-in only
-  showXPNumbers: true,
-  theme: 'auto',
-}
-
-const DEFAULT_GAMIFICATION_PREFERENCES: GamificationPreferences = {
-  notifications: DEFAULT_NOTIFICATION_PREFERENCES,
-  privacy: DEFAULT_PRIVACY_PREFERENCES,
-  display: DEFAULT_DISPLAY_PREFERENCES,
-}
-
 export const NotificationPreferencesSchema = v.object({
   levelUp: v.boolean(),
   xpGain: v.boolean(),
@@ -109,64 +75,3 @@ export const DisplayPreferencesSchema = v.object({
   showXPNumbers: v.boolean(),
   theme: v.picklist(['auto', 'light', 'dark']),
 })
-
-export const GamificationPreferencesSchema = v.object({
-  notifications: NotificationPreferencesSchema,
-  privacy: PrivacyPreferencesSchema,
-  display: DisplayPreferencesSchema,
-})
-
-export const PartialGamificationPreferencesSchema = v.object({
-  notifications: v.optional(v.partial(NotificationPreferencesSchema)),
-  privacy: v.optional(v.partial(PrivacyPreferencesSchema)),
-  display: v.optional(v.partial(DisplayPreferencesSchema)),
-})
-
-// Helper functions
-function createDefaultPreferences(): GamificationPreferences {
-  return structuredClone(DEFAULT_GAMIFICATION_PREFERENCES)
-}
-
-export function validatePreferences(prefs: unknown): GamificationPreferences {
-  const result = v.safeParse(GamificationPreferencesSchema, prefs)
-  if (result.success) {
-    return result.output
-  }
-  // Return defaults if validation fails
-  console.warn('Invalid preferences, using defaults:', result.issues)
-  return createDefaultPreferences()
-}
-
-export function serializePreferences(prefs: GamificationPreferences): string {
-  return JSON.stringify(prefs)
-}
-
-export function deserializePreferences(json: string): GamificationPreferences {
-  try {
-    const parsed = JSON.parse(json)
-    return validatePreferences(parsed)
-  } catch {
-    return createDefaultPreferences()
-  }
-}
-
-// Type guards
-export function hasNotificationEnabled(prefs: GamificationPreferences, type: keyof NotificationPreferences): boolean {
-  return prefs.notifications[type]
-}
-
-export function isProfilePublic(prefs: GamificationPreferences): boolean {
-  return prefs.privacy.publicProfileStats
-}
-
-export function shouldShowOnLeaderboard(prefs: GamificationPreferences): boolean {
-  return prefs.privacy.showOnLeaderboard
-}
-
-export function hasAnimationsEnabled(prefs: GamificationPreferences): boolean {
-  return prefs.display.animatedEffects
-}
-
-export function hasSoundEnabled(prefs: GamificationPreferences): boolean {
-  return prefs.display.soundEffects
-}

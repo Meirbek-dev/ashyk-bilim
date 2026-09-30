@@ -1,4 +1,4 @@
--- BUG-185: one active (unpassed) gate per learner and activity - the
+-- BUG-185: one active (unpassed) gate per learner and activity — the
 -- enqueue-time check cannot see a sibling job still in flight. Stacked
 -- duplicates (all but the earliest) become plain sessions first.
 UPDATE ai_remediation_sessions s SET gate_mode = false

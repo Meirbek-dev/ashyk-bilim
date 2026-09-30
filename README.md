@@ -1,6 +1,7 @@
-# Ashyk Bilim
+# Ashyq Bilim
 
-## Progress
+Learning platform: Rust API (`apps/server`) + Next.js web app (`apps/web`).
 
-🚧 Ashyk Bilim is still in development (alpha), as we reach stability we will release a stable
-version and add more features.
+- Local dev: `bun run services` (Postgres, Redis, Zitadel, RustFS), then
+  `just` recipes in `apps/server` and `bun run dev` for the web app.
+- Production: `bun run deploy`; see `docs/DEPLOYMENT.md`.

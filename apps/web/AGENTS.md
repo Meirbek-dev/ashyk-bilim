@@ -10,8 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # apps/web — frontend conventions (v2 contract, P9)
 
-The app talks to the Rust backend only (`apps/server`, `/api/v2`). The legacy
-Python API (`apps/api`) is frozen reference material — never target it.
+The app talks to the Rust backend (`apps/server`, `/api/v2`), the only backend.
+The legacy Python API was removed after the 2026-09-30 cutover (git tag
+`legacy-final`).
 
 ## Toolchain
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 import * as zod from 'zod'
 
 import { apiJson } from '@/lib/api-client'
@@ -43,27 +43,6 @@ export function latestSubmissionAnalysisQueryOptions(submissionId: string) {
 
 export function useLatestSubmissionAnalysis(submissionId: string) {
   return useQuery(latestSubmissionAnalysisQueryOptions(submissionId))
-}
-
-export function useRunSubmissionAnalysis(submissionId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (language: string) =>
-      apiJson(
-        `ai/submission-analysis/${submissionId}/analyze`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ language }),
-          headers: { 'content-type': 'application/json' },
-          timeoutMs: 120_000,
-        },
-        value => SubmissionAnalysisView.parse(value),
-      ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: latestSubmissionAnalysisQueryOptions(submissionId).queryKey,
-      }),
-  })
 }
 
 /** `202 RunStatus`; the run controller polls/streams the run and invalidates `latest`. */

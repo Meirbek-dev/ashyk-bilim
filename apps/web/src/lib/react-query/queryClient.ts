@@ -31,14 +31,6 @@ interface ErrorMeta {
   userFacing?: boolean
 }
 
-export function queryErrorMeta(meta: ErrorMeta): ErrorMeta {
-  return meta
-}
-
-export function mutationErrorMeta(meta: ErrorMeta): ErrorMeta {
-  return meta
-}
-
 function readErrorMeta(meta: unknown): ErrorMeta {
   return meta && typeof meta === 'object' ? meta : {}
 }

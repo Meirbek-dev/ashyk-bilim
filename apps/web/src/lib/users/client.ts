@@ -81,10 +81,6 @@ export async function getCoursesByUser(username: string): Promise<AppCourse[]> {
   return courses.toSorted((a, b) => b.updated_at_unix - a.updated_at_unix).map(toAppCourse)
 }
 
-export async function getCurrentUserProfile(): Promise<UserProfileType> {
-  return apiJson('users/me', {}, data => UserProfile.parse(data))
-}
-
 async function invalidateMe(): Promise<void> {
   await getQueryClient().invalidateQueries({ queryKey: userKeys.me() })
 }

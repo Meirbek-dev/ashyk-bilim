@@ -1,17 +1,4 @@
-# Used as build context for apps/web/Dockerfile (context = repo root)
-
-# Python (api app - not needed in web image)
-apps/api
-!apps/api/package.json
-**/__pycache__
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/.venv
-**/.pytest_cache
-**/.ruff_cache
-**/.mypy_cache
-**/.pyrefly_cache
+# Build context (repo root) for apps/web/Dockerfile and apps/server/Dockerfile.
 
 # Node / build outputs
 node_modules
@@ -26,10 +13,6 @@ dist
 logs
 *.log
 **/*.log
-apps/api/logs
-apps/api/content
-apps/api/temp-restore
-apps/api/backups
 
 # Cache directories
 .cache
@@ -42,9 +25,6 @@ apps/api/backups
 # Coverage
 coverage
 *.lcov
-.coverage
-htmlcov/
-coverage.xml
 
 # Temporary files
 tmp/
@@ -69,8 +49,7 @@ Thumbs.db
 # Docker files (not needed inside images)
 **/Dockerfile
 **/.dockerignore
-docker-compose.yml
-compose.prod.yml
+docker-compose*.yml
 
 # Documentation
 README.md
@@ -84,17 +63,12 @@ docs/
 **/.env.*
 certs/
 **/target/
-extra/.env
-extra/backup.env
-apps/web/.env
-apps/web/.env.*
 
 # Backups and test artefacts
 backups/
 temp-restore/
 junit.xml
 test-results/
-plans/
 .claude/
 .turbo/
 

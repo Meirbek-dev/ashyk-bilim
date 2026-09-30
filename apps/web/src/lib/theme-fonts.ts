@@ -194,11 +194,6 @@ export function getThemeFontStylesheetHref(tokens: Record<string, string>): stri
   return buildGoogleFontCssUrl(resolveThemeFontFamilies(tokens))
 }
 
-export function buildFontCssUrl(family: string): string | null {
-  const googleFamily = getGoogleThemeFontFamily(family)
-  return googleFamily ? buildGoogleFontCssUrl([googleFamily]) : null
-}
-
 function linkHrefExists(doc: Document, href: string): boolean {
   return [...doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some(
     link => link.href === href || link.getAttribute('href') === href,
@@ -262,11 +257,6 @@ export function loadGoogleFontFamilies(families: readonly GoogleThemeFontFamily[
   for (const family of missingFamilies) {
     loadedGoogleFontFamilies.add(family)
   }
-}
-
-export function loadGoogleFont(family: string): void {
-  const googleFamily = getGoogleThemeFontFamily(family)
-  if (googleFamily) loadGoogleFontFamilies([googleFamily])
 }
 
 export function loadThemeFonts(tokens: Record<string, string>): void {

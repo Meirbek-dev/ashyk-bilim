@@ -5,7 +5,6 @@ import { RadioGroupItem } from '@/components/ui/radio-group'
 import type { LucideIcon } from 'lucide-react'
 import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { queryOptions } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -80,25 +79,6 @@ const courseWorkflowBadgeToneClass: Record<CourseWorkflowBadgeTone, string> = {
 
 export function getCourseWorkflowToneClass(tone: CourseWorkflowBadgeTone) {
   return courseWorkflowBadgeToneClass[tone]
-}
-
-export function CourseWorkflowBadge({
-  tone = 'default',
-  icon: Icon,
-  children,
-  className,
-}: {
-  tone?: CourseWorkflowBadgeTone
-  icon?: LucideIcon
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <Badge variant="outline" className={cn('gap-1.5', getCourseWorkflowToneClass(tone), className)}>
-      {Icon ? <Icon className="size-3.5" aria-hidden /> : null}
-      <span>{children}</span>
-    </Badge>
-  )
 }
 
 export const courseWorkflowCardClass = 'rounded-lg border bg-card'
@@ -203,4 +183,3 @@ export function CourseChoiceCard({
 }
 
 export const courseWorkflowSummaryCardClass = `${courseWorkflowCardClass} p-5`
-export const courseWorkflowMutedPanelClass = 'rounded-lg border bg-muted/50 p-4'

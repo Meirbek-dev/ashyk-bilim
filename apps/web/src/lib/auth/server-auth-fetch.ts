@@ -1,9 +1,8 @@
 import 'server-only'
 
 import { cookies, headers } from 'next/headers'
-import type { NextRequest, NextResponse } from 'next/server'
 import { getServerAPIUrl } from '@services/config/config'
-import { applyResponseCookies, applyResponseCookiesToNextResponse } from './cookie-bridge'
+import { applyResponseCookies } from './cookie-bridge'
 import { AUTH_COOKIE_NAMES } from './types'
 
 type HeaderSource = Pick<Headers, 'get'>
@@ -53,15 +52,6 @@ export async function getServerAuthCookieHeader(): Promise<string> {
     .join('; ')
 }
 
-export function getRequestAuthCookieHeader(request: NextRequest): string {
-  return AUTH_COOKIE_NAMES.map(cookieName => {
-    const cookieValue = request.cookies.get(cookieName)?.value
-    return cookieValue ? `${cookieName}=${cookieValue}` : null
-  })
-    .filter((value): value is string => value !== null)
-    .join('; ')
-}
-
 export async function serverAuthFetch(path: string, init: ServerAuthFetchInit = {}): Promise<Response> {
   const { includeAuthCookies, ...fetchInit } = init
   const requestHeaders = await headers()
@@ -87,33 +77,6 @@ export async function serverAuthFetch(path: string, init: ServerAuthFetchInit = 
   })
 }
 
-export function serverAuthFetchForRequest(
-  request: NextRequest,
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
-  const forwardedHeaders = buildForwardedRequestMetadataHeaders(request.headers)
-  const providedHeaders = new Headers(init.headers)
-
-  providedHeaders.forEach((value, key) => {
-    forwardedHeaders.set(key, value)
-  })
-
-  if (!forwardedHeaders.has('cookie')) {
-    const cookieHeader = getRequestAuthCookieHeader(request)
-    if (cookieHeader) {
-      forwardedHeaders.set('cookie', cookieHeader)
-    }
-  }
-
-  return fetch(resolveBackendUrl(path), {
-    ...init,
-    headers: forwardedHeaders,
-    cache: init.cache ?? 'no-store',
-    redirect: init.redirect ?? 'manual',
-  })
-}
-
 export function postAuthJson(path: string, body: unknown, init: ServerAuthFetchInit = {}): Promise<Response> {
   const jsonHeaders = new Headers(init.headers)
   jsonHeaders.set('content-type', 'application/json')
@@ -129,8 +92,4 @@ export function postAuthJson(path: string, body: unknown, init: ServerAuthFetchI
 
 export async function applyBackendSetCookies(responseHeaders: Headers): Promise<void> {
   await applyResponseCookies(responseHeaders)
-}
-
-export function copyBackendSetCookies(responseHeaders: Headers, response: NextResponse): void {
-  applyResponseCookiesToNextResponse(responseHeaders, response)
 }

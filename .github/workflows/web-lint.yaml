@@ -2,8 +2,7 @@ name: Web Lint
 
 on:
   push:
-    branches:
-      - openu
+    branches: [main]
     paths:
       - 'apps/web/**'
   pull_request:

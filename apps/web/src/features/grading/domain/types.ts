@@ -166,18 +166,6 @@ export function normalizeActivityProgressCell(
   }
 }
 
-export function normalizeGradedItem(item: GradedItem | null | undefined): GradedItem {
-  return item ?? { item_id: '', max_score: 0, score: 0 }
-}
-
-export function normalizeCourseGradebookResponse(data: CourseGradebookResponse): CourseGradebookResponse {
-  return { ...data, cells: data.cells.map(normalizeActivityProgressCell) }
-}
-
-export function normalizeSubmissionsPage(data: SubmissionsPage): SubmissionsPage {
-  return { ...data, items: data.items.map(normalizeSubmission) }
-}
-
 export type ReleaseState = 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION'
 
 export interface CodeRunRecord {

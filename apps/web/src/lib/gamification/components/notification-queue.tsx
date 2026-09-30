@@ -278,32 +278,6 @@ export function XPNotificationContainer({
 }
 
 // ============================================================================
-// Batch Indicator Component
-// ============================================================================
-
-interface BatchIndicatorProps {
-  count: number
-  className?: string
-}
-
-export function BatchIndicator({ count, className }: BatchIndicatorProps) {
-  const prefersReducedMotion = useReducedMotion()
-
-  if (count <= 1) return null
-
-  return (
-    <motion.div
-      initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-      className={`bg-primary text-primary-foreground inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${className}`}
-      {...(prefersReducedMotion ? { transition: { duration: 0.15 } } : {})}
-    >
-      ×{count}
-    </motion.div>
-  )
-}
-
-// ============================================================================
 // Smart Positioning Hook
 // ============================================================================
 
@@ -311,84 +285,4 @@ export interface ContextualPosition {
   x: number
   y: number
   avoid?: 'top' | 'bottom' | 'left' | 'right'
-}
-
-/**
- * Hook to determine smart positioning based on context
- * Avoids blocking important UI elements
- */
-export function useContextualPosition(
-  contextElement?: HTMLElement | null,
-): 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' {
-  const [position, setPosition] = useState<'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'>('bottom-right')
-
-  // Use refs for mutable values so we can reference them from stable callbacks
-  const rafRef = useRef<number | null>(null)
-  const mountedRef = useRef(false)
-
-  // computePosition and scheduleCompute are declared inside the effect to keep
-  // listener references stable and avoid stale-closure issues; see useEffect below.
-
-  useEffect(() => {
-    if (typeof globalThis.window === 'undefined') return
-    if (!contextElement) return
-
-    mountedRef.current = true
-
-    // Define computePosition and scheduler here so listeners can add/remove reliably
-    const computePosition = () => {
-      if (typeof globalThis.window === 'undefined') return
-      if (!contextElement || !mountedRef.current) return
-
-      const rect = contextElement.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
-      const viewportWidth = window.innerWidth
-
-      const isTop = rect.top < viewportHeight / 2
-      const isLeft = rect.left < viewportWidth / 2
-
-      let newPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
-      if (isTop && isLeft) {
-        newPosition = 'bottom-right'
-      } else if (isTop && !isLeft) {
-        newPosition = 'bottom-left'
-      } else if (!isTop && isLeft) {
-        newPosition = 'top-right'
-      } else {
-        newPosition = 'top-left'
-      }
-
-      setPosition(prev => (prev === newPosition ? prev : newPosition))
-    }
-
-    const scheduleCompute = () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      rafRef.current = requestAnimationFrame(() => {
-        computePosition()
-      })
-    }
-
-    // Initial compute via rAF to avoid sync setState inside effect
-    scheduleCompute()
-
-    // Use a single shared options object so add/removeEventListener use the exact same reference
-    const listenerOptions: AddEventListenerOptions = { passive: true }
-
-    // Listen to viewport changes
-    window.addEventListener('resize', scheduleCompute, listenerOptions)
-    window.addEventListener('scroll', scheduleCompute, listenerOptions)
-    globalThis.addEventListener('orientationchange', scheduleCompute, listenerOptions)
-
-    return () => {
-      mountedRef.current = false
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      // Remove listeners using the same options reference to ensure handlers are removed reliably in all browsers
-      window.removeEventListener('resize', scheduleCompute, listenerOptions)
-      window.removeEventListener('scroll', scheduleCompute, listenerOptions)
-      globalThis.removeEventListener('orientationchange', scheduleCompute, listenerOptions)
-      // Note: if the element can be inside a scrollable container, consider listening on the nearest scroll container or using IntersectionObserver - manual review may be needed.
-    }
-  }, [contextElement])
-
-  return position
 }

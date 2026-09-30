@@ -37,7 +37,7 @@ interface CourseActivityAgendaItem {
   href: string
   index: number
   returned: boolean
-  /** BUG-318: e.g. `restricted` — off the allowlist, never a next step. */
+  /** BUG-318: e.g. `restricted` - off the allowlist, never a next step. */
   blocked: boolean
 }
 

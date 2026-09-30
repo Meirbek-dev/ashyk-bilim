@@ -4,14 +4,7 @@
  * Covers:
  *  - `getAssessmentByUuid` — success, null on 404, null on network error
  *  - `getAssessmentByActivityUuid` — success, null on 404, null on network error
- *  - `getAttemptState` — success, null on failure
- *  - `getPolicyPreset` — success, null on failure
- *  - `listStudentPolicyOverrides` — success, empty array on failure
- *  - `createStudentPolicyOverride` — success, throws on failure
- *  - `updateStudentPolicyOverride` — success, throws on failure
- *  - `deleteStudentPolicyOverride` — success, throws on failure
  *  - `saveGradingDraft` — success, throws StaleGradeError on 412, throws on failure
- *  - `runCodeItem` — success, throws on failure
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -25,7 +18,6 @@ const mocks = vi.hoisted(() => ({
   getAssessmentSubmission: vi.fn(),
   getAssessment: vi.fn(),
   getActivityAssessment: vi.fn(),
-  runItem: vi.fn(),
 }))
 
 vi.mock('@/lib/api-client', () => ({
@@ -44,27 +36,13 @@ vi.mock('@/lib/api/generated/assessments/assessments', () => ({
   getActivityAssessment: mocks.getActivityAssessment,
 }))
 
-// v2: runCodeItem goes through the generated code-run fetcher.
-vi.mock('@/lib/api/generated/code/code', () => ({
-  runItem: mocks.runItem,
-}))
-
 vi.mock('@services/config/config', () => ({
   getAPIUrl: vi.fn(() => 'http://api.test/'),
-  getServerAPIUrl: vi.fn(() => 'http://api:8000/api/v1/'),
+  getServerAPIUrl: vi.fn(() => 'http://server:8000/api/v2/'),
 }))
 
 // Import AFTER mocks
-import {
-  getAttemptState,
-  getPolicyPreset,
-  listStudentPolicyOverrides,
-  createStudentPolicyOverride,
-  updateStudentPolicyOverride,
-  deleteStudentPolicyOverride,
-  saveGradingDraft,
-  runCodeItem,
-} from '@/services/assessments/assessment-actions'
+import { saveGradingDraft } from '@/services/assessments/assessment-actions'
 import { getAssessmentByUuid, getAssessmentByActivityUuid } from '@/services/assessments/assessments'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -205,205 +183,6 @@ describe('getAssessmentByActivityUuid', () => {
   })
 })
 
-// ── getAttemptState ───────────────────────────────────────────────────────────
-
-describe('getAttemptState', () => {
-  it('returns the attempt projection on success', async () => {
-    const state = {
-      assessment_uuid: 'asm_1',
-      submission_uuid: null,
-      submission_status: null,
-      release_state: null,
-      recommended_action: 'start',
-      can_start: true,
-      can_submit: false,
-      can_continue: false,
-      can_view_result: false,
-      can_edit: false,
-      can_save_draft: false,
-      can_start_revision: false,
-      is_returned_for_revision: false,
-      is_result_visible: false,
-      primary_button_label_key: 'start',
-      score: null,
-      disabled_action_reasons: [],
-      effective_policy: null,
-      server_now: null,
-      started_at: null,
-      timer_started_at: null,
-      timer_expires_at: null,
-      available_at: null,
-      closes_at: null,
-      due_at: null,
-      time_remaining_seconds: null,
-      content_version: 1,
-      policy_version: 1,
-    }
-    mockMetaSuccess(state)
-
-    const result = await getAttemptState('asm_1')
-
-    expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/attempt-state',
-      expect.objectContaining({ method: 'GET' }),
-    )
-    expect(result?.recommended_action).toBe('start')
-    expect(result?.can_start).toBe(true)
-  })
-
-  it('returns null on failure', async () => {
-    mockMetaFailure('Not found')
-
-    const result = await getAttemptState('ghost')
-
-    expect(result).toBeNull()
-  })
-})
-
-// ── getPolicyPreset ───────────────────────────────────────────────────────────
-
-describe('getPolicyPreset', () => {
-  it('fetches the policy preset for a given kind', async () => {
-    const preset = {
-      kind: 'EXAM',
-      grade_release_mode: 'IMMEDIATE',
-      grading_mode: 'MANUAL',
-      completion_rule: 'GRADED',
-      passing_score: 60,
-      max_attempts: null,
-      time_limit_seconds: null,
-      allow_late: true,
-      anti_cheat_enabled: false,
-      review_visibility: 'AFTER_GRADING',
-    }
-    mockMetaSuccess(preset)
-
-    const result = await getPolicyPreset('EXAM')
-
-    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object))
-    expect(result?.grade_release_mode).toBe('IMMEDIATE')
-    expect(result?.grading_mode).toBe('MANUAL')
-  })
-
-  it('returns null on failure', async () => {
-    mockMetaFailure('Unknown kind')
-
-    const result = await getPolicyPreset('UNKNOWN')
-
-    expect(result).toBeNull()
-  })
-})
-
-// ── listStudentPolicyOverrides ────────────────────────────────────────────────
-
-describe('listStudentPolicyOverrides', () => {
-  it('returns list of overrides on success', async () => {
-    const overrides = [{ id: 1, user_id: 5, policy_id: 10, max_attempts_override: 3 }]
-    mockMetaSuccess(overrides)
-
-    const result = await listStudentPolicyOverrides('asm_1')
-
-    expect(mocks.apiJson).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object))
-    expect(result).toHaveLength(1)
-    expect(result[0]!.max_attempts_override).toBe(3)
-  })
-
-  it('returns empty array on failure', async () => {
-    mockMetaFailure('Forbidden')
-
-    const result = await listStudentPolicyOverrides('asm_1')
-
-    expect(result).toEqual([])
-  })
-})
-
-// ── createStudentPolicyOverride ───────────────────────────────────────────────
-
-describe('createStudentPolicyOverride', () => {
-  const STUDENT_ID = '44444444-4444-4444-8444-444444444444'
-
-  it('POSTs and returns created override', async () => {
-    const override = {
-      id: 1,
-      user_id: 5,
-      policy_id: 10,
-      max_attempts_override: 2,
-    }
-    mockMetaSuccess(override)
-
-    const result = await createStudentPolicyOverride('asm_1', {
-      user_id: STUDENT_ID,
-      max_attempts_override: 2,
-    })
-
-    // v2: the student id is a path segment, not a body field, and the body
-    // carries only the override block itself.
-    expect(mocks.apiJson).toHaveBeenCalledWith(
-      `assessments/asm_1/overrides/${STUDENT_ID}`,
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ max_attempts_override: 2 }),
-      }),
-    )
-    expect(result.id).toBe(1)
-  })
-
-  it('throws on failure', async () => {
-    mockMetaFailure('User not enrolled')
-
-    await expect(createStudentPolicyOverride('asm_1', { user_id: STUDENT_ID })).rejects.toThrow('User not enrolled')
-  })
-})
-
-// ── updateStudentPolicyOverride ───────────────────────────────────────────────
-
-describe('updateStudentPolicyOverride', () => {
-  it('PATCHes and returns the updated override', async () => {
-    const updated = { id: 1, user_id: 5, policy_id: 10, max_attempts_override: 5 }
-    mockMetaSuccess(updated)
-
-    const result = await updateStudentPolicyOverride('asm_1', 5, {
-      max_attempts_override: 5,
-    })
-
-    expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/overrides/5',
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({ max_attempts_override: 5 }),
-      }),
-    )
-    expect(result.max_attempts_override).toBe(5)
-  })
-
-  it('throws on failure', async () => {
-    mockMetaFailure('Override not found')
-
-    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow('Override not found')
-  })
-})
-
-// ── deleteStudentPolicyOverride ───────────────────────────────────────────────
-
-describe('deleteStudentPolicyOverride', () => {
-  it('sends DELETE and revalidates on success', async () => {
-    mockMetaSuccess(null)
-
-    await deleteStudentPolicyOverride('asm_1', 5)
-
-    expect(mocks.apiJson).toHaveBeenCalledWith(
-      'assessments/asm_1/overrides/5',
-      expect.objectContaining({ method: 'DELETE' }),
-    )
-  })
-
-  it('throws on failure', async () => {
-    mockMetaFailure('Override not found')
-
-    await expect(deleteStudentPolicyOverride('asm_1', 999)).rejects.toThrow('Override not found')
-  })
-})
-
 // ── saveGradingDraft ──────────────────────────────────────────────────────────
 
 describe('saveGradingDraft', () => {
@@ -460,61 +239,5 @@ describe('saveGradingDraft', () => {
     mockMetaFailure('Grade conflict')
 
     await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow('Grade conflict')
-  })
-})
-
-// ── runCodeItem ───────────────────────────────────────────────────────────────
-
-describe('runCodeItem', () => {
-  it('POSTs code run request and returns result', async () => {
-    // v2: a wire-shaped `CodeRun` — note `cases`, not the legacy `visible_results`.
-    const codeRun = {
-      id: 'run_1',
-      assessment_id: 'asm_1',
-      item_id: 'item_code_1',
-      language_id: 71,
-      status: 'accepted',
-      purpose: 'visible' as const,
-      replayed: false,
-      passed: 3,
-      total: 3,
-      score: 100,
-      created_at_unix: 1_700_000_000,
-      finished_at_unix: 1_700_000_010,
-      cases: [
-        {
-          test_id: 'case_1',
-          description: 'Case 1',
-          status_description: 'Accepted',
-          passed: true,
-          is_visible: true,
-          weight: 1,
-        },
-      ],
-    }
-    mocks.runItem.mockResolvedValue(codeRun)
-
-    const payload = { source: 'print("hello")', language: 71 }
-    const result = await runCodeItem('asm_1', 'item_code_1', payload)
-
-    // v2: `POST assessment-items/{id}/runs` via the generated `runItem()` fetcher.
-    expect(mocks.runItem).toHaveBeenCalledWith(
-      'item_code_1',
-      { language_id: 71, source: 'print("hello")', custom_input: null },
-      undefined,
-    )
-    expect(result.run_id).toBe('run_1')
-    expect(result.status).toBe('accepted')
-    expect(result.passed).toBe(3)
-  })
-
-  it('throws on failure', async () => {
-    mocks.runItem.mockRejectedValue(
-      new APIError({ code: 'API_ERROR', message: 'Language not supported', status: 400, data: {} }),
-    )
-
-    await expect(runCodeItem('asm_1', 'item_1', { source: 'code', language: 999 })).rejects.toThrow(
-      'Language not supported',
-    )
   })
 })

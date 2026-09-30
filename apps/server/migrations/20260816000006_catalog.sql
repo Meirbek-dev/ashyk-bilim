@@ -16,7 +16,7 @@
 --   * resource_authors used a polymorphic string uuid → two real FKs with an
 --     exactly-one CHECK.
 --   * FTS uses generated stored columns with the 'simple' config (content is
---     ru/kk - English stemming was wrong) + GIN.
+--     ru/kk — English stemming was wrong) + GIN.
 
 CREATE TABLE platforms (
     id              uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -41,7 +41,7 @@ CREATE TABLE courses (
     name                 text NOT NULL CHECK (char_length(name) <= 500),
     description          text NOT NULL DEFAULT '',
     about                text NOT NULL DEFAULT '',
-    -- [{id, text, emoji, link?}] - typed serde enum on the Rust side.
+    -- [{id, text, emoji, link?}] — typed serde enum on the Rust side.
     learnings            jsonb NOT NULL DEFAULT '[]'::jsonb,
     tags                 text[] NOT NULL DEFAULT '{}',
     thumbnail_type       text NOT NULL DEFAULT 'image'
@@ -126,7 +126,7 @@ CREATE TABLE blocks (
     legacy_uuid  text UNIQUE,
     activity_id  uuid NOT NULL REFERENCES activities (id) ON DELETE CASCADE,
     block_type   text NOT NULL CHECK (block_type IN ('video', 'pdf', 'image', 'custom')),
-    -- {file_key, file_format, file_name, file_size, file_type} - typed on the
+    -- {file_key, file_format, file_name, file_size, file_type} — typed on the
     -- Rust side; file bytes live in object storage.
     content      jsonb NOT NULL DEFAULT '{}'::jsonb,
     created_at   timestamptz NOT NULL DEFAULT now(),

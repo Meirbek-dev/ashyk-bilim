@@ -7,14 +7,14 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
 
 ## 1. What moves where
 
-| Legacy | Destination | Method |
-|---|---|---|
-| Postgres `openu` (73 tables) | Postgres `ashyq` (redesigned schema) | `ashyq admin etl` (Rust ETL) |
-| `user` rows + argon2/bcrypt hashes | Zitadel (credentials, verified email, Google IdP links) + `users` table (profile, RBAC link) | Zitadel import API; hashes pass through (passwap verifies argon2id & bcrypt natively, rehashes on first login) |
-| `content/` volume (platform 176 MB, users 5 MB, uploads) | RustFS buckets `public` / `private` | ETL file phase with key map |
-| Redis sessions/caches | **not migrated** | all users re-login after cutover (announced); caches rebuild |
-| Judge0 data (`judge0_box`, its tables) | unchanged | Judge0 stays as-is |
-| Legacy alembic history | dropped | new sqlx migration baseline |
+| Legacy                                                   | Destination                                                                                  | Method                                                                                                         |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Postgres `openu` (73 tables)                             | Postgres `ashyq` (redesigned schema)                                                         | `ashyq admin etl` (Rust ETL)                                                                                   |
+| `user` rows + argon2/bcrypt hashes                       | Zitadel (credentials, verified email, Google IdP links) + `users` table (profile, RBAC link) | Zitadel import API; hashes pass through (passwap verifies argon2id & bcrypt natively, rehashes on first login) |
+| `content/` volume (platform 176 MB, users 5 MB, uploads) | RustFS buckets `public` / `private`                                                          | ETL file phase with key map                                                                                    |
+| Redis sessions/caches                                    | **not migrated**                                                                             | all users re-login after cutover (announced); caches rebuild                                                   |
+| Judge0 data (`judge0_box`, its tables)                   | unchanged                                                                                    | Judge0 stays as-is                                                                                             |
+| Legacy alembic history                                   | dropped                                                                                      | new sqlx migration baseline                                                                                    |
 
 ## 2. ETL design (`ashyq admin etl`)
 
@@ -35,7 +35,7 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
   (the planning estimate of 52 was stale). Every column has an explicit fate in
   `crates/etl/src/spec.rs`: `Normalize` (into columns), `Retype` (parse into the new tagged
   serde enum, with strict-parse failure report), or `Drop` (dead data, listed).
-  A failed parse is a hard ETL error with row identification — never a silent skip.
+  A failed parse is a hard ETL error with row identification - never a silent skip.
 - **Plagiarism internals** (Q4): tables/columns dropped; disabled-state stubs keep
   their flags.
 - **Role display names**: Cyrillic literals replaced by i18n keys during transform
@@ -58,15 +58,15 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
 
 1. ETL exports users: email, username, display name, locale, hash string
    (modular-crypt format: `$argon2id$…` / `$2b$…`), email-verified=true
-   (grandfathered — legacy had no verification), active/locked status.
+   (grandfathered - legacy had no verification), active/locked status.
 2. `ashyq admin zitadel-import` calls Zitadel's user import (machine-user PAT),
-   setting `hashedPassword` verbatim — Zitadel's passwap layer verifies argon2id
+   setting `hashedPassword` verbatim - Zitadel's passwap layer verifies argon2id
    and bcrypt and transparently re-hashes to its own policy on first successful
    login. **No password resets, no user-visible change.**
 3. Google-linked accounts: legacy Google `sub`/account linkage (from the
-   fastapi-users OAuth account storage — exact table verified during P1
+   fastapi-users OAuth account storage - exact table verified during P1
    discovery) migrates into **our** `google_accounts` table (Google OAuth is
-   first-party — DECISIONS.md 2026-08-16). Google-only users get a Zitadel user
+   first-party - DECISIONS.md 2026-08-16). Google-only users get a Zitadel user
    with no password and keep passwordless Google login.
 4. Before import, self-hosted Zitadel must set
    `ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS=argon2,bcrypt` (bcrypt alone
@@ -94,9 +94,10 @@ Zitadel). Big-bang cutover (Q2), window up to 2 days (Q5), zero data loss.
 
 Run the **entire** pipeline against a restored production backup in a scratch
 compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
+
 1. ETL exits green with zero unexplained drops, twice in a row on fresh restores
    (the report shows `xp_transactions` written = 0 and every
-   `gamification_profiles` row zeroed — gamification starts fresh by decision);
+   `gamification_profiles` row zeroed - gamification starts fresh by decision);
 2. rehearsal wall-clock is measured (informs the cutover window; expected minutes,
    not hours, at 16 MB of relational data);
 3. smoke suite passes against the rehearsal stack: login with imported password,
@@ -123,12 +124,13 @@ compose stack (fresh PG + Zitadel + RustFS), repeatedly, until:
   orphan usergroup-resource row are dropped; 77 (79 on 2026-09-26) unknown assessment-setting keys
   and two unresolved answer item references are retained in the detailed ETL
   drop log. (The 40 unverifiable XP rows noted at the time are moot: since
-  2026-09-12 no XP row is migrated at all — every learner starts at zero.)
+  2026-09-12 no XP row is migrated at all - every learner starts at zero.)
 
 ### 2026-09-26 rehearsal (backup 2026-09-25T02-00-00)
 
 Source: 169 users, 47 courses, 452 assessment items, 1,777 trail steps, 370 files.
 Three defects the 2026-09-07 rehearsal could not see were fixed:
+
 - `ai_thread`/`ai_qa_message` were asserted empty; production now has 16 threads
   and 23 questions. Threads and messages migrate; the 23 `ai_run`/`ai_event` rows
   (every run stuck in `running`, no answer ever written) are reported, not loaded.
@@ -143,7 +145,7 @@ Three defects the 2026-09-07 rehearsal could not see were fixed:
   in legacy too, listed in `etl_drop_log`).
 - `progress-backfill` ignored completed trail steps for lessons/videos/documents
   (1,548 completions → 0) and paid course-completion XP on a repair. Both fixed.
-Wall clock for migrate + ETL + Zitadel import + backfill: 64 s.
+  Wall clock for migrate + ETL + Zitadel import + backfill: 64 s.
 
 Browser/API critics on the restored stack then found, and the ETL now handles:
 legacy certificate codes (`XX-YYYYMMDD-XXXX-NNNNNN`) verify dash-insensitively;
@@ -159,9 +161,9 @@ remapped; chapter/activity/item positions are renumbered densely (legacy mixed
 draft file-submission config a new activity gets (see QUESTIONS Q-2026-09-26-1).
 `user.profile` (5 users' builder sections) is retyped into the typed
 `users.profile` document and `user.theme` (79 non-`default` choices) into
-`users.theme` (pass 29, BUG-361/362 — both were dropped until then).
+`users.theme` (pass 29, BUG-361/362 - both were dropped until then).
 Documented losses: `user.details` (2 users; both are the empty «Новая деталь»
-placeholder card the legacy builder wrote on first open — logged with that
+placeholder card the legacy builder wrote on first open - logged with that
 reason; a filled card would be logged with its content) and the per-test
 breakdown of two legacy code-challenge grades (keyed by Judge0 test ids, not
 items; their final scores are kept).
@@ -196,12 +198,12 @@ Production bootstrap notes (2026-09-30):
 T-7d   Announce maintenance window to users (all sessions will be logged out).
 T-1d   Final rehearsal on fresh backup. Freeze legacy deploys entirely.
 T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, db, redis stay up)
-       2. Final backup (offen manual run) — verified restorable.
+       2. Final backup (offen manual run) - verified restorable.
        3. Run `ashyq admin etl --files-root <content> --quarantine-orphans`, then
           `ashyq admin zitadel-import` against the read-only legacy DB, then
           `ashyq admin progress-backfill` (the ETL drops the legacy progress
           projection; without the backfill every learner shows 0% progress).
-       4. Verification phase green (hard gate — abort on red).
+       4. Verification phase green (hard gate - abort on red).
        5. Bring up: zitadel, rustfs, server, worker; run `ashyq migrate` no-op check;
           swap nginx template (v2 routes, /content → rustfs); reload nginx.
        4a. AI keys: put `AB__AI__OPENAI_API_KEY` / `AB__AI__OPENROUTER_API_KEY`
@@ -209,7 +211,7 @@ T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, 
           default to `gpt-6-luna` / `deepseek/deepseek-v4-flash` and the budget to
           1 000 000 tokens/month (`AB__AI__OPENAI_MODEL`, `AB__AI__OPENROUTER_MODEL`,
           `AB__AI__MONTHLY_TOKEN_BUDGET` override). `ashyq admin config-check` prints
-          `ai.status` — `disabled: no provider key` until they are set (AI routes
+          `ai.status` - `disabled: no provider key` until they are set (AI routes
           answer 503 `ai-disabled`, agents return draft artifacts), `enabled` after.
        5a. `ashyq admin judge0-tune` (AB__JUDGE0__DATABASE_URL → Judge0's DB): applies
           the sandbox-safe compiler/run commands the legacy API patched on every boot.

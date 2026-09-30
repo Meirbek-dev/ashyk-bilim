@@ -58,20 +58,12 @@ function getRegistry(): Map<ItemKind, ItemKindModule> {
   return registryMap
 }
 
-export function registerItemKind(module: ItemKindModule): void {
-  getRegistry().set(module.kind, module)
-}
-
 export function getItemKindModule(kind: ItemKind): ItemKindModule {
   const module = getRegistry().get(kind)
   if (!module) {
     throw new Error(`ItemKindRegistry: no module registered for item kind "${kind}"`)
   }
   return module
-}
-
-export function listItemKindModules(): ItemKindModule[] {
-  return [...getRegistry().values()]
 }
 
 export * from './unsupported'

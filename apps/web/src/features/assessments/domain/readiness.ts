@@ -92,17 +92,6 @@ export function localizeValidationIssue(
   return issue.message
 }
 
-export function issuesForArea(
-  issues: ValidationIssue[],
-  area: ValidationArea,
-  itemUuid?: string | null,
-): ClassifiedValidationIssue[] {
-  return issues
-    .filter(issue => (itemUuid ? issue.itemUuid === itemUuid : !issue.itemUuid))
-    .map(classifyValidationIssue)
-    .filter(issue => issue.area === area)
-}
-
 export function itemIssues(
   issues: ValidationIssue[],
   itemUuid: string | null | undefined,

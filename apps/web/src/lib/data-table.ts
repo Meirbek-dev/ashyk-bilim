@@ -1,54 +1,6 @@
 import type * as React from 'react'
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 
-export const dataTableConfig = {
-  textOperators: [
-    { label: 'Contains', value: 'iLike' as const },
-    { label: 'Does not contain', value: 'notILike' as const },
-    { label: 'Is', value: 'eq' as const },
-    { label: 'Is not', value: 'ne' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-  numericOperators: [
-    { label: 'Is', value: 'eq' as const },
-    { label: 'Is not', value: 'ne' as const },
-    { label: 'Is less than', value: 'lt' as const },
-    { label: 'Is less than or equal', value: 'lte' as const },
-    { label: 'Is greater than', value: 'gt' as const },
-    { label: 'Is greater than or equal', value: 'gte' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-  dateOperators: [
-    { label: 'Is', value: 'eq' as const },
-    { label: 'Is not', value: 'ne' as const },
-    { label: 'Is before', value: 'lt' as const },
-    { label: 'Is after', value: 'gt' as const },
-    { label: 'Is on or before', value: 'lte' as const },
-    { label: 'Is on or after', value: 'gte' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-  booleanOperators: [
-    { label: 'Is', value: 'eq' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-  selectOperators: [
-    { label: 'Is', value: 'eq' as const },
-    { label: 'Is not', value: 'ne' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-  multiSelectOperators: [
-    { label: 'Contains any', value: 'inArray' as const },
-    { label: 'Does not contain any', value: 'notInArray' as const },
-    { label: 'Is empty', value: 'isEmpty' as const },
-    { label: 'Is not empty', value: 'isNotEmpty' as const },
-  ],
-} as const
-
 export type FilterOperator =
   | 'eq'
   | 'ne'
@@ -136,24 +88,4 @@ export function getColumnPinningStyle({
     width: column.getSize?.(),
     zIndex: isPinned ? 1 : undefined,
   }
-}
-
-export function getFilterOperators(filterVariant: FilterVariant) {
-  const operatorMap: Record<FilterVariant, readonly { label: string; value: FilterOperator }[]> = {
-    text: dataTableConfig.textOperators,
-    number: dataTableConfig.numericOperators,
-    range: dataTableConfig.numericOperators,
-    date: dataTableConfig.dateOperators,
-    dateRange: dataTableConfig.dateOperators,
-    boolean: dataTableConfig.booleanOperators,
-    select: dataTableConfig.selectOperators,
-    multiSelect: dataTableConfig.multiSelectOperators,
-  }
-
-  return operatorMap[filterVariant] ?? dataTableConfig.textOperators
-}
-
-export function getDefaultFilterOperator(filterVariant: FilterVariant) {
-  const operators = getFilterOperators(filterVariant)
-  return operators[0]?.value ?? (filterVariant === 'text' ? 'iLike' : 'eq')
 }

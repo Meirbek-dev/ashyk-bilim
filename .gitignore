@@ -41,21 +41,15 @@ mprocs.log
 __pycache__/
 *.py[cod]
 *$py.class
-**/.mypy_cache
-**/.ruff_cache
 
 # vscode
 .vscode/
-
-# Flyio
-.flyio/
-fly.toml
 
 # Backup files
 backups/
 .idea
 
-# TLS certificates - managed outside source control
+# TLS certificates — managed outside source control
 certs/*.pem
 certs/*.crt
 certs/*.key
@@ -69,8 +63,6 @@ tmpclaude-*-cwd
 **/.next
 **/coverage
 **/.turbo
-**/.pytest_cache
-temp-restore
 
 # AI
 .antigravitycli

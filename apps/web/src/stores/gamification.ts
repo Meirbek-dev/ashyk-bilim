@@ -229,10 +229,3 @@ export const useGamificationStore = create<GamificationState & GamificationActio
 )
 
 // ── Selectors ─────────────────────────────────────────────────────────────────
-
-export const selectStreaks = (s: GamificationState) => ({
-  login: s.profile?.login_streak ?? 0,
-  learning: s.profile?.learning_streak ?? 0,
-  maxLogin: s.profile?.longest_login_streak ?? 0,
-  maxLearning: s.profile?.longest_learning_streak ?? 0,
-})

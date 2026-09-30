@@ -936,20 +936,6 @@ export function isEmbedType(type: string | null | undefined): type is EmbedType 
 }
 
 /**
- * Returns providers filtered and sorted for a given category.
- * Providers without an `iconName` are sorted last so icon grids look clean.
- */
-export function getProvidersByCategory(category: EmbedCategoryId): EmbedProvider[] {
-  return (EMBED_PROVIDERS as readonly EmbedProvider[])
-    .filter(p => p.categories.includes(category))
-    .toSorted((a, b) => {
-      if (a.iconName && !b.iconName) return -1
-      if (!a.iconName && b.iconName) return 1
-      return a.type.localeCompare(b.type)
-    })
-}
-
-/**
  * Clamps a raw height value to the valid embed height range [200, 1200].
  */
 export function clampEmbedHeight(raw: number): number {

@@ -2,7 +2,7 @@ name: server-ci
 
 on:
   push:
-    branches: [rewrite, main]
+    branches: [main]
     paths:
       - 'apps/server/**'
       - '.github/workflows/server-ci.yaml'

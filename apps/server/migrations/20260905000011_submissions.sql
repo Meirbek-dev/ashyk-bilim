@@ -21,7 +21,7 @@ CREATE TABLE submissions (
                           CHECK (status IN ('draft', 'pending', 'graded', 'published', 'returned')),
     attempt_number        integer NOT NULL CHECK (attempt_number >= 1),
 
-    -- {"<item_id>": ItemAnswer} - one canonical shape for every kind.
+    -- {"<item_id>": ItemAnswer} — one canonical shape for every kind.
     answers               jsonb NOT NULL DEFAULT '{}'::jsonb,
     -- The EFFECTIVE breakdown (teacher edits applied); the raw auto-grade
     -- lives on the grading entry that produced it.

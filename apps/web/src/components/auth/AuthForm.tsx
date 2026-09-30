@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Info, Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@components/ui/alert'
 import { Button } from '@components/ui/button'
 
@@ -13,16 +13,6 @@ export function AuthErrorBanner({ message }: { message: string }) {
   return (
     <Alert variant="destructive">
       <AlertTriangle data-icon="inline-start" />
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
-  )
-}
-
-export function AuthSuccessBanner({ message }: { message: string }) {
-  if (!message) return null
-  return (
-    <Alert>
-      <Info data-icon="inline-start" />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   )

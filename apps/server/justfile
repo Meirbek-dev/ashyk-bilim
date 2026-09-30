@@ -1,4 +1,4 @@
-# Ashyq server - the only entry point for builds/tests/tooling.
+# Ashyq server — the only entry point for builds/tests/tooling.
 # CI runs `just ci`; agents run the same recipes locally. See AGENTS.md.
 
 set dotenv-load := true
@@ -26,7 +26,7 @@ clippy:
 test:
     cargo nextest run --workspace
 
-# Unit tests only - no Postgres/Redis/Docker required (Windows sessions).
+# Unit tests only — no Postgres/Redis/Docker required (Windows sessions).
 test-unit:
     cargo nextest run --workspace --lib --bins
 
@@ -50,13 +50,11 @@ migration NAME:
 openapi:
     cargo run -p ashyq-server -- openapi > openapi.v2.json
 
-# Coverage with floor (ratchet up as phases land - never down).
+# Coverage with floor (ratchet up as phases land — never down).
 # Scaffold floor 30 → 80 after P3 (measured 88% lines, 2026-09-05).
-# The ETL crate is one-shot cutover tooling verified by rehearsal (MIGRATION.md
-# §5), not by unit tests, and main.rs is the process entrypoint; neither is
-# held to the floor (DECISIONS.md, 2026-09-11). Measured 84.5% without them.
+# main.rs is the process entrypoint and is not held to the floor.
 cov:
-    cargo llvm-cov nextest --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/](etl[\\/]|server[\\/]src[\\/]main\.rs)'
+    cargo llvm-cov nextest --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/]server[\\/]src[\\/]main\.rs'
 
 deny:
     cargo deny check
@@ -67,9 +65,9 @@ machete:
 # Everything CI runs, in CI order. Green here == green CI.
 ci: fmt-check clippy test deny machete
 
-# Dev stack (requires Docker): legacy db/redis + zitadel + rustfs.
+# Dev stack (requires Docker): db redis zitadel rustfs.
 services:
-    docker compose -f ../../docker-compose.yml -f ../../docker-compose.rewrite.yml --profile rewrite up -d db redis zitadel rustfs
+    docker compose -f ../../docker-compose.dev.yml up -d db redis zitadel rustfs
 
 dev:
     bacon

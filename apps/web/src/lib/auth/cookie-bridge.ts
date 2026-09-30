@@ -1,6 +1,4 @@
-import type { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { AUTH_COOKIE_NAMES, SESSION_COOKIE_NAME } from './types'
 
 /**
  * Cookie bridge between the Rust BFF and the Next.js server runtime.
@@ -138,24 +136,4 @@ export async function applyResponseCookies(responseHeaders: Headers): Promise<vo
       cookieStore.set(parsed.name, parsed.value, parsed.options)
     }
   }
-}
-
-export function applyResponseCookiesToNextResponse(responseHeaders: Headers, response: NextResponse): void {
-  for (const setCookieHeader of getSetCookieHeaders(responseHeaders)) {
-    response.headers.append('set-cookie', setCookieHeader)
-  }
-}
-
-export function buildRequestCookieHeader(request: NextRequest): string {
-  return AUTH_COOKIE_NAMES.map(cookieName => {
-    const cookieValue = request.cookies.get(cookieName)?.value
-    return cookieValue ? `${cookieName}=${cookieValue}` : null
-  })
-    .filter((value): value is string => value !== null)
-    .join('; ')
-}
-
-export function clearAuthCookies(response: NextResponse): NextResponse {
-  response.cookies.delete(SESSION_COOKIE_NAME)
-  return response
 }

@@ -54,39 +54,3 @@ export function useCourseStructure<TCourseStructure = AppCourse>(
     status: query.status,
   }
 }
-
-export function useCourseChapters(courseUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
-    withUnpublishedActivities,
-  })
-
-  return {
-    ...rest,
-    chapters: courseStructure?.chapters ?? [],
-  }
-}
-
-export function useChapter(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
-    withUnpublishedActivities,
-  })
-
-  const chapter = courseStructure?.chapters?.find(currentChapter => currentChapter.chapter_uuid === chapterUuid) ?? null
-
-  return { ...rest, chapter }
-}
-
-export function useChapterActivities(
-  courseUuid: string,
-  chapterUuid: string,
-  enabled: boolean,
-  withUnpublishedActivities = false,
-) {
-  const { chapter, ...rest } = useChapter(courseUuid, chapterUuid, withUnpublishedActivities)
-
-  return {
-    ...rest,
-    activities: enabled ? (chapter?.activities ?? []) : [],
-    isLoading: enabled ? rest.isLoading : false,
-  }
-}

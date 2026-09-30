@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Authoritative operations reference for the Ashyk Bilim platform.
+Operations reference for the Ashyq Bilim production stack (`docker-compose.yml`).
 
 ## Architecture
 
@@ -8,365 +8,146 @@ Authoritative operations reference for the Ashyk Bilim platform.
 Internet
   │
   ▼
-nginx (TLS termination, rate limiting, static cache)
-  ├── /api/v1/*   → api:8000  (FastAPI)
-  ├── /content/*  → api:8000  (user uploads)
-  └── /*          → web:3000  (Next.js)
+nginx (TLS termination, rate limiting, static cache)   extra/nginx.conf.template
+  ├── /api/v2/*                  → server:8000  (Rust API, axum)
+  ├── /content/*                 → rustfs:9000  (anonymous read of ab-public)
+  ├── /ab-public/, /ab-private/  → rustfs:9000  (presigned S3, passed verbatim)
+  └── /*                         → web:3000     (Next.js)
 
-Networks
-  app-net   — nginx ↔ web ↔ api
-  data-net  — api ↔ db ↔ redis   (internal)
-  exec-net  — api ↔ judge0       (internal)
+server / worker  → db (Postgres + pgvector), redis, zitadel (internal only),
+                   rustfs, judge0-server
 ```
 
-## Compose Profiles
+| Service                         | Role                                                     |
+| ------------------------------- | -------------------------------------------------------- |
+| `server`                        | HTTP API (`ashyq serve`)                                 |
+| `worker`                        | Postgres job queue consumer (`ashyq worker`)             |
+| `web`                           | Next.js standalone server                                |
+| `zitadel`                       | Identity (headless Session API); no public route         |
+| `rustfs`                        | S3 object storage, buckets `ab-public` / `ab-private`    |
+| `db`, `redis`                   | Postgres 18 + pgvector, Redis                            |
+| `judge0-server/-workers`        | Code execution sandbox (internal `exec-net`)             |
+| `backup`                        | Daily volume backup, 02:00, 7-day retention              |
+| `server-migrate`, `storage-admin` | `maintenance` profile: one-shot jobs, run with `run --rm` |
 
-| Profile       | What it adds                                          |
-| ------------- | ----------------------------------------------------- |
-| _(none)_      | nginx, web, api, db, redis — always started with `up` |
-| `code-runner` | judge0-server, judge0-workers                         |
-| `ops`         | backup cron                                           |
-| `migrate`     | one-shot migration container (use with `run --rm`)    |
+## Configuration
 
----
+Copy `.env.example` to `.env` and fill in every `required` value. The server
+reads `AB__SECTION__KEY` variables; compose sets the production values
+(`AB__ENVIRONMENT=production`, CORS, storage origin, Redis DB 2) from
+`NGINX_SERVER_NAME`, so `.env` carries only secrets and optional integrations.
 
-## First-Time Setup
+## Release
 
-### 1. Clone the repository
+Pull the revision to deploy, then:
 
 ```bash
-git clone <repo-url> ashyq-bilim
-cd ashyq-bilim
+bun run deploy          # = bash extra/deploy.sh
 ```
 
-### 2. Configure environment
+`deploy.sh` builds `ashyq-server:<sha>` and `ashyq-web:<sha>`, runs SQLx
+migrations (`server-migrate`), starts `server worker web`, reloads nginx and
+checks `/api/v2/health/ready`. Previous images are kept: roll back with
+`IMAGE_TAG=<old sha> docker compose up -d --no-deps server worker web`
+(migrations are forward-only — a rollback across a schema change needs a
+restore).
 
-```bash
-cp example.env .env
-# Edit .env — fill in every blank value (search for "# required")
-```
+Take a backup first when the release contains migrations:
+`docker compose exec backup backup`.
 
-Required secrets to generate:
+## Bootstrap notes (first install)
 
-```bash
-openssl rand -hex 32    # POSTGRES_PASSWORD
-```
+- Before the first Zitadel start, create the `zitadel_machinekey` volume and
+  give its root directory to UID/GID 1000 with mode 0700. An empty Docker volume
+  belongs to root; otherwise bootstrap commits its instance but cannot write
+  `pat.txt`, and retries fail with `Instance.Domain.AlreadyExists`. Put the PAT
+  from `pat.txt` into `AB__ZITADEL__PAT`.
+- `ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS=argon2,bcrypt` must stay:
+  imported users still carry Argon2id hashes until their next login.
+- Apply the public-read policy once:
+  `docker compose run --rm storage-admin s3api put-bucket-policy --bucket ab-public --policy file:///policy.json`
+  (`/cors.json` is mounted for `put-bucket-cors` the same way).
+- `docker compose run --rm server admin judge0-tune` (needs
+  `AB__JUDGE0__DATABASE_URL`) applies the sandbox-safe compiler/run commands to
+  Judge0's DB. Idempotent; re-run after any Judge0 image upgrade.
+  `… server admin config-check` prints the effective config (e.g. `ai.status`).
+- web/server/worker resolve the public hostname through `host-gateway`: this
+  host cannot reach its public IP through NAT, and signed S3 URLs must keep the
+  HTTPS hostname.
+- The Google callback still registered in the Google console is
+  `/api/v1/auth/google/callback`; nginx forwards it to the v2 handler. After
+  changing the console to `/api/v2/auth/google/callback`, drop that location
+  from `extra/nginx.routes.conf`.
 
-Generate the JWT signing key (run once; store value in `.env`):
+## Post-cutover cleanup (host, owner)
 
-```bash
-python -c "import secrets; print('PLATFORM_JWT_SECRET:', secrets.token_hex(64))"
-```
+The legacy stack was replaced on 2026-09-30. Still on the production host:
 
-Also set the domain variables (`NGINX_SERVER_NAME`, `NEXT_PUBLIC_SITE_URL`, `PLATFORM_DOMAIN`, etc.) to your actual hostname.
+- Stopped legacy containers (`api`, `taskiq-*`, `migrate`): remove with
+  `docker compose up -d --remove-orphans`.
+- The legacy database (`openu`, read-only since cutover) and the `app_content`
+  volume are no longer used or backed up; drop them once you no longer want a
+  fallback copy.
+- Orphan legacy files quarantined under `ab-private/quarantine/` (see
+  QUESTIONS.md for the 87 assignment files) — delete when no longer needed.
 
-### 3. Provision TLS certificates
+## TLS
 
-Place certificates in `./certs/` (git-ignored, mounted read-only into nginx):
-
-```
-certs/
-  cert.pem   — full-chain certificate
-  key.pem    — private key
-```
-
-**Let's Encrypt (Certbot):**
-
-```bash
-sudo certbot certonly --standalone -d cs-mooc.tou.edu.kz
-sudo cp /etc/letsencrypt/live/cs-mooc.tou.edu.kz/fullchain.pem ./certs/cert.pem
-sudo cp /etc/letsencrypt/live/cs-mooc.tou.edu.kz/privkey.pem   ./certs/key.pem
-sudo chmod 644 ./certs/cert.pem ./certs/key.pem
-```
-
-Add a Certbot deploy hook to reload nginx after renewal:
-
-```bash
-docker-compose exec nginx nginx -s reload
-```
-
-### 4. Build images
-
-```bash
-docker-compose build
-```
-
-### 5. Start the database and apply migrations
-
-```bash
-docker-compose up -d db redis
-docker-compose ps db                  # wait until (healthy)
-docker-compose run --rm migrate
-```
-
-### 6. Start all services
-
-```bash
-docker-compose up -d
-```
-
-### 8. Verify
-
-```bash
-docker-compose ps
-curl -fsS https://cs-mooc.tou.edu.kz/api/health
-curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
-```
-
----
-
-## Release Procedure
-
-```bash
-# 1. Backup first
-docker-compose exec backup backup
-
-# 2. Pull and build
-git pull
-docker-compose build
-
-# 3. Apply migrations (only if this release includes schema changes)
-docker-compose ps db                  # confirm healthy
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync python scripts/check_migration_graph.py --require-single-head
-docker-compose run --rm migrate
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync alembic current   # verify revision
-
-# 4. Restart application containers
-docker-compose up -d --no-deps web api nginx
-
-# 5. Verify
-docker-compose ps
-docker-compose logs --tail=50 api
-curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
-```
-
----
-
-## Migrations
-
-Migrations are **always manual** — never applied automatically on start.
-The `migrate` service reuses the `ashyq-bilim-api` image.
-
-**Apply:**
-
-```bash
-docker-compose run --rm migrate
-```
-
-**Verify current revision:**
-
-```bash
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync alembic current
-```
-
-**Rollback one step:**
-
-```bash
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync alembic downgrade -1
-```
-
-**Rollback from the current head:**
-
-The current schema head is `44e39d920b74`. To roll back only that migration,
-downgrade to its parent revision:
-
-```bash
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync alembic downgrade c4d5e6f7a8b9
-```
-
-**Rollback to a specific revision:**
-
-```bash
-docker-compose run --rm --entrypoint "" migrate \
-  uv run --no-sync alembic downgrade <revision_id>
-```
-
-> If a migration is not backward-compatible (e.g. drops a column the previous
-> release still reads), redeploy the previous release first, then downgrade the
-> schema.
-
----
-
-## Rollback
-
-```bash
-# 1. Downgrade schema if needed (see Migrations above)
-# 2. Check out / re-tag the previous image
-# 3. Restart
-docker-compose up -d --no-deps web api
-```
-
----
+Certificates live in `./certs/{cert,key}.pem` (git-ignored, mounted read-only).
+Renewal uses the shared `/var/www/certbot` webroot (HTTP-01 paths bypass the
+HTTPS redirect). Install `extra/renew-certificate.sh` as an executable Certbot
+deploy hook; the host's `certbot.timer` renews and the hook reloads nginx.
 
 ## Backup
 
-Backups run daily at 02:00 via `offen/docker-volume-backup`. Start the service:
-
-```bash
-docker-compose up -d backup
-```
-
-**Trigger a manual backup:**
-
-```bash
-docker-compose exec backup backup
-```
-
-**What gets backed up:**
-
-| Volume          | Contents                                    |
-| --------------- | ------------------------------------------- |
-| `postgres_data` | PostgreSQL (includes pgvector)              |
-| `redis_data`    | Redis                                       |
-| `app_content`   | User uploads and media                      |
-| `judge0_box`    | Judge0 sandbox (when code-runner is active) |
-
-Files land in `./backups/` as `backup-YYYY-MM-DDTHH-MM-SS.tar.zst`.
-Retention: 7 days.
-
-**Optional — remote storage or notifications:**
-Add environment variables to the `backup` service in `docker-compose.yml`:
-
-```yaml
-# S3
-AWS_S3_BUCKET_NAME: my-bucket
-AWS_ACCESS_KEY_ID: ...
-AWS_SECRET_ACCESS_KEY: ...
-
-# Notifications (Slack, Discord, etc.)
-NOTIFICATION_URLS: 'slack://token@channel'
-
-# Encryption
-GPG_PASSPHRASE: ...
-```
-
----
+`offen/docker-volume-backup` archives `postgres_data`, `redis_data`,
+`rustfs_data`, `zitadel_machinekey` and `judge0_box` daily into `./backups/` as
+`backup-YYYY-MM-DDTHH-MM-SS.tar.zst`. Manual run: `docker compose exec backup backup`.
+Always extract with `tar --zstd` (the `backup-latest` symlink says `.tar.gz`).
 
 ## Restore
 
-Volume names are prefixed with the Compose project name, which defaults to the
-directory name — `ashyq-bilim` (note the `q`), unless `COMPOSE_PROJECT_NAME` says
-otherwise. **Confirm the prefix before you copy anything:** Docker and Podman
-create an unknown volume name silently instead of failing, so a typo restores the
-backup into a fresh volume nothing mounts, and the stack comes up on an empty
-database.
+Volume names carry the Compose project prefix (the checkout directory name).
+**Confirm it first** — Docker/Podman silently create an unknown volume, so a
+typo restores into a volume nothing mounts:
 
 ```bash
-docker volume ls | grep _postgres_data   # podman volume ls
+docker volume ls | grep _postgres_data
 ```
 
-**1. Stop the application**
-
 ```bash
-docker-compose down
-```
-
-**2. Extract the backup**
-
-```bash
+docker compose down
 mkdir -p temp-restore
-# Example copy from server to Windows PC:
-# scp user@192.186.12.34:~/openu-prod/backups/backup-YYYY-MM-DDTHH-00-00.tar.zst .
 tar --zstd -xf ./backups/backup-YYYY-MM-DDTHH-MM-SS.tar.zst -C temp-restore
-# Layout: temp-restore/backup/{postgres,redis,app_content,judge0_box}
-```
+# Layout: temp-restore/backup/{postgres,redis,rustfs,zitadel_machinekey,judge0_box}
 
-Windows (Git Bash or WSL): same commands work as-is. Windows (7-Zip):
-
-```powershell
-& "C:\Program Files\7-Zip\7z.exe" x ".\backups\backup-YYYY-MM-DDT02-00-00.tar.zst" "-o.\"
-& "C:\Program Files\7-Zip\7z.exe" x ".\backup-YYYY-MM-DDT02-00-00.tar" "-o.\temp-restore" -snl
-```
-
-> The backup-latest symlink has a `.tar.gz` extension but is zstd-compressed.
-> Always use `tar --zstd`, never `tar -z`.
-
-**3. Restore volumes**
-
-Each volume is emptied before the copy. A bare `cp -a` overlays instead of
-replacing, so leftovers from a previously initialized cluster (a stale
-`postmaster.pid`, orphaned WAL segments) would mix into the restored data
-directory.
-
-```bash
+PREFIX=openu-prod   # the project prefix confirmed above
 BACKUP_PATH="$(pwd)/temp-restore/backup"
-
-for v in postgres:postgres_data redis:redis_data app_content:app_content; do
+for v in postgres:postgres_data redis:redis_data rustfs:rustfs_data zitadel_machinekey:zitadel_machinekey; do
   docker run --rm \
-    -v "ashyq-bilim_${v#*:}:/data" \
+    -v "${PREFIX}_${v#*:}:/data" \
     -v "${BACKUP_PATH}/${v%%:*}:/backup:ro" \
     alpine sh -c 'find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -a /backup/. /data/'
 done
+docker compose up -d
 ```
 
-`judge0_box` is a scratch sandbox that Judge0 rebuilds on start — restore it the
-same way only if you need it byte-identical.
+Each volume is emptied before the copy so leftovers (a stale `postmaster.pid`,
+orphaned WAL) never mix in. `judge0_box` is a scratch sandbox Judge0 rebuilds.
 
-PowerShell (Podman):
-
-```powershell
-$BACKUP_PATH = ($PWD.ProviderPath -replace '\','/') + "/temp-restore/backup"
-
-foreach ($v in @('postgres:postgres_data','redis:redis_data','app_content:app_content')) {
-  $src, $vol = $v -split ':'
-  podman run --rm -v "ashyq-bilim_${vol}:/data" -v "${BACKUP_PATH}/${src}:/backup:ro" alpine sh -c 'find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -a /backup/. /data/'
-}
-```
-
-**4. Start**
+Verify real data came back, not just healthy containers:
 
 ```bash
-docker-compose up -d
+docker compose exec server curl -fsS http://127.0.0.1:8000/api/v2/health/ready
+docker compose exec db psql -U openu -d ashyq -c "SELECT count(*) FROM users;"
 ```
-
-**5. Verify**
-
-Check that real application data came back, not just that the container is
-healthy — an empty cluster passes `pg_isready` and only fails later at API
-startup.
-
-```bash
-docker-compose ps
-docker-compose exec db psql -U openu -d openu -c "SELECT version_num FROM alembic_version;"
-docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(*) FROM roles;"
-```
-
-`version_num` must match `alembic heads` in `apps/api`; if the backup predates
-the current code, run the migration step from [Migrations](#migrations).
-
-**6. Clean up**
-
-```bash
-rm -rf temp-restore
-```
-
----
-
-## Volumes
-
-| Volume          | Contents            | Backed up       |
-| --------------- | ------------------- | --------------- |
-| `postgres_data` | PostgreSQL database | Yes             |
-| `redis_data`    | Redis               | Yes             |
-| `app_content`   | User uploads, media | Yes             |
-| `judge0_box`    | Judge0 sandbox      | Yes (when used) |
-| `nginx_cache`   | Nginx proxy cache   | No (ephemeral)  |
-
----
 
 ## Troubleshooting
 
-**`POSTGRES_PASSWORD must be set in .env`** — `.env` is missing or the variable is blank. Copy `example.env` and fill it in.
-
-**`gzip: stdin: not in gzip format` during restore** — the archive is zstd-compressed despite the `.tar.gz` symlink. Use `tar --zstd`.
-
-**`relation "roles" does not exist` at API startup after a restore** — the backup went into a volume the stack does not mount, usually a typo in the project-name prefix (`ashyk-` instead of `ashyq-`), and the API is talking to a fresh empty cluster. `docker volume ls` will show both names. Stop the stack and redo step 3 of [Restore](#restore) against the correct volumes.
-
-**PostgreSQL version mismatch after restore** — the image in `extra/Dockerfile.db` must match the major version in the backup. Run `pg_upgrade` or pin the image version.
-
-**Backup not running** — `docker-compose logs backup` to inspect. Check disk space with `df -h`.
+- **`… must be set`** during `docker compose config` — a required `.env` value is blank.
+- **`migration … was previously applied but has been modified`** — a committed
+  file under `apps/server/migrations/` was edited. Migrations are append-only;
+  restore the file and add a new migration instead.
+- **Empty database after restore** — wrong volume prefix; see Restore.
+- **PostgreSQL version mismatch** — `extra/Dockerfile.db` must match the backup's major version.
+- **Backup not running** — `docker compose logs backup`; check `df -h`.

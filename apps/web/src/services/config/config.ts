@@ -32,14 +32,4 @@ export const getAPIUrl = () => {
 
 export const getSiteUrl = () => getPublicConfig().siteUrl
 
-export const getBackendUrl = () => getSiteUrl()
-
 export const getAbsoluteUrl = (path: string) => toAbsoluteUrl(path, getSiteUrl())
-
-export const getTopLevelCookieDomain = () => {
-  const serverConfigResult = getServerConfigResult()
-  if (serverConfigResult.success) {
-    return serverConfigResult.config.cookieDomain
-  }
-  return undefined
-}

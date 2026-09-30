@@ -86,10 +86,6 @@ export default defineConfig({
       '.DS_Store',
       '.vscode',
 
-      // Infra
-      '.flyio',
-      'fly.toml',
-
       // Generated files
       'next-env.d.ts',
       'lib/api/generated/**',

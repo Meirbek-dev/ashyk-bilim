@@ -48,12 +48,6 @@ export default defineConfig({
       '.turbo',
       '.vercel',
 
-      // Python
-      '.venv',
-      '__pycache__',
-      '*.py[cod]',
-      '.ruff_cache',
-
       // Logs & env
       '.env*',
       '*.log',
@@ -108,7 +102,6 @@ export default defineConfig({
       '**/gen/',
       '**/.turbo/',
       '**/.genenv/',
-      'lib/api/generated/schema.ts',
       'e2e/',
       'scripts/',
       'playwright.config.ts',
@@ -116,11 +109,9 @@ export default defineConfig({
       'src/components/providers/session-provider.tsx',
       'src/features/assessments/registry/code-challenge/hooks.ts',
       'src/features/assessments/shell/AssessmentLayout.tsx',
-      'src/features/assessments/registry/code-challenge/hooks.ts',
       'src/components/Security/HeaderProfileBox.tsx',
       'src/features/assessments/studio/NativeItemStudio.tsx',
       'src/services/gamification/server.ts',
-      'src/lib/api/generated/schema.ts',
     ],
     plugins: [
       'import',

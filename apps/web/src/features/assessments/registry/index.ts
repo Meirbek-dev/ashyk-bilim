@@ -97,11 +97,6 @@ function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
   return registryMap
 }
 
-/** Register a kind module factory. Call once per kind (e.g., in kind's own file). */
-export function registerKind(kind: AssessmentKind, factory: () => Promise<KindModule>): void {
-  getRegistry().set(kind, factory)
-}
-
 /** Resolve a kind module. Throws if the kind is not registered. */
 async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
   const factory = getRegistry().get(kind)

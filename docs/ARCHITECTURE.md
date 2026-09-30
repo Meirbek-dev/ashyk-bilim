@@ -1,14 +1,14 @@
 # Ashyq Bilim — Rust Backend Architecture
 
 **Status:** authoritative. Decisions here were ratified by the owner on 2026-08-16
-(30-question review). Agents implementing the rewrite follow this document; deviations
-require a written note in `docs/rewrite/DECISIONS.md` with rationale.
+(30-question review); the Rust backend replaced the legacy Python API in production on
+2026-09-30. Deviations require a written note in `docs/DECISIONS.md` with rationale.
 
 Companion documents:
-- [`docs/rewrite/MIGRATION.md`](MIGRATION.md) — data migration & cutover runbook
-- [`docs/rewrite/EXECUTION-PLAN.md`](EXECUTION-PLAN.md) — phased plan, slice status, gates
-- [`apps/server/AGENTS.md`](../../apps/server/AGENTS.md) — day-to-day agent playbook
-- [`docs/FINDINGS.md`](../FINDINGS.md) — pre-existing issues outside rewrite scope
+- [`docs/DECISIONS.md`](DECISIONS.md) — design deltas since ratification
+- [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) — production operations
+- [`apps/server/AGENTS.md`](../apps/server/AGENTS.md) — day-to-day agent playbook
+- [`docs/FINDINGS.md`](FINDINGS.md) — open production/infra issues
 
 ---
 
@@ -587,4 +587,4 @@ the end of every working session.**
 | Zitadel session API coupling | confined to `ab-clients::zitadel`; wiremock fixtures pin the wire contract; Zitadel pinned to a specific minor, upgraded deliberately |
 | Hand-rolled queue correctness | property-style tests (concurrent claim, crash-requeue, backoff), soak test in P0 exit gate |
 | Windows dev machine w/o local Docker in some sessions | all DB-dependent tests skippable locally (`just test-unit`), full suite in CI; `.sqlx` cache keeps builds green without a DB |
-| Agent drift across sessions | AGENTS.md + EXECUTION-PLAN.md status table are the durable memory; every session ends with both updated |
+| Agent drift across sessions | AGENTS.md + DECISIONS.md are the durable memory; every session ends with them current |

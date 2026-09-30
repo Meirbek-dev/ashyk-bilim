@@ -101,28 +101,3 @@ export function getLevelInfo(level: number, t: (key: string) => string): LevelIn
     title: t(`levels.titles.${baseConfig.title}`),
   }
 }
-
-export function getUnlockedFeatures(level: number, t: (key: string) => string): string[] {
-  const unlocked: string[] = []
-
-  Object.values(LEVEL_CONFIG).forEach(config => {
-    if (level >= config.level && config.unlocks) {
-      config.unlocks.forEach(unlock => {
-        unlocked.push(t(`levels.unlocks.${unlock}`))
-      })
-    }
-  })
-
-  AVATAR_UNLOCKS.frames.forEach(frame => {
-    if (level >= frame.level) {
-      unlocked.push(t(`avatar.frames.${frame.name}`))
-    }
-  })
-  AVATAR_UNLOCKS.accessories.forEach(accessory => {
-    if (level >= accessory.level) {
-      unlocked.push(t(`avatar.accessories.${accessory.name}`))
-    }
-  })
-
-  return unlocked
-}

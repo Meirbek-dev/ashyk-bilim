@@ -6,9 +6,6 @@ import { courseCreateSchema } from '@/schemas/courseSchemas'
 import type { CourseCreateValues } from '@/schemas/courseSchemas'
 import { cleanCourseUuid } from '@/lib/course-management'
 
-export const COURSE_TITLE_MAX = 100
-export const COURSE_DESCRIPTION_MAX = 8000
-
 export function useCourseCreateForm() {
   const searchParams = useSearchParams()
 

@@ -131,23 +131,9 @@ export const courseEndpoints = {
   list: ({ limit = 20, cursor }: CourseListKeyOptions = {}) => `courses${buildQueryString({ limit, cursor })}`,
 
   detail: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}`,
-
-  curriculum: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}/curriculum`,
-
-  // No v2 route yet (blocked).
-  rights: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}/rights`,
-
-  // No v2 route yet (blocked).
-  contributors: (courseUuid: string) => `courses/${stripEntityPrefix(courseUuid)}/contributors`,
-
-  chapter: (chapterUuid: string) => `chapters/${stripEntityPrefix(chapterUuid)}`,
-
-  activity: (activityUuid: string) => `activities/${stripEntityPrefix(activityUuid)}`,
 }
 
 export const courseKeys = {
-  all: ['courses'] as const,
-
   list: (options: CourseListKeyOptions = {}) => ['courses', 'list', normalizeCourseListOptions(options)] as const,
 
   detail: (courseUuid: string) => ['courses', 'detail', stripEntityPrefix(courseUuid)] as const,
@@ -155,14 +141,8 @@ export const courseKeys = {
   structure: (courseUuid: string, withUnpublishedActivities = false) =>
     ['courses', 'structure', stripEntityPrefix(courseUuid), withUnpublishedActivities] as const,
 
-  rights: (courseUuid: string) => ['courses', 'rights', stripEntityPrefix(courseUuid)] as const,
-
-  contributors: (courseUuid: string) => ['courses', 'contributors', stripEntityPrefix(courseUuid)] as const,
-
   editorBundle: (courseUuid?: string | null) =>
     courseUuid ? (['courses', 'editor-bundle', stripEntityPrefix(courseUuid)] as const) : null,
-
-  chapter: (chapterUuid: string) => ['chapters', 'detail', chapterUuid] as const,
 
   activity: (activityUuid: string) => ['activities', 'detail', activityUuid] as const,
 }

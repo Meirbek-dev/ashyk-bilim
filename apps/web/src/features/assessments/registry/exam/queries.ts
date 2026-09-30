@@ -6,7 +6,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 
 /**
  * BLOCKED: v2 has no `assessments/exam/config` route (no equivalent found in
- * openapi.v2.json). Left pointed at the legacy path — the query 404s and
+ * openapi.v2.json). Left pointed at the legacy path - the query 404s and
  * callers should already treat a missing config as "use defaults". See
  * report under "Blocked".
  */

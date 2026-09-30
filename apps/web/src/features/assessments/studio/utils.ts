@@ -420,10 +420,6 @@ export function createFormField() {
   }
 }
 
-export function normalizeRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
-}
-
 export function toWorkspaceReadinessIssues(payload: StudioReadinessPayload | undefined): WorkspaceReadinessIssue[] {
   return (payload?.issues ?? []).map(issue => {
     const mapped: WorkspaceReadinessIssue = {
