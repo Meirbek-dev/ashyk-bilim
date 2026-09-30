@@ -9,6 +9,8 @@ const updateActivity = vi.fn()
 vi.mock('@/hooks/mutations/useActivityMutations', () => ({
   useActivityMutations: () => ({ updateActivity }),
 }))
+const getActivity = vi.fn()
+vi.mock('@services/courses/activities', () => ({ getActivity: (id: string) => getActivity(id) }))
 
 // BUG-282: a 412 in one lesson stopped autosave in the next lesson opened
 // in-app (the save status was course-wide) — its typing was lost.
@@ -134,5 +136,43 @@ describe('useActivityAutosave serialization', () => {
     rerender({ id: 'lesson-b' })
     await act(() => vi.advanceTimersByTimeAsync(1500))
     expect(updateActivity.mock.calls.map(([id]) => id)).toEqual(['lesson-a'])
+  })
+})
+
+// BUG-376: a curriculum rename / publish toggle bumps the version; the open
+// editor rebases a content-only save instead of stopping — but only while
+// the server still holds the content this tab last saw.
+describe('useActivityAutosave rebase', () => {
+  const stale = () => new APIError({ status: 412, code: 'precondition-failed', message: 'stale' })
+  beforeEach(() => {
+    updateActivity.mockReset()
+    getActivity.mockReset()
+    useCourseEditorStore.getState().openEditor('other-course', null)
+    useCourseEditorStore.getState().openEditor('course-1', null)
+  })
+
+  it('retries with the current version after a metadata-only change', async () => {
+    const loaded = { type: 'doc', content: [{ type: 'paragraph', text: 'one' }] }
+    const { result } = renderHook(() =>
+      useActivityAutosave({ activityUuid: 'lesson-r', courseUuid: 'course-1', loadedContent: loaded }),
+    )
+    // jsonb hands the same document back with its keys reordered.
+    getActivity.mockResolvedValueOnce({
+      version: 2,
+      content: { content: [{ text: 'one', type: 'paragraph' }], type: 'doc' },
+    })
+    updateActivity.mockRejectedValueOnce(stale()).mockResolvedValueOnce({ version: 3 })
+    await act(() => result.current.flush({ content: { type: 'doc', text: 'typed' }, version: 1 }))
+    expect(updateActivity).toHaveBeenLastCalledWith('lesson-r', { content: { type: 'doc', text: 'typed' }, version: 2 })
+    expect(result.current.saveStatus).toBe('saved')
+
+    // Another tab changed the text: a real conflict, nothing is overwritten.
+    getActivity.mockResolvedValueOnce({ version: 5, content: { type: 'doc', text: 'other tab' } })
+    updateActivity.mockRejectedValueOnce(stale())
+    await expect(result.current.flush({ content: { type: 'doc', text: 'mine' }, version: 1 })).rejects.toMatchObject({
+      code: 'precondition-failed',
+    })
+    expect(updateActivity).toHaveBeenCalledTimes(3)
+    expect(result.current.saveStatus).toBe('conflict')
   })
 })

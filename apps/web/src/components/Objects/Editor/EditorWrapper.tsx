@@ -19,7 +19,7 @@ import { CourseAIHub } from '@/features/course-qa'
 
 interface EditorWrapperProps {
   content: unknown
-  activity: ActivityRef
+  activity: ActivityRef & { version?: number }
   course: {
     course_uuid: string
     name: string
@@ -34,16 +34,20 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   const activityAutosave = useActivityAutosave({
     activityUuid: props.activity.activity_uuid,
     courseUuid: props.course.course_uuid,
+    loadedContent: props.content,
+  })
+
+  // BUG-376: content and the lock only — the loaded name/published flag are
+  // stale once the curriculum edits them, and a rebased save must not undo that.
+  const contentPayload = (content: unknown) => ({
+    content: stripEmptyFileBlocks(structuredClone(content)),
+    version: props.activity.version,
   })
 
   async function setContent(content: unknown) {
     // The header already shows the conflict notice; nothing may overwrite the other tab's save.
     if (activityAutosave.saveStatus === 'conflict' || activityAutosave.saveStatus === 'forbidden') return
-    const { activity } = props
-
-    const updatedActivity = { ...activity, content: stripEmptyFileBlocks(structuredClone(content)) }
-
-    toast.promise(activityAutosave.flush(updatedActivity), {
+    toast.promise(activityAutosave.flush(contentPayload(content)), {
       loading: t('saving'),
       success: () => <b>{t('saveSuccess')}</b>,
       error: err => {
@@ -73,7 +77,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
           activity={props.activity}
           content={props.content}
           onContentChange={content => {
-            activityAutosave.onChange({ ...props.activity, content: stripEmptyFileBlocks(structuredClone(content)) })
+            activityAutosave.onChange(contentPayload(content))
           }}
           saveState={activityAutosave.saveStatus}
           setContent={setContent}
