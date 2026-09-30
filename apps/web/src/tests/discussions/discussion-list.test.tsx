@@ -82,6 +82,8 @@ describe('DiscussionList (v2)', () => {
   it('surfaces a failed post through the localized API error toast', async () => {
     createDiscussion.mockRejectedValueOnce(new Error('boom'))
     render(<DiscussionList initialPosts={[]} currentUser={{ username: 'me' }} courseUuid={courseId} />)
+    // The composer is a one-line prompt until opened.
+    fireEvent.click(screen.getByText('startDiscussionPlaceholder'))
     fireEvent.change(screen.getAllByTestId('editor')[0]!, { target: { value: '<p>new post</p>' } })
     fireEvent.click(screen.getByText('postDiscussion'))
     await waitFor(() =>

@@ -1,9 +1,8 @@
 'use client'
 
-import { BookOpenCheckIcon, GraduationCapIcon, MessageCircleQuestionIcon, ShieldCheckIcon } from 'lucide-react'
+import { BookOpenCheckIcon, GraduationCapIcon, MessageCircleQuestionIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge'
 import { ErrorState, InlineError } from '@/components/ui/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -51,16 +50,6 @@ function CourseAIHubInline({ courseUuid }: Pick<CourseAIHubProps, 'courseUuid'>)
         <div className="flex max-w-2xl flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight">{t('title')}</h2>
           <p className="text-muted-foreground text-sm">{t('description')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">
-            <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {t('groundedBadge')}
-          </Badge>
-          <Badge variant="outline">
-            <BookOpenCheckIcon data-icon="inline-start" aria-hidden="true" />
-            {t('reviewBadge')}
-          </Badge>
         </div>
       </div>
       <Tabs defaultValue="study" className="w-full">

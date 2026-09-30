@@ -10897,8 +10897,8 @@
       "emptyDescCourse": "Answers are grounded in the course material; inspect the sources before you rely on an answer."
     },
     "courseAIHub": {
-      "title": "AI learning support",
-      "description": "Course-grounded help for learners and teacher-reviewed quality checks.",
+      "title": "AI assistant",
+      "description": "Ask about the course material, or get an explanation, summary or practice.",
       "groundedBadge": "Source grounded",
       "reviewBadge": "Teacher reviewed",
       "tabStudy": "Study",

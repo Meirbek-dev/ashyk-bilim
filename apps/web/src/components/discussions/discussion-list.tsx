@@ -468,10 +468,10 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
         {posts.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center">
-              <MessageCircle size={48} className="mx-auto mb-4 text-neutral-300" />
-              <h3 className="mb-2 text-lg font-semibold text-neutral-600">{t('noDiscussions')}</h3>
-              <p className="mb-4 text-neutral-500">{t('noDiscussionsDesc')}</p>
+            <CardContent className="p-6 text-center">
+              <MessageCircle size={32} className="text-muted-foreground/50 mx-auto mb-3" />
+              <h3 className="text-foreground mb-1 font-semibold">{t('noDiscussions')}</h3>
+              <p className="text-muted-foreground text-sm">{t('noDiscussionsDesc')}</p>
             </CardContent>
           </Card>
         )}

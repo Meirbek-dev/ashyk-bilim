@@ -184,7 +184,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
     <NodeViewWrapper className="block-math-equation">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="bg-muted border-border flex flex-col space-y-3 rounded-lg border px-5 py-6 [transition:all_0.2s_ease]">
-          <div className="mb-1 flex items-center space-x-2 text-sm text-zinc-500">
+          <div className="mb-1 flex items-center space-x-2 text-sm text-muted-foreground">
             <Sigma size={16} />
             <span className="font-medium">{t('title')}</span>
           </div>
@@ -228,7 +228,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
 
                   {showTemplates ? (
                     <div className="border-border bg-card absolute left-0 z-10 mt-1 max-h-80 w-64 overflow-y-auto rounded-[8px] border shadow-lg">
-                      <div className="border-b p-2 text-xs text-zinc-500">{t('selectTemplate')}</div>
+                      <div className="border-b p-2 text-xs text-muted-foreground">{t('selectTemplate')}</div>
                       {mathTemplates.map((template, index) => (
                         <button
                           key={index}
@@ -240,7 +240,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                         >
                           <div className="flex flex-col">
                             <span className="font-medium">{t(template.name)}</span>
-                            <span className="text-xs text-zinc-500">{t(template.description)}</span>
+                            <span className="text-xs text-muted-foreground">{t(template.description)}</span>
                           </div>
                         </button>
                       ))}
@@ -262,7 +262,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
 
                   {showSymbols ? (
                     <div className="border-border bg-card absolute left-0 z-10 mt-1 w-64 overflow-hidden rounded-[8px] border shadow-lg">
-                      <div className="border-b p-2 text-xs text-zinc-500">{t('insertSymbol')}</div>
+                      <div className="border-b p-2 text-xs text-muted-foreground">{t('insertSymbol')}</div>
                       <div className="flex flex-wrap p-2">
                         {mathSymbols.map((symbol, index) => (
                           <button
@@ -295,7 +295,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
 
                   {showHelp ? (
                     <div className="border-border bg-card absolute left-0 z-10 mt-1 w-72 overflow-hidden rounded-[8px] border shadow-lg">
-                      <div className="border-b p-2 text-xs font-medium text-zinc-700">{t('quickReference')}</div>
+                      <div className="border-b p-2 text-xs font-medium text-foreground">{t('quickReference')}</div>
                       <div className="space-y-2 p-3 text-xs">
                         <div>
                           <span className="font-medium">{t('fractions')}</span> {'\\frac{'}
@@ -370,7 +370,7 @@ function MathEquationBlockComponent(props: TypedNodeViewProps<MathEquationNodeAt
                 </motion.button>
               </div>
 
-              <div className="flex items-center pl-[2px] text-sm text-zinc-500">
+              <div className="flex items-center pl-[2px] text-sm text-muted-foreground">
                 <span>{t('referTo')}</span>
                 <Link
                   className="mx-1 inline-flex items-center font-medium text-blue-600 hover:text-blue-800"

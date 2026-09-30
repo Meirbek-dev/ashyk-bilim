@@ -27,6 +27,8 @@ interface DiscussionFormProps {
 export default function DiscussionForm({ currentUser, onSubmit }: DiscussionFormProps) {
   const t = useTranslations('CoursePage')
   const [content, setContent] = useState('')
+  // A one-line prompt until the reader wants to write; the full editor toolbar stays out of the way.
+  const [expanded, setExpanded] = useState(false)
 
   const handleSubmit = (formData: FormData) => {
     const nextContent = String(formData.get('content') ?? '')
@@ -34,9 +36,25 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
     if (!hasMeaningfulText(nextContent)) return
     onSubmit(nextContent)
     setContent('')
+    setExpanded(false)
   }
 
   const isContentEmpty = !hasMeaningfulText(content)
+
+  if (!expanded) {
+    return (
+      <div className="bg-card text-card-foreground flex items-center gap-3 rounded-lg border p-3 shadow-sm">
+        <UserAvatar size="sm" variant="default" username={currentUser?.username} />
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="text-muted-foreground hover:border-ring flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors"
+        >
+          {t('startDiscussionPlaceholder')}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border p-5 shadow-sm">
@@ -53,7 +71,10 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
             />
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => setExpanded(false)}>
+            {t('cancel')}
+          </Button>
           <Button type="submit" disabled={isContentEmpty} className="flex items-center gap-2">
             <Send size={16} />
             <span>{t('postDiscussion')}</span>

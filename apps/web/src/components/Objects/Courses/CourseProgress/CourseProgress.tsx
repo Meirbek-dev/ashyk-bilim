@@ -229,7 +229,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                     </div>
                     <ChevronDown
                       className={cn(
-                        'size-5 shrink-0 text-neutral-400 transition-transform duration-200',
+                        'size-5 shrink-0 text-muted-foreground transition-transform duration-200',
                         isExpanded && 'rotate-180',
                       )}
                     />
@@ -238,7 +238,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
 
                 {/* Activities List */}
                 {isExpanded && (
-                  <div className="border-t border-neutral-100 bg-neutral-50/50">
+                  <div className="border-t border-border bg-muted/50">
                     {chapter.activities?.map((activity: AppActivity, activityIndex: number) => {
                       const activityId = activity.activity_uuid.replace('activity_', '')
                       const courseId = (course.course_uuid || '').replace('course_', '')
@@ -253,7 +253,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                           <div
                             className={cn(
                               'group flex items-center gap-3 px-4 py-3 transition-colors',
-                              activityIndex !== (chapter.activities?.length || 0) - 1 && 'border-b border-neutral-100',
+                              activityIndex !== (chapter.activities?.length || 0) - 1 && 'border-b border-border',
                               isDone ? 'hover:bg-teal-50/50 dark:hover:bg-teal-500/15' : 'hover:bg-white',
                             )}
                           >
@@ -264,7 +264,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                                   <Check className="size-3 text-teal-600" />
                                 </div>
                               ) : (
-                                <Circle className="size-4 text-neutral-300" />
+                                <Circle className="size-4 text-muted-foreground/60" />
                               )}
                             </div>
 
@@ -275,7 +275,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                             <span
                               className={cn(
                                 'flex-1 truncate text-sm',
-                                isDone ? 'text-teal-700' : 'text-neutral-700 group-hover:text-neutral-900',
+                                isDone ? 'text-teal-700' : 'text-foreground group-hover:text-foreground',
                               )}
                             >
                               {activity.name}
@@ -285,7 +285,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, lear
                             <ArrowRight
                               className={cn(
                                 'size-4 shrink-0 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100',
-                                isDone ? 'text-teal-500' : 'text-neutral-400',
+                                isDone ? 'text-teal-500' : 'text-muted-foreground',
                               )}
                             />
                           </div>
