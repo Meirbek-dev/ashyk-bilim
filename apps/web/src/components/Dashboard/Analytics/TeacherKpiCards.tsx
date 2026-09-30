@@ -85,9 +85,8 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
             ? t('kpi.noComparison')
             : metric.delta_pct == null && metric.delta_value === 0
               ? t('kpi.stable')
-              : metric.delta_pct == null
-                ? t('kpi.noData')
-                : deltaLabel
+              : // From zero there is no percentage, but the absolute change («+32») is still true.
+                deltaLabel
 
         // Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text.
         return (
