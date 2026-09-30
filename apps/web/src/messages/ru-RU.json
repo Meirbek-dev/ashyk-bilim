@@ -719,7 +719,7 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "codeChallenge": "Код-зона",
+      "codeChallenge": "Задача с кодом",
       "document": "Документ",
       "exam": "Экзамен",
       "fileSubmission": "Отправка файлов",
@@ -751,7 +751,7 @@
       "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
       "video": "Видео",
-      "codeChallenge": "Код-зона",
+      "codeChallenge": "Задача с кодом",
       "quiz": "Тест"
     },
     "chapter": "Глава",
@@ -1773,7 +1773,7 @@
       },
       "backToActivities": "Вернуться к активностям",
       "chooseType": "Выберите тип активности",
-      "codeChallenge": "Код-зона",
+      "codeChallenge": "Задача с кодом",
       "codeChallengeDesc": "Создайте программное упражнение с автоматической проверкой",
       "document": "Документ",
       "documentDesc": "Загрузите PDF или документ для чтения студентами",
@@ -2600,7 +2600,7 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "codeChallenge": "Код-зона",
+        "codeChallenge": "Задача с кодом",
         "document": "Документ",
         "dynamic": "Динамический",
         "exam": "Экзамен",
@@ -8647,11 +8647,11 @@
       "Studio": {
         "kinds": {
           "EXAM": "Экзамен",
-          "CODE_CHALLENGE": "Код-зона",
+          "CODE_CHALLENGE": "Задача с кодом",
           "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Экзамен",
-          "TYPE_CODE_CHALLENGE": "Код-зона",
+          "TYPE_CODE_CHALLENGE": "Задача с кодом",
           "TYPE_CUSTOM": "Тест"
         },
         "loading": "Загрузка студии",
