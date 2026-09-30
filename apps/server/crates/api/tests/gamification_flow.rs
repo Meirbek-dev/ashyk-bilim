@@ -330,6 +330,27 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
+    // UX-301: permission before the body — an invalid award / config is still 403.
+    assert_eq!(
+        app.post_as(
+            &bob,
+            "/api/v2/gamification/xp",
+            &serde_json::json!({ "user_id": bob.user_id, "amount": -5 })
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.send(put_json(
+            &bob,
+            "/api/v2/gamification/config",
+            &serde_json::json!({ "daily_xp_limit": 30, "bogus": 1 }),
+        ))
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
     let awarded = app
         .post_as(
             &admin,

@@ -408,6 +408,12 @@ impl GamificationService {
         ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await
     }
 
+    /// The platform-manager gate on its own: the award and config handlers
+    /// check it before reading the body, so a learner gets 403, not 422 (UX-301).
+    pub fn require_manage(actor: &Actor) -> Result<()> {
+        actor.require(MANAGE_PLATFORM)
+    }
+
     /// Platform managers grant XP to a user (legacy `admin_award`).
     pub async fn admin_award(
         &self,

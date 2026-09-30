@@ -2,6 +2,7 @@
 //! platform-manager award and policy endpoints.
 
 use ab_core::assessments::StreakKind;
+use ab_domain::gamification::GamificationService;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -127,8 +128,11 @@ pub async fn update_preferences(
 pub async fn admin_award(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<AdminAwardRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AwardResponse>)> {
+    // UX-301: permission before the body — a learner gets 403 whatever they send.
+    GamificationService::require_manage(&actor)?;
+    let request = ValidJson::<AdminAwardRequest>::parse(&body)?;
     let award = state
         .gamification
         .admin_award(
@@ -162,8 +166,10 @@ pub async fn get_config(
 pub async fn update_config(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(request): ValidJson<UpdateGamificationConfigRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Json<GamificationConfig>> {
+    GamificationService::require_manage(&actor)?;
+    let request = ValidJson::<UpdateGamificationConfigRequest>::parse(&body)?;
     Ok(Json(
         state
             .gamification
