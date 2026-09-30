@@ -221,7 +221,9 @@ export default function UserRolesClient() {
                           <div className="text-muted-foreground text-xs">{user.organization}</div>
                         ) : null}
                       </TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="max-w-64 truncate" title={user.email}>
+                        {user.email}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
                           {t(user.status === 'active' ? 'status.active' : 'status.disabled')}

@@ -137,9 +137,9 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
   const { data: trailData, isLoading: isTrailLoading } = useTrailCurrent({ enabled: isAuthenticated })
 
   return (
-    <div className="text-foreground container mx-auto py-8">
+    <div className="text-foreground container mx-auto px-4 py-8">
       {/* Banner */}
-      <div className="bg-muted relative mb-0 h-48 w-full overflow-hidden rounded-t-xl">
+      <div className="bg-muted relative mb-0 h-32 w-full overflow-hidden rounded-t-xl">
         {/* Optional banner content */}
       </div>
       {/* Profile Content */}
@@ -183,13 +183,15 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
 
         {/* Profile Content with right padding to avoid overlap */}
         <div className="mt-20 md:mt-14">
-          <div className="flex flex-col gap-12 md:flex-row">
+          <div className="flex flex-col gap-8 md:flex-row md:gap-12">
             {/* Left column with details - aligned with avatar */}
-            <div className="w-full pl-2 md:w-1/6">
+            <div className="w-full pl-2 md:w-64 md:shrink-0">
               {/* Name */}
-              <h1 className="text-foreground mb-8 text-[32px] font-bold">
-                {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
+              <h1 className="text-foreground text-2xl font-bold text-balance">
+                {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ') ||
+                  userData.username}
               </h1>
+              <p className="text-muted-foreground mb-6 text-sm">@{userData.username}</p>
 
               {/* Details */}
               <div className="flex flex-col space-y-3">
@@ -207,7 +209,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
             </div>
 
             {/* Right column with about and related content */}
-            <div className="w-full md:w-4/6">
+            <div className="min-w-0 flex-1">
               <div className="mb-8">
                 <h2 className="mb-4 text-xl font-semibold">{t('aboutTitle')}</h2>
                 {userData.bio ? (
@@ -221,7 +223,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
               {userCourses.length > 0 ? (
                 <div className="mb-8">
                   <h2 className="mb-4 text-xl font-semibold">{t('coursesTitle')}</h2>
-                  <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+                  <div className="grid-cards grid w-full gap-6 pb-8">
                     {userCourses.map(course => {
                       const courseThumbnailData: CourseThumbnailData = {
                         course_uuid: course.course_uuid,
@@ -234,7 +236,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                       }
 
                       return (
-                        <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                        <div key={course.id} className="w-full">
                           <CourseThumbnail
                             course={courseThumbnailData}
                             trailData={trailData}

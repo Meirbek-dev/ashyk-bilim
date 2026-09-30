@@ -142,11 +142,12 @@ function SearchPage() {
       {/* Search Header */}
       <div className="border-border bg-card text-card-foreground border-b">
         <div className="container mx-auto px-4 py-6">
-          <div className="mx-auto max-w-2xl">
+          {/* Same left edge as the results below. */}
+          <div className="mx-auto max-w-7xl">
             <h1 className="text-foreground mb-6 text-2xl font-semibold">{t('searchTitle')}</h1>
 
             {/* Search Input */}
-            <form action={handleSearch} className="group relative mb-6">
+            <form action={handleSearch} className="group relative mb-6 max-w-2xl">
               <Input
                 name="q"
                 type="text"
@@ -163,7 +164,7 @@ function SearchPage() {
                   size={20}
                 />
               </div>
-              <Button type="submit" variant="ghost" size="sm" className="absolute inset-y-1 right-1">
+              <Button type="submit" variant="ghost" size="sm" className="absolute top-1/2 right-1.5 -translate-y-1/2">
                 {t('searchButton')}
               </Button>
             </form>

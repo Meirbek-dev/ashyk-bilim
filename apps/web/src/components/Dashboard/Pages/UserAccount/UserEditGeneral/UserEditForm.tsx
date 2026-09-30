@@ -71,7 +71,7 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
               )}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Controller
                 control={form.control}
                 name="display_name"
@@ -140,8 +140,8 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
         </div>
 
         {/* Profile Picture Section */}
-        <div className="w-full lg:w-80">
-          <Card className="bg-muted/30 h-full">
+        <div className="w-full lg:w-64">
+          <Card className="bg-muted/30">
             <CardContent className="flex flex-col items-center space-y-6 pt-6">
               <Label className="text-base font-semibold">{t('profilePicture')}</Label>
 

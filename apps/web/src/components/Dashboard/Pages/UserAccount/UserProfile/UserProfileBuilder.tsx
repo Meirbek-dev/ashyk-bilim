@@ -152,7 +152,7 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
   const selected = selectedSection === null ? undefined : profileData.sections[selectedSection]
 
   return (
-    <Card className="mx-0 sm:mx-10">
+    <Card>
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between border-b pb-4">
           <div>
@@ -171,8 +171,8 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          <div className="col-span-1 border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <div className="border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
             <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
             <DndContext
               id="profile-builder-sections"
@@ -232,7 +232,7 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
             </div>
           </div>
 
-          <div className="col-span-1 lg:col-span-3">
+          <div className="min-w-0">
             {selectedSection !== null && selected ? (
               <SectionEditor
                 t={t}
