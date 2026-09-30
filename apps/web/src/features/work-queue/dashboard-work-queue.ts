@@ -313,21 +313,25 @@ function buildTeacherSection({
       })
     }
 
-    teacherSignal.backlogItems.slice(0, 3).forEach(item => {
-      items.push({
-        id: `manual-assessment-${item.assessmentId}`,
-        audience: 'teacher',
-        title: item.title,
-        description: t('builderItems.manualAssessment.description', { course: item.courseName }),
-        href: `/dash/analytics/assessments/manual_assessment/${item.assessmentId}`,
-        primaryActionLabel: t('builderItems.manualAssessment.action'),
-        source: 'teacher-analytics',
-        sourceLabel: t('sourceLabels.crossCourseQueue'),
-        status: item.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
-        priority: item.slaBreaches > 0 ? 'critical' : 'high',
-        metric: t('metrics.awaitingReview', { count: item.awaitingReview }),
+    // The grading queue above already lists this work row by row (and opens the review page itself);
+    // the analytics copy of the same assessments only repeats it with a different count.
+    const gradingRowsShown = access.hasCoursesAccess && (teacherWorkItems?.length ?? 0) > 0
+    if (!gradingRowsShown)
+      teacherSignal.backlogItems.slice(0, 3).forEach(item => {
+        items.push({
+          id: `manual-assessment-${item.assessmentId}`,
+          audience: 'teacher',
+          title: item.title,
+          description: t('builderItems.manualAssessment.description', { course: item.courseName }),
+          href: `/dash/analytics/assessments/manual_assessment/${item.assessmentId}`,
+          primaryActionLabel: t('builderItems.manualAssessment.action'),
+          source: 'teacher-analytics',
+          sourceLabel: t('sourceLabels.crossCourseQueue'),
+          status: item.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+          priority: item.slaBreaches > 0 ? 'critical' : 'high',
+          metric: t('metrics.awaitingReview', { count: item.awaitingReview }),
+        })
       })
-    })
 
     if (teacherSignal.forecastBacklog7d > teacherSignal.gradingBacklogTotal) {
       items.push({
