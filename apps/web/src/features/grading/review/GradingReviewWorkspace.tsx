@@ -14,6 +14,7 @@ import ReviewLayout from './components/ReviewLayout'
 import SubmissionList from './components/SubmissionList'
 import SubmissionInspector from './components/SubmissionInspector'
 import GradeForm from './components/GradeForm'
+import { parseStatusFilter } from './types'
 import type { StatusFilter } from './types'
 import { getReleaseState } from '../domain'
 
@@ -42,7 +43,7 @@ export default function GradingReviewWorkspace({
   const t = useTranslations('Features.Grading.Review.submissionInspector')
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
-  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
+  const filterFromUrl = parseStatusFilter(searchParams.get('filter')) ?? initialFilter ?? 'NEEDS_GRADING'
   const sortFromUrl = searchParams.get('sort') ?? 'submitted_at'
   const searchFromUrl = searchParams.get('q') ?? ''
 
