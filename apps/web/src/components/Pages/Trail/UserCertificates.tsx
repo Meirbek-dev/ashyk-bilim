@@ -58,25 +58,22 @@ const UserCertificates: React.FC = () => {
 
   if (!certificatesData || certificatesData.length === 0) {
     return (
-      <div className="border-border bg-card text-card-foreground rounded-xl border p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <Award className="text-primary h-6 w-6" />
-          <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
-        </div>
-        <div className="py-8 text-center">
-          <Award className="text-muted-foreground/40 mx-auto mb-3 h-12 w-12" />
-          <p className="text-muted-foreground">{t('noCertificatesEarned')}</p>
-          <p className="text-muted-foreground mt-1 text-sm">{t('completeCoursesToEarn')}</p>
-        </div>
-      </div>
+      // Nothing earned yet: one line, not a tall empty card.
+      <section className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Award className="text-primary h-5 w-5 shrink-0" />
+        <h2 className="text-foreground text-lg font-semibold">{t('myCertificates')}</h2>
+        <p className="text-muted-foreground text-sm">
+          {t('noCertificatesEarned')}. {t('completeCoursesToEarn')}
+        </p>
+      </section>
     )
   }
 
   return (
     <div className="p-2">
       <div className="mb-6 flex items-center gap-3">
-        <Award className="text-primary h-6 w-6" />
-        <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
+        <Award className="text-primary h-5 w-5" />
+        <h2 className="text-foreground text-lg font-semibold">{t('myCertificates')}</h2>
         <span className="bg-secondary text-secondary-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
           {certificatesData.length}
         </span>
