@@ -108,7 +108,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
             transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 400, damping: 15 }}
             className="shrink-0"
           >
-            <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 p-2.5 md:p-3">
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3 dark:border-amber-500/30 dark:bg-amber-500/15">
               <Award className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
             </div>
           </motion.div>
@@ -195,7 +195,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           }}
           className="relative"
         >
-          <div className="mb-4 inline-flex rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 p-4">
+          <div className="mb-4 inline-flex rounded-full border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/15">
             <Award className="h-20 w-20 text-amber-600" />
           </div>
         </motion.div>
@@ -213,7 +213,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, type: 'spring' }}
-          className="mb-6 inline-block rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-8 py-3"
+          className="mb-6 inline-block rounded-2xl border border-amber-300 bg-amber-50 px-8 py-3 dark:border-amber-500/30 dark:bg-amber-500/15"
         >
           <p className="text-4xl font-black text-amber-700">{t('reachedLevel', { level: newLevel })}</p>
         </motion.div>

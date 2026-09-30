@@ -57,8 +57,8 @@ const AVAILABLE_ICONS = {
 
 function IconComponent({ iconName }: { iconName: string }) {
   const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS]
-  if (!IconElement) return <User className="h-4 w-4 text-muted-foreground" />
-  return <IconElement className="h-4 w-4 text-muted-foreground" />
+  if (!IconElement) return <User className="text-muted-foreground h-4 w-4" />
+  return <IconElement className="text-muted-foreground h-4 w-4" />
 }
 
 const isUserDetail = (value: unknown): value is UserDetail => {
@@ -153,7 +153,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (isEditable && !userData) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg border border-dashed border-border bg-muted/50 p-6">
+        <div className="border-border bg-muted/50 rounded-lg border border-dashed p-6">
           <form action={handleUsernameSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username">{t('usernameLabel')}</Label>
@@ -193,7 +193,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (error) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg bg-red-50 dark:bg-red-500/15 p-4 text-red-500">{error}</div>
+        <div className="rounded-lg bg-red-50 p-4 text-red-500 dark:bg-red-500/15">{error}</div>
       </NodeViewWrapper>
     )
   }
@@ -201,8 +201,8 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   if (!userData) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="rounded-lg border border-dashed border-border bg-muted/50 p-6">
-          <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="border-border bg-muted/50 rounded-lg border border-dashed p-6">
+          <div className="text-muted-foreground flex items-center gap-2">
             <User className="h-5 w-5" />
             <span>{t('noUserSelected')}</span>
           </div>
@@ -215,7 +215,7 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
 
   return (
     <NodeViewWrapper className="block-user">
-      <div className="soft-shadow overflow-hidden rounded-lg bg-card">
+      <div className="soft-shadow bg-card overflow-hidden rounded-lg">
         <div className="relative">
           <div className="absolute inset-0 h-28 rounded-t-lg bg-linear-to-b from-gray-100/30 to-transparent" />
 
@@ -238,11 +238,11 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h4 className="truncate font-semibold text-foreground">
+                    <h4 className="text-foreground truncate font-semibold">
                       {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                     </h4>
                     {userData.username ? (
-                      <Badge variant="outline" className="truncate px-2 text-xs font-normal text-muted-foreground">
+                      <Badge variant="outline" className="text-muted-foreground truncate px-2 text-xs font-normal">
                         @{userData.username}
                       </Badge>
                     ) : null}
@@ -250,14 +250,14 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground h-6 w-6 shrink-0"
                     onClick={() => userData.username && router.push(`/user/${encodeURIComponent(userData.username)}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
                 {userData.bio ? (
-                  <p className="mt-1.5 line-clamp-4 text-sm leading-normal text-muted-foreground">{userData.bio}</p>
+                  <p className="text-muted-foreground mt-1.5 line-clamp-4 text-sm leading-normal">{userData.bio}</p>
                 ) : null}
               </div>
             </div>
@@ -270,8 +270,8 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
               <div key={detail.id} className="flex items-center gap-2.5">
                 <IconComponent iconName={detail.icon} />
                 <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">{detail.label}</span>
-                  <span className="text-sm text-foreground/80">{detail.text}</span>
+                  <span className="text-muted-foreground text-xs">{detail.label}</span>
+                  <span className="text-foreground/80 text-sm">{detail.text}</span>
                 </div>
               </div>
             ))}

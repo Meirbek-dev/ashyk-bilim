@@ -967,22 +967,28 @@ function ItemCanvas({
         </div>
         {/* Read-only (published) items: no dead Duplicate/Delete buttons. */}
         {isEditable ? (
-        <div className="flex shrink-0 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!isEditable || isDuplicating}
-            onClick={onDuplicate}
-          >
-            {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
-            {t('duplicate')}
-          </Button>
-          <Button type="button" variant="destructive" size="sm" disabled={!isEditable || isDeleting} onClick={onDelete}>
-            {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-            {t('delete')}
-          </Button>
-        </div>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!isEditable || isDuplicating}
+              onClick={onDuplicate}
+            >
+              {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+              {t('duplicate')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={!isEditable || isDeleting}
+              onClick={onDelete}
+            >
+              {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+              {t('delete')}
+            </Button>
+          </div>
         ) : null}
       </div>
 

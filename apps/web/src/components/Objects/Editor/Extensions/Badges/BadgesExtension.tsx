@@ -210,7 +210,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
                 <Palette size={14} />
               </button>
               {showColorPicker ? (
-                <div ref={colorPickerRef} className="soft-shadow absolute left-full ml-2 rounded-full bg-card p-2">
+                <div ref={colorPickerRef} className="soft-shadow bg-card absolute left-full ml-2 rounded-full p-2">
                   <div className="flex space-x-2">
                     {colors.map(c => (
                       <button
@@ -247,7 +247,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
                 onClick={() => {
                   handlePredefinedBadgeSelect(badge)
                 }}
-                className={`flex items-center space-x-2 rounded-xl px-3 py-1 text-xs ${getBadgeColor(badge.color)} subtle-shadow font-bold text-muted-foreground transition-all duration-100 ease-linear hover:opacity-80`}
+                className={`flex items-center space-x-2 rounded-xl px-3 py-1 text-xs ${getBadgeColor(badge.color)} subtle-shadow text-muted-foreground font-bold transition-all duration-100 ease-linear hover:opacity-80`}
               >
                 <span className="text-xs">{badge.emoji}</span>
                 <span className="content capitalize">{badge.content}</span>

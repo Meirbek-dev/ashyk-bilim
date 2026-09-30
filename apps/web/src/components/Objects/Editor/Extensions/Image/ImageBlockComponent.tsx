@@ -260,7 +260,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
 
   if (preview) {
     return (
-      <div className="relative rounded-lg border border-border bg-muted/50 p-4">
+      <div className="border-border bg-muted/50 relative rounded-lg border p-4">
         <div className="relative mx-auto h-48 w-full overflow-hidden rounded-md">
           <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
@@ -269,7 +269,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
             type="button"
             onClick={onReset}
             disabled={isUploading}
-            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-muted/50 disabled:opacity-50"
+            className="border-border bg-card text-foreground/80 hover:bg-muted/50 rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
             {t('cancel')}
           </button>
@@ -326,8 +326,8 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         <p className="text-sm text-red-600">{error}</p>
       ) : (
         <>
-          <p className="text-sm font-medium text-foreground/80">{t('dropOrClick')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t('supportedFormats')}</p>
+          <p className="text-foreground/80 text-sm font-medium">{t('dropOrClick')}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{t('supportedFormats')}</p>
         </>
       )}
     </div>

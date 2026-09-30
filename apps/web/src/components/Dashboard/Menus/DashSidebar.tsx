@@ -347,7 +347,6 @@ function DashSidebar({ className }: SidebarProps) {
               </span>
             </SidebarMenuButton>
           </div>
-
         </div>
       </SidebarFooter>
     </Sidebar>

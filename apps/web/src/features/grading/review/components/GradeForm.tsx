@@ -411,7 +411,11 @@ export default function GradeForm({
   }, [handleCtrlEnter])
 
   if (!submissionUuid) {
-    return <aside className="text-muted-foreground p-4 text-sm lg:col-start-2 xl:col-start-3 xl:row-start-1">{t('selectSubmission')}</aside>
+    return (
+      <aside className="text-muted-foreground p-4 text-sm lg:col-start-2 xl:col-start-3 xl:row-start-1">
+        {t('selectSubmission')}
+      </aside>
+    )
   }
 
   if (isLoading && !submission) {
@@ -604,7 +608,7 @@ export default function GradeForm({
                     disabled={!editable || isSaving}
                     maxLength={8000}
                     rows={1}
-                    className="min-h-9 text-sm [field-sizing:content]"
+                    className="[field-sizing:content] min-h-9 text-sm"
                     onChange={event => patchItemDraft(item.item_id, 'feedback', event.target.value)}
                   />
                 </div>

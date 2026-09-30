@@ -383,7 +383,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
               </motion.div>
 
               {error ? (
-                <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-500/15 p-3 text-sm font-medium text-red-500">
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-500 dark:bg-red-500/15">
                   <AlertCircle size={16} />
                   {error}
                 </div>

@@ -52,7 +52,9 @@ const FileUploadBlockInput: FC<FileUploadBlockInputProps> = ({ accept, onFileSel
       onDragLeave={() => setIsDragOver(false)}
       className={cn(
         'flex cursor-pointer flex-col items-center rounded-lg border-2 border-dashed px-6 py-4 text-center transition-colors',
-        isDragOver ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/15' : 'border-gray-300 bg-white hover:border-gray-400',
+        isDragOver
+          ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/15'
+          : 'border-gray-300 bg-white hover:border-gray-400',
       )}
     >
       <input
@@ -62,8 +64,8 @@ const FileUploadBlockInput: FC<FileUploadBlockInputProps> = ({ accept, onFileSel
         onChange={e => select(e.target.files?.[0])}
         className="hidden"
       />
-      <p className="text-sm font-medium text-foreground/80">{file ? file.name : t('dropOrClick')}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      <p className="text-foreground/80 text-sm font-medium">{file ? file.name : t('dropOrClick')}</p>
+      <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
     </div>
   )
 }
@@ -121,7 +123,7 @@ function FileUploadBlockWrapper({ children, isEmpty, ...props }: UploadBlockComp
   return (
     isEmpty && (
       <div
-        className="border-gray-150 flex items-center justify-center space-x-3 rounded-xl border-2 border-dashed bg-muted/50 px-3 py-7 text-sm text-foreground"
+        className="border-gray-150 bg-muted/50 text-foreground flex items-center justify-center space-x-3 rounded-xl border-2 border-dashed px-3 py-7 text-sm"
         contentEditable={false}
       >
         <FileUploadBlock isEmpty {...props}>

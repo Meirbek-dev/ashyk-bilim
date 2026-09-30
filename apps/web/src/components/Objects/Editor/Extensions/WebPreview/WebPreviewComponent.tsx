@@ -47,12 +47,12 @@ function FaviconDisplay({
   return (
     <div className="mt-0 flex items-center gap-2 border-t border-gray-100 pt-2">
       {favicon ? (
-        <div className="relative h-[18px] w-[18px] shrink-0 overflow-hidden rounded bg-muted">
+        <div className="bg-muted relative h-[18px] w-[18px] shrink-0 overflow-hidden rounded">
           <NextImage src={favicon} alt={faviconAlt} fill className="object-cover" />
         </div>
       ) : null}
-      {siteName ? <span className="shrink-0 text-xs font-medium text-muted-foreground">{siteName}</span> : null}
-      <span className="truncate text-xs text-muted-foreground">{url}</span>
+      {siteName ? <span className="text-muted-foreground shrink-0 text-xs font-medium">{siteName}</span> : null}
+      <span className="text-muted-foreground truncate text-xs">{url}</span>
     </div>
   )
 }
@@ -95,7 +95,7 @@ function AlignmentControls({
   return (
     <div className="mt-4 flex flex-col items-center">
       <div className="flex items-center gap-1">
-        <span className="mr-1 text-xs text-muted-foreground">{t('align')}:</span>
+        <span className="text-muted-foreground mr-1 text-xs">{t('align')}:</span>
         {alignments.map(opt => (
           <button
             key={opt.value}
@@ -105,7 +105,7 @@ function AlignmentControls({
             }}
             title={t('alignOption', { value: t(opt.value) })}
             type="button"
-            className={`flex items-center justify-center rounded-full border p-1.5 text-muted-foreground transition-colors duration-150 focus:ring-2 focus:ring-blue-300 focus:outline-none ${
+            className={`text-muted-foreground flex items-center justify-center rounded-full border p-1.5 transition-colors duration-150 focus:ring-2 focus:ring-blue-300 focus:outline-none ${
               alignment === opt.value
                 ? 'border-gray-600 bg-gray-600 text-white hover:bg-gray-700'
                 : 'border-border bg-card hover:bg-muted'
@@ -269,13 +269,13 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
       />
       <div className={`flex w-full ${alignmentClass}`}>
         {/* CardWrapper */}
-        <div className="soft-shadow relative my-2 max-w-[420px] min-w-[260px] rounded-xl bg-card px-6 pt-6 pb-4">
+        <div className="soft-shadow bg-card relative my-2 max-w-[420px] min-w-[260px] rounded-xl px-6 pt-6 pb-4">
           {/* PreviewCard */}
           {/* Floating edit and delete buttons (only if not editing and isEditable) */}
           {isEditable && !editing ? (
             <div className="absolute -top-3 -right-3 z-20 flex flex-col gap-2">
               <button
-                className="flex items-center justify-center rounded-md border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/15 p-1.5 text-yellow-700 dark:text-yellow-300 shadow-md hover:bg-yellow-100"
+                className="flex items-center justify-center rounded-md border border-yellow-200 bg-yellow-50 p-1.5 text-yellow-700 shadow-md hover:bg-yellow-100 dark:border-yellow-500/30 dark:bg-yellow-500/15 dark:text-yellow-300"
                 onClick={handleEdit}
                 title={t('editUrl')}
                 type="button"
@@ -283,7 +283,7 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                 <Edit2 size={16} />
               </button>
               <button
-                className="flex items-center justify-center rounded-md border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-1.5 text-red-700 dark:text-red-300 shadow-md hover:bg-red-100"
+                className="flex items-center justify-center rounded-md border border-red-200 bg-red-50 p-1.5 text-red-700 shadow-md hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300"
                 onClick={handleDelete}
                 title={t('deleteCard')}
                 type="button"
@@ -411,7 +411,11 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
             }
           />
           {!previewUrl && isEditable && !editing ? (
-            <button type="button" className="text-sm text-muted-foreground hover:text-foreground/80" onClick={handleEdit}>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground/80 text-sm"
+              onClick={handleEdit}
+            >
               {t('enterWebsiteUrl')}
             </button>
           ) : null}
@@ -429,7 +433,7 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                       {previewData.title}
                     </span>
                     <span
-                      className="mb-3 block text-sm leading-snug text-foreground/80 no-underline hover:no-underline focus:no-underline active:no-underline"
+                      className="text-foreground/80 mb-3 block text-sm leading-snug no-underline hover:no-underline focus:no-underline active:no-underline"
                       style={{ textDecoration: 'none', borderBottom: 'none' }}
                     >
                       {previewData.description}
@@ -438,12 +442,12 @@ function WebPreviewComponent({ node, updateAttributes, deleteNode }: WebPreviewP
                 ) : (
                   <div className="pt-4 pb-2" data-testid="web-preview-fallback">
                     <span className="text-foreground mb-1.5 flex items-center gap-2 text-lg leading-tight font-semibold">
-                      <Globe className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <Globe className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
                       {previewHostname(previewUrl ?? '')}
                     </span>
-                    <span className="mb-1 block text-sm font-medium text-foreground/80">{t('previewUnavailable')}</span>
+                    <span className="text-foreground/80 mb-1 block text-sm font-medium">{t('previewUnavailable')}</span>
                     {isHttpUrl(previewUrl) ? (
-                      <span className="mb-3 block text-xs leading-snug text-muted-foreground">
+                      <span className="text-muted-foreground mb-3 block text-xs leading-snug">
                         {t('previewUnavailableHint')}
                       </span>
                     ) : null}

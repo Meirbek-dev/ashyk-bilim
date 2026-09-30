@@ -172,7 +172,7 @@ function CourseWorkspaceChrome({
           </div>
         }
       >
-        <div className="flex h-12 items-end gap-0 overflow-x-auto [scrollbar-width:none]">
+        <div className="flex h-12 [scrollbar-width:none] items-end gap-0 overflow-x-auto">
           {visibleStages.map(stage => {
             const Icon = stage.icon
             const isActive = stage.key === activeStage

@@ -159,7 +159,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
 
         {isEditable ? (
           <div
-            className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-foreground/80 shadow-sm backdrop-blur"
+            className="text-foreground/80 absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 shadow-sm backdrop-blur"
             contentEditable={false}
             style={{ pointerEvents: 'auto' }}
           >
@@ -168,7 +168,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
               type="button"
               aria-label={`${t('editButton')} ${providerLabel} ${t('embed')}`}
               onClick={handleEdit}
-              className="flex size-8 items-center justify-center rounded hover:bg-muted focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="hover:bg-muted flex size-8 items-center justify-center rounded focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               <Pencil className="size-4" />
             </button>
@@ -176,7 +176,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
               type="button"
               aria-label={`${t('deleteButton')} ${providerLabel} ${t('embed')}`}
               onClick={deleteNode}
-              className="flex size-8 items-center justify-center rounded text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15 focus-visible:outline-2 focus-visible:outline-red-500"
+              className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-500 dark:text-red-300 dark:hover:bg-red-500/15"
             >
               <Trash2 className="size-4" />
             </button>
@@ -196,7 +196,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             onPointerUp={handlePointerUp}
           >
             <div className="flex h-2.5 w-16 items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <GripHorizontal className="size-4 text-muted-foreground" />
+              <GripHorizontal className="text-muted-foreground size-4" />
             </div>
           </div>
         ) : null}

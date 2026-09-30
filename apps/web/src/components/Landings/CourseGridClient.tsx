@@ -57,7 +57,7 @@ export default function CourseGridClient({
           </a>
         </div>
       ) : (
-        <div className="grid w-full grid-cards gap-6">
+        <div className="grid-cards grid w-full gap-6">
           {initialCourses.map((course: AppCourse, index: number) => (
             <div key={course.course_uuid} className="flex w-full max-w-sm justify-center">
               <CourseThumbnail

@@ -200,9 +200,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 >
                   {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}`)}
                 </Badge>
-                <Badge variant="outline">
-                  {t('pointsShort', { count: draft.points ?? 100 })}
-                </Badge>
+                <Badge variant="outline">{t('pointsShort', { count: draft.points ?? 100 })}</Badge>
                 {draft.time_limit && (
                   <Badge variant="secondary">
                     {t('timeLimit')}: {t('timeSecondsValue', { value: draft.time_limit })}

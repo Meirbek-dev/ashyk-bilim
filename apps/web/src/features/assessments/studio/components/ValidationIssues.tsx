@@ -20,7 +20,7 @@ export function InlineIssueList({ issues }: InlineIssueListProps) {
   if (issues.length === 0) return null
 
   return (
-    <div className="rounded-md border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-3 py-2 text-sm text-amber-900 dark:text-amber-300">
+    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300">
       <ul className="space-y-1">
         {issues.map(issue => (
           <li

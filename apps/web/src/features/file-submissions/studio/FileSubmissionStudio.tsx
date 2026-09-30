@@ -299,33 +299,33 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </Button>
             {/* Published: the badge beside the title says so — no dead «Опубликовано» button. */}
             {isPublished ? null : (
-            <Button
-              size="sm"
-              onClick={() => {
-                if (!publishGate.canPublish) {
-                  toast.error(publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'))
-                  return
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (!publishGate.canPublish) {
+                    toast.error(publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'))
+                    return
+                  }
+                  publishMutation.mutate()
+                }}
+                disabled={
+                  isPublished ||
+                  publishMutation.isPending ||
+                  saveMutation.isPending ||
+                  !title.trim() ||
+                  isMarkdownStructurallyEmpty(instructions) ||
+                  !publishGate.canPublish
                 }
-                publishMutation.mutate()
-              }}
-              disabled={
-                isPublished ||
-                publishMutation.isPending ||
-                saveMutation.isPending ||
-                !title.trim() ||
-                isMarkdownStructurallyEmpty(instructions) ||
-                !publishGate.canPublish
-              }
-            >
-              {publishMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : isPublished ? (
-                <CheckCircle2 className="size-4" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              {isPublished ? t('published') : t('publish')}
-            </Button>
+              >
+                {publishMutation.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : isPublished ? (
+                  <CheckCircle2 className="size-4" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                {isPublished ? t('published') : t('publish')}
+              </Button>
             )}
           </div>
         </div>

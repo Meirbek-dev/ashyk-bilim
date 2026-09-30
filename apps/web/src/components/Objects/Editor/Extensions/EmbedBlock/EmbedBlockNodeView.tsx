@@ -45,7 +45,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
     if (this.state.hasError) {
       return (
         <div
-          className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-6 text-center"
+          className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-500/30 dark:bg-red-500/15"
           role="alert"
         >
           <div>
@@ -118,8 +118,8 @@ function EmbedBlockNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
         }
 
         return (
-          <div className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-border bg-muted/50 p-6 text-center">
-            <p className="text-sm text-muted-foreground">{t('unknownEmbedType', { type: type ? `: ${type}` : '' })}</p>
+          <div className="border-border bg-muted/50 flex min-h-[120px] w-full items-center justify-center rounded-xl border p-6 text-center">
+            <p className="text-muted-foreground text-sm">{t('unknownEmbedType', { type: type ? `: ${type}` : '' })}</p>
           </div>
         )
       }

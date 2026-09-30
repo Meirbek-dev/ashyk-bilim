@@ -189,7 +189,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-card p-8">
+        <div className="soft-shadow bg-card relative z-10 mb-2 w-full space-y-6 rounded-2xl p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
               <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
@@ -208,16 +208,16 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-foreground">{congratsText}</h1>
+          <h1 className="text-foreground text-4xl font-bold">{congratsText}</h1>
 
-          <p className="text-xl text-muted-foreground">
+          <p className="text-muted-foreground text-xl">
             {t('courseCompleted')}
-            <span className="font-semibold text-foreground"> {courseName}</span>
+            <span className="text-foreground font-semibold"> {courseName}</span>
           </p>
 
           <p className="text-muted-foreground">{t('completionDescription')}</p>
           {progressInfo ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {t('progressCompleted', { completed: progressInfo.completed, total: progressInfo.total })}
             </p>
           ) : null}
@@ -227,7 +227,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             <div className="space-y-4 rounded-lg border border-yellow-200 bg-linear-to-br from-yellow-50 to-orange-50 p-6">
               <div className="flex items-center justify-center space-x-2">
                 <Trophy className="h-6 w-6 text-yellow-600" />
-                <h3 className="text-xl font-semibold text-foreground">{t('learningAchievementUnlocked')}</h3>
+                <h3 className="text-foreground text-xl font-semibold">{t('learningAchievementUnlocked')}</h3>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -246,7 +246,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                       <span className="font-semibold">{t('xpBonusMessage', { xp: courseCompletionXp })}</span>
                     </div>
                   )}
-                  <div className="text-center text-sm text-muted-foreground">{t('keepLearningMessage')}</div>
+                  <div className="text-muted-foreground text-center text-sm">{t('keepLearningMessage')}</div>
                 </div>
               </div>
             </div>
@@ -256,15 +256,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           {isLoadingCertificate ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-3 text-muted-foreground">{t('loadingCertificate')}</span>
+              <span className="text-muted-foreground ml-3">{t('loadingCertificate')}</span>
             </div>
           ) : certificateError ? (
-            <div className="rounded-lg border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/15 p-6">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-500/30 dark:bg-yellow-500/15">
               <p className="text-yellow-800">{certificateError}</p>
             </div>
           ) : userCertificate ? (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-foreground">{t('earnedCertificate')}</h2>
+              <h2 className="text-foreground text-2xl font-semibold">{t('earnedCertificate')}</h2>
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
@@ -308,7 +308,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               </div>
             </div>
           ) : (
-            <div className="rounded-lg bg-muted/50 p-6">
+            <div className="bg-muted/50 rounded-lg p-6">
               <p className="text-muted-foreground">{t('noCertificateAvailable')}</p>
             </div>
           )}
@@ -334,7 +334,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   // at 0/0 live activities there is nothing to continue (or, UX-133, to
   // start — the landing shows no CTA either): the action bar's «Назад к
   // курсу» stays the single primary.
-  const certificateConfigured = learnerState?.certificate.configured === true
+  const certificateConfigured = learnerState.certificate.configured
   const noLiveActivities = progressInfo?.total === 0
   const keepGoingText = noLiveActivities
     ? t('noPublishedActivities')
@@ -345,7 +345,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-card p-8">
+      <div className="soft-shadow bg-card w-full max-w-2xl space-y-6 rounded-2xl p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (
             <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
@@ -364,28 +364,28 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         </div>
 
-        <h1 className="text-4xl font-bold text-foreground">{keepGoingText}</h1>
+        <h1 className="text-foreground text-4xl font-bold">{keepGoingText}</h1>
 
-        <p className="text-xl text-muted-foreground">
+        <p className="text-muted-foreground text-xl">
           {noLiveActivities
             ? null
             : notEnrolled
               ? t(certificateConfigured ? 'notEnrolledMessage' : 'notEnrolledMessageNoCertificate')
               : t('youAreMakingProgress')}
-          <span className="font-semibold text-foreground"> {courseName}</span>
+          <span className="text-foreground font-semibold"> {courseName}</span>
         </p>
 
         {progressInfo && !notEnrolled && !noLiveActivities ? (
-          <div className="space-y-4 rounded-lg bg-muted/50 p-6">
+          <div className="bg-muted/50 space-y-4 rounded-lg p-6">
             <div className="flex items-center justify-center space-x-2">
-              <BookOpen className="h-5 w-5 text-muted-foreground" />
-              <span className="text-lg font-semibold text-foreground/80">{t('courseProgress')}</span>
+              <BookOpen className="text-muted-foreground h-5 w-5" />
+              <span className="text-foreground/80 text-lg font-semibold">{t('courseProgress')}</span>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">{t('progress')}</span>
-                <span className="font-semibold text-foreground">{progressInfo.percentageString}</span>
+                <span className="text-foreground font-semibold">{progressInfo.percentageString}</span>
               </div>
 
               <div className="h-3 w-full rounded-full bg-gray-200">
@@ -395,7 +395,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 />
               </div>
 
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {t('progressCompleted', {
                   completed: progressInfo.completed,
                   total: progressInfo.total,

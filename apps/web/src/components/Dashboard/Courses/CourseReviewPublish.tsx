@@ -179,7 +179,6 @@ export default function CourseReviewPublish({
           <ReadinessIssues readiness={readiness} />
         ) : null}
       </section>
-
     </div>
   )
 }

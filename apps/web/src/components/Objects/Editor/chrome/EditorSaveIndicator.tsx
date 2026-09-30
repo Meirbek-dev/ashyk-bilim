@@ -43,7 +43,7 @@ export function EditorSaveIndicator({ saveState }: EditorSaveIndicatorProps) {
   }
 
   return (
-    <span className="text-muted-foreground flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs">
+    <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs whitespace-nowrap">
       {saveState === 'saving' ? (
         <>
           <Loader2 className="size-3 animate-spin" />

@@ -4381,7 +4381,7 @@
       },
       "EditorWrapper": {
         "saveError": "Error: Could not save activity.",
-        "saveSuccess": "Activity saved!",
+        "saveSuccess": "Saved",
         "saving": "Saving...",
         "conflict": "This activity was changed in another tab. Autosave stopped so it is not overwritten.",
         "reload": "Reload page",

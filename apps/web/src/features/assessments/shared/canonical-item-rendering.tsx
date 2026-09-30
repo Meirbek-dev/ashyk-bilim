@@ -299,7 +299,7 @@ export function CanonicalReviewAnswer({
           answer={{ text: answer?.kind === 'OPEN_TEXT' ? answer.text : '' }}
         />
         {body.rubric ? (
-          <div className="rounded-md border border-sky-200 dark:border-sky-500/30 bg-sky-50/70 dark:bg-sky-500/15 p-3 text-xs text-sky-950 dark:text-sky-300">
+          <div className="rounded-md border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-950 dark:border-sky-500/30 dark:bg-sky-500/15 dark:text-sky-300">
             <div className="mb-1 font-medium">{t('OpenText.rubricGuidance')}</div>
             <MarkdownContent content={body.rubric} mode="compactRichText" />
           </div>

@@ -107,7 +107,7 @@ async function CollectionContent(props: PageProps) {
       </div>
 
       {/* Courses Grid */}
-      <div className="grid w-full grid-cards gap-6">
+      <div className="grid-cards grid w-full gap-6">
         {courses.map((course: AppCourse) => (
           <AppLink
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}

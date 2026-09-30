@@ -85,7 +85,6 @@ export function EditorHeader({
         >
           <Eye className="size-4" />
         </Link>
-
       </div>
     </div>
   )

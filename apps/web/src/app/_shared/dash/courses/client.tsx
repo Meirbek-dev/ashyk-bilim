@@ -547,9 +547,7 @@ function CoursesHome({
                 }
               >
                 {item.label}
-                {item.count === undefined ? null : (
-                  <span className="tabular-nums opacity-70">{item.count}</span>
-                )}
+                {item.count === undefined ? null : <span className="tabular-nums opacity-70">{item.count}</span>}
               </Button>
             ))}
           </div>
@@ -609,7 +607,11 @@ function CoursesHome({
 
           {hasQuery ? (
             <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
-              {t('resultsSummaryWithQuery', { visible: optimisticCourses.length, total: totalCourses, preset: presetLabel })}
+              {t('resultsSummaryWithQuery', {
+                visible: optimisticCourses.length,
+                total: totalCourses,
+                preset: presetLabel,
+              })}
             </div>
           ) : null}
         </div>
@@ -646,7 +648,7 @@ function CoursesHome({
             </div>
           </div>
         ) : viewMode === 'cards' ? (
-          <div className="grid w-full grid-cards gap-6 pb-8">
+          <div className="grid-cards grid w-full gap-6 pb-8">
             {optimisticCourses.map(course => (
               <div key={course.course_uuid} className="w-full">
                 <CourseThumbnail

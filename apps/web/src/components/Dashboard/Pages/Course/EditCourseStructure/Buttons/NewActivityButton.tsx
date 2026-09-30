@@ -145,7 +145,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
     // «Create and open»: straight into the editor instead of leaving the author to find the new row.
     if (created?.id) {
       const courseId = course.courseStructure.course_uuid.replace(/^course_/, '')
-      router.push(`/dash/courses/${courseId}/activity/${String(created.id).replace(/^activity_/, '')}/studio`)
+      router.push(`/dash/courses/${courseId}/activity/${created.id.replace(/^activity_/, '')}/studio`)
     }
   }
 

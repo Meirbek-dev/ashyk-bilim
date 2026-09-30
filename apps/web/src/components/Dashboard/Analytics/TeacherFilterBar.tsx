@@ -124,10 +124,7 @@ export default function TeacherFilterBar({
   const resetHref = useMemo(() => basePath, [basePath])
 
   return (
-    <section
-      aria-label={t('filters.sectionAriaLabel')}
-      className="mb-4 flex w-full flex-col gap-4"
-    >
+    <section aria-label={t('filters.sectionAriaLabel')} className="mb-4 flex w-full flex-col gap-4">
       <div className="w-full space-y-4">
         {/* Filters Selectors Grid */}
         <form

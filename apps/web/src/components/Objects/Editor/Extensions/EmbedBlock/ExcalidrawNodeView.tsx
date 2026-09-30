@@ -127,7 +127,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   return (
     <NodeViewWrapper className="excalidraw-node-view w-full">
       <div
-        className="relative w-full overflow-hidden rounded-xl border border-border bg-muted/50"
+        className="border-border bg-muted/50 relative w-full overflow-hidden rounded-xl border"
         style={{ height: `${height}px` }}
       >
         {/* iframe — only rendered in browser environments */}
@@ -163,7 +163,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('editButton')} ${t('providers.excalidraw.label')}`}
               onClick={handleEdit}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors"
             >
               {/* Pencil icon */}
               <svg
@@ -187,7 +187,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
               type="button"
               aria-label={`${t('deleteButton')} ${t('providers.excalidraw.label')}`}
               onClick={handleDelete}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/15 hover:text-red-600 dark:hover:text-red-300"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-300"
             >
               {/* Trash icon */}
               <svg

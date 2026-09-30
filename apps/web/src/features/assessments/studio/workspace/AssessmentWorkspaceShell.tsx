@@ -61,7 +61,7 @@ function AssessmentWorkspaceNavigator({ items }: { items: AssessmentWorkspaceNav
         <div className="hidden px-2 2xl:block">
           <p className="text-muted-foreground text-xs font-medium uppercase">{t('workspace')}</p>
         </div>
-        <nav className="flex gap-1 overflow-x-auto [scrollbar-width:none] 2xl:flex-col 2xl:overflow-visible">
+        <nav className="flex [scrollbar-width:none] gap-1 overflow-x-auto 2xl:flex-col 2xl:overflow-visible">
           {items.map(({ id, label, icon: Icon, issueCount }) => (
             <button
               key={id}

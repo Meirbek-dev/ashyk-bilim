@@ -301,49 +301,49 @@ export default function ReviewBulkActionBar({
       ) : null}
       {submissions.length > 0 ? (
         <>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={disabled || isPending || gradeable.length === 0}
-        onClick={() => setPendingAction('publish-selected')}
-      >
-        <Send className="size-4" />
-        {t('publishSelected')}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={disabled || isPending || returnable.length === 0}
-        onClick={() => setPendingAction('return-selected')}
-      >
-        <RotateCcw className="size-4" />
-        {t('returnSelected')}
-      </Button>
-      {/* UX-093: the bulk return takes saved scores only — say so instead of a mute disabled button. */}
-      {submissions.length > 0 && returnable.length === 0 && ungraded.length > 0 ? (
-        <span className="text-muted-foreground text-xs">{t('returnNeedsSavedScore')}</span>
-      ) : null}
-      <CalendarDateTimePicker
-        value={deadlineLocal}
-        onChange={value => {
-          setDeadlineLocal(value)
-          setDeadlineError(null)
-        }}
-        disabled={disabled || isPending}
-        placeholder={t('deadlinePlaceholder')}
-        className="w-48"
-        // UX-113: a new deadline is in the future — past days are hidden (UX-105 only trimmed the year list).
-        minDate={new Date(new Date().setHours(0, 0, 0, 0))}
-      />
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={disabled || isPending || !deadlineLocal || userIds.length === 0 || !assessmentUuid}
-        onClick={() => setPendingAction('extend-deadline')}
-      >
-        <CalendarClock className="size-4" />
-        {t('extend')}
-      </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled || isPending || gradeable.length === 0}
+            onClick={() => setPendingAction('publish-selected')}
+          >
+            <Send className="size-4" />
+            {t('publishSelected')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled || isPending || returnable.length === 0}
+            onClick={() => setPendingAction('return-selected')}
+          >
+            <RotateCcw className="size-4" />
+            {t('returnSelected')}
+          </Button>
+          {/* UX-093: the bulk return takes saved scores only — say so instead of a mute disabled button. */}
+          {submissions.length > 0 && returnable.length === 0 && ungraded.length > 0 ? (
+            <span className="text-muted-foreground text-xs">{t('returnNeedsSavedScore')}</span>
+          ) : null}
+          <CalendarDateTimePicker
+            value={deadlineLocal}
+            onChange={value => {
+              setDeadlineLocal(value)
+              setDeadlineError(null)
+            }}
+            disabled={disabled || isPending}
+            placeholder={t('deadlinePlaceholder')}
+            className="w-48"
+            // UX-113: a new deadline is in the future — past days are hidden (UX-105 only trimmed the year list).
+            minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled || isPending || !deadlineLocal || userIds.length === 0 || !assessmentUuid}
+            onClick={() => setPendingAction('extend-deadline')}
+          >
+            <CalendarClock className="size-4" />
+            {t('extend')}
+          </Button>
         </>
       ) : null}
       <Button variant="outline" size="sm" disabled={isPending} onClick={() => setPendingAction('release-hidden')}>

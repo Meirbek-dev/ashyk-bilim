@@ -81,17 +81,17 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
       <CollapsibleTrigger
         nativeButton={false}
         render={
-          <div className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/50">
+          <div className="border-border bg-card hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between rounded-lg border px-4 py-3 transition-colors">
             <div className="flex items-center gap-3">
               <Settings size={15} className="text-gray-400" />
               <div>
-                <span className="text-sm font-medium text-foreground/80">{t('additionalSettings')}</span>
+                <span className="text-foreground/80 text-sm font-medium">{t('additionalSettings')}</span>
                 <p className="text-xs text-gray-400">{t('additionalSettingsDescription')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {settingsCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/15 px-1.5 text-xs font-medium text-blue-600 dark:text-blue-300">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-50 px-1.5 text-xs font-medium text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                   {settingsCount}
                 </span>
               )}
@@ -105,7 +105,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
       />
 
       <CollapsibleContent className="overflow-hidden">
-        <div className="mt-2 space-y-5 rounded-lg border border-border bg-card p-5">
+        <div className="border-border bg-card mt-2 space-y-5 rounded-lg border p-5">
           {/* Timing Controls */}
           <div className="space-y-3">
             <h4 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
@@ -139,7 +139,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-3 py-2"
+                className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/30 dark:bg-amber-500/15"
               >
                 <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
                 <div>
@@ -163,7 +163,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
               {t('playbackOptions')}
             </h4>
             <div className="space-y-2">
-              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
+              <Label className="border-border hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors">
                 <Checkbox
                   checked={videoDetails.autoplay}
                   onCheckedChange={checked => setVideoDetails({ ...videoDetails, autoplay: checked })}
@@ -171,12 +171,12 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
                 <div className="flex items-center gap-2">
                   <Play size={14} className="shrink-0 text-gray-400" />
                   <div>
-                    <span className="text-sm font-medium text-foreground/80">{t('autoplay')}</span>
+                    <span className="text-foreground/80 text-sm font-medium">{t('autoplay')}</span>
                     <p className="text-xs text-gray-400">{t('autoplayDescription')}</p>
                   </div>
                 </div>
               </Label>
-              <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/50">
+              <Label className="border-border hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors">
                 <Checkbox
                   checked={videoDetails.muted}
                   onCheckedChange={checked => setVideoDetails({ ...videoDetails, muted: checked })}
@@ -184,7 +184,7 @@ export function VideoSettingsForm({ videoDetails, setVideoDetails, t }: VideoSet
                 <div className="flex items-center gap-2">
                   <VolumeX size={14} className="shrink-0 text-gray-400" />
                   <div>
-                    <span className="text-sm font-medium text-foreground/80">{t('startMuted')}</span>
+                    <span className="text-foreground/80 text-sm font-medium">{t('startMuted')}</span>
                     <p className="text-xs text-gray-400">{t('startMutedDescription')}</p>
                   </div>
                 </div>

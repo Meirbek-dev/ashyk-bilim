@@ -51,7 +51,7 @@ function YouTubeNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
 
       {isEditable ? (
         <div
-          className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-foreground/80 shadow-sm backdrop-blur"
+          className="text-foreground/80 absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 shadow-sm backdrop-blur"
           contentEditable={false}
         >
           <button
@@ -59,7 +59,7 @@ function YouTubeNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
             type="button"
             aria-label={`${t('editButton')} ${t('providers.youtube.label')}`}
             onClick={handleEdit}
-            className="flex size-8 items-center justify-center rounded hover:bg-muted"
+            className="hover:bg-muted flex size-8 items-center justify-center rounded"
           >
             <Pencil className="size-4" />
           </button>
@@ -67,7 +67,7 @@ function YouTubeNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
             type="button"
             aria-label={`${t('deleteButton')} ${t('providers.youtube.label')}`}
             onClick={deleteNode}
-            className="flex size-8 items-center justify-center rounded text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15"
+            className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/15"
           >
             <Trash2 className="size-4" />
           </button>
