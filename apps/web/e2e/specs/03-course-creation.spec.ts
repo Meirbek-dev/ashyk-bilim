@@ -20,7 +20,7 @@
 import { testAsTeacher as test, expect } from '../fixtures'
 import { getEnv, setEnv } from '../env'
 import { JUDGE0_SKIP_REASON, judge0Missing } from '../fixtures/environment'
-import { COURSE } from '../fixtures/test-data'
+import { CODE_CHALLENGE, COURSE } from '../fixtures/test-data'
 import { ActivityStudioPage } from '../page-objects/ActivityStudioPage'
 
 // Persist course UUID across serial tests (setEnv also writes e2e/.auth/state.json)
@@ -241,6 +241,21 @@ test.describe.serial('Teacher – Course Creation', () => {
     })
   })
 
+  // BUG-385: the studio's «Publish now» is the only way a code challenge goes
+  // live (the curriculum toggle refuses a draft assessment). The tests match
+  // CORRECT_PYTHON_SOLUTION, which the learner submits in spec 04.
+  test('teacher can author and publish the Code Challenge from its studio', async ({ page, curriculumEditorPage }) => {
+    test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
+    test.setTimeout(120_000)
+    await curriculumEditorPage.goto(courseUuid)
+    await curriculumEditorPage.configureActivity(COURSE.activities.codeChallenge)
+    await new ActivityStudioPage(page).authorCodeChallenge(CODE_CHALLENGE)
+
+    await curriculumEditorPage.goto(courseUuid)
+    const row = curriculumEditorPage.activityRow(COURSE.activities.codeChallenge)
+    await expect(row.getByRole('button', { name: /^unpublish$/i })).toBeVisible({ timeout: 10_000 })
+  })
+
   // ── 6b. Certificate template ────────────────────────────────────────────
 
   test('teacher can enable a course certificate', async ({ page }) => {
@@ -268,13 +283,14 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   test('teacher can make every activity learner-visible', async ({ curriculumEditorPage }) => {
     // v2 publish gate: the course needs at least one published activity, and
-    // the learner outline only lists published ones. The code challenge stays
-    // a draft: its studio cannot pick languages while Judge0 is down (see the
-    // note in spec 04), and a published-but-unauthored challenge would count
-    // as a required activity the learner can never complete.
+    // the learner outline only lists published ones. Without Judge0 the code
+    // challenge stays an unauthored draft (its studio cannot pick languages),
+    // so it is left out — published unauthored it would be a required
+    // activity the learner can never complete.
     await curriculumEditorPage.goto(courseUuid)
-    const { codeChallenge: _codeChallenge, ...learnerVisible } = COURSE.activities
-    for (const name of Object.values(learnerVisible)) {
+    const { codeChallenge, ...rest } = COURSE.activities
+    const learnerVisible = judge0Missing() ? Object.values(rest) : [...Object.values(rest), codeChallenge]
+    for (const name of learnerVisible) {
       await curriculumEditorPage.publishActivity(name)
     }
   })

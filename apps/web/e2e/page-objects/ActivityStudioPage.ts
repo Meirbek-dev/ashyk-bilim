@@ -208,6 +208,67 @@ export class ActivityStudioPage {
     })
   }
 
+  /**
+   * Author a code challenge the way a teacher does in its studio: problem →
+   * language with starter code and reference solution → test suite → «Save
+   * Settings» → «Validate Solutions» (Judge0 runs the reference against every
+   * test) → «Publish now» (`POST assessments/{id}/lifecycle`).
+   */
+  public async authorCodeChallenge(challenge: {
+    /** The activity name — the studio prefills it as the challenge title (one name, UX-112). */
+    title: string
+    prompt: string
+    language: RegExp
+    starterCode: string
+    referenceSolution: string
+    tests: readonly { input: string; expectedOutput: string; visible: boolean }[]
+  }): Promise<void> {
+    const page = this.page
+    await expect(page.getByPlaceholder('e.g., Two Sum')).toHaveValue(challenge.title, { timeout: 15_000 })
+    await page.locator('.ProseMirror').first().click()
+    await page.keyboard.type(challenge.prompt)
+
+    await page.getByRole('tab', { name: /languages/i }).click()
+    await page.getByRole('button', { name: challenge.language }).click()
+    const editors = page.locator('.monaco-editor')
+    await expect(editors).toHaveCount(2, { timeout: 15_000 })
+    await this.fillMonaco(editors.nth(0), challenge.starterCode)
+    await this.fillMonaco(editors.nth(1), challenge.referenceSolution)
+
+    await page.getByRole('tab', { name: /test suite/i }).click()
+    for (const test of challenge.tests) {
+      await page.getByRole('button', { name: test.visible ? /add sample/i : /add hidden case/i }).click()
+      await page.getByPlaceholder('Console inputs feed here').fill(test.input)
+      await page.getByPlaceholder('Expected output assertion here').fill(test.expectedOutput)
+    }
+
+    await page.getByRole('button', { name: /^save settings$/i }).click()
+    await expect(page.getByText(/configuration saved successfully/i).first()).toBeVisible({ timeout: 15_000 })
+
+    await page.getByRole('tab', { name: /verify solution/i }).click()
+    await page.getByRole('button', { name: /validate solutions/i }).click()
+    await expect(page.getByText(/^passes tests$/i).first()).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByText(`${challenge.tests.length}/${challenge.tests.length}`).first()).toBeVisible()
+
+    const lifecycle = page.waitForResponse(
+      r => r.request().method() === 'POST' && /\/assessments\/[^/]+\/lifecycle$/u.test(r.url()),
+      { timeout: 15_000 },
+    )
+    await page.getByRole('button', { name: /^publish now$/i }).click()
+    const response = await lifecycle
+    expect(response.ok(), `lifecycle → ${response.status()} ${await response.text()}`).toBe(true)
+    await expect(page.getByText(/^published$/i).first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('button', { name: /^publish now$/i })).toBeHidden()
+  }
+
+  /** Replace a Monaco editor's text (insertText skips auto-close/auto-indent). */
+  public async fillMonaco(editor: Locator, text: string): Promise<void> {
+    await editor.locator('.view-lines').click()
+    await this.page.keyboard.press('Control+A')
+    await this.page.keyboard.insertText(text)
+    await expect(editor.locator('.view-lines')).toContainText(text.slice(0, 20))
+  }
+
   /** Save and confirm success badge or toast */
   public async save(): Promise<void> {
     await this.saveButton.click()

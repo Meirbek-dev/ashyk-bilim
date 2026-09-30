@@ -32,9 +32,9 @@ export class AssessmentPage {
     // v2 assessment action bar: "Submit" (opens the confirmation dialog)
     this.submitButton = page.getByRole('button', { name: /^submit( exam| attempt)?$|finish/i }).first()
     this.resultDisplay = page.locator('[data-result], .result, .score, [aria-label*="score"]').first()
-    this.codeEditor = page.locator('.cm-editor .cm-content, .monaco-editor textarea, textarea[name*="code"]').first()
+    this.codeEditor = page.locator('.monaco-editor').first()
     this.runCodeButton = page.getByRole('button', { name: /run|test code/i }).first()
-    this.submitCodeButton = page.getByRole('button', { name: /submit solution|submit code/i }).first()
+    this.submitCodeButton = page.getByRole('button', { name: /^submit$/i }).first()
     this.attemptStatus = page.locator('text=Graded, text=Submitted, text=Pending, [data-status]').first()
   }
 
@@ -118,17 +118,24 @@ export class AssessmentPage {
 
   // ── Code challenge helpers ───────────────────────────────────────────────
 
+  /** Replace the arena's Monaco source (insertText skips auto-close/auto-indent). */
   public async fillCodeEditor(code: string): Promise<void> {
-    await this.codeEditor.click()
-    // Select all and replace
+    const lines = this.page.locator('.monaco-editor .view-lines').first()
+    await lines.click()
     await this.page.keyboard.press('Control+A')
-    await this.codeEditor.fill(code)
+    await this.page.keyboard.insertText(code)
+    await expect(lines).toContainText(code.slice(0, 20))
   }
 
-  public async submitCode(): Promise<void> {
+  /** The arena's «Submit» hands the attempt in (`POST submissions/{id}/submit`); resolves with its body. */
+  public async submitCode(): Promise<{ status: string; final_score: number | null }> {
+    const submitted = this.page.waitForResponse(
+      r => r.request().method() === 'POST' && /\/submissions\/[^/]+\/submit$/u.test(r.url()),
+      { timeout: 60_000 },
+    )
     await this.submitCodeButton.click()
-    await this.page.waitForResponse(r => r.url().includes('/code-execution') || r.url().includes('/assessments'), {
-      timeout: 30_000,
-    })
+    const response = await submitted
+    expect(response.ok(), `submit → ${response.status()} ${await response.text()}`).toBe(true)
+    return (await response.json()) as { status: string; final_score: number | null }
   }
 }

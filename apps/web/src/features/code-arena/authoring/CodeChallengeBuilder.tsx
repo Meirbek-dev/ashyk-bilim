@@ -1,13 +1,28 @@
 'use client'
 
-import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, PlayCircle, Save } from 'lucide-react'
+import {
+  CheckCircle2,
+  ClipboardCheck,
+  Code2,
+  FileText,
+  FlaskConical,
+  Loader2,
+  PlayCircle,
+  Save,
+  Send,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { InlineError } from '@/components/ui/error-state'
 import { useApiError } from '@/hooks/useApiError'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { apiJson } from '@/lib/api-client'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -29,6 +44,7 @@ import { PublishReadinessPanel, buildReadiness, useMarkdownIssueText } from './P
 
 interface CodeChallengeBuilderProps {
   activityUuid: string
+  courseUuid: string
 }
 
 type BuilderTab = 'problem' | 'languages' | 'tests' | 'verify' | 'review'
@@ -57,8 +73,11 @@ const DEFAULT_SETTINGS: CodeChallengeSettings = {
   hints: [],
 }
 
-export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps) {
+export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallengeBuilderProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const tStudio = useTranslations('Features.Assessments.Studio')
+  const queryClient = useQueryClient()
+  const [isPublishing, setIsPublishing] = useState(false)
   const [tab, setTab] = useState<BuilderTab>('problem')
   const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS)
   const { data: settings, isLoading } = useCodeChallengeSettings(activityUuid)
@@ -134,6 +153,39 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     if (await persist()) toast.success(t('configSaved'))
   }
 
+  // BUG-385: the only way a code challenge goes live — the curriculum toggle
+  // refuses a draft assessment (409 `activity-not-ready`).
+  const isDraft = (settings?.lifecycle_status ?? 'draft') === 'draft'
+  const publish = async () => {
+    if (!settings?.uuid) return
+    setIsPublishing(true)
+    const published = tStudio('lifecycle.published')
+    try {
+      if (!(await persist())) return
+      await apiJson(`assessments/${settings.uuid}/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: 'published', scheduled_at_unix: null }),
+      })
+      toast.success(tStudio('lifecycleChanged', { state: published }))
+    } catch (error) {
+      if (hasErrorCode(error, 'conflict')) toast.error(tStudio('lifecycleConflict', { state: published }))
+      else toastApiError(error, { fallback: tStudio('updateLifecycleFailed') })
+    } finally {
+      setIsPublishing(false)
+      // The studio badge, the curriculum row and the course readiness move with the lifecycle (UX-085).
+      const course = courseUuid.replace(/^course_/, '')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.codeChallenges.settings(activityUuid) }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
+        }),
+        queryClient.invalidateQueries({ queryKey: courseKeys.structure(course).slice(0, 3) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(course) }),
+      ])
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-[360px] items-center justify-center">
@@ -165,6 +217,18 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
             {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             {t('saveSettings')}
           </Button>
+          {isDraft ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={publish}
+              disabled={isPublishing || saveSettings.isPending || blockersCount > 0}
+              className="h-8 gap-1.5 text-xs font-semibold"
+            >
+              {isPublishing ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+              {tStudio('publishNow')}
+            </Button>
+          ) : null}
         </div>
       </div>
 

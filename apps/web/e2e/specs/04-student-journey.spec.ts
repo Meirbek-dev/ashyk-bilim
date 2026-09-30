@@ -198,10 +198,8 @@ test.describe.serial('Student – Learning Journey', () => {
   })
 
   // ── 6. Code challenge ───────────────────────────────────────────────────
-  // Last on purpose: the v2 code challenge can only be authored (languages
-  // tab) and published when Judge0 answers `GET code/languages`; without
-  // Judge0 the teacher cannot publish it and the learner gets "not found".
-  // Keeping it last lets the rest of the chain run when the service is down.
+  // Last on purpose: without Judge0 the teacher cannot author the challenge
+  // (spec 03 leaves it an unpublished draft) and this step skips.
 
   test('student can navigate to and submit the coding challenge', async ({
     page,
@@ -209,22 +207,19 @@ test.describe.serial('Student – Learning Journey', () => {
     coursePlayerPage,
   }) => {
     test.skip(judge0Missing(), JUDGE0_SKIP_REASON)
+    test.setTimeout(120_000)
     await coursePlayerPage.gotoCourseLanding(courseUuid)
     const activityId = await coursePlayerPage.openActivity(new RegExp(COURSE.activities.codeChallenge, 'i'))
     setEnv('E2E_CODE_ACTIVITY_ID', activityId)
 
-    // Fill and submit the code solution
-    if (await assessmentPage.codeEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await assessmentPage.fillCodeEditor(CORRECT_PYTHON_SOLUTION)
-      await assessmentPage.submitCode()
-
-      // Wait for evaluation result
-      await expect(page.getByText(/passed|correct|submitted/i).first()).toBeVisible({
-        timeout: 30_000,
-      })
-    } else {
-      // BUG PROTOCOL: Code editor not visible — test must fail
-      await expect(assessmentPage.codeEditor).toBeVisible({ timeout: 1 })
-    }
+    await assessmentPage.startAttempt()
+    // BUG PROTOCOL: the arena editor must render — no fallback
+    await expect(assessmentPage.codeEditor).toBeVisible({ timeout: 30_000 })
+    await assessmentPage.fillCodeEditor(CORRECT_PYTHON_SOLUTION)
+    // Judge0 grades the hand-in inside the submit: both tests pass → 100, released at once
+    const submitted = await assessmentPage.submitCode()
+    expect(submitted).toMatchObject({ status: 'published', final_score: 100 })
+    await expect(page.getByText('Assessment submitted · 100%', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Passed', { exact: true }).first()).toBeVisible()
   })
 })
