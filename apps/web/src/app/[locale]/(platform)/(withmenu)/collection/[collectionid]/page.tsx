@@ -96,10 +96,13 @@ async function CollectionContent(props: PageProps) {
           </Badge>
         </div>
 
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">{col.name}</h1>
+        {/* UX-278: a long unbroken word wraps instead of widening a phone page. */}
+        <h1 className="max-w-full text-4xl font-extrabold tracking-tight wrap-anywhere lg:text-5xl">{col.name}</h1>
 
         {col.description && (
-          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed md:text-lg">{col.description}</p>
+          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed wrap-anywhere md:text-lg">
+            {col.description}
+          </p>
         )}
       </div>
 
