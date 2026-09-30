@@ -471,7 +471,7 @@ Redis — one source of truth for coordination.
 
 ## 12. AI subsystem (Q21: full port, rig-core)
 
-- `ab-clients::llm`: rig-core providers (OpenAI primary `gpt-5.6-luna`, OpenRouter
+- `ab-clients::llm`: rig-core providers (OpenAI primary `gpt-6-luna`, OpenRouter
   fallback) behind our `LlmClient` facade; provider/model/fallback chain is pure
   config. rig types do not leak past this module (the one-file-diff firewall from
   the suggestions doc, made a compile-visible rule: `ab-domain` has no `rig` dep).

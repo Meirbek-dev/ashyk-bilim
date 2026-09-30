@@ -819,7 +819,7 @@ All open `QUESTIONS.md` items were answered; the answers are binding and the
   no XP, levels, streaks or ledgers.
 - **Analytics retention** (Q-2026-09-06-2 b): `analytics:rollup` prunes
   `analytics_events` older than 400 days and daily rollups older than 2 years.
-- **AI models** (Q-2026-09-06-3): `gpt-5.6-luna` / `deepseek/deepseek-v4-flash`
+- **AI models** (Q-2026-09-06-3): `gpt-6-luna` / `deepseek/deepseek-v4-flash`
   stay the defaults; the 1 000 000 tokens/month budget stands; keys are set by
   the owner in the server env at cutover.
 - **Pass-6 contract gaps are closed on the server** (Q-2026-09-12-2): gradebook
