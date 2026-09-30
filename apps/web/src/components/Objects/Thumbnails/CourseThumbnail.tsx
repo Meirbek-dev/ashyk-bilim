@@ -147,7 +147,8 @@ const CourseImage: FC<CourseImageProps> = ({
         </Badge>
       )}
 
-      {updateDate && (
+      {/* «Last updated» matters to the course's authors; learners see the cover alone. */}
+      {updateDate && isOwner && (
         <Badge
           variant="secondary"
           className="bg-background/80 absolute right-2.5 bottom-2.5 text-[11px] backdrop-blur-sm"
