@@ -7,6 +7,8 @@ import {
 } from '@/features/certifications/utils/pdfmeCertificate'
 import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { getUserDisplayName } from '@services/media/avatar'
+import { useSession } from '@/hooks/useSession'
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
 import { useGamificationStore } from '@/stores/gamification'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
@@ -29,6 +31,7 @@ interface CourseEndViewProps {
 
 const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage }) => {
   const locale = useLocale()
+  const { user } = useSession()
   const t = useTranslations('Certificates.CourseEndView')
   const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
   const [dialogAlertMessage, setDialogAlertMessage] = useState('')
@@ -346,6 +349,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                     certificationType={userCertificate.certification.config.certification_type}
                     certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
                     certificateInstructor={userCertificate.instructor_name ?? undefined}
+                    recipientName={getUserDisplayName(user) || undefined}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',

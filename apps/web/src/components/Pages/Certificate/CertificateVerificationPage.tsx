@@ -195,6 +195,7 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                   certificationType={certificateData.certification.config.certification_type}
                   certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
                   certificateInstructor={certificateData.instructor_name ?? undefined}
+                  recipientName={certificateData.holder?.display_name}
                   certificateId={certificateData.certificate_user.user_certification_uuid}
                   awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
                     year: 'numeric',

@@ -10,7 +10,7 @@ import CertificateVerificationPage from '@components/Pages/Certificate/Certifica
 import ruMessages from '@/messages/ru-RU.json'
 
 vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
-  default: () => null,
+  default: ({ recipientName }: { recipientName?: string }) => <span>{recipientName}</span>,
 }))
 vi.mock('@/features/certifications/components/CertificatePdfDownloadButton', () => ({
   CertificatePdfDownloadButton: () => null,
@@ -51,7 +51,8 @@ describe('certificate verify page on a phone (UX-179)', () => {
         <CertificateVerificationPage certificateUuid="ABCD-EFGH-IJKL-MNOP" />
       </NextIntlClientProvider>,
     )
-    expect(await screen.findByText('Айгерим Сапарова')).toBeInTheDocument()
+    // UX-312: in the details and on the on-screen certificate itself.
+    expect(await screen.findAllByText('Айгерим Сапарова')).toHaveLength(2)
     expect(screen.getByText(ruMessages.Certificates.CertificateVerificationPage.certificateHolder)).toBeInTheDocument()
   })
 })

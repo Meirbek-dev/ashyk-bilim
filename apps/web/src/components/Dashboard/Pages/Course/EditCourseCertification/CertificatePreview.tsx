@@ -19,6 +19,8 @@ interface CertificatePreviewProps {
   certificateId?: string | undefined
   awardedDate?: string | undefined
   qrCodeLink?: string | undefined
+  /** Whose certificate it is (UX-312); the PDF prints the same name. */
+  recipientName?: string | undefined
   /** Editor live preview: blanks show sample data. Issued certificates never do (UX-131). */
   sample?: boolean
 }
@@ -82,6 +84,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   certificateId,
   awardedDate,
   qrCodeLink,
+  recipientName,
   sample = false,
 }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState('')
@@ -169,6 +172,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 <div className="bg-border h-px w-8" />
               </div>
 
+              {recipientName || sample ? (
+                <div className="mb-6 max-w-xl">
+                  <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">{t('recipient')}</div>
+                  <div className="mt-1 text-xl font-semibold tracking-tight break-words sm:text-3xl">
+                    {recipientName || t('recipientSample')}
+                  </div>
+                </div>
+              ) : null}
               <h4 className="max-w-xl text-lg font-semibold tracking-tight sm:text-2xl">
                 {certificationName || (sample ? t('certificationName') : '')}
               </h4>

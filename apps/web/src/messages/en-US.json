@@ -990,7 +990,9 @@
       "qrLabel": "QR",
       "scanToVerify": "Scan to verify",
       "template": "Template",
-      "thisIsToConfirm": "This is to confirm that"
+      "thisIsToConfirm": "This is to confirm that",
+      "recipient": "Recipient",
+      "recipientSample": "Aigerim Saparova"
     },
     "CertificateVerificationPage": {
       "authenticityGuaranteed": "Verify the authenticity of this certificate",
@@ -8235,7 +8237,8 @@
     "ContentMarkdown": {
       "imageLabel": "Image",
       "copyCode": "Copy code",
-      "copiedCode": "Copied code"
+      "copiedCode": "Copied code",
+      "plainText": "Text"
     },
     "Grading": {
       "Stream": {

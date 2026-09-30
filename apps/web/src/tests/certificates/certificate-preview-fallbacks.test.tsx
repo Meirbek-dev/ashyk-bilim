@@ -39,6 +39,13 @@ describe('CertificatePreview fallbacks (UX-131)', () => {
     expect(document.body.textContent).not.toContain('OU-2025-001')
   })
 
+  // UX-312: the on-screen certificate names its recipient, like the PDF.
+  it('issued certificate names the recipient', () => {
+    renderPreview({ recipientName: 'Азамат Аскебек', certificateId: 'ABCD-EFGH-IJKL-MNOP' })
+    expect(screen.getByText('Азамат Аскебек')).toBeInTheDocument()
+    expect(screen.getByText(ruMessages.Certificates.CertificatePreview.recipient)).toBeInTheDocument()
+  })
+
   it('editor preview keeps its sample data', () => {
     renderPreview({ sample: true })
     expect(screen.getByText(SAMPLE_INSTRUCTOR)).toBeInTheDocument()

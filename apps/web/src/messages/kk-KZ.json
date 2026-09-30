@@ -989,7 +989,9 @@
       "qrLabel": "QR",
       "scanToVerify": "Тексеру үшін сканерлеңіз",
       "template": "Үлгі",
-      "thisIsToConfirm": "Мына адам келесі курсты аяқтағанын растаймыз:"
+      "thisIsToConfirm": "Мына адам келесі курсты аяқтағанын растаймыз:",
+      "recipient": "Алушы",
+      "recipientSample": "Айгерім Сапарова"
     },
     "CertificateVerificationPage": {
       "authenticityGuaranteed": "Бұл сертификаттың шынайылығын тексеріңіз",
@@ -8265,7 +8267,8 @@
     "ContentMarkdown": {
       "imageLabel": "Сурет",
       "copyCode": "Кодты көшіру",
-      "copiedCode": "Код көшірілді"
+      "copiedCode": "Код көшірілді",
+      "plainText": "Мәтін"
     },
     "Grading": {
       "Stream": {

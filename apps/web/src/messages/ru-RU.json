@@ -990,7 +990,9 @@
       "qrLabel": "QR",
       "scanToVerify": "Отсканируйте для проверки",
       "template": "Шаблон",
-      "thisIsToConfirm": "Настоящим подтверждается, что"
+      "thisIsToConfirm": "Настоящим подтверждается, что",
+      "recipient": "Получатель",
+      "recipientSample": "Айгерим Сапарова"
     },
     "CertificateVerificationPage": {
       "authenticityGuaranteed": "Проверьте подлинность сертификата",
@@ -8250,7 +8252,8 @@
     "ContentMarkdown": {
       "imageLabel": "Изображение",
       "copyCode": "Копировать код",
-      "copiedCode": "Код скопирован"
+      "copiedCode": "Код скопирован",
+      "plainText": "Текст"
     },
     "Grading": {
       "Stream": {
