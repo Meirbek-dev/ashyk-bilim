@@ -2,7 +2,7 @@
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
+import { Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 import { Checkbox } from '@/components/ui/checkbox'
 import NextImage from '@/components/ui/NextImage'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -330,7 +331,7 @@ function NewCollection() {
 
                 {/* Course List */}
                 <ScrollArea className="h-[400px] rounded-lg border">
-                  <div className="space-y-2 p-4">
+                  <div className="space-y-1.5 p-2">
                     {filteredCourses.length === 0 ? (
                       <div className="text-muted-foreground py-8 text-center text-sm">
                         {t('noCoursesFound', { query: searchQuery })}
@@ -343,16 +344,12 @@ function NewCollection() {
                         return (
                           <label
                             key={course.id}
-                            className={`group hover:border-primary hover:bg-accent relative flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-all ${
+                            className={`group hover:border-primary hover:bg-accent relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-all ${
                               isSelected ? 'border-primary bg-accent' : ''
                             }`}
                           >
-                            <Checkbox
-                              checked={isSelected}
-                              className="mt-1"
-                              onCheckedChange={() => toggleCourse(course.id)}
-                            />
-                            <div className="bg-muted relative h-20 w-32 shrink-0 overflow-hidden rounded-md border">
+                            <Checkbox checked={isSelected} onCheckedChange={() => toggleCourse(course.id)} />
+                            <div className="bg-muted relative aspect-video w-20 shrink-0 overflow-hidden rounded-md border">
                               {course.thumbnail_image ? (
                                 <div className="relative h-full w-full">
                                   <NextImage
@@ -364,20 +361,17 @@ function NewCollection() {
                                   />
                                 </div>
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                  <ImageIcon className="text-muted-foreground h-8 w-8" />
-                                </div>
-                              )}
-                              {isSelected && (
-                                <div className="bg-primary/20 absolute inset-0 flex items-center justify-center">
-                                  <CheckCircle2 className="text-primary h-6 w-6" />
-                                </div>
+                                <CoursePlaceholder
+                                  seed={course.course_uuid.replace('course_', '')}
+                                  title={course.name}
+                                  compact
+                                />
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <h3 className="text-foreground leading-tight font-medium">{course.name}</h3>
                               {course.description && (
-                                <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                                <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
                                   {extractMarkdownSummary(course.description, 140)}
                                 </p>
                               )}
