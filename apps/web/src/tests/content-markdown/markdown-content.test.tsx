@@ -149,7 +149,7 @@ describe('MarkdownContent', () => {
     const code = container.querySelector('code')
     expect(code).toBeInTheDocument()
     // Should NOT have the MarkdownCodeBlock header bar
-    expect(container.querySelector('[aria-label="Copy code"]')).not.toBeInTheDocument()
+    expect(container.querySelector('[aria-label="copyCode"]')).not.toBeInTheDocument()
   })
 
   it('renders a one-line fence without a language as a block (UX-320)', () => {
