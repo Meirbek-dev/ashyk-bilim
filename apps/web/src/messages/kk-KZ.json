@@ -7660,7 +7660,8 @@
       "sortTitle": "Атауы",
       "sortSubmission": "Тапсырғандар үлесі",
       "sortPass": "Сәтті өткендер үлесі",
-      "sortLatency": "Тексеру кідірісі"
+      "sortLatency": "Тексеру кідірісі",
+      "title": "Сүзгілер"
     },
     "labels": {
       "bucket": {

@@ -9,6 +9,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useTranslations } from 'next-intl'
+import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 
 // Common IANA timezone identifiers for the select. These cover almost all deployed users.
 const COMMON_TIMEZONES = [
@@ -122,17 +123,32 @@ export default function TeacherFilterBar({
   }
 
   const resetHref = useMemo(() => basePath, [basePath])
+  // Collapsed to one summary line unless a course/cohort narrows the view — the six selects
+  // used to push every chart below the fold on each analytics page.
+  const selectedCourse = courseOptions.find(option => option.value === query.course_ids)?.label
+  const filterSummary = [
+    t('filters.windowPrefix', { window: t(`filters.windows.${query.window || '28d'}`) }),
+    selectedCourse ?? t('filters.allCourses'),
+  ].join(' · ')
+  const narrowed = Boolean(query.course_ids || query.cohort_ids)
 
   return (
     <section aria-label={t('filters.sectionAriaLabel')} className="mb-4 flex w-full flex-col gap-4">
       <div className="w-full space-y-4">
+        <details className="group bg-card rounded-xl border" open={narrowed}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
+            <SlidersHorizontal className="size-4" aria-hidden />
+            {t('filters.title')}
+            <span className="text-muted-foreground truncate font-normal">{filterSummary}</span>
+            <ChevronDown className="text-muted-foreground ml-auto size-4 transition-transform group-open:rotate-180" />
+          </summary>
         {/* Filters Selectors Grid */}
         <form
           onSubmit={event => {
             event.preventDefault()
             applyFilters()
           }}
-          className="bg-card grid grid-cols-2 gap-3 rounded-xl border p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+          className="grid grid-cols-2 gap-3 border-t p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
         >
           <div className="space-y-1">
             <Label
@@ -359,6 +375,7 @@ export default function TeacherFilterBar({
             </Button>
           </div>
         </form>
+        </details>
       </div>
     </section>
   )

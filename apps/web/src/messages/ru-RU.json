@@ -7645,7 +7645,8 @@
       "sortTitle": "Название",
       "sortSubmission": "Доля сдавших",
       "sortPass": "Доля успешных",
-      "sortLatency": "Задержка проверки"
+      "sortLatency": "Задержка проверки",
+      "title": "Фильтры"
     },
     "labels": {
       "bucket": {

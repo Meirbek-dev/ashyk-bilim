@@ -7640,7 +7640,8 @@
       "sortTitle": "Title",
       "sortSubmission": "Submission rate",
       "sortPass": "Pass rate",
-      "sortLatency": "Grading latency"
+      "sortLatency": "Grading latency",
+      "title": "Filters"
     },
     "labels": {
       "bucket": {

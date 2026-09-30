@@ -2,7 +2,6 @@ import { getTeacherAssessmentList, normalizeAnalyticsQuery } from '@services/ana
 import AssessmentOutliersTable from '@components/Dashboard/Analytics/AssessmentOutliersTable'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
-import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import { ASSESSMENT_SORT_KEYS } from '@/lib/analytics/labels'
@@ -81,18 +80,14 @@ async function PlatformAnalyticsAssessmentsPageInner(props: {
       </header>
 
       <section className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
-        <Card className="bg-card text-card-foreground border-border rounded-xl shadow-xs">
-          <CardContent className="pt-6">
-            <TeacherFilterBar
-              path="/dash/analytics/assessments"
-              query={query}
-              courseCount={courseOptions.length}
-              courseOptions={courseOptions}
-              cohortOptions={cohortOptions}
-              sortKeys={ASSESSMENT_SORT_KEYS}
-            />
-          </CardContent>
-        </Card>
+        <TeacherFilterBar
+          path="/dash/analytics/assessments"
+          query={query}
+          courseCount={courseOptions.length}
+          courseOptions={courseOptions}
+          cohortOptions={cohortOptions}
+          sortKeys={ASSESSMENT_SORT_KEYS}
+        />
 
         <div className="text-muted-foreground flex items-center justify-between px-1 text-sm">
           <span>
