@@ -144,7 +144,8 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
               </div>
               <div className="text-muted-foreground flex justify-between text-xs">
                 <span className="tabular-nums">
-                  {formatNumber(profile.xp_in_current_level || 0)} {t('progress.xpAbbreviation')}
+                  {formatNumber(currentLevelXp)} / {formatNumber(currentLevelXp + xpToNext)}{' '}
+                  {t('progress.xpAbbreviation')}
                 </span>
                 <span className="tabular-nums">
                   {formatNumber(xpToNext)} {t('progress.xpToGo')}

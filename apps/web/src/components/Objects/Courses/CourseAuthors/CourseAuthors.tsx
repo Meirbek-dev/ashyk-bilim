@@ -143,6 +143,9 @@ function UpdatesSection({ courseUuid }: { courseUuid: string }) {
   })
   const t = useTranslations('Courses.CourseAuthors')
 
+  // A learner cannot post: with no updates there is nothing to show under the heading.
+  if (!canManageCourse && !updates?.length) return null
+
   return (
     <div className="mt-2 pt-2">
       <div className="mb-4 flex items-center justify-between">
