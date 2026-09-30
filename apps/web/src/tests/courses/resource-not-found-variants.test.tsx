@@ -13,7 +13,7 @@ import kkMessages from '@/messages/kk-KZ.json'
 import ruMessages from '@/messages/ru-RU.json'
 
 const refresh = vi.fn()
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh }), usePathname: () => '/ru/course/x' }))
 vi.mock('@/lib/api-client', () => ({
   apiJson: vi.fn(async () => {
     throw new APIError({ code: 'not-found', status: 404, message: 'user not found' })

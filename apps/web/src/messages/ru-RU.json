@@ -6993,7 +6993,8 @@
       "duplicate": "Такой элемент уже есть в списке.",
       "own-attempt": "Нельзя оценивать свою попытку."
     },
-    "requestFailed": "Запрос не выполнен"
+    "requestFailed": "Запрос не выполнен",
+    "backToCourses": "К списку курсов"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {

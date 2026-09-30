@@ -7008,7 +7008,8 @@
       "duplicate": "Мұндай элемент тізімде бар.",
       "own-attempt": "Өз әрекетіңізді бағалауға болмайды."
     },
-    "requestFailed": "Сұрау орындалмады"
+    "requestFailed": "Сұрау орындалмады",
+    "backToCourses": "Курстар тізіміне"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {

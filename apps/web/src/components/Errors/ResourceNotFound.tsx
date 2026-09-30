@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Home, Compass, BookOpen } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@components/ui/button'
 
 interface ResourceNotFoundProps {
@@ -44,6 +44,9 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
             ? tErrors('userNotFoundMessage')
             : tErrors('courseNotFoundMessage')
 
+  const inDash = usePathname().includes('/dash/')
+  void session
+
   const handleBackToCourse = () => {
     if (!courseuuid) return
     const isDash = typeof globalThis.window !== 'undefined' ? globalThis.location.pathname.includes('/dash/') : false
@@ -74,13 +77,14 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
               {tErrors('backToCourse')}
             </Button>
           ) : (
+            // A missing course on the public site sends people to the catalogue, not the dashboard.
             <Button
               variant="default"
               className="flex items-center gap-2 shadow-sm transition-opacity duration-200"
-              onClick={() => router.push(session ? '/dash' : '/')}
+              onClick={() => router.push(inDash ? '/dash/courses' : '/courses')}
             >
               <Home className="h-4 w-4" />
-              {tErrors('backToDashboard')}
+              {tErrors('backToCourses')}
             </Button>
           )}
         </div>

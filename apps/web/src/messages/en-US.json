@@ -6993,7 +6993,8 @@
       "duplicate": "This entry is already in the list.",
       "own-attempt": "You cannot grade your own attempt."
     },
-    "requestFailed": "Request failed"
+    "requestFailed": "Request failed",
+    "backToCourses": "All courses"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
