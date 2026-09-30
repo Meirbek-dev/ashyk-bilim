@@ -3,11 +3,6 @@
 import { useTranslations } from 'next-intl'
 import { Eye } from 'lucide-react'
 import Link from '@components/ui/AppLink'
-import Image from 'next/image'
-import { useTheme } from '@/components/providers/theme-provider'
-import appLogoDark from '@public/app_logo.svg'
-import appLogoLight from '@public/app_logo_light.svg'
-import { Separator } from '@/components/ui/separator'
 import { EditorSaveIndicator } from './EditorSaveIndicator'
 import type { SaveStatus } from '@/stores/courses/courseEditorStore'
 import { useState } from 'react'
@@ -86,25 +81,11 @@ export function EditorHeader({
   assistantSlot,
 }: EditorHeaderProps) {
   const t = useTranslations('DashPage.Editor.Editor')
-  const tCommon = useTranslations('Common')
-  const { resolvedTheme } = useTheme()
-  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogoDark
 
   return (
     <div className="border-border bg-background flex h-12 items-center justify-between border-b px-3">
       {/* Left: breadcrumb */}
       <div className="flex min-w-0 items-center gap-2">
-        <Link href="/">
-          <Image
-            className="rounded-md"
-            width={22}
-            height={22}
-            src={logoSrc}
-            alt={tCommon('appLogoAlt')}
-            style={{ height: 'auto' }}
-          />
-        </Link>
-        <Separator orientation="vertical" className="h-4" />
         <nav className="flex min-w-0 items-center gap-1 truncate text-sm">
           {/* Back to the course's curriculum — where the author came from. */}
           <Link
