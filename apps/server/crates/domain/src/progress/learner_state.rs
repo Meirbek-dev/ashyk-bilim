@@ -204,16 +204,6 @@ impl LearnerStateService {
         course_id: CourseId,
     ) -> Result<LearnerCourseState> {
         let course = self.courses.get(actor, course_id).await?;
-        if !self
-            .assessments
-            .user_has_course_access(&course, actor.user_id)
-            .await?
-        {
-            return Err(Error::forbidden("no access to this course"));
-        }
-        let user_id: UserId = actor.user_id;
-        let chapters = ab_db::catalog::list_chapters(&self.pool, course.id).await?;
-        let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
         // BUG-287: the course's staff preview it — the enrol door refuses them.
         let staff = AssessmentsService::require_scoped(
             actor,
@@ -222,6 +212,19 @@ impl LearnerStateService {
             "preview",
         )
         .is_ok();
+        // BUG-384: a platform author previews a private course she is not on
+        // the access list of — `courses/{id}` and `activities/{id}` let her in.
+        if !staff
+            && !self
+                .assessments
+                .user_has_course_access(&course, actor.user_id)
+                .await?
+        {
+            return Err(Error::forbidden("no access to this course"));
+        }
+        let user_id: UserId = actor.user_id;
+        let chapters = ab_db::catalog::list_chapters(&self.pool, course.id).await?;
+        let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
         // BUG-292: a run kept from before joining the staff is no member's —
         // its ticks and counts are not shown (the outline and sidebar read these).
         let (rows, course_progress, restricted) = if staff {

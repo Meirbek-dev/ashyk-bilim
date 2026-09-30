@@ -312,6 +312,22 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
         .status,
         StatusCode::NOT_FOUND
     );
+    // BUG-384: a platform admin reads the private course, so she previews it.
+    let boss = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(boss, &["*:*:*"]).await;
+    let preview = app
+        .get_as(
+            &admin,
+            &format!("/api/v2/courses/{private_id}/learner-state"),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
+    assert_eq!(
+        preview.json()["permissions"]["denial_reason"],
+        "staff_preview"
+    );
     let powerless = app.mint_session(&[]).await;
     assert_eq!(
         app.post_as(
