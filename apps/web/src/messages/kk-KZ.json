@@ -1031,7 +1031,8 @@
       "verificationStatusUnknown": "Тексеру күйі белгісіз",
       "verifyingCertificate": "Сертификат тексерілуде...",
       "viewCourse": "Курсты көру",
-      "viewFullCertificate": "Толық сертификатты көру"
+      "viewFullCertificate": "Толық сертификатты көру",
+      "verifiedNote": "Сертификат платформа дерекқорынан табылды. Сертификаттағы QR код осы бетке апарады."
     },
     "CertificateVerifyPage": {
       "description": "{courseName} курсы үшін {certificationName} сертификатының шынайылығын тексеріңіз.",

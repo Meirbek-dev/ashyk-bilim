@@ -352,17 +352,10 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               </div>
             </div>
 
-            <div className="border-primary/20 bg-primary/5 rounded-2xl border p-6">
-              <div className="mb-3 flex items-center gap-3">
-                <Shield className="text-primary h-6 w-6" />
-                <h3 className="text-foreground text-lg font-semibold">{t('verificationNote')}</h3>
-              </div>
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                <li>• {t('authenticityVerified')}</li>
-                <li>• {t('scanQRCode')}</li>
-                <li>• {t('cryptographicallySecure')}</li>
-                <li>• {t('timestampVerified')}</li>
-              </ul>
+            {/* Only what is true: the record exists in our database, and the QR code opens this page. */}
+            <div className="border-primary/20 bg-primary/5 flex gap-3 rounded-2xl border p-4">
+              <Shield className="text-primary mt-0.5 h-5 w-5 shrink-0" />
+              <p className="text-muted-foreground text-sm">{t('verifiedNote')}</p>
             </div>
           </div>
         </div>

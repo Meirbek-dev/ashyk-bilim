@@ -1032,7 +1032,8 @@
       "verificationStatusUnknown": "Verification Status Unknown",
       "verifyingCertificate": "Verifying Certificate...",
       "viewCourse": "View Course",
-      "viewFullCertificate": "View Full Certificate"
+      "viewFullCertificate": "View Full Certificate",
+      "verifiedNote": "This certificate is on record on the platform. The QR code on the certificate opens this page."
     },
     "CertificateVerifyPage": {
       "description": "Verify the authenticity of the {certificationName} certificate for the course {courseName}.",

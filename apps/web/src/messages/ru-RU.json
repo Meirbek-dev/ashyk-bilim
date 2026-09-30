@@ -1032,7 +1032,8 @@
       "verificationStatusUnknown": "Статус проверки неизвестен",
       "verifyingCertificate": "Проверка сертификата...",
       "viewCourse": "Перейти к курсу",
-      "viewFullCertificate": "Посмотреть полный сертификат"
+      "viewFullCertificate": "Посмотреть полный сертификат",
+      "verifiedNote": "Сертификат найден в базе данных платформы. QR-код на сертификате ведёт на эту страницу."
     },
     "CertificateVerifyPage": {
       "description": "Проверьте подлинность сертификата {certificationName} для курса {courseName}.",
