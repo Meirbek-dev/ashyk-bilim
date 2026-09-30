@@ -99,9 +99,10 @@ function SearchPage() {
   const selectedType = type
   const searchResultsQuery = useSearchContent(query, { limit: 30 })
   const searchResults: SearchResults = searchResultsQuery.data?.data ?? { courses: [], collections: [], users: [] }
-  const isLoading = query.trim().length > 0 && searchResultsQuery.isPending
+  const hasQuery = query.trim().length > 0
+  const isLoading = hasQuery && searchResultsQuery.isPending
   // BUG-249: a failed search is an error, not «Ищем…» forever or «Ничего не найдено».
-  const searchError = query.trim().length > 0 ? searchResultsQuery.error : null
+  const searchError = hasQuery ? searchResultsQuery.error : null
 
   const updateSearchParams = (updates: Record<string, string>) => {
     const current = new URLSearchParams([...searchParams.entries()])
@@ -133,8 +134,8 @@ function SearchPage() {
   const totalResults = searchResults.courses.length + searchResults.collections.length + searchResults.users.length
   // UX-119: a filter with 0 hits gets its own empty copy, not a blank list.
   const visibleResults = selectedType === 'all' ? totalResults : searchResults[selectedType].length
-  // UX-109: no «Найдено 0 результатов» / «(0)» before the first result set.
-  const countOf = (n: number) => (isLoading ? null : n)
+  // UX-109 / UX-319: no «(0)» before the first result set, nor before any search.
+  const countOf = (n: number) => (isLoading || !hasQuery ? null : n)
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -229,7 +230,7 @@ function SearchPage() {
       {/* Search Results */}
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-7xl">
-          {query && !searchError ? (
+          {hasQuery && !searchError ? (
             <div className="text-muted-foreground mb-6 text-sm" aria-live="polite">
               {isLoading ? t('searching', { query }) : t('resultsFound', { count: totalResults, query })}
             </div>
@@ -239,9 +240,9 @@ function SearchPage() {
             <InlineError description={handleApiError(searchError).message} error={searchError} />
           ) : isLoading ? (
             <LoadingState />
-          ) : totalResults === 0 && query ? (
+          ) : totalResults === 0 && hasQuery ? (
             <EmptyState query={query} t={t} />
-          ) : visibleResults === 0 && selectedType !== 'all' ? (
+          ) : visibleResults === 0 && selectedType !== 'all' && hasQuery ? (
             <p className="text-muted-foreground py-16 text-center text-sm">
               {t(`noFilterResults.${selectedType}`, { query })}
             </p>
