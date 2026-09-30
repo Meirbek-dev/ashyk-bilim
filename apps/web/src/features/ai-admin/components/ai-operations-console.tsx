@@ -38,6 +38,16 @@ export function AIOperationsConsole() {
   const detail = useAIOperationRunDetail(selectedRun)
   const cancelRun = useCancelAIRun()
   const number = useMemo(() => new Intl.NumberFormat(locale), [locale])
+  // Latency reads as «4,3 с» / «80 мс», not a raw «4 346 ms».
+  const duration = (ms: number) =>
+    ms < 1000
+      ? new Intl.NumberFormat(locale, { style: 'unit', unit: 'millisecond', unitDisplay: 'short' }).format(ms)
+      : new Intl.NumberFormat(locale, {
+          style: 'unit',
+          unit: 'second',
+          unitDisplay: 'short',
+          maximumFractionDigits: 1,
+        }).format(ms / 1000)
   const metrics = useMemo(() => summarizeRuns(runs.data ?? []), [runs.data])
   // `items` lets the closed triggers show labels instead of the raw "7" / "all".
   const dayItems = [1, 7, 30].map(count => ({ value: String(count), label: t('days', { count }) }))
@@ -73,7 +83,7 @@ export function AIOperationsConsole() {
         {runs.isError ? (
           <InlineError title={tErrors('somethingWentWrong')} description={tErrors('defaultError')} error={runs.error} />
         ) : null}
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="flex flex-wrap gap-2 [&>input]:w-48">
           <Select
             value={String(filters.days)}
             onValueChange={value => value && setFilters(current => ({ ...current, days: Number(value) }))}
@@ -128,26 +138,20 @@ export function AIOperationsConsole() {
           />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5 2xl:grid-cols-10">
+        <dl className="flex flex-wrap gap-x-8 gap-y-3 rounded-lg border p-3">
           <Metric label={t('metrics.requests')} value={number.format(metrics.total)} />
           <Metric label={t('metrics.success')} value={`${metrics.successRate}%`} />
           <Metric label={t('metrics.cancelled')} value={`${metrics.cancelRate}%`} />
           <Metric label={t('metrics.retried')} value={`${metrics.retryRate}%`} />
-          <Metric
-            label={t('metrics.p50')}
-            value={metrics.p50 === null ? t('notAvailable') : `${number.format(metrics.p50)} ms`}
-          />
-          <Metric
-            label={t('metrics.p95')}
-            value={metrics.p95 === null ? t('notAvailable') : `${number.format(metrics.p95)} ms`}
-          />
+          <Metric label={t('metrics.p50')} value={metrics.p50 === null ? t('notAvailable') : duration(metrics.p50)} />
+          <Metric label={t('metrics.p95')} value={metrics.p95 === null ? t('notAvailable') : duration(metrics.p95)} />
           <Metric
             label={t('metrics.ttft50')}
-            value={metrics.ttft50 === null ? t('notAvailable') : `${number.format(metrics.ttft50)} ms`}
+            value={metrics.ttft50 === null ? t('notAvailable') : duration(metrics.ttft50)}
           />
           <Metric
             label={t('metrics.ttft95')}
-            value={metrics.ttft95 === null ? t('notAvailable') : `${number.format(metrics.ttft95)} ms`}
+            value={metrics.ttft95 === null ? t('notAvailable') : duration(metrics.ttft95)}
           />
           <Metric label={t('metrics.tokens')} value={number.format(metrics.tokens)} />
           <Metric
@@ -162,7 +166,7 @@ export function AIOperationsConsole() {
                   })
             }
           />
-        </div>
+        </dl>
 
         {/* `isPending`, not `isLoading`: SSR has no fetch in flight, so `isLoading` differed between server and client (hydration error). */}
         {runs.isPending ? (
@@ -190,7 +194,7 @@ export function AIOperationsConsole() {
                   </TableCell>
                   <TableCell>{formatDate(run.started_at_unix * 1000, locale, DATE_TIME_OPTIONS)}</TableCell>
                   <TableCell className="max-w-48 truncate">{modelLabel(run.model_name)}</TableCell>
-                  <TableCell>{run.error_code ?? t('notAvailable')}</TableCell>
+                  <TableCell>{run.error_code ?? '—'}</TableCell>
                   <TableCell>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRun(run.id)}>
                       {t('inspect')}
@@ -298,9 +302,9 @@ function summarizeRuns(runs: AIOperationRun[]) {
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border p-3">
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="mt-1 font-medium tabular-nums">{value}</p>
+    <div>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="font-medium tabular-nums">{value}</dd>
     </div>
   )
 }

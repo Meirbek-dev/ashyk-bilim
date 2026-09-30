@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import { TokenUsageChart } from './token-usage-chart'
 
 export function AIAdminPanel() {
   const t = useTranslations('AiExperience.aiAdminPanel')
+  const format = useFormatter()
   const usage = useAIUsage()
   const settings = useAIAdminSettings()
   const evals = useAIEvalDashboard()
@@ -60,11 +61,11 @@ export function AIAdminPanel() {
                       <SettingMetric label={t('modelLabel')} value={settings.data.model} />
                       <SettingMetric
                         label={t('requestLimitLabel')}
-                        value={settings.data.max_tokens_per_request.toLocaleString()}
+                        value={format.number(settings.data.max_tokens_per_request)}
                       />
                       <SettingMetric
                         label={t('outputLimitLabel')}
-                        value={settings.data.max_output_tokens.toLocaleString()}
+                        value={format.number(settings.data.max_output_tokens)}
                       />
                     </dl>
                   </div>

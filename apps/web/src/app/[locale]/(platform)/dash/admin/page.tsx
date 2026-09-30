@@ -1,4 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
 import { ChevronRight, Shield, Users } from 'lucide-react'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
@@ -71,28 +70,19 @@ async function PlatformAdminContent() {
         {/* Core Administrative Sections */}
         <div className="space-y-4">
           <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('panelsTitle')}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {adminSections.map(section => (
-              <Link key={section.href} href={section.href} className="group block">
-                <Card className="bg-card hover:bg-muted/30 border-border relative flex h-full flex-col justify-between transition-colors select-none">
-                  <CardHeader className="px-5 pt-5 pb-3">
-                    <div className="flex items-start justify-between">
-                      <section.icon className="text-muted-foreground h-5 w-5" />
-                      <ChevronRight
-                        size={16}
-                        className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col justify-end px-5 pb-5">
-                    <CardTitle className="text-foreground group-hover:text-primary mb-1.5 text-sm font-semibold tracking-tight transition-colors">
-                      {section.title}
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground text-xs leading-relaxed">
-                      {section.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
+              <Link
+                key={section.href}
+                href={section.href}
+                className="group bg-card hover:bg-muted/40 flex items-center gap-3 rounded-lg border p-4 transition-colors"
+              >
+                <section.icon className="text-muted-foreground size-5 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="group-hover:text-primary block text-sm font-semibold">{section.title}</span>
+                  <span className="text-muted-foreground block text-xs">{section.description}</span>
+                </span>
+                <ChevronRight className="text-muted-foreground size-4 shrink-0" />
               </Link>
             ))}
           </div>

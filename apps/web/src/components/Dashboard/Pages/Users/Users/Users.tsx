@@ -67,9 +67,15 @@ function RemoveUserButton({ userId, name, onRemove, t }: RemoveUserButtonProps) 
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger
         render={
-          <Button type="button" variant="destructive" size="sm">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            aria-label={t('removeFromOrgButton')}
+            title={t('removeFromOrgButton')}
+          >
             <UserRoundX className="size-3.5" />
-            {t('removeFromOrgButton')}
+            <span className="hidden xl:inline">{t('removeFromOrgButton')}</span>
           </Button>
         }
       />
@@ -155,14 +161,14 @@ function Users() {
         id: 'user',
         header: t('userHeader'),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            {row.original.display_name && <span className="font-medium">{row.original.display_name}</span>}
-            <Badge variant="outline" className="font-mono text-xs">
-              @{row.original.username}
-            </Badge>
-            {row.original.organization && (
-              <span className="text-muted-foreground text-xs">{row.original.organization}</span>
-            )}
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="min-w-0">
+              <div className="truncate font-medium">{row.original.display_name || `@${row.original.username}`}</div>
+              <div className="text-muted-foreground truncate text-xs">
+                @{row.original.username}
+                {row.original.organization ? ` · ${row.original.organization}` : ''}
+              </div>
+            </div>
             {row.original.status === 'disabled' && <Badge variant="secondary">{t('statusDisabled')}</Badge>}
           </div>
         ),
@@ -229,9 +235,16 @@ function Users() {
                     username: user.username,
                   })}
                   dialogTrigger={
-                    <Button variant="outline" size="sm" type="button" onClick={() => handleRolesModal(user)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      aria-label={t('editRoleButton')}
+                      title={t('editRoleButton')}
+                      onClick={() => handleRolesModal(user)}
+                    >
                       <KeyRound className="size-3.5" />
-                      {t('editRoleButton')}
+                      <span className="hidden xl:inline">{t('editRoleButton')}</span>
                     </Button>
                   }
                 />
@@ -301,12 +314,8 @@ function Users() {
   }
 
   return (
-    <div className="mx-10 mt-6">
+    <div className="mx-4 mt-6 lg:mx-10">
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle>{t('activeUsersTitle')}</CardTitle>
-          <CardDescription>{t('description')}</CardDescription>
-        </CardHeader>
         <CardContent className="pt-4">
           <DataTable
             columns={columns}

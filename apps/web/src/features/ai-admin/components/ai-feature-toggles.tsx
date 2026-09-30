@@ -19,8 +19,16 @@ const FEATURE_LABEL_KEYS: Record<string, string> = {
 
 export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] }) {
   const t = useTranslations('AiExperience.featureToggles')
+  const sources = [...new Set(features.map(feature => feature.source))]
   return (
     <div className="flex flex-col gap-3">
+      {sources.length > 0 ? (
+        <p className="text-muted-foreground text-xs">
+          {t('source', {
+            source: sources.map(source => (t.has(`sources.${source}`) ? t(`sources.${source}`) : source)).join(', '),
+          })}
+        </p>
+      ) : null}
       {features.map(feature => {
         const labelKey = FEATURE_LABEL_KEYS[feature.key] ?? feature.key
         return (
@@ -32,11 +40,6 @@ export function AIFeatureToggles({ features }: { features: AIFeatureSetting[] })
                   {feature.enabled ? t('enabled') : t('disabled')}
                 </Badge>
               </div>
-              <FieldDescription>
-                {t('source', {
-                  source: t.has(`sources.${feature.source}`) ? t(`sources.${feature.source}`) : feature.source,
-                })}
-              </FieldDescription>
             </FieldContent>
           </Field>
         )

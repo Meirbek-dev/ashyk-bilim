@@ -219,7 +219,10 @@ test.describe.serial('Student – Learning Journey', () => {
     // Judge0 grades the hand-in inside the submit: both tests pass → 100, released at once
     const submitted = await assessmentPage.submitCode()
     expect(submitted).toMatchObject({ status: 'published', final_score: 100 })
-    await expect(page.getByText('Assessment submitted · 100%', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { level: 2, name: COURSE.activities.codeChallenge })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByText('100%', { exact: true })).toBeVisible()
     await expect(page.getByText('Passed', { exact: true }).first()).toBeVisible()
   })
 })

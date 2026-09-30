@@ -1,7 +1,7 @@
 'use client'
 
 import { ActivityIcon, CheckCircle2Icon, CircleSlashIcon, Clock3Icon, XCircleIcon } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ interface AIEvalDashboardProps {
 
 export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProps) {
   const t = useTranslations('AiExperience.evalDashboard')
+  const format = useFormatter()
 
   if (loading) {
     return (
@@ -59,13 +60,13 @@ export function AIEvalDashboardPanel({ dashboard, loading }: AIEvalDashboardProp
                   <span className="text-muted-foreground text-xs font-medium">{t(`runs.${metric.key}`)}</span>
                   <Icon aria-hidden="true" />
                 </div>
-                <span className="text-2xl font-semibold tabular-nums">{metric.value.toLocaleString()}</span>
+                <span className="text-2xl font-semibold tabular-nums">{format.number(metric.value)}</span>
               </div>
             )
           })}
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          <Metric label={t('evals.total')} value={dashboard.evals.total.toLocaleString()} />
+          <Metric label={t('evals.total')} value={format.number(dashboard.evals.total)} />
           <Metric label={t('evals.passRate')} value={formatPassRate(dashboard.evals)} />
           <Metric
             label={t('evals.averageScore')}
@@ -125,6 +126,6 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function formatPassRate(evals: AIEvalDashboard['evals']) {
-  if (evals.total === 0) return '0%'
+  if (evals.total === 0) return '—'
   return `${Math.round((evals.passed / evals.total) * 100)}%`
 }

@@ -175,9 +175,9 @@ export default function RBACAdminClient() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('tableHead.role')}</TableHead>
-                <TableHead>{t('tableHead.slug')}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t('tableHead.slug')}</TableHead>
                 <TableHead>{t('tableHead.type')}</TableHead>
-                <TableHead>{t('tableHead.priority')}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t('tableHead.priority')}</TableHead>
                 <TableHead>{t('tableHead.permissions')}</TableHead>
                 {canManage && <TableHead className="text-right">{t('tableHead.actions')}</TableHead>}
               </TableRow>
@@ -195,10 +195,12 @@ export default function RBACAdminClient() {
                     <TableCell>
                       <div className="font-medium">{roleName(role)}</div>
                       {roleDescription(role) && (
-                        <div className="text-muted-foreground text-xs">{roleDescription(role)}</div>
+                        <div className="text-muted-foreground max-w-sm text-xs whitespace-normal">
+                          {roleDescription(role)}
+                        </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       <code className="bg-muted rounded px-1.5 py-0.5 text-xs">{role.slug}</code>
                     </TableCell>
                     <TableCell>
@@ -211,7 +213,7 @@ export default function RBACAdminClient() {
                         <Badge variant="outline">{t('custom')}</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{role.priority}</TableCell>
+                    <TableCell className="hidden xl:table-cell">{role.priority}</TableCell>
                     <TableCell>
                       <details>
                         <summary className="cursor-pointer text-sm">
@@ -229,7 +231,9 @@ export default function RBACAdminClient() {
                     {canManage && (
                       <TableCell className="text-right">
                         {role.is_system ? (
-                          <span className="text-muted-foreground text-xs">{t('systemRoleReadOnly')}</span>
+                          <span title={t('systemRoleReadOnly')} className="text-muted-foreground inline-flex">
+                            <Lock className="size-4" aria-label={t('systemRoleReadOnly')} role="img" />
+                          </span>
                         ) : (
                           <div className="flex justify-end gap-1">
                             <Button
