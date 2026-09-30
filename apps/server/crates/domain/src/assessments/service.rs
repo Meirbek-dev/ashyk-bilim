@@ -824,7 +824,7 @@ impl AssessmentsService {
         if let Some(title) = title {
             // The activity carries the title into the curriculum.
             ab_db::catalog::update_activity(
-                &mut *tx,
+                &mut tx,
                 assessment.activity_id,
                 ab_db::catalog::ActivityWrite {
                     name: Some(title),
@@ -1078,7 +1078,7 @@ impl AssessmentsService {
         // BUG-232: the activity flag flips with the lifecycle, under the same
         // lock the curriculum toggle takes — never a torn pair.
         ab_db::catalog::update_activity(
-            &mut *tx,
+            &mut tx,
             assessment.activity_id,
             ab_db::catalog::ActivityWrite {
                 published: Some(activity_live),
@@ -1143,7 +1143,7 @@ impl AssessmentsService {
                 continue;
             }
             ab_db::catalog::update_activity(
-                &mut *tx,
+                &mut tx,
                 assessment.activity_id,
                 ab_db::catalog::ActivityWrite {
                     published: Some(true),

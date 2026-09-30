@@ -644,7 +644,7 @@ impl FileSubmissionsService {
         }
         if let Some(title) = title {
             ab_db::catalog::update_activity(
-                &mut *tx,
+                &mut tx,
                 row.activity_id,
                 ab_db::catalog::ActivityWrite {
                     name: Some(title),
@@ -711,7 +711,7 @@ impl FileSubmissionsService {
         )
         .await?;
         ab_db::catalog::update_activity(
-            &mut *tx,
+            &mut tx,
             row.activity_id,
             ab_db::catalog::ActivityWrite {
                 published: Some(true),

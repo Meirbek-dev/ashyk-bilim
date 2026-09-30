@@ -457,7 +457,7 @@ impl CurriculumService {
         // BUG-358: one guarded write for every column — a rename under a
         // stale `If-Match` is refused exactly like a content save.
         let updated = ab_db::catalog::update_activity(
-            &mut *tx,
+            &mut tx,
             activity_id,
             ab_db::catalog::ActivityWrite {
                 name,
