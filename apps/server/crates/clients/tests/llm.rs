@@ -77,7 +77,7 @@ async fn non_streaming_completion_sends_the_openai_shape() {
         .and(header("authorization", "Bearer openai-key"))
         .and(header("content-type", "application/json"))
         .and(body_partial_json(serde_json::json!({
-            "model": "gpt-5.6-luna",
+            "model": "gpt-6-luna",
             "stream": false,
             "max_completion_tokens": 256,
             "messages": [
@@ -92,7 +92,7 @@ async fn non_streaming_completion_sends_the_openai_shape() {
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(completion_body(
             "{\"answer_markdown\": \"A monad is a monoid in the category of endofunctors.\"}",
-            "gpt-5.6-luna-2026-01",
+            "gpt-6-luna-2026-01",
         )))
         .expect(1)
         .mount(&server)
@@ -101,12 +101,12 @@ async fn non_streaming_completion_sends_the_openai_shape() {
     let llm = client(vec![provider(
         "openai",
         &server,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_secs(2),
     )]);
     let completion = llm.complete(&request()).await.unwrap();
     assert_eq!(completion.provider, "openai");
-    assert_eq!(completion.model_name, "openai:gpt-5.6-luna-2026-01");
+    assert_eq!(completion.model_name, "openai:gpt-6-luna-2026-01");
     assert_eq!(completion.usage.input_tokens, Some(42));
     assert_eq!(completion.usage.output_tokens, Some(7));
     assert!(completion.text.contains("monoid"));
@@ -116,7 +116,7 @@ async fn non_streaming_completion_sends_the_openai_shape() {
 async fn streaming_yields_deltas_in_order_then_done_with_usage() {
     let server = MockServer::start().await;
     let sse = concat!(
-        "data: {\"id\":\"c\",\"model\":\"gpt-5.6-luna\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n",
+        "data: {\"id\":\"c\",\"model\":\"gpt-6-luna\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n",
         "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"{\\\"answer_markdown\\\": \\\"Hel\"}}]}\n\n",
         "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"lo\\\"}\"}}]}\n\n",
         "data: {\"id\":\"c\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
@@ -141,7 +141,7 @@ async fn streaming_yields_deltas_in_order_then_done_with_usage() {
     let llm = client(vec![provider(
         "openai",
         &server,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_secs(2),
     )]);
     let mut stream = llm.stream(&request()).await.unwrap();
@@ -155,7 +155,7 @@ async fn streaming_yields_deltas_in_order_then_done_with_usage() {
     }
     assert_eq!(text, "{\"answer_markdown\": \"Hello\"}");
     let (model_name, usage) = done.expect("Done chunk");
-    assert_eq!(model_name, "openai:gpt-5.6-luna");
+    assert_eq!(model_name, "openai:gpt-6-luna");
     assert_eq!(usage.input_tokens, Some(10));
     assert_eq!(usage.output_tokens, Some(4));
 }
@@ -186,7 +186,7 @@ async fn falls_back_to_the_next_provider_on_5xx() {
         .await;
 
     let llm = client(vec![
-        provider("openai", &primary, "gpt-5.6-luna", Duration::from_secs(2)),
+        provider("openai", &primary, "gpt-6-luna", Duration::from_secs(2)),
         provider(
             "openrouter",
             &fallback,
@@ -202,7 +202,7 @@ async fn falls_back_to_the_next_provider_on_5xx() {
     );
     assert_eq!(
         llm.selected_model_name(),
-        "openai:gpt-5.6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
+        "openai:gpt-6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
     );
 }
 
@@ -218,7 +218,7 @@ async fn every_provider_down_is_unavailable() {
     let llm = client(vec![provider(
         "openai",
         &primary,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_secs(2),
     )]);
     let err = llm.complete(&request()).await.unwrap_err();
@@ -236,7 +236,7 @@ async fn structured_output_repairs_once_then_gives_up() {
         .and(path("/v1/chat/completions"))
         .respond_with(ResponseTemplate::new(200).set_body_json(completion_body(
             "Sure! Here is my answer without JSON.",
-            "gpt-5.6-luna",
+            "gpt-6-luna",
         )))
         .up_to_n_times(1)
         .expect(1)
@@ -253,7 +253,7 @@ async fn structured_output_repairs_once_then_gives_up() {
         })))
         .respond_with(ResponseTemplate::new(200).set_body_json(completion_body(
             "```json\n{\"answer_markdown\": \"repaired\"}\n```",
-            "gpt-5.6-luna",
+            "gpt-6-luna",
         )))
         .expect(1)
         .mount(&server)
@@ -262,7 +262,7 @@ async fn structured_output_repairs_once_then_gives_up() {
     let llm = client(vec![provider(
         "openai",
         &server,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_secs(2),
     )]);
     let structured = llm.complete_structured::<Answer>(&request()).await.unwrap();
@@ -279,7 +279,7 @@ async fn structured_output_repairs_once_then_gives_up() {
         .and(path("/v1/chat/completions"))
         .respond_with(
             ResponseTemplate::new(200)
-                .set_body_json(completion_body("{\"wrong_field\": 1}", "gpt-5.6-luna")),
+                .set_body_json(completion_body("{\"wrong_field\": 1}", "gpt-6-luna")),
         )
         .expect(2)
         .mount(&stubborn)
@@ -287,7 +287,7 @@ async fn structured_output_repairs_once_then_gives_up() {
     let llm = client(vec![provider(
         "openai",
         &stubborn,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_secs(2),
     )]);
     let err = llm
@@ -305,14 +305,14 @@ async fn slow_provider_hits_the_hard_timeout() {
         .respond_with(
             ResponseTemplate::new(200)
                 .set_delay(Duration::from_secs(3))
-                .set_body_json(completion_body("late", "gpt-5.6-luna")),
+                .set_body_json(completion_body("late", "gpt-6-luna")),
         )
         .mount(&server)
         .await;
     let llm = client(vec![provider(
         "openai",
         &server,
-        "gpt-5.6-luna",
+        "gpt-6-luna",
         Duration::from_millis(200),
     )]);
     let err = llm.complete(&request()).await.unwrap_err();

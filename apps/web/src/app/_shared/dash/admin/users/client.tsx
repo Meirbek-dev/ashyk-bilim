@@ -217,6 +217,9 @@ export default function UserRolesClient() {
                       <TableCell>
                         <div className="font-medium">{user.display_name || user.username}</div>
                         <div className="text-muted-foreground text-xs">@{user.username}</div>
+                        {user.organization ? (
+                          <div className="text-muted-foreground text-xs">{user.organization}</div>
+                        ) : null}
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>

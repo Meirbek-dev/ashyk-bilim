@@ -14,6 +14,7 @@ const me = {
   username: 'learner',
   email: 'learner@ashyq.local',
   display_name: 'Aigerim',
+  organization: 'КазНУ',
   bio: '',
   avatar_key: 'avatars/u1.webp',
 }
@@ -35,14 +36,14 @@ vi.mock('@/lib/users/client', () => ({
 beforeEach(() => vi.clearAllMocks())
 
 describe('UserEditGeneral (v2)', () => {
-  it('PATCHes only display_name/bio and routes a failure through the localized API error toast with field binding', async () => {
+  it('PATCHes only display_name/organization/bio and routes a failure through the localized API error toast with field binding', async () => {
     updateProfile.mockRejectedValueOnce(new Error('boom'))
     render(<UserEditGeneral />)
     const bio = await screen.findByLabelText(/^bio/)
     fireEvent.change(bio, { target: { value: 'new bio' } })
     fireEvent.submit(bio.closest('form')!)
     await waitFor(() => expect(toastApiError).toHaveBeenCalledTimes(1))
-    expect(updateProfile).toHaveBeenCalledWith({ display_name: 'Aigerim', bio: 'new bio' })
+    expect(updateProfile).toHaveBeenCalledWith({ display_name: 'Aigerim', organization: 'КазНУ', bio: 'new bio' })
     expect(toastApiError).toHaveBeenCalledWith(expect.any(Error), {
       setError: expect.any(Function),
       fallback: 'profileUpdateError',

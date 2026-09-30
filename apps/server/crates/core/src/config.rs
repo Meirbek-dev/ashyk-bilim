@@ -73,8 +73,9 @@ pub struct AiConfig {
     pub openrouter_model: String,
     #[serde(default = "AiConfig::default_openrouter_base_url")]
     pub openrouter_base_url: String,
-    /// Hard per-call timeout for the primary provider (legacy: 5s, fail fast
-    /// so a rate-limited key cannot eat the 30s request budget).
+    /// Hard per-call timeout for the primary provider. Legacy 5s was too short
+    /// for gpt-6-luna (live structured calls take 5–18s), so every call fell
+    /// back; 20s still leaves room inside the 30s request budget.
     #[serde(default = "AiConfig::default_openai_timeout_secs")]
     pub openai_timeout_secs: f64,
     /// Hard per-call timeout for the fallback provider (legacy: 25s).
@@ -114,7 +115,7 @@ pub struct AiConfig {
 
 impl AiConfig {
     fn default_openai_model() -> String {
-        "gpt-5.6-luna".into()
+        "gpt-6-luna".into()
     }
     fn default_openai_base_url() -> String {
         "https://api.openai.com/v1".into()
@@ -126,7 +127,7 @@ impl AiConfig {
         "https://openrouter.ai/api/v1".into()
     }
     const fn default_openai_timeout_secs() -> f64 {
-        5.0
+        20.0
     }
     const fn default_openrouter_timeout_secs() -> f64 {
         25.0
@@ -563,7 +564,7 @@ mod tests {
     fn ai_defaults_mirror_legacy_and_redact_keys() {
         let mut ai = AiConfig::default();
         assert!(!ai.provider_enabled(), "no key = provider disabled");
-        assert_eq!(ai.openai_model, "gpt-5.6-luna");
+        assert_eq!(ai.openai_model, "gpt-6-luna");
         assert_eq!(ai.monthly_token_budget, 1_000_000);
         ai.openai_api_key = Some(SecretString::from("sk-secret-value"));
         assert!(ai.provider_enabled());

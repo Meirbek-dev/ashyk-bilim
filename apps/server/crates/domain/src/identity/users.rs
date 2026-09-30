@@ -16,6 +16,8 @@ pub struct ProfileChanges {
     pub display_name: Option<String>,
     pub bio: Option<String>,
     pub locale: Option<String>,
+    /// Cannot be blanked once set.
+    pub organization: Option<String>,
     /// Finalized `avatar` upload to claim as the new avatar; `Some(None)`
     /// removes the current one (UX-163).
     pub avatar_upload_id: Option<Option<Uuid>>,
@@ -65,6 +67,11 @@ impl UsersService {
             .as_deref()
             .map(|name| ab_core::required_text("display_name", name))
             .transpose()?;
+        let organization = changes
+            .organization
+            .as_deref()
+            .map(|org| ab_core::required_text("organization", org))
+            .transpose()?;
         // UX-183: the bio keeps its line breaks, not control / bidi characters.
         let bio = changes
             .bio
@@ -95,6 +102,7 @@ impl UsersService {
             display_name.as_deref(),
             bio.as_deref().map(str::trim),
             changes.locale.as_deref(),
+            organization.as_deref(),
             profile.as_ref(),
             theme,
             changes.expected_version,

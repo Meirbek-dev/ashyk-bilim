@@ -16,6 +16,7 @@ export const UpdateMyProfileBody = zod
     bio: zod.string().nullish(),
     display_name: zod.string().nullish(),
     locale: zod.string().nullish().describe('One of the platform locales.'),
+    organization: zod.string().nullish().describe('School / university / company; a blank value is 422 `required`.'),
     profile: zod
       .union([
         zod

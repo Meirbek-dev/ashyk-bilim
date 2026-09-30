@@ -747,7 +747,7 @@ mod tests {
 
     #[test]
     fn token_estimates_are_stable_and_model_tolerant() {
-        let n = tokens::estimate("hello world, this is a budget check", "gpt-5.6-luna");
+        let n = tokens::estimate("hello world, this is a budget check", "gpt-6-luna");
         assert!((5..=12).contains(&n), "got {n}");
         assert_eq!(
             tokens::estimate("same text", "openai:gpt-4o"),
@@ -764,7 +764,7 @@ mod tests {
                     name: "openai".into(),
                     base_url: "http://x".into(),
                     api_key: SecretString::from("k"),
-                    model: "gpt-5.6-luna".into(),
+                    model: "gpt-6-luna".into(),
                     timeout: Duration::from_secs(1),
                 },
                 ProviderConfig {
@@ -780,7 +780,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             client.selected_model_name(),
-            "openai:gpt-5.6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
+            "openai:gpt-6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
         );
         assert!(!format!("{client:?}").contains("api_key: \"k\""));
     }

@@ -85,6 +85,19 @@ export function UserEditForm({ form, profilePicture }: UserEditFormProps) {
                   </Field>
                 )}
               />
+              <Controller
+                control={form.control}
+                name="organization"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>{t('organization')}</FieldLabel>
+                    <FieldContent>
+                      <Input id={field.name} placeholder={t('organizationPlaceholder')} {...field} />
+                    </FieldContent>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
             </div>
 
             <Controller

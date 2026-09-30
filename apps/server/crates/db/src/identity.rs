@@ -87,6 +87,8 @@ pub struct ProfileRow {
     pub bio: String,
     pub avatar_key: Option<String>,
     pub locale: String,
+    /// School / university / company; `""` = not given yet.
+    pub organization: String,
     /// The profile builder document (`ab_domain::identity::profile`), `{"sections": []}` when unset.
     pub profile: serde_json::Value,
     /// UI theme slug; `None` = the web default.
@@ -142,8 +144,8 @@ pub async fn find_public_profile_by_id(
 pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<ProfileRow>> {
     let row = sqlx::query_as!(
         ProfileRow,
-        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme,
-                  profile_version
+        r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
+                  profile, theme, profile_version
            FROM users WHERE id = $1"#,
         user_id.0
     )
@@ -165,6 +167,7 @@ pub async fn update_profile(
     display_name: Option<&str>,
     bio: Option<&str>,
     locale: Option<&str>,
+    organization: Option<&str>,
     profile: Option<&serde_json::Value>,
     theme: Option<Option<&str>>,
     expected_version: Option<i32>,
@@ -177,10 +180,11 @@ pub async fn update_profile(
                locale = COALESCE($4, locale),
                profile = COALESCE($5, profile),
                theme = CASE WHEN $6 THEN $7 ELSE theme END,
-               profile_version = profile_version + CASE WHEN $5::jsonb IS NULL THEN 0 ELSE 1 END
+               profile_version = profile_version + CASE WHEN $5::jsonb IS NULL THEN 0 ELSE 1 END,
+               organization = COALESCE($9, organization)
            WHERE id = $1 AND ($8::int4 IS NULL OR profile_version = $8)
-           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, profile, theme,
-                     profile_version"#,
+           RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
+                     profile, theme, profile_version"#,
         user_id.0,
         display_name,
         bio,
@@ -188,7 +192,8 @@ pub async fn update_profile(
         profile,
         theme.is_some(),
         theme.flatten(),
-        expected_version
+        expected_version,
+        organization
     )
     .fetch_optional(pool)
     .await?;
@@ -356,18 +361,20 @@ pub async fn create_user_with_default_role(
     email: &str,
     display_name: &str,
     locale: Option<&str>,
+    organization: &str,
 ) -> Result<Option<UserId>> {
     let mut tx = pool.begin().await?;
     let inserted = sqlx::query_scalar!(
-        r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale)
-           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru-RU'))
+        r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization)
+           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru-RU'), $6)
            ON CONFLICT DO NOTHING
            RETURNING id"#,
         zitadel_user_id,
         username,
         email.to_lowercase(),
         display_name,
-        locale
+        locale,
+        organization
     )
     .fetch_optional(&mut *tx)
     .await?;
@@ -567,6 +574,7 @@ pub struct AdminUserRow {
     pub username: String,
     pub email: String,
     pub display_name: String,
+    pub organization: String,
     pub status: String,
     pub roles: Vec<String>,
     pub created_at: i64,
@@ -583,7 +591,7 @@ pub async fn list_users(
     let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         AdminUserRow,
-        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.status,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
                   (extract(epoch FROM u.created_at))::bigint AS "created_at!"
@@ -591,7 +599,8 @@ pub async fn list_users(
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id
            WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE '\'
-                  OR u.display_name ILIKE $1 ESCAPE '\' OR u.email ILIKE $1 ESCAPE '\')
+                  OR u.display_name ILIKE $1 ESCAPE '\' OR u.email ILIKE $1 ESCAPE '\'
+                  OR u.organization ILIKE $1 ESCAPE '\')
              AND ($2::uuid IS NULL OR u.id < $2)
            GROUP BY u.id
            ORDER BY u.id DESC
@@ -609,7 +618,7 @@ pub async fn list_users(
 pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<AdminUserRow>> {
     let row = sqlx::query_as!(
         AdminUserRow,
-        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.status,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
                   (extract(epoch FROM u.created_at))::bigint AS "created_at!"

@@ -187,7 +187,7 @@ T-0    1. docker compose stop web api taskiq-worker taskiq-scheduler   (Judge0, 
           swap nginx template (v2 routes, /content → rustfs); reload nginx.
        4a. AI keys: put `AB__AI__OPENAI_API_KEY` / `AB__AI__OPENROUTER_API_KEY`
           (owner-supplied, never in the repo) in the production `.env`; the models
-          default to `gpt-5.6-luna` / `deepseek/deepseek-v4-flash` and the budget to
+          default to `gpt-6-luna` / `deepseek/deepseek-v4-flash` and the budget to
           1 000 000 tokens/month (`AB__AI__OPENAI_MODEL`, `AB__AI__OPENROUTER_MODEL`,
           `AB__AI__MONTHLY_TOKEN_BUDGET` override). `ashyq admin config-check` prints
           `ai.status` — `disabled: no provider key` until they are set (AI routes

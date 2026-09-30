@@ -151,7 +151,7 @@ function Users() {
   const columns = React.useMemo<DataTableColumnDef<UserRow>[]>(
     () => [
       {
-        accessorFn: row => `${row.display_name} ${row.username} ${row.email}`,
+        accessorFn: row => `${row.display_name} ${row.username} ${row.email} ${row.organization}`,
         id: 'user',
         header: t('userHeader'),
         cell: ({ row }) => (
@@ -160,6 +160,9 @@ function Users() {
             <Badge variant="outline" className="font-mono text-xs">
               @{row.original.username}
             </Badge>
+            {row.original.organization && (
+              <span className="text-muted-foreground text-xs">{row.original.organization}</span>
+            )}
             {row.original.status === 'disabled' && <Badge variant="secondary">{t('statusDisabled')}</Badge>}
           </div>
         ),

@@ -42,6 +42,7 @@ const input = (name: string) => document.querySelector<HTMLInputElement>(`input[
 async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(input('firstName'), 'Aigerim')
   await user.type(input('lastName'), 'Test')
+  await user.type(input('organization'), 'КазНУ')
   await user.type(input('username'), 'aigerim.k')
   await user.type(input('email'), 'aigerim@example.com')
   await user.type(input('password'), 'Correct horse 1')
@@ -97,6 +98,7 @@ describe('/auth/signup', () => {
       expect(registerAction).toHaveBeenCalledWith({
         firstName: 'Aigerim',
         lastName: 'Test',
+        organization: 'КазНУ',
         username: 'aigerim.k',
         email: 'aigerim@example.com',
         password: 'Correct horse 1',

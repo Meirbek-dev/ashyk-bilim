@@ -12,6 +12,7 @@ export const RegisterBody = zod
     email: zod.string(),
     first_name: zod.string(),
     last_name: zod.string(),
+    organization: zod.string().describe('School, university or company the user comes from.'),
     password: zod.string(),
     username: zod.string().describe('3–48 characters: letters, digits, `.`, `_`, `-`.'),
   })

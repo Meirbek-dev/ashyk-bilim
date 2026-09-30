@@ -49,6 +49,27 @@ async fn profile_read_and_partial_update(pool: PgPool) {
         .await;
     assert_eq!(bio.status, StatusCode::OK, "{}", bio.text());
     assert_eq!(bio.json()["bio"], "one\ntwo");
+
+    // Organization: empty until given, trimmed, never blanked again.
+    assert_eq!(me.json()["organization"], "");
+    let org = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "organization": "  КазНУ " }),
+        )
+        .await;
+    assert_eq!(org.status, StatusCode::OK, "{}", org.text());
+    assert_eq!(org.json()["organization"], "КазНУ");
+    let blank = app
+        .patch_as(
+            &session,
+            "/api/v2/users/me",
+            &serde_json::json!({ "organization": "  " }),
+        )
+        .await;
+    assert_eq!(blank.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(blank.json()["field_errors"][0]["field"], "organization");
 }
 
 #[sqlx::test(migrations = "../../migrations")]
