@@ -17,8 +17,10 @@ import Link from '@components/ui/AppLink'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 import { InlineError } from '@/components/ui/error-state'
 import { useApiError } from '@/hooks/useApiError'
+import { parseSearchType } from '@/features/search/search-type'
+import type { SearchType } from '@/features/search/search-type'
 
-type ContentType = 'all' | 'courses' | 'collections' | 'users'
+type ContentType = SearchType
 
 function FilterButton({
   type,
@@ -93,7 +95,7 @@ function SearchPage() {
 
   // URL parameters
   const query = searchParams.get('q') || ''
-  const type = (searchParams.get('type') as ContentType) || 'all'
+  const type = parseSearchType(searchParams.get('type'))
   const selectedType = type
   const searchResultsQuery = useSearchContent(query, { limit: 30 })
   const searchResults: SearchResults = searchResultsQuery.data?.data ?? { courses: [], collections: [], users: [] }
