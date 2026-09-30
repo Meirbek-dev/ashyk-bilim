@@ -569,3 +569,33 @@ async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
     let (lost, ()) = tokio::join!(loser, commit);
     assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
 }
+
+// UX-322: a curator holding `collection:update:own` who does not own this
+// public collection gets 403 before the body is read — never a 422 that
+// lists the accepted fields.
+#[sqlx::test(migrations = "../../migrations")]
+async fn foreign_patch_is_refused_before_the_body(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let other = curator(&app, "other").await;
+    let visible = course(&app, &owner, "Visible", true).await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Mine", "public": true, "courses": [visible] }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+
+    let res = app
+        .patch_as(
+            &other,
+            &format!("/api/v2/collections/{id}"),
+            &serde_json::json!({ "zz_bogus_field": 1 }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::FORBIDDEN, "{}", res.text());
+    assert!(!res.text().contains("expected one of"), "{}", res.text());
+}

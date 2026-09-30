@@ -76,13 +76,11 @@ impl CollectionsService {
         actor.require(perm(Action::Create, Scope::Platform))
     }
 
-    /// `collection:update` at some scope — the superset of `require_write`
-    /// UX-311: the write handlers check it before reading the body.
-    pub fn require_some_write(actor: &Actor) -> Result<()> {
-        if actor.has(perm(Action::Update, Scope::Own)) {
-            return Ok(());
-        }
-        actor.require(perm(Action::Update, Scope::Platform))
+    /// UX-311/UX-322: the PATCH handler checks this row's write access (404
+    /// unreadable, 403 not writable) before reading the body.
+    pub async fn require_updatable(&self, actor: &Actor, id: CollectionId) -> Result<()> {
+        let collection = self.load(actor, id).await?;
+        Self::require_write(actor, &collection)
     }
 
     fn require_write(actor: &Actor, collection: &Collection) -> Result<()> {

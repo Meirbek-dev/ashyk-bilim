@@ -145,7 +145,7 @@ pub async fn update_collection(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
-    ab_domain::catalog::CollectionsService::require_some_write(&actor)?;
+    state.collections.require_updatable(&actor, id).await?;
     let request = ValidJson::<UpdateCollectionRequest>::parse(&body)?;
     let expected_version = if_match(&headers)?;
     let collection = state
