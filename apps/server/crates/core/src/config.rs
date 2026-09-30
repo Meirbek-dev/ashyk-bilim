@@ -73,8 +73,9 @@ pub struct AiConfig {
     pub openrouter_model: String,
     #[serde(default = "AiConfig::default_openrouter_base_url")]
     pub openrouter_base_url: String,
-    /// Hard per-call timeout for the primary provider (legacy: 5s, fail fast
-    /// so a rate-limited key cannot eat the 30s request budget).
+    /// Hard per-call timeout for the primary provider. Legacy 5s was too short
+    /// for gpt-6-luna (live structured calls take 5–18s), so every call fell
+    /// back; 20s still leaves room inside the 30s request budget.
     #[serde(default = "AiConfig::default_openai_timeout_secs")]
     pub openai_timeout_secs: f64,
     /// Hard per-call timeout for the fallback provider (legacy: 25s).
@@ -126,7 +127,7 @@ impl AiConfig {
         "https://openrouter.ai/api/v1".into()
     }
     const fn default_openai_timeout_secs() -> f64 {
-        5.0
+        20.0
     }
     const fn default_openrouter_timeout_secs() -> f64 {
         25.0
