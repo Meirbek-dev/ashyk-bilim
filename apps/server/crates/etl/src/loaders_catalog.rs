@@ -34,8 +34,8 @@ async fn load_platform(ctx: &mut Ctx) -> Result<()> {
     };
     ctx.source("platform", 1);
     sqlx::query(
-        "INSERT INTO platforms (name,description,about,email,label,logo_key,thumbnail_key) VALUES ($1,$2,$3,$4,$5,$6,$7) \
-         ON CONFLICT (singleton) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,about=EXCLUDED.about,email=EXCLUDED.email,label=EXCLUDED.label,logo_key=EXCLUDED.logo_key,thumbnail_key=EXCLUDED.thumbnail_key",
+        "INSERT INTO platforms (name,description,about,email,label,logo_key,thumbnail_key,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE(to_timestamp($8),now()),COALESCE(to_timestamp($9),now())) \
+         ON CONFLICT (singleton) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,about=EXCLUDED.about,email=EXCLUDED.email,label=EXCLUDED.label,logo_key=EXCLUDED.logo_key,thumbnail_key=EXCLUDED.thumbnail_key,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at",
     )
     .bind(platform.name)
     .bind(platform.description.unwrap_or_default())
@@ -44,6 +44,8 @@ async fn load_platform(ctx: &mut Ctx) -> Result<()> {
     .bind(platform.label)
     .bind(platform.logo_image.as_deref().and_then(|name| transform::files::under("platform/logos", name)))
     .bind(platform.thumbnail_image.as_deref().and_then(|name| transform::files::under("platform/thumbnails", name)))
+    .bind(platform.created_at)
+    .bind(platform.updated_at)
     .execute(&mut *ctx.tx)
     .await?;
     ctx.wrote("platform", 1);

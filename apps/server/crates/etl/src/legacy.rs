@@ -215,13 +215,21 @@ pub struct Platform {
     pub thumbnail_image: Option<String>,
     pub label: Option<String>,
     pub email: String,
+    pub created_at: Option<f64>,
+    pub updated_at: Option<f64>,
 }
 
 pub async fn platform(pool: &PgPool) -> Result<Option<Platform>> {
     let rows: Vec<Platform> = fetch(
         pool,
         "platform",
-        "SELECT name, description, about, logo_image, thumbnail_image, label, email FROM platform ORDER BY id",
+        concat!(
+            "SELECT name, description, about, logo_image, thumbnail_image, label, email, ",
+            ts!("creation_date" AS "created_at"),
+            ", ",
+            ts!("update_date" AS "updated_at"),
+            " FROM platform ORDER BY id"
+        ),
         Some(1),
     )
     .await?;
@@ -1641,10 +1649,6 @@ pub const DROPPED_TABLES: &[(&str, &str)] = &[
     (
         "permissions",
         "permission catalog encoded in code (ab_core::permission)",
-    ),
-    (
-        "role_permissions",
-        "system-role grants are seeded by migration 0003 (verbatim SYSTEM_ROLES)",
     ),
     (
         "document_chunks",

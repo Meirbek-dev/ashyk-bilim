@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ab_core::Result;
 use sqlx::Row;
@@ -126,7 +126,181 @@ pub async fn run(ctx: &mut Ctx) -> Result<()> {
         written += 1;
     }
     ctx.wrote("user_roles", written);
+    carry_role_grants(ctx).await?;
     load_auth_audit(ctx).await
+}
+
+/// BUG-378: production edited system-role grants (legacy `routers/roles.py`
+/// allowed it); v2 system roles are seed-immutable. Every legacy grant equal
+/// to the seed is carried by it; an extra one that maps to a v2 permission is
+/// carried by a custom `<slug>-legacy-grants` role assigned to every holder
+/// of the system role; anything else, and every seeded grant legacy had
+/// revoked, is logged row by row.
+async fn carry_role_grants(ctx: &mut Ctx) -> Result<()> {
+    let legacy_grants = legacy::role_grants(&ctx.source).await?;
+    ctx.source("role_permissions", legacy_grants.len());
+    let legacy_names: HashMap<String, String> = legacy::roles(&ctx.source)
+        .await?
+        .into_iter()
+        .map(|role| (role.slug, role.name))
+        .collect();
+    let system = sqlx::query(
+        "SELECT r.slug, r.priority, array_remove(array_agg(rp.permission), NULL) AS seed, \
+         (SELECT count(*) FROM user_roles ur WHERE ur.role_id = r.id) AS holders \
+         FROM roles r LEFT JOIN role_permissions rp ON rp.role_id = r.id WHERE r.is_system GROUP BY r.id",
+    )
+    .fetch_all(&mut *ctx.tx)
+    .await?;
+    let mut written = 0usize;
+    let mut by_slug: BTreeMap<&str, Vec<String>> = BTreeMap::new();
+    for grant in &legacy_grants {
+        by_slug
+            .entry(&grant.slug)
+            .or_default()
+            .push(grant.permission.clone());
+    }
+    for (slug, grants) in by_slug {
+        let Some(row) = system
+            .iter()
+            .find(|row| row.get::<String, _>("slug") == slug)
+        else {
+            for grant in grants {
+                ctx.drop_row(
+                    "role_permissions",
+                    format!("{slug}:{grant}"),
+                    format!("legacy role `{slug}` has no v2 system role"),
+                );
+            }
+            continue;
+        };
+        let seed: Vec<String> = row.get("seed");
+        let plan = plan_role_grants(slug, &grants, &seed, row.get::<i64, _>("holders") > 0);
+        written += grants.len() - plan.drops.len();
+        for (grant, reason) in plan.drops {
+            ctx.drop_row("role_permissions", format!("{slug}:{grant}"), reason);
+        }
+        for grant in plan.revoked {
+            ctx.drop_row(
+                "role_permission_revoked",
+                format!("{slug}:{grant}"),
+                format!("legacy `{slug}` lacked this seeded grant; v2 system roles are immutable, so every {slug} holds it — review"),
+            );
+        }
+        if plan.carry.is_empty() {
+            continue;
+        }
+        let custom = format!("{slug}-legacy-grants");
+        let name = legacy_names.get(slug).map_or(slug, String::as_str);
+        let role_id: uuid::Uuid = sqlx::query_scalar(
+            "INSERT INTO roles (slug, display_name_key, description_key, display_name, description, priority, is_system) \
+             VALUES ($1, 'roles.' || $1 || '.name', 'roles.' || $1 || '.description', $2, $3, $4, false) \
+             ON CONFLICT (slug) DO UPDATE SET display_name = EXCLUDED.display_name, description = EXCLUDED.description \
+             RETURNING id",
+        )
+        .bind(&custom)
+        .bind(format!("{name} (legacy grants)"))
+        .bind(format!(
+            "Production grants of `{slug}` beyond the v2 system role, carried by the ETL (BUG-378): {}",
+            plan.carry.join(", ")
+        ))
+        .bind(row.get::<i32, _>("priority") - 1)
+        .fetch_one(&mut *ctx.tx)
+        .await?;
+        sqlx::query("INSERT INTO role_permissions (role_id, permission) SELECT $1, unnest($2::text[]) ON CONFLICT DO NOTHING")
+            .bind(role_id)
+            .bind(&plan.carry)
+            .execute(&mut *ctx.tx)
+            .await?;
+        let assigned = sqlx::query(
+            "INSERT INTO user_roles (user_id, role_id, created_at) \
+             SELECT ur.user_id, $1, ur.created_at FROM user_roles ur JOIN roles r ON r.id = ur.role_id \
+             WHERE r.slug = $2 ON CONFLICT DO NOTHING",
+        )
+        .bind(role_id)
+        .bind(slug)
+        .execute(&mut *ctx.tx)
+        .await?
+        .rows_affected();
+        ctx.note(format!(
+            "role `{custom}` carries {} to {assigned} `{slug}` holder(s) (BUG-378)",
+            plan.carry.join(", ")
+        ));
+    }
+    ctx.wrote("role_permissions", written);
+    Ok(())
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+struct GrantPlan {
+    /// Extra v2 permissions the custom role carries.
+    carry: Vec<String>,
+    /// Extra legacy grants not carried, with the reason.
+    drops: Vec<(String, String)>,
+    /// Seeded grants legacy had revoked.
+    revoked: Vec<String>,
+}
+
+fn plan_role_grants(
+    slug: &str,
+    legacy: &[String],
+    seed: &[String],
+    has_holders: bool,
+) -> GrantPlan {
+    use ab_core::permission::{Grant, Permission, PermissionSet, Scope};
+    let seeded = PermissionSet::parse(seed.iter().map(String::as_str)).unwrap_or_default();
+    // Legacy scope hierarchy: all > platform > assigned > own.
+    let covered = |grant: &Grant| {
+        let (Some(resource), Some(action), Some(scope)) =
+            (grant.resource, grant.action, grant.scope)
+        else {
+            return false;
+        };
+        [Scope::Own, Scope::Assigned, Scope::Platform, Scope::All]
+            .iter()
+            .skip_while(|s| **s != scope)
+            .any(|s| {
+                seeded.grants(&Permission {
+                    resource,
+                    action,
+                    scope: Some(*s),
+                })
+            })
+    };
+    let mut plan = GrantPlan::default();
+    for grant in legacy.iter().filter(|g| !seed.contains(g)) {
+        let reason = match Grant::parse(grant) {
+            Ok(parsed) if covered(&parsed) => {
+                format!("covered by a broader-scope `{slug}` v2 system grant")
+            }
+            Ok(_) if !has_holders => format!(
+                "no user holds `{slug}` (v2 anonymous visitors carry no role; self-registration is not RBAC-gated)"
+            ),
+            Ok(_) => {
+                plan.carry.push(grant.clone());
+                continue;
+            }
+            Err(_) if grant.starts_with("assignment:") => {
+                let equivalent = grant.replacen("assignment", "assessment", 1);
+                if seed.contains(&equivalent) {
+                    format!(
+                        "no v2 resource `assignment` (legacy code never checks it either; assignments are assessments) — `{slug}` holds {equivalent}"
+                    )
+                } else {
+                    format!(
+                        "no v2 resource `assignment` (legacy code never checks it either); `{slug}` lacks {equivalent}"
+                    )
+                }
+            }
+            Err(error) => format!("no v2 permission: {error}"),
+        };
+        plan.drops.push((grant.clone(), reason));
+    }
+    plan.revoked = seed
+        .iter()
+        .filter(|g| !legacy.contains(g))
+        .cloned()
+        .collect();
+    plan
 }
 
 async fn load_auth_audit(ctx: &mut Ctx) -> Result<()> {
@@ -183,5 +357,33 @@ mod tests {
             collision_email("a@example.com", 17),
             "a+legacy-17@example.com"
         );
+    }
+
+    /// BUG-378: the production instructor diff against the v2 seed.
+    #[test]
+    fn edited_system_grants_are_carried_or_logged() {
+        let s = |v: &[&str]| v.iter().map(|g| (*g).to_owned()).collect::<Vec<_>>();
+        let seed = s(&[
+            "assessment:*:own",
+            "user:read:platform",
+            "usergroup:manage:own",
+        ]);
+        let legacy = s(&[
+            "assessment:*:own",
+            "user:read:platform",
+            "assignment:*:own",
+            "user:read:assigned",
+            "usergroup:manage:platform",
+        ]);
+        let plan = plan_role_grants("instructor", &legacy, &seed, true);
+        assert_eq!(plan.carry, ["usergroup:manage:platform"]);
+        let dropped: Vec<&str> = plan.drops.iter().map(|(g, _)| g.as_str()).collect();
+        assert_eq!(dropped, ["assignment:*:own", "user:read:assigned"]);
+        assert!(plan.drops[0].1.contains("holds assessment:*:own"));
+        assert!(plan.drops[1].1.contains("covered"));
+        assert_eq!(plan.revoked, ["usergroup:manage:own"]);
+        // Nobody holds the role (guest): nothing to carry to.
+        let guest = plan_role_grants("guest", &s(&["user:create:all"]), &[], false);
+        assert!(guest.carry.is_empty() && guest.drops.len() == 1);
     }
 }

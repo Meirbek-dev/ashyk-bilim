@@ -1659,3 +1659,29 @@ Implements three more items of the owner answers above. Routes:
 - **`user.details` stays dropped**: the only rows are the empty «Новая деталь»
   placeholder the legacy builder wrote on first open; the ETL logs that reason
   and would log a filled card with its content.
+
+## Production edits to system-role grants survive the ETL (2026-09-30, gauntlet pass 30)
+
+- **System roles stay seed-immutable; the ETL carries production's extra
+  grants on a custom role** (BUG-378). Legacy let admins edit system roles
+  and production did: instructors held `usergroup:manage:platform`. For each
+  legacy system role the ETL diffs its grants against the v2 seed: an extra
+  grant that parses as a v2 permission and is not already covered (same or
+  broader scope, legacy hierarchy all > platform > assigned > own) goes on a
+  custom role `<slug>-legacy-grants` («<legacy name> (legacy grants)»,
+  priority one below the system role), assigned to every holder of the
+  system role with the holder's assignment date. The admin can edit, strip
+  or delete that role like any custom role. Every other extra grant is a
+  per-row `etl_drop_log` entry (`role_permissions`, key `<slug>:<grant>`):
+  `assignment:*` (no resource in v2 or legacy code; the role already holds
+  the `assessment` twin), covered grants (instructor `user:read:assigned`),
+  grants on a role nobody holds (guest `user:create:all` — v2 visitors carry
+  no role and sign-up is not RBAC-gated). A seeded grant legacy had revoked
+  cannot be subtracted from an immutable role: it is logged as
+  `role_permission_revoked` for review (production has none). Replaces the
+  table-level «seeded by migration 0003» drop of all 118 rows.
+- **Out-of-range legacy percentages are logged per row** (UX-302):
+  submission `auto_score`/`final_score`/`late_penalty_pct` and grading-entry
+  `raw_score`/`penalty_pct`/`final_score` outside 0..=100 are clamped as
+  before, and each clamp is a `submission_field`/`grading_entry_field` drop
+  naming the legacy value.
