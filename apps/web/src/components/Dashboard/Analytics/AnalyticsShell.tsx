@@ -126,8 +126,9 @@ export default function AnalyticsShell({
             courseOptions={(courseOptions.length ? courseOptions : overview.course_options) ?? []}
             cohortOptions={(cohortOptions.length ? cohortOptions : overview.cohort_options) ?? []}
             sortKeys={sortKeys}
-          />
-          <SavedViewsBar query={query} viewType={activeTab} />
+          >
+            <SavedViewsBar query={query} viewType={activeTab} />
+          </TeacherFilterBar>
         </div>
 
         {/* Tab Panel content */}

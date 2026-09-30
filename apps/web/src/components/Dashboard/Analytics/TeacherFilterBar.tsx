@@ -38,6 +38,8 @@ interface TeacherFilterBarProps {
   cohortOptions?: AnalyticsFilterOption[]
   /** `sort_by` keys the page's endpoint honours; none hides the sort controls. */
   sortKeys?: readonly string[] | undefined
+  /** Extra controls shown inside the folded panel (saved views). */
+  children?: React.ReactNode
 }
 
 const windows: NonNullable<AnalyticsQuery['window']>[] = ['7d', '28d', '90d']
@@ -54,6 +56,7 @@ export default function TeacherFilterBar({
   courseOptions = EMPTY_FILTER_OPTIONS,
   cohortOptions = EMPTY_FILTER_OPTIONS,
   sortKeys = EMPTY_SORT_KEYS,
+  children,
 }: TeacherFilterBarProps) {
   const t = useTranslations('TeacherAnalytics')
   const router = useRouter()
@@ -375,6 +378,7 @@ export default function TeacherFilterBar({
             </Button>
           </div>
         </form>
+        {children}
         </details>
       </div>
     </section>

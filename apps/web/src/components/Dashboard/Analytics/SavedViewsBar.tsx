@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import type { AnalyticsQuery, SavedAnalyticsViewRow } from '@/types/analytics'
 import { deleteAnalyticsView, getSavedAnalyticsViews, saveAnalyticsView } from '@services/analytics/teacher'
@@ -95,8 +94,8 @@ export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
   }
 
   return (
-    <Card className="shadow-sm">
-      <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+    // Rendered inside the folded filter panel: saving a view is a filter action.
+    <div className="flex flex-col gap-3 border-t p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-wrap gap-2">
           {views.map(view => (
             <div key={view.id} className="inline-flex items-center">
@@ -138,7 +137,6 @@ export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
             {t('savedViewsBar.save')}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   )
 }
