@@ -715,6 +715,8 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | BUG-372 | F14 (server) | 17 parallel runs (20-burst, 3 × 429) → 10 × 503 «timed out after 25s» and the Judge0 circuit breaker trips for every user for 30 s; judge0.conf `COUNT=1` (prod too) — no server-side concurrency cap/queueing in front of Judge0. | open | — | — |
 | BUG-373 | F14 (web) | A Python runtime error is labelled «Time Limit»: `'RUNTIME'.includes('TIME')` in `verdicts.ts:8,22`. | open | — | — |
 | BUG-374 | F14 (server+web) | Code challenge builder: Сложность = Сложно, save, reload → EASY; difficulty is never sent to / read from `assessment_items.difficulty`. | open | — | — |
+| BUG-375 | F23 (server) | `POST /assessments/{id}/items/reorder` racing `DELETE /assessment-items/{last}`: 2/4 tries → 200 and positions `2:Q3 3:Q2 4:Q1` (gap at 1). `reorder_items` reads `existing` before `lock_detail`, so the BUG-359 «stale list is 422» rule does not hold under a race; a racing add is also accepted with a now-incomplete list. | open | — | — |
+| BUG-376 | F21 (server+web) | Lecture editor open in tab A; the same teacher renames the lesson from the curriculum (or toggles publish) → A's next autosave 412 «Активность изменена в другой вкладке. Автосохранение остановлено…» and text typed after the rename is lost on «Обновить страницу». A name/publish-only change invalidates the content lock; the 412 body carries only versions, so the editor cannot rebase. | open | — | — |
 
 ## UX notes
 
@@ -1011,3 +1013,6 @@ Status: `pass` = verified by a critic from a fresh session after the last fix to
 | UX-289 | F14 | /kz workspace: Run and Submit are both «Жіберу». | open |
 | UX-290 | F14 | Phone 390×844: side-by-side panes — title clipped to ~130 px, «Код» overlaps «Қайтару», language picker cut, Сынау/Тапсыру off-screen. | open |
 | UX-291 | F14 | 503 problem detail leaks the internal Judge0 URL («error sending request for url (http://localhost:2358/…)») to learners. | open |
+| UX-292 | F23 | Studio «Лимит попыток» = 11: input has no `max`; `PUT …/policy` 422 toasts English «Validation failed» on /ru, field stays `aria-invalid=false` (`NativeItemAuthor` → `toast.error(error.message)`, which is the envelope title for a 422). | open |
+| UX-293 | F23 | Stale-tab item reorder → English «Validation failed» toast instead of the catalog `reorderFailed` (unreachable: an `APIError` is always an `Error`), and no refetch — every later move 422s until reload. | open |
+| UX-295 | F20 | `PATCH /activities/{id}` with nothing changed (`{}` / `published:false` on an unpublished activity) still bumps version 1→2 (`ActivityWrite` always runs `version = version + 1`) — can push an open editor into a needless conflict. | open |
