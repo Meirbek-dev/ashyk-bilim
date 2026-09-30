@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Error-code i18n sync (ARCHITECTURE §5, EXECUTION-PLAN 9.3).
+ * Error-code i18n sync (ARCHITECTURE §5).
  *
  * The server's closed `ErrorCode` registry is published in
  * `apps/server/openapi.v2.json` (`components.schemas.ErrorCode.enum`). Every

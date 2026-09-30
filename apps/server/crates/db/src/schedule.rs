@@ -1,5 +1,5 @@
 //! Recurring job schedules (`job_schedules`), interval-based — see
-//! docs/rewrite/DECISIONS.md (2026-08-16) for why not cron expressions.
+//! docs/DECISIONS.md (2026-08-16) for why not cron expressions.
 //!
 //! No elected leader: every worker calls [`tick`]; a transaction-scoped
 //! advisory lock makes ticks mutually exclusive, `FOR UPDATE SKIP LOCKED`

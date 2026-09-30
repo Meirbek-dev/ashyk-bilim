@@ -2,7 +2,7 @@
 
 You are a coding agent working on the Rust backend — the production API since
 the 2026-09-30 cutover (the legacy Python API is gone; tag `legacy-final` keeps
-it in git history). The design rationale lives in `docs/rewrite/ARCHITECTURE.md`
+it in git history). The design rationale lives in `docs/ARCHITECTURE.md`
 (read it once per session); this file tells you **how to work**.
 
 ## Ground rules
@@ -14,7 +14,7 @@ it in git history). The design rationale lives in `docs/rewrite/ARCHITECTURE.md`
    docs, CI, or scripts — add a recipe instead. `just ci` locally is byte-for-byte
    what CI runs.
 3. **Deviations from ARCHITECTURE.md** require an entry in
-   `docs/rewrite/DECISIONS.md`: date, what, why, what it replaces. Silent
+   `docs/DECISIONS.md`: date, what, why, what it replaces. Silent
    divergence is the one unforgivable sin here — the next agent trusts these
    documents.
 4. **Production data is migrated legacy data.** Keep the code paths that serve

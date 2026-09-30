@@ -1,7 +1,7 @@
 //! `ab-domain` — all business logic, one module per bounded context.
 //!
-//! Contexts (populated by phases P1–P8, see EXECUTION-PLAN.md):
-//! `identity` (this phase) · `org` · `catalog` · `progress` · `assessment` ·
+//! Contexts:
+//! `identity` · `org` · `catalog` · `progress` · `assessment` ·
 //! `grading` · `files` · `code` · `community` · `certs` · `gamification` ·
 //! `analytics` · `ai` · `search` · `work` · `events`
 //!

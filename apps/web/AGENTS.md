@@ -26,8 +26,8 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 
 - **Source of truth:** `apps/server/openapi.v2.json` (exported by `ashyq openapi`).
   Handler docs live in `apps/server/crates/api/src/routes/*.rs`, DTOs in
-  `crates/api/src/dto/*.rs`; design in `docs/rewrite/ARCHITECTURE.md` §5–§7 and
-  the per-slice "Routes:" notes in `docs/rewrite/DECISIONS.md`.
+  `crates/api/src/dto/*.rs`; design in `docs/ARCHITECTURE.md` §5–§7 and
+  the per-slice "Routes:" notes in `docs/DECISIONS.md`.
 - `bun run generate:api-types` regenerates `src/lib/api/generated/**` (Orval,
   react-query hooks per tag + zod schemas). Never edit generated files; fix
   `orval.config.ts` / `scripts/orval-input-transformer.mjs` /

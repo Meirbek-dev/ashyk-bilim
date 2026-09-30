@@ -4,8 +4,8 @@
  * Responsibilities (v2 contract, `/api/v2`):
  *  1. Verify the Admin, Teacher and Student accounts can log in through the
  *     BFF (`POST /auth/login`). v2 has no registration endpoint — the three
- *     accounts must exist beforehand (seeded through Zitadel + the ETL /
- *     rehearsal stack, see docs/rewrite/EXECUTION-PLAN.md 9.4).
+ *     accounts must exist beforehand (seeded through Zitadel, see
+ *     docs/GAUNTLET-LOOP.md step 0).
  *  2. Log in as Admin and grant the teacher role
  *     (`POST /users/{id}/roles {role: slug}`) to the Teacher user, resolved
  *     through the admin listing (`GET /users?q=`).

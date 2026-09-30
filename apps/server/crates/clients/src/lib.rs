@@ -1,8 +1,7 @@
 //! `ab-clients` — typed clients for external services.
 //!
-//! Populated by later slices (see EXECUTION-PLAN.md):
-//! - `zitadel` — session/user APIs (this slice); IdP intents + import batching
-//!   arrive with 1.5/10.3
+//! Contents:
+//! - `zitadel` — session/user APIs
 //! - `storage` — `object_store` against RustFS (slice 2.2)
 //! - `judge0`  — code execution with circuit breaker (slice 4.4)
 //! - `resend`  — transactional email (registration verification codes)
