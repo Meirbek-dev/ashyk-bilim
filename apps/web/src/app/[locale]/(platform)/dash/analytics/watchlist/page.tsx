@@ -5,7 +5,7 @@ import AnalyticsPage from '../_components/AnalyticsPage'
 import { analyticsPageMetadata } from '../_components/metadata'
 import type { AnalyticsPageProps, AnalyticsTabData } from '../_components/AnalyticsPage'
 
-/** The table sorts through `learners/at-risk` (the overview preview is fixed worst-first — UX-095). */
+/** The table sorts through `learners/at-risk` (the overview preview is fixed worst-first - UX-095). */
 async function WatchlistData({ query, overview }: AnalyticsTabData) {
   const atRisk = await getAtRiskLearners(query).catch(() => null)
   return <WatchlistTab query={query} data={overview} atRisk={atRisk} />

@@ -388,7 +388,7 @@ async function mockAI(page: Page) {
       return match[2] === IDS.qaThread ? route.fulfill({ json: qaTranscript(match[1]!) }) : notFound(route)
     }
 
-    // capabilities, study companion, usage, … — the local server answers those itself.
+    // capabilities, study companion, usage, … - the local server answers those itself.
     return route.fallback()
   })
 }

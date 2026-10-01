@@ -48,7 +48,7 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
         put.status()
     );
 
-    // UX-058: finalize honours `Idempotency-Key` — a retry replays the
+    // UX-058: finalize honours `Idempotency-Key` - a retry replays the
     // stored 200 instead of the "already finalized" 409.
     let finalize = || {
         app.send(
@@ -68,7 +68,7 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     assert_eq!(replayed.status, StatusCode::OK, "{}", replayed.text());
     assert_eq!(replayed.json(), finalized.json());
 
-    // BUG-350: the PUT URL is create-only — replaying it after finalize
+    // BUG-350: the PUT URL is create-only - replaying it after finalize
     // cannot swap the bytes the ledger recorded, and dropping the signed
     // precondition breaks the signature.
     for precondition in [true, false] {
@@ -189,7 +189,7 @@ async fn finalize_without_object_is_a_conflict(pool: PgPool) {
 
 /// Declare `image/png`, store HTML: the signed PUT refuses the header, and
 /// an object that still lands with another type is rejected on finalize and
-/// deleted — nothing served from the public bucket as `text/html`.
+/// deleted - nothing served from the public bucket as `text/html`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -255,7 +255,7 @@ async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     assert_eq!(storage.head(Bucket::Public, &key).await.unwrap(), None);
 }
 
-/// BUG-359: finalize verifies the declared size (ARCHITECTURE §11) — the
+/// BUG-359: finalize verifies the declared size (ARCHITECTURE §11) - the
 /// cap was checked against the intent, so a body of another length is
 /// refused and the object dropped, never recorded with the "real" size.
 #[sqlx::test(migrations = "../../migrations")]
@@ -321,7 +321,7 @@ async fn finalize_rejects_a_size_mismatch(pool: PgPool) {
     );
 }
 
-/// BUG-200: `file:create:own` covers the learner purposes only — platform
+/// BUG-200: `file:create:own` covers the learner purposes only - platform
 /// branding needs the platform grant, thumbnails and content blocks course
 /// write access; a learner gets 403 before any presign.
 #[sqlx::test(migrations = "../../migrations")]

@@ -37,7 +37,7 @@ interface ThumbnailUpdateProps {
 }
 
 /**
- * Course thumbnail (image only — v2 carries a single `thumbnail_key`).
+ * Course thumbnail (image only - v2 carries a single `thumbnail_key`).
  * The file travels the upload pipeline (`uploadFile` → presigned PUT → finalize)
  * and the finalized upload is claimed by `PATCH /courses/{id}`.
  */

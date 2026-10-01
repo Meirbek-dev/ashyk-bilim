@@ -107,7 +107,7 @@ impl LinkPreviewClient {
                 .map_err(|e| failed(format!("reading page: {e}")))?
             {
                 if body.len() + chunk.len() > MAX_BYTES {
-                    // ponytail: a page's <head> is near the top — cut and parse
+                    // ponytail: a page's <head> is near the top - cut and parse
                     // what we have rather than refuse the preview.
                     body.extend_from_slice(&chunk[..MAX_BYTES - body.len()]);
                     break;
@@ -235,7 +235,7 @@ fn is_public(ip: IpAddr) -> bool {
             }
             // UX-195: deprecated IPv4-compatible ::/96 routes to its low 32
             // bits; Teredo 2001::/32 to the server v4 (bits 32-63) and the
-            // client v4 (low 32 bits, inverted) — both must be public.
+            // client v4 (low 32 bits, inverted) - both must be public.
             if seg[..6] == [0; 6] {
                 return is_public(IpAddr::V4(embedded(seg[6], seg[7])));
             }
@@ -469,7 +469,7 @@ mod tests {
             preview.image_url.as_deref(),
             Some("https://example.com/img/cover.png")
         );
-        assert_eq!(preview.site_name.as_deref(), Some("Example — Site"));
+        assert_eq!(preview.site_name.as_deref(), Some("Example \u{2014} Site"));
         let bare = parse(&page, "<title>Only &lt;title&gt;</title>");
         assert_eq!(bare.title.as_deref(), Some("Only <title>"));
         assert_eq!(bare.description, None);

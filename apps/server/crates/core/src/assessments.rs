@@ -1,7 +1,7 @@
 //! Assessment vocabulary shared by every layer.
 //!
 //! Text-backed enums mirroring the `CHECK` constraints in migration 0010
-//! (ARCHITECTURE §8.3 — no native PG enums). Decoded with `query_as!` column
+//! (ARCHITECTURE §8.3 - no native PG enums). Decoded with `query_as!` column
 //! overrides; bound as `as_str()`.
 
 use serde::{Deserialize, Serialize};

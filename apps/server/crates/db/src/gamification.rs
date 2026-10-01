@@ -308,7 +308,7 @@ pub async fn recent_transactions(
 #[derive(Debug, Clone)]
 pub struct LeaderboardRow {
     /// Competition rank over the whole public board (ties share, the next
-    /// skips) — the same rule as `count_with_more_xp + 1` (UX-172).
+    /// skips) - the same rule as `count_with_more_xp + 1` (UX-172).
     pub rank: i64,
     pub user_id: UserId,
     pub total_xp: i32,
@@ -347,7 +347,7 @@ pub async fn count_profiles(pool: &PgPool) -> Result<i64> {
     Ok(n)
 }
 
-/// Leaderboard members above `total_xp` — the caller's rank is this + 1,
+/// Leaderboard members above `total_xp` - the caller's rank is this + 1,
 /// counted against the public board (opted-out profiles do not displace).
 pub async fn count_with_more_xp(pool: &PgPool, total_xp: i32) -> Result<i64> {
     let n = sqlx::query_scalar!(

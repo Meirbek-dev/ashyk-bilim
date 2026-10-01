@@ -17,7 +17,7 @@ import type { GradedItem } from '@/lib/api/generated/zod'
 /** The three product surfaces every assessment kind must support. */
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT'
 
-/** Assessment kind identifiers — mirrors ActivityType from the backend. */
+/** Assessment kind identifiers - mirrors ActivityType from the backend. */
 export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_CUSTOM'
 
 // ── Studio surface ─────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ export interface AttemptReview {
 export interface AttemptViewModel {
   surface: 'ATTEMPT'
   kind: AssessmentKind
-  /** UX-213: off the access list — own attempts read-only, no new attempts. */
+  /** UX-213: off the access list - own attempts read-only, no new attempts. */
   accessClosed?: boolean
   assessmentUuid: string
   activityUuid: string
@@ -99,7 +99,7 @@ export interface AttemptViewModel {
   items: AssessmentItem[]
   /** Released per-item grades keyed by item id (the wire `GradedItem`: score, verdict code, teacher prose); empty until released. */
   itemScores: Record<string, GradedItem>
-  /** UX-116: every released attempt, newest first — the card reviews the grade-of-record one. */
+  /** UX-116: every released attempt, newest first - the card reviews the grade-of-record one. */
   attemptReviews: AttemptReview[]
   /** Student may edit answers. */
   canEdit: boolean
@@ -122,7 +122,7 @@ export interface AttemptViewModel {
   contentVersion: number
   policyVersion: number
 
-  // Phase 1 — server-driven action state
+  // Phase 1 - server-driven action state
   /** Student can start a new attempt. */
   canStart: boolean
   /** Student can continue an in-progress draft. */
@@ -161,7 +161,7 @@ export interface AttemptViewModel {
   /** Server-authoritative timer start (use instead of client Date.now()). */
   startedAt: string | null
   timerStartedAt: string | null
-  /** Server-authoritative timer expiry — derive time remaining from this. */
+  /** Server-authoritative timer expiry - derive time remaining from this. */
   timerExpiresAt: string | null
 }
 

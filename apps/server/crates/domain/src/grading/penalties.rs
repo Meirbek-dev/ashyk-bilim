@@ -34,7 +34,7 @@ pub fn attempt_cap(score: f64, attempt_penalty_percent: f64, attempt_number: i32
 }
 
 /// Percent deducted for lateness (0 when on time, no due date, or late
-/// work disallowed — that case is refused before grading).
+/// work disallowed - that case is refused before grading).
 #[must_use]
 pub fn late_penalty_pct(
     policy: LatePolicy,
@@ -114,7 +114,7 @@ pub fn apply(input: &PenaltyInput) -> PenaltyOutcome {
     }
 }
 
-/// `round(score × (1 − pct/100), 2)` — shared with the teacher path.
+/// `round(score × (1 − pct/100), 2)` - shared with the teacher path.
 #[must_use]
 pub fn apply_late(score: f64, late_penalty_pct: f64) -> f64 {
     round2(score * (1.0 - late_penalty_pct.clamp(0.0, 100.0) / 100.0))

@@ -1,4 +1,4 @@
-//! `assessments:publish-due` — flips scheduled assessments whose time has
+//! `assessments:publish-due` - flips scheduled assessments whose time has
 //! come to published and brings their activities live. Schedule seeded at
 //! worker boot (every minute; the legacy cron ran every two).
 

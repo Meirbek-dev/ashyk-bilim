@@ -436,7 +436,7 @@ async fn listing_pages_by_cursor(pool: PgPool) {
     assert!(rest.json()["next_cursor"].is_null());
 }
 
-/// BUG-298: concurrent likes and replies all count — the triggers move the
+/// BUG-298: concurrent likes and replies all count - the triggers move the
 /// counters by atomic deltas instead of a racing recount.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
@@ -493,7 +493,7 @@ async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
 }
 
 /// BUG-346: an owner edit carrying an unchanged `status` never writes the
-/// column — a moderator hide committed while the edit waits on the row lock
+/// column - a moderator hide committed while the edit waits on the row lock
 /// survives it.
 #[sqlx::test(migrations = "../../migrations")]
 async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {

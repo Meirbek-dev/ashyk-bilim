@@ -350,7 +350,7 @@ export const getUpdateActivityUrl = (id: ActivityId) => {
 /**
  * A `content` write (the editor autosave) requires `If-Match: "<version>"`;
  * other fields honour it when sent. A stale version is 412
- * `precondition-failed` with `details {expected, actual}` — never a silent
+ * `precondition-failed` with `details {expected, actual}` - never a silent
  * overwrite of another tab's save.
  * @summary Partial update: name, publish state, content/details/settings, or the
 type pair (both `activity_type` and `activity_sub_type` together).
@@ -2279,7 +2279,7 @@ export const getListContributorsUrl = (id: CourseId) => {
 
 /**
  * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
-public course — the course page names its authors to every visitor;
+public course - the course page names its authors to every visitor;
 anonymous visitors see active authors only.
  */
 export const listContributors = async (
@@ -2369,7 +2369,7 @@ export function useListContributors<TData = Awaited<ReturnType<typeof listContri
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
-public course — the course page names its authors to every visitor;
+public course - the course page names its authors to every visitor;
 anonymous visitors see active authors only.
  */
 
@@ -2454,7 +2454,7 @@ export function useListContributorsSuspense<
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Roster, creator first (course visibility; 404 otherwise). Public for a
-public course — the course page names its authors to every visitor;
+public course - the course page names its authors to every visitor;
 anonymous visitors see active authors only.
  */
 

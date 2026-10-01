@@ -16,7 +16,7 @@ import { MarkdownContent } from '@/features/content-markdown'
 import { RemediationSessionView } from '../api/use-remediation'
 import { RemediationResultShell } from './remediation-result-shell'
 
-/** `test.questions` of a session: the generator's practice questions (answers included — self-check). */
+/** `test.questions` of a session: the generator's practice questions (answers included - self-check). */
 const PracticeQuestion = zod.looseObject({
   prompt: zod.string(),
   choices: zod.array(zod.string()).default([]),
@@ -29,14 +29,14 @@ export const REMEDIATION_REQUIRED = 'REMEDIATION_REQUIRED'
 
 const mySessionsQueryKey = (userId: string) => ['remediation-sessions', 'mine', userId] as const
 
-/** The unpassed gate-mode session that blocks this learner on `activityId`, if any — the server's `active_remediation_gate`. */
+/** The unpassed gate-mode session that blocks this learner on `activityId`, if any - the server's `active_remediation_gate`. */
 function activeGateFor(sessions: RemediationSessionView[], activityId: string) {
   return sessions.find(s => s.activity_id === activityId && s.gate_mode && s.status !== 'passed') ?? null
 }
 
 /**
  * The signed-in learner's unpassed gate-mode session on `activityId`, `null` when none (or not loaded yet).
- * `poll` — the learner sits on a released result: a gate assigned meanwhile must show without a reload (BUG-158).
+ * `poll` - the learner sits on a released result: a gate assigned meanwhile must show without a reload (BUG-158).
  */
 export function useRemediationGate(activityId: string, { poll = false } = {}) {
   const { user } = useSession()
@@ -60,7 +60,7 @@ export function useRemediationGate(activityId: string, { poll = false } = {}) {
 /**
  * The learner's side of a gate-mode remediation (BUG-152): the blocked
  * reason, «Пройти исправление», the micro-lecture with its practice
- * questions, and completion — which lifts the gate server-side.
+ * questions, and completion - which lifts the gate server-side.
  *
  * The contract is a self-reported `score` (`POST …/complete {score}`): the
  * learner ticks the questions they got right after revealing the answer.

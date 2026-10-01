@@ -107,7 +107,7 @@ export const StudentSubmission = zod
             .number()
             .nullish()
             .describe(
-              "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+              "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
             ),
         }),
         zod.null(),

@@ -19,7 +19,7 @@ interface AssessmentOperationsPanelProps {
   detail: TeacherAssessmentDetailResponse
 }
 
-// One decimal, locale separators («68,8 %» in ru) — same as the summary tiles.
+// One decimal, locale separators («68,8 %» in ru) - same as the summary tiles.
 const oneDecimal = (locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
 
 function formatHours(value: number | null | undefined, emptyLabel: string, locale: string) {

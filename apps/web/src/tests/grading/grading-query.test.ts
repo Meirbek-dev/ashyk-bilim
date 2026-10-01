@@ -127,7 +127,7 @@ describe('courseGradebookQueryOptions', () => {
     expect(result?.activities[0]?.activity_uuid).toBe('activity_1')
     expect(result?.activities[0]?.name).toBe('Week 3 · Exam')
   })
-  // BUG-265: the walk used to stop silently at page 20 — page 21 held a pending cell.
+  // BUG-265: the walk used to stop silently at page 20 - page 21 held a pending cell.
   it('walks past page 20 to the last page and fails loudly on a cursor that never ends', async () => {
     const empty = { cells: [], users: [], assessments: [], file_submissions: [] }
     mocks.gradebook.mockReset()

@@ -81,7 +81,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       void onViolationRef.current?.(type, nextCount)
 
       // UX-087: the server zeroes any submit at or past the threshold
-      // (`violation_exceeded`), so there is nothing to forgive — the attempt
+      // (`violation_exceeded`), so there is nothing to forgive - the attempt
       // is forfeited and handed in at once, once.
       const threshold = antiCheat.violationThreshold
       if (threshold && nextCount >= threshold && !forfeitedRef.current) {

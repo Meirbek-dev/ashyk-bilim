@@ -147,7 +147,7 @@ const matchingToWire = {
   CUSTOM_CHECKER: 'custom_checker',
 } as const
 
-/** Inverse of {@link itemFromWire}'s body mapping — for `PATCH assessment-items/{id}` / `POST assessments/{id}/items`. */
+/** Inverse of {@link itemFromWire}'s body mapping - for `PATCH assessment-items/{id}` / `POST assessments/{id}/items`. */
 export function itemBodyToWire(body: ItemBody) {
   switch (body.kind) {
     case 'CHOICE': {

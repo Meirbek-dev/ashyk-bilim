@@ -1,5 +1,5 @@
 /**
- * Environment probes — infrastructure preconditions the stack may lack.
+ * Environment probes - infrastructure preconditions the stack may lack.
  *
  * Judge0 backs the code arena: without it `GET code/languages` answers 503 and
  * a code challenge can be neither authored (languages tab) nor attempted. The
@@ -10,7 +10,7 @@
 
 import { getEnv } from '../env'
 
-export const JUDGE0_SKIP_REASON = 'Judge0 not reachable (code/languages 503) — code arena needs the executor'
+export const JUDGE0_SKIP_REASON = 'Judge0 not reachable (code/languages 503) - code arena needs the executor'
 
 /** True when the executor answered `GET code/languages` with 2xx. */
 export async function probeJudge0(apiUrl: string, cookie: string): Promise<boolean> {

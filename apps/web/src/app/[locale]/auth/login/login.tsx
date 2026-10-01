@@ -84,7 +84,7 @@ function LoginClient() {
       case 'account_disabled':
         return t('accountDisabled')
       case 'rate_limited':
-        // UX-083: `Retry-After` is the live window TTL — say when to come back.
+        // UX-083: `Retry-After` is the live window TTL - say when to come back.
         return result.retryAfterSeconds
           ? t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(result.retryAfterSeconds / 60)) })
           : t('rateLimited')
@@ -195,7 +195,7 @@ function LoginClient() {
 
   const anyPending = isPending || isPendingGoogle
   // UX-083: `useActionState` keeps the previous result until the action
-  // settles — a submit after a validation miss must not show stale
+  // settles - a submit after a validation miss must not show stale
   // «required» under fields that are now filled.
   const fieldErrors: LoginState['fieldErrors'] = isPending ? {} : state.fieldErrors
   // The Google `?error=` banner belongs to the credentials step only: once

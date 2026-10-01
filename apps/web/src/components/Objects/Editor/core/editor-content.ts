@@ -146,7 +146,7 @@ function stripNode(node: JSONContent): JSONContent {
 }
 
 /**
- * Drops image/PDF/video blocks that never received an upload — a placeholder
+ * Drops image/PDF/video blocks that never received an upload - a placeholder
  * is editor chrome, not content, so autosave must not persist it (UX-058).
  * Anything that is not a Tiptap doc passes through untouched.
  */

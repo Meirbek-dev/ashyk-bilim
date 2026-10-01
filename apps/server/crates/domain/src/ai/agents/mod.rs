@@ -46,7 +46,7 @@ pub(crate) struct Admitted {
     pub context: String,
     /// The user turn, built around `context`.
     pub prompt: String,
-    /// The sources `context` lists — the only citable ones.
+    /// The sources `context` lists - the only citable ones.
     pub sources: Vec<ContextSource>,
     pub reservation: Reservation,
     _lease: ReservationLease,
@@ -133,7 +133,7 @@ pub(crate) fn run_user(run: &RunRow) -> Result<UserId> {
 
 impl AiService {
     /// Admit one request: cut `bundle` so the system prompt, `history` and
-    /// the user turn `prompt(context)` — exactly what is sent — fit the
+    /// the user turn `prompt(context)` - exactly what is sent - fit the
     /// per-request cap (only a turn too large on its own is refused), then
     /// reserve it (BUG-349). `run` ties the reservation to an existing run.
     pub(crate) async fn admit(
@@ -175,7 +175,7 @@ impl AiService {
     /// An unparsable reply gets one repair round (the invalid reply and the
     /// parse error go back to the model). It is a request of its own
     /// (BUG-349): admitted against the per-request cap and reserved against
-    /// the month like the first, and both calls are accounted — each is
+    /// the month like the first, and both calls are accounted - each is
     /// charged to the run as it returns, so a run that fails afterwards
     /// still pays for it.
     pub(crate) async fn structured_or_draft<T>(

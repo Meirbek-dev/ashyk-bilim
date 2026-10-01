@@ -25,7 +25,7 @@ export const SAVE_STATE_LABEL_KEY = {
 
 /**
  * `describeState` localizes the state for the aria-live text (BUG-209: the
- * raw enum — «Выбранный элемент: dirty» — was read out to screen readers).
+ * raw enum - «Выбранный элемент: dirty» - was read out to screen readers).
  */
 export function summarizeSaveLedger(
   entries: SaveLedgerEntry[],

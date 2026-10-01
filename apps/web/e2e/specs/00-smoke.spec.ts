@@ -1,5 +1,5 @@
 /**
- * SPEC: Smoke Tests — Quick sanity checks that the app is up and basic
+ * SPEC: Smoke Tests - Quick sanity checks that the app is up and basic
  * pages render without JS errors or missing network requests.
  *
  * These run first (no auth required) and catch catastrophic failures

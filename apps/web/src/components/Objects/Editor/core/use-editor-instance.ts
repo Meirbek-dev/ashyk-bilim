@@ -26,7 +26,7 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
 
   const presetDef = getEditorPresetDefinition(preset)
 
-  // Memoize extensions — only recompute when preset or activity identity changes
+  // Memoize extensions - only recompute when preset or activity identity changes
   const extensions = useMemo(
     () =>
       createEditorExtensions({

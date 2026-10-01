@@ -1,5 +1,5 @@
 // UX-056: the create dialog's validation / time-limit helpers and the studio
-// access panel are shared by quizzes and exams — their copy names neither.
+// access panel are shared by quizzes and exams - their copy names neither.
 import { describe, expect, it } from 'vite-plus/test'
 
 import en from '@/messages/en-US.json'

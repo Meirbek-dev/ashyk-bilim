@@ -1,5 +1,5 @@
 /**
- * Global teardown — runs once after the entire test suite.
+ * Global teardown - runs once after the entire test suite.
  *
  * We intentionally keep teardown minimal: test data (courses, submissions)
  * created during the suite is useful to inspect after failures.

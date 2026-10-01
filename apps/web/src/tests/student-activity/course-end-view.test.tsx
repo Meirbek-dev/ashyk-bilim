@@ -120,7 +120,7 @@ describe('CourseEndView (BUG-165)', () => {
     expect(screen.queryByText('40%')).toBeNull()
   })
 
-  // UX-133: not enrolled in a 0/0 course — no «Начать обучение» promise, the
+  // UX-133: not enrolled in a 0/0 course - no «Начать обучение» promise, the
   // landing it links to shows no CTA either.
   it('not enrolled + no live activities → no start CTA', () => {
     const s = state()

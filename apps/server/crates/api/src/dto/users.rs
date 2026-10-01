@@ -24,7 +24,7 @@ pub struct UserProfile {
     /// TOTP enrolled on the account (`false` where no session is involved,
     /// e.g. the registration answer).
     pub mfa_enabled: bool,
-    /// The account has a password to change (`false`: Google-only — no
+    /// The account has a password to change (`false`: Google-only - no
     /// password can be set through the API). UX-188.
     pub has_password: bool,
     /// A Google identity is linked; Google sign-in never asks for the TOTP
@@ -67,7 +67,7 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
     }
 }
 
-/// `GET /users/{username}`: the public card plus the bio (no email —
+/// `GET /users/{username}`: the public card plus the bio (no email -
 /// FINDINGS #16). Search keeps the lean `UserHit`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PublicProfile {
@@ -95,7 +95,7 @@ impl From<ab_db::identity::PublicProfileRow> for PublicProfile {
     }
 }
 
-/// Admin account creation (`POST /users`). No `Debug` — may carry a
+/// Admin account creation (`POST /users`). No `Debug` - may carry a
 /// password. Without one the account is IdP-only (Google sign-in).
 #[derive(Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -148,7 +148,7 @@ pub struct UpdateProfileRequest {
     pub theme: Option<Option<String>>,
 }
 
-/// Admin listing row (includes email + status — platform:read gated).
+/// Admin listing row (includes email + status - platform:read gated).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AdminUser {
     pub id: UserId,

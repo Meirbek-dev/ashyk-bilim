@@ -19,7 +19,7 @@ interface EditUserGroupProps {
     name: string
     description: string
   }
-  /** Called after a successful save — the dialog closes like the create one. */
+  /** Called after a successful save - the dialog closes like the create one. */
   onSaved: () => void
 }
 

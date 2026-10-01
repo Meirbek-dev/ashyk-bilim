@@ -110,7 +110,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const { vm: studio } = vm
   const previewHref = `/assessments/${studio.assessmentUuid}`
   const isArchived = studio.lifecycle === 'ARCHIVED'
-  // UX-124: archiving a live (published / scheduled) assessment cuts learners off — confirm first.
+  // UX-124: archiving a live (published / scheduled) assessment cuts learners off - confirm first.
   const isLive = studio.lifecycle === 'PUBLISHED' || studio.lifecycle === 'SCHEDULED'
   // «Архивировать» from any live state; «Восстановить» (→ draft) once archived (BUG-171).
   const setLifecycle = (to: 'ARCHIVED' | 'DRAFT') => {

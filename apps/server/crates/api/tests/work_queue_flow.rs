@@ -587,7 +587,7 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
 
 /// UX-046: a `pending` attempt (manual items in an auto-graded quiz) is
 /// teacher work in any grading mode. BUG-127: only roster members who may
-/// grade (creator, maintainer, contributor) get it — a reporter reads the
+/// grade (creator, maintainer, contributor) get it - a reporter reads the
 /// course but has no review access, so its teacher queue stays empty.
 #[sqlx::test(migrations = "../../migrations")]
 async fn pending_manual_items_reach_graders_only(pool: PgPool) {
@@ -628,7 +628,7 @@ async fn pending_manual_items_reach_graders_only(pool: PgPool) {
     assert_eq!(queue(&app, &contrib, "?role=teacher").await["total"], 1);
 }
 
-/// BUG-299: the learner queue lists member courses only — a leaver, or a
+/// BUG-299: the learner queue lists member courses only - a leaver, or a
 /// learner now on the course's staff, sees no work there; leaving the
 /// staff brings it back.
 #[sqlx::test(migrations = "../../migrations")]
@@ -670,7 +670,7 @@ async fn learner_queue_follows_membership(pool: PgPool) {
 }
 
 /// BUG-309: a leaver's or a staffed learner's pending work stays in the
-/// teacher queue (pass 23) — their row is never re-projected, so the queue
+/// teacher queue (pass 23) - their row is never re-projected, so the queue
 /// reads the attempts: a saved grade moves it to release, publishing (or a
 /// published file grade) takes it off.
 #[sqlx::test(migrations = "../../migrations")]

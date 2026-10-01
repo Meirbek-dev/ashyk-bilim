@@ -96,7 +96,7 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
             : t('rateLimitedRetry', { minutes: Math.max(1, Math.ceil(retryAfter / 60)) })
       }
 
-      // UX-292/293: the generic 422 copy says «check the highlighted fields» — with no form to
+      // UX-292/293: the generic 422 copy says «check the highlighted fields» - with no form to
       // highlight them in, the caller's localized fallback names what failed instead.
       const bound = Boolean(options.setError) && processed.fieldErrors.some(err => err.field)
       if (processed.code === 'validation-failed' && !bound && options.fallback !== undefined) {
@@ -131,7 +131,7 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
     ): ProcessedError => {
       const options = normalizeOptions(setErrorOrOptions, customFallback)
       const processed = handleApiError(error, options)
-      // Field errors bound inline are the message — a second toast repeats it and outlives a
+      // Field errors bound inline are the message - a second toast repeats it and outlives a
       // later successful save (pass 28, UX-244).
       if (options.setError && processed.fieldErrors.some(err => err.field)) {
         if (options.toastId !== undefined) toast.dismiss(options.toastId)

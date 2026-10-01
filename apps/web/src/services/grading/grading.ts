@@ -71,7 +71,7 @@ export async function publishAssessmentGrades(assessmentUuid: string): Promise<B
 }
 
 /**
- * The server's per-assessment CSV (UTF-8 + BOM, header and status words in `locale` — UX-105).
+ * The server's per-assessment CSV (UTF-8 + BOM, header and status words in `locale` - UX-105).
  * Returned as bytes: `Response.text()` strips the BOM (UX-113).
  */
 export async function exportGradesCSV(assessmentUuid: string, locale: string): Promise<Blob> {

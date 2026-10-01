@@ -4,7 +4,7 @@ import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavaila
 
 /**
  * The course landing's video thumbnail. UX-257: a migrated course whose video
- * object is gone from storage showed a dead black player at 0:00 — the same
+ * object is gone from storage showed a dead black player at 0:00 - the same
  * «Видео недоступно» state as a hosted-video activity (UX-221) replaces it.
  */
 export default function CourseThumbnailVideo({ src }: { src: string }) {

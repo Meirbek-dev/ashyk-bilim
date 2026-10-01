@@ -241,7 +241,7 @@ pub async fn set_user_status(
 /// Public profile card by username (legacy `GET /users/username/{username}`).
 ///
 /// Id, username, display name, bio, avatar and the profile builder sections
-/// — readable anonymously, active users only. The profile page resolves its subject here instead of
+/// - readable anonymously, active users only. The profile page resolves its subject here instead of
 /// scanning `/search`.
 #[utoipa::path(
     get,
@@ -265,7 +265,7 @@ pub async fn public_profile(
     Ok(Json(user.into()))
 }
 
-/// Public profile card by id — same card as `GET /users/{username}`.
+/// Public profile card by id - same card as `GET /users/{username}`.
 ///
 /// Editor user blocks store the user id; every reader of the page (learners,
 /// anonymous visitors of a public course) resolves the card here.

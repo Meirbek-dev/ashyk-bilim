@@ -3,7 +3,7 @@ import { DisabledReason } from '@/lib/api/generated/zod'
 
 /**
  * The `DisabledReason` a start/retry 403 names in its problem+json `detail`
- * («cannot start: REMEDIATION_REQUIRED») — the server's attempt-state moved
+ * («cannot start: REMEDIATION_REQUIRED») - the server's attempt-state moved
  * under the open page (a teacher assigned a gate, the last attempt was spent),
  * so the caller refetches it instead of toasting «no permission» (BUG-158).
  */

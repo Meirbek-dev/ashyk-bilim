@@ -116,7 +116,7 @@ impl CodeRunsService {
         Ok(())
     }
 
-    /// The item, its assessment and whether the caller is its author —
+    /// The item, its assessment and whether the caller is its author -
     /// submit access to the assessment (404 unknown/invisible).
     async fn runnable(
         &self,

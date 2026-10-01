@@ -234,7 +234,7 @@ pub struct AnalyticsContext {
     pub users: HashMap<UserId, UserInfoRow>,
     pub usergroup_names: BTreeMap<UsergroupId, String>,
     pub cohorts_by_user: HashMap<UserId, BTreeSet<UsergroupId>>,
-    /// (course, editor) pairs — creator + active non-reporter co-authors
+    /// (course, editor) pairs - creator + active non-reporter co-authors
     /// (the teacher scope rule). Staff are never members: `trail_runs`
     /// excludes them (BUG-145, BUG-287).
     pub course_authors: HashSet<SnapshotKey>,
@@ -279,7 +279,7 @@ impl AnalyticsContext {
         user_ids.extend(certificates.iter().map(|r| r.user_id));
         user_ids.extend(courses.iter().filter_map(|c| c.creator_id));
         let member_ids: Vec<UserId> = user_ids.iter().copied().collect();
-        // BUG-338: every id a report names needs its row — co-authors head
+        // BUG-338: every id a report names needs its row - co-authors head
         // the admin workload (UX-183) without being creators or learners.
         // Cohort memberships stay those of learners and creators.
         user_ids.extend(course_authors.iter().map(|(_, u)| *u));
@@ -405,8 +405,8 @@ impl AnalyticsContext {
     }
 
     /// The one learner set every learner figure counts (UX-150, BUG-250,
-    /// BUG-266/267): a current member of the course — a trail run, what
-    /// `learner-state.enrolled` reads — inside the cohort filter. Progress
+    /// BUG-266/267): a current member of the course - a trail run, what
+    /// `learner-state.enrolled` reads - inside the cohort filter. Progress
     /// rows, submissions and certificates survive a leave; read them through
     /// the `member_*` views so numerators and denominators share this set.
     pub fn counted<'a>(
@@ -538,7 +538,7 @@ pub const fn is_reviewable(s: &SubmissionInfoRow) -> bool {
     matches!(s.status, SubmissionStatus::Pending)
 }
 
-/// The released score — the grade of record (BUG-194): a returned, pending
+/// The released score - the grade of record (BUG-194): a returned, pending
 /// or saved-unreleased attempt never scores analytics, as in the gradebook
 /// and the learner's projection (`GradeKey`).
 #[must_use]
@@ -644,7 +644,7 @@ pub fn build_activity_events(
 
 /// Legacy `progress_snapshots`: one row per enrolled (course, learner).
 ///
-/// Enrolment is the trail run — the same predicate `learner-state.enrolled`
+/// Enrolment is the trail run - the same predicate `learner-state.enrolled`
 /// reads (DECISIONS «Leaving a course», UX-150): projection rows and
 /// certificates survive a leave, so they carry data but not membership.
 #[must_use]

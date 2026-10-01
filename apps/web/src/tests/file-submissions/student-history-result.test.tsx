@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-129: with a new draft open, the published attempt 1 lives only in the
-// history — its row opens the result (score + teacher feedback).
+// history - its row opens the result (score + teacher feedback).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'

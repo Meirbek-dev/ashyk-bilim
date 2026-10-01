@@ -40,7 +40,7 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
     let teacher = instructor(&app, "teacher").await;
     let id = create_course(&app, &teacher, "Rust 101").await;
 
-    // Creator sees their private course; a stranger gets 404 (not 403 — no
+    // Creator sees their private course; a stranger gets 404 (not 403 - no
     // existence leak).
     let own = app.get_as(&teacher, &format!("/api/v2/courses/{id}")).await;
     assert_eq!(own.status, StatusCode::OK);
@@ -623,7 +623,7 @@ async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
         .await;
     assert_eq!(searched.json()["items"].as_array().unwrap().len(), 1);
     assert_eq!(searched.json()["summary"]["total"], 3);
-    // UX-143: `q` is a literal substring — `%` / `_` are not wildcards.
+    // UX-143: `q` is a literal substring - `%` / `_` are not wildcards.
     let wildcard = app
         .get_as(&teacher, "/api/v2/courses?mine=true&q=%25")
         .await;
@@ -808,7 +808,7 @@ async fn invisible_course_writes_are_404s_and_delete_needs_the_grant(pool: PgPoo
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
 }
 
-/// BUG-255: two concurrent thumbnail PATCHes — only the thumbnail that won
+/// BUG-255: two concurrent thumbnail PATCHes - only the thumbnail that won
 /// stays referenced.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
@@ -861,7 +861,7 @@ async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
 }
 
 /// BUG-261: a thumbnail PATCH locks the course row before the upload rows
-/// (the order a course delete takes) — PATCH ∥ DELETE and PATCH ∥ PATCH never
+/// (the order a course delete takes) - PATCH ∥ DELETE and PATCH ∥ PATCH never
 /// deadlock (40P01 → 500).
 #[sqlx::test(migrations = "../../migrations")]
 async fn thumbnail_patch_races_do_not_deadlock(pool: PgPool) {

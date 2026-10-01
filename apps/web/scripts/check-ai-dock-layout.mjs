@@ -2,7 +2,7 @@
 // renders the floating AI panel must go through `ActivityAIDockLayout`, which applies
 // the matching content-spacing style by construction. A host that imports
 // `ActivityAIPanel` directly can render the panel without ever reserving space for it,
-// which silently regresses back to "the AI panel covers the page content" — the exact
+// which silently regresses back to "the AI panel covers the page content" - the exact
 // bug plans/ai-chat-ux-roast-and-tanstack-ai-plan.md was written to permanently kill.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'

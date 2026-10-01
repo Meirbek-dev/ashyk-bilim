@@ -26,7 +26,7 @@ async fn six_system_roles_are_seeded(pool: PgPool) {
     }
 }
 
-/// Every seeded grant string must parse through the typed permission engine —
+/// Every seeded grant string must parse through the typed permission engine -
 /// the DB seeds and the Rust registry cannot drift apart.
 #[sqlx::test(migrations = "../../migrations")]
 async fn all_seeded_grants_parse(pool: PgPool) {

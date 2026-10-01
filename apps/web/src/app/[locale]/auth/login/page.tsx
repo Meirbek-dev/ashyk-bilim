@@ -33,7 +33,7 @@ function Login(props: LoginProps) {
 }
 
 async function LoginGate({ params, searchParams }: LoginProps) {
-  // Already signed in: the form is pointless — land where a fresh login would.
+  // Already signed in: the form is pointless - land where a fresh login would.
   if (await getSession()) {
     const [{ locale }, { returnTo }] = await Promise.all([params, searchParams])
     redirect(getPostAuthRedirect(Array.isArray(returnTo) ? returnTo[0] : returnTo, locale))

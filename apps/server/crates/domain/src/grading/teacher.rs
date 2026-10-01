@@ -44,7 +44,7 @@ pub const MAX_GRADEBOOK_PAGE: i64 = 500;
 /// Discrimination index needs at least this many graded attempts.
 const MIN_DISCRIMINATION_SAMPLE: usize = 6;
 /// 409 for grading or analysing work the learner has not handed in yet
-/// (`ai::subject` uses the same words — one rule, BUG-198).
+/// (`ai::subject` uses the same words - one rule, BUG-198).
 pub(crate) const OPEN_DRAFT: &str = "an open draft cannot be graded";
 /// 403 `grade-own-attempt` for a grader acting on their own counted attempt
 /// (BUG-286: grading; BUG-288: overrides, extensions, publish-all skip it).
@@ -177,7 +177,7 @@ pub struct TeacherSubmission {
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
     /// The latest entry's raw score when it is a manual override (differs
-    /// from the item-derived one) — the grade form reopens with the
+    /// from the item-derived one) - the grade form reopens with the
     /// override switch on (BUG-174).
     pub score_override: Option<f64>,
     pub is_late: bool,
@@ -189,7 +189,7 @@ pub struct TeacherSubmission {
     pub started_at: Option<i64>,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
-    /// Teacher optimistic lock — send back as `If-Match`.
+    /// Teacher optimistic lock - send back as `If-Match`.
     pub version: i64,
     pub content_version: i32,
     pub policy_version: i32,
@@ -280,11 +280,11 @@ pub struct PublishSummary {
     pub published_count: i64,
     pub already_published_count: i64,
     /// Rows held back: `pending` attempts plus graded ones whose manual
-    /// item is still unscored (BUG-197 / BUG-202) — the same count as
+    /// item is still unscored (BUG-197 / BUG-202) - the same count as
     /// `stats.needs_grading`.
     pub needs_grading_count: i64,
     /// Rows a grade save or return changed while the release ran (BUG-226
-    /// version guard) — left as they are; run the release again for them —
+    /// version guard) - left as they are; run the release again for them -
     /// and the caller's own attempts, never theirs to release (BUG-288).
     pub skipped_count: i64,
 }
@@ -303,7 +303,7 @@ pub struct GradebookCell {
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
-    /// BUG-175: the newest attempt still awaiting grading, if any — the
+    /// BUG-175: the newest attempt still awaiting grading, if any - the
     /// grade of record may be an older published one.
     pub pending_attempt: Option<i32>,
     /// Its id (submission or file attempt), for the «pending» deep link (UX-123).
@@ -588,7 +588,7 @@ fn summary(row: ab_db::identity::UserSummaryRow) -> UserSummary {
     }
 }
 
-/// Batch-load user summaries keyed by id (unknown ids get a placeholder —
+/// Batch-load user summaries keyed by id (unknown ids get a placeholder -
 /// a deleted account must not hide a submission from the grader).
 async fn users_by_id(pool: &PgPool, ids: &[UserId]) -> Result<HashMap<UserId, UserSummary>> {
     let rows = ab_db::identity::list_user_summaries(pool, ids).await?;
@@ -721,9 +721,9 @@ impl GradingService {
     }
 
     /// A submission the actor may grade. Unknown and not-gradable answer
-    /// the same 404: the id is the secret (UX-134 — a 403 confirmed
+    /// the same 404: the id is the secret (UX-134 - a 403 confirmed
     /// another learner's submission ids). An open draft is 409 for the
-    /// review read and the save alike (BUG-198) — after the access check,
+    /// review read and the save alike (BUG-198) - after the access check,
     /// so a stranger never learns which ids are drafts (BUG-202). A
     /// grader's own counted attempt is 403 (BUG-286).
     async fn gradable_submission(
@@ -859,7 +859,7 @@ impl GradingService {
         })
     }
 
-    /// Per-item statistics over the grade-of-record attempts — released
+    /// Per-item statistics over the grade-of-record attempts - released
     /// scores only, the analytics drilldown's population (`GradeKey::quiz`,
     /// UX-144); an item still awaiting manual review has no outcome, as in
     /// `analytics::assessments::item_correct`. Legacy `get_item_analytics`.
@@ -1123,7 +1123,7 @@ impl GradingService {
             return Err(Error::not_found("submission"));
         }
         // Feedback is released with the grade as a whole, whichever save
-        // wrote it — the grader may comment first and publish later.
+        // wrote it - the grader may comment first and publish later.
         let released = matches!(
             release_state(&self.pool, &row).await?,
             ReleaseState::Visible | ReleaseState::ReturnedForRevision
@@ -1196,7 +1196,7 @@ impl GradingService {
         }
 
         let items = self.items(assessment.id).await?;
-        // UX-161: one grade per item — a repeated id (501 entries were
+        // UX-161: one grade per item - a repeated id (501 entries were
         // accepted, last one winning, one feedback row each) is refused,
         // which also caps the list at the assessment's item count.
         let mut seen = HashSet::new();
@@ -1220,7 +1220,7 @@ impl GradingService {
             };
             // Item scores arrive on the item's own scale; anything above it would
             // be multiplied into the breakdown (a 33.33 on a 1-point item became
-            // 1110.89 once) — refuse it at the boundary. BUG-225: a 0-max item
+            // 1110.89 once) - refuse it at the boundary. BUG-225: a 0-max item
             // (unpublished, `max_score` set to 0) accepts only 0.
             if let Some(score) = grade.score
                 && !(0.0..=item.max_score).contains(&score)
@@ -1247,7 +1247,7 @@ impl GradingService {
         let feedback = breakdown.feedback.clone();
 
         // BUG-138 / BUG-174: the stored raw survives any save that does not
-        // name a new one — a manual override (raw ≠ item-derived) is never
+        // name a new one - a manual override (raw ≠ item-derived) is never
         // silently replaced by an item recomputation, an integrity-annulled
         // attempt keeps its 0, and re-sending the penalised final would
         // penalise twice. Dropping an override takes an explicit `null`.
@@ -1259,7 +1259,7 @@ impl GradingService {
                 .map(|e| e.raw_score),
         };
         // BUG-205: an explicit `final_score` is the score of record even when
-        // it equals the derived one — the intent is stored on the breakdown
+        // it equals the derived one - the intent is stored on the breakdown
         // (`score_override`), never inferred from equality.
         let (raw, overridden) = match input.final_score {
             Some(Some(score)) => {
@@ -1273,7 +1273,7 @@ impl GradingService {
                 (0.0, true)
             }
             // BUG-215: the annulled 0 (or the override typed since) is the
-            // score of record — the flag is (re)written so `unscored()` and
+            // score of record - the flag is (re)written so `unscored()` and
             // the view agree, rows annulled before the flag included.
             None if annulled => {
                 let raw = breakdown.score_override.or(stored_raw).unwrap_or(0.0);
@@ -1292,8 +1292,8 @@ impl GradingService {
                 None => (derived_raw(&breakdown), false),
             },
         };
-        // BUG-197: without a score of record — an item still awaiting manual
-        // review and no override — a save is a draft: feedback and partial
+        // BUG-197: without a score of record - an item still awaiting manual
+        // review and no override - a save is a draft: feedback and partial
         // scores are stored, the attempt stays `pending` (in the queue, out of
         // the bulk release); publishing it is refused.
         let unscored = breakdown.needs_manual_review && !overridden;
@@ -1310,7 +1310,7 @@ impl GradingService {
             row.late_penalty_pct,
         );
         // BUG-202 / BUG-206: no score of record while the attempt stays
-        // pending — neither the row nor its ledger entry carries a final.
+        // pending - neither the row nor its ledger entry carries a final.
         let score_of_record = (target != SubmissionStatus::Pending).then_some(final_score);
         let effective = breakdown.to_value();
         // The row update and its ledger (entry, item feedback, audit) land
@@ -1464,7 +1464,7 @@ impl GradingService {
         let mut already = 0;
         let mut skipped = 0;
         // BUG-202: a feedback-only save keeps the attempt `pending` (not
-        // releasable) — the UI still has to warn that grading is owed.
+        // releasable) - the UI still has to warn that grading is owed.
         let mut needs_grading = ab_db::submissions::stats(&self.pool, assessment_id)
             .await?
             .pending;
@@ -1505,7 +1505,7 @@ impl GradingService {
                     ),
                 };
             // BUG-226/227: the entry and the flip land together, and only
-            // on the row as snapshotted — a save or return that committed
+            // on the row as snapshotted - a save or return that committed
             // since keeps its version and the row is skipped.
             let mut tx = self.pool.begin().await?;
             ab_db::submissions::insert_grading_entry(
@@ -1579,8 +1579,8 @@ impl GradingService {
     // ── Course gradebook ────────────────────────────────────────────────
 
     /// Grade-of-record attempt per (learner, activity) of a course (the
-    /// projector's attempt, BUG-173) — assessment submissions and
-    /// file-submission attempts alike — keyset on the learner: a page is
+    /// projector's attempt, BUG-173) - assessment submissions and
+    /// file-submission attempts alike - keyset on the learner: a page is
     /// `limit` whole member rows (BUG-265); every member is listed, a
     /// leaver is not (UX-169).
     pub async fn gradebook(
@@ -1808,7 +1808,7 @@ fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
     round2(breakdown.item_percent())
 }
 
-/// BUG-197: no score of record yet — an item still awaits its manual score
+/// BUG-197: no score of record yet - an item still awaits its manual score
 /// and no override is stored. Such a row is held back from the bulk
 /// release, as a single publish is.
 fn unscored(row: &SubmissionRow, breakdown: &GradingBreakdown, stored_raw: Option<f64>) -> bool {
@@ -1819,8 +1819,8 @@ fn is_annulled(row: &SubmissionRow) -> bool {
     row.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation)
 }
 
-/// The stored override (BUG-205), or — for rows written before the flag
-/// existed — a latest ledger raw that differs from the item-derived one
+/// The stored override (BUG-205), or - for rows written before the flag
+/// existed - a latest ledger raw that differs from the item-derived one
 /// (`differs_from_items`, BUG-329); an integrity-annulled attempt's 0
 /// counts as one (BUG-215).
 fn override_of(
@@ -1864,7 +1864,7 @@ fn merge_item_grades(
                     Some(i) if i.max_score > 0.0 && existing.max_score > 0.0 => {
                         round2(score / i.max_score * existing.max_score)
                     }
-                    // BUG-225: a 0-max item or a 0 share earns nothing — the
+                    // BUG-225: a 0-max item or a 0 share earns nothing - the
                     // raw score used to land here (500 on a 43.48 share → 556 %).
                     _ => 0.0,
                 };
@@ -1878,7 +1878,7 @@ fn merge_item_grades(
             }
             continue;
         }
-        // On the item's own scale for now — the reweighting below turns the
+        // On the item's own scale for now - the reweighting below turns the
         // whole set into shares of 100 (BUG-217).
         pushed = true;
         breakdown.items.push(GradedItem {
@@ -1904,7 +1904,7 @@ fn merge_item_grades(
 }
 
 /// BUG-217: an item graded after the auto-grader ran (added between an
-/// unpublish and a republish) joins the set — every breakdown item's
+/// unpublish and a republish) joins the set - every breakdown item's
 /// `max_score` becomes its share of 100 over the set's assessment max
 /// scores (`grader::item_points`), the earned ratio carried along.
 /// Items no longer on the assessment keep their stored share.

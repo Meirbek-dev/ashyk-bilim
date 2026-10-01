@@ -107,7 +107,7 @@ pub async fn lock_in_key_order(conn: &mut sqlx::PgConnection, ids: &[Uuid]) -> R
     Ok(())
 }
 
-/// [`release_reference`] addressed by storage key (keys are UNIQUE) — used
+/// [`release_reference`] addressed by storage key (keys are UNIQUE) - used
 /// when only the key was persisted, e.g. replacing platform branding.
 pub async fn release_reference_by_key<'e>(
     db: impl sqlx::PgExecutor<'e>,

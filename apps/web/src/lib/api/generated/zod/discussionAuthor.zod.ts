@@ -14,7 +14,7 @@ export const DiscussionAuthor = zod
     id: zod.uuid(),
     username: zod.string(),
   })
-  .describe("The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.")
+  .describe("The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.")
 
 export type DiscussionAuthor = zod.input<typeof DiscussionAuthor>
 export type DiscussionAuthorOutput = zod.output<typeof DiscussionAuthor>

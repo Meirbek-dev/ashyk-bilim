@@ -124,7 +124,7 @@ async fn late_release_never_erases_another_connection() {
     drop(new);
 }
 
-/// BUG-343 (AUD-006): rejected attempts must not extend leaked slots — each
+/// BUG-343 (AUD-006): rejected attempts must not extend leaked slots - each
 /// lease keeps its own expiry, and expired leases free their slots.
 #[tokio::test]
 async fn rejected_attempts_do_not_keep_leaked_slots_alive() {

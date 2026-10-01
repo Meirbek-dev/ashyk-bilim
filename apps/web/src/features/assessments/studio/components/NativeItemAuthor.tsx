@@ -254,7 +254,7 @@ export function NativeItemAuthor({
       } catch (error) {
         setLocalOrderedUuids(previousOrder)
         toastApiError(error, { fallback: t('reorderFailed') })
-        // UX-293: a refused move means this tab's list is stale — refetch it, or every later move 422s.
+        // UX-293: a refused move means this tab's list is stale - refetch it, or every later move 422s.
         await refresh()
       }
     },
@@ -310,7 +310,7 @@ export function NativeItemAuthor({
           toast.error(tStudio('lifecycleConflict', { state: tStudio(`lifecycle.${lifecycle.toLowerCase()}`) }))
           return
         }
-        // UX-128: `schedule.after_due_at` belongs on the date field — the
+        // UX-128: `schedule.after_due_at` belongs on the date field - the
         // publish tab shows it there and keeps the picked date.
         if (isApiError(error) && error.fieldErrors.some(e => e.code === 'schedule.after_due_at')) throw error
         toastApiError(error, { fallback: tStudio('updateLifecycleFailed') })
@@ -440,7 +440,7 @@ export function NativeItemAuthor({
     </>
   )
 
-  // BUG-171: a scheduled assessment is read-only on the server — say so
+  // BUG-171: a scheduled assessment is read-only on the server - say so
   // instead of letting every autosave 409.
   const banner =
     assessment.lifecycle === 'SCHEDULED' ? (

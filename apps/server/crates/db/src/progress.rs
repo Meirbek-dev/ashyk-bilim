@@ -149,7 +149,7 @@ pub async fn get_activity_progress<'e>(
 }
 
 /// One learner's rows across a course: every published activity (once
-/// [`ensure_course_rows`] ran) — rows of drafts and since-unpublished
+/// [`ensure_course_rows`] ran) - rows of drafts and since-unpublished
 /// activities are excluded so totals follow the published set.
 pub async fn list_course_progress_rows<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -211,7 +211,7 @@ pub async fn ensure_course_rows<'e>(
 }
 
 /// BUG-318: the course's assessments restricted to an allowlist `user_id`
-/// is not on (`assessments::access_allows`, course-wide) — not theirs to
+/// is not on (`assessments::access_allows`, course-wide) - not theirs to
 /// take, so not in their required set.
 pub async fn restricted_activity_ids<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -353,7 +353,7 @@ pub async fn get_course_progress<'e>(
     Ok(row)
 }
 
-/// The course's members — learners with a trail run.
+/// The course's members - learners with a trail run.
 ///
 /// The same predicate [`has_trail_run`] applies per learner (BUG-260). Course-wide
 /// recalculations and backfills cover members only: a leaver's (or a staff
@@ -482,7 +482,7 @@ pub async fn get_trail_run<'e>(
 }
 
 /// Whether the learner is a member: a run for the course, and not one of
-/// its staff — a learner who joined the staff keeps a run but is no member
+/// its staff - a learner who joined the staff keeps a run but is no member
 /// (BUG-288).
 pub async fn has_trail_run<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -581,7 +581,7 @@ pub async fn ensure_trail_run(
 ///
 /// `pg_try_advisory_xact_lock` on a fresh transaction: `Some(tx)` holds
 /// the lock until commit or drop, `None` means another mark/leave owns it
-/// and the connection is already back in the pool — a waiter never
+/// and the connection is already back in the pool - a waiter never
 /// parks a connection (BUG-220). The caller does every write through the
 /// returned transaction, so the run, the step and the projection land or
 /// vanish together (BUG-221).
@@ -655,7 +655,7 @@ pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tr
 }
 
 /// When `user_id` completed `activity_id` explicitly (a complete trail step),
-/// if they did — the backfill source for non-submission activities.
+/// if they did - the backfill source for non-submission activities.
 pub async fn completed_step_at(
     conn: &mut PgConnection,
     activity_id: ActivityId,

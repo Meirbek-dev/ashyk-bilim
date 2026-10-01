@@ -27,7 +27,7 @@ async fn due_schedule_enqueues_and_advances(pool: PgPool) {
     .await
     .unwrap();
 
-    // Not due yet — tick is a no-op.
+    // Not due yet - tick is a no-op.
     assert_eq!(schedule::tick(&pool).await.unwrap(), 0);
 
     make_due(&pool, "assessment:auto-publish").await;

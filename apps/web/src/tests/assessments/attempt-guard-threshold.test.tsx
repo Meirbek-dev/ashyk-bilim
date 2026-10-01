@@ -12,7 +12,7 @@ vi.mock('next-intl', () => ({
 }))
 
 // UX-087: the server zeroes any submit at or past the threshold, so the guard
-// forfeits and hands in at once — no 10 s «refocus to resume» grace.
+// forfeits and hands in at once - no 10 s «refocus to resume» grace.
 describe('useAttemptGuard at the violation threshold', () => {
   beforeEach(() => {
     vi.useFakeTimers()

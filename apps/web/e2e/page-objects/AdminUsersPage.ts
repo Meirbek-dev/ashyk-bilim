@@ -49,14 +49,14 @@ export class AdminUsersPage {
     const dialog = this.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    // Select user — the user select is typically the first combo in the dialog
+    // Select user - the user select is typically the first combo in the dialog
     const userCombo = dialog.getByRole('combobox').first()
     await userCombo.click()
     // Type to search
     const userInput = dialog.locator('input[type="search"], input[role="combobox"]').first()
     await userInput.fill(userEmail)
     // UX-246: an option is labelled «Name (email)». Match that exact, escaped
-    // email — a bare `new RegExp(email)` also matched proxy-teacher@ for
+    // email - a bare `new RegExp(email)` also matched proxy-teacher@ for
     // teacher@. The option list is the popup of the dialog's own combobox
     // (portalled, so not a DOM child of the dialog).
     await this.page

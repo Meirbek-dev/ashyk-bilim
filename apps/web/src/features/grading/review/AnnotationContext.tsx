@@ -69,6 +69,6 @@ export function useAnnotations() {
 /** Format the annotations for an item into a human-readable feedback block. */
 export function formatAnnotationsAsFeedback(annotations: TextAnnotation[]): string {
   if (annotations.length === 0) return ''
-  const lines = annotations.map((a, i) => `[${i + 1}] "${a.selectedText}" — ${a.comment}`)
+  const lines = annotations.map((a, i) => `[${i + 1}] "${a.selectedText}" - ${a.comment}`)
   return `\n\n--- Inline notes ---\n${lines.join('\n')}`
 }

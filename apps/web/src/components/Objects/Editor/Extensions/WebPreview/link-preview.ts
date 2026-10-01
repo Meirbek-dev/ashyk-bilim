@@ -45,7 +45,7 @@ export function previewToAttrs(url: string, preview: LinkPreview | null): Partia
 function urlPreviewQueryOptions(url: string) {
   return queryOptions({
     queryKey: queryKeys.activities.linkPreview(url),
-    // A 502 means «the page did not answer» — that IS the preview result; never retry the probe.
+    // A 502 means «the page did not answer» - that IS the preview result; never retry the probe.
     queryFn: () => linkPreview({ url }, { retry: 0 }),
     refetchOnWindowFocus: false,
     retry: false,
@@ -54,7 +54,7 @@ function urlPreviewQueryOptions(url: string) {
 }
 
 /**
- * One `GET utils/link-preview` per confirmed URL — only when the author types
+ * One `GET utils/link-preview` per confirmed URL - only when the author types
  * it (insert dialog, edit dialog), never on load: a stored block already carries
  * its metadata or the fallback (BUG-107 / UX-025). A failure is toasted here,
  * inside the mutation, so an autosave remount of the caller cannot swallow it,

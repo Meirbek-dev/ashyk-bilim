@@ -148,7 +148,7 @@ impl AiService {
         self.courses.get(actor, course_id).await
     }
 
-    // UX-311: each write route's access gate on its own — the handlers
+    // UX-311: each write route's access gate on its own - the handlers
     // check it before they read the body, and the entry points still do.
 
     /// A course the caller can see (Q&A, study companion).

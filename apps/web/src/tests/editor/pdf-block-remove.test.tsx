@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /**
- * BUG-263: removing an upload-backed block only drops the node — an undo can
+ * BUG-263: removing an upload-backed block only drops the node - an undo can
  * still restore it, so nothing is released on the click (the next save that
  * no longer shows the block releases its upload server-side).
  */

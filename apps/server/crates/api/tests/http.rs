@@ -60,7 +60,7 @@ async fn wrong_verbs_answer_problem_json(pool: PgPool) {
     assert_eq!(res.json()["status"], 405);
 }
 
-/// The problem+json body carries the same correlation id as the header —
+/// The problem+json body carries the same correlation id as the header -
 /// a user copying the JSON gets something support can grep for.
 #[sqlx::test(migrations = "../../migrations")]
 async fn problem_bodies_carry_the_request_id(pool: PgPool) {
@@ -176,7 +176,7 @@ async fn cross_site_mutations_are_rejected(pool: PgPool) {
                 .unwrap(),
         )
         .await;
-    // Rejected by the guard before routing — 403, not 404.
+    // Rejected by the guard before routing - 403, not 404.
     assert_eq!(res.status, StatusCode::FORBIDDEN);
     assert_eq!(res.json()["code"], "csrf-rejected");
 }
@@ -218,7 +218,7 @@ async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
 
 /// The web client is served from a different origin than the API in split
 /// deployments (and always in local dev). It stamps `traceparent` on every
-/// request and `If-Match` on locked writes, and reads `ETag` back — a preflight
+/// request and `If-Match` on locked writes, and reads `ETag` back - a preflight
 /// that omits any of those silently breaks every browser-side call.
 #[sqlx::test(migrations = "../../migrations")]
 async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
@@ -259,7 +259,7 @@ async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
 /// `Access-Control-Expose-Headers` rides the actual response, not the
 /// preflight. Without it a cross-origin caller cannot read `ETag` (the new
 /// version after a locked write), `x-request-id` (shown in error toasts) or
-/// `Content-Disposition` (the CSV export's filename — UX-122).
+/// `Content-Disposition` (the CSV export's filename - UX-122).
 #[sqlx::test(migrations = "../../migrations")]
 async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {

@@ -31,7 +31,7 @@ pub async fn find_user_for_login(pool: &PgPool, login: &str) -> Result<Option<Au
     Ok(row)
 }
 
-/// The same row by id — for flows that already resolved the account
+/// The same row by id - for flows that already resolved the account
 /// (Google by `sub`: the email Google reports may have moved, BUG-253).
 pub async fn find_auth_user(pool: &PgPool, user_id: UserId) -> Result<Option<AuthUserRow>> {
     let row = sqlx::query_as!(
@@ -279,7 +279,7 @@ pub async fn assign_role(
 /// Remove a role and bump rbac_version. Returns the new version (`None` if
 /// the user does not exist).
 ///
-/// Runs in the caller's transaction — after the last-admin guard
+/// Runs in the caller's transaction - after the last-admin guard
 /// ([`count_other_active_role_holders`]) when the role is `admin` (UX-135).
 pub async fn unassign_role(
     conn: &mut sqlx::PgConnection,
@@ -418,7 +418,7 @@ pub async fn insert_auth_audit(
 /// Set or clear (`None`) the avatar; returns the key it replaced.
 ///
 /// The caller releases it in the same transaction (the
-/// `set_course_thumbnail` mechanics). BUG-255: the old key is read under the row lock — a
+/// `set_course_thumbnail` mechanics). BUG-255: the old key is read under the row lock - a
 /// `RETURNING (SELECT …)` reads the statement snapshot, so the second of two
 /// concurrent swaps got the key the first had already released.
 pub async fn set_avatar_key<'e>(
@@ -662,7 +662,7 @@ pub async fn user_status<'e>(
 }
 
 /// Active holders of `slug` other than `except` (the last-admin guard's
-/// "would anyone be left" count — the target's own status is irrelevant,
+/// "would anyone be left" count - the target's own status is irrelevant,
 /// BUG-144).
 ///
 /// Locks the role row for the rest of the caller's transaction (UX-135):

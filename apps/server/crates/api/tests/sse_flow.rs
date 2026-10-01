@@ -441,7 +441,7 @@ enum Revoke {
 
 /// BUG-320: a platform grader (RBAC grant, not on the roster) holding the
 /// course stream and a submission stream loses both at the next re-check
-/// once the grant is removed or the session logged out — the streams used
+/// once the grant is removed or the session logged out - the streams used
 /// to keep the connect-time actor and deliver the next `grade.published`.
 async fn platform_grader_streams_close(pool: PgPool, revoke: Revoke) {
     let app = TestApp::spawn(pool).await;

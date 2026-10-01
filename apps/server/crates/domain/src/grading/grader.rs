@@ -25,7 +25,7 @@ pub struct GraderPolicy {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AutoGrade {
-    /// 0..100 (never negative — the legacy could go below zero).
+    /// 0..100 (never negative - the legacy could go below zero).
     pub auto_score: f64,
     pub breakdown: GradingBreakdown,
 }
@@ -248,7 +248,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
         });
     }
     // BUG-169: one normalisation over the rounded breakdown (same formula as
-    // the teacher path) — summing per-item round2 gave 100.02 / 99.99 for
+    // the teacher path) - summing per-item round2 gave 100.02 / 99.99 for
     // 6 / 3 equal items, so `passing_score: 100` failed a perfect attempt.
     let auto_score = if possible > 0.0 {
         round2((earned / possible * 100.0).clamp(0.0, 100.0))

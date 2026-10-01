@@ -17,7 +17,7 @@ export function generateUUID(): string {
   ) {
     return crypto.randomUUID()
   }
-  // Minimal fallback (RFC 4122 v4 shape) — no external dependency needed.
+  // Minimal fallback (RFC 4122 v4 shape) - no external dependency needed.
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.floor(Math.random() * 16)
     const value = c === 'x' ? r : (r % 4) + 8

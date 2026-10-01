@@ -78,8 +78,8 @@ const cellStates: Record<SubmissionStatus, ActivityProgressCell['state']> = {
 
 /**
  * `GET courses/{id}/gradebook` carries the latest non-draft attempt per
- * (learner, graded activity) — assessment submissions and file-submission
- * attempts in one cell shape — plus both column lists.
+ * (learner, graded activity) - assessment submissions and file-submission
+ * attempts in one cell shape - plus both column lists.
  */
 /** The attempt a grader opens from a cell: the one awaiting grading when there is one (UX-123). */
 export function reviewTarget(cell: Pick<ActivityProgressCell, 'pending_attempt_id' | 'latest_submission_uuid'>) {
@@ -129,7 +129,7 @@ export function gradebookFromWire(
         teacher_action_required: c.status === 'pending' || c.status === 'graded' || c.pending_attempt != null,
         pending_attempt: c.pending_attempt ?? null,
         pending_attempt_id: c.pending_attempt_id ?? null,
-        // UX-146: scored-unreleased is owed a release, not a grade — counted and labelled apart.
+        // UX-146: scored-unreleased is owed a release, not a grade - counted and labelled apart.
         awaiting_release: (c.pending_attempt_status ?? c.status) === 'graded',
       }
     })

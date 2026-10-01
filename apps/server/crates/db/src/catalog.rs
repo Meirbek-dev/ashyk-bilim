@@ -1,5 +1,5 @@
 //! Catalog queries (compile-checked). Course listings paginate by keyset on
-//! `id` — UUIDv7 is time-ordered, so id-descending is newest-first and the
+//! `id` - UUIDv7 is time-ordered, so id-descending is newest-first and the
 //! cursor is simply the last id seen (ARCHITECTURE §6).
 
 use ab_core::Result;
@@ -140,7 +140,7 @@ pub struct CourseFilter<'a> {
 
 /// One page of the catalogue as `viewer` sees it.
 ///
-/// Visible: SQL `course_visible` (BUG-190) — public courses, their own,
+/// Visible: SQL `course_visible` (BUG-190) - public courses, their own,
 /// courses they actively co-author, and courses reached through a linked
 /// usergroup (cohort access); shared with search and collections. `cursor` = id
 /// of the last row from the previous page; the keyset is `(updated_at, id)`
@@ -155,7 +155,7 @@ pub async fn list_courses(
     let by_name = filter.sort == "name";
     // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on a
     // trail run) first, then by `course_progress.progress_pct`, then newest
-    // update — one keyset over the whole catalog, not a per-page re-sort.
+    // update - one keyset over the whole catalog, not a per-page re-sort.
     let by_progress = filter.sort == "progress";
     // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
     let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
@@ -265,7 +265,7 @@ pub async fn summarize_courses(
 
 /// Newest-first page of courses `user` created or actively co-authors.
 ///
-/// As `viewer` sees them (SQL `course_visible`, BUG-190 — the profile is
+/// As `viewer` sees them (SQL `course_visible`, BUG-190 - the profile is
 /// not a sixth rule, UX-133).
 pub async fn list_user_courses(
     pool: &PgPool,
@@ -490,8 +490,8 @@ pub async fn delete_blocks_releasing(
 ///
 /// The content just saved decides (`block_uuid` anywhere in the tiptap
 /// JSON, v2 id or migrated legacy uuid). A block that left the
-/// content releases its upload (grace clock starts), one that came back —
-/// an undo saved after the removal — re-claims it if it still exists.
+/// content releases its upload (grace clock starts), one that came back -
+/// an undo saved after the removal - re-claims it if it still exists.
 /// The caller holds the activity row (the content UPDATE), so the upload
 /// locks follow the activity → uploads order (BUG-243), in key order.
 pub async fn sync_block_claims(
@@ -632,7 +632,7 @@ pub async fn update_chapter(
 }
 
 /// Delete a chapter, releasing the uploads of the media blocks under it
-/// (BUG-209/242 — see [`delete_course`]; lock order chapter → activities →
+/// (BUG-209/242 - see [`delete_course`]; lock order chapter → activities →
 /// uploads).
 pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Result<bool> {
     let mut tx = pool.begin().await?;
@@ -768,7 +768,7 @@ pub async fn list_chapter_activity_ids(
 pub struct ActivityWrite<'a> {
     pub name: Option<&'a str>,
     pub published: Option<bool>,
-    /// `(activity_type, activity_sub_type)` — they change together; the DB CHECK enforces the pair.
+    /// `(activity_type, activity_sub_type)` - they change together; the DB CHECK enforces the pair.
     pub type_pair: Option<(&'a str, &'a str)>,
     pub content: Option<&'a serde_json::Value>,
     pub details: Option<&'a serde_json::Value>,
@@ -780,10 +780,10 @@ pub struct ActivityWrite<'a> {
 
 /// The one writer of an activity row's mutable columns.
 ///
-/// BUG-358: every write — a rename or publish flip as much as a content
-/// save — bumps `version` and honours `expected_version`; `false` means the
+/// BUG-358: every write - a rename or publish flip as much as a content
+/// save - bumps `version` and honours `expected_version`; `false` means the
 /// row is gone or the version is stale (the caller answers 412).
-/// UX-295: a write that changes nothing leaves the row alone — no version
+/// UX-295: a write that changes nothing leaves the row alone - no version
 /// bump (an open editor tab keeps its lock), no `updated_at` touch.
 pub async fn update_activity(
     conn: &mut sqlx::PgConnection,
@@ -835,10 +835,10 @@ pub async fn update_activity(
 }
 
 /// Delete an activity, releasing the uploads of its media blocks
-/// (BUG-209/243 — see [`delete_course`]; lock order activity → uploads).
+/// (BUG-209/243 - see [`delete_course`]; lock order activity → uploads).
 ///
 /// `false` when the activity is gone or, with `expected_version` (UX-313),
-/// no longer at that version — nothing is deleted then.
+/// no longer at that version - nothing is deleted then.
 pub async fn delete_activity(
     pool: &PgPool,
     id: ActivityId,
@@ -1072,7 +1072,7 @@ pub async fn delete_course_update(pool: &PgPool, id: CourseUpdateId) -> Result<b
 
 // ── Contributors (`resource_authors`, course target) ────────────────────────
 
-/// One roster row joined with the user. The creator is not stored — the
+/// One roster row joined with the user. The creator is not stored - the
 /// service synthesizes it from `courses.creator_id`.
 #[derive(Debug, Clone)]
 pub struct ContributorRow {

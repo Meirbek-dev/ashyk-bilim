@@ -198,7 +198,7 @@ export default function AtRiskLearnersTable({
   const resolvedDescription = description ?? t('atRisk.defaultDescription')
   // UX-114: `cell` functions render as components (`<Cell />`). The cells are
   // module-level components, so a new columns array (a refreshed `t` after
-  // `router.refresh()`, a new `query` object) never remounts a cell — the
+  // `router.refresh()`, a new `query` object) never remounts a cell - the
   // intervention dialog's trigger included; the rows update in place. The
   // headers stay strings: the CSV export and the column menu read them.
   const columns = useMemo(
@@ -441,7 +441,7 @@ function LearnerInterventionDialog({
                     (action.payload.intervention_type === 'extension_granted' && draft.trim().length < 12)
                   }
                   // UX-264: saving the plan is the textarea's own action; the
-                  // «Отметить: …» records ask first — they log a completed step.
+                  // «Отметить: …» records ask first - they log a completed step.
                   onClick={() =>
                     action.payload.intervention_type === 'extension_granted'
                       ? void logIntervention(action.payload)

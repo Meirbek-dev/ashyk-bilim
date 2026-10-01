@@ -1,4 +1,4 @@
-//! `analytics:rollup` — rebuilds the daily rollup tables and risk snapshots.
+//! `analytics:rollup` - rebuilds the daily rollup tables and risk snapshots.
 //!
 //! Legacy `refresh_teacher_analytics_rollups`, which no scheduler ever
 //! invoked. Schedule seeded at worker boot every six hours; the run is

@@ -226,7 +226,7 @@ export const getUpdatePlatformUrl = () => {
 }
 
 /**
- * @summary Update platform settings (requires `platform:update:platform` — admins).
+ * @summary Update platform settings (requires `platform:update:platform` - admins).
 Branding changes claim finalized `platform-logo` / `platform-thumbnail`
 uploads; the replaced object is released for reaping.
  */
@@ -301,7 +301,7 @@ export type UpdatePlatformMutationError = ErrorType<Problem>
 export type UpdatePlatformMutationVariables = { data: BodyType<UpdatePlatformRequest> }
 
 /**
- * @summary Update platform settings (requires `platform:update:platform` — admins).
+ * @summary Update platform settings (requires `platform:update:platform` - admins).
 Branding changes claim finalized `platform-logo` / `platform-thumbnail`
 uploads; the replaced object is released for reaping.
  */

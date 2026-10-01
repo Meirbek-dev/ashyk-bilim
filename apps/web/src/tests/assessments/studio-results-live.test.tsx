@@ -17,7 +17,7 @@ vi.mock('@tanstack/react-query', async importOriginal => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'ru',
-  // ru digits: «100» and «66,7» — the decimal comma is the tell.
+  // ru digits: «100» and «66,7» - the decimal comma is the tell.
   useFormatter: () => ({
     number: (value: number, opts?: { maximumFractionDigits?: number }) =>
       value

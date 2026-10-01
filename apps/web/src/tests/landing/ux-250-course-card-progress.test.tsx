@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-250: an enrolled course card reads the run's `progress_pct` from the one
-// `GET /trail` the page made — no per-card learner-state query, no «0%»
+// `GET /trail` the page made - no per-card learner-state query, no «0%»
 // placeholder while one resolves; `null` (not projected yet) reads as 0 %.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'

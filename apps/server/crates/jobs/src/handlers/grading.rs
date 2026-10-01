@@ -1,4 +1,4 @@
-//! `grading:bulk-action` — executes a queued bulk gradebook action.
+//! `grading:bulk-action` - executes a queued bulk gradebook action.
 //!
 //! Deadline extensions today. Enqueued in the same transaction as the
 //! `bulk_actions` row; the row carries the outcome for the grader to poll.

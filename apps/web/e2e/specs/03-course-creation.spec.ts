@@ -91,7 +91,7 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   test('teacher can populate the lecture with a heading block', async ({ page, curriculumEditorPage }) => {
     // The first visit compiles the studio route under `next dev` (> 30 s on a cold
-    // server — the whole suite then cascades); a later visit is fast.
+    // server - the whole suite then cascades); a later visit is fast.
     test.setTimeout(90_000)
     // v2: the activity row's "Open edit page" link carries the activity id;
     // the studio route renders the page editor for dynamic activities.
@@ -115,7 +115,7 @@ test.describe.serial('Teacher – Course Creation', () => {
 
     // Insert a callout using the slash command
     // BUG PROTOCOL: If the slash-command menu doesn't show "Callout", this test
-    // will fail — leave it failing, do NOT comment out or skip.
+    // will fail - leave it failing, do NOT comment out or skip.
     await studio.insertBlock('Callout')
     await studio.typeInEditor('This is an important note.')
   })
@@ -285,7 +285,7 @@ test.describe.serial('Teacher – Course Creation', () => {
     // v2 publish gate: the course needs at least one published activity, and
     // the learner outline only lists published ones. Without Judge0 the code
     // challenge stays an unauthored draft (its studio cannot pick languages),
-    // so it is left out — published unauthored it would be a required
+    // so it is left out - published unauthored it would be a required
     // activity the learner can never complete.
     await curriculumEditorPage.goto(courseUuid)
     const { codeChallenge, ...rest } = COURSE.activities

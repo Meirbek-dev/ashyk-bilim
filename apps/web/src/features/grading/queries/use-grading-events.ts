@@ -28,7 +28,7 @@ export function courseGradingEventsUrl(courseId: string) {
 }
 
 /**
- * UX-259: a 403/404 from a grading save (demoted while the page was open —
+ * UX-259: a 403/404 from a grading save (demoted while the page was open -
  * the 404 is the id-secret rule) runs the same access re-check as a `closed`
  * stream instead of a generic toast. Returns `false` when no stream hook is
  * mounted or the error is something else, so the caller toasts as usual.
@@ -40,7 +40,7 @@ export function reportGradingAccessLost(error: unknown): boolean {
 }
 
 export interface CourseGradingStream {
-  /** The stream is connected — callers keep interval polling only while it is not. */
+  /** The stream is connected - callers keep interval polling only while it is not. */
   live: boolean
   /** The server ended the stream with `closed` (grading access gone): callers disable grading controls. */
   accessLost: boolean
@@ -111,7 +111,7 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
       probe.abort()
       toast.dismiss(ACCESS_LOST_TOAST)
       if (response.ok) {
-        // Access is intact: the save failed for another reason — say that one.
+        // Access is intact: the save failed for another reason - say that one.
         const error = reportedError.current
         reportedError.current = null
         if (error) toastApiError(error)

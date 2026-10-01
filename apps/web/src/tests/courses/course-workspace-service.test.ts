@@ -40,7 +40,7 @@ describe('getCourseMetadata (BUG-011)', () => {
   })
 })
 
-// UX-102: the learner shape drops chapters with no published lesson («Глава 2 —
+// UX-102: the learner shape drops chapters with no published lesson («Глава 2 -
 // Черновики · 0 учебных задач»); the author shape keeps every chapter.
 describe('getCourseMetadata learner shape', () => {
   const chapter = (id: string, published: boolean[]) => ({

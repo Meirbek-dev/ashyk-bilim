@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-// BUG-110: the exam attempt dropped every non choice/matching item — an
+// BUG-110: the exam attempt dropped every non choice/matching item - an
 // assessment with a choice and an essay showed one question, the confirm
 // dialog counted one, and the essay was submitted blank. Every item kind the
 // server returns is a question with an answer control.

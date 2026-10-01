@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
            */}
           <Suspense
             fallback={
-              // Raw inline fallback — cannot use <Spinner> here because it calls
+              // Raw inline fallback - cannot use <Spinner> here because it calls
               // useTranslations(), which requires NextIntlClientProvider.
               // That provider only mounts inside LocaleLayout (our Suspense child),
               // so the fallback must be fully self-contained with no i18n dependency.

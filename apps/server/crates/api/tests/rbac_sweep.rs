@@ -3,7 +3,7 @@
 //! must reject a session that holds zero grants.
 //!
 //! Adding a mutating endpoint without adding it to exactly one list below
-//! fails this suite — that forced classification IS the review.
+//! fails this suite - that forced classification IS the review.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_testkit::TestApp;
@@ -285,8 +285,8 @@ async fn every_mutating_operation_is_classified_and_gated(pool: PgPool) {
     }
 }
 
-/// UX-311 (UX-301 sibling): a write checks the caller's permission — and
-/// the existence of the resource it names — before it reads the body, so a
+/// UX-311 (UX-301 sibling): a write checks the caller's permission - and
+/// the existence of the resource it names - before it reads the body, so a
 /// learner gets 403 (404 for a resource they cannot see) whatever they send:
 /// never a 422 that validates the body (or lists the accepted fields) for
 /// someone who may not write there at all. Every mutating operation with a

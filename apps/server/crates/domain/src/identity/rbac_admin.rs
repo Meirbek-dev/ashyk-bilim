@@ -64,7 +64,7 @@ impl RbacAdminService {
         actor.require(MANAGE_ROLES)
     }
 
-    /// `platform:manage:platform` — account creation and status
+    /// `platform:manage:platform` - account creation and status
     /// UX-311: the write handlers check it before reading the body.
     pub fn require_manage_platform(actor: &Actor) -> Result<()> {
         actor.require(MANAGE_PLATFORM)
@@ -164,7 +164,7 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         let display_name = trimmed_display_name(display_name)?;
-        // UX-183: the description is shown next to the name — same strip.
+        // UX-183: the description is shown next to the name - same strip.
         let description = description.map(ab_core::strip_controls_multiline);
         let created = ab_db::identity::insert_role(
             &self.pool,
@@ -188,7 +188,7 @@ impl RbacAdminService {
         .await
     }
 
-    /// Metadata update — custom roles only (404 covers system + unknown).
+    /// Metadata update - custom roles only (404 covers system + unknown).
     pub async fn update_role(
         &self,
         actor: &Actor,
@@ -247,7 +247,7 @@ impl RbacAdminService {
     ) -> Result<()> {
         actor.require(MANAGE_ROLES)?;
         // Every grant string must parse against the closed registry; a bad
-        // one is caller input here, not deploy drift — name it, without the
+        // one is caller input here, not deploy drift - name it, without the
         // `internal:` prefix the parser's error code would render.
         let errors: Vec<ab_core::FieldError> = permissions
             .iter()
@@ -404,7 +404,7 @@ impl RbacAdminService {
 
     /// Push the user's fresh grants into every live session. Best-effort:
     /// the change is committed with its `rbac_version` bump, which fences
-    /// every session this misses ([`SessionStore::fenced`], BUG-345) — a
+    /// every session this misses ([`SessionStore::fenced`], BUG-345) - a
     /// failure is logged, never turned into an error for a change that
     /// already holds (and whose audit row must still be written).
     async fn push_grants(&self, user_id: UserId, rbac_version: i64) {

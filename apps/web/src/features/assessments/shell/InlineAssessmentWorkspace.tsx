@@ -67,7 +67,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   const isNotConfigured = hasErrorCode(assessmentError, 'not-found')
 
   // Completion is the projection's call (learner-state), the same source the
-  // outline sidebar ticks from — the latest attempt alone can disagree with it
+  // outline sidebar ticks from - the latest attempt alone can disagree with it
   // (best submitted score decides `passed`).
   const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
   const activityState = learnerState.data?.outline
@@ -86,7 +86,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   const canAct =
     (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0
-  // UX-097: the last hand-in still awaits the teacher — the bar says so; the
+  // UX-097: the last hand-in still awaits the teacher - the bar says so; the
   // retake is the entry card's secondary «Начать новую попытку».
   const awaitingRelease =
     recommendedAction === 'start' && (vm?.releaseState === 'AWAITING_RELEASE' || vm?.submissionStatus === 'PENDING')
@@ -140,7 +140,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       const gated = disabledReasonOf(error)
       if (gated || (isApiError(error) && error.status === 403)) {
         // BUG-158: the server's attempt-state moved under us (a gate was
-        // assigned, the last attempt was spent) — show it, don't toast «no permission».
+        // assigned, the last attempt was spent) - show it, don't toast «no permission».
         // UX-153: any other 403 (the teacher restricted access) refetches too,
         // so the page follows the server instead of keeping «Start».
         await Promise.all([
@@ -173,7 +173,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     }
 
     if (!canAct) {
-      // Blocked or waiting — no actionable CTA
+      // Blocked or waiting - no actionable CTA
       setBottomBarAction(null)
       return
     }
@@ -261,7 +261,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // ── Routing the student to the correct surface ──────────────────────────────
 
-  // UX-213: off the access list — the learner's own attempts, read-only.
+  // UX-213: off the access list - the learner's own attempts, read-only.
   const accessNotice = vm.accessClosed ? (
     <Alert className="mb-4">
       <LockKeyhole aria-hidden="true" />
@@ -275,7 +275,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     return accessNotice
   }
 
-  // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
+  // Entry card (pre-flight) - no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
     return (
       <>
@@ -321,6 +321,6 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     )
   }
 
-  // Active attempt — full-width AssessmentLayout takeover
+  // Active attempt - full-width AssessmentLayout takeover
   return <AssessmentLayout activityUuid={activityUuid} courseUuid={courseUuid} vm={vm} />
 }

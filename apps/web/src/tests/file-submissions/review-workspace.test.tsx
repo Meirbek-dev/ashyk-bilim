@@ -216,7 +216,7 @@ describe('file submission review workspace', () => {
   })
 
   // BUG-154: a colleague's save (SSE refetch) or our own 412 must not be
-  // overwritten by the local draft — the notice blocks the actions until the
+  // overwritten by the local draft - the notice blocks the actions until the
   // teacher picks a version, and `If-Match` carries the version chosen.
   it('blocks the actions when a colleague saves over a dirty draft and sends the chosen version', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -257,7 +257,7 @@ describe('file submission review workspace', () => {
     expect(screen.getByRole('button', { name: 'saveGrade' })).toBeEnabled()
   })
 
-  // UX-065: a released grade is final (BUG-128) — save/return are disabled with a hint.
+  // UX-065: a released grade is final (BUG-128) - save/return are disabled with a hint.
   it('offers only a re-publish on a published attempt', async () => {
     const released: FileSubmissionAttempt = {
       ...attempt('attempt_first', 'Aruzhan', 92, 'First learner feedback'),

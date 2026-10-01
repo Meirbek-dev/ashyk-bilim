@@ -1,7 +1,7 @@
 //! The authenticated caller.
 //!
 //! Every mutating domain service method takes an [`Actor`] and calls
-//! [`Actor::require`] before touching data — enforcement lives in the domain
+//! [`Actor::require`] before touching data - enforcement lives in the domain
 //! layer, not in HTTP handlers (ARCHITECTURE §7).
 
 use ab_core::id::UserId;
@@ -17,7 +17,7 @@ pub struct Actor {
     pub session_id: String,
     pub roles: Vec<String>,
     pub permissions: PermissionSet,
-    /// Raw grant strings — exposed to the frontend for client-side gating
+    /// Raw grant strings - exposed to the frontend for client-side gating
     /// (mirrors the legacy `Session.permissions: string[]` contract).
     pub permission_strings: Vec<String>,
     pub rbac_version: i64,
@@ -29,7 +29,7 @@ pub struct Actor {
 
 impl Actor {
     /// Build from a validated session record. Fails only if the stored grant
-    /// strings no longer parse (registry drift — a deploy-time bug).
+    /// strings no longer parse (registry drift - a deploy-time bug).
     pub fn from_session(session_id: String, record: &SessionRecord) -> Result<Self> {
         Ok(Self {
             user_id: record.user_id,
@@ -45,7 +45,7 @@ impl Actor {
         })
     }
 
-    /// The user's standing as of now — status, roles and grants read from
+    /// The user's standing as of now - status, roles and grants read from
     /// the database, no session behind it. For queued work that re-checks
     /// its performer at execution (UX-136: an enqueue-time grant may be gone
     /// by the time the worker runs); requests keep using the session actor.
@@ -74,7 +74,7 @@ impl Actor {
     }
 
     /// The unauthenticated viewer: nil user id, zero grants. Catalog read
-    /// services treat it like any other actor — nothing is owned and nothing
+    /// services treat it like any other actor - nothing is owned and nothing
     /// is granted, so only public data is visible. Mutations always fail
     /// [`Actor::require`].
     #[must_use]

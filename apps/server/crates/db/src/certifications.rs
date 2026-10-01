@@ -183,7 +183,7 @@ pub async fn get_certificate_by_code(
            FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
            -- Dash-insensitive: ETL-migrated legacy codes keep their own
            -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq
-           -- scan is fine until it is not — then an expression index).
+           -- scan is fine until it is not - then an expression index).
            WHERE upper(regexp_replace(cu.verify_code, '[^A-Za-z0-9]', '', 'g'))
                = upper(regexp_replace($1, '[^A-Za-z0-9]', '', 'g'))"#,
         verify_code

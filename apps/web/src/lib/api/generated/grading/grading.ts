@@ -1262,7 +1262,7 @@ export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
 
 /**
  * The attempt learner progress scores (best-scored submission, latest
- * scored file attempt) — assessment submissions and file-submission
+ * scored file attempt) - assessment submissions and file-submission
  * attempts alike.
  * @summary Course gradebook: the grade-of-record attempt per (learner, activity).
  */
@@ -1671,7 +1671,7 @@ export const getCourseGradingEventsUrl = (id: CourseId) => {
 /**
  * Event names: `connected`, `submission.submitted`, `grade.saved`,
  * `grade.published`, `submission.returned`, `closed` (grading access
- * lost — e.g. the grant set inactive — the stream ends). `data` is
+ * lost - e.g. the grant set inactive - the stream ends). `data` is
  * `{event_id, event, payload, sent_at}` where `payload` carries
  * `activity_id`, `user_id`, `status`, `final_score` and either
  * `submission_id` (assessment) or `attempt_id` (file submission);

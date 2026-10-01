@@ -2,7 +2,7 @@ import type { Page, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 /**
- * Page Object for /en/dash/courses/new — the course creation wizard.
+ * Page Object for /en/dash/courses/new - the course creation wizard.
  */
 export class CourseCreatePage {
   public readonly page: Page
@@ -15,9 +15,9 @@ export class CourseCreatePage {
     this.page = page
     // The wizard uses id="course-title" on the title input
     this.titleInput = page.locator('#course-title').or(page.locator('input[id*="course-title"]'))
-    // v2: the wizard is title + structure only — description/access/media live in
+    // v2: the wizard is title + structure only - description/access/media live in
     // Course Studio (details stage), so there is no description field here.
-    // Primary CTA — matches any button containing "create" in the wizard
+    // Primary CTA - matches any button containing "create" in the wizard
     this.createButton = page.getByRole('button', {
       name: /create course|create/i,
     })

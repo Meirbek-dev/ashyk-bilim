@@ -94,7 +94,7 @@ describe('studio archive menu item', () => {
       </QueryClientProvider>,
     )
     fireEvent.click(await screen.findByRole('button', { name: 'archive' }))
-    // UX-124: a published assessment asks first — learners lose access.
+    // UX-124: a published assessment asks first - learners lose access.
     const dialog = await screen.findByRole('alertdialog')
     expect(dialog).toHaveTextContent('archiveConfirmTitle:{"title":"Quiz"}')
     expect(mocks.apiJson).not.toHaveBeenCalled()

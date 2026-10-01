@@ -203,7 +203,7 @@ async fn abandoned_job_is_not_heartbeated_and_gets_reaped(pool: PgPool) {
 
 #[tokio::test]
 async fn duplicate_handler_registration_is_rejected() {
-    // Pure wiring check — no DB, but pool construction needs a tokio runtime.
+    // Pure wiring check - no DB, but pool construction needs a tokio runtime.
     let pool = sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://unused/unused");
     let worker = Worker::new(pool.unwrap(), WorkerConfig::default());
     let hits = Arc::new(AtomicUsize::new(0));

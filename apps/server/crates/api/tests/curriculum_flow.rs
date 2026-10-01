@@ -265,7 +265,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     let chapter = create_chapter(&app, &teacher, &course, "One").await;
 
     // A rival instructor cannot see the draft (`course:read:all` is the
-    // public-catalogue grant), so authoring on it is a 404 — no existence
+    // public-catalogue grant), so authoring on it is a 404 - no existence
     // leak; a learner can't see the private curriculum either.
     let rival = instructor(&app, "rival").await;
     let denied = app
@@ -286,7 +286,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     assert_eq!(denied.status, StatusCode::NOT_FOUND);
 
     // BUG-208 nit: moving one's own activity into a chapter of an invisible
-    // course is the same 404 as a random id — not the same-course 422.
+    // course is the same 404 as a random id - not the same-course 422.
     let rivals_course = create_course(&app, &rival, "Rival").await;
     let rivals_chapter = create_chapter(&app, &rival, &rivals_course, "R1").await;
     let rivals_activity = create_activity(&app, &rival, &rivals_chapter, "Clip").await;
@@ -309,7 +309,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
     assert_eq!(random.status, StatusCode::NOT_FOUND);
     assert_eq!(probe.json()["detail"], random.json()["detail"]);
     // UX-147: an activity of an invisible course reads and edits like an
-    // unknown one — one detail on every `/activities/{id}` route.
+    // unknown one - one detail on every `/activities/{id}` route.
     let unknown_activity = uuid::Uuid::now_v7();
     let invisible = app
         .get_as(&teacher, &format!("/api/v2/activities/{rivals_activity}"))
@@ -439,7 +439,7 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
     assert_eq!(refused.json()["code"], "activity-not-ready");
 
-    // Readiness names the activity while the config is a draft — once it
+    // Readiness names the activity while the config is a draft - once it
     // is published through the file-submission route, the course is ready.
     let published = app
         .post_as(
@@ -465,7 +465,7 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
     assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
 
     // UX-112: the published config keeps the type attached (the UX-104
-    // guard covers file submissions too) — 409 `conflict`.
+    // guard covers file submissions too) - 409 `conflict`.
     let detached = app
         .patch_as(
             &teacher,
@@ -551,7 +551,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .await;
     assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
 
-    // UX-104: the live exam stays attached — the type cannot move away
+    // UX-104: the live exam stays attached - the type cannot move away
     // from it (409 `conflict`) until the assessment is unpublished.
     let detached = app
         .patch_as(
@@ -569,7 +569,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         "exam"
     );
 
-    // UX-112: one name — a curriculum rename also renames the assessment.
+    // UX-112: one name - a curriculum rename also renames the assessment.
     let renamed = app
         .patch_as(
             &teacher,
@@ -610,7 +610,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
     assert_eq!(detail.json()["activity_type"], "video");
 
     // BUG-135: a type change on an already-published activity runs the same
-    // gate — a live page cannot silently become a quiz with no assessment.
+    // gate - a live page cannot silently become a quiz with no assessment.
     let live = create_activity(&app, &teacher, &chapter_id, "Live").await;
     let toggled = app
         .patch_as(
@@ -694,7 +694,7 @@ async fn drafts_are_visible_to_editors_only(pool: PgPool) {
     assert_eq!(app.get(&activity).await.status, StatusCode::NOT_FOUND);
 }
 
-/// UX-027: the editor autosave (`content`) is an optimistic-lock write —
+/// UX-027: the editor autosave (`content`) is an optimistic-lock write -
 /// `If-Match` required, stale version 412, new version in the body + `ETag`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn content_writes_are_version_locked(pool: PgPool) {
@@ -753,7 +753,7 @@ async fn content_writes_are_version_locked(pool: PgPool) {
         "AAA"
     );
 
-    // Name/publish edits from the curriculum need no version — but BUG-358:
+    // Name/publish edits from the curriculum need no version - but BUG-358:
     // they are row writes too, so they bump it (an open editor tab then
     // sees 412 instead of overwriting the rename).
     let rename = app
@@ -763,7 +763,7 @@ async fn content_writes_are_version_locked(pool: PgPool) {
     assert_eq!(rename.json()["version"], 3);
     assert_eq!(rename.headers[header::ETAG], "\"3\"");
 
-    // UX-313: a delete honours `If-Match` too — the stale tab's is 412 and
+    // UX-313: a delete honours `If-Match` too - the stale tab's is 412 and
     // the activity stays; the current version deletes it.
     let delete = |version: &str| {
         Request::builder()
@@ -788,7 +788,7 @@ async fn content_writes_are_version_locked(pool: PgPool) {
 }
 
 /// UX-317: an activity delete that loses the race to another delete is
-/// 404 — never a 412 whose `expected` equals its `actual`.
+/// 404 - never a 412 whose `expected` equals its `actual`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
     use axum::body::Body;
@@ -827,7 +827,7 @@ async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
     assert_eq!(lost.status, StatusCode::NOT_FOUND, "{}", lost.text());
 }
 
-/// BUG-358: a metadata PATCH honours `If-Match` under the row lock — two
+/// BUG-358: a metadata PATCH honours `If-Match` under the row lock - two
 /// renames racing with the same version end 200 + 412, never 200 + 200.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) {
@@ -898,9 +898,9 @@ async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) 
 }
 
 /// UX-295 + BUG-358: `activities.version` moves on every write that changes
-/// the row — the curriculum PATCH (type pair included), the assessment
+/// the row - the curriculum PATCH (type pair included), the assessment
 /// title sync, lifecycle transitions, the auto-publish sweep and the
-/// file-submission title/publish — and on none that changes nothing.
+/// file-submission title/publish - and on none that changes nothing.
 #[sqlx::test(migrations = "../../migrations")]
 async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1009,7 +1009,7 @@ async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
         )
         .await;
     assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
-    // Scheduling keeps the activity unpublished — nothing changed.
+    // Scheduling keeps the activity unpublished - nothing changed.
     let before = version(later_activity).await;
     sqlx::query("UPDATE assessments SET scheduled_at = now() - interval '1 minute' WHERE id = $1")
         .bind(uuid::Uuid::parse_str(later).unwrap())
@@ -1160,7 +1160,7 @@ async fn published_quiz(
 
 /// BUG-186: a refused PATCH writes nothing. An archived quiz is read-only;
 /// renaming it together with a type change is refused (409 `conflict`)
-/// before the activity write runs — the row keeps its type and name.
+/// before the activity write runs - the row keeps its type and name.
 #[sqlx::test(migrations = "../../migrations")]
 async fn refused_activity_patch_writes_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1276,7 +1276,7 @@ async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
 }
 
 /// BUG-201: a draft (or archived) assessment pins its activity's type just
-/// like a live one — otherwise its later `published` transition would flip a
+/// like a live one - otherwise its later `published` transition would flip a
 /// `dynamic` activity live with a quiz behind it (409 `conflict`, row
 /// untouched). Archived: BUG-186's `refused_activity_patch_writes_nothing`.
 #[sqlx::test(migrations = "../../migrations")]

@@ -22,7 +22,7 @@ export function useActivityAIUrlState(defaultMode: ActivityAIMode = 'ask') {
 
   const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams])
 
-  // UX-299: panel state lives in the URL only for sharing/reload — the native History API
+  // UX-299: panel state lives in the URL only for sharing/reload - the native History API
   // updates `useSearchParams` at once; `router.replace` re-rendered the activity page on the
   // server first (2–10 s before the panel opened or a new Q&A thread was selected).
   function replace(nextParams: URLSearchParams) {

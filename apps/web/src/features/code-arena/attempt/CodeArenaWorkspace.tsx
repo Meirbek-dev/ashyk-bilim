@@ -230,7 +230,7 @@ export function CodeArenaWorkspace({
     try {
       updateAnswer(languageId, code)
       const submitted = await onSubmit()
-      // UX-288: an auto-graded attempt is not «queued» — its result card says the rest.
+      // UX-288: an auto-graded attempt is not «queued» - its result card says the rest.
       if (submitted?.status === 'PENDING') toast.success(t('submissionQueued'))
     } catch {
       // The submission hook already toasted the localized failure.

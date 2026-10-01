@@ -130,7 +130,7 @@ pub async fn admin_award(
     CurrentActor(actor): CurrentActor,
     body: axum::body::Bytes,
 ) -> ApiResult<(StatusCode, Json<AwardResponse>)> {
-    // UX-301: permission before the body — a learner gets 403 whatever they send.
+    // UX-301: permission before the body - a learner gets 403 whatever they send.
     GamificationService::require_manage(&actor)?;
     let request = ValidJson::<AdminAwardRequest>::parse(&body)?;
     let award = state

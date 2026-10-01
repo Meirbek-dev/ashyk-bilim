@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 /**
- * UX-221: a hosted file whose storage object is gone (legacy dangling key) —
+ * UX-221: a hosted file whose storage object is gone (legacy dangling key) -
  * the proxy answers 404 or S3 `AccessDenied` (403). One same-origin HEAD tells
  * it apart from a slow load, so the player/viewer can show a message instead
  * of «Reconnect: N» or raw S3 XML. `blob:`/`data:` previews are never checked.

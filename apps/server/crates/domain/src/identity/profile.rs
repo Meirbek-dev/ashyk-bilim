@@ -14,7 +14,7 @@ use utoipa::ToSchema;
 
 pub const MAX_SECTIONS: usize = 20;
 pub const MAX_ITEMS_PER_SECTION: usize = 50;
-/// Serialized document cap (bytes) — a few hundred filled items.
+/// Serialized document cap (bytes) - a few hundred filled items.
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
 /// The web theme registry (`apps/web/src/lib/theme-store.json` item names).
 ///
@@ -405,7 +405,7 @@ pub fn is_http_url(value: &str) -> bool {
 }
 
 impl ProfileSections {
-    /// Trim, strip controls, cap, check URLs — every failure as one
+    /// Trim, strip controls, cap, check URLs - every failure as one
     /// `profile.sections[i]…` field error (422).
     pub fn normalize(&mut self) -> Result<()> {
         let mut c = Check { errors: Vec::new() };

@@ -133,7 +133,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         .await;
     let second_id = second.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(second.json()["position"], 2);
-    // BUG-359: the order names every item exactly once — a subset or a
+    // BUG-359: the order names every item exactly once - a subset or a
     // duplicate is a stale tab, not a partial move.
     for (items, code) in [
         (serde_json::json!([second_id]), "invalid"),
@@ -1083,7 +1083,7 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
         .await;
     assert_eq!(rescored.status, StatusCode::OK, "{}", rescored.text());
 
-    // Item cap: the 201st item is refused — also when 8 adds race at 199
+    // Item cap: the 201st item is refused - also when 8 adds race at 199
     // (BUG-264: the count is taken under the assessment row lock).
     for n in 1..199 {
         let res = app
@@ -1128,7 +1128,7 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
 /// A live assessment keeps at least one item (409 on the last delete);
 /// a visible non-author cannot transition it (403); the curriculum toggle
 /// hides a published assessment from learners exactly like the activity
-/// read (404 on get / attempt-state / start — BUG-151).
+/// read (404 on get / attempt-state / start - BUG-151).
 #[sqlx::test(migrations = "../../migrations")]
 async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1223,7 +1223,7 @@ async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool
 }
 
 /// BUG-160: `randomize_questions` / `randomize_options` are applied on the
-/// learner read — a stable order per learner (reload keeps it), a different
+/// learner read - a stable order per learner (reload keeps it), a different
 /// one for another learner; authors keep the authored order.
 #[sqlx::test(migrations = "../../migrations")]
 async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
@@ -1337,7 +1337,7 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
 }
 
 /// BUG-162: a scheduled assessment is read-only (409 `conflict`, unschedule
-/// first) — its readiness was gated at schedule time; and the auto-publish
+/// first) - its readiness was gated at schedule time; and the auto-publish
 /// sweep re-checks readiness, leaving a blocked schedule `scheduled` with
 /// an audit row instead of going live past due.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1401,7 +1401,7 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         "{}",
         item_edit.text()
     );
-    // UX-120: the curriculum rename writes the same title — same lock.
+    // UX-120: the curriculum rename writes the same title - same lock.
     let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
     let rename = app
         .patch_as(
@@ -1713,7 +1713,7 @@ async fn policy_oddities_warn_and_item_titles_are_trimmed(pool: PgPool) {
     );
 }
 
-/// BUG-207: a published assessment (no submissions) stays ready — an item
+/// BUG-207: a published assessment (no submissions) stays ready - an item
 /// add/patch that would fail readiness is a 409 carrying the codes, while a
 /// ready edit still lands.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1808,8 +1808,8 @@ async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
 }
 
 /// BUG-333: a published assessment already unready (a legacy blocker the
-/// migration carried in) still takes edits that add no blocker — a due-date
-/// change lands — while an edit adding a new blocker is still a 409.
+/// migration carried in) still takes edits that add no blocker - a due-date
+/// change lands - while an edit adding a new blocker is still a 409.
 #[sqlx::test(migrations = "../../migrations")]
 async fn unready_live_assessment_refuses_only_new_blockers(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -2049,7 +2049,7 @@ async fn scores_and_weights_are_bounded(pool: PgPool) {
 }
 
 /// BUG-218: publish racing an item edit (or the delete of the only item)
-/// must never leave a published assessment unready — `transition` and the
+/// must never leave a published assessment unready - `transition` and the
 /// item writes serialize on the assessment row.
 #[sqlx::test(migrations = "../../migrations")]
 async fn publish_and_item_writes_serialize(pool: PgPool) {
@@ -2121,7 +2121,7 @@ async fn publish_and_item_writes_serialize(pool: PgPool) {
 }
 
 /// BUG-231: a schedule racing an unready item add must never leave a
-/// scheduled assessment the scheduler will refuse to open — every item
+/// scheduled assessment the scheduler will refuse to open - every item
 /// write re-reads the lifecycle under the row lock.
 #[sqlx::test(migrations = "../../migrations")]
 async fn schedule_and_item_add_serialize(pool: PgPool) {
@@ -2195,7 +2195,7 @@ async fn schedule_and_item_add_serialize(pool: PgPool) {
 }
 
 /// BUG-232: the assessment lifecycle and `activities.published` change in
-/// one transaction — an unpublish racing the curriculum publish toggle, or
+/// one transaction - an unpublish racing the curriculum publish toggle, or
 /// a client that hangs up mid-transition, never leaves a torn pair (a
 /// listed quiz that answers 404).
 #[sqlx::test(migrations = "../../migrations")]
@@ -2275,7 +2275,7 @@ async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
 }
 
 /// BUG-245/246: a client that hangs up mid-request never leaves a torn
-/// write — the title PATCH moves the assessment title and the activity name
+/// write - the title PATCH moves the assessment title and the activity name
 /// together, and a duplicate never leaves an activity without its
 /// assessment.
 #[sqlx::test(migrations = "../../migrations")]
@@ -2348,7 +2348,7 @@ async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
 }
 
 /// BUG-262: the curriculum rename reads the assessment lifecycle under the
-/// assessment row lock — a schedule queued ahead of it commits first and the
+/// assessment row lock - a schedule queued ahead of it commits first and the
 /// rename answers 409 instead of retitling a scheduled quiz.
 #[sqlx::test(migrations = "../../migrations")]
 async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
@@ -2418,7 +2418,7 @@ async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
     assert_eq!(detail.json()["title"], "Timed", "{}", detail.text());
 }
 
-/// BUG-375: the reorder list is checked under the assessment row lock — a
+/// BUG-375: the reorder list is checked under the assessment row lock - a
 /// delete that commits while the reorder waits on it makes the (now stale)
 /// full list 422, never a renumber with a gap.
 #[sqlx::test(migrations = "../../migrations")]

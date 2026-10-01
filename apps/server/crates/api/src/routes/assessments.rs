@@ -73,7 +73,7 @@ pub async fn create_assessment(
 }
 
 /// Full assessment with items and policy. Authors always; learners only
-/// once published (404 otherwise — no existence leak).
+/// once published (404 otherwise - no existence leak).
 #[utoipa::path(
     get, path = "/assessments/{id}", tag = "assessments",
     params(("id" = AssessmentId, Path, description = "Assessment id")),
@@ -610,7 +610,7 @@ pub async fn delete_override(
 /// The effective policy (overrides applied) and any reasons an attempt is
 /// blocked. Requires course access and `assessment:submit:assigned`
 /// (authors preview freely); off a restricted access list it answers with
-/// `ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.
+/// `ACCESS_RESTRICTED` (UX-227) - starting and submitting still 403.
 #[utoipa::path(
     get, path = "/assessments/{id}/attempt-state", tag = "assessments",
     params(("id" = AssessmentId, Path, description = "Assessment id")),

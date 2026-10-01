@@ -30,7 +30,7 @@ const activityCreateSchema = v.object({
   published: v.optional(v.boolean()),
   content: v.optional(v.unknown()),
   details: v.optional(v.unknown()),
-  /** Optimistic lock of the loaded activity — `If-Match` on the content PATCH (UX-027). */
+  /** Optimistic lock of the loaded activity - `If-Match` on the content PATCH (UX-027). */
   version: v.optional(v.number()),
 })
 

@@ -873,7 +873,7 @@ export const getRegisterUrl = () => {
 
 /**
  * The link opens the web app under the `Accept-Language` locale (`/ru`,
- * `/kz`, `/en`). No session is opened — the client logs in next. Honours
+ * `/kz`, `/en`). No session is opened - the client logs in next. Honours
  * `Idempotency-Key` (a retry replays the 201 instead of 409
  * `username-taken`).
  * @summary Self-registration: creates the account (default `user` role) and emails

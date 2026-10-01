@@ -2,7 +2,7 @@ use ab_core::id::UserId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Password login. No `Debug` derive — the password must never format.
+/// Password login. No `Debug` derive - the password must never format.
 #[derive(Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LoginRequest {
@@ -11,12 +11,12 @@ pub struct LoginRequest {
     pub login: String,
     #[garde(length(min = 1, max = 200))]
     pub password: String,
-    /// Second factor — resubmit after a 401 `mfa-required`.
+    /// Second factor - resubmit after a 401 `mfa-required`.
     #[garde(inner(length(min = 6, max = 8)))]
     pub totp_code: Option<String>,
 }
 
-/// Self-registration (DECISIONS 2026-09-12). No `Debug` — carries a password.
+/// Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.
 /// Rules mirror the legacy `UserCreate`: unique username/email; the password
 /// follows [`super::new_password`].
 #[derive(Deserialize, garde::Validate, ToSchema)]
@@ -58,7 +58,7 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
-/// TOTP enrollment secrets — shown to the user exactly once.
+/// TOTP enrollment secrets - shown to the user exactly once.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TotpEnrollment {
     /// `otpauth://` URI for QR rendering.

@@ -2,7 +2,7 @@
 //! RustFS in compose today; R2/S3/MinIO later is pure config.
 //!
 //! Upload strategy (DECISIONS-worthy simplification, recorded in the plan):
-//! single presigned PUT per object — course media tops out at hundreds of MB,
+//! single presigned PUT per object - course media tops out at hundreds of MB,
 //! comfortably under the single-PUT limit, and file bytes never transit Axum.
 //! Presigned multipart can layer in later without API changes.
 
@@ -90,7 +90,7 @@ impl StorageClient {
     /// Presigned PUT for direct browser upload, pinned to `content_type`:
     /// the header is part of the signature (`SignedHeaders=content-type;host`),
     /// so storage refuses a PUT that declares anything else. BUG-350: it is
-    /// create-only too (`If-None-Match: *` is signed) — once the object
+    /// create-only too (`If-None-Match: *` is signed) - once the object
     /// exists, replaying the URL is a 412, so a finalized upload's bytes
     /// cannot change under the ledger row that recorded them.
     pub fn presign_put(

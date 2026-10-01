@@ -27,7 +27,7 @@ describe('recommendedActionFor', () => {
 })
 
 // UX-123: a retake awaiting the teacher must not hide the released grade of
-// record — the card shows attempt 1 and names attempt 2 as pending.
+// record - the card shows attempt 1 and names attempt 2 as pending.
 describe('shownSubmission', () => {
   const released = { id: 's1', status: 'PUBLISHED', release_state: 'visible', attempt_number: 1 }
   const pending = { id: 's2', status: 'PENDING', release_state: 'hidden', attempt_number: 2 }
@@ -43,7 +43,7 @@ describe('shownSubmission', () => {
     expect(shownSubmission([released], null)).toEqual({ latest: released, pendingAttemptNumber: null })
   })
 
-  // UX-237: attempts closed (ACCESS_RESTRICTED clears draft_id) — the leftover
+  // UX-237: attempts closed (ACCESS_RESTRICTED clears draft_id) - the leftover
   // draft must not replace the published attempt.
   it('shows the published attempt, not a draft that is no longer open', () => {
     expect(shownSubmission([draft, released], null)).toEqual({ latest: released, pendingAttemptNumber: null })

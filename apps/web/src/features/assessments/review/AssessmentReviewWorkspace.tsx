@@ -22,7 +22,7 @@ const KIND_FROM_WIRE: Record<AssessmentDetail['kind'], 'EXAM' | 'CODE_CHALLENGE'
 }
 
 interface AssessmentReviewWorkspaceProps {
-  /** Activity UUID — route param (may include "activity_" prefix). */
+  /** Activity UUID - route param (may include "activity_" prefix). */
   activityUuid: string
   /** Optionally pre-select a specific submission (from ?submission= query param). */
   initialSubmissionUuid?: string | null
@@ -122,7 +122,7 @@ export default function AssessmentReviewWorkspace({
   const reviewProjection = assessment.review_projection
 
   return (
-    // UX-216: grading access lost mid-session — the grading controls go inert while it is confirmed.
+    // UX-216: grading access lost mid-session - the grading controls go inert while it is confirmed.
     <div className="contents" inert={accessLost}>
       <GradingReviewWorkspace
         // v2 activity ids are UUID strings; `activityId` is a legacy numeric prop only

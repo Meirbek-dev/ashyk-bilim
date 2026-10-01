@@ -25,7 +25,7 @@ beforeEach(() => {
   vi.mocked(createChapter).mockResolvedValue({ chapter_uuid: 'ch-1', activities: [] } as never)
 })
 
-describe('useCreateCourseMutation — BUG-012 starter template', () => {
+describe('useCreateCourseMutation - BUG-012 starter template', () => {
   it('seeds the two promised starter chapters instead of silently creating zero', async () => {
     const { result } = renderHook(() => useCreateCourseMutation())
 
@@ -60,7 +60,7 @@ describe('useCreateCourseMutation — BUG-012 starter template', () => {
 
 // UX-235: a source course that cannot be read was reported as «0 of 0 imported»;
 // UX-246: and its result carries no chapter counts at all (no «0 failed»).
-describe('useCreateCourseMutation — copy outline', () => {
+describe('useCreateCourseMutation - copy outline', () => {
   it('flags a failed source fetch so the form can say the outline was not copied', async () => {
     vi.mocked(getCourseMetadata).mockRejectedValue(new Error('404'))
     const { result } = renderHook(() => useCreateCourseMutation())

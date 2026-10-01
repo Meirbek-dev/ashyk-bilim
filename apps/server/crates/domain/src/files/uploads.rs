@@ -24,7 +24,7 @@ const PRESIGN_GET_TTL: Duration = Duration::from_mins(5);
 
 const MB: i64 = 1024 * 1024;
 
-/// Legacy `file_validation.py` image allowlist — no SVG (scriptable) and no
+/// Legacy `file_validation.py` image allowlist - no SVG (scriptable) and no
 /// `image/*` prefix: the public bucket is served on the web origin.
 const IMAGES: &[&str] = &[
     "image/jpeg",
@@ -42,7 +42,7 @@ const VIDEOS: &[&str] = &[
     "video/x-flv",
 ];
 
-/// (bucket, max bytes, allowed content types — exact match; empty = any).
+/// (bucket, max bytes, allowed content types - exact match; empty = any).
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {
         "avatar" => Some((Bucket::Public, 5 * MB, IMAGES)),
@@ -59,7 +59,7 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
 /// BUG-200: `file:create:own` alone only covers the learner-facing purposes.
 /// Platform branding needs the platform grant; course thumbnails and
 /// content blocks need course write access (the curriculum gate is
-/// `course:update:own` as author or `course:update:platform`) — otherwise
+/// `course:update:own` as author or `course:update:platform`) - otherwise
 /// any learner could park a 500 MB video on the public bucket for the
 /// reap grace and serve it from `/content/…`.
 fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
@@ -124,7 +124,7 @@ pub struct UploadsService {
 }
 
 impl UploadsService {
-    /// `file:create:own` — UX-311: the handler checks it before the body.
+    /// `file:create:own` - UX-311: the handler checks it before the body.
     pub fn require_create(actor: &Actor) -> Result<()> {
         actor.require(Permission {
             resource: ResourceType::File,
@@ -218,7 +218,7 @@ impl UploadsService {
         }
         // ARCHITECTURE §11: finalize verifies the size the intent declared
         // (the cap was checked against it, so the object must match it).
-        // BUG-359: a mismatch is refused and the object dropped — a declared
+        // BUG-359: a mismatch is refused and the object dropped - a declared
         // size can no longer be a foot in the door for a bigger body.
         let actual_size = i64::try_from(head.size).unwrap_or(i64::MAX);
         if actual_size != row.size_bytes {
@@ -307,7 +307,7 @@ pub async fn claim_upload(
 ///
 /// Each row is locked, its object deleted, then the row: a claim racing the sweep waits on the lock and then
 /// finds no row, and a failed object delete rolls back so the row is retried on
-/// the next sweep (object deletes are idempotent) — no orphaned objects.
+/// the next sweep (object deletes are idempotent) - no orphaned objects.
 pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64> {
     let mut deleted = 0;
     let mut failures_in_a_row = 0;

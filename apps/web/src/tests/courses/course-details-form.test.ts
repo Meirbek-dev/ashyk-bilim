@@ -54,7 +54,7 @@ describe('course details form matches the v2 Course (F19)', () => {
   })
 })
 
-// UX-120: the create form trims like the details form — «   » never reaches POST /courses.
+// UX-120: the create form trims like the details form - «   » never reaches POST /courses.
 describe('course create form (F19)', () => {
   it('rejects a whitespace-only title inline', () => {
     const result = v.safeParse(courseCreateSchema, {
@@ -86,7 +86,7 @@ describe('course thumbnail (F19/F22)', () => {
     expect(result.data.thumbnail_image).toBe('course-thumbnail/abc')
   })
 
-  // UX-147: the details form can drop the thumbnail — `null` on the wire.
+  // UX-147: the details form can drop the thumbnail - `null` on the wire.
   it('removes the thumbnail with thumbnail_upload_id: null', async () => {
     await updateCourseThumbnail('course_01a08bfb-2c9b-71b3-8985-d541d2b1716b', null)
     expect(mocks.apiResult).toHaveBeenLastCalledWith(

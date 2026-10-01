@@ -174,7 +174,7 @@ describe('access management feedback (UX-057)', () => {
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
-  // UX-207: one learner joined the staff, the other is saved — each is reported.
+  // UX-207: one learner joined the staff, the other is saved - each is reported.
   it('a bulk override marks the refused learner and badges the saved one', async () => {
     mocks.users = [
       { id: 'u1', username: 'mira', display_name: 'Mira', avatar_key: null },
@@ -196,7 +196,7 @@ describe('access management feedback (UX-057)', () => {
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
-  // UX-208: the refused staffer's override is gone server-side — the stale row goes too.
+  // UX-208: the refused staffer's override is gone server-side - the stale row goes too.
   it('drops the cached override of a learner refused as staff', async () => {
     mocks.overrides = [{ user_id: 'u1' }]
     mocks.updateOverride.mockRejectedValue(validation('user_id', 'staff'))
@@ -250,7 +250,7 @@ describe('access management feedback (UX-057)', () => {
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
-  // BUG-317: only the attempts were edited — the waiver, extension, note and expiry stay.
+  // BUG-317: only the attempts were edited - the waiver, extension, note and expiry stay.
   it('a bulk override keeps the fields the teacher did not change', async () => {
     mocks.overrides = [
       {

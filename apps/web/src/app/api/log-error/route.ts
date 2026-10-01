@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { IS_PRODUCTION } from '@/services/config/env'
 
 // The browser's `keepalive` ceiling: no report the reporter sends (strings
-// clipped to 2000 characters) is refused — 8 KB turned a Cyrillic crash report
+// clipped to 2000 characters) is refused - 8 KB turned a Cyrillic crash report
 // into a 413 (BUG-366). Spam is bounded by the per-IP rate limit below.
 const MAX_BODY_BYTES = 64 * 1024
 
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       error: errorMessage?.slice(0, 1000),
       digest,
       requestId,
-      // Component stacks can contain source paths and PII — strip in production.
+      // Component stacks can contain source paths and PII - strip in production.
       componentStack: isProd ? undefined : body.componentStack,
       page,
     })

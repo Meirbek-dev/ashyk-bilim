@@ -261,7 +261,7 @@ pub struct Judge0Config {
     /// Sent as `X-Auth-Token` when set (Judge0 `AUTHN_TOKEN`).
     pub api_key: Option<SecretString>,
     /// Judge0's own Postgres database (the legacy `openu` DB in the shared
-    /// cluster) — only `ashyq admin judge0-tune` connects to it.
+    /// cluster) - only `ashyq admin judge0-tune` connects to it.
     pub database_url: Option<SecretString>,
     /// Per-HTTP-call timeout.
     #[serde(default = "Judge0Config::default_request_timeout_secs")]
@@ -269,7 +269,7 @@ pub struct Judge0Config {
     #[serde(default = "Judge0Config::default_poll_interval_ms")]
     pub poll_interval_ms: u64,
     /// Total wait for a batch to finish. Must stay under the API request
-    /// timeout (30s) — runs execute inside the request.
+    /// timeout (30s) - runs execute inside the request.
     #[serde(default = "Judge0Config::default_poll_max_wait_secs")]
     pub poll_max_wait_secs: f64,
     /// Batches sent to Judge0 at once per process; later ones queue inside
@@ -327,7 +327,7 @@ impl Judge0Limits {
         128
     }
     /// C, C++, Go, Java 13, Node 12, PHP, Python 3.8, Ruby, Rust, TypeScript,
-    /// Kotlin, Swift — the legacy allowlist.
+    /// Kotlin, Swift - the legacy allowlist.
     fn default_allowed_language_ids() -> Vec<i32> {
         vec![50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78, 83]
     }
@@ -385,7 +385,7 @@ pub struct RedisConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ZitadelConfig {
-    /// Origin only, no trailing slash — internal-network address
+    /// Origin only, no trailing slash - internal-network address
     /// (`http://zitadel:8080` in compose; `http://localhost:8081` in dev).
     pub base_url: String,
     /// Provisioner machine-user PAT.
@@ -437,7 +437,7 @@ pub struct TelemetryConfig {
 
 impl Config {
     /// Load from defaults + environment, then validate. Errors are precise and
-    /// name the offending key — a misconfigured server must not limp.
+    /// name the offending key - a misconfigured server must not limp.
     pub fn load() -> Result<Self> {
         let defaults = serde_json::json!({
             "environment": "development",
@@ -480,7 +480,7 @@ impl Config {
         Ok(())
     }
 
-    /// Effective config with secrets redacted — for `ashyq admin config-check`.
+    /// Effective config with secrets redacted - for `ashyq admin config-check`.
     #[must_use]
     pub fn redacted(&self) -> serde_json::Value {
         serde_json::json!({

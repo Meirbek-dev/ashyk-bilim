@@ -10,7 +10,7 @@ import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
  Cached GET requests and cache revalidation. Writes live in `course-writes.ts`
- (plain functions, not server actions — BUG-035 / UX-242).
+ (plain functions, not server actions - BUG-035 / UX-242).
 */
 
 export type NormalizedCourseWithPermissions = AppCourse
@@ -68,8 +68,8 @@ export async function getCourseMetadata(
     apiJson(`courses/${id}`, serverGet(), value => Course.parse(value)),
     apiJson(`courses/${id}/curriculum`, serverGet(), value => Curriculum.parse(value)),
   ])
-  // Learner shape: only published lessons, and no chapter without one — an
-  // empty «Глава 2 — 0 учебных задач» is the author's business (UX-102).
+  // Learner shape: only published lessons, and no chapter without one - an
+  // empty «Глава 2 - 0 учебных задач» is the author's business (UX-102).
   const chapters = withUnpublishedActivities
     ? curriculum.chapters.map(chapter => toAppChapter(chapter))
     : curriculum.chapters

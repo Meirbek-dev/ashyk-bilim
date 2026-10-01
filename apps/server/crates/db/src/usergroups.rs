@@ -49,7 +49,7 @@ pub async fn get_usergroup(pool: &PgPool, id: UsergroupId) -> Result<Option<User
     Ok(row)
 }
 
-/// Newest-first keyset page (admin/instructor view — no visibility split;
+/// Newest-first keyset page (admin/instructor view - no visibility split;
 /// the service gates on `usergroup:read:platform`).
 pub async fn list_usergroups(
     pool: &PgPool,
@@ -202,7 +202,7 @@ pub async fn list_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<Cours
     Ok(ids)
 }
 
-/// BUG-318: courses whose progress depends on the group's membership —
+/// BUG-318: courses whose progress depends on the group's membership -
 /// linked ones and those with an assessment allowlisting the group (the
 /// access check ignores the link).
 pub async fn affected_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<CourseId>> {

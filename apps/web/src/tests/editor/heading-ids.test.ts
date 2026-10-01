@@ -35,8 +35,8 @@ describe('slugifyHeadingText', () => {
   })
 
   it('strips Cyrillic punctuation but keeps letters and digits', () => {
-    // `:` and `.` and `—` are stripped; `1.2` becomes `12` (dot removed)
-    const slug = slugifyHeadingText('Сурет: 1.2 — Схема')
+    // `:` and `.` and the em dash (\u2014) are stripped; `1.2` becomes `12` (dot removed)
+    const slug = slugifyHeadingText('Сурет: 1.2 \u2014 Схема')
     expect(slug).toBe('сурет-12-схема')
   })
 

@@ -10,7 +10,7 @@ vi.mock('@services/courses/courses', () => ({
     return { name: 'gauntlet12-course' }
   },
 }))
-vi.mock('@services/courses/activities', () => ({ getActivity: async () => ({ name: 'Урок 1 — лекция' }) }))
+vi.mock('@services/courses/activities', () => ({ getActivity: async () => ({ name: 'Урок 1 - лекция' }) }))
 vi.mock('@/features/student-activity/api/runtime', () => ({ getStudentActivityRuntime: async () => ({}) }))
 vi.mock('@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity', () => ({ default: () => null }))
 vi.mock('@/components/Errors/AccessDenied', () => ({ default: () => null }))
@@ -28,7 +28,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 describe('activity page <title>', () => {
   it('carries the app-name suffix', async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ courseuuid: 'c1', activityid: 'a1' }) })
-    expect(meta.title).toBe('Урок 1 — лекция - gauntlet12-course - Ashyk Bilim')
+    expect(meta.title).toBe('Урок 1 - лекция - gauntlet12-course - Ashyk Bilim')
   })
 
   // UX-078: a malformed id (422) is the not-found title, not an empty one from the error boundary.

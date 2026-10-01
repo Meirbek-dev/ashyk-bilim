@@ -62,12 +62,12 @@ process.stderr.write('Running oxlint…\n')
 
 const result = spawnSync(cmd, [...baseArgs, '--format', 'json', ...lintArgs], {
   encoding: 'utf8',
-  maxBuffer: 200 * 1024 * 1024, // 200 MB — large monorepos can be verbose
+  maxBuffer: 200 * 1024 * 1024, // 200 MB - large monorepos can be verbose
   cwd: process.cwd(),
   shell: useShell,
 })
 
-// oxlint exits 0 (clean) or 1 (found issues) — both are expected
+// oxlint exits 0 (clean) or 1 (found issues) - both are expected
 if (result.status !== 0 && result.status !== 1) {
   process.stderr.write(`oxlint exited unexpectedly with code ${result.status}\n`)
   if (result.stderr) process.stderr.write(result.stderr + '\n')

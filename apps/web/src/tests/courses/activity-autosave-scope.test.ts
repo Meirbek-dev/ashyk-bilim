@@ -13,7 +13,7 @@ const getActivity = vi.fn()
 vi.mock('@services/courses/activities', () => ({ getActivity: (id: string) => getActivity(id) }))
 
 // BUG-282: a 412 in one lesson stopped autosave in the next lesson opened
-// in-app (the save status was course-wide) — its typing was lost.
+// in-app (the save status was course-wide) - its typing was lost.
 describe('useActivityAutosave scope', () => {
   beforeEach(() => {
     updateActivity.mockReset()
@@ -140,7 +140,7 @@ describe('useActivityAutosave serialization', () => {
 })
 
 // BUG-376: a curriculum rename / publish toggle bumps the version; the open
-// editor rebases a content-only save instead of stopping — but only while
+// editor rebases a content-only save instead of stopping - but only while
 // the server still holds the content this tab last saw.
 describe('useActivityAutosave rebase', () => {
   const stale = () => new APIError({ status: 412, code: 'precondition-failed', message: 'stale' })

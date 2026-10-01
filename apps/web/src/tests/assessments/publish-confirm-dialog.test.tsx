@@ -96,7 +96,7 @@ describe('publish confirmation dialog (UX-011)', () => {
     expect(rowValue('Попытки')).toBe('1')
   })
 
-  // BUG-171: the archived arm — «В архиве», a restore button, no publish/schedule.
+  // BUG-171: the archived arm - «В архиве», a restore button, no publish/schedule.
   it('renders the archived state with a restore-to-draft action only', () => {
     const onLifecycleChange = vi.fn()
     render(
@@ -126,7 +126,7 @@ describe('publish confirmation dialog (UX-011)', () => {
     expect(onLifecycleChange).toHaveBeenCalledWith('DRAFT')
   })
 
-  // UX-200: reverting a published assessment cuts learners off — confirm first.
+  // UX-200: reverting a published assessment cuts learners off - confirm first.
   it('asks before reverting a published assessment to draft', async () => {
     const onLifecycleChange = vi.fn()
     render(
@@ -158,7 +158,7 @@ describe('publish confirmation dialog (UX-011)', () => {
   })
 
   // UX-128: a publish date past the policy due date is refused on the date
-  // field — client-side first, and again when the server says `schedule.after_due_at`.
+  // field - client-side first, and again when the server says `schedule.after_due_at`.
   it('surfaces schedule.after_due_at on the date field and keeps the date', async () => {
     const onLifecycleChange = vi.fn(() =>
       Promise.reject(
@@ -200,7 +200,7 @@ describe('publish confirmation dialog (UX-011)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Запланировать/ }))
     const dateInput = await screen.findByLabelText('schedule-at')
 
-    // After the due date: the hint shows and the button stays disabled — no request.
+    // After the due date: the hint shows and the button stays disabled - no request.
     fireEvent.change(dateInput, { target: { value: '2030-01-20T10:00' } })
     expect(screen.getByRole('alert')).toHaveTextContent(hint)
     const scheduleButtons = () => screen.getAllByRole('button', { name: /^Запланировать$/ })

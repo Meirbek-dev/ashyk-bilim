@@ -22,7 +22,7 @@ describe('catalog pagination edges', () => {
     expect(document.querySelectorAll('a[href="#"]')).toHaveLength(0)
   })
 
-  // UX-133: `?page=99` past the end rendered a fabricated «1 … 97 98» — the
+  // UX-133: `?page=99` past the end rendered a fabricated «1 … 97 98» - the
   // contract has no total, so only prev/next exist, plus an empty state.
   it('past the end: no page numbers, next disabled, empty state links back to page 1', () => {
     render(

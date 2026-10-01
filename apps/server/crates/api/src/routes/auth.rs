@@ -99,7 +99,7 @@ pub async fn login(
 /// a verification code.
 ///
 /// The link opens the web app under the `Accept-Language` locale (`/ru`,
-/// `/kz`, `/en`). No session is opened — the client logs in next. Honours
+/// `/kz`, `/en`). No session is opened - the client logs in next. Honours
 /// `Idempotency-Key` (a retry replays the 201 instead of 409
 /// `username-taken`).
 #[utoipa::path(
@@ -108,7 +108,7 @@ pub async fn login(
     tag = "auth",
     params(
         ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
-        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en — the locale of the verification link"),
+        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en - the locale of the verification link"),
     ),
     request_body = RegisterRequest,
     responses(
@@ -375,7 +375,7 @@ pub async fn totp_remove(
 }
 
 // ── Google sign-in (browser navigation endpoints: errors redirect, never
-//    render problem+json — the caller is a browser mid-navigation). ─────────
+//    render problem+json - the caller is a browser mid-navigation). ─────────
 
 #[derive(Debug, Deserialize)]
 pub struct GoogleStartQuery {

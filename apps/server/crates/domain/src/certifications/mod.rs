@@ -2,7 +2,7 @@
 //!
 //! A course may carry certification templates (opaque JSON for the
 //! client's PDF designer); a certificate is issued to a learner once the
-//! canonical course progress marks them eligible — automatically by the
+//! canonical course progress marks them eligible - automatically by the
 //! progress projector, and again on demand when the learner opens their
 //! certificates. Verification by code is public.
 
@@ -65,7 +65,7 @@ pub fn new_verify_code() -> String {
 ///
 /// Trimmed, case-insensitive, dashes and spaces optional (`ftsb…` and
 /// `FTSB-…` name the same certificate). BUG-357: `-` and spaces are the
-/// only separators — any other character (`.`, quotes, non-Latin letters)
+/// only separators - any other character (`.`, quotes, non-Latin letters)
 /// is not a code at all (`None`), never silently dropped.
 #[must_use]
 pub fn normalize_verify_code(raw: &str) -> Option<String> {
@@ -169,7 +169,7 @@ impl CertificationsService {
     }
 
     /// Visible course (404) + a course-scoped certificate grant (platform,
-    /// or authorship — the `:own` scope).
+    /// or authorship - the `:own` scope).
     async fn scoped_course(
         &self,
         actor: &Actor,
@@ -188,7 +188,7 @@ impl CertificationsService {
     }
 
     /// UX-311: the create handler's gate before it reads the body (which
-    /// names the course) — a platform grant or authorship of some course.
+    /// names the course) - a platform grant or authorship of some course.
     pub async fn require_some_create(&self, actor: &Actor) -> Result<()> {
         if actor.has(perm(Action::Create, Scope::Platform))
             || ab_db::catalog::authors_any_course(&self.pool, actor.user_id).await?
@@ -381,7 +381,7 @@ impl CertificationsService {
     /// The certificate as a PDF (public by code, like `verify`). The page
     /// language is `language` when given, else the holder's locale;
     /// `verify_url` turns the page language and the canonical code into the
-    /// public verify link. Returns the stored code with the bytes — the
+    /// public verify link. Returns the stored code with the bytes - the
     /// download is named by it, never by the typed code (BUG-327).
     pub async fn pdf(
         &self,

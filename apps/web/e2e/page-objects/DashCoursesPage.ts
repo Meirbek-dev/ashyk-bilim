@@ -1,7 +1,7 @@
 import type { Page, Locator } from '@playwright/test'
 
 /**
- * Page Object for /en/dash/courses — the teacher's course list.
+ * Page Object for /en/dash/courses - the teacher's course list.
  */
 export class DashCoursesPage {
   public readonly page: Page

@@ -29,7 +29,7 @@ import Link from '@components/ui/AppLink'
 
 export type CourseCta = 'start' | 'continue' | 'certificate' | 'review' | 'preview'
 
-/** `Courses.CoursesActions` label per CTA — one wording on desktop and phone (UX-174). */
+/** `Courses.CoursesActions` label per CTA - one wording on desktop and phone (UX-174). */
 export const CTA_LABEL = {
   start: 'startCourse',
   continue: 'continueLearning',
@@ -75,9 +75,9 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
       : null
   // 100 % without a certificate: the wire's next action is a review, not «Продолжить» (UX-053).
   const isReviewCompletion = isStarted && !nextUnfinished && learnerState?.next_action?.id === 'review_completion'
-  // UX-119: nothing published for learners (0/0) — no CTA to dead-click.
+  // UX-119: nothing published for learners (0/0) - no CTA to dead-click.
   const hasNoLiveActivities = learnerState !== null && learnerState !== undefined && activityCount === 0
-  // BUG-287: the course's staff preview it — the server refuses to enrol them.
+  // BUG-287: the course's staff preview it - the server refuses to enrol them.
   const isStaffPreview = learnerState?.permissions.denial_reason === 'staff_preview'
   const action: CourseCta = isStaffPreview
     ? 'preview'
@@ -129,7 +129,7 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
 
     setIsActionLoading(true)
     // Enrolled on the wire but no trail run (left with submissions): bring the
-    // run back so `/trail` lists the course again — quietly, it is not a new start.
+    // run back so `/trail` lists the course again - quietly, it is not a new start.
     const loadingToast = action === 'start' ? toast.loading(t('startingCourse')) : undefined
     try {
       if (action === 'start' || !hasTrailRun) {
@@ -210,7 +210,7 @@ export function ContributorControl({ courseuuid, course }: { courseuuid: string;
       await refetch()
       toast.success(t('applicationWithdrawn'), { id: loadingToast })
     } catch (error) {
-      // Stale page: the application was decided (403) or withdrawn elsewhere (404) — refetch and say so (UX-050).
+      // Stale page: the application was decided (403) or withdrawn elsewhere (404) - refetch and say so (UX-050).
       if (hasErrorCode(error, 'forbidden') || hasErrorCode(error, 'not-found')) {
         await refetch()
         toast.info(t('applicationAlreadyReviewed'), { id: loadingToast })

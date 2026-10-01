@@ -22,7 +22,7 @@ use crate::identity::Actor;
 /// Whether the actor sees private catalog entries they neither created nor
 /// were cohort-linked to.
 ///
-/// The legacy access filter ignored `course:read:all` (every role holds it —
+/// The legacy access filter ignored `course:read:all` (every role holds it -
 /// it means "browse the public catalogue"), so the bypass is reserved for
 /// staff who manage the resource platform-wide.
 #[must_use]

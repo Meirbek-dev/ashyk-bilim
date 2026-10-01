@@ -14,7 +14,7 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/types'
  * The browser never talks to the identity provider: `POST /auth/login` runs
  * the headless Zitadel password (+ TOTP) check and answers with the session
  * cookie, which the action copies onto the app origin. `POST /auth/register`
- * creates the account (no session — the user logs in next) and
+ * creates the account (no session - the user logs in next) and
  * `POST /auth/verify-email` confirms the emailed code. Password reset is not
  * part of the v2 contract (DECISIONS.md 2026-09-12).
  */
@@ -23,10 +23,10 @@ interface LoginActionInput {
   /** Username or email. */
   login: string
   password: string
-  /** Second factor — resubmitted after an `mfa-required` answer. */
+  /** Second factor - resubmitted after an `mfa-required` answer. */
   totpCode?: string | null
   returnTo?: string | null
-  /** Active UI locale (`ru-RU`, …) — prefixes an unprefixed `returnTo`. */
+  /** Active UI locale (`ru-RU`, …) - prefixes an unprefixed `returnTo`. */
   locale?: string | null
 }
 
@@ -116,7 +116,7 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
     await applyBackendSetCookies(response.headers)
   } catch {
     // Logout is idempotent server-side; a transport failure must not trap the
-    // user in a signed-in shell — the cookie is dropped below regardless.
+    // user in a signed-in shell - the cookie is dropped below regardless.
   }
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE_NAME)
@@ -125,7 +125,7 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
   if (redirectTo) {
     // Not `normalizeReturnTo`: that one forces auth routes back to `/` to
     // stop a post-login `returnTo` from looping to the login page. A
-    // post-LOGOUT destination is the opposite case — it's usually `/login`
+    // post-LOGOUT destination is the opposite case - it's usually `/login`
     // itself, and that must be allowed through.
     redirect(normalizeInternalPath(redirectTo))
   }
@@ -165,7 +165,7 @@ async function problemResult(response: Response): Promise<RegisterActionResult> 
   }
 }
 
-/** `POST /auth/register` — creates the account; the user then logs in. */
+/** `POST /auth/register` - creates the account; the user then logs in. */
 export async function registerAction(input: RegisterActionInput): Promise<RegisterActionResult> {
   let response: Response
   try {
@@ -192,7 +192,7 @@ export async function registerAction(input: RegisterActionInput): Promise<Regist
   return { ok: true }
 }
 
-/** `POST /auth/verify-email` — confirms the emailed code. */
+/** `POST /auth/verify-email` - confirms the emailed code. */
 export async function verifyEmailAction(input: { email: string; code: string }): Promise<RegisterActionResult> {
   let response: Response
   try {

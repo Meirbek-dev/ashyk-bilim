@@ -61,7 +61,7 @@ describe('UserSecuritySettings', () => {
     mockListSessions.mockRejectedValue(new Error('network unreachable'))
     // Deliberately the bare library default (3 attempts, exponential
     // backoff up to ~7s) rather than this app's own queryClient.ts default
-    // (3 attempts, 5s each) — either way, slower than the few-second bound
+    // (3 attempts, 5s each) - either way, slower than the few-second bound
     // this test enforces unless UserSecuritySettings caps retries itself.
     const queryClient = new QueryClient()
 
@@ -72,14 +72,14 @@ describe('UserSecuritySettings', () => {
     )
 
     await waitFor(() => expect(screen.getByText('sessionsLoadError')).toBeDefined(), { timeout: 2500 })
-    // The retry button must still be there — capping retries must not
+    // The retry button must still be there - capping retries must not
     // remove the escape hatch.
     expect(screen.getByText('retry')).toBeDefined()
   })
 
   // UX-003: "Enable" and "Disable" both rendered for an account with no
   // TOTP enrolled, making "Disable" a dead click (and, since removal is
-  // idempotent, a misleading one — it would toast success without having
+  // idempotent, a misleading one - it would toast success without having
   // disabled anything).
   it('renders only the enable control for an account with no TOTP enrolled', async () => {
     mockListSessions.mockResolvedValue([])
@@ -112,7 +112,7 @@ describe('UserSecuritySettings', () => {
   })
 
   // UX-188: a Google-only account has no password to change, and TOTP does
-  // not guard its Google sign-in — say so instead of offering the form.
+  // not guard its Google sign-in - say so instead of offering the form.
   it('shows a Google-only account no change-password form and the Google TOTP note', async () => {
     mockListSessions.mockResolvedValue([])
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -159,7 +159,7 @@ describe('UserSecuritySettings', () => {
     await waitFor(() => expect(mockChangePassword).toHaveBeenCalledTimes(2))
     // Success clears the form.
     await waitFor(() => expect(input('currentPassword').value).toBe(''))
-    // UX-017: the server revoked the other sessions — the list refetches.
+    // UX-017: the server revoked the other sessions - the list refetches.
     await waitFor(() => expect(mockListSessions).toHaveBeenCalledTimes(2))
   })
 
@@ -191,7 +191,7 @@ describe('UserSecuritySettings', () => {
     await user.click(within(dialog).getByRole('button', { name: 'disableTotp' }))
     await waitFor(() => expect(mockRemoveTotp).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('enableTotp')).toBeDefined()
-    // UX-055: the trigger unmounted with the dialog — focus lands on the
+    // UX-055: the trigger unmounted with the dialog - focus lands on the
     // section heading, not <body>.
     await waitFor(() => expect(document.activeElement?.id).toBe('totp-heading'))
   })
@@ -220,7 +220,7 @@ describe('UserSecuritySettings', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'revoke' })).toBeNull())
   })
 
-  // UX-082: TOTP disabled in another tab — the server snapshot said
+  // UX-082: TOTP disabled in another tab - the server snapshot said
   // «enabled»; the live session flag wins once it arrives.
   it('reflects a TOTP disable made in another tab from the live session', async () => {
     mockListSessions.mockResolvedValue([])
@@ -235,7 +235,7 @@ describe('UserSecuritySettings', () => {
     expect(screen.queryByText('disableTotp')).toBeNull()
   })
 
-  // UX-110: the enrolment was activated in another tab — verify's 409 is the
+  // UX-110: the enrolment was activated in another tab - verify's 409 is the
   // same «already active» re-sync as enrol's, not a generic conflict toast.
   it('re-syncs to the active state when verify answers 409', async () => {
     const { APIError } = await import('@/lib/api/assertSuccess')
@@ -258,7 +258,7 @@ describe('UserSecuritySettings', () => {
     expect(screen.queryByText('totpScanHint')).toBeNull()
   })
 
-  // UX-118: the same 409 when the pending enrolment was removed elsewhere —
+  // UX-118: the same 409 when the pending enrolment was removed elsewhere -
   // the refetched flag says «not enabled», so the section goes back to
   // «Включить…» with a «start again» notice, not «already active».
   it('resets the enrolment when verify answers 409 and mfa is still off', async () => {
@@ -284,7 +284,7 @@ describe('UserSecuritySettings', () => {
   })
 
   // UX-107: the app default is `refetchOnWindowFocus: false`, so `staleTime: 5 s`
-  // alone never refetched — a session revoked in another tab stayed listed.
+  // alone never refetched - a session revoked in another tab stayed listed.
   it('refetches the sessions list on window focus', async () => {
     mockListSessions.mockResolvedValue([])
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })

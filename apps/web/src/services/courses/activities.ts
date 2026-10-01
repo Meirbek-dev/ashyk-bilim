@@ -20,8 +20,8 @@ const json = (method: 'POST' | 'PATCH', body: unknown, headers: Record<string, s
 
 /**
  * Activities are optimistic-lock writes (UX-027): the server answers with
- * `ETag: "<version>"` — or, on the 201 of `POST chapters/{id}/activities`,
- * only with `version` in the body (BUG-149) — and a `content` PATCH must send
+ * `ETag: "<version>"` - or, on the 201 of `POST chapters/{id}/activities`,
+ * only with `version` in the body (BUG-149) - and a `content` PATCH must send
  * it back as `If-Match` (stale → 412 `precondition-failed`). The version
  * rides on the app activity.
  */

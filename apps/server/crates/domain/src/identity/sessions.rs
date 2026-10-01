@@ -13,7 +13,7 @@
 //!   (`revoke_all`, `revoke_others`, the grant/MFA rewrites) bumps it BEFORE
 //!   touching the sessions, and [`SessionStore::create`] only writes when the
 //!   epoch still equals the one the login read before its slow credential
-//!   check — a login that straddles the mutation gets `None`, never a session
+//!   check - a login that straddles the mutation gets `None`, never a session
 //!   the mutation could not see.
 //! - Per-user registry `user_sessions:{uid}` (zset scored by creation time)
 //!   caps concurrent LIVE sessions at [`MAX_SESSIONS_PER_USER`], evicting
@@ -62,15 +62,15 @@ fn past_absolute_cap(record: &SessionRecord) -> bool {
 }
 
 /// Compare-and-set rewrite: only if the record is still the one we read, and
-/// only if it still exists (`XX` — a concurrent revoke must win).
+/// only if it still exists (`XX` - a concurrent revoke must win).
 const REWRITE_IF_UNCHANGED: &str = r"
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 redis.call('SET', KEYS[1], ARGV[2], 'XX', 'KEEPTTL')
 return 1";
 /// Fenced create: record + registry entry only if the user's epoch is still
 /// the one the caller read (`KEYS[3]`; a never-bumped epoch reads as 0).
-/// Same step (BUG-277): drop registry ids that are already dead — record key
-/// expired, or created before the absolute cap (`ARGV[6]`, ms) — then evict
+/// Same step (BUG-277): drop registry ids that are already dead - record key
+/// expired, or created before the absolute cap (`ARGV[6]`, ms) - then evict
 /// the oldest LIVE sessions beyond the cap (`ARGV[7]`). Key names are built
 /// here from the `session:` / `session_seen:` prefixes (standalone Redis).
 const CREATE_IF_EPOCH: &str = r"
@@ -94,7 +94,7 @@ for i = 1, #live - tonumber(ARGV[7]) do
 end
 return 1";
 /// Touch: slide the record's TTL and stamp `last_seen` only while the record
-/// exists — a touch racing a revoke must not leave an orphan stamp.
+/// exists - a touch racing a revoke must not leave an orphan stamp.
 const TOUCH_IF_ALIVE: &str = r"
 if redis.call('EXPIRE', KEYS[1], ARGV[1]) == 1 then
   redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[1])
@@ -123,13 +123,13 @@ pub struct SessionRecord {
     pub user_id: UserId,
     pub zitadel_user_id: String,
     pub zitadel_session_id: String,
-    /// Zitadel session token — server-side only, never leaves this store.
+    /// Zitadel session token - server-side only, never leaves this store.
     pub zitadel_session_token: String,
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
     pub rbac_version: i64,
     /// TOTP enrolled on the Zitadel account (as of login / last enrollment
-    /// change) — `mfa_enabled` on the wire.
+    /// change) - `mfa_enabled` on the wire.
     #[serde(default)]
     pub mfa_enabled: bool,
     /// The account has a password (UX-188): always after a password login,
@@ -195,7 +195,7 @@ impl SessionStore {
         Ok(Self { client, redis })
     }
 
-    /// The user's current epoch — read it before the checks a login rests on,
+    /// The user's current epoch - read it before the checks a login rests on,
     /// pass it to [`Self::create`].
     pub async fn epoch(&self, user_id: UserId) -> Result<i64> {
         let mut conn = self.redis.clone();
@@ -219,7 +219,7 @@ impl SessionStore {
 
     /// Create a session; returns the opaque id for the cookie, or `None` when
     /// the user's epoch moved since `new.epoch` was read (a mutation landed
-    /// mid-login — the caller re-reads the account and refuses as a fresh
+    /// mid-login - the caller re-reads the account and refuses as a fresh
     /// login would). Prunes dead registry ids, then evicts the oldest live
     /// sessions beyond [`MAX_SESSIONS_PER_USER`].
     pub async fn create(&self, new: NewSession) -> Result<Option<String>> {
@@ -508,7 +508,7 @@ impl SessionStore {
     /// Fence a session against the user's durable `rbac_version` (BUG-345):
     /// a grant change commits in Postgres before its session rewrite, so a
     /// failed or lost rewrite leaves a record behind the user row. Such a
-    /// record is repaired before use — fresh grants (persisted best-effort),
+    /// record is repaired before use - fresh grants (persisted best-effort),
     /// or revoked when the account is no longer active. A record whose user
     /// row is gone is passed through as is.
     pub async fn fenced(

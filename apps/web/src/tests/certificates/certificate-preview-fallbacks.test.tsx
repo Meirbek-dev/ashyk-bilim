@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 // UX-131: an issued certificate whose config lacks `certification_type` /
 // `certificate_instructor` never shows the editor's sample data or a raw
-// i18n key — the type falls back to «completion», the instructor to what
+// i18n key - the type falls back to «completion», the instructor to what
 // the server resolved (the course creator, as the PDF prints it).
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import { fileSubmissionQueryOptions } from '@/features/file-submissions/student/FileSubmissionWorkspace'
 
 // UX-068: a hand-in waiting on the teacher polls for the release.
-// BUG-158: a released one keeps a slower poll — a gate assigned meanwhile must show.
+// BUG-158: a released one keeps a slower poll - a gate assigned meanwhile must show.
 describe('learner file-activity query', () => {
   const interval = (status: string | null) => {
     const options = fileSubmissionQueryOptions('activity_1')

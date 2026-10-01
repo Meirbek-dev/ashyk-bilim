@@ -10,7 +10,7 @@ import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessm
 
 // UX-111: a submit 429 used to toast the server's English detail («too many
 // submit attempts; slow down»). Every non-conflict, non-reason failure now
-// goes through the localized mapper — a 429 with `Retry-After` says when.
+// goes through the localized mapper - a 429 with `Retry-After` says when.
 
 vi.mock('@/lib/api-client', () => ({ apiJson: vi.fn() }))
 vi.mock('next-intl', () => ({
@@ -76,7 +76,7 @@ describe('submit rate limited', () => {
   })
 
   // BUG-178: answers typed inside the autosave throttle used to die with a
-  // failed submit — the draft PATCH must follow with the typed answers and
+  // failed submit - the draft PATCH must follow with the typed answers and
   // the attempt stays «Не сохранено» until it lands.
   it('re-queues the unsaved answers as a draft save when the submit fails', async () => {
     vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {

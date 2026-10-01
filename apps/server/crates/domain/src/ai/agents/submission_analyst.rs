@@ -58,7 +58,7 @@ pub(crate) fn role_for(actor_id: UserId, subject: &Subject) -> AiThreadRole {
 }
 
 impl AiService {
-    /// `POST /ai/submission-analysis/{subject}/analyze` — inline.
+    /// `POST /ai/submission-analysis/{subject}/analyze` - inline.
     pub async fn analyze_submission(
         &self,
         actor: &Actor,
@@ -235,7 +235,7 @@ impl AiService {
 
     /// `GET /ai/submission-analysis/{subject}/latest`: the owner gets the
     /// newest analysis of their own runs (the learner's context, BUG-182 /
-    /// BUG-185 — a grader's report is prose over the answer key and cannot
+    /// BUG-185 - a grader's report is prose over the answer key and cannot
     /// be redacted by `review_visibility`); graders get the newest of all.
     pub async fn latest_submission_analysis(
         &self,

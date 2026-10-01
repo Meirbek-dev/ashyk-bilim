@@ -117,7 +117,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     assert!(body["users"].as_array().unwrap().is_empty());
 
     // The creator finds their own drafts; people search works when signed in
-    // and matches username — but never email.
+    // and matches username - but never email.
     let mine = app.get_as(&teacher, "/api/v2/search?q=rust").await;
     let body = mine.json();
     assert_eq!(body["courses"].as_array().unwrap().len(), 2);
@@ -138,7 +138,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
         by_email.json()["users"].as_array().unwrap().is_empty(),
         "email fragments must not match people (FINDINGS #16)"
     );
-    // UX-183: `\` is literal too — `\ustacean` is not `ustacean`.
+    // UX-183: `\` is literal too - `\ustacean` is not `ustacean`.
     let backslash = app.get_as(&teacher, "/api/v2/search?q=%5Custacean").await;
     assert_eq!(backslash.status, StatusCode::OK, "{}", backslash.text());
     assert!(
@@ -152,8 +152,8 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     assert_eq!(blank.status, StatusCode::OK);
     assert!(blank.json()["courses"].as_array().unwrap().is_empty());
 
-    // UX-152: partial words hit like the people search does — a prefix of a
-    // hyphenated name, a Cyrillic stem — and `-word` still excludes.
+    // UX-152: partial words hit like the people search does - a prefix of a
+    // hyphenated name, a Cyrillic stem - and `-word` still excludes.
     let gauntlet = course(
         &app,
         &teacher,
@@ -175,7 +175,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
             hits.text()
         );
     }
-    // UX-155: `-word` negates as a prefix too — `-gaunt` excludes the course.
+    // UX-155: `-word` negates as a prefix too - `-gaunt` excludes the course.
     let negated = app.get_as(&teacher, "/api/v2/search?q=-gaunt").await;
     let hits = negated.json()["courses"].clone();
     let hits: Vec<&str> = hits
@@ -193,7 +193,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
         .get_as(&teacher, "/api/v2/search?q=it%27s%20%26%20%22")
         .await;
     assert_eq!(quirky.status, StatusCode::OK, "{}", quirky.text());
-    // BUG-249: no punctuation — alone, trailing, negated — reaches tsquery as
+    // BUG-249: no punctuation - alone, trailing, negated - reaches tsquery as
     // a syntax error (`\` used to escape the closing quote → 500).
     for c in (b'!'..=b'~').filter(u8::is_ascii_punctuation) {
         for q in [
@@ -208,7 +208,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
 }
 
 /// BUG-190: search uses the catalogue's visibility predicate, usergroup arm
-/// included — a cohort member finds the private course, anon does not.
+/// included - a cohort member finds the private course, anon does not.
 #[sqlx::test(migrations = "../../migrations")]
 async fn cohort_member_finds_the_usergroup_shared_course(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -290,7 +290,7 @@ async fn anonymous_browsing_sees_public_catalog_only(pool: PgPool) {
     assert_eq!(denied.status, StatusCode::UNAUTHORIZED);
 }
 
-/// UX-222: `/search` and `courses?q=` share one matching rule — symbols
+/// UX-222: `/search` and `courses?q=` share one matching rule - symbols
 /// count (`C#`, `C++`), a one-letter word matches whole (and unfolded), and a
 /// Cyrillic look-alike «С#» is found by the Latin `C#`.
 #[sqlx::test(migrations = "../../migrations")]
@@ -330,7 +330,7 @@ async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool)
         let listed = app.get(&format!("/api/v2/courses?q={q}")).await;
         assert_eq!(names(&listed.json()["items"]), expected, "courses {q}");
     }
-    // UX-238: people search applies the one-letter rule too — `c` is the
+    // UX-238: people search applies the one-letter rule too - `c` is the
     // whole word of «c.dev», not the «c» inside «teacher» or «cooper».
     for name in ["c.dev", "cooper"] {
         app.create_user(name, &format!("{name}@example.com"), &[])

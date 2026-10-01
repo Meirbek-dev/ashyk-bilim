@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-080: a lesson published while the activity page is open never reached the
-// sidebar — the runtime was a server prop, not a query with learner-state's focus policy.
+// sidebar - the runtime was a server prop, not a query with learner-state's focus policy.
 import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vite-plus/test'

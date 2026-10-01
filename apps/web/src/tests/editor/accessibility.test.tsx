@@ -12,12 +12,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-// Mock next-intl — return the key as the translation value
+// Mock next-intl - return the key as the translation value
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }))
 
-// Mock next/image — render a plain <img>
+// Mock next/image - render a plain <img>
 vi.mock('next/image', () => ({
   default: ({ src, alt, ...rest }: { src: string; alt: string; [k: string]: unknown }) => (
     // eslint-disable-next-line @next/next/no-img-element
@@ -34,7 +34,7 @@ vi.mock('@/components/providers/theme-provider', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }))
 
-// Mock @tiptap/react — provide minimal useTiptap / useTiptapState stubs
+// Mock @tiptap/react - provide minimal useTiptap / useTiptapState stubs
 vi.mock('@tiptap/react', () => ({
   useTiptap: () => ({
     editor: {
@@ -259,7 +259,7 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
     const dialog = screen.getByRole('dialog')
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
-    // Tab through all focusable elements — focus must stay inside the dialog
+    // Tab through all focusable elements - focus must stay inside the dialog
     for (let i = 0; i < 5; i += 1) {
       await user.tab()
       expect(dialog.contains(document.activeElement)).toBe(true)
@@ -274,7 +274,7 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
     const dialog = screen.getByRole('dialog')
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
-    // Shift+Tab through all focusable elements — focus must stay inside the dialog
+    // Shift+Tab through all focusable elements - focus must stay inside the dialog
     for (let i = 0; i < 5; i += 1) {
       await user.tab({ shift: true })
       expect(dialog.contains(document.activeElement)).toBe(true)

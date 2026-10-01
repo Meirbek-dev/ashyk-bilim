@@ -12,7 +12,7 @@ export const TotpEnrollment = zod
     secret: zod.string().describe('Base32 secret for manual entry.'),
     uri: zod.string().describe('`otpauth://` URI for QR rendering.'),
   })
-  .describe('TOTP enrollment secrets — shown to the user exactly once.')
+  .describe('TOTP enrollment secrets - shown to the user exactly once.')
 
 export type TotpEnrollment = zod.input<typeof TotpEnrollment>
 export type TotpEnrollmentOutput = zod.output<typeof TotpEnrollment>

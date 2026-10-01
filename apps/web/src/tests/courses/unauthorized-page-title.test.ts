@@ -1,5 +1,5 @@
 // UX-267: /unauthorized metadata comes from the static catalogs (cached), not
-// from `getTranslations` — Next 16 flagged that as URL data in generateMetadata().
+// from `getTranslations` - Next 16 flagged that as URL data in generateMetadata().
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 import ruMessages from '@/messages/ru-RU.json'

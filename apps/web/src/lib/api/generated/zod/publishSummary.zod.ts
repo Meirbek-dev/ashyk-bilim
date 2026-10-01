@@ -12,13 +12,13 @@ export const PublishSummary = zod.object({
   needs_grading_count: zod
     .int()
     .describe(
-      'Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) — the same count as\n`stats.needs_grading`.',
+      'Rows held back: `pending` attempts plus graded ones whose manual\nitem is still unscored (BUG-197 / BUG-202) - the same count as\n`stats.needs_grading`.',
     ),
   published_count: zod.int(),
   skipped_count: zod
     .int()
     .describe(
-      "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) — left as they are; run the release again for them —\nand the caller's own attempts, never theirs to release (BUG-288).",
+      "Rows a grade save or return changed while the release ran (BUG-226\nversion guard) - left as they are; run the release again for them -\nand the caller's own attempts, never theirs to release (BUG-288).",
     ),
 })
 

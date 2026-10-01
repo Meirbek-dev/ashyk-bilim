@@ -176,7 +176,7 @@ export const PublicProfile = zod
     username: zod.string(),
   })
   .describe(
-    '`GET /users/{username}`: the public card plus the bio (no email —\nFINDINGS #16). Search keeps the lean `UserHit`.',
+    '`GET /users/{username}`: the public card plus the bio (no email -\nFINDINGS #16). Search keeps the lean `UserHit`.',
   )
 
 export type PublicProfile = zod.input<typeof PublicProfile>

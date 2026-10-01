@@ -95,7 +95,7 @@ async fn apply_approve_author_and_deactivate(pool: PgPool) {
         .await;
     assert_eq!(again.status, StatusCode::CONFLICT);
     assert_eq!(again.json()["code"], "conflict");
-    // The public course page names its authors to anonymous visitors —
+    // The public course page names its authors to anonymous visitors -
     // active ones only, never the pending applicant.
     let public = app
         .get(&format!("/api/v2/courses/{course}/contributors"))
@@ -332,7 +332,7 @@ async fn roster_management_rules(pool: PgPool) {
         "{}",
         by_learner.text()
     );
-    // …the creator deleting their own id included (409, not 404 — UX-081).
+    // …the creator deleting their own id included (409, not 404 - UX-081).
     let self_evict = app
         .delete_as(
             &teacher,

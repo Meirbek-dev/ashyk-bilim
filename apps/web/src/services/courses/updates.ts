@@ -5,7 +5,7 @@ import { apiResult } from '@/lib/api-client'
 import { CourseUpdate } from '@/lib/api/generated/zod'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 
-/** `POST courses/{id}/updates` — answers 201 with the created `CourseUpdate`. */
+/** `POST courses/{id}/updates` - answers 201 with the created `CourseUpdate`. */
 export async function createCourseUpdate(body: AppPayload) {
   return apiResult(
     `courses/${stripEntityPrefix(body.course_uuid ?? '')}/updates`,
@@ -18,7 +18,7 @@ export async function createCourseUpdate(body: AppPayload) {
   )
 }
 
-/** `DELETE course-updates/{id}` — answers 204. */
+/** `DELETE course-updates/{id}` - answers 204. */
 export async function deleteCourseUpdate(_course_uuid: string, update_uuid: string | number) {
   return apiResult(`course-updates/${update_uuid}`, { method: 'DELETE' })
 }

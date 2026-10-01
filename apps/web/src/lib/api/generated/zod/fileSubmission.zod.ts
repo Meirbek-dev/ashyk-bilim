@@ -67,7 +67,7 @@ export const FileSubmission = zod.object({
               zod.null(),
             ])
             .optional(),
-          version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),
+          version: zod.int().describe('Optimistic lock - send back as `If-Match`.'),
         })
         .describe(
           'One attempt. For its owner, `final_score`, `feedback` and\n`rubric_scores` are `null` until the grade is published or the work\nreturned.',
@@ -133,7 +133,7 @@ export const FileSubmission = zod.object({
               zod.null(),
             ])
             .optional(),
-          version: zod.int().describe('Optimistic lock — send back as `If-Match`.'),
+          version: zod.int().describe('Optimistic lock - send back as `If-Match`.'),
         })
         .describe("The caller's newest attempt (learners)."),
       zod.null(),

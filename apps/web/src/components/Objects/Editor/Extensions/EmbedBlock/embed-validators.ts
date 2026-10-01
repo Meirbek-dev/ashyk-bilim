@@ -90,10 +90,10 @@ export function resolveYouTubeVideoId(value: string): string | null {
  * Validates an Excalidraw share URL.
  *
  * Returns:
- *   - `'errorEmpty'`   — the trimmed input is blank
- *   - `'errorInvalid'` — non-empty but not a valid absolute URL, or the
+ *   - `'errorEmpty'`   - the trimmed input is blank
+ *   - `'errorInvalid'` - non-empty but not a valid absolute URL, or the
  *                        hostname is not exactly `excalidraw.com`
- *   - `null`           — valid (absolute URL with hostname `excalidraw.com`)
+ *   - `null`           - valid (absolute URL with hostname `excalidraw.com`)
  */
 export function validateExcalidrawUrl(url: string): null | EmbedValidationError {
   if (url.trim() === '') return 'errorEmpty'
@@ -133,9 +133,9 @@ export function buildExcalidrawSrc(url: string): string {
  *   - have a path matching `/r/<room-id>` where `<room-id>` is non-empty
  *
  * Returns:
- *   - `'errorEmpty'`   — the trimmed input is blank
- *   - `'errorInvalid'` — non-empty but fails any of the above checks
- *   - `null`           — valid
+ *   - `'errorEmpty'`   - the trimmed input is blank
+ *   - `'errorInvalid'` - non-empty but fails any of the above checks
+ *   - `null`           - valid
  */
 export function validateTldrawUrl(url: string): null | EmbedValidationError {
   if (url.trim() === '') return 'errorEmpty'

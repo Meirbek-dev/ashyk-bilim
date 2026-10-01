@@ -1,4 +1,4 @@
-//! Role administration flows — the key property: grant changes propagate to
+//! Role administration flows - the key property: grant changes propagate to
 //! LIVE sessions immediately, no re-login (mutation-time propagation).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -31,7 +31,7 @@ async fn role_assignment_propagates_to_live_sessions(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::NO_CONTENT);
 
-    // After: same cookie, fresh grants — no re-login.
+    // After: same cookie, fresh grants - no re-login.
     let after = app.get_as(&target_session, "/api/v2/auth/session").await;
     let perms = after.json()["permissions"].as_array().unwrap().clone();
     assert!(perms.contains(&serde_json::json!("course:update:own")));
@@ -272,7 +272,7 @@ async fn last_admin_role_cannot_be_removed(pool: PgPool) {
     assert_eq!(removed.status, StatusCode::NO_CONTENT);
 }
 
-/// UX-135: two admins stripping each other at the same time — the guard
+/// UX-135: two admins stripping each other at the same time - the guard
 /// counts under a row lock on the `admin` role in the write's transaction,
 /// so exactly one removal lands and one active admin always remains.
 #[sqlx::test(migrations = "../../migrations")]
@@ -380,7 +380,7 @@ async fn role_errors_are_typed(pool: PgPool) {
 
 /// BUG-144: the last-admin guard asks "would another *active* admin remain",
 /// so a disabled admin can lose the role (or be disabled again) while one
-/// other admin is active — and the only active admin still cannot.
+/// other admin is active - and the only active admin still cannot.
 #[sqlx::test(migrations = "../../migrations")]
 async fn disabled_admin_can_lose_the_role_while_another_is_active(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -532,7 +532,7 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
 
 /// BUG-345: a role removal or custom-role deletion commits before the live
 /// sessions are rewritten. When that rewrite fails (an injected per-user
-/// Redis fault) the change still holds — 204, audited — because the session
+/// Redis fault) the change still holds - 204, audited - because the session
 /// is fenced on the user row's bumped `rbac_version`: the revoked grant is
 /// gone on its next request, with nothing left for a retry to repair.
 #[sqlx::test(migrations = "../../migrations")]

@@ -1,4 +1,4 @@
-//! `ab-api` — the HTTP layer: state, extractors, middleware, routes, OpenAPI.
+//! `ab-api` - the HTTP layer: state, extractors, middleware, routes, OpenAPI.
 //!
 //! Handlers are thin: extract → call `ab-domain` → map to a response DTO.
 //! Every route is registered through `utoipa_axum::routes!` so the OpenAPI

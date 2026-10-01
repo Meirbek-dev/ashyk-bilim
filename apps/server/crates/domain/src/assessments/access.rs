@@ -23,7 +23,7 @@ use crate::catalog::courses::Course;
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
-/// The attempt cap — one rule for `attempt-state`, `start` and the submit
+/// The attempt cap - one rule for `attempt-state`, `start` and the submit
 /// pipeline (BUG-256): it bars *opening* a new attempt once `completed`
 /// attempts reach `max`, unless the newest one was returned for revision.
 /// An already-open draft may always be finished, so lowering the cap (an
@@ -36,12 +36,12 @@ pub(crate) fn cap_bars_new_attempt(
     max.is_some_and(|max| !revision_requested && completed >= i64::from(max))
 }
 
-/// The gates on an attempt, in the `attempt-state` vocabulary — one rule
+/// The gates on an attempt, in the `attempt-state` vocabulary - one rule
 /// for `attempt-state` and the submit pipeline (BUG-278). A staff preview
 /// (UX-182) has none: whatever attempt-state offers a preview, submit
 /// finishes. `started_at` is the open draft's; `grace` the network
 /// slack past the timer deadline (limit + grace period, BUG-326); `now`
-/// the moment judged — a submit's arrival (BUG-381).
+/// the moment judged - a submit's arrival (BUG-381).
 #[allow(
     clippy::too_many_arguments,
     reason = "the gate inputs; `now` is the caller's clock (BUG-381: a submit judges at arrival)"
@@ -91,7 +91,7 @@ pub struct AccessView {
     pub users: Vec<AccessUser>,
     pub usergroups: Vec<AccessGroup>,
     pub effective_user_count: i64,
-    /// The assessment's `policy_version` — the access tab's `If-Match`
+    /// The assessment's `policy_version` - the access tab's `If-Match`
     /// (UX-154); every access save bumps it.
     pub version: i32,
 }
@@ -128,7 +128,7 @@ pub struct EffectivePolicy {
     pub max_attempts: Option<i32>,
     pub due_at: Option<i64>,
     pub time_limit_seconds: Option<i32>,
-    /// BUG-326: the studio's grace period, in seconds — the timer runs out
+    /// BUG-326: the studio's grace period, in seconds - the timer runs out
     /// at `started + time_limit + grace` (DECISIONS 2026-09-26).
     pub grace_seconds: i64,
     pub allow_late: bool,
@@ -142,7 +142,7 @@ pub struct EffectivePolicy {
 
 impl EffectivePolicy {
     /// The one lateness rule (BUG-284): handed in past the due date and not
-    /// waived — the submit pipeline and every override writer judge by it.
+    /// waived - the submit pipeline and every override writer judge by it.
     #[must_use]
     pub fn is_late(&self, submitted_at: i64) -> bool {
         !self.waive_late_penalty && self.due_at.is_some_and(|due| submitted_at > due)
@@ -201,7 +201,7 @@ pub struct AttemptState {
     /// The attempt at hand is a staff preview: the open draft's own flag,
     /// else (a new attempt) whether the caller is course staff (BUG-294).
     pub is_teacher_preview: bool,
-    /// The caller is course staff right now — what a *new* attempt takes
+    /// The caller is course staff right now - what a *new* attempt takes
     /// and whether the caller's lists include their previews.
     pub staff: bool,
     pub effective: EffectivePolicy,
@@ -220,7 +220,7 @@ pub struct AttemptState {
 
 impl AssessmentsService {
     /// Public course, author, active reporter, or membership of a linked
-    /// usergroup — SQL `course_visible` (BUG-190), no `see_all` arm here.
+    /// usergroup - SQL `course_visible` (BUG-190), no `see_all` arm here.
     pub(crate) async fn user_has_course_access(
         &self,
         course: &Course,
@@ -232,7 +232,7 @@ impl AssessmentsService {
         ab_db::catalog::course_visible(&self.pool, course.id, Some(user_id), false).await
     }
 
-    /// The user row must exist before an access-list / override insert —
+    /// The user row must exist before an access-list / override insert -
     /// the FK would otherwise surface as a 500 (public courses skip the
     /// course-access check that used to catch this by accident).
     async fn unknown_user<'e>(
@@ -251,7 +251,7 @@ impl AssessmentsService {
     }
 
     /// BUG-247: a per-learner teacher action (override, deadline extension)
-    /// targets a course **member** — the trail run `learner-state.enrolled`
+    /// targets a course **member** - the trail run `learner-state.enrolled`
     /// reads (UX-150), not anyone with access (an author or maintainer).
     /// The run is held `FOR SHARE` so a leave cannot slip between this
     /// check and the caller's write (BUG-281, `set_access`). A course
@@ -294,7 +294,7 @@ impl AssessmentsService {
         )
     }
 
-    /// BUG-273: the member's trail lock with the run re-checked on it — the
+    /// BUG-273: the member's trail lock with the run re-checked on it - the
     /// override write goes on the returned transaction, so a leave lands
     /// wholly before (422) or after the write.
     async fn lock_member(
@@ -375,7 +375,7 @@ impl AssessmentsService {
     /// linked to it (the legacy's "no linked groups → every group is
     /// eligible" fallback is gone). Switching to all-course-learners wipes
     /// both lists (legacy). UX-154: `expected_version` (`If-Match`) is
-    /// checked under the row lock — a stale tab gets 412, never a silent
+    /// checked under the row lock - a stale tab gets 412, never a silent
     /// overwrite.
     pub async fn set_access(
         &self,
@@ -410,7 +410,7 @@ impl AssessmentsService {
                 for user_id in user_ids {
                     // Addressable per id so the client can flag the chip.
                     let field = format!("user_ids.{user_id}");
-                    // UX-180: an allowlist names learners who may take it —
+                    // UX-180: an allowlist names learners who may take it -
                     // course members (the BUG-247 override rule), never
                     // authors or staff who merely have course access.
                     if let Some(e) = Self::unknown_user(&mut *tx, *user_id, &field).await? {
@@ -451,7 +451,7 @@ impl AssessmentsService {
         )
         .await?;
         tx.commit().await?;
-        // BUG-318: who may take it decides who must — re-aggregate the members.
+        // BUG-318: who may take it decides who must - re-aggregate the members.
         ProgressProjector::new(self.pool.clone())
             .after_course_change(course.id)
             .await;
@@ -559,7 +559,7 @@ impl AssessmentsService {
         }
         Self::audit_override(&mut tx, actor, id, user_id, "override-deleted").await?;
         tx.commit().await?;
-        // BUG-297: the waiver/extension is gone — the penalty comes back.
+        // BUG-297: the waiver/extension is gone - the penalty comes back.
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
         ProgressProjector::new(self.pool.clone())
@@ -578,7 +578,7 @@ impl AssessmentsService {
 
     /// Read-back after a committed write under the member lock: a missing row
     /// means the learner left in between (the leave drops overrides), so the
-    /// answer is the membership 422, not 404 (UX-195) — `staff` when a
+    /// answer is the membership 422, not 404 (UX-195) - `staff` when a
     /// promotion dropped it (BUG-303).
     async fn override_row(
         &self,
@@ -615,7 +615,7 @@ impl AssessmentsService {
     // ── Student-facing ──────────────────────────────────────────────────
 
     /// The policy for one learner right now: [`Self::policy_at`] with their
-    /// override as of this moment — a new hand-in's `submitted_at`.
+    /// override as of this moment - a new hand-in's `submitted_at`.
     /// Pool-level so system actors (the timer sweep) can use it too.
     pub async fn effective_policy_for(
         pool: &sqlx::PgPool,
@@ -637,7 +637,7 @@ impl AssessmentsService {
     }
 
     /// The policy under `row` as of `at`: the override applies when it is
-    /// in force at `at` (no `expires_at`, or a later one) — for a hand-in,
+    /// in force at `at` (no `expires_at`, or a later one) - for a hand-in,
     /// `at` is its `submitted_at`, so an expiry after it changes nothing
     /// (BUG-307). It wins for attempts and due date; teacher preview lifts
     /// the attempt cap and the late penalty.
@@ -675,7 +675,7 @@ impl AssessmentsService {
                 assessment.late_penalty_max_days,
                 assessment.late_cutoff_at,
             ),
-            // BUG-278: a preview's verdict is its answers — no late penalty.
+            // BUG-278: a preview's verdict is its answers - no late penalty.
             waive_late_penalty: teacher_preview || active.is_some_and(|o| o.waive_late_penalty),
             override_applied: active.is_some() || extended_due.is_some(),
             review_visibility: assessment.review_visibility,
@@ -716,7 +716,7 @@ impl AssessmentsService {
             && assessment.access_mode == AccessMode::Restricted
             && !ab_db::assessments::access_allows(&self.pool, id, actor.user_id).await?;
         // BUG-295: a learner never resumes a preview draft opened while
-        // staff — `start` discards it and opens a counted attempt.
+        // staff - `start` discards it and opens a counted attempt.
         let draft = ab_db::submissions::open_draft(&self.pool, id, actor.user_id)
             .await?
             .filter(|d| staff || !d.preview);

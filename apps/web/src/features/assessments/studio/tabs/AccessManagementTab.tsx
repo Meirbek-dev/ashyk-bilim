@@ -80,7 +80,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const [overrideDueAt, setOverrideDueAt] = useState('')
   const [overrideWaiveLate, setOverrideWaiveLate] = useState(false)
   const [overrideNote, setOverrideNote] = useState('')
-  // BUG-317: the fields the teacher edited — a learner's existing override keeps the rest.
+  // BUG-317: the fields the teacher edited - a learner's existing override keeps the rest.
   const [touchedOverrideFields, setTouchedOverrideFields] = useState<Set<OverrideField>>(new Set())
   const touchOverride = (field: OverrideField) => setTouchedOverrideFields(current => new Set(current).add(field))
   const [lastSaveError, setLastSaveError] = useState<string | null>(null)
@@ -271,7 +271,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
     saveMutation.mutate()
   }
 
-  // UX-207: each learner's override is its own request — the saved ones are
+  // UX-207: each learner's override is its own request - the saved ones are
   // badged and toasted, the refused ones marked on their chip; chips from an
   // earlier save stay unless this save proves them stale.
   const overrideMutation = useMutation({
@@ -312,7 +312,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
         }
       }
       // UX-208: a learner refused as staff / not in the course holds no override any more
-      // (joining the staff or leaving drops it) — drop the stale cached row with the save.
+      // (joining the staff or leaving drops it) - drop the stale cached row with the save.
       if (saved.length > 0 || notMembers.size > 0) {
         queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) => {
           const byUser = new Map(current.map(override => [override.user_id, override]))
@@ -351,7 +351,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       toast.success(t('overrideDeleted'))
     },
     onError: (error, userId) => {
-      // UX-208: 404 — the override is already gone (the learner left or joined the staff);
+      // UX-208: 404 - the override is already gone (the learner left or joined the staff);
       // clearing it succeeded in effect, so drop the stale row instead of an error toast.
       if (isApiError(error) && error.status === 404) {
         queryClient.setQueryData<StudentOverride[]>(overridesKey, (current = []) =>
@@ -1013,7 +1013,7 @@ function displayUser(user: AccessLearner) {
 
 type OverrideField = 'max_attempts_override' | 'due_at_override_unix' | 'waive_late_penalty' | 'note'
 
-/** BUG-317: the PUT replaces the whole override — send the learner's own values (and expiry) for untouched fields. */
+/** BUG-317: the PUT replaces the whole override - send the learner's own values (and expiry) for untouched fields. */
 function mergeOverride(
   existing: StudentOverride,
   form: Required<Pick<OverrideRequest, OverrideField>>,

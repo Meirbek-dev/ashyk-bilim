@@ -1,4 +1,4 @@
-// UX-099: one attempt label per locale — the review list, the review
+// UX-099: one attempt label per locale - the review list, the review
 // inspector, the exam history and the file history must not disagree
 // («Попытка #2» vs «№2», kk «Әрекет №1» vs «#2 әрекет»).
 import { describe, expect, it } from 'vite-plus/test'

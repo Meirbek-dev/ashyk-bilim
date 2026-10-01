@@ -44,7 +44,7 @@ pub struct GradingBreakdown {
     /// Teacher's overall comment.
     #[serde(default)]
     pub feedback: String,
-    /// BUG-205: the teacher's explicit raw override — the score of record
+    /// BUG-205: the teacher's explicit raw override - the score of record
     /// regardless of whether it equals the item-derived one. `None` = derived.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub score_override: Option<f64>,
@@ -63,7 +63,7 @@ impl GradingBreakdown {
     }
 
     /// The earned share of the items' points in percent, unrounded (0
-    /// without points) — the item-derived raw before `round2`.
+    /// without points) - the item-derived raw before `round2`.
     #[must_use]
     pub fn item_percent(&self) -> f64 {
         let possible: f64 = self.items.iter().map(|i| i.max_score).sum();
@@ -76,7 +76,7 @@ impl GradingBreakdown {
     }
 
     /// BUG-329: a stored raw is a manual adjustment only when it differs
-    /// from the item-derived percent by a hundredth or more — a smaller gap
+    /// from the item-derived percent by a hundredth or more - a smaller gap
     /// is the drift of 2-decimal storage, not a grader's decision.
     #[must_use]
     pub fn differs_from_items(&self, raw: f64) -> bool {

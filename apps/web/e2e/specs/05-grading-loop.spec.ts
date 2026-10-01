@@ -9,7 +9,7 @@
  * Then re-check as the Student that the certificate is now downloadable.
  *
  * Bug policy: If the gradebook table doesn't render, the GradeForm inputs
- * are missing, or the grade POST fails — the tests MUST remain failing.
+ * are missing, or the grade POST fails - the tests MUST remain failing.
  */
 
 import { testAsTeacher as test, expect } from '../fixtures'
@@ -74,11 +74,11 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   /**
    * BUG PROTOCOL: If the submission list on the review page is empty despite the
-   * student having submitted, this is a bug. The test MUST fail — do not skip.
+   * student having submitted, this is a bug. The test MUST fail - do not skip.
    */
   test('teacher can open the file submission review page', async ({ gradebookPage, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
-      test.skip(true, 'File submission activity ID not captured — run student journey first')
+      test.skip(true, 'File submission activity ID not captured - run student journey first')
     }
     await gradebookPage.gotoActivityReview(courseUuid, fileSubmissionActivityId)
 
@@ -90,7 +90,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('teacher can select the student submission and see the uploaded file', async ({ page, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
-      test.skip(true, 'File submission activity ID not captured — run student journey first')
+      test.skip(true, 'File submission activity ID not captured - run student journey first')
     }
     await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
 
@@ -104,7 +104,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('teacher can assign a score and feedback to the file submission', async ({ gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
-      test.skip(true, 'File submission activity ID not captured — run student journey first')
+      test.skip(true, 'File submission activity ID not captured - run student journey first')
     }
     await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
     await gradingReviewPage.selectSubmission(USERS.student.firstName)
@@ -117,7 +117,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('file submission status updates to Graded after teacher review', async ({ gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
-      test.skip(true, 'File submission activity ID not captured — run student journey first')
+      test.skip(true, 'File submission activity ID not captured - run student journey first')
       return
     }
     await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
@@ -129,7 +129,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('teacher can navigate to the exam review page via gradebook', async ({ page, gradebookPage }) => {
     if (!examActivityId) {
-      test.skip(true, 'Exam activity ID not set — run course creation spec first')
+      test.skip(true, 'Exam activity ID not set - run course creation spec first')
       return
     }
     await gradebookPage.gotoActivityReview(courseUuid, examActivityId)
@@ -138,13 +138,13 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   test('teacher can release the exam grade to the student', async ({ page, gradingReviewPage }) => {
     if (!examActivityId) {
-      test.skip(true, 'Exam activity ID not set — run course creation spec first')
+      test.skip(true, 'Exam activity ID not set - run course creation spec first')
       return
     }
     await gradingReviewPage.goto(courseUuid, examActivityId)
 
     // The student's auto-graded attempt must be in the queue (BUG PROTOCOL: if
-    // it is missing despite the learner submitting, this fails — do not skip)
+    // it is missing despite the learner submitting, this fails - do not skip)
     // The assessment queue labels entries by display name or "@username"
     const learner = new RegExp(`${USERS.student.firstName}|@${USERS.student.email.split('@')[0]}`, 'i')
     await gradingReviewPage.selectSubmission(learner)

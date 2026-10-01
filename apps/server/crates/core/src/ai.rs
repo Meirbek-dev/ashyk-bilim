@@ -1,7 +1,7 @@
 //! AI subsystem vocabulary shared by every layer.
 //!
 //! Text-backed enums mirroring the `CHECK` constraints in migrations 0030/0031
-//! (ARCHITECTURE §8.3 — no native PG enums) plus the feature-flag keys of the
+//! (ARCHITECTURE §8.3 - no native PG enums) plus the feature-flag keys of the
 //! legacy `AIConfig`. Decoded with `query_as!` column overrides; bound as
 //! `as_str()`.
 

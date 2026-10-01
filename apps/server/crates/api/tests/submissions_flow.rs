@@ -421,7 +421,7 @@ async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
 }
 
 /// BUG-112: `review_visibility` is enforced on the wire for the owner's
-/// read — `score_only` strips correctness and the correct answers,
+/// read - `score_only` strips correctness and the correct answers,
 /// `none` hides the item breakdown; scores stay visible in both.
 #[sqlx::test(migrations = "../../migrations")]
 async fn review_visibility_redacts_the_learner_breakdown(pool: PgPool) {
@@ -692,7 +692,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     );
 }
 
-/// BUG-326: the grace period extends the timer — the sweep waits for it
+/// BUG-326: the grace period extends the timer - the sweep waits for it
 /// and a submit past the limit but inside the grace is accepted.
 #[sqlx::test(migrations = "../../migrations")]
 async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
@@ -864,7 +864,7 @@ async fn violations_past_the_threshold_zero_the_attempt(pool: PgPool) {
 
 /// Submit guards: a stale `If-Match` is 409 with `{expected, actual}`, two
 /// concurrent submits of one draft leave exactly one winner (the loser is a
-/// 409 — CAS lost or already submitted), the fourth submit inside the window
+/// 409 - CAS lost or already submitted), the fourth submit inside the window
 /// is 429, and a draft opened before the deadline is 403 `PAST_DUE` at submit
 /// once the deadline passes with `allow_late = false` (critic12 branch list).
 #[sqlx::test(migrations = "../../migrations")]
@@ -939,7 +939,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
     .unwrap();
     assert_eq!(published, 1);
 
-    // UX-111: the limiter runs after validation — a submit on an already
+    // UX-111: the limiter runs after validation - a submit on an already
     // submitted attempt is a 409, never a 429.
     let again = app.send(submit(&alice, &sub_id, None, &answer)).await;
     assert_eq!(again.status, StatusCode::CONFLICT, "{}", again.text());
@@ -960,7 +960,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .execute(&app.pool)
         .await
         .unwrap();
-    // BUG-290: the draft is frozen too — the sweep scores only what was
+    // BUG-290: the draft is frozen too - the sweep scores only what was
     // saved before the deadline.
     let late_save = app
         .send(patch_draft(&bob, &bob_sub, Some("\"1\""), &answer))
@@ -982,7 +982,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .unwrap();
     assert_eq!(still_draft, "draft");
 
-    // BUG-278: the author's preview obeys only what attempt-state promises —
+    // BUG-278: the author's preview obeys only what attempt-state promises -
     // past due and past its time limit, it still opens, saves and finishes.
     let state = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/attempt-state"))
@@ -1019,7 +1019,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
     assert_eq!(done.json()["late_penalty_pct"], 0.0);
 }
 
-/// UX-111: only submits that pass validation spend the 3/10 s budget —
+/// UX-111: only submits that pass validation spend the 3/10 s budget -
 /// four 422s must not lock the learner out of the real submit.
 #[sqlx::test(migrations = "../../migrations")]
 async fn submit_limiter_counts_only_accepted_submits(pool: PgPool) {
@@ -1152,7 +1152,7 @@ async fn perfect_attempt_scores_exactly_100_and_passes(pool: PgPool) {
 /// stranded by the client. A held key answers 409 `idempotency-in-progress`
 /// after the wait; a stale one (older than 30 s) is taken over and the
 /// action runs; a failed action releases the key; and a request whose
-/// connection drops after the reservation still runs to completion — the
+/// connection drops after the reservation still runs to completion - the
 /// retry with the same key replays the stored 200.
 #[sqlx::test(migrations = "../../migrations")]
 async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgPool) {
@@ -1262,7 +1262,7 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
                 }
             }
         }
-        // `request` dropped here — mid-flight when the row was seen first.
+        // `request` dropped here - mid-flight when the row was seen first.
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while key_row(&app, &dropped).await == Some(IDEMPOTENT_IN_PROGRESS) {
@@ -1285,7 +1285,7 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
 }
 
 /// BUG-224: a learner's `start` and a teacher's item write on a published
-/// quiz with no submissions serialize on the assessment row — the draft is
+/// quiz with no submissions serialize on the assessment row - the draft is
 /// never behind the assessment's `content_version`, and a draft that is
 /// (unpublish → add → republish) cannot be submitted until reopened.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1533,7 +1533,7 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
     }
 }
 
-/// BUG-256: the cap bars opening an attempt, never finishing one — a draft
+/// BUG-256: the cap bars opening an attempt, never finishing one - a draft
 /// opened under an override stays submittable (manual and timer sweep)
 /// after the override is deleted.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1608,7 +1608,7 @@ async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
     assert_eq!(status, "published");
 }
 
-/// BUG-257: only what the learner answers or is scored on stales a draft —
+/// BUG-257: only what the learner answers or is scored on stales a draft -
 /// a title edit (the editor re-sends the unchanged body) or a reorder made
 /// while unpublished leaves it submittable and auto-scored; an option change still answers 409.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1701,7 +1701,7 @@ async fn cosmetic_item_edits_keep_open_drafts_current(pool: PgPool) {
 }
 
 /// BUG-237: a timed draft left behind by unpublish → add item → republish
-/// is never auto-scored by the timer sweep — the item it never showed
+/// is never auto-scored by the timer sweep - the item it never showed
 /// would score `no-answer`; the attempt waits for a teacher instead.
 #[sqlx::test(migrations = "../../migrations")]
 async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
@@ -1780,7 +1780,7 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
 }
 
 /// BUG-279: the timer sweep builds a preview's policy by the preview rule
-/// (BUG-278) — an author's expired, past-due preview closes with no late
+/// (BUG-278) - an author's expired, past-due preview closes with no late
 /// penalty.
 #[sqlx::test(migrations = "../../migrations")]
 async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
@@ -1837,7 +1837,7 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
 }
 
 /// BUG-315: a timed draft whose clock ran out before the due date is on time
-/// however late the sweep gets to it — judged, and handed in, at the moment
+/// however late the sweep gets to it - judged, and handed in, at the moment
 /// its time expired.
 #[sqlx::test(migrations = "../../migrations")]
 async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
@@ -1896,8 +1896,8 @@ async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
 }
 
 /// BUG-379: a timed draft the sweep can never grade (its stored answers no
-/// longer fit the items) is handed in ungraded on the last allowed try —
-/// pending review, answers as stored, at the clock-out moment — never
+/// longer fit the items) is handed in ungraded on the last allowed try -
+/// pending review, answers as stored, at the clock-out moment - never
 /// left a draft nobody can finish or see.
 #[sqlx::test(migrations = "../../migrations")]
 async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
@@ -1987,7 +1987,7 @@ async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
     assert_eq!(queue.json()["items"][0]["id"], sub.to_string());
 }
 
-/// A user with author permissions who is no course contributor — a learner
+/// A user with author permissions who is no course contributor - a learner
 /// until the teacher adds them to the staff.
 async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {
     let user = app
@@ -2031,7 +2031,7 @@ async fn set_maintainer(
 }
 
 /// BUG-294: a counted draft opened as a learner stays counted after its
-/// owner joins the staff — past a hard due date attempt-state, save and
+/// owner joins the staff - past a hard due date attempt-state, save and
 /// submit agree (PAST_DUE), none judges by the caller's new role.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
@@ -2085,7 +2085,7 @@ async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
 }
 
 /// BUG-295: a preview draft opened while staff is never resumed once its
-/// owner is a learner — attempt-state offers a new attempt, the preview
+/// owner is a learner - attempt-state offers a new attempt, the preview
 /// refuses save/submit (404), and start discards it for a counted draft.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
@@ -2165,7 +2165,7 @@ async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
 }
 
 /// BUG-344: a violation report or draft save committed while the submit
-/// grades is never overwritten by the draft that was graded — the violation
+/// grades is never overwritten by the draft that was graded - the violation
 /// re-grades the attempt (zeroed past the threshold), a pinned draft version
 /// that moved is a 409.
 #[sqlx::test(migrations = "../../migrations")]
@@ -2256,7 +2256,7 @@ async fn submit_never_overwrites_a_draft_changed_while_grading(pool: PgPool) {
 }
 
 /// BUG-356 (BUG-344): a draft that moves under every re-grade round is
-/// given up after three — the submit is a 409 «kept changing» that spent
+/// given up after three - the submit is a 409 «kept changing» that spent
 /// the submit budget once, not once per round (two more accepted submits
 /// go through, the fourth is the 429); the timer sweep gives up the same
 /// way and backs the draft off instead of looping.
@@ -2291,7 +2291,7 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
     // The hand-in re-reads the draft, grades it, then takes `lock_attempts`
     // (an advisory lock) right before its guarded UPDATE. The test holds that
     // lock: an advisory lock is one lock object, so its waiters are served
-    // strictly in order — unlike a row lock, whose waiters race again for
+    // strictly in order - unlike a row lock, whose waiters race again for
     // each new tuple version (which made the row-lock version flaky in CI).
     let hold = async |sub: uuid::Uuid| {
         let (assessment, user): (uuid::Uuid, uuid::Uuid) =
@@ -2322,7 +2322,7 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
     };
     // Three rounds: once the hand-in waits on the held lock (it has read the
     // draft), bump `draft_version`; queue the next round's lock behind it,
-    // then release — the hand-in's write misses the moved version, and its
+    // then release - the hand-in's write misses the moved version, and its
     // retry lines up behind the new holder.
     let keep_changing = async |sub: uuid::Uuid, holder: sqlx::Transaction<'_, sqlx::Postgres>| {
         let mut holder = holder;
@@ -2419,7 +2419,7 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
 
 /// UX-260: a `start` racing an in-flight submit waits for it (the submit
 /// holds `lock_attempts` from grading to the row write) and answers the
-/// settled state — the next attempt as a draft, never attempt 1 still as
+/// settled state - the next attempt as a draft, never attempt 1 still as
 /// a draft while the submit turns it `pending`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
@@ -2491,7 +2491,7 @@ async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
     assert_ne!(started.json()["id"], first.as_str());
 }
 
-/// BUG-377: a hand-in holds exactly one pool connection at a time — more
+/// BUG-377: a hand-in holds exactly one pool connection at a time - more
 /// concurrent submits than the pool has connections all land, where the
 /// UX-260 lock on its own connection plus pool writes inside it used to
 /// deadlock the pool (`PoolTimedOut` after the acquire timeout).

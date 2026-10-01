@@ -19,7 +19,7 @@ export function useContributorStatus(courseUuid: string) {
   const userId = session?.userId ?? null
   const query = useContributors(courseUuid, {
     enabled: Boolean(userId),
-    // UX-233: no learner event channel — while the application is pending,
+    // UX-233: no learner event channel - while the application is pending,
     // poll the visible tab so an approval shows without a reload (focus
     // refetch covers the tab-switch case).
     refetchInterval: roster => (contributorOf(roster, userId)?.status === 'pending' ? 10_000 : false),
@@ -30,7 +30,7 @@ export function useContributorStatus(courseUuid: string) {
     : 'NONE'
 
   // UX-251: a roster change (approval seen by the poll) also changes what the
-  // landing offers — staff never enrol — so the learner-state behind the CTA
+  // landing offers - staff never enrol - so the learner-state behind the CTA
   // must refetch, not only the roster.
   const lastStatus = useRef<ContributorStatus | null>(null)
   useEffect(() => {

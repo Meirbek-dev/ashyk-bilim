@@ -129,7 +129,7 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     expect(screen.getByRole('table')).toBeInTheDocument()
   })
 
-  // UX-265: enabling right after disabling stacked an identical toast behind the visible one —
+  // UX-265: enabling right after disabling stacked an identical toast behind the visible one -
   // each direction has its own wording and the shared id replaces the previous toast.
   it('enabling an account toasts its own message under the shared status toast id', async () => {
     setUserStatus.mockResolvedValue(undefined)

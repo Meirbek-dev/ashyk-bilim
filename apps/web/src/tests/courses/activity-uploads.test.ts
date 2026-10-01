@@ -96,7 +96,7 @@ describe('createFileActivity (v2)', () => {
       activity_type: 'video',
       activity_sub_type: 'video_hosted',
     })
-    // BUG-149: the 201 had no ETag — the body version still locks the PATCH.
+    // BUG-149: the 201 had no ETag - the body version still locks the PATCH.
     expect(patch[0]).toBe(`activities/${ACTIVITY_ID}`)
     expect(patch[1].headers['If-Match']).toBe('"1"')
     expect(JSON.parse(patch[1].body)).toEqual({

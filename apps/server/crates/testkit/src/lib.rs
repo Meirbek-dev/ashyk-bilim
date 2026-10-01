@@ -1,11 +1,11 @@
-//! `ab-testkit` — the shared test harness (dev-dependency only).
+//! `ab-testkit` - the shared test harness (dev-dependency only).
 //!
 //! [`TestApp`] wraps the real router (full middleware stack) around a test
-//! database pool, the test Redis, and a wiremock Zitadel — pair it with
+//! database pool, the test Redis, and a wiremock Zitadel - pair it with
 //! `#[sqlx::test]` for a fresh migrated DB per test. Requests go through
 //! `tower::ServiceExt::oneshot`; no sockets.
 //!
-//! Tests may use `unwrap`/`expect`/`panic` freely — this crate is never in a
+//! Tests may use `unwrap`/`expect`/`panic` freely - this crate is never in a
 //! production dependency graph, and panics ARE test failures here.
 #![allow(
     clippy::unwrap_used,
@@ -44,7 +44,7 @@ pub fn test_redis_url() -> String {
     std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into())
 }
 
-/// A deterministic development config for tests. The database URL is unused —
+/// A deterministic development config for tests. The database URL is unused -
 /// the pool is injected directly.
 #[must_use]
 pub fn test_config() -> Config {
@@ -80,17 +80,17 @@ pub struct TestApp {
     ai: ab_domain::ai::AiService,
     pub pool: PgPool,
     pub sessions: ab_domain::identity::SessionStore,
-    /// Wiremock standing in for Zitadel — mount fixtures per test.
+    /// Wiremock standing in for Zitadel - mount fixtures per test.
     pub zitadel: MockServer,
     /// Wiremock standing in for Google's OAuth endpoints.
     pub google: MockServer,
     /// Wiremock standing in for Resend (`POST /emails`). Unmounted = the
     /// send fails and the flow logs-and-continues, like an outage.
     pub resend: MockServer,
-    /// Wiremock standing in for Judge0 — see [`judge0::FakeJudge`].
+    /// Wiremock standing in for Judge0 - see [`judge0::FakeJudge`].
     pub judge0: MockServer,
     /// Wiremock standing in for the OpenAI-compatible chat completions
-    /// endpoint — see [`llm`] for the reply helpers.
+    /// endpoint - see [`llm`] for the reply helpers.
     pub llm: MockServer,
     judge0_client: Arc<Judge0Client>,
 }
@@ -201,7 +201,7 @@ impl TestApp {
         }
     }
 
-    /// The same AI service the app uses — for driving queued runs the way
+    /// The same AI service the app uses - for driving queued runs the way
     /// the worker handler does.
     #[must_use]
     pub fn ai_service(&self) -> ab_domain::ai::AiService {
@@ -226,7 +226,7 @@ impl TestApp {
         format!("http://{addr}")
     }
 
-    /// The same runner the app uses — for driving the auto-submit sweep.
+    /// The same runner the app uses - for driving the auto-submit sweep.
     #[must_use]
     pub fn code_runner(&self) -> CodeRunner {
         CodeRunner::new(
@@ -264,7 +264,7 @@ impl TestApp {
 
     /// Fixture-level publish: flip `courses.public` directly, skipping the
     /// readiness gate of `POST /courses/{id}/lifecycle` (which refuses a
-    /// course without a live activity — most fixtures have none).
+    /// course without a live activity - most fixtures have none).
     pub async fn publish_course(&self, course_id: &str) {
         let id: uuid::Uuid = course_id.parse().expect("course id");
         sqlx::query("UPDATE courses SET public = true WHERE id = $1")
@@ -443,7 +443,7 @@ impl TestResponse {
     }
 
     /// The `ab_session=<value>` pair from `Set-Cookie`, as a `Cookie` header
-    /// value — for continuing an authenticated flow after login.
+    /// value - for continuing an authenticated flow after login.
     #[must_use]
     pub fn session_cookie(&self) -> Option<String> {
         self.headers
@@ -459,7 +459,7 @@ impl TestResponse {
 }
 
 impl TestResponse {
-    /// Raw body as text — for assertion messages when a status surprises.
+    /// Raw body as text - for assertion messages when a status surprises.
     #[must_use]
     pub fn text(&self) -> String {
         String::from_utf8_lossy(&self.body).into_owned()
@@ -476,7 +476,7 @@ impl TestResponse {
 /// future the moment it reports true.
 ///
 /// A request that completes first is
-/// asserted with `on_done` instead — a client hanging up mid-request.
+/// asserted with `on_done` instead - a client hanging up mid-request.
 pub async fn drop_request_when<R>(
     request: impl std::future::Future<Output = R>,
     mut reached: impl AsyncFnMut() -> bool,

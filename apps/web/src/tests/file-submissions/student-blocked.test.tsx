@@ -1,8 +1,8 @@
 /** @vitest-environment jsdom */
-// BUG-166: the deadline closes under an open file draft — the submit 403
+// BUG-166: the deadline closes under an open file draft - the submit 403
 // `cannot start: PAST_DUE` refetches the projection and the blocked card
 // («Срок сдачи истёк») replaces the editor, like the quiz.
-// BUG-167: a gate-mode remediation assigned while the draft is open — the
+// BUG-167: a gate-mode remediation assigned while the draft is open - the
 // polled sessions query surfaces the gate («Пройти исправление») over the
 // editor, not only in the result state.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

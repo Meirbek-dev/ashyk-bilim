@@ -14,7 +14,7 @@ export const CollectionHit = zod
     name: zod.string(),
     public: zod.boolean(),
   })
-  .describe('Collections in search results are light — no embedded courses.')
+  .describe('Collections in search results are light - no embedded courses.')
 
 export type CollectionHit = zod.input<typeof CollectionHit>
 export type CollectionHitOutput = zod.output<typeof CollectionHit>

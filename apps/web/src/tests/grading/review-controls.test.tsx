@@ -234,7 +234,7 @@ describe('teacher review controls', () => {
     await waitFor(() => {
       expect(mocks.saveGradeMock).toHaveBeenCalledTimes(2)
     })
-    // BUG-138: publish-only — no score (the server keeps the stored raw score
+    // BUG-138: publish-only - no score (the server keeps the stored raw score
     // and penalties), no feedback (kept); the note goes to the audit trail.
     expect(mocks.saveGradeMock).toHaveBeenNthCalledWith(
       1,
@@ -254,7 +254,7 @@ describe('teacher review controls', () => {
     expect(await screen.findByText('summaries.publishFinished')).toBeInTheDocument()
   })
 
-  // BUG-125: a PUBLISHED row cannot be returned — it is left out, and a
+  // BUG-125: a PUBLISHED row cannot be returned - it is left out, and a
   // server refusal keeps the dialog open with the per-row error, no success badge.
   it('returns only returnable rows and keeps the dialog open when the server refuses one', async () => {
     mocks.saveGradeMock.mockRejectedValueOnce(new Error('transition-not-allowed'))
@@ -507,7 +507,7 @@ describe('teacher review controls', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument()
-    // UX-105: the action is assessment-wide — the dialog explains that and shows no selection counts.
+    // UX-105: the action is assessment-wide - the dialog explains that and shows no selection counts.
     expect(within(dialog).getByText('preview.releaseHiddenDescription')).toBeInTheDocument()
     expect(within(dialog).queryByText('preview.selectedHiddenSubmissions')).toBeNull()
     expect(within(dialog).queryByText('preview.alreadyVisible')).toBeNull()
@@ -556,7 +556,7 @@ describe('teacher review controls', () => {
     )
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument()
-    // UX-226: no items — the hint asks for the final score, not «every item».
+    // UX-226: no items - the hint asks for the final score, not «every item».
     expect(screen.getByText('publishPrerequisiteScore')).toBeInTheDocument()
     expect(screen.queryByText('publishPrerequisite')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled()
@@ -568,7 +568,7 @@ describe('teacher review controls', () => {
     mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 91, version: 3 })
     const queryClient = new QueryClient()
     const navigation = { hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }
-    // A fresh element each time — React skips a re-render of an identical element.
+    // A fresh element each time - React skips a re-render of an identical element.
     const ui = () => (
       <QueryClientProvider client={queryClient}>
         <AnnotationProvider>
@@ -811,7 +811,7 @@ describe('teacher review controls', () => {
       expect(lastPayload()).toMatchObject({ final_score: null, item_grades: [] })
     })
 
-    // UX-117: an integrity-annulled attempt keeps raw 0 unless overridden — the
+    // UX-117: an integrity-annulled attempt keeps raw 0 unless overridden - the
     // form says so, and the switch cannot be turned off (a silent no-op otherwise).
     it('keeps the override switch on with a hint for an annulled attempt', async () => {
       mocks.saveGradingDraftMock.mockResolvedValue(undefined)

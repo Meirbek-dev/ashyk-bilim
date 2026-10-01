@@ -81,7 +81,7 @@ describe('learnerCourseProgress', () => {
 })
 
 // BUG-336 (not a bug): `outline` is a required non-null array on the wire
-// (`Vec<ChapterState>`), and every learner-state read parses it — a null never
+// (`Vec<ChapterState>`), and every learner-state read parses it - a null never
 // reaches `buildCourseProgressSnapshot`.
 describe('LearnerCourseState.outline', () => {
   it('rejects a null outline at the parse boundary', async () => {

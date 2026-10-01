@@ -23,7 +23,7 @@ test.describe('Login', () => {
     await loginPage.goto()
     await loginPage.loginAndWait(USERS.admin.email, USERS.admin.password)
 
-    // Should be on any authenticated page — not on /login
+    // Should be on any authenticated page - not on /login
     expect(page.url()).not.toContain('/login')
   })
 

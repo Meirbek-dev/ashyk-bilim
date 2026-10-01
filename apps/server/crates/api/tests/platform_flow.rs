@@ -244,7 +244,7 @@ async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
 }
 
 /// BUG-313 (branding sibling of UX-211): the client hangs up the moment the
-/// logo upload counts as referenced — the claim, the swap and the release
+/// logo upload counts as referenced - the claim, the swap and the release
 /// land together or not at all, so no upload stays pinned without being the
 /// logo.
 #[sqlx::test(migrations = "../../migrations")]

@@ -265,7 +265,7 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
 
 /// BUG-234: the upload claim commits with the block that references it.
 /// An activity DELETE that wins the race turns the insert into a 404 and
-/// the claim rolls back — the upload re-enters the reaper's queue instead
+/// the claim rolls back - the upload re-enters the reaper's queue instead
 /// of sitting at `referenced_count 1, expires_at null` forever.
 #[sqlx::test(migrations = "../../migrations")]
 async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
@@ -338,7 +338,7 @@ async fn block(app: &TestApp, session: &MintedSession, activity: &str, upload: &
 }
 
 /// BUG-242: a block that commits while a chapter/course DELETE waits on its
-/// activity is released by that DELETE — the cascade used to drop it after
+/// activity is released by that DELETE - the cascade used to drop it after
 /// the release had read its snapshot, pinning the upload forever.
 #[sqlx::test(migrations = "../../migrations")]
 async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
@@ -391,7 +391,7 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
 /// BUG-243/244: an upload shared by two blocks. A block POST reusing it ∥
 /// the activity DELETE never deadlocks (one lock order: activity, then
 /// upload); a block DELETE ×2 or ∥ the activity DELETE releases only the
-/// block rows actually deleted — the count always equals the live blocks.
+/// block rows actually deleted - the count always equals the live blocks.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -447,7 +447,7 @@ async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
 }
 
 /// BUG-263: an editor block's upload follows the saved content, not the
-/// Remove click — a save without the node releases it, a later save that
+/// Remove click - a save without the node releases it, a later save that
 /// brings it back (undo) re-claims it, and a delete cascade releases only
 /// blocks that still hold a reference.
 #[sqlx::test(migrations = "../../migrations")]

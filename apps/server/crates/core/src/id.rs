@@ -1,6 +1,6 @@
 //! Typed UUIDv7 identifiers.
 //!
-//! Domain signatures never take a bare `Uuid` — `fn enroll(user: UserId, course:
+//! Domain signatures never take a bare `Uuid` - `fn enroll(user: UserId, course:
 //! CourseId)` cannot have its arguments swapped, `fn enroll(a: Uuid, b: Uuid)`
 //! can. New entity ids are added here, one line each.
 
@@ -103,7 +103,7 @@ typed_id!(AiSubmissionAnalysisId);
 typed_id!(
     /// The work an AI analysis or remediation is about: an assessment
     /// submission id *or* a file-submission attempt id (both UUIDv7, one
-    /// route parameter — the server looks the id up in both tables).
+    /// route parameter - the server looks the id up in both tables).
     AiSubjectId
 );
 typed_id!(AiCourseAnalysisId);

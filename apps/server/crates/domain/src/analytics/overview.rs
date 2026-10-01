@@ -618,7 +618,7 @@ pub fn build_admin_overview(
         .map(|e| e.user_id)
         .collect();
     // Both sides of the retention rate count the member set (BUG-304): a
-    // cohort user with a current, non-staff run in a scoped course — never a
+    // cohort user with a current, non-staff run in a scoped course - never a
     // leaver, a promoted co-author or a course creator loaded for display.
     let learners: HashSet<UserId> = snapshots.values().map(|s| s.user_id).collect();
     let mut members: BTreeMap<UsergroupId, HashSet<UserId>> = BTreeMap::new();

@@ -7,8 +7,8 @@
 //! events; axum's keep-alive comments every 25s hold proxies open. Each
 //! user may hold five streams at once (429 beyond that). Access is
 //! re-checked before every batch of live events (and on every idle
-//! read timeout) against the session as it is now — logged out, revoked
-//! or regranted (BUG-320) — and the course roster: once lost, a terminal
+//! read timeout) against the session as it is now - logged out, revoked
+//! or regranted (BUG-320) - and the course roster: once lost, a terminal
 //! `closed` event ends the stream (BUG-188).
 
 use std::convert::Infallible;
@@ -185,7 +185,7 @@ pub async fn submission_events(
 ///
 /// Event names: `connected`, `submission.submitted`, `grade.saved`,
 /// `grade.published`, `submission.returned`, `closed` (grading access
-/// lost — e.g. the grant set inactive — the stream ends). `data` is
+/// lost - e.g. the grant set inactive - the stream ends). `data` is
 /// `{event_id, event, payload, sent_at}` where `payload` carries
 /// `activity_id`, `user_id`, `status`, `final_score` and either
 /// `submission_id` (assessment) or `attempt_id` (file submission);

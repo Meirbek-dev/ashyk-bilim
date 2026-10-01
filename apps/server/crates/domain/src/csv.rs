@@ -3,8 +3,8 @@
 
 /// Quote a CSV field when it needs it (RFC 4180) and defuse a cell a
 /// spreadsheet would evaluate (BUG-196): a value starting with `=`, `+`,
-/// `-`, `@`, tab or CR — a learner-controlled display name such as
-/// `=HYPERLINK(...)` — is prefixed with `'` so it opens as text.
+/// `-`, `@`, tab or CR - a learner-controlled display name such as
+/// `=HYPERLINK(...)` - is prefixed with `'` so it opens as text.
 pub fn csv_field(value: &str) -> String {
     let defused = if value.starts_with(['=', '+', '-', '@', '\t', '\r']) {
         format!("'{value}")

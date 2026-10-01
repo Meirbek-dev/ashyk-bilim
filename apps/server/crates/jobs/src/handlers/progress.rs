@@ -1,4 +1,4 @@
-//! `progress:*` — post-commit re-projections that did not finish inline.
+//! `progress:*` - post-commit re-projections that did not finish inline.
 //!
 //! A member lock was busy past the short inline wait (BUG-305/310, UX-209):
 //! `progress:staff-change` (roster / RBAC) and `progress:course-change`

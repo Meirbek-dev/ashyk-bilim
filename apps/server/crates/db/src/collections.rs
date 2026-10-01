@@ -83,8 +83,8 @@ pub async fn collection_listable(
 
 /// Newest-first page of collections visible to `viewer`.
 ///
-/// A collection with no course visible to the viewer — all invisible
-/// (UX-119) or none attached (UX-127) — is omitted unless the viewer created
+/// A collection with no course visible to the viewer - all invisible
+/// (UX-119) or none attached (UX-127) - is omitted unless the viewer created
 /// it or `see_all_courses`: SQL `collection_listable`, shared with
 /// [`crate::search::search_collections`].
 pub async fn list_collections(
@@ -118,7 +118,7 @@ pub async fn list_collections(
     Ok(rows)
 }
 
-/// Update the fields and, when given, replace the membership — one
+/// Update the fields and, when given, replace the membership - one
 /// transaction, so a failure leaves nothing half-written (BUG-192).
 ///
 /// Every write bumps `version`; with `expected_version` it only lands while

@@ -44,7 +44,7 @@ impl ContextBundle {
     }
 
     /// The rendering cut to fit the prompt (BUG-325): whole sources, in
-    /// order, while it stays within a character limit — `CONTEXT_CLIP_LIMIT`
+    /// order, while it stays within a character limit - `CONTEXT_CLIP_LIMIT`
     /// first, shrinking until `fits` accepts it. Returns the rendering and
     /// the sources it lists; the dropped ones are not citable, the model
     /// never saw them.
@@ -382,7 +382,7 @@ pub async fn submission_bundle(
 }
 
 /// What the owner's submission read shows of the grade: `(released,
-/// grading)` — scores only once released, the breakdown redacted by the
+/// grading)` - scores only once released, the breakdown redacted by the
 /// assessment's `review_visibility` (`None` = hidden).
 async fn learner_grading(
     pool: &PgPool,
@@ -418,7 +418,7 @@ fn learner_item_body(body: &serde_json::Value) -> serde_json::Value {
 /// One file-submission attempt as context.
 ///
 /// The activity, the teacher's instructions and rubric, the attempt's
-/// status/grade/feedback, and its files — `texts[i]` is the read-back
+/// status/grade/feedback, and its files - `texts[i]` is the read-back
 /// content of `files[i]` when it is a text file (else the file is described
 /// by name, type and size). `learner_view` hides the grade and feedback
 /// until the attempt is published or returned (BUG-182).

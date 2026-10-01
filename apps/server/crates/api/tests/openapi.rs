@@ -1,5 +1,5 @@
 //! Contract snapshot: the entire OpenAPI document. Any route/schema change
-//! shows up in this snapshot's diff — read it before accepting (`cargo insta
+//! shows up in this snapshot's diff - read it before accepting (`cargo insta
 //! review` or delete-and-regenerate via `just openapi`).
 
 #[test]

@@ -86,7 +86,7 @@ pub struct ReviewItem {
     /// The learner is a course member (trail run); a leaver's row is not a
     /// target for per-learner actions such as a deadline extension (UX-167).
     pub enrolled: bool,
-    /// The learner is on the course staff — never a member (BUG-287), so
+    /// The learner is on the course staff - never a member (BUG-287), so
     /// named as staff rather than as a leaver (UX-199).
     pub staff: bool,
 }
@@ -154,7 +154,7 @@ impl From<domain::Stats> for Stats {
     }
 }
 
-/// A submission as the grader sees it — nothing redacted.
+/// A submission as the grader sees it - nothing redacted.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TeacherSubmission {
     pub id: SubmissionId,
@@ -378,15 +378,15 @@ pub struct GradebookCell {
     pub status: SubmissionStatus,
     pub attempt_number: i32,
     pub attempts: i64,
-    /// The newest attempt still awaiting grading (`pending`), if any — set
+    /// The newest attempt still awaiting grading (`pending`), if any - set
     /// even when the grade of record is an older published attempt (BUG-175).
     pub pending_attempt: Option<i32>,
-    /// The id of that pending attempt — a submission id or a file attempt
-    /// id, whichever the cell is about — so the review deep link opens the
+    /// The id of that pending attempt - a submission id or a file attempt
+    /// id, whichever the cell is about - so the review deep link opens the
     /// work awaiting grading rather than the grade of record (UX-123).
     pub pending_attempt_id: Option<Uuid>,
-    /// UX-146: what that attempt waits for — `pending` (a grade) or
-    /// `graded` (a release) — so the gradebook counts and labels the two apart.
+    /// UX-146: what that attempt waits for - `pending` (a grade) or
+    /// `graded` (a release) - so the gradebook counts and labels the two apart.
     pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
     pub is_late: bool,

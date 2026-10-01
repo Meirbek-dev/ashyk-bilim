@@ -129,13 +129,13 @@ describe('buildAssessmentPatch', () => {
     expect(details).toEqual({ title: 'Midterm (updated)', description: 'Covers ch. 1-6' })
     // Edited field:
     expect(policy?.passing_score).toBe(70)
-    // Not exposed by the editor — carried forward from raw_policy, not dropped:
+    // Not exposed by the editor - carried forward from raw_policy, not dropped:
     expect(policy?.grading_mode).toBe('auto')
     expect(policy?.late_policy).toEqual({ kind: 'none' })
     expect(policy?.allow_late).toBe(false)
   })
 
-  // BUG-170: `max_attempts: null` (unlimited) stays unlimited — the editor
+  // BUG-170: `max_attempts: null` (unlimited) stays unlimited - the editor
   // state is an empty field, and a description-only edit sends no policy.
   it('keeps an unlimited quiz unlimited and sends no policy for a description-only edit', () => {
     const assessment = studioDetailFromWire(

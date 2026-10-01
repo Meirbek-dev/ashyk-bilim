@@ -34,8 +34,8 @@ pub struct TrailRun {
     pub course: Course,
     /// Published activities in the course.
     pub course_total_steps: i64,
-    /// The learner's `course_progress` percent — what `learner-state`
-    /// reports — or `None` before the projection wrote a row (UX-250).
+    /// The learner's `course_progress` percent - what `learner-state`
+    /// reports - or `None` before the projection wrote a row (UX-250).
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
 }
@@ -71,7 +71,7 @@ const MEMBER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 const LOCK_RETRY: std::time::Duration = std::time::Duration::from_millis(15);
 
 /// The (user, course) lock transaction (BUG-210): every trail write and
-/// its projection go through it — marks, leaves and the course-wide
+/// its projection go through it - marks, leaves and the course-wide
 /// re-aggregation (BUG-269). Waiters poll `try_lock` instead of blocking on
 /// the server, so a stampede never parks a pool connection per waiter
 /// (BUG-220); past `wait` → 409.
@@ -98,7 +98,7 @@ async fn lock_trail_run(
 /// Every per-member write that depends on membership (BUG-269/270/271):
 /// the member's trail lock with the run re-checked inside it, so a leave
 /// lands wholly before (→ `None`, nothing is written) or after the write.
-/// `enrol` (the learner's own work) creates the run instead — never for the
+/// `enrol` (the learner's own work) creates the run instead - never for the
 /// course's staff (BUG-287), who are no member even with a leftover run
 /// (`has_trail_run`, BUG-288). Do every write through the returned
 /// transaction and fire pool hooks after commit (BUG-235).
@@ -115,7 +115,7 @@ pub(crate) async fn lock_member(
 
 /// [`lock_member`], plus whether this call created the run (a (re)join):
 /// the caller then re-projects the whole member on the returned
-/// transaction (BUG-289) — `ProgressProjector::project` does.
+/// transaction (BUG-289) - `ProgressProjector::project` does.
 pub(crate) async fn lock_member_joined(
     pool: &PgPool,
     user_id: UserId,
@@ -135,7 +135,7 @@ pub(crate) async fn lock_member_joined(
     Ok(Some((tx, false)))
 }
 
-/// BUG-303: allowlist and override rows name course members only — a user
+/// BUG-303: allowlist and override rows name course members only - a user
 /// who is no member (joined the staff, or holds no run) loses theirs on the
 /// course. Under the member lock (override writes take it), with the run
 /// row held `FOR UPDATE` so a `set_access` that validated them before the
@@ -278,7 +278,7 @@ impl TrailService {
     }
 
     /// Visible course (404) the learner may access (403) and join: the
-    /// course's staff — the `is_teacher_preview` set — never get a run, their
+    /// course's staff - the `is_teacher_preview` set - never get a run, their
     /// attempts are previews (BUG-287) → 409.
     async fn accessible_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
@@ -315,7 +315,7 @@ impl TrailService {
     /// Drop the run and every step in it, and reset the explicit lesson
     /// completions those steps stood for (legacy `remove_course_from_trail`
     /// deleted the `TrailStep`s). Assessment and file-submission rows are
-    /// pipeline-owned and stay — the submissions still exist. Allowlist and
+    /// pipeline-owned and stay - the submissions still exist. Allowlist and
     /// override rows go (BUG-281): they name members only.
     ///
     /// The run is the caller's own, so no course visibility check: a learner
@@ -360,7 +360,7 @@ impl TrailService {
     /// lesson-type activities. Drafts do not exist for learners (404): a
     /// step on one would become a required row the course never counts.
     /// Pipeline-owned activities (quiz/exam/code/file submission) complete
-    /// through their submissions only — a step here would fire the XP hook
+    /// through their submissions only - a step here would fire the XP hook
     /// while the projection stays untouched (BUG-176) → 409.
     pub async fn add_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;
@@ -416,7 +416,7 @@ impl TrailService {
     /// visibility check; with nothing to delete the course must be visible
     /// and the activity published (404 otherwise) so the reply is not an
     /// existence oracle (BUG-183, UX-131).
-    /// Every 404 here reads `activity not found` — the detail is not an
+    /// Every 404 here reads `activity not found` - the detail is not an
     /// oracle for the course or the trail either (UX-131).
     pub async fn remove_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Trail> {
         Self::require_write(actor)?;

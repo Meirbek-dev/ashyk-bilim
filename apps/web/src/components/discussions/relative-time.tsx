@@ -7,7 +7,7 @@ const emptySubscribe = () => () => {}
 
 /**
  * "7 minutes ago" is computed against `now`, which differs between the SSR
- * pass and the client — so the relative form only renders after mount; the
+ * pass and the client - so the relative form only renders after mount; the
  * server (and the hydrating client) print the absolute date instead.
  */
 export default function RelativeTime({ date }: { date: string }) {

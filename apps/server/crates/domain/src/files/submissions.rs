@@ -212,7 +212,7 @@ const fn late_policy_of(row: &FileSubmissionRow) -> LatePolicy {
 }
 
 /// BUG-316: every learner's file hand-ins judged by the late rules as they
-/// stand — the worker side of `ProgressProjector::after_file_lateness_change`.
+/// stand - the worker side of `ProgressProjector::after_file_lateness_change`.
 /// Each attempt reads the config under the lock a settings PATCH takes, so a
 /// pass racing a newer PATCH never prices a row by the older rules (the
 /// newer PATCH's own pass runs after it). Previews are never late.
@@ -338,7 +338,7 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("file submission"))
     }
 
-    // UX-311: each write's access gate on its own — the handlers check it
+    // UX-311: each write's access gate on its own - the handlers check it
     // before they read the body, and the methods still do.
 
     /// [`Self::update`]'s gate: authoring on the course.
@@ -426,7 +426,7 @@ impl FileSubmissionsService {
     }
 
     /// Authors always; others only a published activity, with
-    /// `assessment:read:assigned` (404 either way — no existence leak).
+    /// `assessment:read:assigned` (404 either way - no existence leak).
     async fn require_read(&self, actor: &Actor, row: &FileSubmissionRow) -> Result<Course> {
         let course = self
             .assessments
@@ -460,7 +460,7 @@ impl FileSubmissionsService {
         let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        // `viewer`: the caller and whether they are staff — a learner's
+        // `viewer`: the caller and whether they are staff - a learner's
         // list hides previews made while staff (BUG-285).
         let attempts = match viewer {
             Some((actor, is_author)) => {
@@ -651,7 +651,7 @@ impl FileSubmissionsService {
     ///
     /// BUG-229/230: every gate reads the config row under its lock (a
     /// concurrent publish sees this edit or refuses on it), and the title
-    /// and config land in one transaction — a refused PATCH writes nothing.
+    /// and config land in one transaction - a refused PATCH writes nothing.
     pub async fn update(
         &self,
         actor: &Actor,
@@ -675,7 +675,7 @@ impl FileSubmissionsService {
         let values = values_of(&merged);
         validate_config(&values)?;
         // BUG-219: a published config passed the publish gate (title +
-        // instructions); an edit must not undo it — 409 like BUG-207. The
+        // instructions); an edit must not undo it - 409 like BUG-207. The
         // title patch above is already non-blank.
         if row.lifecycle == FileSubmissionLifecycle::Published
             && ab_core::trim_blank(&merged.instructions).is_empty()
@@ -700,7 +700,7 @@ impl FileSubmissionsService {
         ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
         tx.commit().await?;
         // BUG-316: like a quiz policy PUT (BUG-312), new late rules re-price
-        // every existing hand-in — one rule for every learner.
+        // every existing hand-in - one rule for every learner.
         if (row.due_at, row.allow_late, late_policy_of(&row))
             != (merged.due_at, merged.allow_late, late_policy_of(&merged))
         {
@@ -781,7 +781,7 @@ impl FileSubmissionsService {
         self.require_visible(row, is_author).await
     }
 
-    /// A hidden activity does not exist for learners — reads and writes
+    /// A hidden activity does not exist for learners - reads and writes
     /// alike (UX-108).
     async fn require_visible(&self, row: &FileSubmissionRow, is_author: bool) -> Result<()> {
         if !is_author && !self.activity_published(row).await? {
@@ -821,7 +821,7 @@ impl FileSubmissionsService {
         ab_db::file_submissions::open_attempt(&self.pool, row.id, user_id).await
     }
 
-    /// Why the caller cannot open or submit right now — the quiz rules
+    /// Why the caller cannot open or submit right now - the quiz rules
     /// (`attempt_state`): a closed deadline (BUG-166) and an unpassed
     /// gate-mode remediation (BUG-140 / UX-105). A preview attempt
     /// (`preview_of`) is never blocked.
@@ -847,7 +847,7 @@ impl FileSubmissionsService {
         Ok(reasons)
     }
 
-    /// 403 `cannot <action>: <REASONS>` — the same vocabulary as the quiz
+    /// 403 `cannot <action>: <REASONS>` - the same vocabulary as the quiz
     /// start/submit, so the web renders the localized blocked card (it reads
     /// only the reason codes; UX-202 names the refused action).
     async fn require_can_act(
@@ -917,7 +917,7 @@ impl FileSubmissionsService {
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
-    /// `preview`: the actor is course staff (UX-182) — uncapped, like a quiz
+    /// `preview`: the actor is course staff (UX-182) - uncapped, like a quiz
     /// preview (UX-189).
     async fn open_new_attempt(
         &self,
@@ -975,7 +975,7 @@ impl FileSubmissionsService {
         self.require_open(&row, is_author).await?;
         let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // UX-115: an open draft is frozen too once the deadline closed or a
-        // gate is active — 403, the stored files untouched.
+        // gate is active - 403, the stored files untouched.
         self.require_can_act(
             actor.user_id,
             &row,
@@ -1075,7 +1075,7 @@ impl FileSubmissionsService {
 
     /// Attach validated uploads; reference counts move from the old set to
     /// the new one. BUG-241: the version bump (the attempt's lock), the file
-    /// rows and the counts land in one transaction — a dropped request or a
+    /// rows and the counts land in one transaction - a dropped request or a
     /// lost race leaves no file row without its reference. Returns the new
     /// version; a stale one is 412 with nothing changed.
     async fn replace_files(
@@ -1094,7 +1094,7 @@ impl FileSubmissionsService {
         }
         let previous = ab_db::file_submissions::list_files(&mut *tx, attempt.id).await?;
         // BUG-258: every upload this swap touches is locked in key order
-        // before the file rows (FK) and the counts move — two drafts
+        // before the file rows (FK) and the counts move - two drafts
         // swapping shared uploads otherwise lock them in list order.
         let touched: Vec<uuid::Uuid> = previous
             .iter()
@@ -1189,7 +1189,7 @@ impl FileSubmissionsService {
             return Err(files_required());
         }
         let now = now_unix();
-        // A preview's verdict is its files — never late (BUG-278/284 rule);
+        // A preview's verdict is its files - never late (BUG-278/284 rule);
         // the attempt's own flag decides (BUG-285).
         let is_late = !attempt.preview && row.due_at.is_some_and(|due| now > due);
         let penalty = if attempt.preview {

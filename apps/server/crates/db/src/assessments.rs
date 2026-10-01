@@ -1,7 +1,7 @@
 //! Assessment queries (compile-checked).
 //!
 //! Enum columns decode through the `ab_core::assessments` text enums via
-//! column overrides and are bound as `as_str()` — see that module.
+//! column overrides and are bound as `as_str()` - see that module.
 //! Timestamps travel as epoch seconds like everywhere else in this crate.
 
 use ab_core::Result;
@@ -257,7 +257,7 @@ pub async fn get_assessment<'e>(
 }
 
 /// BUG-218: `SELECT … FOR UPDATE` on the assessment row, then the row as the
-/// previous writer left it — publish and item/policy writes serialize here.
+/// previous writer left it - publish and item/policy writes serialize here.
 pub async fn lock_assessment(
     conn: &mut sqlx::PgConnection,
     id: AssessmentId,
@@ -691,7 +691,7 @@ pub async fn delete_item<'e>(db: impl sqlx::PgExecutor<'e>, id: AssessmentItemId
     Ok(deleted.rows_affected() == 1)
 }
 
-/// Rewrite positions 1..n — call inside the caller's transaction.
+/// Rewrite positions 1..n - call inside the caller's transaction.
 pub async fn renumber_items(
     conn: &mut sqlx::PgConnection,
     ordered_ids: &[AssessmentItemId],
@@ -882,11 +882,11 @@ pub async fn replace_access_lists(
 }
 
 /// Distinct course members the access policy reaches: the allowlists
-/// (direct + via groups) when restricted, every member when course-wide —
+/// (direct + via groups) when restricted, every member when course-wide -
 /// one member set (trail runs) for both (BUG-281).
 pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i64> {
     // UX-159: the course-wide mode reaches the course's enrolled learners
-    // (a trail run — the UX-150 enrolment predicate), not the empty lists.
+    // (a trail run - the UX-150 enrolment predicate), not the empty lists.
     let count = sqlx::query_scalar!(
         r#"SELECT CASE WHEN a.access_mode = 'all_course_learners' THEN
                (SELECT count(DISTINCT r.user_id) FROM trail_runs r
@@ -911,7 +911,7 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
 }
 
 /// BUG-281: a leave takes the leaver off every allowlist and override of
-/// the course, in the leave's transaction — neither ever names a
+/// the course, in the leave's transaction - neither ever names a
 /// non-member.
 ///
 /// Returns the assessments whose override went (BUG-306: the caller settles
@@ -1066,7 +1066,7 @@ pub async fn update_override<'e>(
 /// A deadline extension's write: due date and note, other fields kept.
 ///
 /// One statement, so a concurrent `PUT overrides/{user}`
-/// either lands before (its other fields survive) or after (it wins) —
+/// either lands before (its other fields survive) or after (it wins) -
 /// never a read-modify-write that resurrects stale values (BUG-247).
 ///
 /// The extension's due date never lapses (`due_extended`, BUG-300): on a

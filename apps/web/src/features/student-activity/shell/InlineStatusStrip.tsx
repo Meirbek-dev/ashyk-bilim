@@ -59,7 +59,7 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
         attemptsUsed: attemptState?.attempts_used ?? 0,
       }
     : hasAttemptPolicy
-      ? null // assessment policy not loaded yet — say nothing rather than "unlimited"
+      ? null // assessment policy not loaded yet - say nothing rather than "unlimited"
       : {
           maxAttempts: runtime.policy?.max_attempts ?? null,
           timeLimitSeconds: runtime.policy?.time_limit_seconds ?? null,
@@ -71,7 +71,7 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   // Human-readable activity kind label
   items.push(tKinds(activityType))
 
-  // State — staff previewing track no progress of their own (UX-194). UX-237: off the
+  // State - staff previewing track no progress of their own (UX-194). UX-237: off the
   // allowlist a leftover draft cannot be continued; the result card shows the counted attempt.
   const accessClosed = attemptState?.disabled_reasons?.includes('ACCESS_RESTRICTED') ?? false
   const staleDraft = accessClosed && state === 'in_progress'
@@ -84,8 +84,8 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
     items.push(t('passingScore', { score: passingScore }))
   }
 
-  // Max attempts — student-readable. UX-189: an open draft may be finished after the cap
-  // was lowered (BUG-256), so the count can pass it — never «2 из 1».
+  // Max attempts - student-readable. UX-189: an open draft may be finished after the cap
+  // was lowered (BUG-256), so the count can pass it - never «2 из 1».
   if (policy?.maxAttempts) {
     items.push(t('attemptsUsed', { used: Math.min(policy.attemptsUsed, policy.maxAttempts), max: policy.maxAttempts }))
   } else if (policy && activityType !== 'TYPE_FILE_SUBMISSION') {

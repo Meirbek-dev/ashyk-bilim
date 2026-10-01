@@ -478,7 +478,7 @@ impl AnalyticsService {
         if !errors.is_empty() {
             return Err(Error::validation(errors));
         }
-        // BUG-157: an intervention targets a learner of the course —
+        // BUG-157: an intervention targets a learner of the course -
         // UX-150: enrolment is the trail run, as `learner-state` reads it;
         // BUG-273: checked and written under the learner's trail lock.
         // UX-207: course staff are named as such.
@@ -569,7 +569,7 @@ impl AnalyticsService {
         if !errors.is_empty() {
             return Err(Error::validation(errors));
         }
-        // UX-106: `teacher_user_id` impersonation is read-only — a view is
+        // UX-106: `teacher_user_id` impersonation is read-only - a view is
         // saved under the acting user (like interventions, BUG-157).
         let row =
             ab_db::analytics::upsert_saved_view(&self.pool, actor.user_id, name, view_type, query)
@@ -578,7 +578,7 @@ impl AnalyticsService {
     }
 
     /// 404 when the view is not the actor's own (`teacher_user_id` is
-    /// read-only — it never selects whose view is deleted).
+    /// read-only - it never selects whose view is deleted).
     pub async fn delete_view(
         &self,
         actor: &Actor,

@@ -1,4 +1,4 @@
-/** Save a fetched body as a file. Bytes go through untouched (a CSV keeps its UTF-8 BOM — UX-113). */
+/** Save a fetched body as a file. Bytes go through untouched (a CSV keeps its UTF-8 BOM - UX-113). */
 export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -25,7 +25,7 @@ export function filenameFromContentDisposition(header: string | null | undefined
 
 /**
  * One CSV cell: RFC-4180 quoting plus a `'` prefix on cells that a spreadsheet
- * would evaluate as a formula (`=`, `+`, `-`, `@`, tab, CR) — the web mirror of
+ * would evaluate as a formula (`=`, `+`, `-`, `@`, tab, CR) - the web mirror of
  * `ab_domain::csv::csv_field` (BUG-196).
  */
 export function csvField(value: unknown): string {

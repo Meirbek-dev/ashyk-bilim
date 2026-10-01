@@ -1,5 +1,5 @@
 //! Chapters + activities: the course curriculum. Ordering ports the legacy
-//! semantics — 1-based contiguous positions per parent, moves clamp the
+//! semantics - 1-based contiguous positions per parent, moves clamp the
 //! target position and renumber all siblings.
 
 use ab_core::assessments::{FileSubmissionLifecycle, Lifecycle};
@@ -50,7 +50,7 @@ pub struct CurriculumChapter {
     pub activities: Vec<Activity>,
 }
 
-/// Partial activity update. `type_pair` changes type+subtype together —
+/// Partial activity update. `type_pair` changes type+subtype together -
 /// changing one alone can't be validated against the closed set.
 #[derive(Debug, Default)]
 pub struct ActivityChanges<'a> {
@@ -114,7 +114,7 @@ impl CurriculumService {
     }
 
     /// An activity the actor may read: the course must be visible and,
-    /// unless the actor edits the course, the activity published — drafts
+    /// unless the actor edits the course, the activity published - drafts
     /// do not exist for learners (404, no leak).
     async fn readable_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Activity> {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
@@ -189,7 +189,7 @@ impl CurriculumService {
             .await?
             .ok_or_else(|| Error::not_found("chapter"))?;
         // BUG-209: an invisible course's chapter reads exactly like an
-        // unknown one — the detail must not leak that the chapter exists.
+        // unknown one - the detail must not leak that the chapter exists.
         self.writable_course(actor, chapter.course_id)
             .await
             .map_err(|err| match err.code() {
@@ -320,7 +320,7 @@ impl CurriculumService {
     /// learners never see an activity that answers 404 when opened.
     ///
     /// BUG-232: the lifecycle is read under the backing row's lock, inside
-    /// the toggle's transaction — a transition in flight commits its flag
+    /// the toggle's transaction - a transition in flight commits its flag
     /// first or sees this one.
     async fn require_publishable(
         tx: &mut sqlx::PgConnection,
@@ -359,7 +359,7 @@ impl CurriculumService {
     /// An assessment or file-submission config attached to this activity,
     /// whatever its lifecycle (BUG-201): a draft or archived assessment can
     /// still be published later, and its transition flips the activity
-    /// `published` — so a `dynamic` row would go live with a quiz behind it.
+    /// `published` - so a `dynamic` row would go live with a quiz behind it.
     /// BUG-377: read on the caller's transaction (it holds row locks).
     async fn has_attached_content(
         db: &mut sqlx::PgConnection,
@@ -414,7 +414,7 @@ impl CurriculumService {
         // The publish gate reads the MERGED row: the type this PATCH sets
         // (or keeps) and the published flag it asks for. It runs whenever
         // the merged row is published and either the flag flips or the type
-        // changes — a live activity cannot become a quiz with no assessment.
+        // changes - a live activity cannot become a quiz with no assessment.
         let merged_type = changes
             .type_pair
             .map_or(activity.activity_type.as_str(), |(t, _)| t);
@@ -434,7 +434,7 @@ impl CurriculumService {
                 "the activity has an assessment attached; delete it before changing the type",
             ));
         }
-        // UX-112/UX-120: one name — the assessment title follows the activity
+        // UX-112/UX-120: one name - the assessment title follows the activity
         // name under the assessment lock (scheduled / archived /
         // published-with-submissions → 409). BUG-186: every refusal above runs
         // before the first write, and the writes share one transaction.
@@ -463,7 +463,7 @@ impl CurriculumService {
             .await?;
         }
         let published = changes.published.filter(|p| *p != activity.published);
-        // BUG-358: one guarded write for every column — a rename under a
+        // BUG-358: one guarded write for every column - a rename under a
         // stale `If-Match` is refused exactly like a content save.
         let updated = ab_db::catalog::update_activity(
             &mut tx,
@@ -490,7 +490,7 @@ impl CurriculumService {
         }
         if changes.content.is_some() || changes.details.is_some() || changes.settings.is_some() {
             // BUG-263: an editor block's upload is released when a save no
-            // longer shows it (not on the Remove click — undo restores the
+            // longer shows it (not on the Remove click - undo restores the
             // node) and re-claimed when a later save shows it again.
             // Document/video activities keep their block outside `content`.
             if changes.content.is_some() && merged_type == "dynamic" {
@@ -527,7 +527,7 @@ impl CurriculumService {
         )
         .await?
         {
-            // UX-317: nothing deleted — a concurrent delete won (404), or
+            // UX-317: nothing deleted - a concurrent delete won (404), or
             // the row moved past the caller's `If-Match` (412, its version now).
             let current = ab_db::catalog::get_activity(&self.pool, activity_id).await?;
             return Err(match (current, expected_version) {
@@ -559,7 +559,7 @@ impl CurriculumService {
         let destination = match target_chapter {
             None => activity.chapter_id,
             Some(chapter_id) => {
-                // BUG-208: 404 for a chapter the actor cannot see — the
+                // BUG-208: 404 for a chapter the actor cannot see - the
                 // same-course 422 must not be an existence oracle.
                 let chapter = self.writable_chapter(actor, chapter_id).await?;
                 if chapter.course_id != activity.course_id {
@@ -627,7 +627,7 @@ impl CurriculumService {
         // BUG-234: the claim and the row that holds it commit together.
         // BUG-242/243: the activity row is locked before the upload row (the
         // order every delete takes), so a concurrent activity/chapter/course
-        // DELETE either sees this block or makes this a 404 — never a
+        // DELETE either sees this block or makes this a 404 - never a
         // deadlock, never a leaked reference.
         let mut tx = self.pool.begin().await?;
         if !ab_db::catalog::lock_activity_for_blocks(&mut tx, activity_id).await? {
@@ -670,7 +670,7 @@ impl CurriculumService {
     /// the object once nothing references it).
     ///
     /// BUG-244: one tx, activity locked first (BUG-243 order), and the
-    /// release counts only a block row this DELETE removed — a concurrent
+    /// release counts only a block row this DELETE removed - a concurrent
     /// second DELETE or activity DELETE releases nothing twice.
     pub async fn delete_block(&self, actor: &Actor, block_id: BlockId) -> Result<()> {
         let block = ab_db::catalog::get_block(&self.pool, block_id)

@@ -213,7 +213,7 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     assert_eq!(created.json()["name"], "Cohort");
-    // UX-165: the description too — line breaks stay.
+    // UX-165: the description too - line breaks stay.
     assert_eq!(created.json()["description"], "Line one\nline two");
     let id = created.json()["id"].as_str().unwrap().to_owned();
 
@@ -248,7 +248,7 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
 }
 
 /// BUG-156: linking a course grants every member read access, so the link
-/// needs write access on the course — an invisible private course is a 404,
+/// needs write access on the course - an invisible private course is a 404,
 /// a visible one the caller does not author is a 403, and the private course
 /// never becomes readable through the group. Plus the `writable` miss (404
 /// before the write check) and the members/courses read gate (403).
@@ -377,7 +377,7 @@ async fn linking_a_course_requires_write_access_on_it(pool: PgPool) {
         "{}",
         by_admin.text()
     );
-    // UX-106: the course's group list needs the course to be readable —
+    // UX-106: the course's group list needs the course to be readable -
     // the private course and an unknown id are 404, the own course lists.
     let private_groups = app
         .get_as(

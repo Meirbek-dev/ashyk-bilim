@@ -50,7 +50,7 @@ function answersFromSubmission(submission: AssessmentSubmissionRead | null | und
   return answers ?? {}
 }
 
-// UX-212: a save or submit refused with 401 (the session ended — cap
+// UX-212: a save or submit refused with 401 (the session ended - cap
 // eviction, logout elsewhere) sends the learner to the login page. The
 // answers the draft does not hold yet wait in this tab's sessionStorage,
 // keyed by the attempt, and come back (then save) when the draft reopens.
@@ -186,7 +186,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 
   // The attempt list is the source of truth for «is a draft open»: a submit
   // that landed while the reply was lost leaves the draft cache one row behind
-  // (BUG-212 nit) — the list's refetch must swap the form for the result.
+  // (BUG-212 nit) - the list's refetch must swap the form for the result.
   const draft = hasOpenDraft ? (draftQuery.data?.submission ?? null) : null
   const submission = draft ?? submissionsQuery.data?.[0] ?? null
   const version = submission?.draft_version
@@ -249,7 +249,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   )
 
   // UX-103 / UX-196: the attempt's window closed under the open form
-  // (PAST_DUE, TIME_LIMIT_EXPIRED, REMEDIATION_REQUIRED, …) — whether the
+  // (PAST_DUE, TIME_LIMIT_EXPIRED, REMEDIATION_REQUIRED, …) - whether the
   // autosave or the submit hit it. Say why, drop the unsaved edits the server
   // refused (the form shows what is on record), and refetch attempt-state so
   // the form turns read-only.
@@ -377,7 +377,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         if (isOfflineRecoverable(error)) {
           // The reply was lost, not necessarily the submit (BUG-204 keeps the
           // action running server-side): if the attempt already landed, that
-          // is the result — otherwise the BUG-178 re-queue below.
+          // is the result - otherwise the BUG-178 re-queue below.
           const latest = await getMySubmission(active.id).catch(() => null)
           if (latest && latest.status !== 'DRAFT') return latest
           throw error
@@ -385,7 +385,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         if (error.code !== 'idempotency-in-progress') throw error
         // BUG-204: the earlier submit under this key is still running (or its
         // reservation is stranded). Give it a moment; if it landed, that is
-        // the result — otherwise mint a fresh key and submit again. Never the
+        // the result - otherwise mint a fresh key and submit again. Never the
         // draft-conflict dialog for this.
         await new Promise(resolve => setTimeout(resolve, IN_PROGRESS_RETRY_MS))
         const latest = await getMySubmission(active.id)
@@ -416,7 +416,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (isApiError(error) && error.status === 409 && error.details?.field === 'content_version' && assessmentUuid) {
         // BUG-238: the teacher changed the questions under this draft. `start`
         // re-syncs it to the current content; reload the items and keep the
-        // learner's answers — no draft-conflict dialog, nothing to merge.
+        // learner's answers - no draft-conflict dialog, nothing to merge.
         submitRetryRef.current = null
         const reopened = await startAssessmentSubmission(assessmentUuid).catch(() => null)
         if (reopened) {
@@ -444,7 +444,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         return
       }
       // BUG-178: the submit carried the latest answers, but the draft on the
-      // server may not — the mutation cleared the throttled autosave. Put the
+      // server may not - the mutation cleared the throttled autosave. Put the
       // answers back on the draft path (autosave / pagehide flush / «Сохранить»)
       // so a 429 / 5xx / offline submit never loses them.
       const draftAnswers = answersFromSubmission(
@@ -471,7 +471,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
         }).catch(() => undefined)
       }
-      // UX-111: every remaining failure is localized by code — a 429 says
+      // UX-111: every remaining failure is localized by code - a 429 says
       // «Слишком много попыток…» with the Retry-After window, never the
       // server's English detail.
       toastApiError(error, { fallback: t('submitFailed') })
@@ -608,7 +608,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     saveRef.current = save
   }, [save])
 
-  // UX-212: back from the login page — the answers a 401 kept for this
+  // UX-212: back from the login page - the answers a 401 kept for this
   // attempt replace the draft's (adopted here, after the seeding above) and
   // are saved straight away by the effect. Checked once per opened draft: a
   // 401 in this mount keeps them for the next one.
@@ -656,7 +656,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   // UX-090: answers typed inside the 5 s throttle window must not die with
   // the page. On unload / route change, send the pending draft straight
   // away (`keepalive` outlives the document); the server's own 5 s window
-  // may still 429 it — the unsaved-changes guard is the learner's warning.
+  // may still 429 it - the unsaved-changes guard is the learner's warning.
   const saveStateRef = useRef(saveState)
   useEffect(() => {
     saveStateRef.current = saveState

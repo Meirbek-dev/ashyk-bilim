@@ -23,7 +23,7 @@ export interface SubmissionListQueryParams {
   sortBy: string
   sortDir: 'asc' | 'desc'
   status: SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
-  /** Server-side `late_only` — pages and totals follow it. */
+  /** Server-side `late_only` - pages and totals follow it. */
   lateOnly?: boolean
 }
 
@@ -46,12 +46,12 @@ function toReviewStatus(status: SubmissionListQueryParams['status']): string | n
 /**
  * v2 lists submissions as keyset pages; the review UI still thinks in page
  * numbers, so page N is reached by walking N-1 cursors, in the server's
- * `sort`/`order` (BUG-351 — cursors are only valid within one order).
+ * `sort`/`order` (BUG-351 - cursors are only valid within one order).
  * A queue that shrank below the requested page answers with the last page
  * actually reached (never a relabelled one), and `total` counts only rows
  * that exist through it: exact when `has_more` is false, a lower bound
  * otherwise.
- * ponytail: O(N) requests for page N — fine for a per-assessment queue.
+ * ponytail: O(N) requests for page N - fine for a per-assessment queue.
  */
 async function fetchSubmissionsPage(params: SubmissionListQueryParams): Promise<SubmissionsPage> {
   const base = new URLSearchParams()
@@ -98,9 +98,9 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
 }
 
 /**
- * Walks `GET courses/{id}/gradebook` to the end (keyset — no offset paging in v2).
+ * Walks `GET courses/{id}/gradebook` to the end (keyset - no offset paging in v2).
  * A page is whole learner rows, so the walk is learners / page size long; it never
- * stops short (BUG-265) — a cursor that will not end is an error, not a truncated gradebook.
+ * stops short (BUG-265) - a cursor that will not end is an error, not a truncated gradebook.
  */
 export async function collectGradebookPages(courseUuid: string, maxPages = 10_000): Promise<GradebookPage[]> {
   const pages: GradebookPage[] = []
@@ -116,7 +116,7 @@ export async function collectGradebookPages(courseUuid: string, maxPages = 10_00
 
 /**
  * `params` (search/activityType/savedFilter/page) are legacy server-side
- * filters v2's gradebook route does not accept — filtering happens client
+ * filters v2's gradebook route does not accept - filtering happens client
  * side in `filterGradebookStudents`/`buildGradebookRollups` on the full,
  * un-paginated result instead (v2 bans offset paging; see AGENTS.md).
  *

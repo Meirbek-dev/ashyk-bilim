@@ -75,7 +75,7 @@ fn content_hash(rendered: &str) -> String {
 }
 
 impl AiService {
-    /// `POST /ai/course-analysis/{course}/analyze` — inline.
+    /// `POST /ai/course-analysis/{course}/analyze` - inline.
     pub async fn analyze_course(
         &self,
         actor: &Actor,

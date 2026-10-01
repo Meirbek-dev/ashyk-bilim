@@ -116,7 +116,7 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     harness.contributorIds = []
   })
 
-  // UX-200: unpublishing cuts learners off — a confirm first, then a result toast.
+  // UX-200: unpublishing cuts learners off - a confirm first, then a result toast.
   it('asks before unpublishing and toasts the result', async () => {
     harness.permissions = new Set(['activity:update:own'])
     harness.creatorId = 'teacher-1'
@@ -152,7 +152,7 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     await screen.findByText('unpublishConfirmMessage')
     fireEvent.click(screen.getAllByRole('button', { name: 'unpublish' }).find(b => b !== toggle)!)
     await waitFor(() => expect(screen.queryByText('unpublishConfirmMessage')).toBeNull())
-    // A browser drops focus from the now-disabled toggle to <body>; jsdom keeps it — emulate the browser.
+    // A browser drops focus from the now-disabled toggle to <body>; jsdom keeps it - emulate the browser.
     ;(document.activeElement as HTMLElement | null)?.blur()
     settle({})
     await waitFor(() => expect(harness.toastSuccess).toHaveBeenCalledWith('unpublishedToast'))
@@ -206,7 +206,7 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     harness.lifecycle = undefined
   })
 
-  // UX-128: a locked quiz refuses the rename with a 409 — the toast is the
+  // UX-128: a locked quiz refuses the rename with a 409 - the toast is the
   // page-language lock copy, never the server's English `detail`.
   it('names the assessment lock on a refused rename instead of the raw detail', async () => {
     harness.permissions = new Set(['activity:update:platform'])
@@ -248,7 +248,7 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'editButton' })))
   })
 
-  // BUG-186: deleting an assessment activity cascades its hand-ins — the confirm says so.
+  // BUG-186: deleting an assessment activity cascades its hand-ins - the confirm says so.
   it('warns about lost hand-ins when deleting an assessment activity', () => {
     harness.permissions = new Set(['activity:delete:platform'])
     render(

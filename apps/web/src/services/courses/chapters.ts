@@ -1,4 +1,4 @@
-// Plain isomorphic functions, NOT server actions — problem+json codes must
+// Plain isomorphic functions, NOT server actions - problem+json codes must
 // reach the client `toastApiError` (GAUNTLET BUG-035). Nothing reads the
 // `courses` cache tags (no `cacheTag()` consumer), so nothing is revalidated.
 import { apiJson } from '@/lib/api-client'

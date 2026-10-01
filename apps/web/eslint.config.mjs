@@ -125,7 +125,7 @@ const COMMON_RULES = {
           '^middle$',
           '^present$',
           '^Present$',
-          '^—$',
+          '^-$',
           '^–$',
         ],
       },

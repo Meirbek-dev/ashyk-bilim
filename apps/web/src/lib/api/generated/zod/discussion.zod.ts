@@ -17,7 +17,7 @@ export const Discussion = zod.object({
           id: zod.uuid(),
           username: zod.string(),
         })
-        .describe("The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone."),
+        .describe("The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone."),
       zod.null(),
     ])
     .optional(),
@@ -47,7 +47,7 @@ export const Discussion = zod.object({
                 username: zod.string(),
               })
               .describe(
-                "The post's author — no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
+                "The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
               ),
             zod.null(),
           ])
@@ -68,7 +68,7 @@ export const Discussion = zod.object({
         replies: zod
           .array(zod.unknown())
           .describe(
-            'Embedded when the list was asked for `include_replies` (replies\ncarry an empty list — one level only).',
+            'Embedded when the list was asked for `include_replies` (replies\ncarry an empty list - one level only).',
           ),
         replies_count: zod.int(),
         status: zod
@@ -78,7 +78,7 @@ export const Discussion = zod.object({
       }),
     )
     .describe(
-      'Embedded when the list was asked for `include_replies` (replies\ncarry an empty list — one level only).',
+      'Embedded when the list was asked for `include_replies` (replies\ncarry an empty list - one level only).',
     ),
   replies_count: zod.int(),
   status: zod

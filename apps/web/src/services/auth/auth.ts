@@ -41,7 +41,7 @@ export async function revokeSession(handle: string): Promise<void> {
 // ── Password (self-service) ────────────────────────────────────────────────────
 
 /**
- * `POST /auth/password` — Zitadel checks the current password
+ * `POST /auth/password` - Zitadel checks the current password
  * (401 `invalid-credentials`); every other session of the caller is revoked.
  */
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {

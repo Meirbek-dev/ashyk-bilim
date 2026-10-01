@@ -2,8 +2,8 @@
 //! `ResourceAuthor`).
 //!
 //! Roles `maintainer | contributor | reporter`, statuses `pending | active |
-//! inactive`. The creator is implicit — `courses.creator_id`, never a stored
-//! row, never editable — and is synthesized into the roster as
+//! inactive`. The creator is implicit - `courses.creator_id`, never a stored
+//! row, never editable - and is synthesized into the roster as
 //! `creator/active`. Any *active* row authors on the course like the creator
 //! (`Course::is_author`, legacy `is_owner`). Roster management: the creator,
 //! an active maintainer, or `course:manage:platform`.
@@ -71,7 +71,7 @@ impl CoursesService {
 
     /// Roster, creator first (course visibility). Pending applicants and
     /// inactive rows are for roster managers; anyone else sees the active
-    /// authors plus their own row (BUG-331 — the apply/withdraw button reads
+    /// authors plus their own row (BUG-331 - the apply/withdraw button reads
     /// it). An anonymous actor's nil id matches no row.
     pub async fn list_contributors(
         &self,
@@ -169,7 +169,7 @@ impl CoursesService {
                 self.manageable(actor, course_id).await?;
             }
         } else {
-            // Someone else's row: managers only — the 403 comes before the
+            // Someone else's row: managers only - the 403 comes before the
             // creator 409 (UX-102); the creator is never a row (UX-081).
             self.manageable(actor, course_id).await?;
             Self::not_creator(&course, user_id)?;

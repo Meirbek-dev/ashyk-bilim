@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-168: the dash table row «Удалить» opens the same confirm as the course
-// card — nothing is deleted until the dialog's action is clicked.
+// card - nothing is deleted until the dialog's action is clicked.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'

@@ -23,7 +23,7 @@ interface ExamQuestionCardProps {
 
 /**
  * One exam question: header (number, points, flag, prompt) plus the canonical
- * answer control for the item's kind — every kind the server can return
+ * answer control for the item's kind - every kind the server can return
  * (choice, matching, open text, form, code) renders here (BUG-110).
  */
 export default function ExamQuestionCard({

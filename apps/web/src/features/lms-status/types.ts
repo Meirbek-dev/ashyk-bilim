@@ -111,7 +111,7 @@ export function getLmsStatusModel(status: LmsStatus): LmsStatusModel {
 
 /**
  * Resolves the localized badge label for a status. `types.ts` is a plain module and
- * cannot call `useTranslations` itself, so callers thread their translator through —
+ * cannot call `useTranslations` itself, so callers thread their translator through -
  * same pattern as `WorkQueueTranslate` in `features/work-queue/dashboard-work-queue.ts`.
  */
 export function getLmsStatusLabel(status: LmsStatus, t: (key: string) => string): string {

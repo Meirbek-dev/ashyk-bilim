@@ -54,7 +54,7 @@ export const Problem = zod
         'ai-run-cancelled',
         'ai-provider-unavailable',
       ])
-      .describe("Stable machine code — the frontend's i18n key."),
+      .describe("Stable machine code - the frontend's i18n key."),
     detail: zod.string().nullish(),
     details: zod
       .looseObject({})

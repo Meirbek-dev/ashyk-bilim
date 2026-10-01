@@ -36,7 +36,7 @@ export function loadKkIntlPolyfill(): Promise<void> {
     await import('@formatjs/intl-relativetimeformat/polyfill-force.js')
     await import('@formatjs/intl-relativetimeformat/locale-data/kk.js')
     // ponytail: only kk data is loaded, so every other locale resolves to kk
-    // while polyfilled — the kk UI never formats in ru/en. Add locale-data/ru
+    // while polyfilled - the kk UI never formats in ru/en. Add locale-data/ru
     // + en here if that changes.
     ;(Intl.DateTimeFormat as unknown as { __setDefaultTimeZone(tz: string): void }).__setDefaultTimeZone(timeZone)
     matchIcuWhitespace()

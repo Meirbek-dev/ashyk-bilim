@@ -1,4 +1,4 @@
-//! Executing one item's tests on Judge0 and recording the run — shared by
+//! Executing one item's tests on Judge0 and recording the run - shared by
 //! the learner-facing [`super::CodeRunsService`] and the submit pipeline.
 //!
 //! Compared to the legacy: hidden-test data is stored in full and masked
@@ -75,7 +75,7 @@ pub struct CodeRun {
 }
 
 impl CodeRun {
-    /// The runner is down or the breaker is open — the same request may
+    /// The runner is down or the breaker is open - the same request may
     /// succeed later.
     #[must_use]
     pub fn is_retryable(&self) -> bool {
@@ -102,7 +102,7 @@ impl CodeRun {
 #[derive(Debug)]
 pub enum FinalRun {
     Ran(CodeRun),
-    /// Judge0 unavailable (or not configured) — nothing was graded.
+    /// Judge0 unavailable (or not configured) - nothing was graded.
     Degraded(String),
     /// The stored answer's language is not allowed for this item.
     LanguageNotAllowed {
@@ -175,7 +175,7 @@ impl CodeRunner {
     }
 
     /// Size and blank-source checks shared by every entry point. Blank
-    /// source is refused before any row exists — Judge0 would 422 it, and
+    /// source is refused before any row exists - Judge0 would 422 it, and
     /// the auto-submit timer must not hammer the sandbox retrying that.
     pub fn validate_payload(&self, source: &str, custom_input: Option<&str>) -> Result<()> {
         if source.trim().is_empty() {

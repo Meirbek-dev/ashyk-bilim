@@ -1,7 +1,7 @@
-//! `LlmClient` — the one facade the domain talks to for language models.
+//! `LlmClient` - the one facade the domain talks to for language models.
 //!
 //! Speaks the OpenAI-compatible `POST {base_url}/chat/completions` contract
-//! (OpenAI primary, OpenRouter fallback — both use the same wire shape), so
+//! (OpenAI primary, OpenRouter fallback - both use the same wire shape), so
 //! the provider chain is pure config. Provider wire types never leave this
 //! module: `ab-domain` sees [`CompletionRequest`], [`Completion`],
 //! [`StreamChunk`] and [`LlmError`] only. Structured output requests a JSON
@@ -161,9 +161,9 @@ pub enum StreamChunk {
 pub enum LlmError {
     /// No provider configured (or the master switch is off).
     Disabled,
-    /// Transport failure, timeout, 5xx or 429 — try the next provider.
+    /// Transport failure, timeout, 5xx or 429 - try the next provider.
     Unavailable(String),
-    /// The provider refused the request (other 4xx) — also falls through to
+    /// The provider refused the request (other 4xx) - also falls through to
     /// the next provider (a bad key on one provider must not take AI down).
     Rejected(String),
     /// The reply was not the JSON the schema asked for, even after a repair.
@@ -694,7 +694,7 @@ pub fn repair_request(
         .push(ChatMessage::assistant(reply.to_owned()));
     repair.messages.push(ChatMessage::user(format!(
         "Your previous reply was not valid JSON for the requested schema ({parse_err}). \
-         Reply again with only the JSON object — no prose, no code fences."
+         Reply again with only the JSON object - no prose, no code fences."
     )));
     repair
 }

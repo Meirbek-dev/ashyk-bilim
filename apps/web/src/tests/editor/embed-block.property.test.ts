@@ -17,7 +17,7 @@ import { EmbedBlock } from '../../components/Objects/Editor/Extensions/EmbedBloc
 import type { EmbedType } from '../../components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
 // ---------------------------------------------------------------------------
-// Schema setup — StarterKit provides the required doc/text/paragraph nodes
+// Schema setup - StarterKit provides the required doc/text/paragraph nodes
 // ---------------------------------------------------------------------------
 
 const schema = getSchema([StarterKit, EmbedBlock])

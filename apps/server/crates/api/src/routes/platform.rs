@@ -21,7 +21,7 @@ pub async fn get_platform(State(state): State<AppState>) -> ApiResult<Json<Platf
     Ok(Json(state.platform.get().await?.into()))
 }
 
-/// Update platform settings (requires `platform:update:platform` — admins).
+/// Update platform settings (requires `platform:update:platform` - admins).
 /// Branding changes claim finalized `platform-logo` / `platform-thumbnail`
 /// uploads; the replaced object is released for reaping.
 #[utoipa::path(

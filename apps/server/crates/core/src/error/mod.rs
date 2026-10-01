@@ -23,7 +23,7 @@ pub struct FieldError {
 }
 
 impl FieldError {
-    /// `{field}`/`required` — the field is blank.
+    /// `{field}`/`required` - the field is blank.
     #[must_use]
     pub fn required(field: &str) -> Self {
         Self {
@@ -35,7 +35,7 @@ impl FieldError {
 }
 
 /// `trim`, but zero-width spaces and other format characters (Cf) are
-/// blank too — `trim` only knows White_Space (BUG-224 nit).
+/// blank too - `trim` only knows White_Space (BUG-224 nit).
 #[must_use]
 pub fn trim_blank(value: &str) -> &str {
     value.trim_matches(|c: char| {
@@ -43,7 +43,7 @@ pub fn trim_blank(value: &str) -> &str {
     })
 }
 
-/// `value` without control (Cc) and format (Cf) characters — bidi overrides
+/// `value` without control (Cc) and format (Cf) characters - bidi overrides
 /// in a display name render the neighbours reversed (UX-152 nit). The
 /// zero-width joiner stays: it glues emoji sequences together.
 #[must_use]
@@ -78,7 +78,7 @@ pub fn required_text(field: &str, value: &str) -> Result<String> {
 
 /// The shared "blank string" rule (UX-106).
 ///
-/// `value` trimmed, or 422 `{field}`/`required` when nothing is left —
+/// `value` trimmed, or 422 `{field}`/`required` when nothing is left -
 /// `""` and `"   "` answer the same code. DTOs that route a name through
 /// it carry no garde `min = 1`.
 pub fn required_str<'a>(field: &str, value: &'a str) -> Result<&'a str> {

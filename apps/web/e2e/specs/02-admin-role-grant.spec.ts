@@ -67,7 +67,7 @@ test.describe('Admin – User Roles Panel', () => {
   })
 
   test('admin cannot access roles panel as a non-admin', async ({ browser }) => {
-    // Open a fresh context with student storage state — student has no admin permissions
+    // Open a fresh context with student storage state - student has no admin permissions
     const context = await browser.newContext({
       storageState: STORAGE_STATE.student,
     })

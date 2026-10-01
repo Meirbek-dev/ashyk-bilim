@@ -89,7 +89,7 @@ export function MarkdownEditor({
   const effectiveMinHeight = minHeight ?? config.minHeight
   const effectiveMaxHeight = maxHeight ?? config.maxHeight
 
-  // Stable extensions array — rebuilt only when preset changes
+  // Stable extensions array - rebuilt only when preset changes
   const extensions = useMemo(
     () => buildEditorExtensions(placeholder ? { config, placeholder } : { config }),
     [config, placeholder],

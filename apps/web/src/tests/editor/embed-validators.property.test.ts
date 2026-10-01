@@ -17,7 +17,7 @@ import {
 
 /**
  * Generates a non-empty room ID string safe for use in a URL path segment.
- * Uses alphanumeric characters and hyphens — common in real room IDs.
+ * Uses alphanumeric characters and hyphens - common in real room IDs.
  */
 const arbRoomId = fc.stringMatching(/^[a-zA-Z0-9][a-zA-Z0-9-]{0,29}$/)
 

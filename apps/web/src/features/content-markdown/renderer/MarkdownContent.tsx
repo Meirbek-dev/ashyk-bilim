@@ -115,7 +115,7 @@ export function MarkdownContent({
     if (!hasMath) return
     // Dynamic import so KaTeX CSS is code-split and not loaded on every page
     import('katex/dist/katex.min.css').catch(() => {
-      // CSS import — no action needed on failure
+      // CSS import - no action needed on failure
     })
   }, [hasMath])
 

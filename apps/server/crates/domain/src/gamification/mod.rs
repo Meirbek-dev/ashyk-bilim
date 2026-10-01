@@ -4,7 +4,7 @@
 //! login/learning streaks, leaderboard and dashboard reads, and the hooks
 //! other slices call.
 //!
-//! Awards are never requested by learners in v2 — they are side effects of
+//! Awards are never requested by learners in v2 - they are side effects of
 //! completing things (activity, course, a passing published submission,
 //! the first login of a day). `POST /gamification/xp` is the admin award.
 
@@ -267,7 +267,7 @@ impl GamificationService {
         })
     }
 
-    /// The learner-callable touch: only `login` — the learning streak is a
+    /// The learner-callable touch: only `login` - the learning streak is a
     /// completion side effect (`hooks::activity_completed`), never a bare
     /// POST with nothing completed (BUG-204 nit).
     pub async fn touch_streak(&self, user_id: UserId, kind: StreakKind) -> Result<StreakUpdate> {
@@ -315,7 +315,7 @@ impl GamificationService {
     }
 
     /// Position on the public board; `None` for a profile that opted out
-    /// (`privacy.showOnLeaderboard = false`) — it is not on the board (BUG-137).
+    /// (`privacy.showOnLeaderboard = false`) - it is not on the board (BUG-137).
     pub async fn rank(&self, actor: &Actor) -> Result<Option<i64>> {
         let profile = ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await?;
         self.rank_of(&profile).await

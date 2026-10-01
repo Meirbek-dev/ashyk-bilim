@@ -122,7 +122,7 @@ pub async fn course_readiness(
 // ── Contributors ────────────────────────────────────────────────────────────
 
 /// Roster, creator first (course visibility; 404 otherwise). Public for a
-/// public course — the course page names its authors to every visitor;
+/// public course - the course page names its authors to every visitor;
 /// anonymous visitors see active authors only.
 #[utoipa::path(
     get,

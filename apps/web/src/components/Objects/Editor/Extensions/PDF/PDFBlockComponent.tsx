@@ -139,7 +139,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     setIsModalOpen(true)
   }
 
-  // BUG-263: like the image block — the save that drops the node releases
+  // BUG-263: like the image block - the save that drops the node releases
   // the upload server-side; undo before or after it keeps the file.
   const handleRemove = () => {
     props.deleteNode()

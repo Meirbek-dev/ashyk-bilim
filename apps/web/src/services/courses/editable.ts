@@ -10,7 +10,7 @@ import { getSession } from '@/lib/auth/session'
  active contributor, or platform updater/manager) plus the `summary` block;
  `q` / `sort` / `preset` are applied on the server (DECISIONS "Teacher course
  listing is server-side"). The legacy page-numbered URL is kept by hopping
- `page - 1` cursors — one request per hop.
+ `page - 1` cursors - one request per hop.
 */
 
 export interface EditableCoursesSummary {

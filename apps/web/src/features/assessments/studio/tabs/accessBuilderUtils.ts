@@ -61,7 +61,7 @@ export function getExcludedLoadedCount(loadedEligibleUserIds: string[], selected
   return loadedEligibleUserIds.filter(userId => !selectedUserIds.has(userId)).length
 }
 
-/** Restricted mode with nothing selected locks every learner out — the save asks first (UX-057). */
+/** Restricted mode with nothing selected locks every learner out - the save asks first (UX-057). */
 export function isLockout(mode: AccessMode, selectedUserCount: number, selectedGroupCount: number): boolean {
   return mode === 'restricted' && selectedUserCount === 0 && selectedGroupCount === 0
 }

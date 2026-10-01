@@ -2,14 +2,14 @@
  * Canonical submission-status for the unified grading workflow.
  *
  * Five states shared by ALL assessment types:
- *   DRAFT      — student is working, not yet submitted
- *   PENDING    — submitted, awaiting teacher or auto-grading
- *   GRADED     — score set, not yet visible to student
- *   PUBLISHED  — score visible to student
- *   RETURNED   — sent back for revision
+ *   DRAFT      - student is working, not yet submitted
+ *   PENDING    - submitted, awaiting teacher or auto-grading
+ *   GRADED     - score set, not yet visible to student
+ *   PUBLISHED  - score visible to student
+ *   RETURNED   - sent back for revision
  *
  * Supersedes:
- *   - SubmissionStatus in features/grading/domain (identical — this is the source)
+ *   - SubmissionStatus in features/grading/domain (identical - this is the source)
  *   - ExamAttempt.status IN_PROGRESS/SUBMITTED/AUTO_SUBMITTED
  *       → IN_PROGRESS maps to DRAFT; SUBMITTED/AUTO_SUBMITTED map to PENDING
  *   - CodeSubmission.status PENDING/PROCESSING/COMPLETED/FAILED
@@ -84,7 +84,7 @@ export function needsTeacherAction(status: SubmissionStatus | null | undefined):
 /**
  * Mirrors the server's `transition_allowed` (grading/teacher.rs): a PUBLISHED
  * attempt can only be re-published (`action: 'publish'`), never parked as a
- * draft or returned — so the form stays editable but only the publish action is
+ * draft or returned - so the form stays editable but only the publish action is
  * offered.
  */
 export function canTeacherEditGrade(status: SubmissionStatus | null | undefined): boolean {

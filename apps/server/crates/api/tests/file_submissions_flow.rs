@@ -561,7 +561,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{}",
         stranger_grade.text()
     );
-    // UX-141: `rubric_scores` is an object of bounded size — 422 otherwise;
+    // UX-141: `rubric_scores` is an object of bounded size - 422 otherwise;
     // BUG-223: a NUL in an object key is refused at the door like a value.
     for (bad, field) in [
         (serde_json::json!("notobj"), "rubric_scores"),
@@ -637,7 +637,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{}",
         published_grade.text()
     );
-    // BUG-128: a released grade is final — it cannot be returned (same
+    // BUG-128: a released grade is final - it cannot be returned (same
     // table as assessment submissions).
     let retract = app
         .send(with_if_match(
@@ -858,7 +858,7 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
         late_submit.text()
     );
     assert_eq!(late_submit.json()["detail"], "cannot submit: PAST_DUE");
-    // UX-115: so is a draft save — the stored files stay.
+    // UX-115: so is a draft save - the stored files stay.
     let late_save = app
         .patch_as(
             &alice,
@@ -954,7 +954,7 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
 }
 
 /// BUG-316: a settings change to the late rules re-prices every existing
-/// file hand-in — the rate (80 → 56 → 32) and the due date (→ on time, 80).
+/// file hand-in - the rate (80 → 56 → 32) and the due date (→ on time, 80).
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1017,7 +1017,7 @@ async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
         assert_eq!(mine.json()["final_score"], score, "{}", mine.text());
     }
 
-    // BUG-322: the client hangs up the moment the PATCH commits — the
+    // BUG-322: the client hangs up the moment the PATCH commits - the
     // re-price still runs (detached, durable post-commit path): late again.
     let fs = uuid::Uuid::parse_str(&id).unwrap();
     drop_request_when(
@@ -1264,7 +1264,7 @@ async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
 }
 
 /// BUG-229: publish racing a blank-instructions PATCH never leaves a
-/// published config with blank instructions — both run under the config
+/// published config with blank instructions - both run under the config
 /// row lock. BUG-232: publish flips the activity flag in the same
 /// transaction, so a client that hangs up mid-publish leaves no torn pair.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1340,7 +1340,7 @@ async fn publish_and_config_edits_serialize(pool: PgPool) {
     .await;
 }
 
-/// BUG-230: a refused config PATCH writes nothing — the title travels in
+/// BUG-230: a refused config PATCH writes nothing - the title travels in
 /// the same transaction as the config it was refused with.
 #[sqlx::test(migrations = "../../migrations")]
 async fn refused_config_patch_keeps_the_title(pool: PgPool) {
@@ -1376,7 +1376,7 @@ async fn refused_config_patch_keeps_the_title(pool: PgPool) {
 }
 
 /// UX-154: the config `rubric` is an object, like the grade route's
-/// `rubric_scores` — a list or a string is a 422, on create and on patch.
+/// `rubric_scores` - a list or a string is a 422, on create and on patch.
 #[sqlx::test(migrations = "../../migrations")]
 async fn config_rubric_must_be_an_object(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1479,7 +1479,7 @@ async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
 }
 
 /// BUG-258: two drafts of one learner swapping shared uploads at once lock
-/// them in key order — never a 40P01 deadlock, and the counts stay exact.
+/// them in key order - never a 40P01 deadlock, and the counts stay exact.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1519,7 +1519,7 @@ async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
 }
 
 /// BUG-259: deleting the activity, chapter or course under a submitted file
-/// releases the learner's upload (count 0, reaper clock set) — the cascade
+/// releases the learner's upload (count 0, reaper clock set) - the cascade
 /// drops the file rows, never the reference.
 #[sqlx::test(migrations = "../../migrations")]
 async fn deletes_release_submitted_file_uploads(pool: PgPool) {
@@ -1583,7 +1583,7 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
 }
 
 /// BUG-260: a grade published for a learner who left the course is
-/// recorded — and nothing more: no completion, no certificate.
+/// recorded - and nothing more: no completion, no certificate.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1638,7 +1638,7 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     assert_eq!((completed, certificates), (0, 0));
 }
 
-/// Author permissions but no contributor row — a learner until added.
+/// Author permissions but no contributor row - a learner until added.
 async fn future_maintainer(app: &TestApp, name: &str) -> MintedSession {
     let user = app
         .create_user(name, &format!("{name}@example.com"), &["instructor"])
@@ -1681,7 +1681,7 @@ async fn set_maintainer(
     assert!(res.status.is_success(), "{}", res.text());
 }
 
-/// BUG-296: an open file attempt is judged by its own preview flag — a
+/// BUG-296: an open file attempt is judged by its own preview flag - a
 /// counted draft stays gated (PAST_DUE) after its owner joins the staff.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
@@ -1734,7 +1734,7 @@ async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     assert_eq!(late.json()["detail"], "cannot submit: PAST_DUE");
 }
 
-/// BUG-295: a file preview draft is never resumed by a learner — hidden
+/// BUG-295: a file preview draft is never resumed by a learner - hidden
 /// from `GET draft`, discarded by their next write (upload reference
 /// released), which opens a counted attempt.
 #[sqlx::test(migrations = "../../migrations")]

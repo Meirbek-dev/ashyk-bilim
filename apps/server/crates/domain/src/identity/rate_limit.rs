@@ -1,5 +1,5 @@
 //! Fixed-window rate limiting in Redis (login brute-force protection; ports
-//! the legacy auth limiter posture — Zitadel's own lockout counters are the
+//! the legacy auth limiter posture - Zitadel's own lockout counters are the
 //! second layer behind it).
 
 use std::time::Duration;

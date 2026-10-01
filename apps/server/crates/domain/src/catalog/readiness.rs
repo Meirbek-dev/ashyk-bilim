@@ -2,19 +2,19 @@
 //! server so the web only localizes codes.
 //!
 //! Blockers (`ready == false`):
-//! - `no-live-activity` — no published activity at all.
-//! - `assessment-not-ready` — a published quiz/exam activity whose assessment
+//! - `no-live-activity` - no published activity at all.
+//! - `assessment-not-ready` - a published quiz/exam activity whose assessment
 //!   is missing, not `published`, or fails its own readiness rules.
-//! - `code-challenge-unconfigured` — a published code-challenge activity with
+//! - `code-challenge-unconfigured` - a published code-challenge activity with
 //!   no assessment behind it (the same lifecycle/readiness rules as above
 //!   apply once one exists, reported as `assessment-not-ready`).
-//! - `file-submission-unpublished` — a published file-submission activity
+//! - `file-submission-unpublished` - a published file-submission activity
 //!   whose config is missing or not `published`.
-//! - `file-submission-not-ready` — a published config with empty
+//! - `file-submission-not-ready` - a published config with empty
 //!   instructions (legacy rows; BUG-219 refuses the edit today).
 //!
 //! Warnings (informational):
-//! - `activity-unpublished` — a draft activity learners cannot see yet.
+//! - `activity-unpublished` - a draft activity learners cannot see yet.
 //! - `thumbnail-missing`, `certificate-not-configured`.
 
 use ab_core::assessments::{FileSubmissionLifecycle, Lifecycle};

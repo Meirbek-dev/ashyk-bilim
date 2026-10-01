@@ -9,7 +9,7 @@ import { sessionCan } from '@/lib/auth/permissions'
 
 describe('sessionCan super-admin wildcard', () => {
   it('honours the *:*:* grant the server actually issues', () => {
-    // admin@ashyq.local logs in with permissions: ["*:*:*"] — nothing else.
+    // admin@ashyq.local logs in with permissions: ["*:*:*"] - nothing else.
     const session = { permissions: ['*:*:*'] }
     expect(sessionCan(session, 'platform', 'read', 'platform')).toBe(true)
     expect(sessionCan(session, 'course', 'delete', 'own')).toBe(true)

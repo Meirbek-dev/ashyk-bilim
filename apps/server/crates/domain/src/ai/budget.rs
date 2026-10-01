@@ -27,7 +27,7 @@ const RESERVATION_LEASE: Duration = Duration::from_mins(15);
 #[derive(Debug, Clone, Copy)]
 pub struct Reservation {
     pub id: uuid::Uuid,
-    /// The prompt estimate — the input count when the provider reports none.
+    /// The prompt estimate - the input count when the provider reports none.
     pub input_tokens: i32,
 }
 
@@ -91,7 +91,7 @@ impl TokenBudget {
     /// Legacy `assert_request_budget` minus the hourly count (see
     /// [`Self::assert_hourly`]).
     ///
-    /// `prompt` — everything sent — must fit the
+    /// `prompt` - everything sent - must fit the
     /// per-request cap, and the month must have room for it plus
     /// `max_output_tokens` after the ledger and every in-flight reservation.
     /// The room is reserved atomically (BUG-349); `run` ties it to a run
@@ -139,7 +139,7 @@ impl TokenBudget {
     }
 
     /// One request against the caller's hourly allowance on `lane`. Without Redis
-    /// (worker without `AB__REDIS__URL`) the check is skipped — it already
+    /// (worker without `AB__REDIS__URL`) the check is skipped - it already
     /// ran when the run was accepted.
     pub async fn assert_hourly(&self, user_id: UserId, lane: BudgetLane) -> Result<()> {
         let Some(limiter) = &self.limiter else {

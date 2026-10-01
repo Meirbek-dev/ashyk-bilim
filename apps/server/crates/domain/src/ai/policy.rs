@@ -64,7 +64,7 @@ impl AiService {
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))?;
         if session.student_user_id != actor.user_id {
-            // One 404 detail whatever fails underneath — the session id must
+            // One 404 detail whatever fails underneath - the session id must
             // not leak that it exists (UX-134).
             let subject = self.load_subject_by(session.subject).await?;
             self.require_subject_access(actor, &subject)
@@ -84,7 +84,7 @@ impl AiService {
     }
 
     /// Legacy `require_ai_run_access`: thread owner or platform reader.
-    /// Anyone else gets 404 — a run id must not leak that it exists. The
+    /// Anyone else gets 404 - a run id must not leak that it exists. The
     /// owner also needs their current standing on the run's work (UX-136:
     /// a demoted maintainer kept reading a learner's analysis through
     /// `runs/{id}/artifacts`).
@@ -101,7 +101,7 @@ impl AiService {
             .map_err(|_| Error::not_found("ai run"))
     }
 
-    /// What the run's work asks of its performer — the subject rule for
+    /// What the run's work asks of its performer - the subject rule for
     /// submission analyses and remediations, course write access for the
     /// teacher agents, course visibility otherwise. Checked at the enqueue,
     /// again at execution and on every read (UX-136).

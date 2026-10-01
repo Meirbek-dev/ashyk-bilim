@@ -1,10 +1,10 @@
-//! First-party Google OAuth client (DECISIONS.md 2026-08-16) — port of the
+//! First-party Google OAuth client (DECISIONS.md 2026-08-16) - port of the
 //! legacy `google_oauth.py` semantics:
 //! - Authorization-code flow with PKCE (S256), `openid email profile`,
 //!   `prompt=select_account`, `access_type=online`.
 //! - Token exchange with 3 attempts on transient network errors.
 //! - Identity from the `id_token` claims (issuer/audience checked; signature
-//!   deliberately not verified — the token arrives directly from Google's
+//!   deliberately not verified - the token arrives directly from Google's
 //!   token endpoint over TLS, exactly as the legacy did), falling back to the
 //!   `userinfo` endpoint.
 //!
@@ -41,7 +41,7 @@ pub struct GoogleConfig {
 pub struct GoogleIdentity {
     pub sub: String,
     pub email: String,
-    /// Google's `email_verified` claim — only a verified address may be
+    /// Google's `email_verified` claim - only a verified address may be
     /// matched to an existing account (BUG-254).
     pub email_verified: bool,
     pub given_name: Option<String>,
@@ -162,7 +162,7 @@ impl GoogleClient {
         self.fetch_userinfo(&access_token).await
     }
 
-    /// Decode (without signature verification — see module docs) and validate
+    /// Decode (without signature verification - see module docs) and validate
     /// issuer/audience/subject claims.
     fn identity_from_id_token(&self, id_token: &str) -> Option<GoogleIdentity> {
         #[derive(Deserialize)]

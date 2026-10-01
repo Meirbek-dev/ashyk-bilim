@@ -17,7 +17,7 @@ export const QaWireMessage = zod
     parts: zod
       .array(zod.looseObject({}))
       .nullish()
-      .describe('`[{type: "text", content: "…"}, …]` — an alternative to `content`.'),
+      .describe('`[{type: "text", content: "…"}, …]` - an alternative to `content`.'),
     role: zod.string(),
     subagentRunId: zod.string().nullish(),
   })

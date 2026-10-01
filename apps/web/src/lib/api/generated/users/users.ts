@@ -335,7 +335,7 @@ export const getPublicProfileByIdUrl = (userId: UserId) => {
 /**
  * Editor user blocks store the user id; every reader of the page (learners,
  * anonymous visitors of a public course) resolves the card here.
- * @summary Public profile card by id — same card as `GET /users/{username}`.
+ * @summary Public profile card by id - same card as `GET /users/{username}`.
  */
 export const publicProfileById = async (
   userId: UserId,
@@ -432,7 +432,7 @@ export function usePublicProfileById<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Public profile card by id — same card as `GET /users/{username}`.
+ * @summary Public profile card by id - same card as `GET /users/{username}`.
  */
 
 export function usePublicProfileById<
@@ -518,7 +518,7 @@ export function usePublicProfileByIdSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Public profile card by id — same card as `GET /users/{username}`.
+ * @summary Public profile card by id - same card as `GET /users/{username}`.
  */
 
 export function usePublicProfileByIdSuspense<
@@ -912,7 +912,7 @@ export const getPublicProfileUrl = (username: string) => {
 
 /**
  * Id, username, display name, bio, avatar and the profile builder sections
- * — readable anonymously, active users only. The profile page resolves its subject here instead of
+ * - readable anonymously, active users only. The profile page resolves its subject here instead of
  * scanning `/search`.
  * @summary Public profile card by username (legacy `GET /users/username/{username}`).
  */

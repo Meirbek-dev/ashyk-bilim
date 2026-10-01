@@ -2,7 +2,7 @@
 //! `_compiler_options_for_language`).
 //!
 //! Managed runtimes need far more address space than the item's memory
-//! limit suggests — the JVM reserves ~1.5 GB, Go's runtime ~0.5 GB — and
+//! limit suggests - the JVM reserves ~1.5 GB, Go's runtime ~0.5 GB - and
 //! the compiler flags keep their own heap small enough to fit. These pair
 //! with the `languages` table patch (P5.3) that sets the run commands.
 

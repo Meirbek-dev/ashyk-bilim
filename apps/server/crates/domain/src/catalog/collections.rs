@@ -95,7 +95,7 @@ impl CollectionsService {
         Err(Error::forbidden("no write access to this collection"))
     }
 
-    /// Every attached course must be readable by the actor (404 otherwise —
+    /// Every attached course must be readable by the actor (404 otherwise -
     /// same no-leak rule as direct course reads).
     async fn check_courses_readable(&self, actor: &Actor, ids: &[CourseId]) -> Result<()> {
         for id in ids {
@@ -144,7 +144,7 @@ impl CollectionsService {
     }
 
     /// The one 404 rule for every direct access (`get`/`update`/`delete`):
-    /// unknown, not readable, or — unless the actor manages collections —
+    /// unknown, not readable, or - unless the actor manages collections -
     /// not `collection_listable` (no course visible to them, UX-131). A
     /// caller who cannot read a collection learns nothing else about it
     /// (BUG-192).
@@ -270,7 +270,7 @@ impl CollectionsService {
         if ab_db::collections::delete_collection(&self.pool, id, expected_version).await? {
             return Ok(());
         }
-        // UX-317: nothing deleted — a concurrent delete won (404), or the
+        // UX-317: nothing deleted - a concurrent delete won (404), or the
         // row moved past the caller's `If-Match` (412 with its version now).
         match (
             ab_db::collections::get_collection(&self.pool, id).await?,

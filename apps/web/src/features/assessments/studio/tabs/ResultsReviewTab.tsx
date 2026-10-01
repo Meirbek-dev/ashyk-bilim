@@ -49,7 +49,7 @@ import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
     queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
-    // The generated fetcher: the row key is `item_id` (UX-058 — a hand-rolled
+    // The generated fetcher: the row key is `item_id` (UX-058 - a hand-rolled
     // `item_uuid` type left every row keyed `undefined`).
     queryFn: () => fetchItemAnalytics(assessmentUuid),
     staleTime: 30_000,
@@ -206,7 +206,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
               <Badge variant="outline">{t('queueSelected', { count: selectedUuids.size })}</Badge>
             </div>
           </div>
-          {/* UX-190: a wrapping row — the fixed 5-column grid overflowed a studio at 1380 px. */}
+          {/* UX-190: a wrapping row - the fixed 5-column grid overflowed a studio at 1380 px. */}
           <div className="mt-4 flex flex-wrap gap-2">
             <div className="relative min-w-[16rem] flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />

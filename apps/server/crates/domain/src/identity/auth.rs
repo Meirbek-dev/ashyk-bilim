@@ -37,13 +37,13 @@ use crate::identity::sessions::{NewSession, SessionStore};
 /// a classroom NAT behind one `X-Forwarded-For` is throttled by its
 /// failures only (DECISIONS 2026-09-13).
 const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
-/// Login attempts per account (the user id when the login name resolves —
-/// email and username share one lock — the normalised name otherwise).
+/// Login attempts per account (the user id when the login name resolves -
+/// email and username share one lock - the normalised name otherwise).
 const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
-/// Wrong `current_password` guesses per user on the password change — a
+/// Wrong `current_password` guesses per user on the password change - a
 /// stolen session must not brute-force the password it never knew.
 const PASSWORD_CHECK_LIMIT: (u32, Duration) = (5, Duration::from_mins(15));
-/// Accounts actually created per IP (the expensive path — two Zitadel calls
+/// Accounts actually created per IP (the expensive path - two Zitadel calls
 /// plus an email). Failed attempts do not count: a classroom behind one NAT
 /// must survive ten typos.
 const REGISTER_IP_LIMIT: (u32, Duration) = (10, Duration::from_hours(1));
@@ -187,9 +187,9 @@ pub struct NewAccount {
 pub use ab_db::identity::ProfileRow as Profile;
 
 /// A profile name as every account-creating door stores it (register, admin
-/// create, Google — UX-157): control/format characters stripped (a bidi
+/// create, Google - UX-157): control/format characters stripped (a bidi
 /// override renders the neighbours reversed), trimmed; `None` when nothing
-/// visible is left — the rule `PATCH /users/me` applies to `display_name`.
+/// visible is left - the rule `PATCH /users/me` applies to `display_name`.
 pub(crate) fn profile_name(value: &str) -> Option<String> {
     let value = ab_core::strip_controls(value);
     let value = ab_core::trim_blank(&value);
@@ -341,7 +341,7 @@ impl IdentityService {
                 ))
             }
             PasswordSessionOutcome::UserNotFound => {
-                // Our row exists but Zitadel's does not — identity drift.
+                // Our row exists but Zitadel's does not - identity drift.
                 // Loud in the logs; uniform message to the client.
                 tracing::error!(login = %input.login, "app user missing from zitadel");
                 self.audit(
@@ -380,7 +380,7 @@ impl IdentityService {
         let ip_key = self.enforce_login_ip_limit(&input).await?;
 
         // Our row first (username or email, legacy semantics), then the
-        // password check by Zitadel user id — Zitadel's login name may be
+        // password check by Zitadel user id - Zitadel's login name may be
         // either identifier depending on how the account was created.
         // UX-110: the name-limit key already trimmed; the lookup must too.
         let user = ab_db::identity::find_user_for_login(&self.pool, input.login.trim()).await?;
@@ -400,7 +400,7 @@ impl IdentityService {
             ));
         };
         // A fenced attempt (a mutation landed mid-flight) is retried once as
-        // a fresh login — every check including the password runs again on
+        // a fresh login - every check including the password runs again on
         // the new epoch (bar the already-verified TOTP code, UX-158), so a
         // role or MFA rewrite costs the user nothing and a password change is
         // caught by Zitadel itself (BUG-222 nit).
@@ -429,17 +429,17 @@ impl IdentityService {
     /// discarded and the fence audited); the caller retries or refuses.
     ///
     /// `first` carries the limiter hits this login counted: handed back as
-    /// soon as Zitadel accepts the password — every answer after that
+    /// soon as Zitadel accepts the password - every answer after that
     /// (`mfa-required`, `account-disabled`, a session) is not a guess
     /// (BUG-236). `None` on the retry, which only runs once the first attempt
-    /// was accepted — its TOTP code included (UX-158).
+    /// was accepted - its TOTP code included (UX-158).
     async fn login_attempt(
         &self,
         input: &LoginInput,
         user: &ab_db::identity::AuthUserRow,
         first: Option<&[&str]>,
     ) -> Result<Option<LoginOk>> {
-        // UX-158: the retry does not resend the code — Zitadel refuses a
+        // UX-158: the retry does not resend the code - Zitadel refuses a
         // replayed one. The first attempt verified it moments ago, so it
         // still stands as the second factor.
         let code = if first.is_some() {
@@ -466,7 +466,7 @@ impl IdentityService {
             self.limiter.release(key).await?;
         }
         // Status and `rbac_version` are re-read after the epoch, not taken
-        // from the row looked up before it — the fence only covers state read
+        // from the row looked up before it - the fence only covers state read
         // after the epoch, and the version must be no older than the grants
         // read below (UX-211, as Google login does).
         let (status, rbac_version) = ab_db::identity::find_auth_user(&self.pool, user.id)
@@ -491,7 +491,7 @@ impl IdentityService {
         }
 
         // BFF-enforced MFA: Zitadel's session API does not force TOTP by
-        // itself — if the account has TOTP enrolled and no code came with
+        // itself - if the account has TOTP enrolled and no code came with
         // this attempt, demand the second factor before opening our session.
         // A code Zitadel accepted on this attempt proves enrollment by itself;
         // on the retry enrollment is read live (the mutation may have removed
@@ -548,7 +548,7 @@ impl IdentityService {
         }))
     }
 
-    /// Fenced twice in a row: answer as a fresh login would — 403 if the
+    /// Fenced twice in a row: answer as a fresh login would - 403 if the
     /// account is now disabled, 401 `mfa-required` if TOTP is now enrolled
     /// and no code came, else 401 (the password may have changed).
     async fn fenced_login(
@@ -661,7 +661,7 @@ impl IdentityService {
             .await
             .map_err(|err| {
                 // Zitadel's own uniqueness check (login names span providers
-                // — a Google-created account may hold the name).
+                // - a Google-created account may hold the name).
                 if err.code() == ErrorCode::Conflict {
                     Error::app(ErrorCode::UsernameTaken, "username is already taken")
                 } else {
@@ -681,7 +681,7 @@ impl IdentityService {
         let user_id = match inserted {
             Ok(Some(user_id)) => user_id,
             // Lost a race since `require_unique`, or the insert itself
-            // failed: undo the Zitadel side — a Zitadel user without a row
+            // failed: undo the Zitadel side - a Zitadel user without a row
             // burns the login name for good (BUG-213).
             other => {
                 if let Err(err) = self.zitadel.delete_user(&created.user_id).await {
@@ -721,7 +721,7 @@ impl IdentityService {
 
     /// Public self-registration (DECISIONS 2026-09-12). The verification
     /// code goes out via Resend; without a mailer it is logged and the
-    /// account still works — the legacy never gated login on verification.
+    /// account still works - the legacy never gated login on verification.
     pub async fn register(&self, account: NewAccount) -> Result<Profile> {
         let ip = account.ip.as_deref();
         self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
@@ -790,7 +790,7 @@ impl IdentityService {
         if let Err(err) = mailer
             .send(
                 &profile.email,
-                "Подтвердите адрес электронной почты — Ashyq Bilim",
+                "Подтвердите адрес электронной почты - Ashyq Bilim",
                 &html,
             )
             .await
@@ -814,7 +814,7 @@ impl IdentityService {
         };
         // Zitadel's email codes are uppercase letters + digits; a code typed
         // in lowercase is the same code (UX-205). A blank one is simply wrong
-        // — Zitadel never sees it (UX-211).
+        // - Zitadel never sees it (UX-211).
         let code = code.trim().to_uppercase();
         if code.is_empty() {
             return Err(invalid());
@@ -889,7 +889,7 @@ impl IdentityService {
     }
 
     /// Change the caller's password through Zitadel (current password
-    /// checked there). Every other session of the user is revoked — the
+    /// checked there). Every other session of the user is revoked - the
     /// legacy tracked `password_changed_at` for exactly this.
     pub async fn change_password(
         &self,
@@ -970,7 +970,7 @@ impl IdentityService {
     ///
     /// A start within [`TOTP_ENROL_TTL`] of a pending one returns that
     /// pending secret again (UX-254: Zitadel replaces the pending secret on
-    /// every registration — a second tab would otherwise kill the first
+    /// every registration - a second tab would otherwise kill the first
     /// tab's QR). Two starts racing to Zitadel are serialized on a per-user
     /// lock; the loser answers `idempotency-in-progress` and its retry gets
     /// the winner's secret. The lock is held until the pending secret is

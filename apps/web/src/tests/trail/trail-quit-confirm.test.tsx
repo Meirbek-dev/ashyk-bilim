@@ -86,7 +86,7 @@ describe('TrailCourseElement quit + certificate', () => {
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['trail', 'current'] }))
   })
 
-  // UX-140: the run was already deleted elsewhere — a 404 reads as «уже
+  // UX-140: the run was already deleted elsewhere - a 404 reads as «уже
   // покинули», not «Не удалось покинуть курс», and the card still goes.
   it('404 on leave → «Вы уже покинули курс» and the card is dropped', async () => {
     vi.mocked(apiJson).mockRejectedValueOnce(new APIError({ status: 404, code: 'not-found', message: 'run not found' }))

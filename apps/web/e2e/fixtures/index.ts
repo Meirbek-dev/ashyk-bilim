@@ -44,7 +44,7 @@ interface LmsFixtures {
 }
 
 // ---------------------------------------------------------------------------
-// Base fixture — injects page objects
+// Base fixture - injects page objects
 // ---------------------------------------------------------------------------
 
 export const test = base.extend<LmsFixtures>({

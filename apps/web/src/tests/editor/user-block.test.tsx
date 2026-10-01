@@ -2,7 +2,7 @@
 /**
  * Restore C1: a user block stores `attrs.user_id`. It resolves the public card
  * by id (any reader of the page may call it), and a failed lookup never clears
- * the stored link — the studio save would otherwise drop it.
+ * the stored link - the studio save would otherwise drop it.
  */
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import type { ReactNode } from 'react'

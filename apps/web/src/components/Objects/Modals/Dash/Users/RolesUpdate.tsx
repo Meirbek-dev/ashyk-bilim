@@ -45,7 +45,7 @@ const RolesUpdate: FC<Props> = props => {
   const { handleApiError } = useApiError()
   // The role the user holds as far as this dialog knows (BUG-347): once the
   // old role is removed, a failed assign must not make the retry remove it
-  // again — the retry only assigns.
+  // again - the retry only assigns.
   const [heldRole, setHeldRole] = useState(props.alreadyAssignedRole)
 
   const form = useForm<FormData, unknown, RoleFormValues>({
@@ -88,7 +88,7 @@ const RolesUpdate: FC<Props> = props => {
         try {
           await removeRoleFromUser(userId, heldRole)
         } catch (removeError: unknown) {
-          // 404: already gone (a lost response, another admin) — the goal of this step.
+          // 404: already gone (a lost response, another admin) - the goal of this step.
           if (!(removeError instanceof APIError && removeError.status === 404)) throw removeError
         }
         setHeldRole('')

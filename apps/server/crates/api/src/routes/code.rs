@@ -16,7 +16,7 @@ use crate::state::AppState;
 
 /// Run code against an item's visible tests (or one custom input).
 ///
-/// Does not affect any grade — hidden tests only run at submit. Needs
+/// Does not affect any grade - hidden tests only run at submit. Needs
 /// submit access to the assessment (authors may preview and see hidden
 /// data). With an `Idempotency-Key`, a retry with the same source, input
 /// and language replays the finished run (200); a different payload under

@@ -7,7 +7,7 @@ import { Button } from '@components/ui/button'
 import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 
-// UX-267: cached metadata from the static catalogs — `getTranslations` reads
+// UX-267: cached metadata from the static catalogs - `getTranslations` reads
 // request data, which Next 16 flags as URL data in `generateMetadata()`
 // (the /dash/admin pattern).
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {

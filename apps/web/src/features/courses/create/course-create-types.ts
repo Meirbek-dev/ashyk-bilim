@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Course Create — Shared Types
+// Course Create - Shared Types
 // ---------------------------------------------------------------------------
 
 export type CourseStructureMode = 'blank' | 'starter' | 'copy-outline'
@@ -35,7 +35,7 @@ export interface CourseCreateSuccess {
   destinationPath: string
 }
 
-/** A partial-success result — course created but some chapters failed. */
+/** A partial-success result - course created but some chapters failed. */
 export interface CourseCreatePartialSuccess {
   status: 'partial'
   courseUuid: string
@@ -47,7 +47,7 @@ export interface CourseCreatePartialSuccess {
 
 /**
  * UX-235/UX-246: the course was created but the source outline could not be
- * read — nothing was attempted, so there are no chapter counts to report.
+ * read - nothing was attempted, so there are no chapter counts to report.
  */
 export interface CourseCreateOutlineUnavailable {
   status: 'partial'

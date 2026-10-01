@@ -1,4 +1,4 @@
-//! `ab-jobs` — the worker runtime over `ab_db::queue`.
+//! `ab-jobs` - the worker runtime over `ab_db::queue`.
 //!
 //! A [`Worker`] holds a registry of [`JobHandler`]s and drives the loop:
 //! claim (`SKIP LOCKED`) → execute bounded-concurrently → resolve
@@ -189,7 +189,7 @@ impl Worker {
             // Permits are free by construction (claim is bounded by them), so
             // this acquire never blocks meaningfully.
             let Ok(permit) = semaphore.clone().acquire_owned().await else {
-                return; // semaphore closed — shutting down
+                return; // semaphore closed - shutting down
             };
             let handler = self.handlers.get(job.kind.as_str()).cloned();
             let pool = self.pool.clone();
@@ -226,7 +226,7 @@ async fn execute(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: Claim
     let _guard = span.enter();
 
     let Some(handler) = handler else {
-        tracing::error!("no handler registered — dead-lettering");
+        tracing::error!("no handler registered - dead-lettering");
         let resolved = queue::mark_dead(pool, &job, "no handler registered for kind").await;
         log_resolution(resolved, "dead-letter");
         return;
@@ -242,7 +242,7 @@ async fn execute(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: Claim
     }
 }
 
-/// `Ok(false)`: our claim was reaped (and maybe re-claimed) while we ran —
+/// `Ok(false)`: our claim was reaped (and maybe re-claimed) while we ran -
 /// the late result is dropped, never applied to the newer claim (BUG-342).
 fn log_resolution(resolved: Result<bool>, action: &str) {
     match resolved {

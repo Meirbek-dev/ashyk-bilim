@@ -57,7 +57,7 @@ fn validate_question(question: &str) -> Result<&str> {
 }
 
 impl AiService {
-    /// `POST /ai/study/{course}/ask` — inline; returns the artifact.
+    /// `POST /ai/study/{course}/ask` - inline; returns the artifact.
     pub async fn ask_study_companion(
         &self,
         actor: &Actor,

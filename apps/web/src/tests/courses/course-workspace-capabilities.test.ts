@@ -4,7 +4,7 @@ import { getCourseWorkspaceCapabilitiesForCourse } from '@/lib/course-management
 /**
  * `getCourseWorkspaceCapabilitiesForCourse` (course-management-server.ts) used
  * to derive capabilities from the v1-only `courses/{id}/rights` route, which
- * does not exist in v2 and always answered 404 — 404ing the whole teacher
+ * does not exist in v2 and always answered 404 - 404ing the whole teacher
  * course workspace for every stage. It now derives capabilities from the
  * session's RBAC permission strings plus the course's `creator_id`, mirroring
  * the server's own/platform scope resolution

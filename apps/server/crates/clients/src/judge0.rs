@@ -5,7 +5,7 @@
 //! legacy's official Python SDK used them: `POST /submissions/batch` with
 //! `base64_encoded=true`, then `GET /submissions/batch?tokens=…` until every
 //! status id is past "Processing". Judge0's own `expected_output` comparison
-//! is not used — the domain compares outputs itself so match modes are ours.
+//! is not used - the domain compares outputs itself so match modes are ours.
 //! Fixtures in `tests/judge0.rs` pin the shapes.
 
 use std::collections::HashMap;
@@ -35,7 +35,7 @@ pub struct Judge0Config {
     pub poll_interval: Duration,
     /// Budget for one batch: waiting for a slot, then for results.
     pub poll_max_wait: Duration,
-    /// Batches in flight at once (BUG-372) — size it to Judge0's workers
+    /// Batches in flight at once (BUG-372) - size it to Judge0's workers
     /// (`COUNT` in judge0.conf); the rest queue for a slot.
     pub max_concurrency: usize,
 }
@@ -82,7 +82,7 @@ pub struct Language {
 /// Why a run could not be executed.
 #[derive(Debug, Clone)]
 pub enum Judge0Error {
-    /// Judge0 is down or the breaker is open — retry later. Counts
+    /// Judge0 is down or the breaker is open - retry later. Counts
     /// against the breaker.
     Unavailable(String),
     /// Judge0 refused the payload (unknown language, bad limits). The
@@ -90,7 +90,7 @@ pub enum Judge0Error {
     Rejected(String),
     /// No slot freed up, or the results did not arrive, within the budget:
     /// Judge0 is up but saturated. Retry later; never trips the breaker
-    /// (BUG-372 — one burst must not take the runner away from everyone).
+    /// (BUG-372 - one burst must not take the runner away from everyone).
     Busy(String),
 }
 
@@ -308,7 +308,7 @@ impl Judge0Client {
                 self.config.poll_max_wait
             )));
         };
-        // UX-316: the breaker may have opened while this batch waited —
+        // UX-316: the breaker may have opened while this batch waited -
         // fail fast instead of spending a refused connect on a dead Judge0.
         if self.is_degraded() {
             return Err(Judge0Error::Unavailable(
@@ -439,7 +439,7 @@ impl Judge0Client {
         Ok(envelope.submissions)
     }
 
-    /// `GET /languages` — the active (non-archived) languages.
+    /// `GET /languages` - the active (non-archived) languages.
     pub async fn languages(&self) -> std::result::Result<Vec<Language>, Judge0Error> {
         if !self.admit() {
             return Err(Judge0Error::Unavailable(
@@ -523,7 +523,7 @@ fn encode_spec(spec: &SubmissionSpec) -> serde_json::Value {
 /// Judge0 base64-encodes with line feeds every 60 chars (Ruby `encode64`);
 /// strip whitespace before decoding. Undecodable text is passed through.
 /// BUG-369: this is where program output enters the platform, so it is made
-/// storable here — invalid UTF-8 and NUL (which Postgres `text` rejects)
+/// storable here - invalid UTF-8 and NUL (which Postgres `text` rejects)
 /// become U+FFFD; a NUL never matches expected output anyway.
 fn decode_text(value: Option<String>) -> Option<String> {
     let raw = value?;

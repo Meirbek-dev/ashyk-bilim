@@ -13,7 +13,7 @@ export const ReadinessIssue = zod
     code: zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
     item_id: zod.union([zod.uuid(), zod.null()]).optional(),
     message: zod.string(),
-    severity: zod.string().describe('`blocker` | `warning` | `advice` — every current rule is a blocker.'),
+    severity: zod.string().describe('`blocker` | `warning` | `advice` - every current rule is a blocker.'),
   })
   .describe('One thing blocking (or advising against) publication.')
 

@@ -155,7 +155,7 @@ function buildRollupRow(id: string, label: string, cells: ActivityProgressCell[]
     id,
     label,
     completed: cells.filter(cell => isActivityProgressComplete(cell.state)).length,
-    // UX-215: the toolbar tile's «На проверке» — owed a grade; a scored row awaiting release is counted apart.
+    // UX-215: the toolbar tile's «На проверке» - owed a grade; a scored row awaiting release is counted apart.
     needsGrading: cells.filter(cell => activityProgressNeedsTeacherAction(cell) && !cell.awaiting_release).length,
     overdue: cells.filter(cell => isActivityProgressOverdue(cell)).length,
     returned: cells.filter(cell => cell.state === 'RETURNED').length,

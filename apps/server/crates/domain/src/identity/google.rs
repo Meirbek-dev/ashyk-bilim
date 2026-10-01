@@ -3,7 +3,7 @@
 //! Improvements over the legacy JWT-state design, same semantics otherwise:
 //! - The OAuth `state` is an opaque random token whose record (frontend
 //!   callback + PKCE verifier) lives server-side in Redis, consumed once via
-//!   `GETDEL` — nothing user-controlled round-trips.
+//!   `GETDEL` - nothing user-controlled round-trips.
 //! - The frontend callback must be a same-site relative path (open-redirect
 //!   guard the legacy delegated to a signed JWT).
 
@@ -64,7 +64,7 @@ impl GoogleAuthService {
     }
 
     /// Begin the flow: returns the Google authorization URL to redirect to.
-    /// `callback` is where the browser lands afterwards — relative paths only.
+    /// `callback` is where the browser lands afterwards - relative paths only.
     pub async fn start(&self, callback: &str) -> Result<String> {
         if !callback.starts_with('/') || callback.starts_with("//") {
             return Err(Error::validation(vec![ab_core::FieldError {
@@ -195,7 +195,7 @@ impl GoogleAuthService {
             .create(NewSession {
                 user_id,
                 zitadel_user_id: user.zitadel_user_id,
-                // No Zitadel session exists for Google logins — ours is the
+                // No Zitadel session exists for Google logins - ours is the
                 // only session; placeholders keep the record shape uniform.
                 zitadel_session_id: String::new(),
                 zitadel_session_token: String::new(),
@@ -260,10 +260,10 @@ impl GoogleAuthService {
             .zitadel
             .create_human_user(&NewHumanUser {
                 username: identity.email.clone(),
-                given_name: given_name.unwrap_or_else(|| "—".into()),
-                family_name: family_name.unwrap_or_else(|| "—".into()),
+                given_name: given_name.unwrap_or_else(|| "-".into()),
+                family_name: family_name.unwrap_or_else(|| "-".into()),
                 email: identity.email.clone(),
-                // Only what Google vouches for counts as verified here —
+                // Only what Google vouches for counts as verified here -
                 // otherwise the later link check would trust it (BUG-254).
                 email_verified: identity.email_verified,
                 password: PasswordSpec::None,

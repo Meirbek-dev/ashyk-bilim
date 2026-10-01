@@ -1,5 +1,5 @@
 /**
- * RBAC service — every role / grant / user-status call in the frontend goes
+ * RBAC service - every role / grant / user-status call in the frontend goes
  * through this module (v2: roles are slug-keyed, grants are
  * `resource:action:scope` strings, no numeric ids, no audit log, no
  * permission registry endpoint).
@@ -35,34 +35,34 @@ export function listRoles(): Promise<Role[]> {
   return request('rbac/roles')
 }
 
-/** `POST rbac/roles` — custom role; 409 `conflict` when the slug is taken. */
+/** `POST rbac/roles` - custom role; 409 `conflict` when the slug is taken. */
 export function createRole(body: CreateRoleBody): Promise<void> {
   return request('rbac/roles', { method: 'POST', body: JSON.stringify(body) })
 }
 
-/** `PATCH rbac/roles/{slug}` — custom roles only (system roles answer 404). */
+/** `PATCH rbac/roles/{slug}` - custom roles only (system roles answer 404). */
 export function updateRole(slug: string, body: UpdateRoleBody): Promise<void> {
   return request(`rbac/roles/${slug}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
-/** `DELETE rbac/roles/{slug}` — custom roles only (system roles answer 403). */
+/** `DELETE rbac/roles/{slug}` - custom roles only (system roles answer 403). */
 export function deleteRole(slug: string): Promise<void> {
   return request(`rbac/roles/${slug}`, { method: 'DELETE' })
 }
 
-/** `PUT rbac/roles/{slug}/permissions` — full replacement of the grant set. */
+/** `PUT rbac/roles/{slug}/permissions` - full replacement of the grant set. */
 export function setRolePermissions(slug: string, permissions: string[]): Promise<void> {
   return request(`rbac/roles/${slug}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions }) })
 }
 
 // ── User ↔ role ──────────────────────────────────────────────────────────────
 
-/** `POST users/{id}/roles` — idempotent (204 when the user already holds it). */
+/** `POST users/{id}/roles` - idempotent (204 when the user already holds it). */
 export function assignRoleToUser(userId: string, slug: string): Promise<void> {
   return request(`users/${userId}/roles`, { method: 'POST', body: JSON.stringify({ role: slug }) })
 }
 
-/** `DELETE users/{id}/roles/{slug}` — 409 `conflict` when it would remove the last admin. */
+/** `DELETE users/{id}/roles/{slug}` - 409 `conflict` when it would remove the last admin. */
 export function removeRoleFromUser(userId: string, slug: string): Promise<void> {
   return request(`users/${userId}/roles/${slug}`, { method: 'DELETE' })
 }
@@ -80,14 +80,14 @@ export function listUsers(params: ListUsersParams = {}): Promise<AdminUserPage> 
 }
 
 /**
- * `POST users` — admin account creation; 409 `username-taken` / `email-taken`.
+ * `POST users` - admin account creation; 409 `username-taken` / `email-taken`.
  * Without `password` the account signs in with Google only.
  */
 export function createUser(body: CreateUserBody): Promise<AdminUser> {
   return request('users', { method: 'POST', body: JSON.stringify(body) })
 }
 
-/** `PATCH users/{id}/status` — 409 `conflict` on self-disable. */
+/** `PATCH users/{id}/status` - 409 `conflict` on self-disable. */
 export function setUserStatus(userId: string, body: SetUserStatusBody): Promise<void> {
   return request(`users/${userId}/status`, { method: 'PATCH', body: JSON.stringify(body) })
 }

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { useTestGuard } from '@/hooks/useTestGuard'
 
 // BUG-136: the caller passes a new `onViolation` lambda on every render (a 1 Hz
-// timer re-renders the attempt); the guard must not re-subscribe — its cleanup
+// timer re-renders the attempt); the guard must not re-subscribe - its cleanup
 // cancelled the pending blur debounce, so most tab switches were never reported.
 describe('useTestGuard blur reporting', () => {
   beforeEach(() => {

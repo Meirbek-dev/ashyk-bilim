@@ -339,7 +339,7 @@ pub struct TrailRunInfoRow {
 
 /// Attempts the dashboards leave out (UX-192).
 ///
-/// Staff previews, and the non-preview attempts of the course's staff (made before they joined it —
+/// Staff previews, and the non-preview attempts of the course's staff (made before they joined it -
 /// staff are in no member set, BUG-287). Same window as [`list_submissions`], and the same
 /// cohort filter as every other figure (empty `cohort_ids` = everyone, BUG-304).
 #[derive(Debug, Clone, Copy, Default)]
@@ -1226,7 +1226,7 @@ pub async fn latest_risk_score<'e>(
     Ok(score)
 }
 
-/// Number of rows the rollup produced for a date — for the admin command
+/// Number of rows the rollup produced for a date - for the admin command
 /// report and tests.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RollupCounts {
@@ -1423,7 +1423,7 @@ pub async fn upsert_saved_view(
 }
 
 /// Delete the teacher's own view; `false` when it does not exist (or is
-/// someone else's — no existence leak).
+/// someone else's - no existence leak).
 pub async fn delete_saved_view(
     pool: &PgPool,
     teacher_user_id: UserId,

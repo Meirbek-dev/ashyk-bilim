@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-// UX-124: collections could never be deleted from the UI — the card gated on
+// UX-124: collections could never be deleted from the UI - the card gated on
 // `can_delete`, which the v2 schema did not carry. Now the server derives it and
 // the card confirms, deletes through the client fetcher, toasts and drops the list.
 import { describe, expect, it, vi } from 'vite-plus/test'

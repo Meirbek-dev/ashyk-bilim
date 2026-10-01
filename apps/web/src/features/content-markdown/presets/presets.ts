@@ -49,7 +49,7 @@ interface MarkdownPresetRules {
   minHeight: number
   maxHeight?: number
   maxLength: number
-  /** Feature gates — controls both toolbar visibility and extension registration. */
+  /** Feature gates - controls both toolbar visibility and extension registration. */
   allowTaskList: boolean
   allowTable: boolean
   allowMath: boolean
@@ -81,7 +81,7 @@ export interface MarkdownPresetConfig {
   minHeight: number
   maxHeight?: number
   maxLength: number
-  /** Feature gates — controls both toolbar visibility and extension registration. */
+  /** Feature gates - controls both toolbar visibility and extension registration. */
   allowTaskList: boolean
   allowTable: boolean
   allowMath: boolean

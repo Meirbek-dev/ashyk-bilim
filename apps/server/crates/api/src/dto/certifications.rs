@@ -84,7 +84,7 @@ pub struct IssuedCertificate {
     pub certification: Certification,
     pub course: Course,
     /// The name signed on the certificate (`config.certificate_instructor`,
-    /// else the course creator's display name) — what the PDF prints.
+    /// else the course creator's display name) - what the PDF prints.
     pub instructor_name: Option<String>,
 }
 
@@ -121,7 +121,7 @@ pub struct VerifiedCertificate {
     pub certification: Certification,
     pub course: Course,
     pub holder: CertificateHolder,
-    /// The name signed on the certificate — what the PDF prints.
+    /// The name signed on the certificate - what the PDF prints.
     pub instructor_name: Option<String>,
 }
 
@@ -136,7 +136,7 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
                 issued_at_unix: c.created_at,
             },
             certification: v.issued.certification.into(),
-            // Public view: no user ids at all (BUG-137) — `creator_id` is optional on the wire.
+            // Public view: no user ids at all (BUG-137) - `creator_id` is optional on the wire.
             course: Course {
                 creator_id: None,
                 contributor_ids: Vec::new(),

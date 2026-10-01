@@ -139,7 +139,7 @@ pub async fn my_certificates(
     Ok(Json(rows.into_iter().map(Into::into).collect()))
 }
 
-/// Public verification by code — no session needed.
+/// Public verification by code - no session needed.
 #[utoipa::path(
     get, path = "/certificates/{code}", tag = "certifications",
     params(("code" = String, Path, description = "Verification code (case-insensitive, dashes optional)")),
@@ -156,7 +156,7 @@ pub async fn verify_certificate(
     Ok(Json(state.certifications.verify(&code).await?.into()))
 }
 
-/// The certificate as an A4-landscape PDF — public by code, like verification.
+/// The certificate as an A4-landscape PDF - public by code, like verification.
 ///
 /// Holder, course, certificate name/type, issue date, teacher, the
 /// verification code and the verify link (`AB__SERVER__WEB_URL` +

@@ -191,7 +191,7 @@ pub struct Attempt {
     pub feedback: Option<String>,
     #[schema(value_type = Option<Object>)]
     pub rubric_scores: Option<serde_json::Value>,
-    /// Optimistic lock — send back as `If-Match`.
+    /// Optimistic lock - send back as `If-Match`.
     pub version: i64,
     pub started_at_unix: Option<i64>,
     pub submitted_at_unix: Option<i64>,

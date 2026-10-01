@@ -18,7 +18,7 @@ export const Trail = zod
           contributor_ids: zod
             .array(zod.uuid())
             .describe(
-              'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
+              'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
             ),
           created_at_unix: zod.int(),
           creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
@@ -75,7 +75,7 @@ export const Trail = zod
               name: zod.string(),
               position: zod.int().describe('1-based, contiguous within the chapter.'),
               published: zod.boolean(),
-              version: zod.int().describe('Optimistic lock — send back as `If-Match` on the content PATCH.'),
+              version: zod.int().describe('Optimistic lock - send back as `If-Match` on the content PATCH.'),
             }),
             activity_id: zod.uuid(),
             complete: zod.boolean(),

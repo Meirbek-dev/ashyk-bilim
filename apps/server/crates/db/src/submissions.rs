@@ -67,7 +67,7 @@ pub async fn share_assessment(
     crate::assessments::get_assessment(conn, id).await
 }
 
-/// Open a draft (started now). `None` when the learner already has one —
+/// Open a draft (started now). `None` when the learner already has one -
 /// the partial unique index turns the race into a no-op.
 #[allow(
     clippy::too_many_arguments,
@@ -119,7 +119,7 @@ pub async fn lock_attempts(
 }
 
 /// BUG-224: re-opening an existing draft (`start` again) follows the
-/// assessment's current content and policy versions — the learner is
+/// assessment's current content and policy versions - the learner is
 /// loading the items now, so a later submit is no longer stale.
 ///
 /// Returns the draft (row-locked until commit, so a concurrent submit waits),
@@ -146,7 +146,7 @@ pub async fn resync_draft(
     Ok(id)
 }
 
-/// BUG-295: drop the caller's open **preview** draft (made while staff) —
+/// BUG-295: drop the caller's open **preview** draft (made while staff) -
 /// a learner never resumes one. Its code runs and events cascade.
 pub async fn discard_preview_draft(
     conn: &mut sqlx::PgConnection,
@@ -229,7 +229,7 @@ pub async fn open_draft(
 }
 
 /// Every attempt by one learner, newest first.
-/// `include_preview: false` drops staff previews (UX-182) — the progress
+/// `include_preview: false` drops staff previews (UX-182) - the progress
 /// projection's view, which must never count them (UX-186).
 pub async fn list_user_submissions<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -348,7 +348,7 @@ pub struct SubmitOutcome<'a> {
     /// The hand-in moment; `None` is now (BUG-315: a timer sweep hands in
     /// at the moment the clock ran out).
     pub submitted_at: Option<i64>,
-    /// BUG-344: the draft this outcome was graded from — the `draft_version`
+    /// BUG-344: the draft this outcome was graded from - the `draft_version`
     /// and stored `violation_count` read before grading. A save or a
     /// violation report since then leaves the row untouched.
     pub read_draft_version: i64,
@@ -450,7 +450,7 @@ pub struct LatenessRow {
     pub is_late: bool,
 }
 
-/// `SELECT … FOR UPDATE` on one submission — call inside the transaction
+/// `SELECT … FOR UPDATE` on one submission - call inside the transaction
 /// that ends in [`set_lateness`].
 pub async fn lock_for_lateness(
     tx: &mut sqlx::PgConnection,
@@ -469,7 +469,7 @@ pub async fn lock_for_lateness(
 /// Recompute lateness after a deadline change.
 ///
 /// A cleared penalty carries the recomputed final score (`None` keeps the
-/// stored one). BUG-216: the version bumps either way — a save that priced
+/// stored one). BUG-216: the version bumps either way - a save that priced
 /// the penalty before the change is stale (412).
 pub async fn set_lateness<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,
@@ -527,7 +527,7 @@ pub async fn list_non_draft(
 
 // ── Course gradebook ────────────────────────────────────────────────────────
 
-/// The grade-of-record sort key (BUG-173 / BUG-180 / BUG-187) — one order
+/// The grade-of-record sort key (BUG-173 / BUG-180 / BUG-187) - one order
 /// shared by `progress::projector` and [`gradebook_cells`].
 ///
 /// A released attempt outranks any unreleased one whatever score the
@@ -543,7 +543,7 @@ pub struct GradeKey {
 }
 
 impl GradeKey {
-    /// A quiz attempt is released once `published` with a score — the one
+    /// A quiz attempt is released once `published` with a score - the one
     /// rule behind [`SubmissionRow::grade_key`], `SubmissionInfoRow::grade_key`
     /// and every analytics / studio population (BUG-194, UX-144).
     #[must_use]
@@ -595,10 +595,10 @@ pub struct GradebookCellRow {
     /// Submitted attempts on this pair.
     pub attempts: i64,
     /// The newest attempt awaiting the teacher (`pending`, or `submitted`
-    /// on a file attempt, or `graded` but unreleased), if any — the ranked
+    /// on a file attempt, or `graded` but unreleased), if any - the ranked
     /// attempt may be an older released one.
     pub pending_attempt: Option<i32>,
-    /// That attempt's id (a submission id or a file attempt id) — the
+    /// That attempt's id (a submission id or a file attempt id) - the
     /// gradebook's «pending» deep link (UX-123).
     pub pending_attempt_id: Option<uuid::Uuid>,
     /// UX-146: `pending` (owed a grade) or `graded` (owed a release).
@@ -757,20 +757,20 @@ pub struct ReviewRow {
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
     pub version: i64,
-    /// A course member (trail run) — per-learner actions target members only.
+    /// A course member (trail run) - per-learner actions target members only.
     pub enrolled: bool,
-    /// On the course staff (`is_course_staff`) — never a member (UX-199).
+    /// On the course staff (`is_course_staff`) - never a member (UX-199).
     pub staff: bool,
-    /// The signed keyset key this row sorted by — what its cursor carries.
+    /// The signed keyset key this row sorted by - what its cursor carries.
     pub sort_key: f64,
 }
 
 /// Non-draft submissions of an assessment, filtered and ordered for review.
 ///
 /// Optional filters: status / lateness / learner-name substring; ordered by `sort` (`submitted_at`,
-/// `final_score` — ungraded as -1 — or `attempt_number`), descending unless
+/// `final_score` - ungraded as -1 - or `attempt_number`), descending unless
 /// `ascending`; ties newest first. Keyset on (key, id): `cursor` is the
-/// last row's `(sort_key, id)` (BUG-351/BUG-355 — the key travels in the
+/// last row's `(sort_key, id)` (BUG-351/BUG-355 - the key travels in the
 /// cursor, so a vanished row never ends or re-keys the walk).
 #[allow(clippy::too_many_arguments)]
 pub async fn list_for_review(
@@ -1685,7 +1685,7 @@ pub async fn reserve_idempotent(
 
 /// Heartbeat of a running action: keeps its IN_PROGRESS reservation fresh.
 ///
-/// Without it [`reserve_idempotent`] takes the key over mid-run — a keyed
+/// Without it [`reserve_idempotent`] takes the key over mid-run - a keyed
 /// submit with several code items legitimately outlives
 /// [`IDEMPOTENT_STALE_SECS`].
 pub async fn touch_idempotent(pool: &PgPool, user_id: UserId, key: &str) -> Result<()> {

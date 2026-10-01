@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * useAssessment — unified data hook for any assessable activity.
+ * useAssessment - unified data hook for any assessable activity.
  *
  * Phase 1: fetches the activity metadata and derives the surface view model.
  * Each kind may still have its own additional queries (tasks, questions, etc.);
@@ -111,7 +111,7 @@ function useAssessment(
       apiJson(`assessments/${assessment!.id}/attempt-state`, undefined, value => AttemptState.parse(value)),
     enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
     // BUG-158: a teacher may gate the retake (or spend the last attempt) while
-    // the learner sits on the result page — follow the server on focus and
+    // the learner sits on the result page - follow the server on focus and
     // every 15 s once a hand-in exists, the same policy as the release poll.
     refetchOnWindowFocus: 'always',
     refetchInterval: query => {
@@ -136,7 +136,7 @@ function useAssessment(
     },
   })
   // A released grade changed under an open page (release flip, re-grade,
-  // override — UX-121): the outline/progress projection (passed, score) must
+  // override - UX-121): the outline/progress projection (passed, score) must
   // follow, or the headline shows a stale verdict.
   const queryClient = useQueryClient()
   const releasedGrades =
@@ -210,7 +210,7 @@ function useAssessment(
   }
 
   // UX-213/UX-227: off the allowlist attempt-state answers `ACCESS_RESTRICTED`
-  // while the learner's own attempts stay readable — a read-only page with the
+  // while the learner's own attempts stay readable - a read-only page with the
   // «no new attempts» notice (which replaces the reason), not a page error.
   if (attempt.isLoading || submissions.isLoading || !attempt.data) {
     return {
@@ -321,7 +321,7 @@ function useAssessment(
 
 /**
  * The attempt the card is about: the open draft; else, while the newest
- * hand-in still waits on the teacher, the newest released one — a retake must
+ * hand-in still waits on the teacher, the newest released one - a retake must
  * not hide the grade of record (UX-123), which then names the pending attempt
  * as a secondary line; else the newest hand-in. A draft that is not the open
  * one (attempts closed for the learner, UX-237) never hides the attempt of record.
@@ -344,8 +344,8 @@ export function shownSubmission<
 /**
  * A released result wins over "you may start again": with unlimited attempts
  * the learner must still see the score they just earned (the result card
- * offers the retake). A hand-in the teacher has not released yet — pending
- * grading or graded but unpublished — is "received, awaiting review", never
+ * offers the retake). A hand-in the teacher has not released yet - pending
+ * grading or graded but unpublished - is "received, awaiting review", never
  * the red "blocked" lock (UX-032).
  */
 export function recommendedActionFor(

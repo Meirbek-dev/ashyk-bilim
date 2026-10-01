@@ -124,7 +124,7 @@ describe('getAnalyticsMessage', () => {
 })
 
 // Gauntlet F32: the assessment learner table showed the raw submission status
-// (`published`) — v2 statuses are draft/pending/graded/published/returned.
+// (`published`) - v2 statuses are draft/pending/graded/published/returned.
 describe('getAnalyticsStatusLabel', () => {
   const t = (key: string) => key
 

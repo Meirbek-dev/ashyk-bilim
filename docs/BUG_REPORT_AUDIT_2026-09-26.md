@@ -1,4 +1,4 @@
-# Application bug audit — 26 September 2026
+# Application bug audit - 26 September 2026
 
 Started 26 September; verification continued into 27 September (Asia/Qyzylorda).
 
@@ -54,7 +54,7 @@ Playwright used the existing local Next.js application and Rust service (`localh
 
 ## Confirmed application findings
 
-### AUD-001 — P1 — Editor autosave sends concurrent writes with the same version
+### AUD-001 - P1 - Editor autosave sends concurrent writes with the same version
 
 **Evidence: reproduced at hook level.** [useActivityAutosave.ts](../apps/web/src/hooks/useActivityAutosave.ts#L40), especially lines 44–51, 66–68 and 79–83; [EditorHeader.tsx](../apps/web/src/components/Objects/Editor/chrome/EditorHeader.tsx#L80).
 
@@ -66,7 +66,7 @@ Playwright used the existing local Next.js application and Rust service (`localh
 
 **Fix direction:** serialize writes per activity, retain the newest pending payload, advance the version from each acknowledgement, and make manual flush consume/cancel the pending debounce. Do not remove the server's conflict check.
 
-### AUD-002 — P2 — Failed curriculum mutations cannot restore their rollback snapshots
+### AUD-002 - P2 - Failed curriculum mutations cannot restore their rollback snapshots
 
 **Evidence: reproduced for activity update and delete; same defect code-confirmed for chapter update.** [activity.mutation.ts](../apps/web/src/features/courses/mutations/activity.mutation.ts#L28), lines 36–38, 64, 92–116; [chapter.mutation.ts](../apps/web/src/features/courses/mutations/chapter.mutation.ts#L69), lines 76–89.
 
@@ -78,7 +78,7 @@ Playwright used the existing local Next.js application and Rust service (`localh
 
 **Fix direction:** make nested optimistic updates immutable; preserve the original snapshot unchanged. Cover chapter updates too.
 
-### AUD-003 — P1 — Finished or panicked jobs can remain `running` forever
+### AUD-003 - P1 - Finished or panicked jobs can remain `running` forever
 
 **Evidence: code-confirmed and SQL predicate reproduced.** [jobs/lib.rs](../apps/server/crates/jobs/src/lib.rs#L128), lines 146–149 and 199–225; [queue.rs](../apps/server/crates/db/src/queue.rs#L173), lines 177–179 and 265.
 
@@ -90,7 +90,7 @@ If `succeed`, `fail`, or `mark_dead` fails to persist, `execute` logs and return
 
 **Fix direction:** heartbeat only the IDs of actually executing tasks; retry completion persistence or stop renewing a job whose task has ended. Catch/report task failure with its job identity.
 
-### AUD-004 — P1 — A stale worker can complete or requeue another worker's claim
+### AUD-004 - P1 - A stale worker can complete or requeue another worker's claim
 
 **Evidence: code-confirmed and SQL predicate reproduced.** [queue.rs](../apps/server/crates/db/src/queue.rs#L205), also `mark_dead` and `fail` at lines 187–250; `ClaimedJob` at line 95.
 
@@ -102,7 +102,7 @@ Resolution UPDATEs match only job ID and `status = 'running'`; they do not match
 
 **Fix direction:** return a claim token/generation from `claim`, require it in all completion/failure UPDATEs, and treat zero updated rows as a lost lease. This complements, rather than replaces, idempotent job handlers.
 
-### AUD-005 — P2 — SSE disconnect can erase a newly acquired connection counter
+### AUD-005 - P2 - SSE disconnect can erase a newly acquired connection counter
 
 **Evidence: Redis command sequence reproduced.** [events/mod.rs](../apps/server/crates/domain/src/events/mod.rs#L99), lines 99–102; acquisition at lines 142–160.
 
@@ -114,7 +114,7 @@ Release does `DECR`, awaits it, and separately `DEL`s when the returned value is
 
 **Fix direction:** make conditional decrement/delete atomic, and account for expiry/late releases (per-connection leases avoid deleting or decrementing a replacement generation).
 
-### AUD-006 — P2 — Retrying SSE clients prevent leaked slots from expiring
+### AUD-006 - P2 - Retrying SSE clients prevent leaked slots from expiring
 
 **Evidence: code-confirmed.** [events/mod.rs](../apps/server/crates/domain/src/events/mod.rs#L140), lines 145–155.
 
@@ -126,7 +126,7 @@ Every acquisition refreshes the counter's TTL to 3,600 seconds **before** checki
 
 **Fix direction:** use expiring per-connection leases or another recovery mechanism that rejected attempts cannot extend indefinitely.
 
-### AUD-007 — P2 — Profile courses are not ordered by latest update
+### AUD-007 - P2 - Profile courses are not ordered by latest update
 
 **Evidence: existing test reproduced in both full web test runs.** [client.ts](../apps/web/src/lib/users/client.ts#L76); [user-courses-order.test.ts](../apps/web/src/tests/users/user-courses-order.test.ts#L20). Corresponds to existing BUG-221.
 
@@ -136,7 +136,7 @@ Every acquisition refreshes the counter's TTL to 3,600 seconds **before** checki
 
 **Impact:** profile courses do not follow the required most-recently-updated ordering. **Fix direction:** sort the collected list by update timestamp, with a deterministic tie-breaker, or implement matching server pagination/order.
 
-### AUD-008 — P3 — Failed outline fetch reports zero failed chapters
+### AUD-008 - P3 - Failed outline fetch reports zero failed chapters
 
 **Evidence: code-confirmed.** [useCreateCourseMutation.ts](../apps/web/src/features/courses/create/useCreateCourseMutation.ts#L69), lines 69–77; [CourseCreateForm.tsx](../apps/web/src/features/courses/create/CourseCreateForm.tsx#L40). Refines existing BUG-225.
 
@@ -146,7 +146,7 @@ If the source-course request rejects after the destination is created, the resul
 
 **Reproduce:** choose Copy outline, allow course creation, fail the source metadata GET. **Expected:** explicit source-fetch failure and a way to retry/recover. **Actual:** empty created course and a partial-import warning with zero successes and zero failures.
 
-### AUD-015 — P1 — Submission finalization overwrites concurrently saved answers and violation counts
+### AUD-015 - P1 - Submission finalization overwrites concurrently saved answers and violation counts
 
 **Evidence: code-confirmed and SQL predicate reproduced.** [grading/submissions.rs](../apps/server/crates/domain/src/grading/submissions.rs#L753), lines 756–761, 865–871 and 899–920; [db/submissions.rs](../apps/server/crates/db/src/submissions.rs#L355), lines 358–365.
 
@@ -158,7 +158,7 @@ The domain checks `expected_draft_version` against a previously read row, then a
 
 **Fix direction:** atomically claim/transition the draft using its expected version, or revalidate under an appropriate lock before commit. Make the final verdict/count consistent with accepted violation events; merely retaining the larger count after grading would not repair an already-computed wrong verdict.
 
-### AUD-016 — P2 — Full-list consumers silently discard everything after page 20
+### AUD-016 - P2 - Full-list consumers silently discard everything after page 20
 
 **Evidence: reproduced by importing the actual helper; consumers code-confirmed.** [contract.ts](../apps/web/src/lib/api/contract.ts#L17), [users.query.ts](../apps/web/src/features/users/queries/users.query.ts#L33), and [discussions.ts](../apps/web/src/services/courses/discussions.ts#L50).
 
@@ -170,15 +170,15 @@ The domain checks `expected_draft_version` against a previously read row, then a
 
 ## Verification and setup defects
 
-### AUD-009 — P2 — Formatting gate fails on 271 files
+### AUD-009 - P2 - Formatting gate fails on 271 files
 
 **Reproduced:** `vp check` in `apps/web` exits 1 at formatting. This is existing BUG-220. It does not establish 271 functional bugs. The checkout was dirty before the audit, so attribution to a particular change is not established.
 
-### AUD-010 — P2 — Lint also fails after bypassing the formatting blocker
+### AUD-010 - P2 - Lint also fails after bypassing the formatting blocker
 
 **Reproduced:** `vp lint --type-aware --type-check` exits 1, with 137 error diagnostic lines and 198 warning diagnostic lines. The complete output is saved in [web-lint.log](audit-2026-09-26/web-lint.log). Examples include `FileSubmissionReviewWorkspace.tsx:244` (effect state update), `useAssessmentSubmission.ts:648` (render-time ref access), and unbound-method diagnostics at service/parser call sites. These diagnostics require triage; this report does **not** assert that every lint diagnostic is a runtime bug. TypeScript's separate typecheck and the production build pass.
 
-### AUD-011 — P2 — Documented built-in test command skips required environment setup
+### AUD-011 - P2 - Documented built-in test command skips required environment setup
 
 **Later status: resolved and verified.** Concurrent commit `fb5b60e` added public configuration defaults to test setup. Final plain `vp test` passes all 1,016 tests. Original evidence follows.
 
@@ -186,25 +186,25 @@ The domain checks `expected_draft_version` against a previously read row, then a
 
 **Impact:** the repository's prescribed command and its package test script have different behavior. Tests depending on a developer's local configuration are not hermetic. **Fix direction:** set safe test defaults/mock public configuration in test setup and align documentation/CI with the actual runner. Existing BUG-222 says eight environment failures; the actual number is nine (3 + 5 + 1).
 
-### AUD-012 — P2 — Rust CI is blocked by a denied doc-comment lint
+### AUD-012 - P2 - Rust CI is blocked by a denied doc-comment lint
 
 **Later status: resolved and verified.** Concurrent commit `ad7882f` split the offending summary. The final complete `just clippy` check passed with warnings denied.
 
 **Reproduced:** `just ci` with offline SQLx passes formatting, then Clippy rejects [search.rs](../apps/server/crates/db/src/search.rs#L53), `word_patterns`: `clippy::too_long_first_doc_paragraph`. Corresponds to existing BUG-003. Fix the paragraph layout without suppressing the lint. This audit did not alter implementation to make the gate green.
 
-### AUD-013 — P2 — Role-assignment E2E selector is ambiguous
+### AUD-013 - P2 - Role-assignment E2E selector is ambiguous
 
 **Reproduced:** [AdminUsersPage.ts](../apps/web/e2e/page-objects/AdminUsersPage.ts#L54) uses `new RegExp(userEmail, 'i')` without escaping or boundaries. The seeded stack contains both `teacher@ashyq.local` and `proxy-teacher@ashyq.local`; both match. Playwright stops with a strict-mode violation before assigning a role.
 
 **Impact:** the suite fails on valid user data and does not verify the assignment action. The UI correctly showed two distinct options. **Fix direction:** select the exact email/option identity and escape any regex literal input; scope to the dialog.
 
-### AUD-014 — P3 — Checked-in E2E default still targets the legacy API
+### AUD-014 - P3 - Checked-in E2E default still targets the legacy API
 
 **Code-confirmed:** [e2e/.env.test](../apps/web/e2e/.env.test#L12) sets `E2E_API_URL=http://localhost:1338/api/v1`, although global setup calls v2 routes/payloads. `playwright.config.ts` loads this file; its v2 default is therefore not used on a fresh setup without an override.
 
 **Reproduce:** use the checked-in test env without `.env.test.local`/shell override against a Rust-only stack. Setup sends `/auth/login` to the legacy endpoint and cannot establish the intended sessions. The audit machine's `.env.test.local` masks this defect with port 8000 and `/api/v2`.
 
-### AUD-017 — P2 — Rust OpenAPI snapshot does not match the checked-out API
+### AUD-017 - P2 - Rust OpenAPI snapshot does not match the checked-out API
 
 **Reproduced:** `ab-api::openapi::openapi_document_snapshot` fails at `crates/api/tests/openapi.rs:11`. The diff includes the public-user response changing from `UserHit` to `PublicProfile` and route/schema additions. The first full run stopped after 268 passed and one failed, leaving 325 tests unrun; the follow-up audit runner disables fail-fast.
 
@@ -212,7 +212,7 @@ The follow-up completed all 594 tests: 593 passed and only this snapshot failed.
 
 **Impact:** the Rust test gate is red and the committed contract/snapshot needs review against the current API. A passing frontend contract check only confirms generation from its existing input, not agreement with Rust. This checkout already contained staged user API changes, so the introducing commit is not established. Review/export the intended API and regenerate consumers/snapshot together; do not blindly accept the diff. Corresponds to existing BUG-002.
 
-## Second-pass findings — 27 September
+## Second-pass findings - 27 September
 
 The shared checkout advanced from `5e41925` to `11c5a06` during this pass. Other work also modified `AccessManagementTab.tsx` and its test; those changes were preserved. These findings were reproduced against the checked-out implementations, not inferred from the legacy backend. No application fixes were made by this audit.
 
@@ -220,7 +220,7 @@ The shared checkout advanced from `5e41925` to `11c5a06` during this pass. Other
 
 Evidence: [Rust reproducers](audit-2026-09-26/audit_second_pass.rs), [Rust results](audit-2026-09-26/second-pass-rust.log), [role UI reproducer](audit-2026-09-26/role-recovery.test.tsx), [review query reproducers](audit-2026-09-26/review-query.test.ts), [frontend results](audit-2026-09-26/second-pass-web.log).
 
-### AUD-018 — P1 — Failed role revocation propagation leaves usable privileges and retry cannot repair it
+### AUD-018 - P1 - Failed role revocation propagation leaves usable privileges and retry cannot repair it
 
 **Evidence: reproduced through HTTP with an isolated Redis fault.** [rbac_admin.rs](../apps/server/crates/domain/src/identity/rbac_admin.rs#L103), especially the membership check, commit at line 130, and subsequent `propagate`; [sessions.rs](../apps/server/crates/domain/src/identity/sessions.rs), `get_and_touch` and `update_user_sessions`.
 
@@ -232,7 +232,7 @@ Role removal commits in Postgres before rewriting Redis sessions. If the rewrite
 
 **Fix direction:** persist a recoverable revocation/propagation obligation with the role change and fence stale sessions until it is applied. Make retries repair pending propagation even when the database assignment is already absent. Returning 500 alone does not undo the committed revocation or revoke the old session.
 
-### AUD-019 — P1 — An owner edit can undo a moderator's concurrent hide
+### AUD-019 - P1 - An owner edit can undo a moderator's concurrent hide
 
 **Evidence: reproduced through HTTP with deterministic row-lock ordering.** [discussions.rs](../apps/server/crates/domain/src/community/discussions.rs#L303); [database update](../apps/server/crates/db/src/discussions.rs#L195).
 
@@ -244,7 +244,7 @@ For a non-moderator, the domain permits an explicit status when it equals the pr
 
 **Fix direction:** non-moderators must never write the status column, including a same-as-before value; reject or omit it. Alternatively enforce the permission/state check under the same lock as the write.
 
-### AUD-020 — P2 — Failed role replacement removes the old role and traps the dialog in failed retries
+### AUD-020 - P2 - Failed role replacement removes the old role and traps the dialog in failed retries
 
 **Evidence: reproduced against the real React component with a stateful service mock.** [RolesUpdate.tsx](../apps/web/src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx), `handleSubmit`.
 
@@ -254,7 +254,7 @@ The dialog first removes `alreadyAssignedRole`, then assigns the new role. If as
 
 **Fix direction:** provide an atomic role replacement operation, or implement explicit partial-success recovery with fresh state and safe compensation. Invalidate displayed role data on partial failure.
 
-### AUD-021 — P1 — AI terminal success is committed before its result and accounting
+### AUD-021 - P1 - AI terminal success is committed before its result and accounting
 
 **Evidence: reproduced with a real AI route and a blocked artifact INSERT.** [runs.rs](../apps/server/crates/domain/src/ai/runs.rs#L347), artifact insertion at 360, ledger update at 392, worker terminal short-circuit at 499.
 
@@ -266,7 +266,7 @@ The dialog first removes `alreadyAssignedRole`, then assigns the new role. If as
 
 **Fix direction:** commit the terminal state, artifact, evidence, accounting, and durable completion event together; publish external notifications after commit. Include feature-specific result records in the completion boundary where required.
 
-### AUD-022 — P2 — AI accounting discards the provider's actual input-token usage
+### AUD-022 - P2 - AI accounting discards the provider's actual input-token usage
 
 **Evidence: reproduced through the study-companion HTTP endpoint.** [agents/mod.rs](../apps/server/crates/domain/src/ai/agents/mod.rs#L178); [runs.rs](../apps/server/crates/domain/src/ai/runs.rs#L392).
 
@@ -278,7 +278,7 @@ The provider returns usage for both prompt and completion. The pipeline forwards
 
 **Fix direction:** record reported input and output usage, estimating only missing values; keep estimated admission costs distinct from settled usage.
 
-### AUD-023 — P2 — Monthly AI budget can be spent repeatedly by in-flight requests
+### AUD-023 - P2 - Monthly AI budget can be spent repeatedly by in-flight requests
 
 **Evidence: reproduced against the real `TokenBudget` and ledger functions.** [budget.rs](../apps/server/crates/domain/src/ai/budget.rs#L80).
 
@@ -290,7 +290,7 @@ Admission reads completed usage and compares it with this request's estimated in
 
 **Fix direction:** atomically reserve input plus a bounded output allowance at admission, settle against actual usage, and release abandoned reservations with a recoverable lifecycle.
 
-### AUD-024 — P2 — Study-companion request limit excludes instructions sent to the model
+### AUD-024 - P2 - Study-companion request limit excludes instructions sent to the model
 
 **Evidence: reproduced through HTTP and inspection of the received fake-provider request.** [study_companion.rs](../apps/server/crates/domain/src/ai/agents/study_companion.rs#L79), also queued path at 183 and final prompt construction at 220; [agents/mod.rs](../apps/server/crates/domain/src/ai/agents/mod.rs#L119).
 
@@ -302,7 +302,7 @@ Admission estimates only the question and clipped course context. The actual req
 
 **Fix direction:** assemble the full messages before estimating/fitting; use the same budgeted payload for the actual provider call. Audit the other structured agents for the same construction order.
 
-### AUD-025 — P1 — A finalized upload remains replaceable through its original signed PUT URL
+### AUD-025 - P1 - A finalized upload remains replaceable through its original signed PUT URL
 
 **Evidence: reproduced with the real upload/finalize/download routes and RustFS.** [storage.rs](../apps/server/crates/clients/src/storage.rs#L93); [uploads.rs](../apps/server/crates/domain/src/files/uploads.rs), `create`/`finalize`; [file-submission validation](../apps/server/crates/domain/src/files/submissions.rs#L952).
 
@@ -314,7 +314,7 @@ The 15-minute PUT signature binds the key and MIME type, but does not enforce a 
 
 **Fix direction:** finalize into an immutable destination/version inaccessible to the upload URL, or require a storage-enforced create-only PUT. Pin the object/version/checksum consumed by submissions; shortening the URL lifetime alone does not remove the race.
 
-### AUD-026 — P2 — Grading review's score and attempt sort controls do nothing
+### AUD-026 - P2 - Grading review's score and attempt sort controls do nothing
 
 **Evidence: reproduced against the real query function, with API data and row mapping mocked.** [grading.query.ts](../apps/web/src/features/grading/queries/grading.query.ts#L52); [SubmissionList.tsx](../apps/web/src/features/grading/review/components/SubmissionList.tsx#L70); [useSubmissions.ts](../apps/web/src/hooks/useSubmissions.ts).
 
@@ -324,7 +324,7 @@ The UI offers submitted-time, final-score and attempt-number ordering and passes
 
 **Fix direction:** implement supported sorting with consistent cursor semantics, or remove unsupported controls. Sorting only a fetched page would not correctly sort a multi-page queue.
 
-### AUD-027 — P2 — A shrinking grading queue repeats its last page and invents totals
+### AUD-027 - P2 - A shrinking grading queue repeats its last page and invents totals
 
 **Evidence: reproduced against the real query function.** [grading.query.ts](../apps/web/src/features/grading/queries/grading.query.ts#L64).
 

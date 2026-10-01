@@ -78,7 +78,7 @@ fn actor_of(token: &str, record: Option<SessionRecord>) -> ab_core::Result<Actor
 
 /// Like [`CurrentActor`] but never rejects: no cookie, an expired session,
 /// or a garbage cookie all yield [`Actor::anonymous`] (public-only
-/// visibility). For public catalog reads — never for mutations.
+/// visibility). For public catalog reads - never for mutations.
 pub struct MaybeActor(pub Actor);
 
 impl FromRequestParts<AppState> for MaybeActor {
@@ -102,7 +102,7 @@ impl FromRequestParts<AppState> for MaybeActor {
 /// Client address for rate limiting and the session audit trail (BUG-147).
 ///
 /// Trust order: `X-Real-IP` (our nginx sets it from the socket peer), then
-/// the LAST `X-Forwarded-For` hop (the one nginx appended — earlier hops are
+/// the LAST `X-Forwarded-For` hop (the one nginx appended - earlier hops are
 /// client-supplied and spoofable), then the TCP peer. Never the first hop.
 pub struct ClientIp(pub Option<String>);
 
@@ -158,7 +158,7 @@ fn nul_free(field: &str, raw: &str) -> Result<(), ApiError> {
 }
 
 /// The same for a JSON body: any string value or object key (at any depth)
-/// holding NUL — keys reach the jsonb bind too (BUG-223, 22P05).
+/// holding NUL - keys reach the jsonb bind too (BUG-223, 22P05).
 fn has_nul(value: &serde_json::Value) -> bool {
     match value {
         serde_json::Value::String(s) => s.contains('\0'),
@@ -320,7 +320,7 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 /// The reserve → action → complete/release sequence runs on its own task
 /// (BUG-204): a client that drops the connection mid-flight makes hyper drop
 /// the handler future, which must neither abort the action nor strand the
-/// key IN_PROGRESS — the retry replays the completed reply. A reservation
+/// key IN_PROGRESS - the retry replays the completed reply. A reservation
 /// that nevertheless goes stale (crash, panic) is taken over after
 /// [`ab_db::submissions::IDEMPOTENT_STALE_SECS`]; a live action heartbeats
 /// its reservation every [`IDEMPOTENT_HEARTBEAT`] so a long one (several
@@ -393,7 +393,7 @@ where
 ///
 /// The key is looked up alone and the reply is stored under the user
 /// `owner_of` names on the fresh reply. No owner is known before the
-/// action, so the key is not reserved up front — concurrent duplicates
+/// action, so the key is not reserved up front - concurrent duplicates
 /// race to the unique email/username instead.
 pub async fn idempotent_anonymous<T, Fut>(
     pool: &sqlx::PgPool,
@@ -443,7 +443,7 @@ where
     Ok((status, dto, value))
 }
 
-/// Reservation heartbeat period — a third of the stale window.
+/// Reservation heartbeat period - a third of the stale window.
 const IDEMPOTENT_HEARTBEAT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// How long a concurrent duplicate waits for the owner's reply.

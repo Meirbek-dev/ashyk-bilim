@@ -4,7 +4,7 @@ use utoipa::ToSchema;
 
 use crate::dto::courses::Course;
 
-/// Collections in search results are light — no embedded courses.
+/// Collections in search results are light - no embedded courses.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CollectionHit {
     pub id: ab_core::id::CollectionId,
@@ -13,7 +13,7 @@ pub struct CollectionHit {
     pub public: bool,
 }
 
-/// Public-profile projection (no email — FINDINGS #16).
+/// Public-profile projection (no email - FINDINGS #16).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserHit {
     pub id: UserId,

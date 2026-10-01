@@ -153,7 +153,7 @@ export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallenge
     if (await persist()) toast.success(t('configSaved'))
   }
 
-  // BUG-385: the only way a code challenge goes live — the curriculum toggle
+  // BUG-385: the only way a code challenge goes live - the curriculum toggle
   // refuses a draft assessment (409 `activity-not-ready`).
   const isDraft = (settings?.lifecycle_status ?? 'draft') === 'draft'
   const publish = async () => {

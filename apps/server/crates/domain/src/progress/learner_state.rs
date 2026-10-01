@@ -204,7 +204,7 @@ impl LearnerStateService {
         course_id: CourseId,
     ) -> Result<LearnerCourseState> {
         let course = self.courses.get(actor, course_id).await?;
-        // BUG-287: the course's staff preview it — the enrol door refuses them.
+        // BUG-287: the course's staff preview it - the enrol door refuses them.
         let staff = AssessmentsService::require_scoped(
             actor,
             &course,
@@ -213,7 +213,7 @@ impl LearnerStateService {
         )
         .is_ok();
         // BUG-384: a platform author previews a private course she is not on
-        // the access list of — `courses/{id}` and `activities/{id}` let her in.
+        // the access list of - `courses/{id}` and `activities/{id}` let her in.
         if !staff
             && !self
                 .assessments
@@ -225,7 +225,7 @@ impl LearnerStateService {
         let user_id: UserId = actor.user_id;
         let chapters = ab_db::catalog::list_chapters(&self.pool, course.id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
-        // BUG-292: a run kept from before joining the staff is no member's —
+        // BUG-292: a run kept from before joining the staff is no member's -
         // its ticks and counts are not shown (the outline and sidebar read these).
         let (rows, course_progress, restricted) = if staff {
             (Vec::new(), None, Vec::new())
@@ -239,7 +239,7 @@ impl LearnerStateService {
         let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
         // Enrolment is the trail run, as in the legacy `TrailRun`: projection
         // rows survive a leave (submissions stay), so they cannot mean
-        // "enrolled" — otherwise a learner who left could never re-enrol.
+        // "enrolled" - otherwise a learner who left could never re-enrol.
         let enrolled = has_run;
 
         let states: Vec<(ChapterId, ActivityState)> = activities
@@ -248,7 +248,7 @@ impl LearnerStateService {
             .map(|a| {
                 let progress = rows.iter().find(|r| r.activity_id == a.id);
                 let mut state = activity_state(a, progress);
-                // BUG-318: restricted to an allowlist the learner is not on —
+                // BUG-318: restricted to an allowlist the learner is not on -
                 // not required, never a next step; their own results stay readable.
                 if restricted.contains(&a.id) {
                     state.required = false;

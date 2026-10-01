@@ -10,7 +10,7 @@ export const formatPercent = (format: NumberFormatter, percent: number) =>
 /**
  * The one percent format on learner and analytics surfaces (attempt history,
  * result card, file result, toasts, analytics tables): locale digits, at most
- * two decimals — «31,58%» in ru, never «31.58%» beside «32%» (UX-035).
+ * two decimals - «31,58%» in ru, never «31.58%» beside «32%» (UX-035).
  */
 export function usePercentFormat(): (percent: number) => string {
   const format = useFormatter()

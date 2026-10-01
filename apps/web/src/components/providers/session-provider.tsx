@@ -26,7 +26,7 @@ type AuthBroadcastMessage = { type: 'logout' } | { type: 'session_refresh' }
 export interface SessionContextValue {
   /** Current session status derived from the latest server render. */
   status: SessionStatus
-  /** Convenience boolean — equivalent to `status === 'authenticated'`. */
+  /** Convenience boolean - equivalent to `status === 'authenticated'`. */
   isAuthenticated: boolean
   session: Session | null
   user: Session['user'] | null
@@ -36,7 +36,7 @@ export interface SessionContextValue {
    * Argument order: ``can(resource, action, scope)``.
    *
    * Delegates to the permission set embedded in the session (expanded by the
-   * backend before being placed in the JWT).  Uses an exact Set.has() lookup —
+   * backend before being placed in the JWT).  Uses an exact Set.has() lookup -
    * no wildcard matching required on the frontend.
    *
    * Returns false when the user is not authenticated.

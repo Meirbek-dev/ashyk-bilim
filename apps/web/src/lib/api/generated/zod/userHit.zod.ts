@@ -14,7 +14,7 @@ export const UserHit = zod
     id: zod.uuid(),
     username: zod.string(),
   })
-  .describe('Public-profile projection (no email — FINDINGS #16).')
+  .describe('Public-profile projection (no email - FINDINGS #16).')
 
 export type UserHit = zod.input<typeof UserHit>
 export type UserHitOutput = zod.output<typeof UserHit>

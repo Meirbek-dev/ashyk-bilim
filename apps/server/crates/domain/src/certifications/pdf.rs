@@ -1,8 +1,8 @@
 //! The certificate as an A4-landscape PDF (`GET /certificates/{code}/pdf`).
 //!
 //! Text only, laid out by hand on one page with two embedded Noto Sans
-//! subsets (`assets/fonts`, SIL OFL) so Cyrillic — including the Kazakh
-//! letters — renders everywhere. No headless browser, no layout engine.
+//! subsets (`assets/fonts`, SIL OFL) so Cyrillic - including the Kazakh
+//! letters - renders everywhere. No headless browser, no layout engine.
 
 use ab_core::language::Language;
 use ab_core::{Error, Result};
@@ -396,7 +396,7 @@ pub fn render(input: &CertificatePdf) -> Result<Vec<u8>> {
     }
     pdf.document_info(info_id)
         .title(TextStr(&format!(
-            "{} — {}",
+            "{} - {}",
             input.certificate_name, input.holder_name
         )))
         .creator(TextStr("Ashyq Bilim"));

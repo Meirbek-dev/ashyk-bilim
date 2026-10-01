@@ -134,7 +134,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         if (protocolError) throw new Error(protocolError)
         const nextThreadUuid = runResultThreadId(response.result) ?? threadUuid
         if (nextThreadUuid) onThread(nextThreadUuid)
-        // UX-299: the optimistic question + answer stay until the saved thread is in the cache —
+        // UX-299: the optimistic question + answer stay until the saved thread is in the cache -
         // dropping them first flashed the empty state while the thread loaded.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),

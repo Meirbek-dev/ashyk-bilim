@@ -642,7 +642,7 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
 }
 
 /// BUG-176: quiz / exam / code / file-submission activities complete through
-/// their pipelines only — marking one by hand is a 409 and leaves no trail
+/// their pipelines only - marking one by hand is a 409 and leaves no trail
 /// step, no progress row and no XP behind.
 #[sqlx::test(migrations = "../../migrations")]
 async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
@@ -750,7 +750,7 @@ async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
         .delete_as(&alice, &format!("/api/v2/trail/activities/{a2}"))
         .await;
     assert_eq!(oracle.status, StatusCode::NOT_FOUND, "{}", oracle.text());
-    // UX-131: the detail is the same as for an unknown id — invisible
+    // UX-131: the detail is the same as for an unknown id - invisible
     // course, no step, no trail all read alike.
     assert_eq!(oracle.json()["detail"], "activity not found");
     let unknown = app
@@ -955,7 +955,7 @@ async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
 }
 
 /// The (user, course) trail lock is held by some transaction of this test
-/// database — the mark / leave is past its first write.
+/// database - the mark / leave is past its first write.
 async fn trail_lock_held(pool: &PgPool) -> bool {
     sqlx::query_scalar::<_, bool>(
         "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND granted
@@ -968,7 +968,7 @@ async fn trail_lock_held(pool: &PgPool) -> bool {
 
 /// BUG-221: the client hangs up while a mark (then a leave) is inside its
 /// transaction. Both still land whole: the step with its completion, the
-/// run's removal with every un-completion — never one without the other.
+/// run's removal with every un-completion - never one without the other.
 #[sqlx::test(migrations = "../../migrations")]
 async fn mark_and_leave_dropped_mid_flight_still_land_whole(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1068,7 +1068,7 @@ async fn quiz(
 
 /// BUG-268: a leaver who passed 1 of 2 required quizzes is no member, so the
 /// course-wide recalculation after unpublishing or deleting the other quiz
-/// leaves them alone — no completion, certificate or course XP.
+/// leaves them alone - no completion, certificate or course XP.
 #[sqlx::test(migrations = "../../migrations")]
 async fn course_recalculation_skips_leavers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1232,7 +1232,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
 }
 
 /// BUG-272: the first member's trail lock is held past the interactive 2 s
-/// wait while the teacher unpublishes the other quiz — the course-wide
+/// wait while the teacher unpublishes the other quiz - the course-wide
 /// recalculation waits for it instead of aborting, so every member
 /// (the held one included) completes.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1303,7 +1303,7 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
     }
 }
 
-/// BUG-310: the curriculum toggle is detached — a teacher who hangs up
+/// BUG-310: the curriculum toggle is detached - a teacher who hangs up
 /// while a member's trail lock holds up the course-wide recalculation still
 /// gets it once the lock frees: the learner with A done and only B left is
 /// 1/1 and eligible after B is unpublished.
@@ -1474,7 +1474,7 @@ async fn graded_while_away(
 }
 
 /// BUG-275: a grade and a lesson published while the learner was away both
-/// reach them on rejoin — through `POST trail/courses` and through a mark
+/// reach them on rejoin - through `POST trail/courses` and through a mark
 /// that re-creates the run.
 #[sqlx::test(migrations = "../../migrations")]
 async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
@@ -1699,8 +1699,8 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
     );
 }
 
-/// BUG-291: a learner who joins the staff and leaves it again — removed,
-/// deactivated, demoted to reporter, or a platform grant revoked — is a
+/// BUG-291: a learner who joins the staff and leaves it again - removed,
+/// deactivated, demoted to reporter, or a platform grant revoked - is a
 /// member again and picks up the grade published while they were staff.
 #[sqlx::test(migrations = "../../migrations")]
 async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
@@ -1802,7 +1802,7 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
 }
 
 /// BUG-292: a member who joins the course's staff keeps the run but is no
-/// member — `/trail` stops listing the course and learner-state shows no
+/// member - `/trail` stops listing the course and learner-state shows no
 /// progress of theirs; leaving the staff brings both back.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_staffed_run_is_not_listed(pool: PgPool) {
@@ -1854,7 +1854,7 @@ async fn a_staffed_run_is_not_listed(pool: PgPool) {
     assert_eq!(state["progress"]["completed_required_count"], 1, "{state}");
 }
 
-/// BUG-318: a learner's required set is what they may take — a quiz
+/// BUG-318: a learner's required set is what they may take - a quiz
 /// restricted to an allowlist they are not on is neither required nor their
 /// next step, so the rest completes the course; adding them to the list makes
 /// it required again (the access change re-aggregates the members).
@@ -2134,7 +2134,7 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     let (course_id, chapter_id) = public_course(&app, &teacher, "Migrated 101").await;
     let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
     let a2 = lesson(&app, &teacher, &chapter_id, "Outro").await;
-    // A certification makes completion eligible — what pays the hook.
+    // A certification makes completion eligible - what pays the hook.
     let created = app
         .post_as(
             &teacher,
@@ -2245,7 +2245,7 @@ async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
 
 /// UX-274: `GET /courses?sort=progress` puts the caller's in-progress
 /// courses first (by `course_progress.progress_pct`), then the rest by
-/// progress and newest update — one keyset across pages, so an in-progress
+/// progress and newest update - one keyset across pages, so an in-progress
 /// course never hides on page 2 behind courses the learner never opened.
 #[sqlx::test(migrations = "../../migrations")]
 async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool) {

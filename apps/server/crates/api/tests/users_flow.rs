@@ -330,7 +330,7 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["username"], "troublemaker");
     assert_eq!(items[0]["roles"], serde_json::json!(["user"]));
-    // UX-184: `\` is literal, not LIKE's escape — `\t` is not `t`.
+    // UX-184: `\` is literal, not LIKE's escape - `\t` is not `t`.
     let escaped = app.get_as(&admin, "/api/v2/users?q=%5Ct").await;
     assert_eq!(
         escaped.json()["items"],
@@ -566,7 +566,7 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert_eq!(card.json()["bio"], "Teaches Rust");
     let no_card = app.get("/api/v2/users/nobody").await;
     assert_eq!(no_card.status, StatusCode::NOT_FOUND);
-    // Editor user blocks resolve the same card by id — anonymously too.
+    // Editor user blocks resolve the same card by id - anonymously too.
     let by_id = app.get(&format!("/api/v2/users/by-id/{author}")).await;
     assert_eq!(by_id.status, StatusCode::OK, "{}", by_id.text());
     assert_eq!(by_id.json(), card.json());
@@ -609,7 +609,7 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     assert_eq!(reported.status, StatusCode::OK, "{}", reported.text());
     assert_eq!(reported.json()["items"].as_array().unwrap().len(), 0);
 
-    // UX-133: the profile applies the catalogue's `course_visible` rule —
+    // UX-133: the profile applies the catalogue's `course_visible` rule -
     // a cohort member sees the private course, anonymous visitors do not.
     let member_id = app
         .create_user("member", "member@example.com", &["user"])
@@ -763,7 +763,7 @@ async fn finalized_row(app: &TestApp, user: ab_core::id::UserId, purpose: &str) 
 }
 
 /// BUG-255: two concurrent avatar PATCHes each release the key their own
-/// swap replaced — only the avatar that won stays referenced.
+/// swap replaced - only the avatar that won stays referenced.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -804,7 +804,7 @@ async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
 }
 
 /// UX-211: the client hangs up the moment the avatar upload counts as
-/// referenced — the claim and the swap land together or not at all, so no
+/// referenced - the claim and the swap land together or not at all, so no
 /// upload stays pinned without being the avatar.
 #[sqlx::test(migrations = "../../migrations")]
 async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
@@ -982,7 +982,7 @@ async fn profile_sections_and_theme_are_validated(pool: PgPool) {
     );
     assert_eq!(bad_url.json()["field_errors"][0]["code"], "invalid");
 
-    // BUG-365: the theme is a closed registry set — a legacy camelCase slug
+    // BUG-365: the theme is a closed registry set - a legacy camelCase slug
     // would render as the default and be persisted over the user's choice.
     for theme in ["bad slug!", "vintagePaper", "black"] {
         let bad_theme = app
@@ -1049,7 +1049,7 @@ async fn profile_sections_and_theme_are_validated(pool: PgPool) {
 }
 
 /// BUG-367: `PATCH /users/me` with `If-Match` is an optimistic lock on the
-/// profile document — the second of two tabs gets 412, not a silent
+/// profile document - the second of two tabs gets 412, not a silent
 /// overwrite; a theme write never moves the version.
 #[sqlx::test(migrations = "../../migrations")]
 async fn profile_document_write_is_version_checked(pool: PgPool) {

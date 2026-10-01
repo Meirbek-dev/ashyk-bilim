@@ -61,7 +61,7 @@ async fn batch_create_then_poll_until_done_decoding_base64() {
         .mount(&server)
         .await;
     // First poll: one done, one still processing. Judge0 base64 output has
-    // Ruby's 60-column line feeds — "4\n" → "NAo=\n".
+    // Ruby's 60-column line feeds - "4\n" → "NAo=\n".
     Mock::given(method("GET"))
         .and(path("/submissions/batch"))
         .and(query_param("tokens", "tok-1,tok-2"))
@@ -144,7 +144,7 @@ async fn stuck_judge(max_concurrency: usize) -> (MockServer, Judge0Client) {
     (server, client)
 }
 
-/// BUG-372: a saturated Judge0 is `Busy` — retryable, and it never opens
+/// BUG-372: a saturated Judge0 is `Busy` - retryable, and it never opens
 /// the breaker for everyone else.
 #[tokio::test]
 async fn poll_timeouts_are_busy_and_never_trip_the_breaker() {
@@ -187,7 +187,7 @@ async fn batches_beyond_the_concurrency_cap_queue_for_a_slot() {
 }
 
 /// UX-308: one owner's burst waits for their own previous batch, not in
-/// the slot queue — another owner's batch still reaches Judge0.
+/// the slot queue - another owner's batch still reaches Judge0.
 #[tokio::test]
 async fn one_owners_burst_does_not_queue_ahead_of_others() {
     let (server, client) = stuck_judge(2).await;
@@ -248,7 +248,7 @@ async fn breaker_opens_after_five_failures_and_skips_the_network() {
 }
 
 /// UX-316: a batch queued for the slot while the breaker opened fails fast
-/// once it gets the slot — no connect to the Judge0 that just tripped it.
+/// once it gets the slot - no connect to the Judge0 that just tripped it.
 #[tokio::test]
 async fn a_queued_batch_rechecks_the_breaker_after_its_slot() {
     let server = MockServer::start().await;

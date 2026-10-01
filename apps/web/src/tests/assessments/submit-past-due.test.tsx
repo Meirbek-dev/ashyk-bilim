@@ -8,7 +8,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 import type { StudentSubmission } from '@/lib/api/generated/zod'
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
 
-// UX-103: the due date passes inside an open attempt (`allow_late: false`) —
+// UX-103: the due date passes inside an open attempt (`allow_late: false`) -
 // the submit 403 names a `DisabledReason` («cannot submit: PAST_DUE»). The
 // hook must refetch attempt-state (the blocked card replaces the attempt)
 // and toast the localized reason, not the raw «PAST_DUE» / «Ошибка сохранения».
@@ -74,7 +74,7 @@ describe('submit past due', () => {
     }
   })
 
-  // UX-196: the autosave hits the gate first — say why at once (not «Ошибка
+  // UX-196: the autosave hits the gate first - say why at once (not «Ошибка
   // сохранения»), drop the refused edit and refetch attempt-state (read-only).
   it('an autosave 403 names the reason, keeps the answers on record and refetches attempt-state', async () => {
     const invalidation = vi.spyOn(QueryClient.prototype, 'invalidateQueries')

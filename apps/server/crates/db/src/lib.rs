@@ -1,4 +1,4 @@
-//! `ab-db` — Postgres access: pool construction, embedded migrations, and
+//! `ab-db` - Postgres access: pool construction, embedded migrations, and
 //! (slice 0.8) the transactional job queue.
 //!
 //! Conventions (see ARCHITECTURE §8): `query!`/`query_as!` for static SQL with

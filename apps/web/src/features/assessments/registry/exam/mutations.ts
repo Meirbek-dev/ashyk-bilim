@@ -31,7 +31,7 @@ const json = (method: 'POST' | 'PUT' | 'PATCH', body: unknown) => ({
 /**
  * v2 creates the activity and the assessment in one `POST assessments`,
  * starting from the kind's policy preset. The modal's settings are then applied
- * as a whole-policy `PUT` merged onto that preset — `Policy` is replaced
+ * as a whole-policy `PUT` merged onto that preset - `Policy` is replaced
  * wholesale, so a partial patch would 422. A quiz keeps the preset's attempt
  * and proctoring settings; only an exam overrides them (UX-028).
  */

@@ -3,7 +3,7 @@ import { calculateItemPercent, roundScoreInput, sumScores, toItemScale } from '@
 import type { GradedItem } from '@/features/grading/domain'
 
 describe('sumScores', () => {
-  it('keeps three 33.33 items at exactly 99.99 — the same precision as the maximum', () => {
+  it('keeps three 33.33 items at exactly 99.99 - the same precision as the maximum', () => {
     const items = [33.33, 33.33, 33.33]
     const total = sumScores(items)
     expect(total).toBe(99.99)
@@ -13,7 +13,7 @@ describe('sumScores', () => {
     expect((99.99).toFixed(1)).toBe('100.0')
   })
 
-  it('sums raw item scores and rounds once — per-item cents rounding inflated 150 × 0.6667 to 100.5', () => {
+  it('sums raw item scores and rounds once - per-item cents rounding inflated 150 × 0.6667 to 100.5', () => {
     const items = Array.from({ length: 150 }, () => 0.6667)
     expect(sumScores(items)).toBe(100.01)
     expect(sumScores(Array.from({ length: 150 }, () => 100 / 150))).toBe(100)

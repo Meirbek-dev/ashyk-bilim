@@ -2,7 +2,7 @@
 //!
 //! The durable copy of every event is the `ai_events` table; this stream is
 //! the live mirror the run tail reads (`XREAD BLOCK`) and replays from
-//! (`XRANGE`) with the stream id as the SSE `id:` — the grading-stream
+//! (`XRANGE`) with the stream id as the SSE `id:` - the grading-stream
 //! design (DECISIONS "Grading SSE on Redis Streams") applied to runs.
 
 use std::time::Duration;
@@ -23,7 +23,7 @@ const STREAM_TTL_SECS: i64 = 24 * 3600;
 /// One run event as mirrored (`data:` is this, serialised).
 #[derive(Debug, Clone, Serialize)]
 pub struct AiStoredEvent {
-    /// Redis stream id — the SSE `id:`.
+    /// Redis stream id - the SSE `id:`.
     pub event_id: String,
     /// `queued`, `running`, `collecting_context`, …, `finished`, `failed`,
     /// `cancelled`.

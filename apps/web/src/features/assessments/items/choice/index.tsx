@@ -51,7 +51,7 @@ export type ChoiceAuthorValue =
       pairs: MatchingPair[]
     }
 
-/** Matching is attempted through `items/matching` — one learner renderer. */
+/** Matching is attempted through `items/matching` - one learner renderer. */
 export interface ChoiceAttemptItem {
   id: string | number
   kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'

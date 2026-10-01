@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 // UX-104: a quiz published while the learner's course page is open never
-// reached the outline — the page seeds the structure query from the server
+// reached the outline - the page seeds the structure query from the server
 // prop, so the query refetches on every focus and every 30 s regardless of
 // staleness.
 

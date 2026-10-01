@@ -238,7 +238,7 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
     let relaxed = app.get(&format!("/api/v2/certificates/{sloppy}")).await;
     assert_eq!(relaxed.status, StatusCode::OK, "{}", relaxed.text());
     assert_eq!(relaxed.json()["certificate"]["verify_code"], code.as_str());
-    // BUG-357: only `-` and spaces separate groups — dots, a trailing quote
+    // BUG-357: only `-` and spaces separate groups - dots, a trailing quote
     // or a stray non-Latin letter make it a different (unknown) code.
     let dotted = code.replace('-', ".");
     for junk in [

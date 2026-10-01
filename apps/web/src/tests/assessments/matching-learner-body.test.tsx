@@ -94,7 +94,7 @@ describe('matching learner body', () => {
   })
 
   // Critic 9 T6: the teacher review printed the raw key
-  // `Features.Assessments.Items.Matching.correct` — every key the component
+  // `Features.Assessments.Items.Matching.correct` - every key the component
   // asks for must exist in all three catalogs.
   it('has every t() key of the matching component in ru, kk and en', () => {
     const source = readFileSync(path.resolve(__dirname, '../../features/assessments/items/matching/index.tsx'), 'utf8')

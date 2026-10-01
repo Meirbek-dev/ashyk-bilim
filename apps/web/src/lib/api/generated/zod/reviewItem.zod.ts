@@ -22,7 +22,7 @@ export const ReviewItem = zod.object({
   staff: zod
     .boolean()
     .describe(
-      'The learner is on the course staff — never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).',
+      'The learner is on the course staff - never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).',
     ),
   status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
   submitted_at_unix: zod.int().nullish(),

@@ -226,7 +226,7 @@ function CurriculumEditor() {
       destChapterUuid = overChapter?.chapter_uuid
     }
 
-    // Same chapter — skip. dnd-kit CSS transforms already provide the visual
+    // Same chapter - skip. dnd-kit CSS transforms already provide the visual
     // feedback; we commit the final order in handleDragEnd via arrayMove.
     if (!destChapterUuid || sourceChapter.chapter_uuid === destChapterUuid) return
 
@@ -267,7 +267,7 @@ function CurriculumEditor() {
     const { active, over } = event
 
     if (!over) {
-      // Dropped outside any droppable — revert to the last server state
+      // Dropped outside any droppable - revert to the last server state
       setLocalStructure(course_structure)
       return
     }
@@ -313,7 +313,7 @@ function CurriculumEditor() {
         }
       }
       // Cross-chapter: localStructure was already updated optimistically in
-      // handleDragOver — nothing more to do here before saving.
+      // handleDragOver - nothing more to do here before saving.
     }
 
     setLocalStructure(finalStructure)
@@ -440,7 +440,7 @@ function CurriculumEditor() {
 }
 
 // ── Drag overlay previews ─────────────────────────────────────────────────────
-// Purely presentational — no hooks, no mutations. Render a faithful clone of the
+// Purely presentational - no hooks, no mutations. Render a faithful clone of the
 // actual card so the user always sees what they're dragging.
 
 function ChapterDragOverlay({ chapter }: { chapter: AppChapter }) {

@@ -11,9 +11,9 @@ export const LoginBody = zod
   .object({
     login: zod.string().describe('Username or email.'),
     password: zod.string(),
-    totp_code: zod.string().nullish().describe('Second factor — resubmit after a 401 `mfa-required`.'),
+    totp_code: zod.string().nullish().describe('Second factor - resubmit after a 401 `mfa-required`.'),
   })
-  .describe('Password login. No `Debug` derive — the password must never format.')
+  .describe('Password login. No `Debug` derive - the password must never format.')
 
 export type LoginBody = zod.input<typeof LoginBody>
 export type LoginBodyOutput = zod.output<typeof LoginBody>

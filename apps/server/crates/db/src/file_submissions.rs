@@ -161,7 +161,7 @@ pub async fn get_file_submission_by_activity<'e>(
 }
 
 /// BUG-229: `SELECT … FOR UPDATE` on the config row, then the row as the
-/// previous writer left it — publish, the config PATCH and the curriculum
+/// previous writer left it - publish, the config PATCH and the curriculum
 /// publish toggle serialize here.
 pub async fn lock_file_submission(
     conn: &mut sqlx::PgConnection,
@@ -316,7 +316,7 @@ impl AttemptRow {
 }
 
 /// Open a draft (started now). `None` when the learner already has an open
-/// (draft or returned) attempt — the partial unique index absorbs the race.
+/// (draft or returned) attempt - the partial unique index absorbs the race.
 pub async fn insert_attempt(
     pool: &PgPool,
     file_submission_id: FileSubmissionId,
@@ -396,7 +396,7 @@ pub async fn open_attempt(
 }
 
 /// Every attempt of one learner, newest first.
-/// `include_preview: false` drops staff previews (UX-182) — the progress
+/// `include_preview: false` drops staff previews (UX-182) - the progress
 /// projection's view, which must never count them (UX-186).
 pub async fn list_user_attempts<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -458,7 +458,7 @@ pub async fn list_attempts(
     Ok(rows)
 }
 
-/// Attempts past draft. `include_preview: false` is the learner's cap —
+/// Attempts past draft. `include_preview: false` is the learner's cap -
 /// staff previews never count toward it (BUG-285).
 pub async fn count_completed_attempts(
     pool: &PgPool,
@@ -558,7 +558,7 @@ pub async fn grade_attempt(
 }
 
 /// BUG-316: `(is_late, late_penalty_pct, raw_score)` of one attempt under
-/// `FOR UPDATE` — the lateness settle's read, which a grade save contends for.
+/// `FOR UPDATE` - the lateness settle's read, which a grade save contends for.
 pub async fn lock_attempt_lateness(
     conn: &mut sqlx::PgConnection,
     id: FileAttemptId,
@@ -795,7 +795,7 @@ pub async fn delete_files_releasing(
 
 /// BUG-295: drop a learner's open preview attempts (made while staff).
 ///
-/// Draft or returned — a learner never resumes one. Their file rows go with
+/// Draft or returned - a learner never resumes one. Their file rows go with
 /// one upload reference released each, as in [`delete_files_releasing`].
 pub async fn discard_preview_attempts(
     conn: &mut sqlx::PgConnection,

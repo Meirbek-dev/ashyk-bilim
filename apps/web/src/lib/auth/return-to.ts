@@ -15,7 +15,7 @@ function containsUnsafeCharacters(value: string): boolean {
  * Sanitizes a redirect target down to a safe same-origin path: must start
  * with a single `/`, no control characters, no protocol-relative `//`, no
  * encoded-slash tricks, and it must parse to the same (fake) origin it was
- * resolved against — anything else collapses to `/`. Unlike
+ * resolved against - anything else collapses to `/`. Unlike
  * `normalizeReturnTo`, this does NOT exclude auth routes, because not every
  * caller wants that: a post-logout redirect legitimately targets `/login`.
  */

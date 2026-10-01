@@ -7,7 +7,7 @@
 //!
 //! The two AG-UI request bodies (`QaChatRequest`, `RunStreamRequest`) are
 //! camelCase on the wire because they mirror the protocol
-//! `@tanstack/ai-client` speaks — not this API's snake_case convention.
+//! `@tanstack/ai-client` speaks - not this API's snake_case convention.
 
 use ab_core::ai::{
     AiRunKind, AiRunStatus, AiThreadRole, CourseAnalysisStatus, FindingReviewAction,
@@ -27,7 +27,7 @@ fn default_language() -> String {
 }
 
 /// `auto` or one of the platform languages (`ru`, `kk`, `en`, with or
-/// without a region tag) — see `ai::prompts::resolve_locale`.
+/// without a region tag) - see `ai::prompts::resolve_locale`.
 fn known_language(value: &str) -> garde::Result {
     let lang = value
         .split('-')
@@ -212,7 +212,7 @@ pub struct QaWireMessage {
     pub role: String,
     #[garde(length(chars, max = 20_000))]
     pub content: Option<String>,
-    /// `[{type: "text", content: "…"}, …]` — an alternative to `content`.
+    /// `[{type: "text", content: "…"}, …]` - an alternative to `content`.
     #[garde(skip)]
     #[schema(value_type = Option<Vec<Object>>)]
     pub parts: Option<Vec<serde_json::Value>>,
@@ -451,9 +451,9 @@ impl StudyRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SubmissionAnalysis {
     pub id: AiSubmissionAnalysisId,
-    /// The analysed assessment submission — `null` for a file attempt.
+    /// The analysed assessment submission - `null` for a file attempt.
     pub submission_id: Option<SubmissionId>,
-    /// The analysed file-submission attempt — `null` for a submission.
+    /// The analysed file-submission attempt - `null` for a submission.
     /// Exactly one of the two ids is set.
     pub file_submission_attempt_id: Option<FileAttemptId>,
     pub run_id: Option<AiRunId>,
@@ -579,9 +579,9 @@ impl From<ab_db::ai::LectureReviewRow> for LectureReview {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct RemediationSession {
     pub id: AiRemediationSessionId,
-    /// The remediated assessment submission — `null` for a file attempt.
+    /// The remediated assessment submission - `null` for a file attempt.
     pub submission_id: Option<SubmissionId>,
-    /// The remediated file-submission attempt — `null` for a submission.
+    /// The remediated file-submission attempt - `null` for a submission.
     /// Exactly one of the two ids is set.
     pub file_submission_attempt_id: Option<FileAttemptId>,
     pub activity_id: ActivityId,
@@ -625,7 +625,7 @@ impl From<ab_db::ai::RemediationSessionRow> for RemediationSession {
     }
 }
 
-/// `(submission_id, file_submission_attempt_id)` — exactly one is set.
+/// `(submission_id, file_submission_attempt_id)` - exactly one is set.
 const fn subject_ids(
     subject: ab_db::ai::AiSubject,
 ) -> (Option<SubmissionId>, Option<FileAttemptId>) {

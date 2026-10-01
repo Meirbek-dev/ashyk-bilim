@@ -2,8 +2,8 @@
 //!
 //! Everything a learner should act on, and every submission a teacher should
 //! grade or release, ranked and paged behind an opaque cursor. Items are
-//! assembled from the canonical `activity_progress` projection — never from
-//! submissions directly — so the queue agrees with the learner course state
+//! assembled from the canonical `activity_progress` projection - never from
+//! submissions directly - so the queue agrees with the learner course state
 //! by construction. The whole queue is materialised per call (as the legacy
 //! did): it is bounded by one user's open work.
 
@@ -84,7 +84,7 @@ pub struct WorkQueue {
     pub next_cursor: Option<String>,
 }
 
-/// `(priority rank, due_at or created_at — missing sorts last, id)`.
+/// `(priority rank, due_at or created_at - missing sorts last, id)`.
 type SortKey = (u8, i64, String);
 
 #[derive(Clone)]

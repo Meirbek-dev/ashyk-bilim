@@ -1,4 +1,4 @@
-//! `ab-core` — foundation types shared by every other crate.
+//! `ab-core` - foundation types shared by every other crate.
 //!
 //! Contains: the [`Error`]/[`ErrorCode`] model, typed configuration, typed ids,
 //! time abstractions, the RBAC permission model, and telemetry initialization.

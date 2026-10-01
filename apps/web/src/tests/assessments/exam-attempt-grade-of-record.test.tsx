@@ -94,7 +94,7 @@ describe('exam entry panel grade of record', () => {
 })
 
 // UX-224: a 50 % retake after a counted 100 % toasted «Тест не пройден: 50%»
-// while the card said «Пройден · 100%» — the toast states the counted result.
+// while the card said «Пройден · 100%» - the toast states the counted result.
 describe('submit toast verdict', () => {
   it('is the counted result, with this attempt as a side note', () => {
     expect(submitVerdict(50, { score: 100, passed: true }, 60)).toEqual({ score: 100, passed: true, latest: 50 })

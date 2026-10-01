@@ -37,7 +37,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
   const total = latestRun?.total ?? 0
   const accepted = total > 0 && passed === total
   // UX-226: an attempt with no test run (migrated, or graded by hand) has no
-  // verdict to show — no «требует проверки · 0/0»; the language by name, never a raw id.
+  // verdict to show - no «требует проверки · 0/0»; the language by name, never a raw id.
   const tested = total > 0
   const languageName = languages.data?.find(language => language.id === answer.language)?.name ?? null
 

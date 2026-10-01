@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-// BUG-152: a gate-mode remediation has a learner surface — the result card
+// BUG-152: a gate-mode remediation has a learner surface - the result card
 // names the reason and opens the session; completing it posts the
 // self-reported score and invalidates the attempt state (no reload).
 

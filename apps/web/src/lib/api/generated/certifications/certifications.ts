@@ -59,7 +59,7 @@ export const getVerifyCertificateUrl = (code: string) => {
 }
 
 /**
- * @summary Public verification by code — no session needed.
+ * @summary Public verification by code - no session needed.
  */
 export const verifyCertificate = async (
   code: string,
@@ -156,7 +156,7 @@ export function useVerifyCertificate<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Public verification by code — no session needed.
+ * @summary Public verification by code - no session needed.
  */
 
 export function useVerifyCertificate<
@@ -242,7 +242,7 @@ export function useVerifyCertificateSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Public verification by code — no session needed.
+ * @summary Public verification by code - no session needed.
  */
 
 export function useVerifyCertificateSuspense<
@@ -274,7 +274,7 @@ export const getCertificatePdfUrl = (code: string) => {
  * verification code and the verify link (`AB__SERVER__WEB_URL` +
  * `/{locale}/certificates/{code}/verify`). The page language follows
  * `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
- * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ * @summary The certificate as an A4-landscape PDF - public by code, like verification.
  */
 export const certificatePdf = async (code: string, options?: Parameters<typeof orvalMutator>[1]): Promise<string> => {
   return orvalMutator<string>(
@@ -359,7 +359,7 @@ export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificateP
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ * @summary The certificate as an A4-landscape PDF - public by code, like verification.
  */
 
 export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
@@ -442,7 +442,7 @@ export function useCertificatePdfSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The certificate as an A4-landscape PDF — public by code, like verification.
+ * @summary The certificate as an A4-landscape PDF - public by code, like verification.
  */
 
 export function useCertificatePdfSuspense<

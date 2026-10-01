@@ -41,7 +41,7 @@ const MAX_FIELD_CHARS = 2000
  * Stacks, component stacks and SSR error messages run to tens of KB (the
  * BUG-366 crash report was refused with 413); the route logs the first 1000
  * characters, so strings are clipped before sending (two levels deep: the
- * payload and its `error` object) — the body also stays under the 64 KiB
+ * payload and its `error` object) - the body also stays under the 64 KiB
  * `keepalive` ceiling.
  */
 function clipForLog(value: unknown, depth = 0): unknown {

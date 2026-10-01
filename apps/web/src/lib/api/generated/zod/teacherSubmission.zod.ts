@@ -99,7 +99,7 @@ export const TeacherSubmission = zod
         .number()
         .nullish()
         .describe(
-          "BUG-205: the teacher's explicit raw override — the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+          "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
         ),
     }),
     id: zod.uuid(),
@@ -128,7 +128,7 @@ export const TeacherSubmission = zod
     violation_count: zod.int(),
     violations: zod.array(zod.looseObject({})),
   })
-  .describe('A submission as the grader sees it — nothing redacted.')
+  .describe('A submission as the grader sees it - nothing redacted.')
 
 export type TeacherSubmission = zod.input<typeof TeacherSubmission>
 export type TeacherSubmissionOutput = zod.output<typeof TeacherSubmission>

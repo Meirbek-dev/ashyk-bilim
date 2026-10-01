@@ -23,7 +23,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
       const courseName = certificateData.course.name ?? ''
       // The PDF's rule: no certification name → the course name (UX-225).
       const certificationName = (typeof rawName === 'string' && rawName.trim()) || courseName
-      // UX-225: a migrated certification is often named like its course — name it once.
+      // UX-225: a migrated certification is often named like its course - name it once.
       const single = certificationName.trim() === courseName.trim() ? t('titleSingle', { name: courseName }) : null
 
       return {

@@ -1,7 +1,7 @@
 //! `GET /utils/link-preview`: OpenGraph + `<title>` from a wiremock page,
 //! the 24 h cache (a second call does not hit the page), relative image
 //! resolution, the SSRF guard (private and link-local addresses, bad
-//! schemes, credentials — loopback passes only because the test config is
+//! schemes, credentials - loopback passes only because the test config is
 //! `development`), non-HTML answers, 5 s timeout, and the session gate.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -197,7 +197,7 @@ async fn malformed_query_and_path_are_problem_json(pool: PgPool) {
 }
 
 /// U+0000 in a query string, a path parameter or any JSON string is a 422
-/// `validation-failed` (`query` / `path` / `body` field error) — never a
+/// `validation-failed` (`query` / `path` / `body` field error) - never a
 /// Postgres 22021 turned 500 (BUG-211).
 #[sqlx::test(migrations = "../../migrations")]
 async fn nul_in_any_string_is_validation_failed(pool: PgPool) {

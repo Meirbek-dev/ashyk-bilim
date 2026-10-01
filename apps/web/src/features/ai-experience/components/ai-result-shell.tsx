@@ -82,7 +82,7 @@ function AuditMetadata() {
 }
 
 /**
- * `Модель: …` — the server records `draft-mode` (`DRAFT_MODEL`, no LLM
+ * `Модель: …` - the server records `draft-mode` (`DRAFT_MODEL`, no LLM
  * configured) as the model name; that is a state, not a model, and reads
  * as its localized label.
  */

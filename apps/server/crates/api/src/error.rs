@@ -34,7 +34,7 @@ pub struct Problem {
     #[serde(rename = "type")]
     pub type_uri: String,
     pub status: u16,
-    /// Stable machine code — the frontend's i18n key.
+    /// Stable machine code - the frontend's i18n key.
     pub code: ErrorCode,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -58,7 +58,7 @@ const SUPPORTED_LOCALES = Object.keys(ERROR_MESSAGES) as SupportedLocale[]
  * Must only be called in a browser context (i.e. inside `useEffect`).
  */
 export function detectLocale(): SupportedLocale {
-  // 1. NEXT_LOCALE cookie (most reliable — set by next-intl middleware)
+  // 1. NEXT_LOCALE cookie (most reliable - set by next-intl middleware)
   const cookieMatch = /NEXT_LOCALE=([^;]+)/.exec(document.cookie)
   const cookieLocale = cookieMatch?.[1] as SupportedLocale | undefined
   if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {

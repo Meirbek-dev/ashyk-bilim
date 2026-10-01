@@ -143,7 +143,7 @@ const fn manual_review() -> AutoGrade {
     }
 }
 
-/// Every test failed — a blank answer or one no runner will accept.
+/// Every test failed - a blank answer or one no runner will accept.
 fn failed_cases(body: &crate::assessments::items::CodeBody) -> Vec<CaseOutcome> {
     body.tests
         .iter()
@@ -155,7 +155,7 @@ fn failed_cases(body: &crate::assessments::items::CodeBody) -> Vec<CaseOutcome> 
         .collect()
 }
 
-/// The attempt cap over a learner's attempts (newest first) — the
+/// The attempt cap over a learner's attempts (newest first) - the
 /// `attempt-state` rule: a returned attempt lifts it for its revision.
 fn cap_reached(prior: &[Submission], max_attempts: Option<i32>) -> bool {
     let mut completed = prior
@@ -306,7 +306,7 @@ struct Context {
     assessment: Assessment,
     items: Vec<Item>,
     effective: EffectivePolicy,
-    /// The attempt is a staff preview (UX-182) — its row flag (BUG-285).
+    /// The attempt is a staff preview (UX-182) - its row flag (BUG-285).
     preview: bool,
 }
 
@@ -386,12 +386,12 @@ impl SubmissionsService {
             .get_for_grading(actor, submission.assessment_id)
             .await?;
         // BUG-295: a learner never resumes a preview draft made while
-        // staff — it does not exist for them (`start` discards it).
+        // staff - it does not exist for them (`start` discards it).
         if submission.preview && !state.staff {
             return Err(Error::not_found("submission"));
         }
         // BUG-285/294: the attempt's own preview flag decides, as in the
-        // timer sweep (BUG-279) — a role change mid-attempt changes neither
+        // timer sweep (BUG-279) - a role change mid-attempt changes neither
         // its policy, its gates nor whether it counts.
         let preview = submission.preview;
         let effective = if preview == state.is_teacher_preview {
@@ -507,7 +507,7 @@ impl SubmissionsService {
         Ok(out)
     }
 
-    /// One attempt the caller owns (404 otherwise — no existence leak).
+    /// One attempt the caller owns (404 otherwise - no existence leak).
     pub async fn my_submission(
         &self,
         actor: &Actor,
@@ -545,7 +545,7 @@ impl SubmissionsService {
         // Visibility gate only; the versions come from the locked row below.
         self.assessments.get(actor, assessment_id).await?;
         // BUG-224: the draft and the assessment row lock (`FOR SHARE`) land
-        // in one transaction — an item write (`FOR UPDATE`, BUG-218) either
+        // in one transaction - an item write (`FOR UPDATE`, BUG-218) either
         // committed before (the draft gets its content version) or waits
         // and then sees the draft (409 «already has submissions»).
         // BUG-239: starts of one learner serialize on `lock_attempts`, and
@@ -558,7 +558,7 @@ impl SubmissionsService {
             .ok_or_else(|| Error::not_found("assessment"))?;
         ab_db::submissions::lock_attempts(&mut tx, assessment_id, actor.user_id).await?;
         // BUG-295: a preview draft opened while staff is never resumed by a
-        // learner — it goes, and a counted attempt opens under their rules
+        // learner - it goes, and a counted attempt opens under their rules
         // (attempt-state already judged without it).
         if !state.staff {
             ab_db::submissions::discard_preview_draft(&mut tx, assessment_id, actor.user_id)
@@ -648,7 +648,7 @@ impl SubmissionsService {
             .get(actor, submission.assessment_id)
             .await?
             .assessment;
-        // BUG-240: one atomic increment — parallel reports all count, and
+        // BUG-240: one atomic increment - parallel reports all count, and
         // none lands once the draft is submitted.
         let event = serde_json::json!({ "kind": kind, "detail": detail, "at": now_unix() });
         let violation_count =
@@ -684,7 +684,7 @@ impl SubmissionsService {
             ));
         }
         let ctx = self.context(actor, submission).await?;
-        // BUG-290: the submit gates freeze the draft too — past a hard due
+        // BUG-290: the submit gates freeze the draft too - past a hard due
         // date (or the time limit, or under a gate remediation) nothing more
         // is saved, so the timer sweep scores only what landed in time. A
         // preview has none (BUG-278).
@@ -782,7 +782,7 @@ impl SubmissionsService {
             let violation_count = submission.violation_count.max(reported_violations);
             let ctx = self.context(actor, submission).await?;
             // BUG-224: a draft opened against older content never scores items
-            // the learner did not see — `start` again re-syncs it to the current
+            // the learner did not see - `start` again re-syncs it to the current
             // version once the items are reloaded.
             if ctx.submission.content_version < ctx.assessment.content_version {
                 return Err(Error::app_with_details(
@@ -797,7 +797,7 @@ impl SubmissionsService {
             }
             let answers = Self::merge(&ctx, patch.clone().unwrap_or_default())?;
             // UX-111: like `save_draft`, only a submit that passed validation
-            // spends the budget — a 409/422 must not lock the learner out.
+            // spends the budget - a 409/422 must not lock the learner out.
             if !limited {
                 let submit_key = format!("submit_rl:{}", actor.user_id);
                 if !self
@@ -843,7 +843,7 @@ impl SubmissionsService {
     }
 
     /// The pipeline proper. Returns (row, effective policy, item count);
-    /// `None` when the draft changed while it was graded (BUG-344) — the
+    /// `None` when the draft changed while it was graded (BUG-344) - the
     /// caller re-reads and grades it again. `answers: None` hands the draft
     /// in ungraded, its stored answers kept as they are, for a teacher to
     /// score (BUG-379: the timer's last try on a draft it cannot grade).
@@ -868,7 +868,7 @@ impl SubmissionsService {
             preview,
         } = ctx;
 
-        // BUG-256: no cap check here — the cap bars opening an attempt
+        // BUG-256: no cap check here - the cap bars opening an attempt
         // (`start`, under `lock_attempts`, BUG-239), and an open draft may
         // always be finished, as `attempt-state` promises.
         if !opts.skip_constraints {
@@ -904,7 +904,7 @@ impl SubmissionsService {
             None => manual_review(),
         };
         // BUG-237: a draft behind the assessment's content never publishes
-        // an auto score — items it never showed would score `no-answer`.
+        // an auto score - items it never showed would score `no-answer`.
         // `submit` refuses it earlier (409, reopen); the timer sweep, which
         // cannot ask, hands it to a teacher (pending review).
         if submission.content_version < assessment.content_version {
@@ -927,7 +927,7 @@ impl SubmissionsService {
             waive_late_penalty: effective.waive_late_penalty,
         });
         let verdict = Verdict::decide(&assessment, &grade, &penalty, opts.auto_submit_reason);
-        // BUG-215: the annulled 0 is an explicit override — the score of
+        // BUG-215: the annulled 0 is an explicit override - the score of
         // record for `save_grade` / `publish_all` however many manual items
         // are still unscored (UX-117: only a typed override changes it).
         if penalty.violation_zeroed {
@@ -939,8 +939,8 @@ impl SubmissionsService {
             .map_or_else(|| submission.answers.clone(), answers_to_value);
         // UX-260: a `start` racing this hand-in waits on `lock_attempts`
         // (BUG-239) until the row is written, so it answers the settled
-        // state — never the attempt being submitted as a draft. BUG-377:
-        // the lock and the write share one connection, taken only now —
+        // state - never the attempt being submitted as a draft. BUG-377:
+        // the lock and the write share one connection, taken only now -
         // gates and grading (Judge0 included) ran on the pool before it, so
         // a hand-in never holds a connection while waiting for a second one
         // (N concurrent hand-ins used to deadlock an N-connection pool). A
@@ -1131,7 +1131,7 @@ impl SubmissionsService {
             FinalRun::Degraded(message) => {
                 // BUG-381: a busy or unreachable runner is never the
                 // learner's fault, and a 503 on a deadline rush turned into
-                // PAST_DUE on the retry — the hand-in lands for review.
+                // PAST_DUE on the retry - the hand-in lands for review.
                 tracing::warn!(submission_id = %submission.id, %message,
                     "final code run degraded; handing the attempt to manual review");
                 return Ok(manual_review());
@@ -1170,7 +1170,7 @@ impl SubmissionsService {
             let attempts = ab_db::submissions::get_submission(pool, id)
                 .await?
                 .map_or(0, |s| s.auto_submit_attempts);
-            // BUG-379: the last try never abandons the draft — it is handed
+            // BUG-379: the last try never abandons the draft - it is handed
             // in ungraded, as stored, for a teacher to score. Should even
             // that fail (the database), it retries hourly until it lands.
             if attempts + 1 >= AUTO_SUBMIT_MAX_ATTEMPTS {
@@ -1233,7 +1233,7 @@ impl SubmissionsService {
             .map(Item::try_from)
             .collect::<Result<Vec<_>>>()?;
         // BUG-315: the hand-in is the moment the clock ran out, not when the
-        // sweep got to it — lateness, the override in force (BUG-307) and
+        // sweep got to it - lateness, the override in force (BUG-307) and
         // `submitted_at` (what settling re-judges) all use it.
         // BUG-326: the clock runs out after the grace period.
         let submitted_at = match (submission.started_at, assessment.time_limit_seconds) {
@@ -1243,7 +1243,7 @@ impl SubmissionsService {
             }
             _ => now_unix(),
         };
-        // BUG-279: the attempt's own preview flag — the same policy rule as
+        // BUG-279: the attempt's own preview flag - the same policy rule as
         // a manual submit (a preview carries no late penalty).
         let preview = submission.preview;
         let row = if preview {

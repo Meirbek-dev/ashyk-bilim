@@ -157,7 +157,7 @@ export const CreateItemBody = zod.object({
   max_score: zod
     .number()
     .nullish()
-    .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
+    .describe('BUG-208: at most 10 000 - an unbounded score overflows the grade shares.'),
   metadata: zod
     .union([
       zod.object({

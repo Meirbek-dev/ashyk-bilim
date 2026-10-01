@@ -14,7 +14,7 @@ import { useCallback } from 'react'
  * ```
  *
  * The hook reads item positions from `SortableContext` via DndKit's built-in
- * `over` / `active` ids — the caller does not need to pass the items array.
+ * `over` / `active` ids - the caller does not need to pass the items array.
  */
 export function useDndAnnouncements(items: string[]): Announcements {
   const t = useTranslations('Common.DragAndDrop')

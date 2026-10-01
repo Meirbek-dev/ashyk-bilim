@@ -483,7 +483,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
 
 /// BUG-381: a deadline rush on a saturated runner. The submit arrives
 /// before `due_at` (no late hand-ins), Judge0 answers «busy» only after the
-/// due date has passed — the attempt is on time (judged at arrival) and
+/// due date has passed - the attempt is on time (judged at arrival) and
 /// lands for manual review: 200 `pending`, counted in the teacher's stats.
 #[sqlx::test(migrations = "../../migrations")]
 async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool) {
@@ -571,7 +571,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     assert_eq!(recorded.json()["status"], "degraded");
     assert_eq!(recorded.json()["error_message"], "code runner unavailable");
 
-    // BUG-381: an on-time hand-in is never lost to the runner — it lands
+    // BUG-381: an on-time hand-in is never lost to the runner - it lands
     // for manual review instead of a 503 the learner retries past the due.
     let draft = app
         .post_as(
@@ -652,7 +652,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     assert_eq!(languages.json()[0]["monaco_language"], "python");
 }
 
-/// BUG-369: a program printing a NUL byte is a wrong answer, not a 500 —
+/// BUG-369: a program printing a NUL byte is a wrong answer, not a 500 -
 /// on a visible run and at submit, and no run is left `running`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
@@ -701,7 +701,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
     assert_eq!(stuck, 0);
 }
 
-/// BUG-371: a key whose run is still executing answers 409 — never a
+/// BUG-371: a key whose run is still executing answers 409 - never a
 /// second execution; an abandoned run (crash) frees the key after a while.
 #[sqlx::test(migrations = "../../migrations")]
 async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
@@ -782,7 +782,7 @@ async fn code_draft(
 
 /// BUG-370 + the grade branches: a manual submit refuses what the learner
 /// can fix (runner internal error 503, disallowed language 422); the timer
-/// sweep always finalizes — internal error / a run it cannot finish go to
+/// sweep always finalizes - internal error / a run it cannot finish go to
 /// manual review, a compile error, a disallowed language or NUL output
 /// score what they earned.
 #[sqlx::test(migrations = "../../migrations")]

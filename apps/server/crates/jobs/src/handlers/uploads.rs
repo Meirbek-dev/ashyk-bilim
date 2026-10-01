@@ -1,4 +1,4 @@
-//! `uploads:reap` — scheduled cleanup of expired pending / unreferenced
+//! `uploads:reap` - scheduled cleanup of expired pending / unreferenced
 //! uploads (rows + objects). Schedule seeded at worker boot (6h interval).
 
 use std::sync::Arc;

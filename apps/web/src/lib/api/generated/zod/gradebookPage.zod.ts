@@ -43,20 +43,20 @@ export const GradebookPage = zod
             .int()
             .nullish()
             .describe(
-              'The newest attempt still awaiting grading (`pending`), if any — set\neven when the grade of record is an older published attempt (BUG-175).',
+              'The newest attempt still awaiting grading (`pending`), if any - set\neven when the grade of record is an older published attempt (BUG-175).',
             ),
           pending_attempt_id: zod
             .uuid()
             .nullish()
             .describe(
-              'The id of that pending attempt — a submission id or a file attempt\nid, whichever the cell is about — so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).',
+              'The id of that pending attempt - a submission id or a file attempt\nid, whichever the cell is about - so the review deep link opens the\nwork awaiting grading rather than the grade of record (UX-123).',
             ),
           pending_attempt_status: zod
             .union([
               zod
                 .enum(['draft', 'pending', 'graded', 'published', 'returned'])
                 .describe(
-                  'UX-146: what that attempt waits for — `pending` (a grade) or\n`graded` (a release) — so the gradebook counts and labels the two apart.',
+                  'UX-146: what that attempt waits for - `pending` (a grade) or\n`graded` (a release) - so the gradebook counts and labels the two apart.',
                 ),
               zod.null(),
             ])

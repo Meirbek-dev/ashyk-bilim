@@ -60,7 +60,7 @@ describe('createExamWithActivity (v2)', () => {
     const calls = mocks.apiJson.mock.calls as [string, { body: string }][]
     const [create, policy] = [calls[0]!, calls[1]!]
     expect(create[0]).toBe('assessments')
-    // UX-112: one name — the activity name is the assessment title; no separate rename PATCH.
+    // UX-112: one name - the activity name is the assessment title; no separate rename PATCH.
     expect(JSON.parse(create[1].body)).toEqual({
       kind: 'exam',
       chapter_id: 'ch-1',
@@ -82,7 +82,7 @@ describe('createExamWithActivity (v2)', () => {
     expect(result).toEqual({ exam_uuid: 'asm-1', activity_uuid: 'act-1' })
   })
 
-  // UX-028: «Тест» creates a quiz on the server's quiz preset — no exam proctoring, no attempt cap.
+  // UX-028: «Тест» creates a quiz on the server's quiz preset - no exam proctoring, no attempt cap.
   it('keeps the quiz preset: only the time limit / shuffle / review settings are applied', async () => {
     mocks.apiJson.mockClear()
     mocks.apiJson.mockImplementation(async (path: string) => {

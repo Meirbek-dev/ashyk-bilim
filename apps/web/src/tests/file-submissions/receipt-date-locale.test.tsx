@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-// UX-149: submission stamps follow the route locale, not the browser's — kk shows «қыр.», never «Sep».
+// UX-149: submission stamps follow the route locale, not the browser's - kk shows «қыр.», never «Sep».
 
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'

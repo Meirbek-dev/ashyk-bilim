@@ -1,4 +1,4 @@
-//! Resend transactional email (`POST /emails`). One method, one shape —
+//! Resend transactional email (`POST /emails`). One method, one shape -
 //! the registration verification code is the only mail v2 sends.
 
 use ab_core::config::ResendConfig;
@@ -20,7 +20,7 @@ impl ResendClient {
     }
 
     /// Send one HTML email. Non-2xx answers surface as `service-unavailable`
-    /// — callers decide whether mail failure blocks the flow (it never does
+    /// - callers decide whether mail failure blocks the flow (it never does
     /// for registration).
     pub async fn send(&self, to: &str, subject: &str, html: &str) -> Result<()> {
         let response = self

@@ -4,7 +4,7 @@
 //! sandbox's memory and thread limits for managed runtimes. The legacy API
 //! patched them from a daemon thread on every boot (polling for two minutes
 //! until Judge0 had created the table); v2 makes it an operator command in
-//! the cutover runbook — idempotent, so it may be repeated after a Judge0
+//! the cutover runbook - idempotent, so it may be repeated after a Judge0
 //! image upgrade re-seeds the table.
 
 use ab_core::{Error, Result};
@@ -80,7 +80,7 @@ pub struct TuneReport {
 
 /// Apply the patches to the Judge0 database at `database_url`. Refuses when
 /// the `languages` table is missing or the core rows (22, 60, 62) are not
-/// there yet — Judge0 seeds them on its first boot.
+/// there yet - Judge0 seeds them on its first boot.
 pub async fn apply(database_url: &str) -> Result<TuneReport> {
     let pool = PgPoolOptions::new()
         .max_connections(1)
@@ -94,7 +94,7 @@ pub async fn apply(database_url: &str) -> Result<TuneReport> {
             .map_err(|e| Error::internal("checking judge0 languages table", e))?;
     if present.unwrap_or(0) < 3 {
         return Err(Error::config(
-            "judge0 languages table is missing its core rows (ids 22, 60, 62) — has Judge0 booted against this database?",
+            "judge0 languages table is missing its core rows (ids 22, 60, 62) - has Judge0 booted against this database?",
         ));
     }
     let mut rows_updated = 0;

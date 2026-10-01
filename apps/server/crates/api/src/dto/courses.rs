@@ -21,7 +21,7 @@ pub struct Course {
     pub creator_id: Option<UserId>,
     /// Active maintainers / contributors (`GET /courses/{id}/contributors`,
     /// status `active`, role not `reporter`); they edit the course like the
-    /// creator without any role grant — authorship is the `:own` scope.
+    /// creator without any role grant - authorship is the `:own` scope.
     /// Reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
     pub created_at_unix: i64,
@@ -209,10 +209,10 @@ pub struct CourseListQuery {
     pub q: Option<String>,
     /// `updated` (default, newest update first), `name` (A→Z) or `progress`
     /// (the caller's in-progress courses first by `progress_pct`, then
-    /// newest update — UX-274).
+    /// newest update - UX-274).
     pub sort: Option<String>,
     /// `all` (default) | `drafts` (unpublished) | `published` | `recent`
-    /// (updated in the last 7 days) | `attention` — published with no live
+    /// (updated in the last 7 days) | `attention` - published with no live
     /// activity, or a draft created more than 30 days ago.
     pub preset: Option<String>,
 }

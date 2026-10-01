@@ -1,4 +1,4 @@
-//! `ai:execute_run` — executes one queued AI run (legacy
+//! `ai:execute_run` - executes one queued AI run (legacy
 //! `worker/tasks/ai.py`).
 //!
 //! Enqueued by the `/queue` variants after the run row is committed. The

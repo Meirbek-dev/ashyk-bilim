@@ -7,7 +7,7 @@ import { expect } from '@playwright/test'
 export class LoginPage {
   public readonly page: Page
 
-  // Selectors rely on `name` attributes and ARIA labels — not locale-specific text.
+  // Selectors rely on `name` attributes and ARIA labels - not locale-specific text.
   public readonly emailInput: Locator
   public readonly passwordInput: Locator
   public readonly submitButton: Locator

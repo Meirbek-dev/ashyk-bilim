@@ -2,8 +2,8 @@
 //!
 //! Access semantics: read = public OR author OR active reporter OR cohort
 //! member OR platform manager; write = author OR `course:update:platform`.
-//! "Author" is `Course::is_author` — the creator or an active maintainer /
-//! contributor (`resource_authors`, see `contributors.rs`) — the one
+//! "Author" is `Course::is_author` - the creator or an active maintainer /
+//! contributor (`resource_authors`, see `contributors.rs`) - the one
 //! predicate every authoring gate in the workspace (curriculum, assessments,
 //! files, grading, AI, certificates) goes through. Authorship IS the `:own`
 //! scope: no role grant is needed on top (DECISIONS 2026-09-12, "active
@@ -73,7 +73,7 @@ pub fn learnings(value: &serde_json::Value) -> Vec<Learning> {
 }
 
 /// Trim text/emoji, reject blank text and duplicate ids (422 `learnings`/
-/// `duplicate`: the landing keys its list by id — BUG-334), fill blank ids.
+/// `duplicate`: the landing keys its list by id - BUG-334), fill blank ids.
 fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
     let mut seen = std::collections::HashSet::new();
     items
@@ -141,7 +141,7 @@ impl CoursesService {
     }
 
     /// Write access: platform-wide updaters, or an author (the creator or an
-    /// active maintainer / contributor — authorship is the `:own` scope).
+    /// active maintainer / contributor - authorship is the `:own` scope).
     /// Shared with the curriculum service (chapters/activities inherit it).
     pub(crate) fn require_write(actor: &Actor, course: &Course) -> Result<()> {
         if actor.has(perm(Action::Update, Scope::Platform)) || course.is_author(actor.user_id) {
@@ -152,7 +152,7 @@ impl CoursesService {
 
     /// Visibility: public, author (creator / active contributor), active
     /// reporter, platform manager, or membership of a usergroup linked to
-    /// the course (cohort access) — SQL `course_visible`, the predicate the
+    /// the course (cohort access) - SQL `course_visible`, the predicate the
     /// catalogue, search and collections list by (BUG-190). Invisible = 404.
     pub(crate) async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
         let see_all = sees_private(actor, ResourceType::Course);
@@ -310,7 +310,7 @@ impl CoursesService {
         // concurrent course DELETE turns the UPDATE into a 404 and the
         // rollback drops the reference instead of leaking the upload.
         // BUG-261: the UPDATE above locked the course row before the claim
-        // touches an upload row — the course → uploads order every course
+        // touches an upload row - the course → uploads order every course
         // delete takes, so PATCH ∥ DELETE (or PATCH ∥ PATCH) cannot deadlock.
         let thumbnail_key = match changes.thumbnail_upload_id {
             Some(Some(upload_id)) => Some(Some(
@@ -326,9 +326,9 @@ impl CoursesService {
             Some(None) => Some(None),
             None => None,
         };
-        // UX-143: the key the UPDATE actually replaced is released — not the
+        // UX-143: the key the UPDATE actually replaced is released - not the
         // one this request read, which a concurrent PATCH may have replaced.
-        // BUG-209: also when it equals the new key — the claim above counted
+        // BUG-209: also when it equals the new key - the claim above counted
         // it once more, so releasing the "old" one nets to a no-op (holds
         // for two identical concurrent PATCHes: each swap returns one key).
         if let Some(key) = thumbnail_key

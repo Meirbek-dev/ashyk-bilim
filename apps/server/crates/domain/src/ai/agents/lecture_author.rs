@@ -3,7 +3,7 @@
 //! Lecture author (legacy `agents/lecture_author.py` + `run_lecture_review`
 //! / `queue_lecture_review` / reviews listing / suggestion dismissal).
 //! Teachers only. A critique covers the whole course context (the legacy
-//! did too — `activity_id` only scopes the review record).
+//! did too - `activity_id` only scopes the review record).
 
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
@@ -73,7 +73,7 @@ impl AiService {
         }
     }
 
-    /// `POST /ai/lecture-authoring/{course}/critique` — inline.
+    /// `POST /ai/lecture-authoring/{course}/critique` - inline.
     pub async fn critique_lecture(
         &self,
         actor: &Actor,
@@ -243,7 +243,7 @@ impl AiService {
         .await
     }
 
-    /// `GET /ai/lecture-authoring/{course}/reviews` — active reviews.
+    /// `GET /ai/lecture-authoring/{course}/reviews` - active reviews.
     pub async fn list_lecture_reviews(
         &self,
         actor: &Actor,

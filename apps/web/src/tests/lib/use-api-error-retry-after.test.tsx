@@ -7,7 +7,7 @@ import { useApiError } from '@/hooks/useApiError'
 
 // UX-101: a 429 that carries its window (`Retry-After` or
 // `details.retry_after_seconds`) says «через N минут» instead of the generic
-// «Слишком много запросов. Попробуйте позже.» — the login banner already did.
+// «Слишком много запросов. Попробуйте позже.» - the login banner already did.
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 vi.mock('next-intl', () => ({

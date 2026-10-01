@@ -6,7 +6,7 @@ use ab_domain::community::discussions as domain;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// The post's author — no email (unlike the legacy `UserRead`); `null`
+/// The post's author - no email (unlike the legacy `UserRead`); `null`
 /// once the account is gone.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct DiscussionAuthor {
@@ -33,7 +33,7 @@ pub struct Discussion {
     pub is_liked: bool,
     pub is_disliked: bool,
     /// Embedded when the list was asked for `include_replies` (replies
-    /// carry an empty list — one level only).
+    /// carry an empty list - one level only).
     #[schema(no_recursion)]
     pub replies: Vec<Discussion>,
     pub is_owner: bool,

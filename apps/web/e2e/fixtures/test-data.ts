@@ -1,6 +1,6 @@
 /**
  * Shared constants used across E2E test specs.
- * All secrets are read from environment variables — never hardcoded here.
+ * All secrets are read from environment variables - never hardcoded here.
  *
  * Environment is loaded by global-setup.ts before any test runs.
  * Test files that import this module directly (e.g. during spec collection)
@@ -57,7 +57,7 @@ export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf')
 /**
  * The code challenge authored in spec 03 and solved in spec 04: the arena
  * grades stdin → stdout, so the solution reads «a b» and prints the sum. One
- * line on purpose — Monaco's auto-indent would reshape typed multi-line code.
+ * line on purpose - Monaco's auto-indent would reshape typed multi-line code.
  */
 export const CORRECT_PYTHON_SOLUTION = 'print(sum(map(int, input().split())))'
 

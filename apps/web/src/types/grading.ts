@@ -1,15 +1,15 @@
 /**
- * Grading system type definitions — v4.
+ * Grading system type definitions - v4.
  *
  * Interface definitions are re-exported from the normalized grading domain.
  * Only utility constants and helpers live here.
  *
  * Status model (5 states):
- *   DRAFT      — student is working, not yet submitted
- *   PENDING    — submitted, awaiting teacher grading
- *   GRADED     — teacher has set a final score (not yet visible to student)
- *   PUBLISHED  — grade is visible to the student
- *   RETURNED   — teacher sent it back for revision
+ *   DRAFT      - student is working, not yet submitted
+ *   PENDING    - submitted, awaiting teacher grading
+ *   GRADED     - teacher has set a final score (not yet visible to student)
+ *   PUBLISHED  - grade is visible to the student
+ *   RETURNED   - teacher sent it back for revision
  *
  * Late submissions use is_late: boolean on the Submission object itself.
  */

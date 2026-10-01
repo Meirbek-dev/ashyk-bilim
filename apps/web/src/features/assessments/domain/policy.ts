@@ -1,5 +1,5 @@
 /**
- * AssessmentPolicy — unified policy view model.
+ * AssessmentPolicy - unified policy view model.
  *
  * Aggregates due-date, attempt limit, late penalty, and anti-cheat settings
  * from any assessment type into one shape. Each kind provides a

@@ -6,7 +6,7 @@
  *
  * Client-side: uses credentials:"include" so the BFF session cookie is sent
  * automatically. Sessions are server-side records with a sliding idle
- * timeout — there is no refresh token and nothing to rotate: a 401 outside
+ * timeout - there is no refresh token and nothing to rotate: a 401 outside
  * the auth pages simply sends the browser to the login page.
  */
 
@@ -469,7 +469,7 @@ export interface ApiResultEnvelope<T> {
 }
 
 /**
- * Like `apiJson`, but also returns the response headers — needed wherever the
+ * Like `apiJson`, but also returns the response headers - needed wherever the
  * contract answers with an `ETag` version (draft saves, grade saves).
  */
 export async function apiResult<T = unknown>(

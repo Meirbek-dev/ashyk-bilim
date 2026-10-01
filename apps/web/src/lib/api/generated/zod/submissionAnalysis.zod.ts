@@ -16,7 +16,7 @@ export const SubmissionAnalysis = zod.object({
       zod
         .uuid()
         .describe(
-          'The analysed file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
+          'The analysed file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.',
         ),
       zod.null(),
     ])
@@ -28,7 +28,7 @@ export const SubmissionAnalysis = zod.object({
   run_id: zod.union([zod.uuid(), zod.null()]).optional(),
   status: zod.string(),
   submission_id: zod
-    .union([zod.uuid().describe('The analysed assessment submission — `null` for a file attempt.'), zod.null()])
+    .union([zod.uuid().describe('The analysed assessment submission - `null` for a file attempt.'), zod.null()])
     .optional(),
   triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
 })

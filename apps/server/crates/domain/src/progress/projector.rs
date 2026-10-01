@@ -39,7 +39,7 @@ pub const LEARNER_JOB: &str = "progress:learner";
 
 /// How long a post-commit re-projection holds the response (UX-209): far
 /// under the 30 s request timeout, so a busy member lock never turns a
-/// committed write into a 408 — the rest goes on in the background, with a
+/// committed write into a 408 - the rest goes on in the background, with a
 /// retrying job queued behind it.
 const INLINE_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 
@@ -112,7 +112,7 @@ impl ProgressProjector {
 
     // ── Entry points for write paths ────────────────────────────────────
 
-    /// After the learner's own submission work (start, save, submit) —
+    /// After the learner's own submission work (start, save, submit) -
     /// working on a course enrols them. A staff `preview` (UX-182) neither
     /// enrols nor projects. Never fails the caller: projection errors are
     /// logged and the next write (or a backfill) repairs them.
@@ -128,7 +128,7 @@ impl ProgressProjector {
     }
 
     /// After a change the learner did not make (grade, publish, deadline
-    /// extension, timer auto-submit): re-projects without enrolling —
+    /// extension, timer auto-submit): re-projects without enrolling -
     /// BUG-251, a grader's action never creates a trail run.
     ///
     /// Goes through [`Self::after_commit`] (BUG-313/314): a busy member lock
@@ -208,7 +208,7 @@ impl ProgressProjector {
             return Ok(());
         };
         // BUG-260 / BUG-270: a non-member's grade is recorded (the row) and
-        // nothing more — no progress, completion, certificate or XP.
+        // nothing more - no progress, completion, certificate or XP.
         if !self
             .project(
                 assessment.course_id,
@@ -346,8 +346,8 @@ impl ProgressProjector {
 
     /// The one per-member projection entry (BUG-270): one activity's row
     /// (when given) and the course aggregate, written under the member's
-    /// trail lock with the run re-checked inside it. `enrol` — the learner's
-    /// own work, never a grader's (BUG-251) — creates the run instead: the
+    /// trail lock with the run re-checked inside it. `enrol` - the learner's
+    /// own work, never a grader's (BUG-251) - creates the run instead: the
     /// run is what `learner-state.enrolled` reads, and the legacy created it
     /// on the first submission too. Returns whether the user is a member; a
     /// non-member is left alone (BUG-260/268/269) and the caller fires no
@@ -381,7 +381,7 @@ impl ProgressProjector {
         }
         if joined {
             // BUG-289: a submission that (re)creates the run re-projects the
-            // whole member — grades published while they were away too.
+            // whole member - grades published while they were away too.
             let (_, rejoin) = self
                 .reproject_member_on(&mut tx, course_id, user_id)
                 .await?;
@@ -433,7 +433,7 @@ impl ProgressProjector {
         }
         let weights = ab_db::progress::list_assessment_weights(&mut *conn, course_id).await?;
         let mut write = aggregate_course(course_id, user_id, &rows, &weights);
-        // BUG-276: completion is a member's — a leaver keeps the counts, not
+        // BUG-276: completion is a member's - a leaver keeps the counts, not
         // the completion or the certificate (the caller holds the trail lock).
         if !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
             write.certificate_eligible = false;
@@ -450,10 +450,10 @@ impl ProgressProjector {
         Ok((row, newly_completed))
     }
 
-    /// Re-aggregate every member of a course (trail run; BUG-268) — after an activity is
+    /// Re-aggregate every member of a course (trail run; BUG-268) - after an activity is
     /// (un)published or deleted, so `total_required_count` follows the
     /// published set. Every writer of `activities.published` (the curriculum
-    /// toggle, assessment lifecycle transitions — studio + scheduler — and
+    /// toggle, assessment lifecycle transitions - studio + scheduler - and
     /// file-submission publish) flips the flag in its own transaction and
     /// calls this once it committed (BUG-232), through
     /// [`Self::after_course_change`] (BUG-310).
@@ -474,7 +474,7 @@ impl ProgressProjector {
 
     /// Repair projections for every member of one course (or all; BUG-268),
     /// each under the member's trail lock (BUG-270). A member whose lock
-    /// stays busy past the wait is logged and skipped — never every member
+    /// stays busy past the wait is logged and skipped - never every member
     /// and course after it (BUG-272); the last error is returned.
     pub async fn backfill(&self, course_id: Option<CourseId>) -> Result<BackfillReport> {
         let courses = match course_id {
@@ -531,7 +531,7 @@ impl ProgressProjector {
     }
 
     /// Every writer that changes what a hand-in pays for lateness, after
-    /// commit (BUG-312): the assessment policy (`user_id: None` — every
+    /// commit (BUG-312): the assessment policy (`user_id: None` - every
     /// learner's hand-ins) or one learner's override. See
     /// [`Self::after_commit`]; `granted_by` signs the re-score entries.
     pub async fn after_lateness_change(
@@ -704,7 +704,7 @@ impl ProgressProjector {
 
     /// [`Self::reproject_member`] for the backfill: a repair writes the
     /// projection (and certificates, inside it) but fires no XP/analytics
-    /// hooks — the completions it finds happened long ago, often before the
+    /// hooks - the completions it finds happened long ago, often before the
     /// cutover that zeroed gamification (DECISIONS Q-2026-09-06-1 c).
     async fn repair_member(&self, course_id: CourseId, user_id: UserId) -> Result<Option<usize>> {
         let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, false).await?
@@ -880,7 +880,7 @@ pub(crate) fn project_submissions(
         .collect();
     // The grade of record is a released one (BUG-180 / BUG-187): a pending,
     // saved or returned attempt never scores the activity, whatever its
-    // partial score — `GradeKey` is the gradebook's order too.
+    // partial score - `GradeKey` is the gradebook's order too.
     let best = submitted
         .iter()
         .copied()
@@ -1083,7 +1083,7 @@ pub(crate) const fn progress_is_completed(row: &ActivityProgressRow) -> bool {
 }
 
 /// Legacy `recalculate_course_progress` arithmetic over the required rows
-/// (`rows` is the published set — `list_course_progress_rows` filters).
+/// (`rows` is the published set - `list_course_progress_rows` filters).
 pub(crate) fn aggregate_course(
     course_id: CourseId,
     user_id: UserId,

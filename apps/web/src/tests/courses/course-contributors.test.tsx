@@ -187,7 +187,7 @@ describe('course collaboration (v2 roster)', () => {
   })
 
   // UX-251: the approval also refreshes the learner-state behind the landing CTA
-  // (staff never enrol — «Начать курс» would 409).
+  // (staff never enrol - «Начать курс» would 409).
   it('invalidates the learner-state when the poll sees the approval', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {

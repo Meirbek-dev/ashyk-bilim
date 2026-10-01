@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 // Quick-creating a code challenge from the curriculum "Add Activity" dialog
 // sent the legacy body (`kind: 'CODE_CHALLENGE'`, `course_id`, `policy.settings_json`)
-// to `POST assessments`, which v2 rejects with 422 — the teacher saw a raw
+// to `POST assessments`, which v2 rejects with 422 - the teacher saw a raw
 // validation error and no activity. The v2 body is
 // `{chapter_id, kind, title, description, grading_type}`.
 

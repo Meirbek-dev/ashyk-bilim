@@ -188,7 +188,7 @@ export function createEditorExtensions(options: EditorKernelOptions): EditorExte
         }),
         // Markdown ↔ Tiptap serialization (used by AI toolkit insertMarkdown)
         Markdown.configure({ html: true, transformPastedText: true }),
-        // Character count without hard limit — used by toolbar word/char stats
+        // Character count without hard limit - used by toolbar word/char stats
         CharacterCount,
         // Adds has-focus / is-focused CSS classes to focused nodes
         Focus.configure({ className: 'has-focus', mode: 'all' }),

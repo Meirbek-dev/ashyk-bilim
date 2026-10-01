@@ -45,7 +45,7 @@ export interface AssessmentChromeProps {
  * Renders the kind label, title, description, due-date badge, timer badge,
  * returned-for-revision alert, and anti-cheat notice.
  *
- * Deliberately does NOT render a save-state badge — that lives exclusively in
+ * Deliberately does NOT render a save-state badge - that lives exclusively in
  * AssessmentActionBar so students see it in exactly one place.
  */
 export function AssessmentChrome({

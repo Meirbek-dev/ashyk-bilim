@@ -21,7 +21,7 @@ export function gradeOfRecord(
 }
 
 /**
- * UX-224: the verdict a hand-in toast states — the counted result (projection
+ * UX-224: the verdict a hand-in toast states - the counted result (projection
  * score + passed, what the result card shows), falling back to this attempt's
  * released score. `null` while the score is not released.
  */

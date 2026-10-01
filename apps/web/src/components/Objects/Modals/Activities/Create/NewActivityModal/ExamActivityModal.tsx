@@ -136,7 +136,7 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
         if (courseUuidClean) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid)
           // A fresh assessment is unpublished, so the learner activity page
-          // (which reads the published outline) cannot show it — go to the studio.
+          // (which reads the published outline) cannot show it - go to the studio.
           router.push(`/dash/courses/${courseUuidClean}/activity/${activityUuidClean}/studio`)
         } else {
           router.push('/courses')

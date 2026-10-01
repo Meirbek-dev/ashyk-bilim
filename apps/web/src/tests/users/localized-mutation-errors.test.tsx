@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-247: a failed role replacement and a rejected chapter rename speak the
-// page language through the error-code catalog — never the raw
+// page language through the error-code catalog - never the raw
 // `Error.message` («Network request failed») or the server's English title
 // («Validation failed»).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

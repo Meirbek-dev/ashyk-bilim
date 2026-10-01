@@ -8,7 +8,7 @@ vi.mock('@/lib/api-client', () => ({ apiJson }))
 import { getCourses } from '@services/courses/courses'
 
 describe('catalog paging', () => {
-  // UX-275: /ru?page=-1 rendered «Пока нет курсов» — the cursor walk never ran.
+  // UX-275: /ru?page=-1 rendered «Пока нет курсов» - the cursor walk never ran.
   it('reads a missing, junk, zero or negative ?page= as page 1', () => {
     expect(getPageParam({})).toBe(1)
     expect(getPageParam({ page: 'abc' })).toBe(1)

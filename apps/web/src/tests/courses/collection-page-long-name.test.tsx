@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-278: a collection name that is one long word widened a 390 px phone page
-// (scrollWidth 956) — the heading and description must wrap anywhere.
+// (scrollWidth 956) - the heading and description must wrap anywhere.
 import { render, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { describe, expect, it, vi } from 'vite-plus/test'

@@ -2,7 +2,7 @@
 //!
 //! Every user-visible failure mode has exactly one entry here. The wire code is
 //! the kebab-case string; the frontend's i18n catalogs key off it. Adding a code:
-//! add one row to the macro invocation — the snapshot test below makes the
+//! add one row to the macro invocation - the snapshot test below makes the
 //! addition visible in the diff, and a sync script propagates codes to the web
 //! app's message catalogs (phase P9).
 
@@ -36,7 +36,7 @@ macro_rules! error_codes {
                 match self { $(Self::$variant => $title),+ }
             }
 
-            /// Every registered code — used by the registry snapshot test and
+            /// Every registered code - used by the registry snapshot test and
             /// the i18n sync script.
             pub const ALL: &'static [Self] = &[$(Self::$variant),+];
         }

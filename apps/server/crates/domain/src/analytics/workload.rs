@@ -2,7 +2,7 @@
 //!
 //! The legacy fed this from `manual_assessment_submissions`, which was
 //! always empty. v2 uses the real thing: `pending` submissions are the
-//! backlog (any kind — every kind can need hand grading), and feedback
+//! backlog (any kind - every kind can need hand grading), and feedback
 //! latency is measured on graded submissions of assessments whose
 //! `grading_mode` is not `auto`.
 
@@ -37,7 +37,7 @@ pub fn build_teacher_workload(
     build_workload_for_courses(ctx, filters, None)
 }
 
-/// The workload over a subset of the context's courses (`None` = all) — the
+/// The workload over a subset of the context's courses (`None` = all) - the
 /// admin overview compares teachers this way instead of reloading a context
 /// per teacher as the legacy did.
 #[must_use]

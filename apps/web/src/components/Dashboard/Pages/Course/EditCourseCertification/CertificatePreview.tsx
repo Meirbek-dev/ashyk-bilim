@@ -200,7 +200,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <span>{t('instructor')}</span>
                 </div>
                 <div className="text-foreground text-sm font-medium">
-                  {certificateInstructor || (sample ? t('instructorName') : '—')}
+                  {certificateInstructor || (sample ? t('instructorName') : '-')}
                 </div>
               </div>
 

@@ -13,7 +13,7 @@ export const CreatedUpload = zod.object({
   put_url: zod
     .string()
     .describe(
-      'PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` — the URL writes the\nobject once; a replay is a 412.',
+      'PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` - the URL writes the\nobject once; a replay is a 412.',
     ),
 })
 

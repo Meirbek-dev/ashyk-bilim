@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 // BUG-158: a teacher assigns a gate (or the last attempt is spent) while the
 // learner sits on the result page. The retry then 403s with a `DisabledReason`
-// in `detail` — the page refetches attempt-state so the gate card shows,
+// in `detail` - the page refetches attempt-state so the gate card shows,
 // instead of toasting «У вас нет прав…».
 // UX-097: a pending hand-in with attempts left keeps the bottom bar neutral
 // («Ожидание оценки»); the retake is the entry card's secondary control.
@@ -134,7 +134,7 @@ describe('InlineAssessmentWorkspace (BUG-158)', () => {
     expect(mocks.toastApiError).not.toHaveBeenCalled()
   })
 
-  it('still toasts a plain 403 — and refetches attempt-state so the page follows (UX-153)', async () => {
+  it('still toasts a plain 403 - and refetches attempt-state so the page follows (UX-153)', async () => {
     mocks.vm = { ...base, recommendedAction: 'viewResult', isResultVisible: true, canSubmit: true }
     mocks.apiJson.mockRejectedValueOnce(new APIError({ code: 'forbidden', status: 403, message: 'denied' }))
     const { invalidate } = renderWorkspace()

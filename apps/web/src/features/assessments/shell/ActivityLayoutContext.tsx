@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
  *
  * - CONTENT: default layout (outline rail + content zone)
  * - PREFLIGHT: assessment entry card is shown
- * - ACTIVE_ATTEMPT: full-width takeover — outline rail hidden, global nav hidden
+ * - ACTIVE_ATTEMPT: full-width takeover - outline rail hidden, global nav hidden
  * - RESULT: post-submit result card shown
  *
  * The mode is reflected on `document.documentElement.dataset.layoutMode` so

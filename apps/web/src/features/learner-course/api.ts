@@ -18,7 +18,7 @@ export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = tru
 
 /**
  * After a hand-in (quiz submit, file submit, …): the outline sidebar, header
- * badge, footer CTA and course progress read the learner-state projection —
+ * badge, footer CTA and course progress read the learner-state projection -
  * the client query here plus the server-rendered activity runtime.
  */
 export async function refreshLearnerCourseState(queryClient: QueryClient, router: { refresh: () => void }) {
@@ -33,7 +33,7 @@ export async function refreshLearnerCourseState(queryClient: QueryClient, router
 
 /**
  * The one progress source for the course page: the server's aggregate
- * (`progress` — only what is required of this learner, BUG-318: an
+ * (`progress` - only what is required of this learner, BUG-318: an
  * assessment they are off the allowlist of does not count) plus the
  * outline's completed ids for the per-activity checkmarks. `activityCount`
  * is every published activity (UX-119: 0 → nothing to open).
@@ -42,7 +42,7 @@ export function learnerCourseProgress(state: LearnerCourseState | null | undefin
   const activities = state?.outline.flatMap(chapter => chapter.activities) ?? []
   return {
     completedIds: new Set(activities.filter(activity => activity.complete).map(activity => activity.id)),
-    /** Not required of this learner (BUG-318) — left out of every client-side tally. */
+    /** Not required of this learner (BUG-318) - left out of every client-side tally. */
     optionalIds: new Set(activities.filter(activity => !activity.required).map(activity => activity.id)),
     completed: state?.progress.completed_required_count ?? 0,
     total: state?.progress.total_required_count ?? 0,

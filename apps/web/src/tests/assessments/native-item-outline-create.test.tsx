@@ -6,8 +6,8 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 // "New question → Choice" in the studio outline: the Base UI menu item fires
 // `onClick` (not `onSelect`, which was a dead prop), and the create body is the
-// v2 `CreateItemRequest` — `{title, max_score, body}` with a lowercase-tagged
-// body — rather than the uppercase editor state, which the API 422s.
+// v2 `CreateItemRequest` - `{title, max_score, body}` with a lowercase-tagged
+// body - rather than the uppercase editor state, which the API 422s.
 
 const mocks = vi.hoisted(() => ({
   apiJson: vi.fn(),

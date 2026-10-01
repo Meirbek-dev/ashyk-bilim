@@ -37,9 +37,9 @@ const arbEditorStateSnapshot: fc.Arbitrary<ToolbarStateSnap> = fc
     isActiveResults: fc.array(fc.boolean(), { minLength: 13, maxLength: 13 }),
     canUndo: fc.boolean(),
     canRedo: fc.boolean(),
-    // getAttributes('codeBlock').language — string | undefined
+    // getAttributes('codeBlock').language - string | undefined
     codeBlockLanguage: fc.oneof(fc.constant(undefined), fc.string({ minLength: 0, maxLength: 40 })),
-    // getAttributes('link').href — string | undefined
+    // getAttributes('link').href - string | undefined
     linkHref: fc.oneof(fc.constant(undefined), fc.string({ minLength: 0, maxLength: 200 })),
   })
   .map(({ isActiveResults, canUndo, canRedo, codeBlockLanguage, linkHref }) => {

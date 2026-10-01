@@ -18,7 +18,7 @@ interface EditorLinkDialogProps {
 }
 
 /**
- * Accessible inline link editor — replaces the native browser prompt().
+ * Accessible inline link editor - replaces the native browser prompt().
  * Renders as a floating panel anchored to the toolbar.
  */
 export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLinkDialogProps) {

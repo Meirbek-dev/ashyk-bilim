@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { APIError } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
 
-// UX-244: field errors bound inline are the message — no second toast that outlives a later save.
+// UX-244: field errors bound inline are the message - no second toast that outlives a later save.
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), dismiss: vi.fn() } }))
 vi.mock('next-intl', () => ({

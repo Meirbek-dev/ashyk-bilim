@@ -709,7 +709,7 @@ pub async fn remediation_session(
     ))
 }
 
-/// The newest remediation session on a submission — `null` when none —
+/// The newest remediation session on a submission - `null` when none -
 /// for whoever may read the work (the grader's gate card, UX-115).
 #[utoipa::path(
     get, path = "/ai/remediation/{submission_id}/latest", tag = "ai",
@@ -765,8 +765,8 @@ pub async fn complete_remediation(
 }
 
 /// A learner's sessions: their own, or anyone's with the platform-scoped
-/// `platform:read` (platform admins). Course staff — instructors,
-/// contributors — do not have it and get 403 for another learner.
+/// `platform:read` (platform admins). Course staff - instructors,
+/// contributors - do not have it and get 403 for another learner.
 #[utoipa::path(
     get, path = "/ai/remediation/student/{user_id}", tag = "ai",
     params(("user_id" = UserId, Path, description = "Learner id")),

@@ -18,8 +18,8 @@ interface ActivityAutosaveOptions {
 // payloads replace the queued one (their callers wait for it) and are sent
 // with the version the previous write acknowledged. A debounced payload is
 // bound to its activity, so a hook reused for another lesson never sends it
-// there. Once a 412/403 stops the lane, every save still waiting — and every
-// later manual Save — rejects with that error: a write that did not happen
+// there. Once a 412/403 stops the lane, every save still waiting - and every
+// later manual Save - rejects with that error: a write that did not happen
 // never reports success.
 interface Lane {
   timer: ReturnType<typeof setTimeout> | null
@@ -94,7 +94,7 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
   }, [updateActivity])
 
   // The activity `version` of the last save (UX-027): the loaded one until the
-  // first save answers, then whatever the server handed back — per activity.
+  // first save answers, then whatever the server handed back - per activity.
   // After a 412 (another tab saved first) this activity's autosave stops;
   // the notice offers a reload.
   const lanes = useRef(new Map<string, Lane>())

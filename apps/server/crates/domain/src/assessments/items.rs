@@ -224,7 +224,7 @@ pub struct MatchingLearnerBody {
     pub right: Vec<MatchingOption>,
 }
 
-/// Internally tagged on `kind` — the wire and storage shape.
+/// Internally tagged on `kind` - the wire and storage shape.
 ///
 /// `MatchingLearner` shares the `matching` tag but is only ever written
 /// (the learner read); an incoming `matching` body always parses as the
@@ -324,7 +324,7 @@ impl ItemBody {
         value
     }
 
-    /// Parse the storage form (unknown `schema_version`s parse as v1 — the
+    /// Parse the storage form (unknown `schema_version`s parse as v1 - the
     /// only version so far; a future bump adds an upgrade step here).
     pub fn from_stored(value: &serde_json::Value) -> Result<Self, serde_json::Error> {
         serde_json::from_value(value.clone())
@@ -356,7 +356,7 @@ pub struct ReadinessIssue {
     /// Stable machine key, e.g. `choice.options_missing`.
     pub code: String,
     pub message: String,
-    /// `blocker` | `warning` | `advice` — every current rule is a blocker.
+    /// `blocker` | `warning` | `advice` - every current rule is a blocker.
     pub severity: &'static str,
     /// `details` | `questions` | `policy` | `audience` | `publish`.
     pub area: &'static str,
@@ -554,7 +554,7 @@ impl MatchingBody {
 impl ItemBody {
     /// Structural rules refused at write time, not just at publish: the
     /// grader matches choice answers by option id (BUG-199), so an item
-    /// whose options share an id can never grade right — 422
+    /// whose options share an id can never grade right - 422
     /// `choice.option_id_duplicate` on `body.options`.
     pub fn validate(&self) -> ab_core::Result<()> {
         let fail = |field: &str, code: &str, message: &str| {
@@ -573,7 +573,7 @@ impl ItemBody {
                 "option ids must be unique",
             );
         }
-        // UX-143: size caps — a list of options/fields/pairs is bounded like
+        // UX-143: size caps - a list of options/fields/pairs is bounded like
         // the item count; BUG-209: every free-text field like a description
         // (1.9 MB option texts sailed through on the prompt cap alone).
         let (texts, entries) = self.sized_fields();

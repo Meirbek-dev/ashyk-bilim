@@ -38,7 +38,7 @@ const learnerState = {
     { id: 'c1', index: 0, title: 'Введение', activities: [activity('a1', true), activity('a2', false)] },
     { id: 'c2', index: 1, title: 'Уроки', activities: [activity('a3', true), activity('a4', false)] },
   ],
-  // BUG-318: the server's aggregate — a4 is off this learner's allowlist, so 2 of 3.
+  // BUG-318: the server's aggregate - a4 is off this learner's allowlist, so 2 of 3.
   progress: { completed_required_count: 2, total_required_count: 3, progress_pct: 66.67 },
   next_action: { id: 'start', activity_id: 'a2' },
 } as unknown as LearnerCourseState

@@ -16,7 +16,7 @@ export const RemediationSession = zod.object({
       zod
         .uuid()
         .describe(
-          'The remediated file-submission attempt — `null` for a submission.\nExactly one of the two ids is set.',
+          'The remediated file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.',
         ),
       zod.null(),
     ])
@@ -33,7 +33,7 @@ export const RemediationSession = zod.object({
     .describe('Remediation session lifecycle (legacy string states).'),
   student_user_id: zod.uuid(),
   submission_id: zod
-    .union([zod.uuid().describe('The remediated assessment submission — `null` for a file attempt.'), zod.null()])
+    .union([zod.uuid().describe('The remediated assessment submission - `null` for a file attempt.'), zod.null()])
     .optional(),
   test: zod.looseObject({}),
   updated_at_unix: zod.int(),

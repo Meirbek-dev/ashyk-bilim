@@ -5,14 +5,14 @@
  * transformer only papers over two things the generator needs and the Rust
  * side does not guarantee yet:
  *
- *  1. Dangling `$ref`s — utoipa emits a reference for every `#[param]` enum
+ *  1. Dangling `$ref`s - utoipa emits a reference for every `#[param]` enum
  *     but only registers schemas that are reachable from a body. Missing
  *     schemas are filled in from `KNOWN_SCHEMAS` (docs/FINDINGS.md #25).
  *  2. Duplicate `operationId`s across tags (`get_run` in `ai` and `code`,
- *     `review_queue`, `export_csv`, `save_draft`) — Orval's tags-split index
+ *     `review_queue`, `export_csv`, `save_draft`) - Orval's tags-split index
  *     re-exports every tag file, so identical names collide. Duplicates are
  *     renamed `<tag>_<operationId>` for every occurrence (deterministic).
- *  3. Binary responses (`application/pdf` — the certificate PDF) would make
+ *  3. Binary responses (`application/pdf` - the certificate PDF) would make
  *     Orval type the fetcher as `Blob`, which `orvalMutator` (JSON only)
  *     cannot satisfy. They are re-declared as `text/plain` so the generated
  *     fetcher types like the CSV exports; binaries are downloaded through
@@ -54,7 +54,7 @@ function fillDanglingRefs(spec) {
     const known = KNOWN_SCHEMAS[name]
     if (!known) {
       throw new Error(
-        `openapi.v2.json references unknown schema "${name}" — add it to KNOWN_SCHEMAS or fix the contract`,
+        `openapi.v2.json references unknown schema "${name}" - add it to KNOWN_SCHEMAS or fix the contract`,
       )
     }
     console.warn(`[orval] filling dangling schema ref "${name}" (contract defect, see docs/FINDINGS.md)`)

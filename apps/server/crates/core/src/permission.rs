@@ -1,7 +1,7 @@
 //! The RBAC permission model, ported from the legacy `resource:action:scope`
 //! string scheme (`apps/api/src/security/rbac.py`, `src/db/permission_enums.py`).
 //!
-//! Matching semantics are verified against the legacy implementation —
+//! Matching semantics are verified against the legacy implementation -
 //! see `legacy_has_perm_candidate_table_is_honored` for the case-by-case
 //! port and the one documented (unreachable-on-real-data) delta. Legacy's
 //! scope hierarchy (`all` > `platform` > `assigned` > `own`) lives partly
@@ -262,7 +262,7 @@ mod tests {
     /// pattern legacy accepted must be accepted here for the same request.
     ///
     /// Known deliberate delta: legacy did NOT match `resource:action:*`
-    /// grants (its candidate list omitted that shape) — ours does. No seeded
+    /// grants (its candidate list omitted that shape) - ours does. No seeded
     /// or user-visible grant ever used that shape, so behavior is identical
     /// on real data; ours is simply the consistent reading. The legacy
     /// `assigned` scope is exercised once contributor semantics land.

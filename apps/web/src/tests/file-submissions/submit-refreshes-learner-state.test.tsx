@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // Critic 9 F15: after «Отправить файлы» the header badge stayed «Не начато»
-// and the footer «Начать» until a reload — the file submit must refresh the
+// and the footer «Начать» until a reload - the file submit must refresh the
 // learner-state projection the way the quiz submit does.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -81,12 +81,12 @@ describe('FileSubmissionWorkspace submit', () => {
     await waitFor(() => expect(mocks.submit).toHaveBeenCalledWith('fs-1', expect.any(Array), 1))
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course'] }))
     // UX-097: the activity runtime is seeded from the server prop (`initialData`),
-    // so `router.refresh()` alone never reached the header chip — invalidate it too.
+    // so `router.refresh()` alone never reached the header chip - invalidate it too.
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['student-activity'] })
     expect(mocks.refresh).toHaveBeenCalled()
   })
 
-  // BUG-158: a gate assigned while the result was open — the new-attempt 403
+  // BUG-158: a gate assigned while the result was open - the new-attempt 403
   // names the reason; refetch the attempt and the learner's sessions, no toast.
   it('refetches the attempt and the gate on a gated new attempt', async () => {
     const { APIError } = await import('@/lib/api/assertSuccess')

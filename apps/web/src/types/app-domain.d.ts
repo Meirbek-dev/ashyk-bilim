@@ -231,7 +231,7 @@ declare global {
       created_at: string
       [key: string]: unknown
     }
-    /** The name signed on the certificate (config instructor, else the course creator) — what the PDF prints. */
+    /** The name signed on the certificate (config instructor, else the course creator) - what the PDF prints. */
     instructor_name?: string | null
     /** The public verification view names the holder (UX-300); issued listings do not. */
     holder?: { display_name: string }

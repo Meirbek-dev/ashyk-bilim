@@ -7,7 +7,7 @@ pub struct Role {
     /// i18n key (frontend catalogs own the display strings of seeded roles).
     pub display_name_key: String,
     pub description_key: String,
-    /// Raw display text — custom roles only; `null` on seeded roles.
+    /// Raw display text - custom roles only; `null` on seeded roles.
     pub display_name: Option<String>,
     pub description: Option<String>,
     pub priority: i32,

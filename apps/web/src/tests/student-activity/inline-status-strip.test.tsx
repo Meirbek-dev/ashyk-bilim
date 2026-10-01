@@ -53,13 +53,13 @@ function renderStrip(attemptsUsed: number, strip = runtime) {
 }
 
 describe('InlineStatusStrip (UX-009)', () => {
-  it('shows no progress chip to staff previewing — they are never members (UX-194)', () => {
+  it('shows no progress chip to staff previewing - they are never members (UX-194)', () => {
     renderStrip(1, { ...runtime, permissions: { ...runtime.permissions, staff_preview: true } })
     expect(screen.queryByText('Не начато')).toBeNull()
     expect(screen.getByText('Экзамен')).toBeInTheDocument()
   })
 
-  it('drops the draft chip when attempts are closed — the leftover draft is not continuable (UX-237)', () => {
+  it('drops the draft chip when attempts are closed - the leftover draft is not continuable (UX-237)', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(queryKeys.assessments.attemptState('asm-1'), {
       attempts_used: 1,

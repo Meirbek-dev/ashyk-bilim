@@ -307,7 +307,7 @@ describe('v2 learner submissions', () => {
   })
 
   // BUG-238: a draft behind the assessment's content is re-opened (the server
-  // re-syncs it) and the items reload — never the draft-conflict dialog.
+  // re-syncs it) and the items reload - never the draft-conflict dialog.
   it('reopens a draft the teacher changed under it instead of a conflict', async () => {
     const starts: string[] = []
     let itemGets = 0
@@ -333,7 +333,7 @@ describe('v2 learner submissions', () => {
       return parse!(p.endsWith('/me') ? [fixture] : fixture)
     })
     // The exam page: items from `useAssessmentAttempt` (keyed by activity),
-    // submit from the hook (keyed by assessment) — the re-sync must reach them.
+    // submit from the hook (keyed by assessment) - the re-sync must reach them.
     const { result } = renderHook(
       () => ({
         attempt: useAssessmentAttempt(activityId),

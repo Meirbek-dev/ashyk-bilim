@@ -2,10 +2,10 @@
 //!
 //! Matching is `search_matches` (UX-222, shared with `courses?q=`): every
 //! word matches at a word start (UX-152 prefix), a one-character word only
-//! whole and unfolded, symbols count (`C#`, `C++` — the 'simple' tsvector
+//! whole and unfolded, symbols count (`C#`, `C++` - the 'simple' tsvector
 //! drops them), and Cyrillic look-alikes fold to Latin; `-word` excludes. Hits are ranked by
 //! `ts_rank_cd` over the `search` tsvector, then recency.
-//! ponytail: a regex scan per row, not the GIN index — fine for hundreds of
+//! ponytail: a regex scan per row, not the GIN index - fine for hundreds of
 //! courses; a trigram index on the folded text if the catalogue grows.
 
 use ab_core::Result;
@@ -173,7 +173,7 @@ pub struct UserHitRow {
 
 /// Prefix matches rank above substring matches; active users only.
 ///
-/// (Privacy upgrade over legacy: email is NOT searchable — FINDINGS #16.)
+/// (Privacy upgrade over legacy: email is NOT searchable - FINDINGS #16.)
 /// A one-character word matches only a whole word of the username or
 /// display name, as in course search (UX-238: `c` is not every «…c…»).
 pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 // UX-213: dropped from a quiz's allowlist, attempt-state says ACCESS_RESTRICTED
-// while `submissions/me` still answers — the learner sees their own
+// while `submissions/me` still answers - the learner sees their own
 // published result read-only, not a page error.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'

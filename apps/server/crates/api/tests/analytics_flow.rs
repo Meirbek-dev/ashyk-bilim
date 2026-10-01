@@ -1226,7 +1226,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
         .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
         .await;
     assert_eq!(list.json()["total"], 1, "{}", list.text());
-    // BUG-195: four concurrent identical requests reserve the key once —
+    // BUG-195: four concurrent identical requests reserve the key once -
     // one row, four identical 201 replies.
     let race = tokio::join!(
         post_key(body.clone(), "race-1"),
@@ -1362,8 +1362,8 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     assert_eq!(staffer.json()["field_errors"][0]["code"], "staff");
 
     // UX-150: a learner who left (run gone, projection row kept) is not
-    // enrolled anywhere — not at risk, not counted, not a valid target.
-    // UX-155: nor active — only members' activity counts.
+    // enrolled anywhere - not at risk, not counted, not a valid target.
+    // UX-155: nor active - only members' activity counts.
     let bob = learner(&app, "bob").await;
     enrol(&pool, &course_id, bob.user_id, 0.0).await;
     for user in [alice.user_id, bob.user_id] {
@@ -1530,7 +1530,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     assert_eq!(bad_course_sort.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
-/// UX-106: `teacher_user_id` is read-only — an admin inspecting a teacher
+/// UX-106: `teacher_user_id` is read-only - an admin inspecting a teacher
 /// neither saves nor deletes that teacher's views; `GET interventions`
 /// honours `page`/`page_size`; a `reporter` roster row does not put the
 /// course into the reporter's analytics scope; `""` and `"   "` answer the
@@ -1671,7 +1671,7 @@ fn grade(session: &MintedSession, id: &str, body: &serde_json::Value) -> Request
         .unwrap()
 }
 
-/// BUG-194: analytics score the grade of record only — a returned (60) or
+/// BUG-194: analytics score the grade of record only - a returned (60) or
 /// saved-unreleased (100) retake never outranks the published 30 in the
 /// assessment summary, the learner rows, the pass-rate drill-through or
 /// the outcomes CSV (the BUG-187 `GradeKey` rule).
@@ -1729,7 +1729,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     assert_eq!(row["status"], "published", "{row}");
     assert_eq!(row["pending_attempt"], 3, "{row}");
     // UX-142: question tallies and item populations count the grade-of-record
-    // attempts only — Q1 is 1/1 correct, not 1/3.
+    // attempts only - Q1 is 1/1 correct, not 1/3.
     let q1 = body["question_breakdown"]
         .as_array()
         .unwrap()
@@ -1746,7 +1746,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     assert_eq!(q1_item["population_count"], 1, "{q1_item}");
     assert_eq!(q1_item["impacted_count"], 0, "{q1_item}");
     // UX-144: the essay was published under an override without being
-    // scored — no outcome, so it is neither a «critical» question nor an
+    // scored - no outcome, so it is neither a «critical» question nor an
     // impacted item.
     assert!(
         body["question_breakdown"]
@@ -1766,7 +1766,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
         "{}",
         body["item_analytics"]
     );
-    // UX-144: the studio Results item-analytics count the same population —
+    // UX-144: the studio Results item-analytics count the same population -
     // the published attempt only, not the returned / saved retakes, and the
     // unscored essay has no responses.
     let studio = app
@@ -1795,7 +1795,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     assert!(essay["avg_score_pct"].is_null(), "{essay}");
 
     // UX-145: the essay scored 7/10 under the same override is partial
-    // credit above the pass threshold (50) — a correct item for the
+    // credit above the pass threshold (50) - a correct item for the
     // breakdown, not a «critical» one; the studio keeps its avg 70.
     let published = app
         .get_as(&teacher, &format!("/api/v2/submissions/{first}/review"))
@@ -1909,7 +1909,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
 }
 
 /// UX-142: a code-challenge attempt that is graded but not released is not
-/// an outcome — `repeated_failures` appears only once the failing score is
+/// an outcome - `repeated_failures` appears only once the failing score is
 /// published.
 #[sqlx::test(migrations = "../../migrations")]
 async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
@@ -1971,7 +1971,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
 
 /// UX-261: an exam's and a code challenge's «common failures» carry the
 /// catalogued workflow codes as `key` (what the web resolves), the same
-/// two the quiz-side workflow rows use — never ad-hoc `late`/`ungraded`.
+/// two the quiz-side workflow rows use - never ad-hoc `late`/`ungraded`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -2037,7 +2037,7 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
 }
 
 /// BUG-266/267: every course-detail figure counts the members
-/// `enrolled_learners` counts — after two passing learners leave, the
+/// `enrolled_learners` counts - after two passing learners leave, the
 /// chapter/activity drop-off and `certificates_issued` follow (cohort filter
 /// included), and the remaining member's failed quiz does not turn into a
 /// «repeated failures» bottleneck built from the leavers' progress rows.
@@ -2170,7 +2170,7 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
     );
 }
 
-/// BUG-338: `completed` is a share of `enrolled` — learners who finished
+/// BUG-338: `completed` is a share of `enrolled` - learners who finished
 /// earlier are not in `active_7d`, which made the share 300 %.
 #[sqlx::test(migrations = "../../migrations")]
 async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
@@ -2272,7 +2272,7 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
 }
 
 /// BUG-273: the intervention's membership check and insert run under the
-/// learner's trail lock — a leave committing mid-request is a 422
+/// learner's trail lock - a leave committing mid-request is a 422
 /// `not-in-course`, never an intervention for a non-member.
 #[sqlx::test(migrations = "../../migrations")]
 async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
@@ -2320,8 +2320,8 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
     assert_eq!(rows, 0);
 }
 
-/// BUG-287: the course's staff (creator, platform author) never enrol — the
-/// enrol door is a 409 and learner-state says why — and a staff run made
+/// BUG-287: the course's staff (creator, platform author) never enrol - the
+/// enrol door is a 409 and learner-state says why - and a staff run made
 /// before the fix (or a learner who joined the staff) is in no member set:
 /// the gradebook, analytics rates and at-risk count the learners only.
 #[sqlx::test(migrations = "../../migrations")]
@@ -2412,8 +2412,8 @@ async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
     assert!(!listed.contains(&boss.to_string()), "{listed}");
 }
 
-/// UX-192: the data-quality panel counts the attempts it leaves out — staff
-/// previews, and a learner-turned-co-author's earlier attempt — and the
+/// UX-192: the data-quality panel counts the attempts it leaves out - staff
+/// previews, and a learner-turned-co-author's earlier attempt - and the
 /// assessment audit history never lists a preview's grade.
 #[sqlx::test(migrations = "../../migrations")]
 async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: PgPool) {
@@ -2469,9 +2469,9 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     );
 }
 
-/// BUG-304: admin cohort retention counts the member set on both sides — of
+/// BUG-304: admin cohort retention counts the member set on both sides - of
 /// a cohort of three, a leaver and a learner-turned-co-author are out, so
-/// the one active stayer is 1 of 1 — and the data-quality excluded counters
+/// the one active stayer is 1 of 1 - and the data-quality excluded counters
 /// follow the cohort filter like every other figure.
 #[sqlx::test(migrations = "../../migrations")]
 async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPool) {

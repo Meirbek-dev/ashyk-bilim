@@ -30,7 +30,7 @@ function can(session: AuthSession, permsSet: Set<string>, resource: Resource, ac
 /**
  * Authorship IS the `:own` scope: the creator and every active maintainer /
  * contributor (`isCourseAuthor`, `contributor_ids` on the wire) write on the
- * course without any role grant — a plain `user`-role co-author edits like
+ * course without any role grant - a plain `user`-role co-author edits like
  * the creator; a `:platform`-scoped grant covers every course. Mirrors
  * `CoursesService::require_write` / `AssessmentsService::require_scoped` in
  * `apps/server/crates/domain`.
@@ -73,7 +73,7 @@ export function deriveCourseWorkspaceCapabilities(
   const canDeleteCourse = canOwnOrPlatform(session, permsSet, isCreator, Resources.COURSE, Actions.DELETE)
   // Gradebook / review need the server's grading gate (`assessment:grade` platform
   // or authorship). UX-258: the instructor role's `certificate:create:platform`
-  // is not course access — it used to open the workspace of every course.
+  // is not course access - it used to open the workspace of every course.
   const canGrade = canOwnOrPlatform(session, permsSet, isAuthor, Resources.ASSESSMENT, Actions.GRADE)
   const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canGrade
 

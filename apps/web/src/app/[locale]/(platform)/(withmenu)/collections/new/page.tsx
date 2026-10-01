@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 // The session check runs inside the boundary (Next 16: uncached data outside
-// <Suspense> blocks the route — UX-231, UX-253).
+// <Suspense> blocks the route - UX-231, UX-253).
 export default function PlatformNewCollectionPage() {
   return (
     <Suspense fallback={<div className="bg-muted/60 m-8 h-64 animate-pulse rounded-xl" />}>

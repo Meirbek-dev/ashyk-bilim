@@ -201,7 +201,7 @@ async function loadCodeAssessment(activityUuid: string): Promise<CodeAssessmentR
       // v2 has no policy settings_json bucket; code-challenge-specific fields
       // (difficulty/execution_mode/hints/max_submissions/allow_custom_input)
       // have no wire home and fall back to `toCodeChallengeSettings`'s
-      // defaults — see report under "Blocked".
+      // defaults - see report under "Blocked".
       assessment_policy: null,
       items: assessment.items.map(itemFromWire),
     }
@@ -467,7 +467,7 @@ export async function saveCodeChallengeSettings(
   // legacy free-form settings bag doesn't exist on the wire); only `title`
   // has a real v2 home here, so that's all that's patched at the assessment
   // level. Difficulty/execution_mode/hints/max_submissions/allow_custom_input
-  // have nowhere to persist — see report under "Blocked".
+  // have nowhere to persist - see report under "Blocked".
   if (settings.title !== undefined && settings.title !== assessment.title) {
     await apiJson(`assessments/${assessment.assessment_uuid}`, {
       method: 'PATCH',

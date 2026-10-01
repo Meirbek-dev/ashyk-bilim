@@ -29,7 +29,7 @@ export const VerifiedCertificate = zod
       contributor_ids: zod
         .array(zod.uuid())
         .describe(
-          'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant — authorship is the `:own` scope.\nReporters are read-only and not listed.',
+          'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
         ),
       created_at_unix: zod.int(),
       creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
@@ -64,7 +64,7 @@ export const VerifiedCertificate = zod
         display_name: zod.string(),
       })
       .describe('What a verifier learns about the holder: the name on the certificate.'),
-    instructor_name: zod.string().nullish().describe('The name signed on the certificate — what the PDF prints.'),
+    instructor_name: zod.string().nullish().describe('The name signed on the certificate - what the PDF prints.'),
   })
   .describe('The public verification view.')
 

@@ -1,7 +1,7 @@
 import type { Page, Locator } from '@playwright/test'
 
 /**
- * Shared navigation chrome — sidebar/topbar present on all authenticated pages.
+ * Shared navigation chrome - sidebar/topbar present on all authenticated pages.
  */
 export class NavBar {
   public readonly page: Page
@@ -15,7 +15,7 @@ export class NavBar {
 
   public constructor(page: Page) {
     this.page = page
-    // The sidebar "dashboard" link — resilient to label text changes
+    // The sidebar "dashboard" link - resilient to label text changes
     this.dashboardLink = page.getByRole('link', { name: /dashboard/i }).first()
     // Avatar button in the top-right corner
     this.userMenu = page.locator('button[aria-label*="user"], button[aria-label*="profile"], header button').last()

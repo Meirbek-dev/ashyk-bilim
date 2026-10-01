@@ -1,6 +1,6 @@
 //! The work the submission analyst and the remediation generator look at:
 //! an assessment submission or a file-submission attempt, behind one id
-//! (`AiSubjectId`, looked up in both tables — DECISIONS 2026-09-12).
+//! (`AiSubjectId`, looked up in both tables - DECISIONS 2026-09-12).
 
 use ab_clients::storage::Bucket;
 use ab_core::assessments::{FileAttemptStatus, SubmissionStatus};
@@ -43,7 +43,7 @@ impl Subject {
         }
     }
 
-    /// A staff preview (UX-182) — never a grade of record.
+    /// A staff preview (UX-182) - never a grade of record.
     pub(crate) const fn preview(&self) -> bool {
         match self {
             Self::Submission(s) => s.preview,
@@ -107,8 +107,8 @@ impl AiService {
 
     /// Legacy `require_ai_submission_access`, for either subject kind: the
     /// owner once the grade is released to them (BUG-182: 403
-    /// `grade-not-released` before that — the analysis reads the grading),
-    /// or someone who can update the course — anyone else gets 404 (an id
+    /// `grade-not-released` before that - the analysis reads the grading),
+    /// or someone who can update the course - anyone else gets 404 (an id
     /// must not leak that it exists). Work the learner has not handed in
     /// yet is 409, as for the grader (BUG-198: an analysis on a draft could
     /// gate the learner out of their own open attempt).

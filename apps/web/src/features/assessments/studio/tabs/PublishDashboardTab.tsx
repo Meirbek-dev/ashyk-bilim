@@ -236,7 +236,7 @@ export default function PublishDashboardTab({
         <div className="flex items-center gap-2">
           {isPublished || isScheduled || isArchived ? (
             // BUG-171: archived → draft is the only way out of the archive (the API allows it).
-            // UX-200: a published one goes dark for learners — confirm first.
+            // UX-200: a published one goes dark for learners - confirm first.
             <>
               <Button
                 variant="outline"
@@ -283,7 +283,7 @@ export default function PublishDashboardTab({
                 />
                 <PopoverContent align="end" className="w-64 space-y-3 p-3">
                   <p className="text-sm font-medium">{tPublish('schedulePublication')}</p>
-                  {/* UX-112: a publication date is in the future — no 1900–2077 year list. */}
+                  {/* UX-112: a publication date is in the future - no 1900–2077 year list. */}
                   <CalendarDateTimePicker
                     value={scheduledAt}
                     onChange={value => {

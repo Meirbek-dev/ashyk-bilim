@@ -65,7 +65,7 @@ async fn crud_membership_and_visibility(pool: PgPool) {
     // UX-124: the creator sees the delete affordance …
     assert_eq!(created.json()["can_delete"], true);
 
-    // UX-102: `Idempotency-Key` replays the 201 — one row, not two.
+    // UX-102: `Idempotency-Key` replays the 201 - one row, not two.
     let keyed = serde_json::json!({ "name": "Keyed", "public": false });
     let send = || {
         app.send(
@@ -173,7 +173,7 @@ async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
     let owner = curator(&app, "owner").await;
     let foreign_draft = course(&app, &owner, "Foreign draft", false).await;
 
-    // Another curator without read access to the draft can't attach it —
+    // Another curator without read access to the draft can't attach it -
     // and learns nothing about its existence (404).
     let other_user = app
         .create_user("other", "other@example.com", &["instructor"])
@@ -194,7 +194,7 @@ async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::NOT_FOUND);
 }
 
-/// BUG-192: an update is validated before anything is written — an
+/// BUG-192: an update is validated before anything is written - an
 /// unreadable course in `courses` is a 404 and the name stays; and a
 /// collection the caller cannot read is a 404 on PATCH/DELETE too (not a
 /// 403 existence oracle).
@@ -348,7 +348,7 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 2);
 }
 
-/// BUG-190: `collection_listable` shares the course-visibility predicate —
+/// BUG-190: `collection_listable` shares the course-visibility predicate -
 /// a public collection whose only course is usergroup-shared is listed,
 /// searchable and shows the course for the cohort member; anon sees nothing.
 #[sqlx::test(migrations = "../../migrations")]
@@ -528,8 +528,8 @@ async fn stale_if_match_is_refused(pool: PgPool) {
     assert_eq!(current.status, StatusCode::NO_CONTENT, "{}", current.text());
 }
 
-/// UX-317: a delete that loses the race to another delete is 404 — the row
-/// is gone — never a 412 claiming the version moved (`expected == actual`).
+/// UX-317: a delete that loses the race to another delete is 404 - the row
+/// is gone - never a 412 claiming the version moved (`expected == actual`).
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -571,7 +571,7 @@ async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
 }
 
 // UX-322: a curator holding `collection:update:own` who does not own this
-// public collection gets 403 before the body is read — never a 422 that
+// public collection gets 403 before the body is read - never a 422 that
 // lists the accepted fields.
 #[sqlx::test(migrations = "../../migrations")]
 async fn foreign_patch_is_refused_before_the_body(pool: PgPool) {

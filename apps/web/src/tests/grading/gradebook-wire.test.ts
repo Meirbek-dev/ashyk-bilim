@@ -132,7 +132,7 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(matchesGradebookSavedFilter(extended.cells[0]!, 'overdue')).toBe(false)
   })
 
-  // UX-146: scored-unreleased is owed a release, pending is owed a grade — the
+  // UX-146: scored-unreleased is owed a release, pending is owed a grade - the
   // header counts them apart while both stay teacher actions.
   it('counts awaiting-release apart from needs-grading', () => {
     const data = gradebookFromWire(
@@ -164,7 +164,7 @@ describe('gradebookFromWire (UX-013)', () => {
   })
 
   // BUG-175: the cell ranks the published grade of record (attempt 1, 80 %)
-  // while a newer attempt still waits — the queue, filter and count see it.
+  // while a newer attempt still waits - the queue, filter and count see it.
   it('flags a pending attempt behind a published grade of record', () => {
     const data = gradebookFromWire(
       [page([{ ...examCell('published', 80), attempts: 2, pending_attempt: 2, pending_attempt_id: 'submission_2' }])],

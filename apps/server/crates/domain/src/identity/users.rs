@@ -36,7 +36,7 @@ pub struct UsersService {
 }
 
 impl UsersService {
-    /// `user:update:own` — UX-311: the handler checks it before the body.
+    /// `user:update:own` - UX-311: the handler checks it before the body.
     pub fn require_update_own(actor: &Actor) -> Result<()> {
         actor.require(Permission {
             resource: ResourceType::User,
@@ -133,7 +133,7 @@ impl UsersService {
 
     /// Claim the new avatar upload (if any), swap the key and release
     /// exactly the key the UPDATE replaced (equal to the new one only after a
-    /// re-claim, which counted it once more) — one transaction, so a hang-up
+    /// re-claim, which counted it once more) - one transaction, so a hang-up
     /// never leaves a claimed reference without the swap (BUG-255, UX-211).
     async fn replace_avatar(&self, actor: &Actor, upload_id: Option<Uuid>) -> Result<()> {
         let mut tx = self.pool.begin().await?;

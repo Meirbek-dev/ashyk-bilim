@@ -523,7 +523,7 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
         .await;
     assert_eq!(wrong.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(wrong.json()["field_errors"][0]["field"], "code");
-    // A blank code is simply wrong — Zitadel never sees it (UX-211).
+    // A blank code is simply wrong - Zitadel never sees it (UX-211).
     let verify_calls = || async {
         app.zitadel
             .received_requests()
@@ -573,7 +573,7 @@ async fn registration_creates_the_account_and_emails_the_code(pool: PgPool) {
     assert_eq!(events, vec!["account-created", "email-verified"]);
 }
 
-/// UX-273: two overlapping verifies with one code — Zitadel accepts both —
+/// UX-273: two overlapping verifies with one code - Zitadel accepts both -
 /// verify once: the second answers `idempotency-in-progress`, one audit row.
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_email_verifies_audit_once(pool: PgPool) {
@@ -653,7 +653,7 @@ async fn registration_rejects_taken_username_and_email(pool: PgPool) {
 }
 
 /// UX-101: `POST /auth/register` honours `Idempotency-Key` (a retry replays
-/// the 201 — one Zitadel create, one email) and the verification link is
+/// the 201 - one Zitadel create, one email) and the verification link is
 /// prefixed with the `Accept-Language` locale (`/kz/auth/verify-email`).
 /// UX-126: the same header seeds the stored profile `locale`.
 #[sqlx::test(migrations = "../../migrations")]
@@ -975,7 +975,7 @@ async fn password_change_checks_the_current_password_and_revokes_other_sessions(
 }
 
 /// Zitadel reports "new password equals the current one" as an internal
-/// error (code 13, COMMAND-CahN2; captured live 2026-09-13) — the user's
+/// error (code 13, COMMAND-CahN2; captured live 2026-09-13) - the user's
 /// mistake, so a 422 on the field, not a 503.
 #[sqlx::test(migrations = "../../migrations")]
 async fn unchanged_password_is_a_field_error(pool: PgPool) {
@@ -1011,7 +1011,7 @@ async fn unchanged_password_is_a_field_error(pool: PgPool) {
     assert_eq!(res.json()["field_errors"][0]["code"], "password-unchanged");
 }
 
-/// BUG-293: bcrypt reads at most 72 bytes — a 42-letter Cyrillic passphrase
+/// BUG-293: bcrypt reads at most 72 bytes - a 42-letter Cyrillic passphrase
 /// (82 B) is a 422 `password-too-long` on the field at every door, before
 /// Zitadel (which answered 503 / a false «unchanged»).
 #[sqlx::test(migrations = "../../migrations")]
@@ -1068,7 +1068,7 @@ async fn password_over_72_bytes_is_a_field_error_at_every_door(pool: PgPool) {
     );
 }
 
-/// BUG-293: COMMAND-CahN2 is Zitadel's answer to any hashing failure — only
+/// BUG-293: COMMAND-CahN2 is Zitadel's answer to any hashing failure - only
 /// an equal current/new pair is «unchanged»; anything else is not the user's.
 #[sqlx::test(migrations = "../../migrations")]
 async fn opaque_zitadel_hash_failure_is_not_password_unchanged(pool: PgPool) {
@@ -1132,8 +1132,8 @@ async fn login_from(app: &TestApp, ip: &str, body: &serde_json::Value) -> ab_tes
     .await
 }
 
-/// BUG-130 (branch #2): a classroom behind one NAT — every browser shares
-/// `X-Forwarded-For` behind Next — logs in twenty-plus times; only failed
+/// BUG-130 (branch #2): a classroom behind one NAT - every browser shares
+/// `X-Forwarded-For` behind Next - logs in twenty-plus times; only failed
 /// passwords count toward the 20 per 5 min IP cap.
 #[sqlx::test(migrations = "../../migrations")]
 async fn ip_limit_counts_failed_logins_only(pool: PgPool) {
@@ -1170,7 +1170,7 @@ async fn ip_limit_counts_failed_logins_only(pool: PgPool) {
     assert!(res.headers.contains_key(header::RETRY_AFTER));
 }
 
-/// BUG-236: the `mfa-required` step of an MFA login is not a failure — a
+/// BUG-236: the `mfa-required` step of an MFA login is not a failure - a
 /// classroom of TOTP users behind one NAT logs in 25 times (step 1 + code)
 /// and never fills the IP window; a wrong password still counts.
 #[sqlx::test(migrations = "../../migrations")]
@@ -1231,7 +1231,7 @@ async fn login_name_limit_covers_username_and_email_of_one_account(pool: PgPool)
 }
 
 /// BUG-133: the 10-created-per-hour cap counts accounts Zitadel actually
-/// created — a policy-rejected password (422) leaves the budget alone.
+/// created - a policy-rejected password (422) leaves the budget alone.
 #[sqlx::test(migrations = "../../migrations")]
 async fn register_created_limit_ignores_rejected_passwords(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1276,7 +1276,7 @@ async fn register_created_limit_ignores_rejected_passwords(pool: PgPool) {
 }
 
 /// BUG-131: a stolen session cannot brute-force the current password on
-/// `POST /auth/password` — five wrong guesses per 15 min, then 429.
+/// `POST /auth/password` - five wrong guesses per 15 min, then 429.
 #[sqlx::test(migrations = "../../migrations")]
 async fn password_change_limits_wrong_current_password_guesses(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1305,7 +1305,7 @@ async fn password_change_limits_wrong_current_password_guesses(pool: PgPool) {
 }
 
 /// Branch #54: another user's session handle is not the caller's to revoke
-/// — 404, and the other session stays alive.
+/// - 404, and the other session stays alive.
 #[sqlx::test(migrations = "../../migrations")]
 async fn revoking_another_users_session_handle_is_not_found(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1349,7 +1349,7 @@ async fn eleventh_session_evicts_the_oldest(pool: PgPool) {
     assert_eq!(list.json().as_array().unwrap().len(), 10);
 }
 
-/// BUG-277: the cap counts live sessions only — nine already-expired logins
+/// BUG-277: the cap counts live sessions only - nine already-expired logins
 /// still in the registry must not make a new login evict the live one.
 #[sqlx::test(migrations = "../../migrations")]
 async fn expired_sessions_do_not_count_toward_the_cap(pool: PgPool) {
@@ -1528,7 +1528,7 @@ async fn spoofed_forwarded_for_first_hop_is_ignored(pool: PgPool) {
 // ── Profile names (BUG-148) ────────────────────────────────────────────────
 
 /// BUG-148: whitespace-only names are rejected on our side as `required`
-/// before Zitadel sees them — on self-registration and on the admin path,
+/// before Zitadel sees them - on self-registration and on the admin path,
 /// which used to surface Zitadel's code 3 as a 503.
 #[sqlx::test(migrations = "../../migrations")]
 async fn blank_names_are_required_field_errors_on_register_and_admin_create(pool: PgPool) {
@@ -1594,7 +1594,7 @@ async fn blank_names_are_required_field_errors_on_register_and_admin_create(pool
 
 /// UX-157: names lose control/format characters (a bidi override, a
 /// zero-width space) before Zitadel and our row see them; a name with
-/// nothing visible left is 422 `required` — on register and admin create.
+/// nothing visible left is 422 `required` - on register and admin create.
 #[sqlx::test(migrations = "../../migrations")]
 async fn names_are_stripped_of_controls_on_register_and_admin_create(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1683,7 +1683,7 @@ async fn names_are_stripped_of_controls_on_register_and_admin_create(pool: PgPoo
 }
 
 /// BUG-148: a Zitadel code 3 that is not about the password is a 422 on the
-/// named field — never `password-policy`, never a 503 (admin path).
+/// named field - never `password-policy`, never a 503 (admin path).
 #[sqlx::test(migrations = "../../migrations")]
 async fn zitadel_profile_rejection_maps_to_the_named_field(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1742,7 +1742,7 @@ async fn zitadel_profile_rejection_maps_to_the_named_field(pool: PgPool) {
 // ── BUG-203: logins in flight are fenced against account mutations ─────────
 // A slow Zitadel stub (`set_delay`) parks the login after it has read the
 // state it rests on; the mutation lands meanwhile; the login must then end
-// as a fresh one would — never with a session the mutation did not see.
+// as a fresh one would - never with a session the mutation did not see.
 
 async fn mock_methods(app: &TestApp, zid: &str, with_totp: bool, delay_ms: u64, priority: u8) {
     let mut methods = vec!["AUTHENTICATION_METHOD_TYPE_PASSWORD"];
@@ -1859,7 +1859,7 @@ async fn old_password_login_in_flight_during_a_password_change_gets_no_session(p
                 .await;
             assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
             // From now on Zitadel rejects the old password (the fenced
-            // login retries once as a fresh one — BUG-222 — and must fail).
+            // login retries once as a fresh one - BUG-222 - and must fail).
             Mock::given(method("POST"))
                 .and(path("/v2/sessions"))
                 .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
@@ -1972,7 +1972,7 @@ async fn login_in_flight_during_a_role_rewrite_retries_with_the_new_grants(pool:
         login.text()
     );
     // The rewrite lands 100 ms in: usually mid-login (fenced once, then retried), but a
-    // slow runner may read the roles after it — either way one login with the new grants.
+    // slow runner may read the roles after it - either way one login with the new grants.
     assert!(audited(&app, "login-fenced").await <= 1);
     assert_eq!(audited(&app, "login").await, 1);
 }
@@ -2274,7 +2274,7 @@ async fn registration_dropped_mid_flight_still_completes_and_replays(pool: PgPoo
 }
 
 /// BUG-214: the admin connection drops right after `status = disabled` is
-/// committed; `revoke_all` and the audit must still run — no session of a
+/// committed; `revoke_all` and the audit must still run - no session of a
 /// disabled account answers afterwards.
 #[sqlx::test(migrations = "../../migrations")]
 async fn disable_dropped_mid_flight_still_revokes_every_session(pool: PgPool) {
@@ -2332,7 +2332,7 @@ async fn disable_dropped_mid_flight_still_revokes_every_session(pool: PgPool) {
 
 /// BUG-222: the IP cap is counted before the Zitadel round-trip, so a burst
 /// of 40 concurrent wrong passwords against 40 accounts from one IP lets at
-/// most the cap (20) reach Zitadel — the rest are 429 at once, and so is the
+/// most the cap (20) reach Zitadel - the rest are 429 at once, and so is the
 /// next sequential attempt. (A connection dropped mid-check now costs its
 /// attempt: accepted, the alternative was an uncounted spray.)
 #[sqlx::test(migrations = "../../migrations")]
@@ -2395,7 +2395,7 @@ async fn ip_limit_holds_under_a_concurrent_burst(pool: PgPool) {
     );
 }
 
-/// BUG-311: the client hangs up mid-logout — once our session is gone and
+/// BUG-311: the client hangs up mid-logout - once our session is gone and
 /// once Zitadel is still answering its delete. The session is revoked and
 /// the logout audited either way (the web drops its cookie regardless).
 #[sqlx::test(migrations = "../../migrations")]

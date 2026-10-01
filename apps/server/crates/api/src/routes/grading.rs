@@ -30,7 +30,7 @@ const DEFAULT_REVIEW_PAGE: i64 = 25;
 const DEFAULT_GRADEBOOK_PAGE: i64 = 100;
 
 /// `If-Match` as the expected version; `None` when absent (the domain
-/// requires it after its authz gate — UX-108), 422 when not an integer.
+/// requires it after its authz gate - UX-108), 422 when not an integer.
 pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
     let Some(raw) = headers.get(header::IF_MATCH) else {
         return Ok(None);
@@ -380,7 +380,7 @@ pub async fn export_gradebook_csv(
 /// Course gradebook: the grade-of-record attempt per (learner, activity).
 ///
 /// The attempt learner progress scores (best-scored submission, latest
-/// scored file attempt) — assessment submissions and file-submission
+/// scored file attempt) - assessment submissions and file-submission
 /// attempts alike.
 #[utoipa::path(
     get, path = "/courses/{id}/gradebook", tag = "grading",

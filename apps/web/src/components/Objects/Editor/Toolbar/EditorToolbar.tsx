@@ -78,7 +78,7 @@ export function EditorToolbar() {
   // when these specific values change (Requirements 1.4, 2.2, 2.4).
   const toolbarState = useTiptapState(selectToolbarState)
 
-  // Ref for the Embed button — passed to EmbedPanelStore so focus can be
+  // Ref for the Embed button - passed to EmbedPanelStore so focus can be
   // returned to the trigger when the panel closes (Requirement 12.6).
   const embedTriggerRef = useRef<HTMLButtonElement>(null)
   const openEmbedPanel = useEmbedPanelStore(s => s.open)
@@ -113,7 +113,7 @@ export function EditorToolbar() {
       <ToolbarSeparator />
       <InsertButtons editor={editor} />
 
-      {/* Embed button — media insert group (Requirements 3.1, 11.4) */}
+      {/* Embed button - media insert group (Requirements 3.1, 11.4) */}
       <TooltipProvider delay={150}>
         <div
           className="border-border/70 bg-muted/30 ml-3 flex items-center gap-1 rounded-xl border px-1 py-1"

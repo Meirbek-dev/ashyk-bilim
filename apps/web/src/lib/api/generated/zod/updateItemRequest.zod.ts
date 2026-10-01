@@ -156,7 +156,7 @@ export const UpdateItemRequest = zod.object({
             ),
         ])
         .describe(
-          'Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
+          'Internally tagged on `kind` - the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
         ),
       zod.null(),
     ])
@@ -164,7 +164,7 @@ export const UpdateItemRequest = zod.object({
   max_score: zod
     .number()
     .nullish()
-    .describe('BUG-208: at most 10 000 — an unbounded score overflows the grade shares.'),
+    .describe('BUG-208: at most 10 000 - an unbounded score overflows the grade shares.'),
   metadata: zod
     .union([
       zod

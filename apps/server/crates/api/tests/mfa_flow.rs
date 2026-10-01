@@ -1,4 +1,4 @@
-//! TOTP MFA flows — fixtures replicate shapes captured from live Zitadel
+//! TOTP MFA flows - fixtures replicate shapes captured from live Zitadel
 //! (2026-08-16): registration `{details,uri,secret}`, method listing
 //! `authMethodTypes`, wrong code = code 3 with a plain detail.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -100,7 +100,7 @@ async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
     assert!(res.session_cookie().is_none());
 }
 
-/// Branch #13: discarding the pre-MFA Zitadel session is best effort — a
+/// Branch #13: discarding the pre-MFA Zitadel session is best effort - a
 /// Zitadel failure there is logged, and the caller still gets `mfa-required`
 /// with no cookie (never a 503 that would leak the enrolment state).
 #[sqlx::test(migrations = "../../migrations")]
@@ -177,7 +177,7 @@ async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
     app.create_user("mfauser", "mfa@example.com", &["user"])
         .await;
     // Captured live: TOTP failure is code 3 with a plain detail (no
-    // failedAttempts) — unlike password failures.
+    // failedAttempts) - unlike password failures.
     Mock::given(method("POST"))
         .and(path("/v2/sessions"))
         .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
@@ -200,7 +200,7 @@ async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
 
 /// A code sent for an account with no authenticator: Zitadel answers code 9
 /// "Multifactor OTP (OneTimePassword) isn't ready" (COMMAND-3Mif9s, captured
-/// live 2026-09-13) — a bad second factor, not an outage.
+/// live 2026-09-13) - a bad second factor, not an outage.
 #[sqlx::test(migrations = "../../migrations")]
 async fn totp_code_for_an_unenrolled_account_is_invalid_not_an_outage(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -397,7 +397,7 @@ async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
 
 /// BUG-132: activating with no enrolment started answers Zitadel code 5
 /// "Multifactor OTP (OneTimePassword) doesn't exist" (COMMAND-3Mif9s,
-/// captured live 2026-09-13) — the caller's state, a 409, not a 503.
+/// captured live 2026-09-13) - the caller's state, a 409, not a 503.
 #[sqlx::test(migrations = "../../migrations")]
 async fn verifying_without_a_pending_enrolment_is_a_conflict(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -446,7 +446,7 @@ async fn enrolling_twice_is_a_conflict(pool: PgPool) {
     assert_eq!(res.json()["code"], "conflict");
 }
 
-/// UX-254: two enrolment starts in flight at once — the second answers
+/// UX-254: two enrolment starts in flight at once - the second answers
 /// `idempotency-in-progress` while the first is at Zitadel (never registering
 /// a secret of its own), and its retry gets the first tab's pending secret.
 /// Only activation ends the pending enrolment: the next start registers anew.
@@ -502,7 +502,7 @@ async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
 }
 
 /// UX-158: a TOTP login fenced by a role rewrite mid-flight retries without
-/// resending the (now replayed) code — the first attempt verified it — and
+/// resending the (now replayed) code - the first attempt verified it - and
 /// opens the session instead of answering `invalid-totp-code`.
 #[sqlx::test(migrations = "../../migrations")]
 async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {

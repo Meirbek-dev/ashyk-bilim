@@ -190,7 +190,7 @@ describe('Frontend Auth Actions (v2 BFF)', () => {
         headers: new Headers(),
       })
 
-      // `/login` is an auth route — `normalizeReturnTo` (used for post-LOGIN
+      // `/login` is an auth route - `normalizeReturnTo` (used for post-LOGIN
       // returnTo targets) would collapse it to `/` to stop a login loop, but
       // that's the wrong sanitizer for a post-LOGOUT destination: landing
       // back on `/login` after logging out is exactly the point (BUG-009).

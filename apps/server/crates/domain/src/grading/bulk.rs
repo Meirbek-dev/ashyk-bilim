@@ -2,12 +2,12 @@
 //! execution on the job queue. Ported from `grading/bulk.py`.
 //!
 //! Only deadline extensions exist so far: per target learner an override
-//! carrying the new due date (other override fields untouched — the legacy
+//! carrying the new due date (other override fields untouched - the legacy
 //! overwrote the note and left the rest), then every submitted attempt's
 //! `is_late` is recomputed against the new date. A hand-in that becomes on
 //! time also loses its late penalty: graded rows get a new ledger entry
 //! with the penalty cleared and the final score recomputed (the legacy kept
-//! deducting — DECISIONS.md, BUG-139).
+//! deducting - DECISIONS.md, BUG-139).
 
 use ab_core::assessments::{AutoSubmitReason, BulkActionStatus, BulkActionType};
 use ab_core::id::{AssessmentId, BulkActionId, UserId};
@@ -120,7 +120,7 @@ impl GradingService {
                 serde_json::json!({ "unknown_user_ids": missing }),
             ));
         }
-        // BUG-247: the same rule as `POST overrides/{user}` — an extension
+        // BUG-247: the same rule as `POST overrides/{user}` - an extension
         // is for a member of the course, named per id; never the caller's
         // own attempts (BUG-288).
         let mut outsiders = Vec::new();
@@ -191,13 +191,13 @@ impl GradingService {
     }
 
     /// Run a queued action (job handler + tests). A failure is recorded on
-    /// the row and not retried — the grader sees it and re-requests. The
+    /// the row and not retried - the grader sees it and re-requests. The
     /// performer's grading access is checked again here (UX-136: a
     /// maintainer demoted between the enqueue and the worker run). A row
     /// still `running` is a worker that died mid-run (the reaper requeued
-    /// its job): the run resumes from the top — every step is idempotent
+    /// its job): the run resumes from the top - every step is idempotent
     /// (the override upsert rewrites the same values, `settle_override`
-    /// re-prices from the ledger) — so the targets it had done are settled
+    /// re-prices from the ledger) - so the targets it had done are settled
     /// and the rest extended, then the row finishes (BUG-321).
     pub async fn execute_bulk_action(
         pool: &PgPool,
@@ -277,10 +277,10 @@ async fn performer_may_grade(
 
 /// One submission's lateness under the policy an override write left
 /// behind, settled both ways (BUG-297): the penalty is what a hand-in at
-/// `submitted_at` would pay now — cleared by a waiver or an extension,
+/// `submitted_at` would pay now - cleared by a waiver or an extension,
 /// re-applied when either goes away. BUG-216: the scoring fields are
 /// re-read under the row lock a concurrent grade save contends for, and the
-/// re-score lands in the same transaction — a save that priced the old
+/// re-score lands in the same transaction - a save that priced the old
 /// penalty either waits and sees the bumped version (412) or landed first
 /// and is re-scored here.
 async fn settle_lateness(
@@ -313,7 +313,7 @@ async fn settle_lateness(
     let penalty_changed = (penalty_pct - locked.late_penalty_pct).abs() > f64::EPSILON;
     // A row with a score of record is re-scored from its ledger (raw score,
     // attempt cap, the new late deduction). BUG-206: a pending row
-    // (feedback-only saved, no final) keeps its `NULL` — the ledger entry is
+    // (feedback-only saved, no final) keeps its `NULL` - the ledger entry is
     // not a grade; the teacher's save applies the stored penalty. BUG-316:
     // the whole deduction is recomputed, so a policy change that only moves
     // `attempt_penalty_percent` re-scores too.
@@ -367,9 +367,9 @@ async fn settle_lateness(
 
 /// BUG-284: the lateness step behind every writer of override rows
 /// (create/update/delete, the bulk extension, and the leave / staff-join
-/// sweeps — BUG-306), each right after its write commits: the learner's
+/// sweeps - BUG-306), each right after its write commits: the learner's
 /// hand-ins are re-judged by [`EffectivePolicy::is_late`] against the policy
-/// the write left behind — a new due date or a waiver alike. Each hand-in
+/// the write left behind - a new due date or a waiver alike. Each hand-in
 /// is judged by the override as it stood at its `submitted_at` (BUG-307):
 /// an expiry after the hand-in changes nothing, so an unrelated write never
 /// moves a score. Returns the learner's submitted attempts (previews
@@ -404,7 +404,7 @@ pub(crate) async fn settle_override(
 }
 
 /// BUG-312: one learner's (`Some`) or every learner's (`None`) hand-ins
-/// settled under the assessment's policy as it stands when this runs — the
+/// settled under the assessment's policy as it stands when this runs - the
 /// worker side of [`ProgressProjector::after_lateness_change`]. A policy
 /// write that lands meanwhile (a newer `policy_version`) runs the pass again,
 /// so an older pass racing a newer one never leaves a row priced by the old

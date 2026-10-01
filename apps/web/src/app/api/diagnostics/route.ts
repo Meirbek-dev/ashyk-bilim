@@ -126,7 +126,7 @@ function buildStackErrorCheck(error: unknown): StackErrorCheck {
 }
 
 export async function GET() {
-  // Diagnostics expose internal URLs, config, and connectivity — block in production.
+  // Diagnostics expose internal URLs, config, and connectivity - block in production.
   if (IS_PRODUCTION) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }

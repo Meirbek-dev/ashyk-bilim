@@ -7,7 +7,7 @@ import { cleanCourseUuid } from '@/lib/course-management'
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content'
 /** `conflict`: another editor saved first (412); that activity's autosave is off until the page reloads. */
-/** `forbidden` (UX-214): a 403 — the author lost access; autosave stops like a conflict. */
+/** `forbidden` (UX-214): a 403 - the author lost access; autosave stops like a conflict. */
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'conflict' | 'forbidden'
 
 interface ConflictState {
@@ -23,7 +23,7 @@ interface CourseEditorState {
   lastKnownUpdateDate: string | null
   dirtySections: Partial<Record<CourseDirtySection, boolean>>
   conflict: ConflictState
-  /** BUG-282: the autosave state of one activity — another activity reads `idle`. */
+  /** BUG-282: the autosave state of one activity - another activity reads `idle`. */
   activitySave: ActivitySaveState
 }
 
@@ -109,7 +109,7 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
       dismissConflict: () => set({ conflict: createInitialConflictState() }),
 
       /**
-       * "Save anyway" — sync lastKnownUpdateDate from the server version and retry the pending save.
+       * "Save anyway" - sync lastKnownUpdateDate from the server version and retry the pending save.
        */
       saveAnyway: async () => {
         const { conflict } = get()

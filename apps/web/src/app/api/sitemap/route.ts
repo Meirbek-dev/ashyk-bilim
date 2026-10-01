@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
       page += 1
     }
   } catch {
-    // Backend unavailable — return an empty but valid sitemap
+    // Backend unavailable - return an empty but valid sitemap
     return new NextResponse(
       generateSitemap(getAbsoluteUrl('/'), [{ loc: getAbsoluteUrl('/'), priority: 1, changefreq: 'daily' }]),
       {
@@ -32,7 +32,7 @@ export async function GET(_request: NextRequest) {
   try {
     collections = await getCollections()
   } catch {
-    // Collections unavailable — continue with empty list
+    // Collections unavailable - continue with empty list
   }
 
   const baseUrl = getAbsoluteUrl('/')

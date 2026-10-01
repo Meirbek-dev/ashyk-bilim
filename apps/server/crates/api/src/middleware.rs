@@ -11,7 +11,7 @@ use crate::error::ApiError;
 /// CSRF guard for the cookie-auth BFF (ARCHITECTURE §6).
 ///
 /// Browsers send `Sec-Fetch-Site` on every request; a mutating request marked
-/// `cross-site` is rejected outright — cookies are our only credential, and no
+/// `cross-site` is rejected outright - cookies are our only credential, and no
 /// legitimate cross-site caller exists. (Mirrors the legacy middleware's
 /// posture; `SameSite=Lax` on the cookie is the second belt.)
 pub async fn csrf_guard(request: Request, next: Next) -> Result<Response, ApiError> {
@@ -68,7 +68,7 @@ pub async fn sanitize_request_id(mut request: Request, next: Next) -> Response {
 }
 
 tokio::task_local! {
-    /// The `x-request-id` of the request being handled — read by the error
+    /// The `x-request-id` of the request being handled - read by the error
     /// mapper so the problem+json body carries the same id as the header.
     static REQUEST_ID: String;
 }

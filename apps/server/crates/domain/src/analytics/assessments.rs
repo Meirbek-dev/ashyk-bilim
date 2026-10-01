@@ -305,8 +305,8 @@ pub fn outlier_reason_codes(
     codes
 }
 
-/// Submissions of one assessment by `members` — the course's
-/// [`eligible_by_course`] set, cohort filter included — inside the bucket
+/// Submissions of one assessment by `members` - the course's
+/// [`eligible_by_course`] set, cohort filter included - inside the bucket
 /// window. BUG-250: the rates' numerator comes from the denominator's member
 /// set, so a learner who left (UX-150) drops from both, never 200 %.
 fn visible_submissions<'a>(
@@ -621,10 +621,10 @@ struct ItemTally {
 }
 
 /// The item's outcome, if it has one: an item still awaiting manual review
-/// carries a placeholder score, not a result (UX-144) — it is excluded
+/// carries a placeholder score, not a result (UX-144) - it is excluded
 /// from accuracy / impact, not counted as wrong. A teacher-scored item
 /// without a verdict is correct when its share reaches the assessment's
-/// pass threshold (`pass_pct`, 0–100) — partial credit above it is not an
+/// pass threshold (`pass_pct`, 0–100) - partial credit above it is not an
 /// error (UX-145).
 fn item_correct(item: &crate::grading::breakdown::GradedItem, pass_pct: f64) -> Option<bool> {
     if item.needs_manual_review {
@@ -655,7 +655,7 @@ fn question_tallies(
     } else {
         (HashSet::new(), HashSet::new())
     };
-    // UX-142: items of the grade-of-record attempts only — the same
+    // UX-142: items of the grade-of-record attempts only - the same
     // population as the strong / weak groups, pass rate and median.
     let mut tallies: BTreeMap<String, ItemTally> = BTreeMap::new();
     for (_, s) in &scored {
@@ -1111,7 +1111,7 @@ pub fn build_detail(
     );
     let mut item_analytics = build_workflow_items(&diagnostics);
     // UX-261: an exam's / code challenge's common failures are its workflow
-    // rows for these two codes — the one builder, so `key` is the catalogued
+    // rows for these two codes - the one builder, so `key` is the catalogued
     // code (`awaiting_grading`, `late_submissions`) in every branch.
     if a.kind != AssessmentKind::Quiz {
         common_failures.extend(

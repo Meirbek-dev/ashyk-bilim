@@ -23,7 +23,7 @@ interface CourseActionsMobileProps {
 }
 
 // Component for displaying multiple authors
-/** Active roster rows (`GET /courses/{id}/contributors`) — the v2 `Course` carries no author profiles (BUG-248). */
+/** Active roster rows (`GET /courses/{id}/contributors`) - the v2 `Course` carries no author profiles (BUG-248). */
 function MultipleAuthors({ authors }: { authors: Contributor[] }) {
   const t = useTranslations('Courses.CourseActionsMobile')
 
@@ -124,7 +124,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
           </Button>
         )}
 
-        {/* UX-176: the phone landing is the only one below md — apply/withdraw lives here too. */}
+        {/* UX-176: the phone landing is the only one below md - apply/withdraw lives here too. */}
         <ContributorControl courseuuid={courseuuid} course={course} />
       </div>
       <CourseProgress

@@ -135,7 +135,7 @@ describe('SubmissionAIEntry on the v2 wire', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 
-  // UX-139: a gate locks the learner out — the run starts only after the confirm.
+  // UX-139: a gate locks the learner out - the run starts only after the confirm.
   it('asks before assigning a remediation gate', async () => {
     answerLatest(parse => parse(wire))
 

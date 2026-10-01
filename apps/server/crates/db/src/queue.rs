@@ -1,7 +1,7 @@
 //! Transactional Postgres job queue (ARCHITECTURE §9).
 //!
 //! Design invariants:
-//! - [`enqueue`] is a plain INSERT — call it with the caller's transaction and
+//! - [`enqueue`] is a plain INSERT - call it with the caller's transaction and
 //!   the job commits or rolls back atomically with the domain write that
 //!   caused it. `NOTIFY jobs_new` fires on commit (same statement, via
 //!   `pg_notify`), so workers wake with no polling latency.
@@ -11,7 +11,7 @@
 //!   dies, [`reap`] returns stale jobs to the queue (or dead-letters them).
 //! - `attempts` is the claim generation: only [`claim`] increments it, so the
 //!   resolution UPDATEs match `(id, attempts)` and a stale worker's late result
-//!   (its job reaped and re-claimed meanwhile) is a no-op — they return
+//!   (its job reaped and re-claimed meanwhile) is a no-op - they return
 //!   `false` for a lost lease (BUG-342).
 //!
 //! SQL here is runtime-checked (dynamic-ish operational statements, exercised
@@ -33,7 +33,7 @@ pub fn backoff_delay(attempt: i32) -> Duration {
     const BASE: Duration = Duration::from_secs(5);
     const CAP: Duration = Duration::from_mins(15);
     let exp = attempt.saturating_sub(1).clamp(0, 16);
-    // Bounded by clamp above — the shift cannot overflow, and CAP bounds growth.
+    // Bounded by clamp above - the shift cannot overflow, and CAP bounds growth.
     let delay = BASE.saturating_mul(1_u32 << u32::try_from(exp).unwrap_or(0));
     delay.min(CAP)
 }
@@ -173,8 +173,8 @@ where
     Ok(())
 }
 
-/// Dead-letter a job immediately (no retries) — e.g. no handler registered.
-/// `false`: the claim was lost (reaped, possibly re-claimed) — nothing changed.
+/// Dead-letter a job immediately (no retries) - e.g. no handler registered.
+/// `false`: the claim was lost (reaped, possibly re-claimed) - nothing changed.
 pub async fn mark_dead<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
@@ -193,7 +193,7 @@ where
     Ok(done.rows_affected() == 1)
 }
 
-/// `false`: the claim was lost (reaped, possibly re-claimed) — nothing changed.
+/// `false`: the claim was lost (reaped, possibly re-claimed) - nothing changed.
 pub async fn succeed<'e, E>(executor: E, job: &ClaimedJob) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
@@ -211,7 +211,7 @@ where
 }
 
 /// Record a failure: requeue with exponential backoff, or dead-letter once
-/// `max_attempts` is exhausted. `false`: the claim was lost — nothing changed.
+/// `max_attempts` is exhausted. `false`: the claim was lost - nothing changed.
 pub async fn fail<'e, E>(executor: E, job: &ClaimedJob, error: &str) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,

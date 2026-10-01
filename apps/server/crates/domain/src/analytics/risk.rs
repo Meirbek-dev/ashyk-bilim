@@ -247,7 +247,7 @@ pub fn build_risk_rows(
                     *failed.entry(key).or_default() += 1;
                 }
             }
-            // UX-142: only a released score is an outcome — a graded but
+            // UX-142: only a released score is an outcome - a graded but
             // unreleased attempt is still in the teacher's hands.
             AssessmentKind::CodeChallenge => match score {
                 Some(v) if v >= assessment.passing_score => {

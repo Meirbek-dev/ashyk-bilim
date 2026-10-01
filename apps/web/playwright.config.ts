@@ -6,7 +6,7 @@ import { getEnv, getEnvOr } from './e2e/env'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Minimal env loader — no external deps required in the config file
+// Minimal env loader - no external deps required in the config file
 function loadEnv(file: string): void {
   if (!fs.existsSync(file)) return
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
@@ -32,7 +32,7 @@ const isCi = getEnv('CI') !== undefined
 export default defineConfig({
   testDir: './e2e/specs',
   // Serial specs (course creation → student journey → grading) must not run
-  // fully parallel — they share state via process.env. Within a single spec
+  // fully parallel - they share state via process.env. Within a single spec
   // file, test.describe.serial handles ordering.
   fullyParallel: false,
   forbidOnly: isCi,
@@ -40,7 +40,7 @@ export default defineConfig({
   retries: isCi ? 1 : 0,
   workers: 1, // serial workflows require a single worker
   reporter: [
-    // HTML report with screenshots + traces — open with: npx playwright show-report
+    // HTML report with screenshots + traces - open with: npx playwright show-report
     ['html', { outputFolder: 'reports/e2e-html', open: 'never' }],
     // Human-readable output in the terminal
     ['list'],
@@ -50,7 +50,7 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
-    // Generous action timeout — avoids false positives on slower CI machines
+    // Generous action timeout - avoids false positives on slower CI machines
     actionTimeout: 15 * 1000,
     // Capture trace on the FIRST retry (not on the initial run) so CI doesn't
     // explode with huge trace files when everything is green.
@@ -59,7 +59,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     // Video retained only on failure to keep storage usage reasonable
     video: 'retain-on-failure',
-    // Always use the English locale for tests — stable text selectors
+    // Always use the English locale for tests - stable text selectors
     locale: 'en-US',
   },
 

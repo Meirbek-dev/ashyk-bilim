@@ -85,10 +85,10 @@ pub struct TeacherWorkRow {
 /// Rows flagged `teacher_action_required` in the courses the teacher may grade.
 ///
 /// Never the teacher's own attempts, never a staff preview as the review
-/// target (BUG-301 — a grader never grades their own, BUG-286).
+/// target (BUG-301 - a grader never grades their own, BUG-286).
 ///
 /// BUG-309: a non-member's row (leaver, or now staff) is never re-projected
-/// — grader writes on it record the grade only (BUG-260/270) — so for them
+/// - grader writes on it record the grade only (BUG-260/270) - so for them
 /// the flag is read from the attempts: the latest submission `pending`, or a
 /// `submitted` file attempt. Their pending work stays gradable (pass 23).
 ///

@@ -1,5 +1,5 @@
 // UX-058: an image/PDF/video placeholder that never received an upload is
-// editor chrome — autosave drops it instead of persisting it.
+// editor chrome - autosave drops it instead of persisting it.
 import { describe, expect, it } from 'vite-plus/test'
 
 import { EMPTY_TIPTAP_DOC, stripEmptyFileBlocks } from '@/components/Objects/Editor/core/editor-content'

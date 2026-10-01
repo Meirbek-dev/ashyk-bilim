@@ -1,7 +1,7 @@
 //! Response/request DTOs, grouped by context (one module per API tag).
 //!
 //! Rules: request DTOs use `#[serde(deny_unknown_fields)]` + garde; response
-//! DTOs derive `ToSchema` and are built from domain types — never from DB rows
+//! DTOs derive `ToSchema` and are built from domain types - never from DB rows
 //! directly.
 
 pub mod ai;
@@ -44,7 +44,7 @@ where
 }
 
 /// The one rule for a password the user sets (register, admin create,
-/// change — BUG-293): at least 8 characters and at most 72 UTF-8 **bytes**,
+/// change - BUG-293): at least 8 characters and at most 72 UTF-8 **bytes**,
 /// bcrypt's input limit in Zitadel (past it Zitadel answers an opaque error).
 // garde's custom-validator contract fixes this signature (&field, &context).
 #[allow(clippy::trivially_copy_pass_by_ref)]

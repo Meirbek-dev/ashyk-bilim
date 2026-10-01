@@ -1,6 +1,6 @@
 # Embedded fonts
 
-`NotoSans-Regular.ttf` / `NotoSans-Bold.ttf` — Noto Sans (Copyright 2022 The
+`NotoSans-Regular.ttf` / `NotoSans-Bold.ttf` - Noto Sans (Copyright 2022 The
 Noto Project Authors, https://github.com/notofonts/latin-greek-cyrillic),
 licensed under the SIL Open Font License 1.1 (`OFL.txt`). Used by the
 certificate PDF renderer (`ab_domain::certifications::pdf`).

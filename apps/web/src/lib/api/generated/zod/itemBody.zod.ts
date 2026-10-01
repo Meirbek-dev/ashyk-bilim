@@ -153,7 +153,7 @@ export const ItemBody = zod
       ),
   ])
   .describe(
-    'Internally tagged on `kind` — the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
+    'Internally tagged on `kind` - the wire and storage shape.\n\n`MatchingLearner` shares the `matching` tag but is only ever written\n(the learner read); an incoming `matching` body always parses as the\nauthor [`MatchingBody`].',
   )
 
 export type ItemBody = zod.input<typeof ItemBody>

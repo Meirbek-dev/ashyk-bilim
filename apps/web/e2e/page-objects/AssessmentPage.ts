@@ -71,7 +71,7 @@ export class AssessmentPage {
    * The question group (`role="group"`, labelled by the question title) whose
    * prompt contains `questionText`. v2 renders one question at a time (card
    * mode) by default, so switch to scroll mode first to have every question
-   * on the page — the exam shuffles questions and options, so we address
+   * on the page - the exam shuffles questions and options, so we address
    * questions and options by text, never by index.
    */
   public async question(questionText: string | RegExp): Promise<Locator> {

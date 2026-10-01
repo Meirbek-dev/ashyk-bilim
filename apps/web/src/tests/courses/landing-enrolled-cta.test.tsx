@@ -4,7 +4,7 @@
 // read only the trail run and offered «Начать курс». The wire decides the CTA;
 // «Продолжить» re-creates the missing trail run so `/trail` lists the course.
 // UX-174..176: the phone card runs the same CTA/contributor code as the
-// desktop sidebar — every case runs against both.
+// desktop sidebar - every case runs against both.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
@@ -125,7 +125,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     expect(screen.getByRole('button', { name: /Начать курс/ })).toBeInTheDocument()
   })
 
-  // BUG-287: the course's staff preview it — «Открыть курс», never an enrol call.
+  // BUG-287: the course's staff preview it - «Открыть курс», never an enrol call.
   it('offers staff «Открыть курс» without enrolling', async () => {
     renderActions({
       ...enrolledWithoutRun,
@@ -138,7 +138,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     expect(mocks.apiJson).not.toHaveBeenCalled()
   })
 
-  // UX-119: the landing reads learner-state (5 s staleTime) — enrolling must
+  // UX-119: the landing reads learner-state (5 s staleTime) - enrolling must
   // invalidate it, or Back from the first activity offers «Начать курс» again.
   it('invalidates learner-state after «Начать курс»', async () => {
     const client = new QueryClient()
@@ -149,7 +149,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['learner-course', 'c1', 'state'] }))
   })
 
-  // UX-119: 0/0 (every activity unpublished) — no dead «Продолжить», an empty state instead.
+  // UX-119: 0/0 (every activity unpublished) - no dead «Продолжить», an empty state instead.
   it('hides the CTA on a course with no published activities', () => {
     renderActions({ ...enrolledWithoutRun, outline: [] } as unknown as LearnerCourseState)
     expect(screen.queryByRole('button', { name: /Продолжить/ })).toBeNull()
@@ -173,7 +173,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith('u1'))
   })
 
-  // UX-050: the teacher approved meanwhile — a stale «Отозвать» must refetch and explain, not toast «нет прав».
+  // UX-050: the teacher approved meanwhile - a stale «Отозвать» must refetch and explain, not toast «нет прав».
   it('refetches and explains when a stale withdraw hits 403', async () => {
     mocks.contributorStatus = 'PENDING'
     mocks.remove.mockRejectedValueOnce(new APIError({ status: 403, code: 'forbidden', message: 'forbidden' }))
@@ -212,7 +212,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     expect(mocks.push).not.toHaveBeenCalled()
   })
 
-  // UX-268: approved as a contributor from another tab — the 409 on «Начать курс»
+  // UX-268: approved as a contributor from another tab - the 409 on «Начать курс»
   // refetches roster + learner-state (the CTA flips), no «обновите страницу».
   it('refetches roster and learner-state on a 409 start instead of asking for a reload', async () => {
     mocks.apiJson.mockRejectedValueOnce(new APIError({ status: 409, code: 'conflict', message: 'staff never enrol' }))

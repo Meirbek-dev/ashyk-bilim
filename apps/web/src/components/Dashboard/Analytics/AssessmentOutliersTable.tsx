@@ -24,7 +24,7 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
   const t = useTranslations('TeacherAnalytics')
   const percent = usePercentFormat()
   const format = useFormatter()
-  // UX-149: one precision per column set — rates (submission, pass, difficulty) 1 dp, scores ≤ 2 dp via `percent`.
+  // UX-149: one precision per column set - rates (submission, pass, difficulty) 1 dp, scores ≤ 2 dp via `percent`.
   const rate = (value: number) => `${format.number(value, { maximumFractionDigits: 1 })}%`
   const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [
     {

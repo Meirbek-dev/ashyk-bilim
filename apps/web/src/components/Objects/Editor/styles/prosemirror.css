@@ -395,7 +395,7 @@
   align-items: start;
 }
 
-/* TOC sidebar — collapses entirely when empty */
+/* TOC sidebar - collapses entirely when empty */
 .prosemirror-interactive-layout-toc:empty {
   display: none;
 }

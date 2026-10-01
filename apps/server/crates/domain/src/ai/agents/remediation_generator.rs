@@ -31,7 +31,7 @@ const FAIL_CODE: &str = "REMEDIATION_FAILED";
 pub const PASS_SCORE: i32 = 70;
 
 /// The owner reads (and builds on) only analyses produced from the
-/// learner's view — their own runs; graders see every run (BUG-185).
+/// learner's view - their own runs; graders see every run (BUG-185).
 pub(crate) fn learner_only(subject: &Subject, viewer: UserId) -> Option<UserId> {
     Some(viewer).filter(|v| *v == subject.user_id())
 }
@@ -114,7 +114,7 @@ impl AiService {
             .await
     }
 
-    /// `POST /ai/remediation/{subject}/generate` — inline.
+    /// `POST /ai/remediation/{subject}/generate` - inline.
     pub async fn generate_remediation(
         &self,
         actor: &Actor,
@@ -167,7 +167,7 @@ impl AiService {
     }
 
     /// BUG-141: a gate (`gate_mode`) blocks the learner's next attempt, so
-    /// only someone who grades the course may set one — never the learner.
+    /// only someone who grades the course may set one - never the learner.
     async fn require_gate_rights(
         &self,
         actor: &Actor,
@@ -179,12 +179,12 @@ impl AiService {
         }
         let course = self.courses.get(actor, subject.course_id()).await?;
         policy::require_course_update(actor, &course)?;
-        // BUG-302: a gate is a grader's action — never on the caller's own
+        // BUG-302: a gate is a grader's action - never on the caller's own
         // counted attempt (BUG-286); their previews stay theirs.
         if subject.user_id() == actor.user_id && !subject.preview() {
             return Err(crate::grading::teacher::own_attempt());
         }
-        // BUG-179: one blocking gate per learner and activity — a second one
+        // BUG-179: one blocking gate per learner and activity - a second one
         // would stack behind the first and outlive it in `latest`.
         let activity_id = self.subject_activity(subject).await?;
         self.refuse_stacked_gate(subject, activity_id).await
@@ -283,7 +283,7 @@ impl AiService {
     ) -> Result<RemediationSessionRow> {
         Box::pin(self.settle(run.id, FAIL_CODE, async {
             // BUG-185: the enqueue-time check cannot see a sibling job still
-            // in flight — refuse before spending the model call, and the
+            // in flight - refuse before spending the model call, and the
             // partial unique index decides the race at the insert.
             let activity_id = self.subject_activity(subject).await?;
             if gate_mode {
@@ -302,7 +302,7 @@ impl AiService {
                 .map(|g| format!("- {}: {}", g.concept, g.remediation_goal))
                 .collect::<Vec<_>>()
                 .join("\n");
-            // BUG-349: admitted only now — the prompt carries the analysis
+            // BUG-349: admitted only now - the prompt carries the analysis
             // produced above.
             let locale = self.user_locale(user_id).await?;
             let admitted = self
@@ -384,7 +384,7 @@ impl AiService {
 
     /// `GET /ai/remediation/{subject}/latest`: the newest **blocking** session
     /// on the work if one exists (BUG-179), else the newest, for whoever may
-    /// read the work (UX-115: the grader's gate card reads the status here —
+    /// read the work (UX-115: the grader's gate card reads the status here -
     /// the learner's session list is admin-only).
     pub async fn latest_remediation(
         &self,
@@ -396,7 +396,7 @@ impl AiService {
     }
 
     /// `GET /ai/remediation/student/{user}`: own sessions, or any with the
-    /// platform-scoped `platform:read` (admins only — course staff get 403).
+    /// platform-scoped `platform:read` (admins only - course staff get 403).
     pub async fn student_remediation_sessions(
         &self,
         actor: &Actor,
@@ -424,7 +424,7 @@ impl AiService {
             }]));
         }
         // UX-134 / UX-141: a stranger sees an unknown session (404); a reader
-        // who is not the learner — the grader — may not complete it (403).
+        // who is not the learner - the grader - may not complete it (403).
         let session = self.accessible_remediation(actor, id).await?;
         if session.student_user_id != actor.user_id {
             return Err(Error::forbidden(
@@ -436,7 +436,7 @@ impl AiService {
         } else {
             RemediationStatus::Failed
         };
-        // UX-099: a passed session is final — re-completing it with a lower
+        // UX-099: a passed session is final - re-completing it with a lower
         // score must not re-lock the gate (the guard is in the UPDATE, so a
         // concurrent pass wins too).
         if !ab_db::ai::complete_remediation_session(&self.pool, id, score, status).await? {

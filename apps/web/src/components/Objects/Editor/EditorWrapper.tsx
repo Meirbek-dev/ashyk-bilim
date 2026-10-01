@@ -37,7 +37,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
     loadedContent: props.content,
   })
 
-  // BUG-376: content and the lock only — the loaded name/published flag are
+  // BUG-376: content and the lock only - the loaded name/published flag are
   // stale once the curriculum edits them, and a rebased save must not undo that.
   const contentPayload = (content: unknown) => ({
     content: stripEmptyFileBlocks(structuredClone(content)),

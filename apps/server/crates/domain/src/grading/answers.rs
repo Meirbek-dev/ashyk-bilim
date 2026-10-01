@@ -4,7 +4,7 @@
 //! Validation ports `pipeline/validate.py`: unknown items and kind
 //! mismatches are rejected together, missing items are filled with empty
 //! typed answers, open text is capped, and every string is trimmed (the
-//! legacy did that globally at parse time — it is load-bearing for the
+//! legacy did that globally at parse time - it is load-bearing for the
 //! blank-source short-circuit).
 
 use std::collections::{BTreeMap, BTreeSet};

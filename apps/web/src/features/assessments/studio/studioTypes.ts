@@ -30,7 +30,7 @@ export interface AssessmentEditorState {
   violationThreshold: string
   allowResultReview: boolean
   showCorrectAnswers: boolean
-  /** 0–100 — minimum score to pass. Empty string = no threshold. */
+  /** 0–100 - minimum score to pass. Empty string = no threshold. */
   passThreshold: string
   /** Randomise question order per attempt. */
   randomizeQuestions: boolean
@@ -40,9 +40,9 @@ export interface AssessmentEditorState {
   partialCredit: boolean
   /** Extra minutes after time limit before auto-submit fires. */
   gracePeriodMinutes: string
-  /** ISO datetime-local — when the exam becomes available. */
+  /** ISO datetime-local - when the exam becomes available. */
   availableFrom: string
-  /** 0–100 — percentage of item points deducted for a fully wrong answer (negative marking). Empty string = disabled. */
+  /** 0–100 - percentage of item points deducted for a fully wrong answer (negative marking). Empty string = disabled. */
   negativeMarkingPercent: string
 }
 

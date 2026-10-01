@@ -526,7 +526,7 @@ export const getGetAssessmentUrl = (id: AssessmentId) => {
 
 /**
  * @summary Full assessment with items and policy. Authors always; learners only
-once published (404 otherwise — no existence leak).
+once published (404 otherwise - no existence leak).
  */
 export const getAssessment = async (
   id: AssessmentId,
@@ -615,7 +615,7 @@ export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Full assessment with items and policy. Authors always; learners only
-once published (404 otherwise — no existence leak).
+once published (404 otherwise - no existence leak).
  */
 
 export function useGetAssessment<TData = Awaited<ReturnType<typeof getAssessment>>, TError = ErrorType<Problem>>(
@@ -699,7 +699,7 @@ export function useGetAssessmentSuspense<
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Full assessment with items and policy. Authors always; learners only
-once published (404 otherwise — no existence leak).
+once published (404 otherwise - no existence leak).
  */
 
 export function useGetAssessmentSuspense<
@@ -1096,7 +1096,7 @@ export const getAttemptStateUrl = (id: AssessmentId) => {
  * The effective policy (overrides applied) and any reasons an attempt is
  * blocked. Requires course access and `assessment:submit:assigned`
  * (authors preview freely); off a restricted access list it answers with
- * `ACCESS_RESTRICTED` (UX-227) — starting and submitting still 403.
+ * `ACCESS_RESTRICTED` (UX-227) - starting and submitting still 403.
  * @summary What the caller may do with this assessment right now.
  */
 export const attemptState = async (

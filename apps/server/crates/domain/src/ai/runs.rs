@@ -329,8 +329,8 @@ impl AiService {
         Ok(())
     }
 
-    /// Legacy `_finish_run`: validate citations, then — in one transaction
-    /// the caller commits with [`Self::commit_finish`] (BUG-348) —
+    /// Legacy `_finish_run`: validate citations, then - in one transaction
+    /// the caller commits with [`Self::commit_finish`] (BUG-348) -
     /// `running → succeeded`, the artifact + evidence, the token ledger
     /// (settling the run's budget reservation) and the `finished` event.
     pub(crate) async fn finish_run(&self, spec: FinishSpec<'_>) -> Result<Completion> {
@@ -445,8 +445,8 @@ impl AiService {
         Ok(completion.trusted)
     }
 
-    /// BUG-349: charge one returned provider call to the run — the reported
-    /// usage, estimates only for a missing count — so a run that then fails
+    /// BUG-349: charge one returned provider call to the run - the reported
+    /// usage, estimates only for a missing count - so a run that then fails
     /// or aborts still puts it on the ledger.
     pub(crate) async fn record_call(
         &self,
@@ -463,7 +463,7 @@ impl AiService {
         ab_db::ai::add_run_usage(&self.pool, run_id, input, output).await
     }
 
-    /// Legacy `_fail_run`: best-effort — an aborted run stays aborted, and
+    /// Legacy `_fail_run`: best-effort - an aborted run stays aborted, and
     /// a failure to record the failure is logged, not raised.
     pub(crate) async fn fail_run(&self, run_id: AiRunId, error_code: &str) {
         match ab_db::ai::fail_run(&self.pool, run_id, error_code).await {

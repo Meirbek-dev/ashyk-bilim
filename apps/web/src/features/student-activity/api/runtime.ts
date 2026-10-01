@@ -147,7 +147,7 @@ function primaryAction(
   // A hand-in, a pending grade or a released result is this page's content:
   // «Посмотреть квитанцию» / «Смотреть результат» had nothing to open (UX-033),
   // so the bar moves the learner on instead. BUG-287: so does a lesson for the
-  // course's staff — a mark would enrol them (409); an assessment still starts a preview.
+  // course's staff - a mark would enrol them (409); an assessment still starts a preview.
   const isLesson = ['dynamic', 'video', 'document', 'custom'].includes(current.activity_type)
   if (current.complete || VIEW_STATES.has(current.state) || (isLesson && staffPreview)) {
     return next

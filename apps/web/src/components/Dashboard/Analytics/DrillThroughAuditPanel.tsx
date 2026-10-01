@@ -29,7 +29,7 @@ interface Column {
 const col = (key: string, label: string, kind: ColumnKind = 'text'): Column => ({ key, label, kind })
 
 /**
- * Curated columns per metric (UX-122) — the rows are untyped `Object`s on the
+ * Curated columns per metric (UX-122) - the rows are untyped `Object`s on the
  * wire (`drillthrough.rs` / `workload.rs`), so the shape is pinned here.
  */
 const learnerColumns = [

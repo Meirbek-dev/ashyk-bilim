@@ -36,7 +36,7 @@ beforeEach(() => {
 })
 
 describe('/auth/login', () => {
-  // UX-019: «Back to login» on the TOTP step was a Link — the URL changed
+  // UX-019: «Back to login» on the TOTP step was a Link - the URL changed
   // but the same LoginClient kept `step: 'totp'` until a reload.
   it('returns from the TOTP step to the credentials form', async () => {
     loginAction.mockResolvedValue({ ok: false, reason: 'mfa_required', code: 'mfa-required' })

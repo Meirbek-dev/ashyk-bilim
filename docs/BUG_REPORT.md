@@ -116,7 +116,7 @@ Method: static review of the Rust crates (`core`, `db`, `domain`, `api`, `server
 
 **Expected behavior:** The user is told the outline import failed (and why), or the flow retries.
 
-**Actual behavior:** In [useCreateCourseMutation.ts](apps/web/src/features/courses/create/useCreateCourseMutation.ts#L55-L67), the `try/catch` around `getCourseMetadata` falls through with `sourceChapters = []` and a comment `// source fetch failed — treat as partial success with 0 chapters`; the result reports "0 imported, 0 failed".
+**Actual behavior:** In [useCreateCourseMutation.ts](apps/web/src/features/courses/create/useCreateCourseMutation.ts#L55-L67), the `try/catch` around `getCourseMetadata` falls through with `sourceChapters = []` and a comment `// source fetch failed - treat as partial success with 0 chapters`; the result reports "0 imported, 0 failed".
 
 **Suspected cause:** Deliberate graceful degradation, but without a user-visible warning it reads as a silent failure.
 
@@ -154,10 +154,10 @@ Method: static review of the Rust crates (`core`, `db`, `domain`, `api`, `server
 
 Items examined during this audit and determined **not** to be bugs:
 
-- **Negative marking in choice grading** — [grader.rs](apps/server/crates/domain/src/grading/grader.rs#L156) computes `round2(-deduction.min(points))`, which is exactly the legacy Python `max(-points, -deduction)`; intentional parity, and capped at `-points`.
-- **AI run `succeeded` → `failed` flip** — `fail_run` in [ai.rs](apps/server/crates/db/src/ai.rs#L292-L304) deliberately includes `succeeded` in its transition set; the doc comment cites BUG-189 (a run whose feature row was refused must not read as success). Divergence from the legacy Python service is intentional and documented.
-- **Session provider unmount update** — the session probe in [session-provider.tsx](apps/web/src/components/providers/session-provider.tsx#L119-L142) uses a `cancelled` flag and cleanup, so no setState-after-unmount occurs.
-- **Exam submit toast stale closure** — `countedActivity` is included in the `handleSubmit` `useCallback` dependency list at [ExamAttemptContent.tsx](apps/web/src/features/assessments/registry/exam/ExamAttemptContent.tsx#L500); the callback is recreated when the prop changes.
-- **GradeForm stale-grade error flow** — the `StaleGradeError` branch at [GradeForm.tsx](apps/web/src/features/grading/review/components/GradeForm.tsx#L320-L334) is a clean `if/else` separation; the generic error toast cannot run for stale-grade errors.
-- **useCreateCourseMutation callback churn** — `tStarterChapters` in the `useCallback` deps ([useCreateCourseMutation.ts](apps/web/src/features/courses/create/useCreateCourseMutation.ts#L16)) is harmless because the callback is invoked directly, not handed to memoized children.
-- **Rust HTTP layer sweep** — SSE stream access re-validated per batch, analytics routes resolve scopes, AI run access enforces thread owner or platform reader, keyset pagination is stable, CSRF middleware ordering is correct, and no request-derived `unwrap`/`expect` panic paths were found in the routes layer.
+- **Negative marking in choice grading** - [grader.rs](apps/server/crates/domain/src/grading/grader.rs#L156) computes `round2(-deduction.min(points))`, which is exactly the legacy Python `max(-points, -deduction)`; intentional parity, and capped at `-points`.
+- **AI run `succeeded` → `failed` flip** - `fail_run` in [ai.rs](apps/server/crates/db/src/ai.rs#L292-L304) deliberately includes `succeeded` in its transition set; the doc comment cites BUG-189 (a run whose feature row was refused must not read as success). Divergence from the legacy Python service is intentional and documented.
+- **Session provider unmount update** - the session probe in [session-provider.tsx](apps/web/src/components/providers/session-provider.tsx#L119-L142) uses a `cancelled` flag and cleanup, so no setState-after-unmount occurs.
+- **Exam submit toast stale closure** - `countedActivity` is included in the `handleSubmit` `useCallback` dependency list at [ExamAttemptContent.tsx](apps/web/src/features/assessments/registry/exam/ExamAttemptContent.tsx#L500); the callback is recreated when the prop changes.
+- **GradeForm stale-grade error flow** - the `StaleGradeError` branch at [GradeForm.tsx](apps/web/src/features/grading/review/components/GradeForm.tsx#L320-L334) is a clean `if/else` separation; the generic error toast cannot run for stale-grade errors.
+- **useCreateCourseMutation callback churn** - `tStarterChapters` in the `useCallback` deps ([useCreateCourseMutation.ts](apps/web/src/features/courses/create/useCreateCourseMutation.ts#L16)) is harmless because the callback is invoked directly, not handed to memoized children.
+- **Rust HTTP layer sweep** - SSE stream access re-validated per batch, analytics routes resolve scopes, AI run access enforces thread owner or platform reader, keyset pagination is stable, CSRF middleware ordering is correct, and no request-derived `unwrap`/`expect` panic paths were found in the routes layer.

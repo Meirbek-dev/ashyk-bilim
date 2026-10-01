@@ -137,7 +137,7 @@ function SignupClient() {
     INITIAL_STATE,
   )
 
-  // UX-255: `useActionState` keeps the previous result until the action settles —
+  // UX-255: `useActionState` keeps the previous result until the action settles -
   // a stale «Обязательно» under a now-filled field is masked while pending (as login, UX-083).
   const fieldErrors: SignupState['fieldErrors'] = isPending ? {} : state.fieldErrors
 

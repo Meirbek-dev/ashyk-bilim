@@ -263,7 +263,7 @@ fn empty_object() -> serde_json::Value {
     serde_json::Value::Object(serde_json::Map::new())
 }
 
-/// A preference value is a boolean or absent — `null` is neither an opt-in
+/// A preference value is a boolean or absent - `null` is neither an opt-in
 /// nor an opt-out (BUG-137); remove the whole section with `"privacy": null`.
 fn bool_not_null<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where

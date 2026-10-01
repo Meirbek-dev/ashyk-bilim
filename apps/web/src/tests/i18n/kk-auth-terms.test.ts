@@ -1,4 +1,4 @@
-// UX-178: one kk term each — Cancel, the 429 phrasing and «password» — so the
+// UX-178: one kk term each - Cancel, the 429 phrasing and «password» - so the
 // login, signup and security pages do not disagree.
 import { describe, expect, it } from 'vite-plus/test'
 

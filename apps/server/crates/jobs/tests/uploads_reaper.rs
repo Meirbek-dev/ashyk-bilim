@@ -79,7 +79,7 @@ async fn reaper_removes_expired_rows_and_objects(pool: PgPool) {
 }
 
 /// AUD (reaper retry gap): a failed object delete must not drop the row, or the
-/// object is orphaned forever — the row stays and the next sweep reaps both.
+/// object is orphaned forever - the row stays and the next sweep reaps both.
 #[sqlx::test(migrations = "../../migrations")]
 async fn failed_object_delete_keeps_the_row_for_the_next_sweep(pool: PgPool) {
     let storage = storage();
@@ -182,7 +182,7 @@ async fn keys_left(pool: &PgPool) -> Vec<String> {
 }
 
 /// A row claimed (locked) between the listing and the lock is skipped, not
-/// waited on — `lock_expired` answers `None` — and reaped by a later sweep.
+/// waited on - `lock_expired` answers `None` - and reaped by a later sweep.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_locked_row_is_skipped_until_the_next_sweep(pool: PgPool) {
     let storage = storage();

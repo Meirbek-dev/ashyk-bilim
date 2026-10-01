@@ -94,13 +94,13 @@ export const EmbedBlock = Node.create({
       updateEmbedBlock:
         (pos: number, attrs: Partial<EmbedBlockAttrs>) =>
         ({ tr, dispatch }: CommandProps) => {
-          // Guard against out-of-bounds positions — nodeAt throws a RangeError
+          // Guard against out-of-bounds positions - nodeAt throws a RangeError
           // for positions outside the document, so we check bounds first.
           let node: ReturnType<typeof tr.doc.nodeAt>
           try {
             node = tr.doc.nodeAt(pos)
           } catch {
-            // Position is outside the document — treat as no-op
+            // Position is outside the document - treat as no-op
             return true
           }
 

@@ -3,7 +3,7 @@
 //!
 //! Conventions:
 //! - The endpoint is the FULL traces URL (e.g.
-//!   `https://logfire-api.pydantic.dev/v1/traces`) — nothing is appended.
+//!   `https://logfire-api.pydantic.dev/v1/traces`) - nothing is appended.
 //! - Auth headers come from the standard `OTEL_EXPORTER_OTLP_HEADERS` env var
 //!   (`key=value,key2=value2`), so tokens stay out of typed config.
 //! - Hold the returned [`TelemetryGuard`] for the life of the process; drop
@@ -99,7 +99,7 @@ pub fn init(config: &TelemetryConfig) -> TelemetryGuard {
 
     if let Some(err) = otel_error {
         // Deliberate: a broken exporter must not take the service down, but it
-        // must be loud — this is the "Logfire is empty" failure mode.
+        // must be loud - this is the "Logfire is empty" failure mode.
         tracing::error!(%err, "OTLP exporter failed to build; telemetry export DISABLED");
     } else if guard.tracer_provider.is_some() {
         tracing::info!("OTLP span export enabled");

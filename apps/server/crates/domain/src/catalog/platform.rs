@@ -50,7 +50,7 @@ impl PlatformService {
         actor.require(UPDATE)
     }
 
-    /// The singleton row (seeded by migration — absence is a deploy bug).
+    /// The singleton row (seeded by migration - absence is a deploy bug).
     pub async fn get(&self) -> Result<Platform> {
         ab_db::platform::get_platform(&self.pool)
             .await?
@@ -68,7 +68,7 @@ impl PlatformService {
         thumbnail_upload_id: Option<Uuid>,
     ) -> Result<Platform> {
         actor.require(UPDATE)?;
-        // BUG-164: the name feeds the landing page and every title — never
+        // BUG-164: the name feeds the landing page and every title - never
         // blank; UX-183: nor carrying control / bidi characters.
         let name = changes
             .name

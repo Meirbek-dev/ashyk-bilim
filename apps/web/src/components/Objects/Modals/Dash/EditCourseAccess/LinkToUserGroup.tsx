@@ -27,7 +27,7 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
   const course = useCourse()
   const { courseStructure } = course
 
-  // UX-106: linking writes the group — only groups the user may write are offered.
+  // UX-106: linking writes the group - only groups the user may write are offered.
   const { data: allGroups } = useUserGroups({ enabled: Boolean(courseStructure) })
   const usergroups = allGroups?.filter(group => group.can_write)
   const [selectedUserGroup, setSelectedUserGroup] = useState<string | null>(null)

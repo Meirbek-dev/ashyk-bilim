@@ -1,8 +1,8 @@
 //! Course Q&A (legacy `agents/course_qa.py` + `prepare_course_question_stream`
 //! / `stream_course_question_events` / `get_course_question_replay`).
 //!
-//! One turn is prepared eagerly — gates, budget, thread and user message,
-//! the run — so failures surface as a normal HTTP status; only the model
+//! One turn is prepared eagerly - gates, budget, thread and user message,
+//! the run - so failures surface as a normal HTTP status; only the model
 //! call and the final persistence happen inside the stream, where failures
 //! become a terminal error item. The model is asked for the
 //! [`CourseQaAnswer`] JSON object; `answer_markdown` is its first key, so
@@ -184,7 +184,7 @@ fn turn_reused() -> Error {
 }
 
 /// Aborts the run and keeps the partial answer when the session is dropped
-/// before it settled (client went away — legacy `asyncio.CancelledError`).
+/// before it settled (client went away - legacy `asyncio.CancelledError`).
 struct IncompleteGuard {
     service: AiService,
     session_ids: (AiThreadId, CourseId, UserId, AiMessageId),
@@ -327,7 +327,7 @@ impl AiService {
     }
 
     /// Legacy `prepare_course_question_stream`: gates, context, budget, the
-    /// thread + user message, and the run — all committed before streaming.
+    /// thread + user message, and the run - all committed before streaming.
     #[allow(
         clippy::too_many_lines,
         reason = "one turn's preparation in order: gates, history, admission, records"

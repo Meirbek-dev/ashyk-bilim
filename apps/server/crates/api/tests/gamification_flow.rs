@@ -259,7 +259,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(streak.json()["current_count"], 1);
     assert_eq!(streak.json()["is_new_record"], true);
     // BUG-204 nit: the learning streak is a completion side effect, never a
-    // bare POST — 422, and the streak stays where the completions left it.
+    // bare POST - 422, and the streak stays where the completions left it.
     let vanity = app
         .post_as(
             &bob,
@@ -293,7 +293,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(prefs.json()["preferences"]["display"]["compactMode"], true);
     assert!(prefs.json()["preferences"].get("notifications").is_none());
     // BUG-117 / BUG-153: unknown sections, non-object sections and unknown keys
-    // inside a section (snake_case included) are 422 — nothing is stored silently.
+    // inside a section (snake_case included) are 422 - nothing is stored silently.
     for body in [
         serde_json::json!({ "theme": "dark" }),
         serde_json::json!({ "display": true }),
@@ -330,7 +330,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
-    // UX-301: permission before the body — an invalid award / config is still 403.
+    // UX-301: permission before the body - an invalid award / config is still 403.
     assert_eq!(
         app.post_as(
             &bob,
@@ -416,7 +416,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
 }
 
 /// BUG-252: parallel awards on a fresh profile serialize on the profile row
-/// lock — the daily cap (500 by default) holds and the ledger matches totals.
+/// lock - the daily cap (500 by default) holds and the ledger matches totals.
 #[sqlx::test(migrations = "../../migrations")]
 async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     use ab_core::assessments::XpSource;
@@ -459,7 +459,7 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     assert_eq!((total, daily, ledger), (400, 400, 400));
 }
 
-/// UX-172: one rank rule — competition rank (ties share, the next skips) on
+/// UX-172: one rank rule - competition rank (ties share, the next skips) on
 /// the board, the dashboard and `/rank`, with a stable order inside a tie.
 #[sqlx::test(migrations = "../../migrations")]
 async fn tied_learners_share_a_rank_everywhere(pool: PgPool) {

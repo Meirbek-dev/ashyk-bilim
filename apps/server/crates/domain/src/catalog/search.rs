@@ -2,7 +2,7 @@
 //!
 //! Visibility follows the same rules as the listing endpoints; anonymous
 //! viewers get public content only and never see the people section
-//! (privacy upgrade over legacy — FINDINGS #16).
+//! (privacy upgrade over legacy - FINDINGS #16).
 
 use ab_core::Result;
 use ab_core::permission::ResourceType;

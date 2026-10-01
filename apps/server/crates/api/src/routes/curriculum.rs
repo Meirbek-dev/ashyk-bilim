@@ -257,7 +257,7 @@ pub async fn get_activity(
 ///
 /// A `content` write (the editor autosave) requires `If-Match: "<version>"`;
 /// other fields honour it when sent. A stale version is 412
-/// `precondition-failed` with `details {expected, actual}` — never a silent
+/// `precondition-failed` with `details {expected, actual}` - never a silent
 /// overwrite of another tab's save.
 #[utoipa::path(
     patch,

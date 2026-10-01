@@ -25,7 +25,7 @@ const fn perm(action: Action) -> Permission {
     }
 }
 
-/// 422 `<field>`/`unknown` for every requested id that does not exist —
+/// 422 `<field>`/`unknown` for every requested id that does not exist -
 /// the FK would otherwise surface as a 500 (BUG-109).
 pub(crate) fn reject_unknown<T: PartialEq + std::fmt::Display>(
     field: &str,
@@ -66,7 +66,7 @@ impl UsergroupsService {
         Self { pool }
     }
 
-    /// `usergroup:create` or `usergroup:manage` — the superset of
+    /// `usergroup:create` or `usergroup:manage` - the superset of
     /// `can_write` and of creating one.
     /// UX-311: the write handlers check it before reading the body.
     pub fn require_writer(actor: &Actor) -> Result<()> {
@@ -158,7 +158,7 @@ impl UsergroupsService {
 
     pub async fn delete(&self, actor: &Actor, id: UsergroupId) -> Result<()> {
         self.writable(actor, id).await?;
-        // BUG-318: the allowlist rows cascade away with the group — collect
+        // BUG-318: the allowlist rows cascade away with the group - collect
         // the courses first.
         let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
         ab_db::usergroups::delete_usergroup(&self.pool, id).await?;
@@ -200,7 +200,7 @@ impl UsergroupsService {
     }
 
     /// BUG-318: a group on an assessment's allowlist decides who must take
-    /// it — re-aggregate every course it is linked to or allowlisted in.
+    /// it - re-aggregate every course it is linked to or allowlisted in.
     async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
         let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
         Self::reaggregate(&self.pool, courses).await;
@@ -227,7 +227,7 @@ impl UsergroupsService {
     ) -> Result<()> {
         self.writable(actor, id).await?;
         // BUG-156: linking grants every member read access to the course, so
-        // the linker needs write access on it — invisible 404, visible 403.
+        // the linker needs write access on it - invisible 404, visible 403.
         let courses = CoursesService::new(self.pool.clone());
         let mut known = Vec::with_capacity(course_ids.len());
         for &course_id in course_ids {

@@ -36,7 +36,7 @@ pub const MAX_ATTEMPTS: i32 = 10;
 /// Archived and scheduled assessments are read-only; a published one with
 /// any submission cannot be edited (BUG-162). Shared with the curriculum
 /// rename path (UX-120), which writes the title through the activity.
-/// BUG-377: on the caller's transaction when it holds the row lock — never a
+/// BUG-377: on the caller's transaction when it holds the row lock - never a
 /// second pool connection under a held one.
 pub(crate) async fn ensure_editable<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -96,7 +96,7 @@ pub(crate) const fn perm(action: Action, scope: Scope) -> Permission {
     }
 }
 
-/// An item with its body parsed (corrupt rows are an internal error — the
+/// An item with its body parsed (corrupt rows are an internal error - the
 /// write path validates every body).
 #[derive(Debug, Clone)]
 pub struct Item {
@@ -184,7 +184,7 @@ impl LatePolicy {
     }
 }
 
-/// The complete policy block — replaced wholesale (no partial patch: the
+/// The complete policy block - replaced wholesale (no partial patch: the
 /// legacy patch model could not tell "unset" from "set to null" for the
 /// nullable limits).
 #[allow(clippy::struct_excessive_bools)]
@@ -489,7 +489,7 @@ impl AssessmentsService {
 
     // ── Gates ───────────────────────────────────────────────────────────
 
-    /// Authoring or publishing rights on some course — a platform grant or
+    /// Authoring or publishing rights on some course - a platform grant or
     /// authorship anywhere; the superset of `require_scoped` for `Author`
     /// and `Publish`.
     /// UX-311: the write handlers check it before reading the body.
@@ -544,7 +544,7 @@ impl AssessmentsService {
 
     /// The chapter, when its course is visible and authorable. BUG-209 /
     /// UX-145: an invisible course's chapter reads exactly like an unknown
-    /// one — the detail must not leak that the chapter exists.
+    /// one - the detail must not leak that the chapter exists.
     pub(crate) async fn authorable_chapter(
         &self,
         actor: &Actor,
@@ -579,7 +579,7 @@ impl AssessmentsService {
         Ok(assessment)
     }
 
-    /// Existence for non-authors: published AND the activity is live — the
+    /// Existence for non-authors: published AND the activity is live - the
     /// curriculum toggle can hide a published assessment (same 404 as the
     /// activity read).
     pub(crate) async fn live_for_learners(&self, assessment: &Assessment) -> Result<bool> {
@@ -610,9 +610,9 @@ impl AssessmentsService {
 
     /// BUG-207: a live assessment passed the readiness gate at publish time;
     /// an edit that would undo it (blank prompt, no options, no correct
-    /// option, …) is refused with the would-be readiness codes — 409, like
+    /// option, …) is refused with the would-be readiness codes - 409, like
     /// the delete-last-item guard. BUG-333: only a blocker the edit adds
-    /// refuses it — a published assessment already unready (a migrated
+    /// refuses it - a published assessment already unready (a migrated
     /// legacy rule) still takes edits that leave its blockers as they are.
     fn ensure_stays_ready(
         (assessment, items): (&Assessment, &[Item]),
@@ -684,7 +684,7 @@ impl AssessmentsService {
         policy.validate()?;
 
         let (activity_type, sub_type) = kind.activity_type();
-        // BUG-233: activity + assessment (+ default item) land together — a
+        // BUG-233: activity + assessment (+ default item) land together - a
         // dropped socket or a concurrent chapter DELETE (FK → 404) leaves no
         // orphan activity behind.
         let mut tx = self.pool.begin().await?;
@@ -838,7 +838,7 @@ impl AssessmentsService {
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
         // BUG-245: both titles (and the details) commit together, under the
-        // row lock the lifecycle gate reads — assessment first, then the
+        // row lock the lifecycle gate reads - assessment first, then the
         // activity, the order `update_activity` takes.
         let mut tx = self.pool.begin().await?;
         let assessment = ab_db::assessments::lock_assessment(&mut tx, id)
@@ -883,7 +883,7 @@ impl AssessmentsService {
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
         ensure_editable(&mut *tx, &assessment).await?;
         // BUG-207: the readiness gate publish took, re-run on the would-be
-        // policy (no policy rule blocks today — they warn — but the gate
+        // policy (no policy rule blocks today - they warn - but the gate
         // stays one function).
         let (late_kind, _, _, late_cutoff_at) = policy.late_policy.columns();
         let would_be = Assessment {
@@ -896,7 +896,7 @@ impl AssessmentsService {
         Self::ensure_stays_ready((&assessment, &items), (&would_be, &items))?;
         ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
         tx.commit().await?;
-        // BUG-312: one lateness rule for every learner — the new policy
+        // BUG-312: one lateness rule for every learner - the new policy
         // re-prices every existing hand-in, as an override write does its
         // learner's, so a later unrelated write never moves a score.
         ProgressProjector::new(self.pool.clone())
@@ -946,7 +946,7 @@ impl AssessmentsService {
             ));
         }
         // UX-137: policy combinations that are legal but almost certainly
-        // not what the teacher meant — warnings, never blockers.
+        // not what the teacher meant - warnings, never blockers.
         let warning = |code: &str, message: &str| ReadinessIssue {
             severity: "warning",
             ..blocker(code, message, "policy")
@@ -1019,7 +1019,7 @@ impl AssessmentsService {
         self.readiness_of(id).await
     }
 
-    /// Readiness without an access gate — for callers that already hold
+    /// Readiness without an access gate - for callers that already hold
     /// course write access (course readiness).
     pub(crate) async fn readiness_of(&self, id: AssessmentId) -> Result<Readiness> {
         let detail = self.detail(id).await?;
@@ -1109,7 +1109,7 @@ impl AssessmentsService {
         };
         ab_db::assessments::set_lifecycle(&mut *tx, id, to, scheduled, published, archived).await?;
         // BUG-232: the activity flag flips with the lifecycle, under the same
-        // lock the curriculum toggle takes — never a torn pair.
+        // lock the curriculum toggle takes - never a torn pair.
         ab_db::catalog::update_activity(
             &mut tx,
             assessment.activity_id,
@@ -1136,7 +1136,7 @@ impl AssessmentsService {
         self.detail(id).await
     }
 
-    /// Called by the auto-publish job: re-checks readiness (BUG-162 — the
+    /// Called by the auto-publish job: re-checks readiness (BUG-162 - the
     /// schedule was gated at schedule time, the world may have moved since),
     /// flips due schedules and brings their activities live (the legacy cron
     /// forgot the activity flag). A blocked one stays `scheduled`, logged and
@@ -1205,7 +1205,7 @@ impl AssessmentsService {
     /// given) chapter, the whole policy, every item with fresh ids in the
     /// same order. Access lists and per-student overrides are not copied
     /// (legacy semantics). Unlike legacy, due date / lateness / anti-cheat
-    /// travel with the copy — dropping them silently was a data-loss bug.
+    /// travel with the copy - dropping them silently was a data-loss bug.
     pub async fn duplicate(
         &self,
         actor: &Actor,
@@ -1235,7 +1235,7 @@ impl AssessmentsService {
 
         let (activity_type, sub_type) = source.kind.activity_type();
         // BUG-246 (BUG-233 sibling): activity, assessment, items and the
-        // audit row land together — a dropped socket leaves no orphan.
+        // audit row land together - a dropped socket leaves no orphan.
         let mut tx = self.pool.begin().await?;
         let activity_id = ab_db::catalog::insert_activity(
             &mut *tx,
@@ -1339,7 +1339,7 @@ impl AssessmentsService {
             mut items,
         } = Self::lock_detail(&mut tx, id).await?;
         // BUG-231: a schedule (or publish) that landed since the load above
-        // makes the row read-only — the same gates, on the locked row.
+        // makes the row read-only - the same gates, on the locked row.
         ensure_editable(&mut *tx, &assessment).await?;
         Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
         // BUG-264: the cap counts the items read under the row lock, so
@@ -1416,7 +1416,7 @@ impl AssessmentsService {
             mut items,
         } = Self::lock_detail(&mut tx, row.assessment_id).await?;
         ensure_editable(&mut *tx, &assessment).await?;
-        // BUG-257: content = what the learner answers and is scored on — the
+        // BUG-257: content = what the learner answers and is scored on - the
         // body (prompt, options, correct answers, tests) and the max score.
         // The editor re-sends the whole item, so compare, don't test presence;
         // a title/metadata edit neither locks nor stales open drafts.
@@ -1513,7 +1513,7 @@ impl AssessmentsService {
     }
 
     /// Reorder: `ordered` lists every item id exactly once in the desired
-    /// order (BUG-359: a subset or a duplicate is 422 — the studio sends the
+    /// order (BUG-359: a subset or a duplicate is 422 - the studio sends the
     /// whole list, so anything else is a stale tab). Positions come out
     /// 1..n contiguous (legacy wrote client integers verbatim).
     pub async fn reorder_items(
@@ -1525,7 +1525,7 @@ impl AssessmentsService {
         self.load_for_author(actor, id).await?;
         let mut tx = self.pool.begin().await?;
         // BUG-231: the lifecycle gate re-runs on the locked row. BUG-375: so
-        // does the list check — a delete or add racing this reorder commits
+        // does the list check - a delete or add racing this reorder commits
         // first or waits, never lands between the check and the renumber.
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
         ensure_editable(&mut *tx, &assessment).await?;
@@ -1560,7 +1560,7 @@ impl AssessmentsService {
                 ),
             }]));
         }
-        // BUG-257: order is presentation, not content — no content bump.
+        // BUG-257: order is presentation, not content - no content bump.
         ab_db::assessments::renumber_items(&mut tx, ordered).await?;
         tx.commit().await?;
         Ok(self.detail(id).await?.items)

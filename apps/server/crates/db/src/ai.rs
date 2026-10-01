@@ -2,7 +2,7 @@
 //!
 //! Timestamps as epoch seconds; enums decoded via `ab_core::ai`. Run
 //! status changes are guarded updates (`WHERE status = $expected`)
-//! returning whether the row moved — the domain turns a `false` into the
+//! returning whether the row moved - the domain turns a `false` into the
 //! right conflict.
 
 use ab_core::ai::{
@@ -265,7 +265,7 @@ pub async fn mark_running(pool: &PgPool, id: AiRunId) -> Result<bool> {
 /// `running → succeeded` with the accounting columns. `false` = not running
 /// any more (cancelled underneath us).
 ///
-/// Runs inside the completion transaction (BUG-348), which also records the ledger — the run's budget
+/// Runs inside the completion transaction (BUG-348), which also records the ledger - the run's budget
 /// reservation is settled here (BUG-349).
 pub async fn finish_run<'e>(
     db: impl sqlx::PgExecutor<'e>,
@@ -339,7 +339,7 @@ async fn end_run(pool: &PgPool, id: AiRunId, status: &str, error_code: &str) -> 
 
 /// BUG-349: one paid provider call's tokens, added to the run.
 ///
-/// Called as soon as the call returns — a run that then fails or aborts still charges them
+/// Called as soon as the call returns - a run that then fails or aborts still charges them
 /// ([`end_run`]); a success records its totals ([`finish_run`]).
 pub async fn add_run_usage(
     pool: &PgPool,
@@ -832,7 +832,7 @@ pub async fn attach_reservation(pool: &PgPool, id: uuid::Uuid, run_id: AiRunId) 
 }
 
 /// Drop a reservation that never got its run (admitted, then the run's
-/// creation failed — BUG-356); one tied to a run is the run's to settle.
+/// creation failed - BUG-356); one tied to a run is the run's to settle.
 pub async fn release_unattached_reservation(pool: &PgPool, id: uuid::Uuid) -> Result<()> {
     sqlx::query!(
         "DELETE FROM ai_token_reservations WHERE id = $1 AND run_id IS NULL",
@@ -951,7 +951,7 @@ pub async fn get_qa_message(pool: &PgPool, id: AiMessageId) -> Result<Option<QaM
     Ok(row)
 }
 
-/// Oldest first — the thread transcript.
+/// Oldest first - the thread transcript.
 pub async fn list_thread_messages(
     pool: &PgPool,
     thread_id: AiThreadId,
@@ -971,7 +971,7 @@ pub async fn list_thread_messages(
     Ok(rows)
 }
 
-/// Newest first, at most `limit`, optionally skipping one message — the
+/// Newest first, at most `limit`, optionally skipping one message - the
 /// raw material for the model's conversation history.
 pub async fn recent_thread_messages(
     pool: &PgPool,
@@ -1051,7 +1051,7 @@ pub async fn find_assistant_reply(
 // ── Submission analyses ─────────────────────────────────────────────────────
 
 /// The work an analysis or remediation is about (exactly one of the two
-/// columns is set — `*_one_subject` CHECK).
+/// columns is set - `*_one_subject` CHECK).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AiSubject {
     Submission(SubmissionId),
@@ -1187,7 +1187,7 @@ pub async fn get_submission_analysis(
 
 /// The newest analysis of a submission or file attempt.
 /// `triggered_by` narrows to one user's runs (the owner reads only the
-/// analyses built from the learner's view — BUG-185).
+/// analyses built from the learner's view - BUG-185).
 pub async fn latest_submission_analysis(
     pool: &PgPool,
     subject: AiSubject,
@@ -1654,7 +1654,7 @@ pub async fn active_remediation_gate(
     Ok(id.map(AiRemediationSessionId))
 }
 
-/// `false` when the session had already passed — a pass is final, so two
+/// `false` when the session had already passed - a pass is final, so two
 /// concurrent completions cannot end on the lower score (BUG-224 nit).
 pub async fn complete_remediation_session(
     pool: &PgPool,

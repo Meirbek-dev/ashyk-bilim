@@ -158,7 +158,7 @@ describe('AuthoringEditor save', () => {
     expect(headerProps).toEqual({ courseUuid: '123', activityUuid: '123' })
     unmount()
 
-    // v2 ids carry no prefix — the old `slice(7)` / `slice(9)` mangled them
+    // v2 ids carry no prefix - the old `slice(7)` / `slice(9)` mangled them
     render(
       <AuthoringEditor
         content={emptyDocument}

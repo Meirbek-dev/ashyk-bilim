@@ -39,7 +39,7 @@ async fn learner(app: &TestApp, name: &str) -> (UserId, MintedSession) {
     (user, session)
 }
 
-/// A trail run — course membership, what overrides target (BUG-247).
+/// A trail run - course membership, what overrides target (BUG-247).
 async fn enrol(pool: &PgPool, course_id: &str, user_id: UserId) {
     let trail_id: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
@@ -157,7 +157,7 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
         .await;
     assert_eq!(hidden.status, StatusCode::NOT_FOUND);
 
-    // UX-159: course-wide reach is the enrolled learners — Alice is in the
+    // UX-159: course-wide reach is the enrolled learners - Alice is in the
     // cohort but not yet enrolled.
     let view = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/access"))
@@ -172,7 +172,7 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     assert_eq!(preview.json()["is_teacher_preview"], true);
     assert!(preview.json()["effective"]["max_attempts"].is_null());
 
-    // Restricting to Bob is refused — he has no course access — and to an
+    // Restricting to Bob is refused - he has no course access - and to an
     // unlinked group likewise.
     let other_group = app
         .post_as(
@@ -355,7 +355,7 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     assert_eq!(view.json()["effective_user_count"], 1);
 
     // UX-154: the view carries an ETag; a save that echoes it lands and
-    // bumps it, a save with the old one is 412 — tab B never silently
+    // bumps it, a save with the old one is 412 - tab B never silently
     // overwrites tab A.
     let etag = |r: &ab_testkit::TestResponse| {
         r.headers[axum::http::header::ETAG]
@@ -443,7 +443,7 @@ async fn overrides_shape_the_effective_policy(pool: PgPool) {
         )
         .await;
     assert_eq!(too_many.status, StatusCode::UNPROCESSABLE_ENTITY);
-    // 2033 — comfortably in the future, comfortably inside timestamptz.
+    // 2033 - comfortably in the future, comfortably inside timestamptz.
     let far = 2_000_000_000_i64;
     let granted = app
         .post_as(
@@ -649,7 +649,7 @@ async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
 }
 
 /// BUG-212: every `*_unix` request field is bounded by the `timestamptz`
-/// range — a huge epoch is a 422 with the field named, not a Postgres
+/// range - a huge epoch is a 422 with the field named, not a Postgres
 /// «timestamp out of range» 500 (BUG-206 bounded only `new_due_at_unix`).
 #[sqlx::test(migrations = "../../migrations")]
 async fn out_of_range_epochs_are_client_errors(pool: PgPool) {
@@ -801,7 +801,7 @@ async fn held_leave(
 }
 
 /// BUG-273: override create / update check membership under the learner's
-/// trail lock — a leave committing mid-request is a 422 `not-in-course`,
+/// trail lock - a leave committing mid-request is a 422 `not-in-course`,
 /// never an override written for a non-member.
 #[sqlx::test(migrations = "../../migrations")]
 async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
@@ -875,7 +875,7 @@ async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
 
 /// UX-196: the leave lands after the create's write commits but before its
 /// read-back (the post-commit lateness settle in between is held on the
-/// submissions table; the audit commits with the write since BUG-313) —
+/// submissions table; the audit commits with the write since BUG-313) -
 /// still 422 `not-in-course`, never 404 «override not found».
 #[sqlx::test(migrations = "../../migrations")]
 async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
@@ -1021,7 +1021,7 @@ async fn a_leave_drops_allowlist_and_overrides(pool: PgPool) {
 }
 
 /// BUG-303: joining the staff (roster add, RBAC role) drops the member's
-/// allowlist and override rows like a leave (BUG-281) — the unchanged list
+/// allowlist and override rows like a leave (BUG-281) - the unchanged list
 /// saves again. A staffer never edits or deletes their own override (403).
 #[sqlx::test(migrations = "../../migrations")]
 async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
@@ -1127,7 +1127,7 @@ async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
 }
 
 /// BUG-305: a roster add outlives a client that hangs up while the member
-/// lock is busy — the access sweep still runs once it frees — and a failing
+/// lock is busy - the access sweep still runs once it frees - and a failing
 /// sweep never turns the committed add into an error: it is queued instead.
 #[sqlx::test(migrations = "../../migrations")]
 async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AtRiskLearnersTable from '@/components/Dashboard/Analytics/AtRiskLearnersTable'
 import { APIError } from '@/lib/api/assertSuccess'
 
-// Stable like the real hooks (memoized per locale) — the memo test depends on it.
+// Stable like the real hooks (memoized per locale) - the memo test depends on it.
 const t = (key: string) => key
 const formatter = { number: (v: number) => String(v).replace('.', ',') }
 vi.mock('next-intl', () => ({ useTranslations: () => t, useLocale: () => 'ru', useFormatter: () => formatter }))
@@ -96,7 +96,7 @@ describe('UX-114 at-risk table', () => {
     expect(toastApiError).not.toHaveBeenCalled()
   })
 
-  // UX-264: a quick action logs a completed step — it asks first, nothing is POSTed on the bare click.
+  // UX-264: a quick action logs a completed step - it asks first, nothing is POSTed on the bare click.
   it('asks for confirmation before logging a quick action', async () => {
     createTeacherIntervention.mockClear().mockResolvedValueOnce({})
     renderTable([row])

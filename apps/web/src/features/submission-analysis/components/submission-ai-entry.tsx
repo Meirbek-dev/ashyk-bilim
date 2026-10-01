@@ -46,14 +46,14 @@ export function SubmissionAIEntry({
   onDraftFeedback,
   submissionUuid,
 }: {
-  /** The feedback box already holds text — «Подготовить отзыв» asks before replacing it (UX-093). */
+  /** The feedback box already holds text - «Подготовить отзыв» asks before replacing it (UX-093). */
   hasFeedback?: boolean
   onDraftFeedback?: (feedback: string) => void
   submissionUuid: string | null
 }) {
   const t = useTranslations('AiExperience.submissionAIEntry')
   const [confirmReplace, setConfirmReplace] = useState(false)
-  // UX-139: a gate locks the learner out of the activity — ask first.
+  // UX-139: a gate locks the learner out of the activity - ask first.
   const [confirmGate, setConfirmGate] = useState(false)
   const locale = useLocale()
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
@@ -78,7 +78,7 @@ export function SubmissionAIEntry({
     const lecture = RemediationLecture.safeParse(artifactContent)
     return lecture.success ? { gate_mode: true, lecture: lecture.data, status: 'assigned' } : null
   }, [storedSession.data, artifactContent])
-  // BUG-179: `latest` puts the unpassed gate first — a second one would 409.
+  // BUG-179: `latest` puts the unpassed gate first - a second one would 409.
   const gateActive =
     remediationSession?.gate_mode === true && ['assigned', 'in_progress', 'failed'].includes(remediationSession.status)
 

@@ -241,7 +241,7 @@ pub async fn create_intervention(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     let filters = filters(query)?;
-    // BUG-157: the scope gate runs before the idempotent replay — an actor
+    // BUG-157: the scope gate runs before the idempotent replay - an actor
     // who lost the grant does not get the stored 201 back.
     state
         .analytics

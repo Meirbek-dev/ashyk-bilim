@@ -1,9 +1,9 @@
 //! Grading events for SSE clients, on Redis Streams.
 //!
 //! One stream per submission (`sse:grading:{submission}`) and one per
-//! course (`sse:grading:course:{course}` — every grade change and hand-in
+//! course (`sse:grading:course:{course}` - every grade change and hand-in
 //! on the course, for graders), both `MAXLEN ~ 1024`. Publishing is `XADD`; the stream id doubles as the SSE `id:` so
-//! `Last-Event-ID` resumes with a plain `XRANGE (id +` — no custom replay
+//! `Last-Event-ID` resumes with a plain `XRANGE (id +` - no custom replay
 //! log like the legacy sorted set. Live delivery is `XREAD BLOCK` on a
 //! dedicated connection per subscriber (a blocking read must never sit on
 //! the shared multiplexed connection). Per-user concurrent connections are
@@ -75,7 +75,7 @@ impl Stream {
 /// One event as stored and as sent (`data:` is this, serialised).
 #[derive(Debug, Clone, Serialize)]
 pub struct StoredEvent {
-    /// Redis stream id — the SSE `id:`.
+    /// Redis stream id - the SSE `id:`.
     pub event_id: String,
     /// `grade.published`, `submission.returned`, `deadline.extended`, …
     pub event: String,
@@ -120,7 +120,7 @@ fn now_unix() -> i64 {
 }
 
 /// A sorted set of leases (renamed from the legacy `sse_conn:` counter,
-/// a plain string — the old keys expire on their own).
+/// a plain string - the old keys expire on their own).
 fn slot_key(user_id: UserId) -> String {
     format!("sse_leases:{user_id}")
 }
@@ -224,7 +224,7 @@ impl GradingEvents {
         Ok(id)
     }
 
-    /// Publish without failing the caller: events are advisory — a client
+    /// Publish without failing the caller: events are advisory - a client
     /// that misses one refetches on reconnect.
     pub async fn publish_best_effort(
         &self,

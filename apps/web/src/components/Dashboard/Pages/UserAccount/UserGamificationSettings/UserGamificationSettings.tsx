@@ -53,7 +53,7 @@ export function readGamificationPreferences(
 }
 
 interface UserGamificationSettingsProps {
-  /** Profile fetched server-side for this request — the source of truth on first render. */
+  /** Profile fetched server-side for this request - the source of truth on first render. */
   initialProfile: UserGamificationProfile | null
   /** Suspense fallback: reserve the card heights instead of flashing "no data". */
   loading?: boolean

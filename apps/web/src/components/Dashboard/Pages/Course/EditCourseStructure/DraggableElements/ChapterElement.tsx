@@ -58,7 +58,7 @@ interface ChapterElementProps {
   chapter: Chapter
   chapterIndex: number
   course_uuid: string
-  /** True while the user is dragging any activity — used to highlight drop zones */
+  /** True while the user is dragging any activity - used to highlight drop zones */
   isDraggingActivity?: boolean
 }
 
@@ -85,7 +85,7 @@ function SortableActivityElement({ activity, activityIndex, course_uuid, chapter
       style={{
         // CSS.Translate avoids the scaleX/Y artifacts that CSS.Transform includes
         transform: CSS.Translate.toString(transform),
-        // Skip transition on the actively dragged item — it should snap instantly
+        // Skip transition on the actively dragged item - it should snap instantly
         transition: isDragging ? undefined : transition,
       }}
       className={cn(isDragging && 'opacity-30')}
@@ -218,7 +218,7 @@ function ChapterElement({
       style={{
         // CSS.Translate avoids the scaleX/Y artifacts from CSS.Transform
         transform: CSS.Translate.toString(transform),
-        // Don't animate the item being actively dragged — it should appear fixed
+        // Don't animate the item being actively dragged - it should appear fixed
         transition: isDragging ? undefined : transition,
       }}
       className={cn(
@@ -357,7 +357,7 @@ function ChapterElement({
           className={cn(
             'min-h-[80px] rounded-lg px-4 py-3 transition-colors',
             // Subtle tint on the entire activities area while any activity is being
-            // dragged — signals this chapter is a valid drop target without needing
+            // dragged - signals this chapter is a valid drop target without needing
             // a separate useDroppable registration.
             isDraggingActivity && 'bg-muted/30',
           )}

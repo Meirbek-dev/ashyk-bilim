@@ -45,7 +45,7 @@ describe('MarkdownCodeBlock', () => {
   })
 
   it('shows fallback pre while Shiki loads', () => {
-    // highlightCode is mocked but resolves async — we check before resolve
+    // highlightCode is mocked but resolves async - we check before resolve
     const { container } = render(<MarkdownCodeBlock code="const x = 1" language="typescript" />)
     expect(container.querySelector('pre')).toBeInTheDocument()
   })
