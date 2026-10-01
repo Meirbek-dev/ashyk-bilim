@@ -1,7 +1,4 @@
 /** @vitest-environment jsdom */
-// UX-140: the retake entry page said «Балл 0%» from the latest completed
-// submission while the result card on the same activity said «100%» (the
-// projection). Both read the grade of record through `gradeOfRecord`.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
@@ -32,7 +29,6 @@ const submissions = [
   },
 ]
 
-vi.mock('@/hooks/useContributorStatus', () => ({ useContributorStatus: () => ({ contributorStatus: null }) }))
 vi.mock('@/features/assessments/shell', () => ({ useAttemptShellControls: () => undefined }))
 vi.mock('@/features/assessments/hooks/useAssessmentSubmission', () => ({
   useAssessmentSubmission: () => ({
@@ -74,8 +70,11 @@ const vm = {
   ],
 } as unknown as AttemptViewModel
 
-describe('exam entry panel grade of record', () => {
-  it('shows the projection score (best attempt), not the latest attempt', () => {
+// The entry and result screens are InlineAssessmentWorkspace's. Between a submit
+// and the attempt-state refetch the attempt shell has no draft: it used to flash
+// a second entry screen with «Начать экзамен» there - now only a loader.
+describe('exam attempt without an open draft', () => {
+  it('renders no second entry screen', () => {
     const client = new QueryClient()
     client.setQueryData(['learner-course', 'c1', 'state'], {
       outline: [{ activities: [{ id: 'act1', score: 100, passed: true }] }],
@@ -87,9 +86,8 @@ describe('exam entry panel grade of record', () => {
         </NextIntlClientProvider>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('Результат доступен')).toBeInTheDocument()
-    expect(screen.getByText('Балл').parentElement?.textContent).toMatch(/^Балл100%$/)
-    expect(screen.getByText('Отлично')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByText('Результат доступен')).toBeNull()
   })
 })
 

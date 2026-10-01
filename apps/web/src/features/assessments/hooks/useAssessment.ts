@@ -294,6 +294,7 @@ function useAssessment(
     canContinue: state.can_continue,
     canViewResult: visible,
     canStartRevision: state.revision_requested && state.can_start,
+    attemptsLeft: policy.maxAttempts === null ? null : Math.max(0, policy.maxAttempts - state.attempts_used),
     nextAttemptCapPercent:
       assessment.policy.attempt_penalty_percent > 0 && state.attempts_used > 0
         ? Math.max(0, 100 - assessment.policy.attempt_penalty_percent * state.attempts_used)

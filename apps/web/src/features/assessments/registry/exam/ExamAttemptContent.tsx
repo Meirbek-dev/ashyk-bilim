@@ -1,24 +1,13 @@
 'use client'
 
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  FileText,
-  InfinityIcon,
-  LayoutList,
-  RotateCcw,
-  Rows2,
-  ShieldAlert,
-  Users,
-} from 'lucide-react'
+import { LayoutList, MessageSquareText, RotateCcw, Rows2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocale, useTranslations } from 'next-intl'
 import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { toast } from 'sonner'
 
-import { reportSubmissionViolation, startAssessmentSubmission } from '@/features/assessments/submission-client'
+import { reportSubmissionViolation } from '@/features/assessments/submission-client'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -26,16 +15,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
-import { useContributorStatus } from '@/hooks/useContributorStatus'
-import { useApiError } from '@/hooks/useApiError'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
 import { gradeOfRecord, submitVerdict } from '@/features/assessments/domain/grade-of-record'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
-import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
+import { extractMarkdownSummary, MarkdownContent } from '@/features/content-markdown'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
-import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
 import { useAttemptShellControls } from '@/features/assessments/shell'
 import type { AttemptShellRegistration } from '@/features/assessments/shell/AssessmentActionBar'
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt'
@@ -50,17 +36,13 @@ import ExamSubmitDialog from './ExamSubmitDialog'
 export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.ExamActivity')
   const queryClient = useQueryClient()
-  const { toastApiError } = useApiError()
-  const { contributorStatus } = useContributorStatus(courseUuid)
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
-  // UX-140: the entry panel's score is the grade of record (projection), the
-  // same source the result card and the outline sidebar use — not the latest attempt.
+  // UX-140: feedback comes from the grade of record (projection), the same
+  // source the result card and the outline sidebar use.
   const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
-  const formatPercent = usePercentFormat()
-  const [isStarting, setIsStarting] = useState(false)
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
   const assessmentUuid = vm?.assessmentUuid ?? null
-  // Every item the server returns is a question — no kind filter (BUG-110).
+  // Every item the server returns is a question - no kind filter (BUG-110).
   const questions = vm?.items ?? []
 
   const handleComplete = useCallback(async () => {
@@ -91,7 +73,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     ])
   }, [assessmentUuid, courseUuid, queryClient])
 
-  // UX-224: the counted result (projection) — the submit refreshes it before
+  // UX-224: the counted result (projection) - the submit refreshes it before
   // resolving, so the toast reads what the result card will show.
   const activityUuid = vm?.activityUuid
   const countedActivity = useCallback(
@@ -103,176 +85,26 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     [activityUuid, courseUuid, queryClient],
   )
 
-  if (!vm || submissionState.isLoading) {
-    return <PageLoading />
-  }
-
-  if (!assessmentUuid) {
+  if (!assessmentUuid && vm) {
     return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>
   }
 
-  const buildHistoryItem = (
-    submission: (typeof submissionState.submissions)[number],
-    index: number,
-  ): AttemptHistoryItem => {
-    const label = index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submission.attempt_number })
-    const submittedAt = submission.submitted_at ?? submission.updated_at ?? null
-
-    return {
-      id: submission.submission_uuid,
-      label,
-      submittedAt,
-      status: submission.status ?? 'PENDING',
-      scoreLabel: typeof submission.final_score === 'number' ? formatPercent(submission.final_score) : null,
-      metaLabel: null,
-    }
+  // The entry and result screens belong to InlineAssessmentWorkspace; this
+  // shell only renders while a draft is open. Between a submit and the
+  // attempt-state refetch there is no draft - a loader, not a second «Start».
+  if (!vm || submissionState.isLoading || !submissionState.draft) {
+    return <PageLoading />
   }
 
-  const latestCompletedSubmission =
-    submissionState.submissions.find(submission => submission.status !== 'DRAFT') ?? null
+  const latestCompleted = submissionState.submissions.find(submission => submission.status !== 'DRAFT')
   const record = gradeOfRecord(
     vm,
     learnerState.data?.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === vm.activityUuid),
   )
-  const recordScore = vm.isResultVisible ? record.pct : null
-  const recordFeedback = vm.isResultVisible ? (record.recordAttempt?.generalFeedback ?? null) : null
-  const historyItems = submissionState.submissions
-    .filter(submission => submission.status !== 'DRAFT')
-    .map(buildHistoryItem)
-
-  const handleStartExam = async () => {
-    if (!assessmentUuid || !vm.canEdit) return
-    setIsStarting(true)
-    try {
-      await startAssessmentSubmission(assessmentUuid)
-      toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
-      await handleComplete()
-    } catch (error) {
-      toastApiError(error, { fallback: t('errorStartingExam') })
-    }
-    setIsStarting(false)
-  }
-
-  if (!submissionState.draft) {
-    return (
-      <AttemptEntryPanel
-        title={vm.title}
-        description={vm.description}
-        metrics={[
-          {
-            icon: FileText,
-            label: t('totalQuestions'),
-            value: String(questions.length),
-          },
-          {
-            icon: Clock,
-            label: t('timeLimit'),
-            value:
-              typeof policy.timeLimitSeconds === 'number'
-                ? t('minutes', {
-                    count: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
-                  })
-                : t('unlimited'),
-          },
-          {
-            icon: contributorStatus === 'ACTIVE' ? InfinityIcon : Users,
-            label: contributorStatus === 'ACTIVE' ? t('teacherPreview') : t('attemptsRemaining'),
-            value:
-              contributorStatus === 'ACTIVE' || policy.maxAttempts === null
-                ? t('unlimited')
-                : String(Math.max(policy.maxAttempts - historyItems.length, 0)),
-          },
-        ]}
-        historyItems={historyItems}
-        actionTitle={
-          questions.length === 0
-            ? t('testNotReadyTitle')
-            : vm.isReturnedForRevision
-              ? t('readyToRevise')
-              : t('readyToStart')
-        }
-        actionDescription={
-          questions.length === 0
-            ? contributorStatus === 'ACTIVE'
-              ? t('teacherNoQuestionsWarning')
-              : t('noQuestionsWarning')
-            : vm.isReturnedForRevision
-              ? t('readyToReviseDescription')
-              : t('readyToStartSubtitle')
-        }
-        actionDisabled={!vm.canEdit || questions.length === 0}
-        actionPending={isStarting}
-        blockedMessage={
-          questions.length === 0
-            ? contributorStatus === 'ACTIVE'
-              ? t('teacherNoQuestionsWarning')
-              : t('noQuestionsWarning')
-            : !vm.canEdit
-              ? t('noEditableDraft')
-              : null
-        }
-        {...(questions.length > 0 && vm.canEdit
-          ? {
-              actionLabel: vm.isReturnedForRevision ? t('startRevision') : t('startExam'),
-              onAction: handleStartExam,
-            }
-          : {})}
-        notices={
-          <div className="space-y-4">
-            {questions.length === 0 ? (
-              <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
-                <AlertCircle className="size-4" />
-                <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
-                <AlertDescription>
-                  {contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning')}
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="bg-muted/30 rounded-md border p-4">
-                <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
-                <ul className="space-y-2 text-sm">
-                  <Instruction icon={CheckCircle} label={t('instruction1')} />
-                  {policy.timeLimitSeconds ? (
-                    <Instruction
-                      icon={CheckCircle}
-                      label={t('instruction3', {
-                        minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
-                      })}
-                    />
-                  ) : null}
-                  <Instruction icon={AlertCircle} label={t('instruction2')} />
-                  {policy.antiCheat.tabSwitchDetection ? (
-                    <Instruction icon={AlertCircle} label={t('instruction4')} />
-                  ) : null}
-                  {policy.antiCheat.copyPasteProtection ? (
-                    <Instruction icon={AlertCircle} label={t('instruction5')} />
-                  ) : null}
-                </ul>
-              </div>
-            )}
-            {questions.length > 0 && isAntiCheatWarningVisible(policy) ? (
-              <Alert className="border-red-200 bg-red-50/80 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100">
-                <ShieldAlert className="size-4" />
-                <AlertTitle>{t('antiCheatingEnabled')}</AlertTitle>
-                <AlertDescription>
-                  {t('antiCheatingDescription', {
-                    threshold: policy.antiCheat.violationThreshold || t('notSet'),
-                  })}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {latestCompletedSubmission ? (
-              <ExamSubmissionStatePanel
-                submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
-                score={recordScore}
-                feedback={recordFeedback}
-              />
-            ) : null}
-          </div>
-        }
-      />
-    )
-  }
+  // Mid-attempt only the returned-for-revision feedback matters; an older
+  // attempt's score would read as this attempt's result.
+  const revisionFeedback =
+    latestCompleted?.status === 'RETURNED' && vm.isResultVisible ? (record.recordAttempt?.generalFeedback ?? null) : null
 
   return (
     <ExamTakingContent
@@ -288,8 +120,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       canSubmit={vm.canSubmit}
       timerExpiresAt={vm.timerExpiresAt}
       passingScore={vm.passingScore}
-      latestCompletedSubmission={latestCompletedSubmission}
-      recordFeedback={recordFeedback}
+      revisionFeedback={revisionFeedback}
     />
   )
 }
@@ -306,8 +137,7 @@ function ExamTakingContent({
   canSubmit,
   timerExpiresAt,
   passingScore,
-  latestCompletedSubmission,
-  recordFeedback,
+  revisionFeedback,
 }: {
   title: string
   questions: AssessmentItem[]
@@ -320,8 +150,7 @@ function ExamTakingContent({
   canSubmit: boolean
   timerExpiresAt: string | null
   passingScore: number | null
-  latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
-  recordFeedback: string | null
+  revisionFeedback: string | null
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const tWorkspace = useTranslations('Features.ActivityWorkspace')
@@ -360,12 +189,16 @@ function ExamTakingContent({
     })
   }, [])
 
-  const scrollToQuestion = useCallback((index: number) => {
-    const ref = questionRefs.current[index]
-    if (ref) {
-      ref.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [])
+  // One way to move between questions: every nav control (bar, grid, mobile
+  // strip, the submit dialog's unanswered list) lands on it and, in scroll
+  // mode, brings the question into view.
+  const goTo = useCallback(
+    (index: number) => {
+      setCurrentIndex(index)
+      if (viewMode === 'SCROLL') questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    },
+    [viewMode],
+  )
 
   const validateRecoveredAnswers = useCallback((answers: unknown): boolean => {
     if (!answers || typeof answers !== 'object') return false
@@ -545,11 +378,10 @@ function ExamTakingContent({
                   ? ('error' as const)
                   : ('saved' as const),
       status: submissionState.status,
-      canSave: canSaveDraft && submissionState.saveState === 'dirty',
+      // Answers autosave (the badge says so); no manual «Save» button.
       canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      ...(canSaveDraft && submissionState.saveState === 'dirty' ? { onSave: () => submissionState.save() } : {}),
       ...(canSubmit ? { onSubmit: handleOpenSubmitConfirmation } : {}),
       navigation: {
         current: currentIndex + 1,
@@ -557,16 +389,8 @@ function ExamTakingContent({
         answered: answeredCount,
         canPrevious: currentIndex > 0,
         canNext: currentIndex < orderedQuestions.length - 1,
-        onPrevious: () => {
-          const next = Math.max(0, currentIndex - 1)
-          setCurrentIndex(next)
-          if (viewMode === 'SCROLL') scrollToQuestion(next)
-        },
-        onNext: () => {
-          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1)
-          setCurrentIndex(next)
-          if (viewMode === 'SCROLL') scrollToQuestion(next)
-        },
+        onPrevious: () => goTo(Math.max(0, currentIndex - 1)),
+        onNext: () => goTo(Math.min(orderedQuestions.length - 1, currentIndex + 1)),
       },
       timer: policy.timeLimitSeconds
         ? {
@@ -623,7 +447,6 @@ function ExamTakingContent({
         : null,
     }),
     [
-      canSaveDraft,
       canSubmit,
       answeredCount,
       attempt.created_at,
@@ -641,8 +464,7 @@ function ExamTakingContent({
       submissionState,
       t,
       timerExpiresAt,
-      viewMode,
-      scrollToQuestion,
+      goTo,
     ],
   )
 
@@ -671,14 +493,14 @@ function ExamTakingContent({
         </Alert>
       ) : null}
 
-      {/* Mid-attempt only the returned-for-revision feedback matters; an older
-          attempt's score reads as this attempt's result. */}
-      {latestCompletedSubmission?.status === 'RETURNED' ? (
-        <ExamSubmissionStatePanel
-          submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
-          score={null}
-          feedback={recordFeedback}
-        />
+      {revisionFeedback ? (
+        <Alert>
+          <MessageSquareText className="size-4" />
+          <AlertTitle>{tWorkspace('teacherFeedback')}</AlertTitle>
+          <AlertDescription>
+            <MarkdownContent content={revisionFeedback} mode="compactRichText" />
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {/* Progress bar + view mode toggle */}
@@ -733,7 +555,7 @@ function ExamTakingContent({
               currentQuestionIndex={currentIndex}
               answeredQuestions={answeredIndexes}
               flaggedQuestions={flaggedIndexes}
-              onQuestionSelect={setCurrentIndex}
+              onQuestionSelect={goTo}
             />
           </div>
         </div>
@@ -773,10 +595,7 @@ function ExamTakingContent({
                 currentQuestionIndex={currentIndex}
                 answeredQuestions={answeredIndexes}
                 flaggedQuestions={flaggedIndexes}
-                onQuestionSelect={index => {
-                  setCurrentIndex(index)
-                  scrollToQuestion(index)
-                }}
+                onQuestionSelect={goTo}
               />
             </div>
           </div>
@@ -788,23 +607,7 @@ function ExamTakingContent({
         currentQuestionIndex={currentIndex}
         answeredQuestions={answeredIndexes}
         flaggedQuestions={flaggedIndexes}
-        onQuestionSelect={index => {
-          setCurrentIndex(index)
-          if (viewMode === 'SCROLL') scrollToQuestion(index)
-        }}
-        onPrevious={() => {
-          const next = Math.max(0, currentIndex - 1)
-          setCurrentIndex(next)
-          if (viewMode === 'SCROLL') scrollToQuestion(next)
-        }}
-        onNext={() => {
-          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1)
-          setCurrentIndex(next)
-          if (viewMode === 'SCROLL') scrollToQuestion(next)
-        }}
-        onSubmit={handleOpenSubmitConfirmation}
-        canGoNext={currentIndex < orderedQuestions.length - 1}
-        canGoPrevious={currentIndex > 0}
+        onQuestionSelect={goTo}
       />
 
       <ExamSubmitDialog
@@ -813,12 +616,12 @@ function ExamTakingContent({
         answeredCount={answeredCount}
         flaggedCount={flaggedIndexes.size}
         unansweredQuestions={orderedQuestions
-          .map((q, i) => ({ index: i, id: q.id, question_text: q.body.prompt }))
+          .map((q, i) => ({ index: i, id: q.id, question_text: extractMarkdownSummary(q.body.prompt, 120) }))
           .filter(q => !isAnswered(q.id))}
         isSubmitting={submissionState.isSubmitting}
         onNavigateTo={index => {
           setIsConfirmingSubmit(false)
-          setCurrentIndex(index)
+          goTo(index)
         }}
         labels={{
           confirmSubmission: t('confirmSubmission'),
@@ -836,76 +639,5 @@ function ExamTakingContent({
         onSubmit={() => void handleSubmit()}
       />
     </div>
-  )
-}
-
-function ExamSubmissionStatePanel({
-  submission,
-  score,
-  feedback,
-}: {
-  submission: {
-    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
-    submitted_at?: string | null
-  }
-  /** Grade of record (`gradeOfRecord`), null when not released. */
-  score: number | null
-  feedback: string | null
-}) {
-  const t = useTranslations('Activities.ExamActivity')
-  const formatPercent = usePercentFormat()
-  const locale = useLocale()
-  if (submission.status === 'PENDING') {
-    return (
-      <Alert>
-        <AlertTitle>{t('submissionReceivedTitle')}</AlertTitle>
-        <AlertDescription>
-          {submission.submitted_at
-            ? t('submissionReceivedWithDateDescription', {
-                date: formatDate(submission.submitted_at, locale, DATE_TIME_LONG_OPTIONS),
-              })
-            : t('submissionReceivedDescription')}
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (submission.status === 'GRADED') {
-    return (
-      <Alert>
-        <AlertTitle>{t('resultsWaitingForReleaseTitle')}</AlertTitle>
-        <AlertDescription>{t('resultsWaitingForReleaseDescription')}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  return (
-    <Alert>
-      <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
-      <AlertDescription className="space-y-3">
-        {score !== null ? (
-          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
-            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
-            {formatPercent(score)}
-          </span>
-        ) : null}
-        {feedback ? <p className="whitespace-pre-wrap">{feedback}</p> : null}
-      </AlertDescription>
-    </Alert>
-  )
-}
-
-function Instruction({ icon: Icon, label }: { icon: AppIcon; label: string }) {
-  return (
-    <li className="flex gap-2">
-      <Icon className="mt-0.5 size-4 shrink-0" />
-      <span>{label}</span>
-    </li>
-  )
-}
-
-function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean {
-  return (
-    policy.antiCheat.tabSwitchDetection || policy.antiCheat.copyPasteProtection || policy.antiCheat.devtoolsDetection
   )
 }

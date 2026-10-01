@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal, Timer } from 'lucide-react'
 import type { AttemptTimerConfig } from '@/features/assessments/shared/hooks/useAttemptGuard'
 import type { PolicyView } from '@/features/assessments/domain/policy'
 
@@ -124,7 +124,9 @@ export function useActionBarState() {
 
   const registerControls = useCallback((nextControls: AttemptShellRegistration) => {
     setControls(current => {
-      const mergedControls = { ...current, ...nextControls }
+      // A registration replaces the previous one: a handler the kind dropped
+      // (e.g. `onSubmit` once submitting is no longer allowed) must not linger.
+      const mergedControls = { ...DEFAULT_CONTROLS, ...nextControls }
       return areAttemptShellRegistrationsEqual(current, mergedControls) ? current : mergedControls
     })
   }, [])
@@ -149,6 +151,8 @@ interface AssessmentActionBarProps {
   primaryButtonLabelKey?: string | null
   /** The course page: the site nav is hidden mid-attempt, so this is the way out (the draft autosaves). */
   exitHref?: string
+  /** Time left on a timed attempt; shown here because the bar never scrolls away. */
+  remainingSeconds?: number | null
 }
 
 /**
@@ -171,7 +175,13 @@ export function resolvePrimaryButtonLabelKey(
  *
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
-export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey, exitHref }: AssessmentActionBarProps) {
+export function AssessmentActionBar({
+  controls,
+  returned,
+  primaryButtonLabelKey,
+  exitHref,
+  remainingSeconds = null,
+}: AssessmentActionBarProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
   const tAttemptActions = useTranslations('AttemptActions')
   const tActivity = useTranslations('ActivityPage')
@@ -187,6 +197,17 @@ export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey,
               <ChevronLeft className="size-4" />
               {tActivity('backToCourse')}
             </Button>
+          ) : null}
+          {remainingSeconds !== null ? (
+            <Badge
+              variant={remainingSeconds <= 60 ? 'destructive' : remainingSeconds <= 300 ? 'warning' : 'outline'}
+              className="gap-1 font-mono tabular-nums"
+              role="timer"
+              aria-label={t('timeRemainingValue', { time: formatRemaining(remainingSeconds) })}
+            >
+              <Timer className="size-3" />
+              {formatRemaining(remainingSeconds)}
+            </Badge>
           ) : null}
           <SaveStateBadge
             state={returned ? 'returned' : (controls.saveState ?? 'saved')}
@@ -317,4 +338,12 @@ function areShellRegistrationValuesEqual(left: unknown, right: unknown): boolean
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+export function formatRemaining(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  const mmss = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return h > 0 ? `${h}:${mmss}` : mmss
 }

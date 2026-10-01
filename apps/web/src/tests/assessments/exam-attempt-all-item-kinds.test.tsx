@@ -26,6 +26,7 @@ vi.mock('@/features/assessments/registry/exam/ExamQuestionNavigation', () => ({
 }))
 vi.mock('@/features/content-markdown', () => ({
   MarkdownContent: ({ content }: { content: string }) => <p>{content}</p>,
+  extractMarkdownSummary: (markdown: string) => markdown,
 }))
 vi.mock('@/features/assessments/hooks/useAssessmentSubmission', () => ({
   useAssessmentSubmission: () => ({

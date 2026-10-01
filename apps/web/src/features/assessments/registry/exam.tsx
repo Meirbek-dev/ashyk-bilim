@@ -26,13 +26,15 @@ export const examModuleFactory = async (): Promise<KindModule> => {
     <NativeItemAuthor mode="exam" itemNoun="Question" itemNounKey="question" allowedKinds={['CHOICE', 'MATCHING']} />
   )
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
-    return GradingReviewWorkspace({
-      activityId,
-      initialSubmissionUuid: submissionUuid ?? null,
-      ...(title !== undefined ? { title } : {}),
-    })
-  }
+  // Rendered as an element: calling the workspace as a function ran its hooks
+  // inside this wrapper's render.
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => (
+    <GradingReviewWorkspace
+      activityId={activityId}
+      initialSubmissionUuid={submissionUuid ?? null}
+      {...(title !== undefined ? { title } : {})}
+    />
+  )
 
   return {
     label: 'Exam',

@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { MarkdownContent } from '@/features/content-markdown'
+import { extractMarkdownSummary, MarkdownContent } from '@/features/content-markdown'
 import { localizeItemFeedback } from '@/features/grading/domain/status'
 import { answerLines } from '@/features/assessments/domain/answer-lines'
 import { gradeOfRecord } from '@/features/assessments/domain/grade-of-record'
@@ -232,7 +232,7 @@ export default function AttemptResultCard({
                   <div key={item.id} className="flex items-center justify-between px-4 py-2">
                     <span className="min-w-0 flex-1 pr-4">
                       <span className="text-muted-foreground line-clamp-2">
-                        {i + 1}. {item.title}
+                        {i + 1}. {extractMarkdownSummary(item.body.prompt, 140) || item.title}
                       </span>
                       {userAnswer.length > 0 ? (
                         <span
@@ -301,6 +301,11 @@ export default function AttemptResultCard({
             <RotateCcw className="size-4" />
             {t('retryAssessment')}
           </Button>
+        ) : null}
+        {canSubmit && onRetry && typeof vm.attemptsLeft === 'number' && vm.policy.maxAttempts ? (
+          <span className="text-muted-foreground self-center text-sm" data-testid="attempts-left">
+            {t('attemptsLeftOf', { left: vm.attemptsLeft, max: vm.policy.maxAttempts })}
+          </span>
         ) : null}
       </div>
       {/* BUG-152: a gate-mode remediation blocks the retake — say so and open it here. */}

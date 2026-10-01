@@ -1842,7 +1842,8 @@
         "examDescriptionPlaceholder": "Бұл тест нені қамтитынын сипаттаңыз",
         "examTitle": "Тест атауы",
         "examTitlePlaceholder": "мыс., 1-тарау бойынша тест"
-      }
+      },
+      "examPresetNote": "Емтихан пресеті: бір әрекет, толық экран режимі, көшіру, оң жақ батырма және қойынды ауыстыру бақыланады; 3-ші бұзушылық әрекетті аяқтайды. Мұның бәрін баптауларда өзгертуге болады."
     },
     "Onboarding": {
       "endButton": "Аяқтау",
@@ -8826,7 +8827,9 @@
               "unsupportedKind": "Элемент түрі қолданылмайды."
             }
           },
-          "errorLoading": "Студияны жүктеу кезінде қате кетті"
+          "errorLoading": "Студияны жүктеу кезінде қате кетті",
+          "deleteConfirmTitle": "Жою: {itemNoun}?",
+          "deleteConfirmDescription": "Бұл әрекетті қайтару мүмкін емес."
         },
         "policyTitle": "{kind} саясаты",
         "Tabs": {
@@ -9284,7 +9287,9 @@
         "outlineEmptyMessage": "Әлі элемент жоқ. Қосу үшін + басыңыз.",
         "jumpToItem": "Элементке өту",
         "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
-        "loadingEditor": "Редактор жүктелуде"
+        "loadingEditor": "Редактор жүктелуде",
+        "publishedReadOnly": "Жарияланды: сұрақтар мен баптаулар құлыпталған. Өзгерту үшін «Жариялау» қойындысында жобаға қайтарыңыз.",
+        "archivedReadOnly": "Мұрағатта: тек қарау. Өзгерту үшін «Жариялау» қойындысында жобаға қалпына келтіріңіз."
       },
       "Shared": {
         "AntiCheatOverlay": {
@@ -9637,7 +9642,8 @@
           "connectionLostTitle": "Байланыс үзілді",
           "connectionLostDescription": "Интернет байланысын тексеріңіз. Прогресіңіз жергілікті түрде сақталып, желі қалпына келгенде синхрондалады.",
           "draftConflictDescription": "Серверде жауаптарыңыздың жаңа нұсқасы #{latestVersion} сақталды ({latestSavedAt}). Қай нұсқаны пайдаланғыңыз келеді?",
-          "draftConflictAnswerCounts": "Жергілікті: {localCount} жауап | Серверде: {serverCount} жауап"
+          "draftConflictAnswerCounts": "Жергілікті: {localCount} жауап | Серверде: {serverCount} жауап",
+          "timeRemainingValue": "Қалған уақыт: {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Сіздің шығаруыңыз",
@@ -10128,7 +10134,8 @@
       "yourAnswer": "Сіздің жауабыңыз",
       "correctAnswer": "Дұрыс жауап",
       "violationThresholdForfeited": "Бұзушылық шегіне жетті ({count}): әрекет жойылып, нөл балмен жіберілді.",
-      "startNewAttempt": "Жаңа әрекетті бастау"
+      "startNewAttempt": "Жаңа әрекетті бастау",
+      "attemptsLeftOf": "{max} ішінен {left} қалды"
     },
     "MediaStudio": {
       "source": "Дереккөз",

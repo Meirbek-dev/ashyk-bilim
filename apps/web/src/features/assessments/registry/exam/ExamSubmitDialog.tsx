@@ -68,7 +68,6 @@ export default function ExamSubmitDialog({
   const unansweredCount = totalQuestions - answeredCount
   const hasWarning = unansweredCount > 0 || flaggedCount > 0
   const completion = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
-  const statusLabel = hasWarning ? labels.reviewQuestions : labels.confirmAndSubmit
 
   return (
     <AlertDialog open={open} onOpenChange={nextOpen => !nextOpen && onCancel()}>
@@ -83,10 +82,7 @@ export default function ExamSubmitDialog({
             >
               {hasWarning ? <AlertCircle /> : <CheckCircle2 />}
             </AlertDialogMedia>
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <AlertDialogTitle className="col-start-auto">{labels.confirmSubmission}</AlertDialogTitle>
-              <Badge variant={hasWarning ? 'destructive' : 'secondary'}>{statusLabel}</Badge>
-            </div>
+            <AlertDialogTitle className="col-start-auto">{labels.confirmSubmission}</AlertDialogTitle>
             <AlertDialogDescription className="col-start-2">{labels.confirmSubmissionMessage}</AlertDialogDescription>
           </AlertDialogHeader>
 

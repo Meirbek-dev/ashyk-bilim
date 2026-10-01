@@ -14,6 +14,7 @@ import { MarkdownContent } from '@/features/content-markdown'
 import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 import { matchingColumns } from '../../domain/items'
 import type { MatchOption, MatchPair } from '../../domain/items'
+
 export { matchingColumns }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -153,9 +154,7 @@ export function MatchingItemAttempt({
                   aria-label={t('matchForLabel', { term: option.text })}
                   className={cn('sm:max-w-xs', !selected && 'text-muted-foreground')}
                 >
-                  <NativeSelectOption value="" disabled hidden>
-                    {t('selectMatch')}
-                  </NativeSelectOption>
+                  <NativeSelectOption value="">{t('selectMatch')}</NativeSelectOption>
                   {right.map(choice => (
                     <NativeSelectOption key={choice.id} value={choice.id}>
                       {choice.text}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CalendarOff, ChartColumn, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
+import { CalendarOff, ChartColumn, Lock, PanelLeft, Send, Settings2, UsersRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -65,6 +65,7 @@ export function NativeItemAuthor({
     isEditable,
     totalPoints,
     validationIssues,
+    activeView,
     setActiveView,
     setSaveLedgerEntry,
     clearSaveLedgerEntry,
@@ -98,12 +99,18 @@ export function NativeItemAuthor({
   const [itemSaveState, setItemSaveState] = useState<SaveState>('idle')
   const lastSavedAssessmentRef = useRef('')
   const lastSavedItemRef = useRef('')
+  // What the in-flight autosave sent. The refetch after a save brings back
+  // that state; anything typed since must survive it, not be replaced by it.
+  const [sentAssessment, setSentAssessment] = useState<string | null>(null)
+  const [sentItem, setSentItem] = useState<string | null>(null)
 
   if (assessment !== prevAssessment) {
     setPrevAssessment(assessment)
-    const nextAssessmentState = toAssessmentEditorState(assessment)
-    setAssessmentState(nextAssessmentState)
-    setAssessmentSaveState('idle')
+    if (sentAssessment === null || serializeAssessmentState(assessmentState) === sentAssessment) {
+      setAssessmentState(toAssessmentEditorState(assessment))
+      setAssessmentSaveState('idle')
+    }
+    setSentAssessment(null)
   }
 
   const [prevItemKey, setPrevItemKey] = useState(() => ({
@@ -121,9 +128,16 @@ export function NativeItemAuthor({
       updated_at: item?.updated_at,
       item,
     })
-    const nextItem = item ? toEditableItem(item) : null
-    setItemState(nextItem)
-    setItemSaveState('idle')
+    const typedSinceSave =
+      item?.item_uuid === prevItemKey.uuid &&
+      sentItem !== null &&
+      itemState !== null &&
+      serializeItemState(itemState) !== sentItem
+    if (!typedSinceSave) {
+      setItemState(item ? toEditableItem(item) : null)
+      setItemSaveState('idle')
+    }
+    setSentItem(null)
   }
 
   useEffect(() => {
@@ -138,6 +152,7 @@ export function NativeItemAuthor({
   const saveAssessment = useCallback(
     async (nextState: AssessmentEditorState) => {
       setAssessmentSaveState('saving')
+      setSentAssessment(serializeAssessmentState(nextState))
       try {
         const { details, policy } = buildAssessmentPatch(mode, assessment, nextState)
         await Promise.all([
@@ -168,6 +183,7 @@ export function NativeItemAuthor({
   const saveItem = useCallback(
     async (nextItem: EditableItem) => {
       setItemSaveState('saving')
+      setSentItem(serializeItemState(nextItem))
       try {
         await apiJson(`assessment-items/${nextItem.item_uuid}`, {
           method: 'PATCH',
@@ -451,6 +467,19 @@ export function NativeItemAuthor({
           <Button size="sm" variant="outline" onClick={() => void setLifecycle('DRAFT')}>
             {tStudio('unschedule')}
           </Button>
+        </AlertDescription>
+      </Alert>
+    ) : assessment.lifecycle === 'PUBLISHED' || assessment.lifecycle === 'ARCHIVED' ? (
+      // Every field below is disabled; say why and where the way back to editing is.
+      <Alert className="rounded-none border-x-0 border-t-0">
+        <Lock className="size-4" />
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+          <span>{tStudio(assessment.lifecycle === 'PUBLISHED' ? 'publishedReadOnly' : 'archivedReadOnly')}</span>
+          {activeView === 'PUBLISH' ? null : (
+            <Button size="sm" variant="outline" onClick={() => setActiveView('PUBLISH')}>
+              {tTabs('publish')}
+            </Button>
+          )}
         </AlertDescription>
       </Alert>
     ) : null

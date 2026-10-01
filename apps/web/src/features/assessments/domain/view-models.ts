@@ -131,6 +131,8 @@ export interface AttemptViewModel {
   canViewResult: boolean
   /** Student can start a revision (returned attempt). */
   canStartRevision: boolean
+  /** Attempts the learner still has under the effective cap; null when unlimited. */
+  attemptsLeft?: number | null
   /** Score cap the next attempt would carry (`attempt_penalty_percent` × attempts used), null when uncapped. */
   nextAttemptCapPercent: number | null
   /** Cap the shown attempt carried (`attempt_penalty_percent` × earlier attempts), null when uncapped or hidden. */

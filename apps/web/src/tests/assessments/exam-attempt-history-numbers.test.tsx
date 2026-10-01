@@ -79,8 +79,7 @@ const vm = {
 } as unknown as AttemptViewModel
 
 describe('exam attempt history numbering', () => {
-  // The history left the in-attempt view (it read as this attempt's result); the entry
-  // panel keeps it, numbered by `attempt_number` through the same AttemptHistoryList.
+  // The history left the in-attempt view (it read as this attempt's result).
   it('keeps past attempts out of the open attempt', () => {
     render(
       <QueryClientProvider client={new QueryClient()}>

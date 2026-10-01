@@ -1859,7 +1859,8 @@
         "examDescriptionPlaceholder": "Describe what this quiz covers",
         "examTitle": "Quiz title",
         "examTitlePlaceholder": "e.g., Chapter 1 quiz"
-      }
+      },
+      "examPresetNote": "Exam preset: one attempt, fullscreen required, copying, right-click and tab switches are tracked; the 3rd violation ends the attempt. You can change all of this in Settings."
     },
     "Onboarding": {
       "endButton": "End",
@@ -8980,7 +8981,8 @@
           "connectionLostTitle": "Connection Lost",
           "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
           "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
-          "draftConflictAnswerCounts": "Local: {localCount, plural, one {# answer} other {# answers}} | Server: {serverCount, plural, one {# answer} other {# answers}}"
+          "draftConflictAnswerCounts": "Local: {localCount, plural, one {# answer} other {# answers}} | Server: {serverCount, plural, one {# answer} other {# answers}}",
+          "timeRemainingValue": "Time remaining: {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -9376,7 +9378,9 @@
               "addField": "Add field",
               "unsupportedKind": "Unsupported item kind."
             }
-          }
+          },
+          "deleteConfirmTitle": "Delete this {itemNoun}?",
+          "deleteConfirmDescription": "This cannot be undone."
         },
         "policyTitle": "{kind} policy",
         "Tabs": {
@@ -9800,7 +9804,9 @@
           "mediumDescription": "Some protections are active. Consider enabling more.",
           "high": "Secure Proctoring",
           "highDescription": "Strong anti-cheat protections are active."
-        }
+        },
+        "publishedReadOnly": "Published: questions and settings are locked. To edit, return it to draft on the Publish tab.",
+        "archivedReadOnly": "Archived: read-only. To edit, restore it to draft on the Publish tab."
       },
       "Review": {
         "Gradebook": {
@@ -9944,7 +9950,8 @@
       "yourAnswer": "Your answer",
       "correctAnswer": "Correct answer",
       "violationThresholdForfeited": "Violation threshold reached ({count}): the attempt is forfeited and handed in with a zero score.",
-      "startNewAttempt": "Start a new attempt"
+      "startNewAttempt": "Start a new attempt",
+      "attemptsLeftOf": "{left} of {max} left"
     },
     "MediaStudio": {
       "source": "Source",

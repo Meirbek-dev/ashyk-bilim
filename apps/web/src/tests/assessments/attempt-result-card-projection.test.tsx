@@ -64,7 +64,7 @@ describe('AttemptResultCard vs progress projection', () => {
     const item = { item_id: itemId, score: 100, max_score: 100, correct: true, feedback_code: 'correct' }
     const reviewVm = {
       ...vm,
-      items: [{ id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', max_score: 10 }],
+      items: [{ id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', body: { prompt: '' }, max_score: 10 }],
       itemScores: { [itemId]: item },
       autoSubmitReason: 'integrity_violation',
       generalFeedback: null,

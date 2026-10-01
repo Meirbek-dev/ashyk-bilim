@@ -291,10 +291,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (assessmentScopeRef.current !== assessmentUuid) return
       draftVersionRef.current = latest.draft_version
 
+      // The reply is the saved draft: seeding the draft and attempt caches is
+      // their refresh. Only the permissions are re-read (a save may have opened
+      // the draft); refetching draft, attempts, detail and items as well was
+      // five requests per autosave.
       syncLatestSubmission(latest)
       setConflictState(null)
       setSaveState(areAnswersEqual(localAnswersRef.current, savedAnswers) ? 'saved' : 'dirty')
-      await invalidateAssessmentState()
+      if (assessmentUuid) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(assessmentUuid) })
+      }
     },
     onError: async (error: unknown) => {
       if (assessmentScopeRef.current !== assessmentUuid) return

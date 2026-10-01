@@ -62,6 +62,11 @@ export interface ChoiceAttemptItem {
 
 export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined
 
+// The whole card reads as picked (not only the small control), and a locked
+// attempt does not invite clicks.
+const OPTION_CARD =
+  'bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:hover:bg-background'
+
 function optionId(option: ChoiceOption, index: number) {
   return option.id ?? index
 }
@@ -81,7 +86,7 @@ export function ChoiceItemAttempt({
           return (
             <Label
               key={String(id)}
-              className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
+              className={OPTION_CARD}
             >
               <Checkbox
                 checked={selected.includes(id)}
@@ -114,7 +119,7 @@ export function ChoiceItemAttempt({
         return (
           <Label
             key={String(id)}
-            className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
+            className={OPTION_CARD}
           >
             <RadioGroupItem value={String(id)} />
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
@@ -355,7 +360,7 @@ function OptionsAuthor({
                   options: value.options.filter((_, i) => i !== index),
                 })
               }
-              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
+              className="shrink-0 opacity-40 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
               aria-label={t('removeOption')}
             >
               <Trash2 className="text-muted-foreground hover:text-destructive size-4 transition-colors" />

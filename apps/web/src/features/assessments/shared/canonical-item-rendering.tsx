@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
 import { normalizeFormItem } from '@/features/assessments/items/form'
 import { getItemKindModule } from '@/features/assessments/items/registry'
-import { matchingColumns } from '@/features/assessments/domain/items'
-import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items'
+import { MatchingItemAttempt } from '@/features/assessments/items/matching'
+import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import { MarkdownContent } from '@/features/content-markdown'
 
 function choiceItemKind(body: Extract<AssessmentItem['body'], { kind: 'CHOICE' }>) {
@@ -136,52 +136,13 @@ export function CanonicalAttemptItem({
   }
 
   if (body.kind === 'MATCHING') {
-    const columns = matchingColumns(body)
-    const currentMatches = new Map<string, string>(
-      answer?.kind === 'MATCHING' ? answer.matches.map(pair => [pair.left, pair.right]) : [],
-    )
-    const updateMatch = (left: string, right: string) => {
-      const next = new Map(currentMatches)
-      if (right) {
-        next.set(left, right)
-      } else {
-        next.delete(left)
-      }
-      onChange({
-        kind: 'MATCHING',
-        matches: [...next.entries()].map(([matchLeft, matchRight]): MatchPair => ({
-          left: matchLeft,
-          right: matchRight,
-        })),
-      })
-    }
-
     return (
-      <div className="space-y-3">
-        {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
-        {columns.left.map(option => (
-          <div
-            key={option.id}
-            className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
-          >
-            <span className="min-w-0 flex-1 text-sm font-medium">{option.text}</span>
-            <NativeSelect
-              value={currentMatches.get(option.id) ?? ''}
-              disabled={disabled}
-              onChange={event => updateMatch(option.id, event.target.value)}
-              aria-label={t('Matching.matchForLabel', { term: option.text })}
-              className="sm:max-w-xs"
-            >
-              <NativeSelectOption value="">{t('Matching.selectMatch')}</NativeSelectOption>
-              {columns.right.map(choice => (
-                <NativeSelectOption key={choice.id} value={choice.id}>
-                  {choice.text}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
-        ))}
-      </div>
+      <MatchingItemAttempt
+        item={body}
+        answer={answer?.kind === 'MATCHING' ? answer : null}
+        disabled={disabled}
+        onAnswerChange={next => onChange(next ?? { kind: 'MATCHING', matches: [] })}
+      />
     )
   }
 

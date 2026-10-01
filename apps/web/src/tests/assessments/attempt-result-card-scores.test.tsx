@@ -33,9 +33,9 @@ const vm = {
   startedAt: '2026-09-11T18:04:39.000Z',
   policy: DEFAULT_POLICY_VIEW,
   items: [
-    { id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', max_score: 1 },
-    { id: matchingId, item_uuid: matchingId, order: 1, kind: 'MATCHING', title: 'Столицы', max_score: 3 },
-    { id: prose, item_uuid: prose, order: 2, kind: 'OPEN_TEXT', title: 'Эссе', max_score: 10 },
+    { id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', body: { prompt: '' }, max_score: 1 },
+    { id: matchingId, item_uuid: matchingId, order: 1, kind: 'MATCHING', title: 'Столицы', body: { prompt: '' }, max_score: 3 },
+    { id: prose, item_uuid: prose, order: 2, kind: 'OPEN_TEXT', title: 'Эссе', body: { prompt: '' }, max_score: 10 },
   ],
   itemScores: {
     [itemId]: { item_id: itemId, score: 100, max_score: 100, correct: true, feedback_code: 'correct' },

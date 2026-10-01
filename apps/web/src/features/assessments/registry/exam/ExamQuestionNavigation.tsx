@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const EMPTY_SET = new Set<number>()
 
@@ -12,14 +11,6 @@ interface ExamQuestionNavigationProps {
   answeredQuestions: Set<number>
   flaggedQuestions?: Set<number>
   onQuestionSelect: (index: number) => void
-}
-
-interface ExamQuestionNavigationMobileProps extends ExamQuestionNavigationProps {
-  onPrevious: () => void
-  onNext: () => void
-  onSubmit?: () => void
-  canGoNext?: boolean
-  canGoPrevious?: boolean
 }
 
 function getButtonStyle(i: number, currentIndex: number, answered: Set<number>, flagged: Set<number>): string {
@@ -54,7 +45,6 @@ export default function ExamQuestionNavigation({
             key={i}
             type="button"
             onClick={() => onQuestionSelect(i)}
-            title={`Q${i + 1}${flaggedQuestions.has(i) ? ' 🔖' : ''}`}
             aria-current={i === currentQuestionIndex ? 'step' : undefined}
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded text-xs font-medium transition-colors',
@@ -84,53 +74,35 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   )
 }
 
+/**
+ * Below `lg` the sidebar grid is hidden: a scrollable number strip under the
+ * questions. Previous/Next live in the fixed action bar only.
+ */
 export function ExamQuestionNavigationMobile({
   totalQuestions,
   currentQuestionIndex,
   answeredQuestions,
   flaggedQuestions = EMPTY_SET,
   onQuestionSelect,
-  onPrevious,
-  onNext,
-}: ExamQuestionNavigationMobileProps) {
-  const t = useTranslations('Activities.ExamActivity')
+}: ExamQuestionNavigationProps) {
+  const t = useTranslations('Features.Assessments.Exam')
 
   return (
-    <div className="bg-card sticky bottom-20 z-20 flex items-center gap-2 rounded-lg border p-2 shadow-sm lg:hidden">
-      <button
-        type="button"
-        onClick={onPrevious}
-        disabled={currentQuestionIndex === 0}
-        aria-label={t('previous')}
-        className="hover:bg-muted flex size-9 shrink-0 items-center justify-center rounded-md border text-sm transition-colors disabled:opacity-50"
-      >
-        <ChevronLeft className="size-4" />
-      </button>
-      <div className="flex flex-1 gap-1 overflow-x-auto">
-        {Array.from({ length: totalQuestions }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onQuestionSelect(i)}
-            aria-current={i === currentQuestionIndex ? 'step' : undefined}
-            className={cn(
-              'flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-medium',
-              getButtonStyle(i, currentQuestionIndex, answeredQuestions, flaggedQuestions),
-            )}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={currentQuestionIndex === totalQuestions - 1}
-        aria-label={t('next')}
-        className="hover:bg-muted flex size-9 shrink-0 items-center justify-center rounded-md border text-sm transition-colors disabled:opacity-50"
-      >
-        <ChevronRight className="size-4" />
-      </button>
-    </div>
+    <nav aria-label={t('questions')} className="bg-card flex gap-1 overflow-x-auto rounded-lg border p-2 lg:hidden">
+      {Array.from({ length: totalQuestions }, (_, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onQuestionSelect(i)}
+          aria-current={i === currentQuestionIndex ? 'step' : undefined}
+          className={cn(
+            'flex size-8 shrink-0 items-center justify-center rounded text-xs font-medium',
+            getButtonStyle(i, currentQuestionIndex, answeredQuestions, flaggedQuestions),
+          )}
+        >
+          {i + 1}
+        </button>
+      ))}
+    </nav>
   )
 }

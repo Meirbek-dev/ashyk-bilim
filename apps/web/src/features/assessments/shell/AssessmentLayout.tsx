@@ -31,6 +31,7 @@ import { AssessmentChrome } from './AssessmentChrome'
 import {
   ActionBarContext,
   AssessmentActionBar,
+  formatRemaining,
   resolvePrimaryButtonLabelKey,
   useActionBarState,
 } from './AssessmentActionBar'
@@ -162,7 +163,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {tKinds(vm.kind)}
               </span>
-              <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
+              <span className="text-sm font-medium tabular-nums">{formatRemaining(guard.remainingSeconds)}</span>
             </div>
           ) : null}
           {/* Editor fills remaining height; pb-16 leaves space for fixed AssessmentActionBar */}
@@ -214,7 +215,6 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
             description={vm.description}
             dueAt={vm.dueAt}
             returned={returned}
-            timerSeconds={guard.remainingSeconds}
             antiCheatEnabled={antiCheatEnabled}
             violationCount={guard.violationCount}
             policy={policy}
@@ -241,6 +241,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           returned={returned}
           primaryButtonLabelKey={primaryButtonLabelKey}
           exitHref={`/course/${courseUuid.replace(/^course_/, '')}`}
+          remainingSeconds={guard.remainingSeconds}
         />
       </div>
 
@@ -342,14 +343,4 @@ function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null })
       </AlertDialogContent>
     </AlertDialog>
   )
-}
-
-function formatTimerDisplay(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  if (h > 0) {
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  }
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }

@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  ChevronDown,
   CheckCircle2,
   Copy,
   Eye,
@@ -57,7 +58,18 @@ import { InlineIssueMessage } from '../components/ValidationIssues'
 import { apiJson } from '@/lib/api-client'
 import { itemBodyToWire } from '@/features/assessments/domain/assessment-wire'
 import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
-import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
+import { extractMarkdownSummary, MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -337,9 +349,9 @@ export default function BuilderCanvasTab({
   )
 
   return (
-    <div className="grid h-[calc(100vh-168px)] min-h-[620px] grid-cols-1 overflow-hidden lg:grid-cols-[16rem_minmax(0,1fr)_auto] 2xl:grid-cols-[20rem_minmax(0,1fr)_auto]">
+    <div className="grid grid-cols-1 lg:h-[calc(100vh-168px)] lg:min-h-[620px] lg:grid-cols-[16rem_minmax(0,1fr)_auto] lg:overflow-hidden 2xl:grid-cols-[20rem_minmax(0,1fr)_auto]">
       {/* Left Outline Sidebar */}
-      <aside className="bg-card/70 flex min-h-0 flex-col border-r">
+      <aside className="bg-card/70 flex max-h-[50vh] min-h-0 flex-col border-b lg:max-h-none lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
@@ -477,7 +489,7 @@ export default function BuilderCanvasTab({
       </aside>
 
       {/* Middle Canvas */}
-      <div className="bg-muted/10 min-w-0 overflow-y-auto">
+      <div className="bg-muted/10 min-w-0 lg:overflow-y-auto">
         {!itemState ? (
           <div className="flex h-full items-center justify-center p-8">
             <div className="max-w-sm text-center">
@@ -648,11 +660,15 @@ function BulkItemActions({
   const tInspector = useTranslations('Features.Assessments.Studio.Inspector')
 
   return (
-    <div className="space-y-2 border-b p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold">{tBuilder('bulkTitle')}</p>
-        {disabled ? <LoaderCircle className="text-muted-foreground size-3.5 animate-spin" /> : null}
-      </div>
+    <details className="group/bulk space-y-2 border-b p-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-semibold">
+        {tBuilder('bulkTitle')}
+        {disabled ? (
+          <LoaderCircle className="text-muted-foreground size-3.5 animate-spin" />
+        ) : (
+          <ChevronDown className="text-muted-foreground size-3.5 transition-transform group-open/bulk:rotate-180" />
+        )}
+      </summary>
       <div className="grid grid-cols-[1fr_auto] gap-1.5">
         <Input
           aria-label={tBuilder('bulkPointsAria')}
@@ -699,7 +715,7 @@ function BulkItemActions({
           {tBuilder('apply')}
         </Button>
       </div>
-    </div>
+    </details>
   )
 }
 
@@ -791,7 +807,10 @@ function SortableOutlineItem({
           <Icon className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium">
-              {index + 1}. {item.title || '—'}
+              {index + 1}.{' '}
+              {item.title && item.title !== t('defaultItemTitle')
+                ? item.title
+                : extractMarkdownSummary('prompt' in item.body ? item.body.prompt : '', 80) || item.title || '—'}
             </p>
             <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-[10px]">
               <span>{t('pointsCompact', { points: item.max_score ?? 0 })}</span>
@@ -929,6 +948,7 @@ function ItemCanvas({
 }) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
+  const tCommon = useTranslations('Common')
   const itemIssueList = dedupeIssues([
     ...localItemValidationIssues(item),
     ...persistedItemIssues(validationIssues, item.item_uuid),
@@ -978,16 +998,28 @@ function ItemCanvas({
               {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
               {t('duplicate')}
             </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={!isEditable || isDeleting}
-              onClick={onDelete}
-            >
-              {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-              {t('delete')}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button type="button" variant="destructive" size="sm" disabled={!isEditable || isDeleting}>
+                    {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                    {t('delete')}
+                  </Button>
+                }
+              />
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('deleteConfirmTitle', { itemNoun: itemNoun.toLowerCase() })}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('deleteConfirmDescription')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={onDelete}>
+                    {t('delete')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : null}
       </div>

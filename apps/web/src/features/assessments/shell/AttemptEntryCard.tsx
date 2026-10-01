@@ -126,7 +126,13 @@ export default function AttemptEntryCard({
             <MetricCard
               icon={<FileEdit className="size-4" />}
               label={t('attempts')}
-              value={maxAttempts ? String(maxAttempts) : t('unlimited')}
+              value={
+                !maxAttempts
+                  ? t('unlimited')
+                  : typeof vm.attemptsLeft === 'number' && vm.attemptsLeft < maxAttempts
+                    ? t('attemptsLeftOf', { left: vm.attemptsLeft, max: maxAttempts })
+                    : String(maxAttempts)
+              }
             />
           </div>
 

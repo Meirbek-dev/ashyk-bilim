@@ -24,7 +24,7 @@ const DEFAULT_TIME_LIMIT = 50
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
     activity_name: v.pipe(v.string(), v.trim(), v.minLength(1, t('activityNameRequired'))),
-    exam_description: v.pipe(v.string(), v.trim(), v.minLength(1, t('examDescriptionRequired'))),
+    exam_description: v.pipe(v.string(), v.trim()),
     time_limit: v.optional(v.pipe(v.number(), v.minValue(TIME_LIMIT_MIN), v.maxValue(TIME_LIMIT_MAX))),
     has_time_limit: v.boolean(),
     shuffle_questions: v.boolean(),
@@ -73,7 +73,8 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
     defaultValues: {
       activity_name: '',
       exam_description: '',
-      has_time_limit: true,
+      // A quiz is practice: untimed unless the teacher says otherwise.
+      has_time_limit: kind === 'exam',
       time_limit: DEFAULT_TIME_LIMIT,
       shuffle_questions: true,
       allow_result_review: true,
@@ -83,7 +84,7 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
   const hasTimeLimit = useWatch({
     control: form.control,
     name: 'has_time_limit',
-    defaultValue: true,
+    defaultValue: kind === 'exam',
   })
 
   const onSubmit = async (values: SubmitValues) => {
@@ -99,7 +100,9 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
               attempt_limit: 1,
               copy_paste_protection: true,
               tab_switch_detection: true,
-              devtools_detection: true,
+              // The devtools check guesses from the window size: a browser side
+              // panel or zoom trips it and forfeits honest attempts. Opt-in only.
+              devtools_detection: false,
               right_click_disable: true,
               fullscreen_enforcement: true,
               violation_threshold: 3,
@@ -247,6 +250,8 @@ function NewExam({ chapterId, course, closeModal, kind }: NewExamProps) {
           </Field>
         )}
       />
+
+      {kind === 'exam' ? <p className="text-muted-foreground text-sm">{t('examPresetNote')}</p> : null}
 
       <div className="mt-6 flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={closeModal} disabled={form.formState.isSubmitting}>

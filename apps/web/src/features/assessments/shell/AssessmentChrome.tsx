@@ -5,7 +5,6 @@ import { AlertTriangle, Clock, RotateCcw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { TimerRing } from './TimerRing'
 import { useLocale, useTranslations } from 'next-intl'
 import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import type { PolicyView } from '@/features/assessments/domain/policy'
@@ -23,8 +22,6 @@ export interface AssessmentChromeProps {
   dueAt?: string | null
   /** Whether this attempt was returned for revision. */
   returned?: boolean
-  /** Remaining seconds for a timed assessment. `null` = no timer. */
-  timerSeconds?: number | null
   /** Whether anti-cheat checks are active. */
   antiCheatEnabled?: boolean
   /** Number of recorded violations (shown when > 0). */
@@ -42,7 +39,7 @@ export interface AssessmentChromeProps {
 /**
  * The header card for every assessment attempt surface.
  *
- * Renders the kind label, title, description, due-date badge, timer badge,
+ * Renders the kind label, title, description, due-date badge,
  * returned-for-revision alert, and anti-cheat notice.
  *
  * Deliberately does NOT render a save-state badge - that lives exclusively in
@@ -54,7 +51,6 @@ export function AssessmentChrome({
   description,
   dueAt,
   returned = false,
-  timerSeconds = null,
   antiCheatEnabled = false,
   violationCount = 0,
   policy,
@@ -94,7 +90,6 @@ export function AssessmentChrome({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {timerSeconds !== null ? <TimerRing remainingSeconds={timerSeconds} /> : null}
             {dueAt ? (
               <Badge variant="outline">
                 <Clock className="size-3" />

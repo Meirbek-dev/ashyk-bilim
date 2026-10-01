@@ -1843,7 +1843,8 @@
         "examDescriptionPlaceholder": "Опишите, что охватывает этот тест",
         "examTitle": "Название теста",
         "examTitlePlaceholder": "напр., Тест по главе 1"
-      }
+      },
+      "examPresetNote": "Пресет экзамена: одна попытка, полноэкранный режим, отслеживаются копирование, правый клик и переключение вкладок; 3-е нарушение завершает попытку. Всё это можно изменить в настройках."
     },
     "Onboarding": {
       "endButton": "Завершить",
@@ -8850,7 +8851,9 @@
               "addField": "Добавить поле",
               "unsupportedKind": "Неподдерживаемый тип элемента."
             }
-          }
+          },
+          "deleteConfirmTitle": "Удалить: {itemNoun}?",
+          "deleteConfirmDescription": "Это действие нельзя отменить."
         },
         "policyTitle": "Политика {kind}",
         "Tabs": {
@@ -9274,7 +9277,9 @@
           "mediumDescription": "Некоторые защиты активны. Рассмотрите включение большего числа.",
           "high": "Безопасный прокторинг",
           "highDescription": "Активна надёжная защита от списывания."
-        }
+        },
+        "publishedReadOnly": "Опубликовано: вопросы и настройки заблокированы. Чтобы изменить, верните в черновик на вкладке «Публикация».",
+        "archivedReadOnly": "В архиве: только просмотр. Чтобы изменить, восстановите в черновик на вкладке «Публикация»."
       },
       "Shared": {
         "AntiCheatOverlay": {
@@ -9627,7 +9632,8 @@
           "connectionLostTitle": "Подключение потеряно",
           "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
           "draftConflictDescription": "Более новая версия #{latestVersion} ваших ответов была сохранена на сервере в {latestSavedAt}. Какую версию вы хотите использовать?",
-          "draftConflictAnswerCounts": "Локально: {localCount, plural, one {# ответ} few {# ответа} other {# ответов}} | На сервере: {serverCount, plural, one {# ответ} few {# ответа} other {# ответов}}"
+          "draftConflictAnswerCounts": "Локально: {localCount, plural, one {# ответ} few {# ответа} other {# ответов}} | На сервере: {serverCount, plural, one {# ответ} few {# ответа} other {# ответов}}",
+          "timeRemainingValue": "Осталось времени: {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",
@@ -9957,7 +9963,8 @@
       "yourAnswer": "Ваш ответ",
       "correctAnswer": "Правильный ответ",
       "violationThresholdForfeited": "Порог нарушений достигнут ({count}): попытка аннулирована и отправлена с нулевым баллом.",
-      "startNewAttempt": "Начать новую попытку"
+      "startNewAttempt": "Начать новую попытку",
+      "attemptsLeftOf": "Осталось {left} из {max}"
     },
     "MediaStudio": {
       "source": "Источник",
