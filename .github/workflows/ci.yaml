@@ -6,7 +6,8 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    # ci/**: run the image build and the stack smoke for a branch (never published).
+    branches: [main, 'ci/**']
   pull_request:
 
 # PRs: a newer push cancels the running one. main: never cancelled while
@@ -195,8 +196,7 @@ jobs:
     needs: [changes, server-gates, web-gates, infra-gates]
     # Gates may be skipped (path filter) but never failed.
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      !failure() && !cancelled()
+      github.event_name == 'push' && !failure() && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -294,6 +294,7 @@ jobs:
 
   publish:
     needs: [changes, stack-smoke]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
