@@ -10,7 +10,7 @@ stack=${STACK:-prod}
 
 services=(db redis zitadel rustfs)
 judge0=false
-if compose config --services | grep -qx judge0-server; then
+if grep -qx judge0-server <<<"$(compose config --services)"; then
   judge0=true
   services+=(judge0-server judge0-workers)
 fi

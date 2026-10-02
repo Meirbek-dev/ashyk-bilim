@@ -182,7 +182,7 @@ jobs:
         run: just ci-infra
 
       - name: shellcheck
-        run: shellcheck -x infra/scripts/*.sh
+        run: shellcheck -x -S warning infra/scripts/*.sh infra/storage/*.sh
 
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color

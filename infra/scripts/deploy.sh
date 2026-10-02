@@ -83,7 +83,10 @@ if [[ ${1:-} == --rollback ]]; then
   if [[ ${1:-} == --force ]]; then force=1 && shift; fi
   current=$(deployed 1)
   # Most recent release that differs from the current one.
-  target=$([[ -f $HISTORY ]] && awk '{ print $2 }' "$HISTORY" | grep -vxF "$current" | tail -n 1 || true)
+  target=
+  if [[ -f $HISTORY ]]; then
+    target=$(awk '{ print $2 }' "$HISTORY" | grep -vxF "$current" | tail -n 1 || true)
+  fi
   if [[ -n ${1:-} ]]; then
     target=$(short_sha "$1")
     [[ -n $target ]] || die "unknown commit: $1"

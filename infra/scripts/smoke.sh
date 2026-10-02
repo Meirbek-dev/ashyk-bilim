@@ -44,7 +44,7 @@ expect 200 / -L --max-redirs 3
 expect 200 /content/_probe/smoke.txt
 
 use_stack
-if compose ps --status running --services 2>/dev/null | grep -qx judge0-server; then
+if grep -qx judge0-server <<<"$(compose ps --status running --services 2>/dev/null)"; then
   got=$(compose exec -T server curl -sS -o /dev/null -w '%{http_code}' http://judge0-server:2358/languages || true)
   if [[ $got == 401 ]]; then log "ok   401 judge0 without token"; else
     log "FAIL judge0 without token: expected 401, got ${got:-no response}"

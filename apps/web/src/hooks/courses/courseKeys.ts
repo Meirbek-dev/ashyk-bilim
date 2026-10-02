@@ -85,7 +85,7 @@ export function toAppCertification(issued: IssuedCertificate | VerifiedCertifica
       user_certification_uuid: certificate.verify_code,
       created_at: unixToIso(certificate.issued_at_unix) ?? '',
     },
-    certification: { ...certification, config: certification.config as AppCertification['certification']['config'] },
+    certification: { ...certification, config: certification.config },
   }
 }
 

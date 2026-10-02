@@ -80,7 +80,7 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
   if [[ -n $proj ]] &&
     { [[ -s .deploy-history ]] ||
       [[ -n $(docker ps -aq --filter "label=com.docker.compose.project=$proj") ]] ||
-      docker volume ls -q | grep -q '_postgres_data$'; } &&
+      grep -q '_postgres_data$' <<<"$(docker volume ls -q)"; } &&
     ! docker volume inspect "${proj}_postgres_data" >/dev/null 2>&1; then
     fail "volume ${proj}_postgres_data is missing on a host that already ran the stack (wrong COMPOSE_PROJECT_NAME?)"
   fi

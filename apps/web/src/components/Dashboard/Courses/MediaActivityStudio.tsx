@@ -177,7 +177,7 @@ export default function MediaActivityStudio({
           )
         ) : (
           <div className="h-[70vh] overflow-hidden rounded-lg border">
-            <DocumentPdfActivity activity={activity} course={{ course_uuid: courseUuid } as AppCourse} />
+            <DocumentPdfActivity activity={activity} course={{ course_uuid: courseUuid }} />
           </div>
         )}
       </section>
