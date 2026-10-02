@@ -38,6 +38,11 @@ port is not published.
 The production admin password was pasted into a chat session during rewrite
 planning. Rotate it (now a Zitadel credential) and enable MFA on the admin account.
 
+### 30. The production SSH password was written into a repository file
+On 2026-10-02 the host's SSH password was pasted into `docs/MODERNIZATION-STAGE-1.md`
+(staged, never committed or pushed; scrubbed before the first commit). Rotate it and
+switch the host to key-only authentication (`PasswordAuthentication no`).
+
 ### 8. Judge0 shares the production Postgres and Redis instances
 **Fixed in repo, takes effect at cutover (RUNBOOK).** Judge0 gets its own
 `judge0-db` and `judge0-redis` on the internal `exec-net` and has no network
@@ -70,6 +75,13 @@ Half closed: lint, typecheck, unit tests, the API contract and the error-code
 check run in CI (`ci.yaml`, web-gates). Still open: Playwright runs only by
 hand, and `scripts/run-vitest.mjs` pins Vitest over a stale vite-plus bundle
 (remove when vite-plus catches up).
+
+### 29. Flaky server test under coverage
+`ab-api::mfa_flow::fenced_totp_login_retries_without_replaying_the_code`
+(`crates/api/tests/mfa_flow.rs:580`, "the retry ran": left 0, right 1) failed once in
+the `Coverage floor` step (CI run 37062388407) after passing in the plain test step of
+the same run and in five other runs. Timing-dependent under llvm-cov instrumentation.
+A red server gate blocks `publish`; re-run the job until the test is made deterministic.
 
 ## Low
 

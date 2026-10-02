@@ -429,9 +429,22 @@ Next.js leftovers stage 2 must remove:
 - `scripts/run-vitest.mjs` Vitest pin (FINDINGS #13); `test` script name is
   fine, `e2e` is today `test:e2e`.
 
+## Verified in CI (2026-10-03)
+
+Branch `ci/stage1-verify` (run 37062396376, `main` at 39eabe9 plus the worker
+healthcheck and workflow fixes): infra gates, server gates on the `just dev-up`
+stack, both images, full-stack smoke from zero with the real images, and the
+second smoke with the stub web (R-09). Web gates were green on `main` at 39eabe9
+(run 37053137010). The GHCR packages are public (anonymous pull works).
+Any `ci/**` branch runs gates, images and stack smoke without publishing.
+
 ## Known gaps
 
 - **Prod cutover pending.** Nothing of the above runs on the prod host yet.
+- **No release is published yet.** `main` is red since 34d8cd2 (message catalogs
+  moved to the Paraglide format while `apps/web` still reads them through
+  next-intl: web typecheck fails), so `publish` has never run and there is no
+  `<sha>` tag to deploy. See `QUESTIONS.md` Q-2026-10-03-1.
 - **Judge0 untested in the new layout** (own db/redis, token, `judge0.conf`
   precedence). Off in CI smoke (privileged). First real check: the cutover
   verification (RUNBOOK 1.3).
