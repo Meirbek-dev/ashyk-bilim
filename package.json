@@ -2,7 +2,7 @@
   "name": "ashyq-bilim",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/web"
   ],
   "scripts": {
     "services": "docker compose -f docker-compose.dev.yml up -d",

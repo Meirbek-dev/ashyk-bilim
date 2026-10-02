@@ -44,3 +44,6 @@ Thumbs.db
 *.pem
 tmpclaude-*-cwd
 .claude/scheduled_tasks.lock
+
+# Owner-local reference projects (not part of this repo)
+apps/examples/
