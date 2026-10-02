@@ -1,0 +1,8 @@
+{
+  "$comment": "Required term translations. Each value is a lowercase stem; a message whose ru text contains the ru stem must contain the kk and en stems (gate G-03).",
+  "terms": [
+    { "ru": "коллекци", "kk": "жинақ", "en": "collection" },
+    { "ru": "курс", "kk": "курс", "en": "course" },
+    { "ru": "парол", "kk": "құпиясөз", "en": "password" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://inlang.com/schema/project-settings",
+  "baseLocale": "ru",
+  "locales": ["ru", "kk", "en"],
+  "modules": ["./node_modules/@inlang/plugin-message-format/dist/index.js"],
+  "plugin.inlang.messageFormat": {
+    "pathPattern": [
+      "./messages/{locale}/platform.json",
+      "./messages/{locale}/auth.json",
+      "./messages/{locale}/home.json",
+      "./messages/{locale}/collections.json"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "collections_title": "Коллекции",
+  "collections_empty": "Коллекций пока нет",
+  "collections_show_more": "Показать ещё",
+  "collections_updated": "Обновлено {date}",
+  "collections_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} курс",
+        "countPlural=few": "{count} курса",
+        "countPlural=many": "{count} курсов",
+        "countPlural=other": "{count} курса"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "collections_title": "Collections",
+  "collections_empty": "No collections yet",
+  "collections_show_more": "Show more",
+  "collections_updated": "Updated {date}",
+  "collections_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} course",
+        "countPlural=other": "{count} courses"
+      }
+    }
+  ]
+}

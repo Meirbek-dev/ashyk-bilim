@@ -1,0 +1,40 @@
+/* Sage Garden Plus. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="sage-garden-plus"] {
+  --background: light-dark(oklch(0.994 0 0), oklch(0.117 0.009 73.5));
+  --foreground: light-dark(oklch(0 0 0), oklch(0.98 0.002 67.8));
+  --card: light-dark(oklch(0.994 0 0), oklch(0.161 0.011 81));
+  --card-foreground: light-dark(oklch(0 0 0), oklch(0.98 0.002 67.8));
+  --popover: light-dark(oklch(0.991 0 0), oklch(0.141 0.011 88.5));
+  --popover-foreground: light-dark(oklch(0 0 0), oklch(0.98 0.002 67.8));
+  --primary: light-dark(oklch(0.783 0.038 132.7), oklch(0.783 0.038 132.7));
+  --primary-foreground: light-dark(oklch(0 0 0), oklch(0.099 0.006 72.5));
+  --secondary: light-dark(oklch(0.954 0.006 255.5), oklch(0.251 0.015 76.2));
+  --secondary-foreground: light-dark(oklch(0.134 0 0), oklch(0.92 0.007 80.7));
+  --muted: light-dark(oklch(0.97 0 0), oklch(0.22 0.013 78));
+  --muted-foreground: light-dark(oklch(0.543 0 0), oklch(0.651 0.008 80.7));
+  --accent: light-dark(oklch(0.443 0.044 134.5), oklch(0.443 0.044 134.5));
+  --accent-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
+  --destructive: light-dark(oklch(0.493 0.186 26.2), oklch(0.608 0.186 26.2));
+  --border: light-dark(oklch(0.93 0.009 286.2), oklch(0.281 0.025 82.7));
+  --input: light-dark(oklch(0.66 0 0), oklch(0.479 0.015 76));
+  --ring: light-dark(oklch(0.653 0.038 132.7), oklch(0.783 0.038 132.7));
+  --chart-1: light-dark(oklch(0.746 0.148 156.4), oklch(0.564 0.165 136.9));
+  --chart-2: light-dark(oklch(0.539 0.271 286.7), oklch(0.651 0.176 136));
+  --chart-3: light-dark(oklch(0.734 0.176 50.6), oklch(0.725 0.173 135.1));
+  --chart-4: light-dark(oklch(0.583 0.181 259.7), oklch(0.854 0.14 133.8));
+  --chart-5: light-dark(oklch(0.559 0 0), oklch(0.783 0.038 132.7));
+  --sidebar: light-dark(oklch(0.978 0.005 247.9), oklch(0.099 0.006 72.5));
+  --sidebar-foreground: light-dark(oklch(0 0 0), oklch(0.95 0.005 78.3));
+  --sidebar-primary: light-dark(oklch(0 0 0), oklch(0.783 0.038 132.7));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0.099 0.006 72.5));
+  --sidebar-accent: light-dark(oklch(0.93 0.014 134.9), oklch(0.443 0.044 134.5));
+  --sidebar-accent-foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --sidebar-border: light-dark(oklch(0.94 0 0), oklch(0.251 0.02 80.3));
+  --sidebar-ring: light-dark(oklch(0.783 0.038 132.7), oklch(0.783 0.038 132.7));
+  --radius: 1.4rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0 0 0 / 0.16), oklch(0 0 0 / 0.35));
+}

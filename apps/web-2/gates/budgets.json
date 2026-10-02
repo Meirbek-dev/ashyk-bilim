@@ -1,0 +1,6 @@
+{
+  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`. Phase 0 baseline; tighten when the kit lands.",
+  "initialJsGzipKb": 170,
+  "chunkGzipKb": 150,
+  "cssGzipKb": 30
+}

@@ -1,0 +1,40 @@
+/* Elegant Luxury. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="elegant-luxury"] {
+  --background: light-dark(oklch(0.98 0 0), oklch(0.22 0.01 56));
+  --foreground: light-dark(oklch(0.22 0 0), oklch(0.97 0 0));
+  --card: light-dark(oklch(0.98 0 0), oklch(0.27 0.01 34.3));
+  --card-foreground: light-dark(oklch(0.22 0 0), oklch(0.97 0 0));
+  --popover: light-dark(oklch(0.98 0 0), oklch(0.27 0.01 34.3));
+  --popover-foreground: light-dark(oklch(0.22 0 0), oklch(0.97 0 0));
+  --primary: light-dark(oklch(0.47 0.15 24.9), oklch(0.51 0.19 27.5));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(0.98 0 0));
+  --secondary: light-dark(oklch(0.96 0.04 89.1), oklch(0.47 0.12 46.2));
+  --secondary-foreground: light-dark(oklch(0.48 0.1 75.1), oklch(0.96 0.06 95.6));
+  --muted: light-dark(oklch(0.94 0.01 53.4), oklch(0.27 0.01 34.3));
+  --muted-foreground: light-dark(oklch(0.44 0.01 73.6), oklch(0.87 0 0));
+  --accent: light-dark(oklch(0.96 0.06 95.6), oklch(0.56 0.15 49));
+  --accent-foreground: light-dark(oklch(0.4 0.13 25.7), oklch(0.975 0.041 95.6));
+  --destructive: light-dark(oklch(0.44 0.16 26.9), oklch(0.67 0.21 25.3));
+  --border: light-dark(oklch(0.94 0.03 81), oklch(0.37 0.01 67.6));
+  --input: light-dark(oklch(0.65 0.03 81), oklch(0.515 0.01 67.6));
+  --ring: light-dark(oklch(0.47 0.15 24.9), oklch(0.54 0.19 27.5));
+  --chart-1: light-dark(oklch(0.51 0.19 27.5), oklch(0.71 0.17 22.2));
+  --chart-2: light-dark(oklch(0.47 0.15 24.9), oklch(0.64 0.21 25.3));
+  --chart-3: light-dark(oklch(0.4 0.13 25.7), oklch(0.58 0.22 27.3));
+  --chart-4: light-dark(oklch(0.56 0.15 49), oklch(0.84 0.16 84.4));
+  --chart-5: light-dark(oklch(0.47 0.12 46.2), oklch(0.77 0.16 70.1));
+  --sidebar: light-dark(oklch(0.94 0.01 53.4), oklch(0.22 0.01 56));
+  --sidebar-foreground: light-dark(oklch(0.22 0 0), oklch(0.97 0 0));
+  --sidebar-primary: light-dark(oklch(0.47 0.15 24.9), oklch(0.51 0.19 27.5));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0.98 0 0));
+  --sidebar-accent: light-dark(oklch(0.96 0.06 95.6), oklch(0.56 0.15 49));
+  --sidebar-accent-foreground: light-dark(oklch(0.4 0.13 25.7), oklch(0.975 0.041 95.6));
+  --sidebar-border: light-dark(oklch(0.94 0.03 81), oklch(0.37 0.01 67.6));
+  --sidebar-ring: light-dark(oklch(0.47 0.15 24.9), oklch(0.51 0.19 27.5));
+  --radius: 0.375rem;
+  --shadow-x: 1px;
+  --shadow-y: 1px;
+  --shadow-blur: 16px;
+  --shadow-spread: -2px;
+  --shadow-color: light-dark(oklch(0.279 0.087 24.8 / 0.12), oklch(0.279 0.087 24.8 / 0.12));
+}

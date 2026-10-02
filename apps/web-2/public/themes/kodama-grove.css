@@ -1,0 +1,40 @@
+/* Kodama Grove. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="kodama-grove"] {
+  --background: light-dark(oklch(0.88 0.05 91.8), oklch(0.33 0.02 88.1));
+  --foreground: light-dark(oklch(0.255 0.03 59.2), oklch(0.92 0.02 82.1));
+  --card: light-dark(oklch(0.89 0.04 87.6), oklch(0.36 0.02 82.3));
+  --card-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.92 0.02 82.1));
+  --popover: light-dark(oklch(0.94 0.03 89.8), oklch(0.36 0.02 82.3));
+  --popover-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.92 0.02 82.1));
+  --primary: light-dark(oklch(0.55 0.11 118.9), oklch(0.68 0.06 132.4));
+  --primary-foreground: light-dark(oklch(0.99 0.01 88.6), oklch(0.27 0.01 61));
+  --secondary: light-dark(oklch(0.85 0.06 91.2), oklch(0.44 0.02 84.5));
+  --secondary-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.92 0.02 82.1));
+  --muted: light-dark(oklch(0.85 0.06 91.2), oklch(0.39 0.02 82.7));
+  --muted-foreground: light-dark(oklch(0.455 0.03 60.9), oklch(0.77 0.02 73.6));
+  --accent: light-dark(oklch(0.84 0.07 90.3), oklch(0.65 0.07 90.8));
+  --accent-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.27 0.01 61));
+  --destructive: light-dark(oklch(0.46 0.1 30), oklch(0.76 0.08 31.3));
+  --border: light-dark(oklch(0.69 0.04 59.8), oklch(0.44 0.02 84.5));
+  --input: light-dark(oklch(0.575 0.07 90.3), oklch(0.6 0.02 84.5));
+  --ring: light-dark(oklch(0.565 0.06 130.8), oklch(0.68 0.06 132.4));
+  --chart-1: light-dark(oklch(0.73 0.06 130.8), oklch(0.68 0.06 132.4));
+  --chart-2: light-dark(oklch(0.68 0.06 132.4), oklch(0.73 0.06 130.8));
+  --chart-3: light-dark(oklch(0.82 0.03 136.7), oklch(0.59 0.05 137.6));
+  --chart-4: light-dark(oklch(0.59 0.05 137.6), oklch(0.65 0.07 90.8));
+  --chart-5: light-dark(oklch(0.52 0.04 137.2), oklch(0.52 0.04 137.2));
+  --sidebar: light-dark(oklch(0.86 0.06 90.5), oklch(0.33 0.02 88.1));
+  --sidebar-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.92 0.02 82.1));
+  --sidebar-primary: light-dark(oklch(0.55 0.06 130.8), oklch(0.68 0.06 132.4));
+  --sidebar-primary-foreground: light-dark(oklch(0.99 0.01 88.6), oklch(0.27 0.01 61));
+  --sidebar-accent: light-dark(oklch(0.92 0.02 88), oklch(0.65 0.07 90.8));
+  --sidebar-accent-foreground: light-dark(oklch(0.43 0.03 59.2), oklch(0.27 0.01 61));
+  --sidebar-border: light-dark(oklch(0.91 0.02 88), oklch(0.44 0.02 84.5));
+  --sidebar-ring: light-dark(oklch(0.73 0.06 130.8), oklch(0.68 0.06 132.4));
+  --radius: 0.425rem;
+  --shadow-x: 3px;
+  --shadow-y: 3px;
+  --shadow-blur: 2px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0.509 0.063 128.8 / 0.15), oklch(0.509 0.063 128.8 / 0.15));
+}

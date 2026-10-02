@@ -1,0 +1,40 @@
+/* Brownie. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="brownie"] {
+  --background: light-dark(oklch(0.968 0.016 99), oklch(0.267 0.012 44.6));
+  --foreground: light-dark(oklch(0.38 0.031 52.9), oklch(0.968 0.016 99));
+  --card: light-dark(oklch(0.968 0.016 99), oklch(0.329 0.016 50.9));
+  --card-foreground: light-dark(oklch(0.38 0.031 52.9), oklch(0.968 0.016 99));
+  --popover: light-dark(oklch(1 0 0), oklch(0.329 0.016 50.9));
+  --popover-foreground: light-dark(oklch(0.38 0.031 52.9), oklch(0.968 0.016 99));
+  --primary: light-dark(oklch(0.567 0.101 14.2), oklch(0.739 0.059 53.6));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(0.267 0.012 44.6));
+  --secondary: light-dark(oklch(0.567 0.04 49), oklch(0.544 0.055 48.4));
+  --secondary-foreground: light-dark(oklch(1 0 0), oklch(0.968 0.016 99));
+  --muted: light-dark(oklch(0.86 0.039 39.9), oklch(0.38 0.031 52.9));
+  --muted-foreground: light-dark(oklch(0.464 0.055 48.4), oklch(0.757 0.038 50.9));
+  --accent: light-dark(oklch(0.86 0.039 39.9), oklch(0.747 0.04 49));
+  --accent-foreground: light-dark(oklch(0.38 0.031 52.9), oklch(0.267 0.012 44.6));
+  --destructive: light-dark(oklch(0.228 0.009 75.2), oklch(0.718 0.142 21.5));
+  --border: light-dark(oklch(0.574 0.055 48.4), oklch(0.38 0.031 52.9));
+  --input: light-dark(oklch(0.574 0.055 48.4), oklch(0.545 0.031 52.9));
+  --ring: light-dark(oklch(0.567 0.101 14.2), oklch(0.739 0.059 53.6));
+  --chart-1: light-dark(oklch(0.567 0.101 14.2), oklch(0.739 0.059 53.6));
+  --chart-2: light-dark(oklch(0.574 0.055 48.4), oklch(0.747 0.04 49));
+  --chart-3: light-dark(oklch(0.739 0.059 53.6), oklch(0.567 0.101 14.2));
+  --chart-4: light-dark(oklch(0.747 0.04 49), oklch(0.574 0.055 48.4));
+  --chart-5: light-dark(oklch(0.63 0.055 27.7), oklch(0.63 0.055 27.7));
+  --sidebar: light-dark(oklch(0.864 0.04 39.3), oklch(0.223 0.01 53));
+  --sidebar-foreground: light-dark(oklch(0.38 0.031 52.9), oklch(0.968 0.016 99));
+  --sidebar-primary: light-dark(oklch(0.567 0.101 14.2), oklch(0.739 0.059 53.6));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0.223 0.01 53));
+  --sidebar-accent: light-dark(oklch(0.569 0.059 53.6), oklch(0.747 0.04 49));
+  --sidebar-accent-foreground: light-dark(oklch(1 0 0), oklch(0.223 0.01 53));
+  --sidebar-border: light-dark(oklch(0.63 0.055 27.7), oklch(0.38 0.031 52.9));
+  --sidebar-ring: light-dark(oklch(0.567 0.101 14.2), oklch(0.739 0.059 53.6));
+  --radius: 0px;
+  --shadow-x: 2px;
+  --shadow-y: 2px;
+  --shadow-blur: 0px;
+  --shadow-spread: 2px;
+  --shadow-color: light-dark(oklch(0.38 0.031 52.9), oklch(0.38 0.031 52.9));
+}

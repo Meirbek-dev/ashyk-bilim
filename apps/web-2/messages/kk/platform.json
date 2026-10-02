@@ -1,0 +1,15 @@
+{
+  "platform_brand": "Ashyq Bilim",
+  "platform_nav_label": "Негізгі навигация",
+  "platform_nav_home": "Бүгін",
+  "platform_nav_collections": "Жинақтар",
+  "platform_nav_login": "Кіру",
+  "platform_landing_title": "Өз қарқыныңызбен оқыңыз",
+  "platform_landing_browse": "Жинақтарды қарау",
+  "platform_error_title": "Бірдеңе дұрыс болмады",
+  "platform_error_request_id": "Өтініш коды: {id}",
+  "platform_error_retry": "Қайталау",
+  "platform_not_found_title": "Бет табылмады",
+  "platform_not_found_home": "Басты бетке",
+  "platform_loading": "Жүктелуде…"
+}

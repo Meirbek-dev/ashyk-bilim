@@ -1,0 +1,5 @@
+{
+  "home_title": "Today",
+  "home_signed_in_as": "Signed in as {name}",
+  "home_roles": "Roles: {roles}"
+}

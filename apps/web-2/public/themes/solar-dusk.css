@@ -1,0 +1,40 @@
+/* Solar Dusk. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="solar-dusk"] {
+  --background: light-dark(oklch(0.99 0.01 84.6), oklch(0.22 0.01 56));
+  --foreground: light-dark(oklch(0.37 0.03 49.6), oklch(0.97 0 0));
+  --card: light-dark(oklch(0.97 0.01 78.3), oklch(0.27 0.01 34.3));
+  --card-foreground: light-dark(oklch(0.37 0.03 49.6), oklch(0.97 0 0));
+  --popover: light-dark(oklch(0.97 0.01 78.3), oklch(0.27 0.01 34.3));
+  --popover-foreground: light-dark(oklch(0.37 0.03 49.6), oklch(0.97 0 0));
+  --primary: light-dark(oklch(0.56 0.15 49), oklch(0.58 0.159 47.6));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
+  --secondary: light-dark(oklch(0.83 0.08 74.4), oklch(0.44 0.01 73.6));
+  --secondary-foreground: light-dark(oklch(0.44 0.01 73.6), oklch(0.92 0 0));
+  --muted: light-dark(oklch(0.94 0.02 83.3), oklch(0.27 0.01 34.3));
+  --muted-foreground: light-dark(oklch(0.52 0.01 58.1), oklch(0.72 0.01 56.3));
+  --accent: light-dark(oklch(0.9 0.05 75), oklch(0.36 0.05 229.3));
+  --accent-foreground: light-dark(oklch(0.44 0.01 73.6), oklch(0.92 0 0));
+  --destructive: light-dark(oklch(0.44 0.16 26.9), oklch(0.67 0.217 27.3));
+  --border: light-dark(oklch(0.89 0.04 89.7), oklch(0.37 0.01 67.6));
+  --input: light-dark(oklch(0.655 0.04 89.7), oklch(0.515 0.01 67.6));
+  --ring: light-dark(oklch(0.56 0.15 49), oklch(0.7 0.19 47.6));
+  --chart-1: light-dark(oklch(0.56 0.15 49), oklch(0.7 0.19 47.6));
+  --chart-2: light-dark(oklch(0.55 0.01 58.1), oklch(0.68 0.15 237.3));
+  --chart-3: light-dark(oklch(0.55 0.12 66.4), oklch(0.8 0.16 86));
+  --chart-4: light-dark(oklch(0.55 0.01 58.1), oklch(0.72 0.01 56.3));
+  --chart-5: light-dark(oklch(0.68 0.14 75.8), oklch(0.55 0.01 58.1));
+  --sidebar: light-dark(oklch(0.94 0.02 83.3), oklch(0.27 0.01 34.3));
+  --sidebar-foreground: light-dark(oklch(0.37 0.03 49.6), oklch(0.97 0 0));
+  --sidebar-primary: light-dark(oklch(0.56 0.15 49), oklch(0.58 0.159 47.6));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
+  --sidebar-accent: light-dark(oklch(0.55 0.12 66.4), oklch(0.68 0.15 237.3));
+  --sidebar-accent-foreground: light-dark(oklch(1 0 0), oklch(0.28 0.07 254.5));
+  --sidebar-border: light-dark(oklch(0.89 0.04 89.7), oklch(0.37 0.01 67.6));
+  --sidebar-ring: light-dark(oklch(0.56 0.15 49), oklch(0.7 0.19 47.6));
+  --radius: 0.3rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0.377 0.025 63.2 / 0.18), oklch(0.158 0 0 / 0.18));
+}

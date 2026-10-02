@@ -1,0 +1,40 @@
+/* Twitter. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="twitter"] {
+  --background: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --foreground: light-dark(oklch(0.19 0.01 248.5), oklch(0.93 0 0));
+  --card: light-dark(oklch(0.98 0 0), oklch(0.21 0.01 274.5));
+  --card-foreground: light-dark(oklch(0.19 0.01 248.5), oklch(0.89 0 0));
+  --popover: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --popover-foreground: light-dark(oklch(0.19 0.01 248.5), oklch(0.93 0 0));
+  --primary: light-dark(oklch(0.56 0.141 245), oklch(0.56 0.141 245));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
+  --secondary: light-dark(oklch(0.19 0.01 248.5), oklch(0.96 0 0));
+  --secondary-foreground: light-dark(oklch(1 0 0), oklch(0.19 0.01 248.5));
+  --muted: light-dark(oklch(0.92 0 0), oklch(0.21 0 0));
+  --muted-foreground: light-dark(oklch(0.19 0.01 248.5), oklch(0.605 0.01 248));
+  --accent: light-dark(oklch(0.94 0.02 250.8), oklch(0.19 0.03 242.6));
+  --accent-foreground: light-dark(oklch(0.52 0.131 245), oklch(0.67 0.16 245));
+  --destructive: light-dark(oklch(0.545 0.221 25.8), oklch(0.635 0.24 25.8));
+  --border: light-dark(oklch(0.93 0.01 231.7), oklch(0.27 0 0));
+  --input: light-dark(oklch(0.665 0 0), oklch(0.47 0.03 244.8));
+  --ring: light-dark(oklch(0.66 0.16 243.3), oklch(0.68 0.16 243.3));
+  --chart-1: light-dark(oklch(0.67 0.16 245), oklch(0.67 0.16 245));
+  --chart-2: light-dark(oklch(0.69 0.16 160.3), oklch(0.69 0.16 160.3));
+  --chart-3: light-dark(oklch(0.82 0.16 82.5), oklch(0.82 0.16 82.5));
+  --chart-4: light-dark(oklch(0.71 0.18 151.7), oklch(0.71 0.18 151.7));
+  --chart-5: light-dark(oklch(0.59 0.22 10.6), oklch(0.59 0.22 10.6));
+  --sidebar: light-dark(oklch(0.98 0 0), oklch(0.21 0.01 274.5));
+  --sidebar-foreground: light-dark(oklch(0.19 0.01 248.5), oklch(0.89 0 0));
+  --sidebar-primary: light-dark(oklch(0.56 0.141 245), oklch(0.56 0.136 243.3));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
+  --sidebar-accent: light-dark(oklch(0.94 0.02 250.8), oklch(0.19 0.03 242.6));
+  --sidebar-accent-foreground: light-dark(oklch(0.52 0.131 245), oklch(0.67 0.16 245));
+  --sidebar-border: light-dark(oklch(0.93 0.01 238.5), oklch(0.38 0.02 240.6));
+  --sidebar-ring: light-dark(oklch(0.68 0.16 243.3), oklch(0.68 0.16 243.3));
+  --radius: 1.3rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 0px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0.682 0.158 243.4 / 0), oklch(0.682 0.158 243.4 / 0));
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/apps/web-2/gates/hook-post-edit.sh\"",
+            "timeout": 120,
+            "statusMessage": "apps/web-2: types and lint"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/apps/web-2/gates/hook-stop.sh\"",
+            "timeout": 600,
+            "statusMessage": "apps/web-2: vp run verify"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/apps/web-2/gates/hook-stop.sh\"",
+            "timeout": 600,
+            "statusMessage": "apps/web-2: vp run verify"
+          }
+        ]
+      }
+    ]
+  }
+}

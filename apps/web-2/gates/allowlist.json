@@ -1,0 +1,28 @@
+{
+  "$comment": "Every exception to a gate, each with a reason (spec 4.7, G-12). Changes here are reported in the phase report (8.6).",
+  "apiCoverage": {
+    "phase": 0,
+    "enforceFromPhase": 7,
+    "reason": "During the rewrite most operations have no consumer yet; G-07 reports the count and turns red from phase 7 (spec 12, Ф7: G-07 without exceptions except service operations).",
+    "serviceOperations": [
+      {
+        "operation": "live",
+        "reason": "liveness probe for infra (/api/v2/health), not a UI operation"
+      },
+      {
+        "operation": "ready",
+        "reason": "readiness probe for infra (/api/v2/health/ready), not a UI operation"
+      }
+    ]
+  },
+  "contractReportOnly": {
+    "reason": "Server lane L-2 (S-01 contract hygiene) is in progress; remove this entry when it lands so G-08 enforces again."
+  },
+  "suppressions": [],
+  "i18nSameAsRu": [
+    {
+      "key": "platform_brand",
+      "reason": "Brand name, not translated."
+    }
+  ]
+}

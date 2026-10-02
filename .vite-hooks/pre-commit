@@ -1,0 +1,8 @@
+#!/bin/sh
+# Vite+ pre-commit (spec 8.1): when a commit touches apps/web-2, format its staged files and run
+# `vp run verify` there - the same gate for agents and humans. Enable once per clone: `vp hooks enable`.
+set -eu
+git diff --cached --name-only -- apps/web-2 | grep -q . || exit 0
+cd "$(git rev-parse --show-toplevel)/apps/web-2"
+vp staged
+vp run verify

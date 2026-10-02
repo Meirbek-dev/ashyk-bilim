@@ -1,0 +1,40 @@
+/* Shadcn Default. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="shadcn-default"] {
+  --background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
+  --foreground: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
+  --card: light-dark(oklch(1 0 0), oklch(0.205 0 0));
+  --card-foreground: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
+  --popover: light-dark(oklch(1 0 0), oklch(0.269 0 0));
+  --popover-foreground: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
+  --primary: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
+  --primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.205 0 0));
+  --secondary: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
+  --secondary-foreground: light-dark(oklch(0.205 0 0), oklch(0.985 0 0));
+  --muted: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
+  --muted-foreground: light-dark(oklch(0.541 0 0), oklch(0.708 0 0));
+  --accent: light-dark(oklch(0.97 0 0), oklch(0.371 0 0));
+  --accent-foreground: light-dark(oklch(0.205 0 0), oklch(0.985 0 0));
+  --destructive: light-dark(oklch(0.548 0.224 28.5), oklch(0.704 0.191 22.2));
+  --border: light-dark(oklch(0.922 0 0), oklch(0.275 0 0));
+  --input: light-dark(oklch(0.662 0 0), oklch(0.485 0 0));
+  --ring: light-dark(oklch(0.663 0 0), oklch(0.556 0 0));
+  --chart-1: light-dark(oklch(0.81 0.1 252), oklch(0.81 0.1 252));
+  --chart-2: light-dark(oklch(0.62 0.19 260), oklch(0.62 0.19 260));
+  --chart-3: light-dark(oklch(0.55 0.22 263), oklch(0.55 0.22 263));
+  --chart-4: light-dark(oklch(0.49 0.22 264), oklch(0.49 0.22 264));
+  --chart-5: light-dark(oklch(0.42 0.18 266), oklch(0.42 0.18 266));
+  --sidebar: light-dark(oklch(0.985 0 0), oklch(0.205 0 0));
+  --sidebar-foreground: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
+  --sidebar-primary: light-dark(oklch(0.205 0 0), oklch(0.488 0.243 264.4));
+  --sidebar-primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.985 0 0));
+  --sidebar-accent: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
+  --sidebar-accent-foreground: light-dark(oklch(0.205 0 0), oklch(0.985 0 0));
+  --sidebar-border: light-dark(oklch(0.922 0 0), oklch(0.275 0 0));
+  --sidebar-ring: light-dark(oklch(0.708 0 0), oklch(0.439 0 0));
+  --radius: 0.625rem;
+  --shadow-x: 0px;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.1));
+}

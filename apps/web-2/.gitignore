@@ -1,0 +1,6 @@
+dist/
+.tanstack/
+src/shared/api/gen.check-tmp/
+src/routeTree.check-tmp.ts
+test-results/
+playwright-report/

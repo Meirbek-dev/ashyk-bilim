@@ -1,0 +1,55 @@
+{
+  "name": "web-2",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "workspaces": [],
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build && bun gates/gates.ts budgets",
+    "start": "node serve.ts",
+    "codegen": "bun gates/codegen.ts",
+    "check": "vp check",
+    "test": "vp test run",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
+    "gates": "bun gates/gates.ts all",
+    "verify": "vp check && vp test run && bun gates/gates.ts all"
+  },
+  "dependencies": {
+    "@inlang/paraglide-js": "2.25.4",
+    "@tanstack/react-form": "1.33.5",
+    "@tanstack/react-query": "5.104.1",
+    "@tanstack/react-router": "1.170.41",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.168.60",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "srvx": "1.0.5",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@hey-api/openapi-ts": "0.99.0",
+    "@inlang/plugin-message-format": "4.4.4",
+    "@playwright/test": "1.63.0",
+    "@rolldown/plugin-babel": "0.2.4",
+    "@tailwindcss/vite": "4.3.3",
+    "@tanstack/router-generator": "1.167.40",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "@vitest/browser-playwright": "5.0.1",
+    "babel-plugin-react-compiler": "1.0.0",
+    "knip": "6.39.0",
+    "playwright": "1.63.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vite-plus": "1.0.0",
+    "vitest": "5.0.1"
+  }
+}

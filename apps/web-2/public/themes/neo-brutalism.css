@@ -1,0 +1,40 @@
+/* Neo Brutalism. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="neo-brutalism"] {
+  --background: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --card: light-dark(oklch(1 0 0), oklch(0.32 0 0));
+  --card-foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --popover: light-dark(oklch(1 0 0), oklch(0.32 0 0));
+  --popover-foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --primary: light-dark(oklch(0.592 0.239 27), oklch(0.7 0.19 23.2));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --secondary: light-dark(oklch(0.97 0.21 109.8), oklch(0.97 0.2 109.6));
+  --secondary-foreground: light-dark(oklch(0 0 0), oklch(0 0 0));
+  --muted: light-dark(oklch(0.96 0 0), oklch(0.32 0 0));
+  --muted-foreground: light-dark(oklch(0.32 0 0), oklch(0.85 0 0));
+  --accent: light-dark(oklch(0.56 0.24 260.8), oklch(0.68 0.18 252.3));
+  --accent-foreground: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --destructive: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --border: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --input: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --ring: light-dark(oklch(0.65 0.24 27), oklch(0.7 0.19 23.2));
+  --chart-1: light-dark(oklch(0.65 0.24 27), oklch(0.7 0.19 23.2));
+  --chart-2: light-dark(oklch(0.97 0.21 109.8), oklch(0.97 0.2 109.6));
+  --chart-3: light-dark(oklch(0.56 0.24 260.8), oklch(0.68 0.18 252.3));
+  --chart-4: light-dark(oklch(0.73 0.25 142.5), oklch(0.74 0.23 142.8));
+  --chart-5: light-dark(oklch(0.59 0.27 328.4), oklch(0.61 0.25 328.1));
+  --sidebar: light-dark(oklch(0.96 0 0), oklch(0 0 0));
+  --sidebar-foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --sidebar-primary: light-dark(oklch(0.592 0.239 27), oklch(0.7 0.19 23.2));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --sidebar-accent: light-dark(oklch(0.56 0.24 260.8), oklch(0.68 0.18 252.3));
+  --sidebar-accent-foreground: light-dark(oklch(1 0 0), oklch(0 0 0));
+  --sidebar-border: light-dark(oklch(0 0 0), oklch(1 0 0));
+  --sidebar-ring: light-dark(oklch(0.65 0.24 27), oklch(0.7 0.19 23.2));
+  --radius: 0px;
+  --shadow-x: 4px;
+  --shadow-y: 4px;
+  --shadow-blur: 0px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0 0 0), oklch(0 0 0));
+}

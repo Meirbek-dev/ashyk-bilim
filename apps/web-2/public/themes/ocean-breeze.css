@@ -1,0 +1,40 @@
+/* Ocean Breeze. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="ocean-breeze"] {
+  --background: light-dark(oklch(0.98 0.01 244.3), oklch(0.21 0.04 265.8));
+  --foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.87 0.01 258.3));
+  --card: light-dark(oklch(1 0 0), oklch(0.28 0.04 260));
+  --card-foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.87 0.01 258.3));
+  --popover: light-dark(oklch(1 0 0), oklch(0.28 0.04 260));
+  --popover-foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.87 0.01 258.3));
+  --primary: light-dark(oklch(0.545 0.151 149.6), oklch(0.77 0.15 163.2));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(0.21 0.04 265.8));
+  --secondary: light-dark(oklch(0.95 0.03 236.8), oklch(0.34 0.03 260.9));
+  --secondary-foreground: light-dark(oklch(0.45 0.03 256.8), oklch(0.71 0.01 286.1));
+  --muted: light-dark(oklch(0.97 0 0), oklch(0.28 0.04 260));
+  --muted-foreground: light-dark(oklch(0.54 0.02 264.4), oklch(0.655 0.02 264.4));
+  --accent: light-dark(oklch(0.95 0.05 163.1), oklch(0.37 0.03 259.7));
+  --accent-foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.745 0.01 286.1));
+  --destructive: light-dark(oklch(0.535 0.21 25.3), oklch(0.68 0.208 25.3));
+  --border: light-dark(oklch(0.93 0.01 264.5), oklch(0.45 0.03 256.8));
+  --input: light-dark(oklch(0.65 0.01 264.5), oklch(0.51 0.03 256.8));
+  --ring: light-dark(oklch(0.63 0.175 149.6), oklch(0.77 0.15 163.2));
+  --chart-1: light-dark(oklch(0.72 0.19 149.6), oklch(0.77 0.15 163.2));
+  --chart-2: light-dark(oklch(0.7 0.15 162.5), oklch(0.78 0.13 181.9));
+  --chart-3: light-dark(oklch(0.6 0.13 163.2), oklch(0.72 0.19 149.6));
+  --chart-4: light-dark(oklch(0.51 0.1 165.6), oklch(0.7 0.15 162.5));
+  --chart-5: light-dark(oklch(0.43 0.09 166.9), oklch(0.6 0.13 163.2));
+  --sidebar: light-dark(oklch(0.95 0.03 236.8), oklch(0.28 0.04 260));
+  --sidebar-foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.87 0.01 258.3));
+  --sidebar-primary: light-dark(oklch(0.545 0.151 149.6), oklch(0.77 0.15 163.2));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0.21 0.04 265.8));
+  --sidebar-accent: light-dark(oklch(0.95 0.05 163.1), oklch(0.37 0.03 259.7));
+  --sidebar-accent-foreground: light-dark(oklch(0.37 0.03 259.7), oklch(0.745 0.01 286.1));
+  --sidebar-border: light-dark(oklch(0.93 0.01 264.5), oklch(0.45 0.03 256.8));
+  --sidebar-ring: light-dark(oklch(0.72 0.19 149.6), oklch(0.77 0.15 163.2));
+  --radius: 0.5rem;
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 8px;
+  --shadow-spread: -1px;
+  --shadow-color: light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.1));
+}

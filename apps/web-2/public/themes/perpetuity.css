@@ -1,0 +1,40 @@
+/* Perpetuity. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="perpetuity"] {
+  --background: light-dark(oklch(0.95 0.01 197), oklch(0.21 0.02 224.4));
+  --foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --card: light-dark(oklch(0.97 0.01 197.1), oklch(0.23 0.03 216.1));
+  --card-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --popover: light-dark(oklch(0.97 0.01 197.1), oklch(0.23 0.03 216.1));
+  --popover-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --primary: light-dark(oklch(0.555 0.09 203.3), oklch(0.85 0.13 195));
+  --primary-foreground: light-dark(oklch(1 0 0), oklch(0.21 0.02 224.4));
+  --secondary: light-dark(oklch(0.92 0.02 196.8), oklch(0.38 0.06 216.5));
+  --secondary-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --muted: light-dark(oklch(0.93 0.01 197), oklch(0.29 0.04 218.8));
+  --muted-foreground: light-dark(oklch(0.51 0.06 201.6), oklch(0.66 0.1 195.1));
+  --accent: light-dark(oklch(0.9 0.03 201.9), oklch(0.38 0.06 216.5));
+  --accent-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --destructive: light-dark(oklch(0.515 0.19 25.5), oklch(0.655 0.21 25.8));
+  --border: light-dark(oklch(0.89 0.02 204.4), oklch(0.38 0.06 216.5));
+  --input: light-dark(oklch(0.625 0.02 196.8), oklch(0.505 0.06 216.5));
+  --ring: light-dark(oklch(0.56 0.09 203.3), oklch(0.85 0.13 195));
+  --chart-1: light-dark(oklch(0.56 0.09 203.3), oklch(0.85 0.13 195));
+  --chart-2: light-dark(oklch(0.64 0.1 201.6), oklch(0.66 0.1 195.1));
+  --chart-3: light-dark(oklch(0.71 0.11 201.3), oklch(0.58 0.08 195.1));
+  --chart-4: light-dark(oklch(0.77 0.1 201.2), oklch(0.43 0.06 202.6));
+  --chart-5: light-dark(oklch(0.83 0.08 201), oklch(0.31 0.05 204.2));
+  --sidebar: light-dark(oklch(0.93 0.02 205.3), oklch(0.21 0.02 224.4));
+  --sidebar-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --sidebar-primary: light-dark(oklch(0.555 0.09 203.3), oklch(0.85 0.13 195));
+  --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(0.21 0.02 224.4));
+  --sidebar-accent: light-dark(oklch(0.9 0.03 201.9), oklch(0.38 0.06 216.5));
+  --sidebar-accent-foreground: light-dark(oklch(0.38 0.06 212.7), oklch(0.85 0.13 195));
+  --sidebar-border: light-dark(oklch(0.89 0.02 204.4), oklch(0.38 0.06 216.5));
+  --sidebar-ring: light-dark(oklch(0.56 0.09 203.3), oklch(0.85 0.13 195));
+  --radius: 0.125rem;
+  --shadow-x: 1px;
+  --shadow-y: 1px;
+  --shadow-blur: 2px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0.528 0.085 204.5 / 0.15), oklch(0.833 0.12 195.1 / 0.2));
+}

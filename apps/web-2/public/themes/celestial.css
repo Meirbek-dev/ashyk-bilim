@@ -1,0 +1,40 @@
+/* Celestial. Generated from the legacy theme store; colors, radius and shadows only. */
+html[data-theme="celestial"] {
+  --background: light-dark(oklch(1 0 0), oklch(0.182 0 0));
+  --foreground: light-dark(oklch(0 0 0), oklch(0.933 0.003 228.8));
+  --card: light-dark(oklch(0.978 0.001 197.1), oklch(0.21 0.008 274.5));
+  --card-foreground: light-dark(oklch(0.243 0 0), oklch(0.933 0.003 228.8));
+  --popover: light-dark(oklch(1 0 0), oklch(0.182 0 0));
+  --popover-foreground: light-dark(oklch(0.317 0 0), oklch(0.933 0.003 228.8));
+  --primary: light-dark(oklch(0.801 0.109 201.2), oklch(0.801 0.109 201.2));
+  --primary-foreground: light-dark(oklch(0 0 0), oklch(0 0 0));
+  --secondary: light-dark(oklch(0.243 0 0), oklch(0.933 0.003 228.8));
+  --secondary-foreground: light-dark(oklch(1 0 0), oklch(0.243 0 0));
+  --muted: light-dark(oklch(0.968 0.007 247.9), oklch(0.228 0.005 219.7));
+  --muted-foreground: light-dark(oklch(0.317 0 0), oklch(0.674 0.024 248.2));
+  --accent: light-dark(oklch(0.939 0.017 250.8), oklch(0.315 0.043 202.4));
+  --accent-foreground: light-dark(oklch(0.317 0 0), oklch(0.933 0.003 228.8));
+  --destructive: light-dark(oklch(0.549 0.223 25.8), oklch(0.639 0.238 25.8));
+  --border: light-dark(oklch(0.932 0.012 231.7), oklch(0.318 0.008 240.1));
+  --input: light-dark(oklch(0.661 0.003 228.8), oklch(0.499 0.009 264.4));
+  --ring: light-dark(oklch(0.651 0.109 201.2), oklch(0.801 0.109 201.2));
+  --chart-1: light-dark(oklch(0.801 0.109 201.2), oklch(0.801 0.109 201.2));
+  --chart-2: light-dark(oklch(0.691 0.155 160.3), oklch(0.691 0.155 160.3));
+  --chart-3: light-dark(oklch(0.821 0.16 82.5), oklch(0.821 0.16 82.5));
+  --chart-4: light-dark(oklch(0.706 0.182 151.7), oklch(0.706 0.182 151.7));
+  --chart-5: light-dark(oklch(0.592 0.219 10.6), oklch(0.592 0.219 10.6));
+  --sidebar: light-dark(oklch(0.978 0.001 197.1), oklch(0.21 0.008 274.5));
+  --sidebar-foreground: light-dark(oklch(0 0 0), oklch(0.933 0.003 228.8));
+  --sidebar-primary: light-dark(oklch(0.801 0.109 201.2), oklch(0.801 0.109 201.2));
+  --sidebar-primary-foreground: light-dark(oklch(0 0 0), oklch(0 0 0));
+  --sidebar-accent: light-dark(oklch(0.906 0.068 201.8), oklch(0.315 0.043 202.4));
+  --sidebar-accent-foreground: light-dark(oklch(0.317 0 0), oklch(0.933 0.003 228.8));
+  --sidebar-border: light-dark(oklch(0.927 0.01 238.5), oklch(0.318 0.008 240.1));
+  --sidebar-ring: light-dark(oklch(0.801 0.109 201.2), oklch(0.801 0.109 201.2));
+  --radius: 0.5rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 0px;
+  --shadow-spread: 0px;
+  --shadow-color: light-dark(oklch(0.682 0.158 243.4 / 0), oklch(0 0 0 / 0));
+}

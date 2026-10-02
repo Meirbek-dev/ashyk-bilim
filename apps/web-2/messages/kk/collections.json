@@ -1,0 +1,16 @@
+{
+  "collections_title": "Жинақтар",
+  "collections_empty": "Әзірге жинақтар жоқ",
+  "collections_show_more": "Тағы көрсету",
+  "collections_updated": "Жаңартылды: {date}",
+  "collections_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} курс",
+        "countPlural=other": "{count} курс"
+      }
+    }
+  ]
+}
