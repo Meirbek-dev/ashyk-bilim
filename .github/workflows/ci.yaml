@@ -249,8 +249,11 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}-image
           cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
 
+  # success() is false when ANY ancestor was skipped (a path-filtered gate),
+  # so the jobs after `images` test their direct dependency explicitly.
   stack-smoke:
     needs: [changes, images]
+    if: ${{ !failure() && !cancelled() && needs.images.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -294,7 +297,7 @@ jobs:
 
   publish:
     needs: [changes, stack-smoke]
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
