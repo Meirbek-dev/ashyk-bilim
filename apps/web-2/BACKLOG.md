@@ -21,6 +21,9 @@ Orchestration rules (not in the spec):
   `apps/server` (:8000). Seed: `e2e-admin`, `e2e-teacher`, `e2e-student1`, `e2e-student2`; password in
   `reports/L-1.md`. Restart from a fresh copy after each server lane step.
 
+Server gaps found by slices (feed into the server lane): collection cover field + upload purpose; `listCollections`
+`q`/`sort`; email links and Google error redirect still point at `/auth/...` (S-11).
+
 ## Server lane (sequential)
 
 | #    | Item                                              | Status |
@@ -44,19 +47,19 @@ Orchestration rules (not in the spec):
 | 0.4 | e2e stand: local + CI job `web2-e2e`                              | todo   |
 | 0.5 | assumptions recorded in `docs/DECISIONS.md`                       | done   |
 | 1.1 | DESIGN.md, tokens, typography, 63 themes                          | done   |
-| 1.2 | a) kit, templates, states, theme infra, G-15 (wip); b) shell, full route tree, nav | wip |
-| 1.3 | shared/api (client, errors, events, upload), shared/auth, guards  | todo   |
-| 1.4 | i18n: strategy, format.ts, validation map, labels, glossary       | todo   |
-| 1.5 | request chain: CSP, request id, healthz, client-error             | todo   |
-| 1.6 | reference slice: auth + collections                               | todo   |
+| 1.2 | kit, templates, states, theme infra, G-15; shell, full route tree, nav | done   |
+| 1.3 | shared/api (client, errors, upload), shared/auth, guards; events.ts waits L-4 | done (events todo) |
+| 1.4 | i18n: strategy, format.ts, validation map, labels, glossary       | done   |
+| 1.5 | request chain: CSP, request id, healthz, client-error             | done   |
+| 1.6 | reference slice: auth + collections (reset-password waits L-5)    | done   |
 | 1.7 | AGENTS.md final                                                   | todo   |
-| 2   | editor, markdown, video, PDF, discussions                         | todo   |
+| 2   | editor + markdown (wip, worktree); video, PDF, discussions (todo) | wip    |
 | 3.1 | home                                                              | todo   |
-| 3.2 | catalog, landing, search, command palette                         | todo   |
+| 3.2 | catalog, landing, search, command palette                         | wip    |
 | 3.3 | course page                                                       | todo   |
 | 3.4 | learning, certificates                                            | todo   |
 | 3.5 | player                                                            | todo   |
-| 3.6 | settings, public profile                                          | todo   |
+| 3.6 | settings, public profile                                          | wip    |
 | 3.7 | achievements                                                      | todo   |
 | 3.8 | notifications                                                     | todo   |
 | 4.1 | course studio                                                     | todo   |

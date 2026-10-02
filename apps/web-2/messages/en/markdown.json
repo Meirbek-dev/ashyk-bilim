@@ -1,0 +1,18 @@
+{
+  "markdown_image": "Image: {alt}",
+  "markdown_image_untitled": "Image",
+  "markdown_code_plain": "Text",
+  "markdown_copy": "Copy code",
+  "markdown_copied": "Code copied",
+  "markdown_toolbar": "Formatting",
+  "markdown_bold": "Bold",
+  "markdown_italic": "Italic",
+  "markdown_code": "Inline code",
+  "markdown_heading": "Heading",
+  "markdown_bullet_list": "Bulleted list",
+  "markdown_ordered_list": "Numbered list",
+  "markdown_quote": "Quote",
+  "markdown_code_block": "Code block",
+  "markdown_undo": "Undo",
+  "markdown_redo": "Redo"
+}
