@@ -13,5 +13,29 @@
         "countPlural=other": "{count} курса"
       }
     }
-  ]
+  ],
+  "collections_search_label": "Поиск по названию",
+  "collections_new": "Новая коллекция",
+  "collections_create_submit": "Создать",
+  "collections_created": "Коллекция создана",
+  "collections_field_name": "Название",
+  "collections_field_description": "Описание",
+  "collections_field_public": "Публичная",
+  "collections_field_public_hint": "Видна всем, в том числе без входа.",
+  "collections_visibility_public": "Публичная",
+  "collections_visibility_private": "Скрытая",
+  "collections_action_update": "Изменить",
+  "collections_action_delete": "Удалить",
+  "collections_courses_title": "Курсы",
+  "collections_courses_empty": "В коллекции пока нет курсов.",
+  "collections_not_found": "Коллекция не найдена",
+  "collections_all": "Ко всем коллекциям",
+  "collections_edit_title": "Изменение коллекции",
+  "collections_edit_section": "Основное",
+  "collections_edit_section_hint": "Название, описание и видимость.",
+  "collections_saved": "Сохранено",
+  "collections_back": "К коллекции",
+  "collections_delete_title": "Удалить коллекцию «{name}»?",
+  "collections_delete_consequence": "Курсы останутся на платформе, исчезнет только коллекция.",
+  "collections_deleted": "Коллекция удалена"
 }

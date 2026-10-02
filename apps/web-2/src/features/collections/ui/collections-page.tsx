@@ -1,37 +1,29 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { ListPage } from '#/shared/ui/templates/list-page'
 
-import { collectionsListOptions } from '../queries'
-import { CollectionItem } from './collection-item'
+import { CollectionsFound } from './collections-found'
+import { CollectionsList } from './collections-list'
+import { CollectionsSearch } from './collections-search'
+import { CreateCollectionDialog } from './create-collection-dialog'
 
-/** Public collections list with "show more" (spec 5.6: no page numbers). */
+/** Public collections (plus the caller's own), searchable by name; "New collection" only with `collection.create`. */
 export function CollectionsPage() {
-  const query = useSuspenseInfiniteQuery(collectionsListOptions())
-  const collections = query.data.pages.flatMap(page => page.items)
+  const { q } = useSearch({ from: '/_public/collections/' })
+  const { data: session } = useSuspenseQuery(sessionOptions())
+  const create = hasCapability(session, 'collection.create') ? <CreateCollectionDialog /> : null
   return (
-    <ListPage title={m.collections_title()}>
-      <ListState
-        pending={false}
-        error={query.error}
-        count={collections.length}
-        filtered={false}
-        emptyText={m.collections_empty()}
-        onRetry={() => void query.refetch()}
-      >
-        <DataList items={collections} getKey={collection => collection.id}>
-          {collection => <CollectionItem collection={collection} />}
-        </DataList>
-        <ShowMore
-          hasMore={query.hasNextPage}
-          pending={query.isFetchingNextPage}
-          onMore={() => void query.fetchNextPage()}
-        />
-      </ListState>
+    <ListPage
+      title={m.collections_title()}
+      primaryAction={create}
+      // Keyed by the URL value: "back" to another search refills the box.
+      search={<CollectionsSearch key={q ?? ''} q={q} />}
+    >
+      {q ? <CollectionsFound q={q} /> : <CollectionsList />}
     </ListPage>
   )
 }

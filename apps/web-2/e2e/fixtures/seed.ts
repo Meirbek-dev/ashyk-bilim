@@ -1,6 +1,7 @@
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { getCurriculum, listCollections, listCourses, login } from '#/shared/api/gen/sdk.gen'
-import type { SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Client } from '#/shared/api/gen/client'
+import { createCollection, getCollection, getCurriculum, listCourses, login, search } from '#/shared/api/gen/sdk.gen'
+import type { CollectionAction, CourseId, SessionInfo } from '#/shared/api/gen/types.gen'
 
 import { test as base } from './test'
 
@@ -21,8 +22,11 @@ export function e2ePassword(): string {
 }
 
 type Account = { cookie: { name: string; value: string }; session: SessionInfo }
+type SignedIn = Exclude<Role, 'guest'>
 export type Seed = {
-  accounts: Record<Exclude<Role, 'guest'>, Account>
+  accounts: Record<SignedIn, Account>
+  /** `allowed_actions` of the seed collection per role: routes guarded by an object's actions (spec 7.5). */
+  collectionActions: Record<SignedIn, CollectionAction[]>
   /** Values for the route params of spec 5.3. */
   params: Record<'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId', string>
 }
@@ -39,6 +43,24 @@ async function signIn(baseUrl: string, loginName: string): Promise<Account> {
   return { cookie: { name: pair[1], value: pair[2] }, session: data }
 }
 
+const cookieOf = (account: Account) => ({ cookie: `${account.cookie.name}=${account.cookie.value}` })
+
+// A collection every spec can read and none deletes: the teacher's, public, holding the seed course (an empty one is
+// listed only to its author, UX-127). Found by name, created once per stand.
+const SEED_COLLECTION = 'E2E seed collection'
+async function seedCollection(client: Client, teacher: Account, courseId: CourseId): Promise<string> {
+  const found = await search({ client, query: { q: SEED_COLLECTION }, throwOnError: true })
+  const existing = found.data.collections.find(hit => hit.name === SEED_COLLECTION)
+  if (existing) return existing.id
+  const created = await createCollection({
+    client,
+    body: { name: SEED_COLLECTION, public: true, courses: [courseId] },
+    headers: cookieOf(teacher),
+    throwOnError: true,
+  })
+  return created.data.id
+}
+
 async function loadSeed(baseUrl: string): Promise<Seed> {
   const [student, teacher, admin] = await Promise.all(Object.values(LOGINS).map(name => signIn(baseUrl, name)))
   if (!student || !teacher || !admin) throw new Error('seeded accounts missing')
@@ -49,20 +71,28 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   const curriculum = await getCurriculum({
     client,
     path: { id: course.id },
-    headers: { cookie: `${teacher.cookie.name}=${teacher.cookie.value}` },
+    headers: cookieOf(teacher),
     throwOnError: true,
   })
   const activity = curriculum.data.chapters.flatMap(chapter => chapter.activities)[0]
   if (!activity) throw new Error('the seed course has no activity')
-  const collections = await listCollections({ client, throwOnError: true })
+  const collectionId = await seedCollection(client, teacher, course.id)
+  const actionsOf = async (account: Account) =>
+    (await getCollection({ client, path: { id: collectionId }, headers: cookieOf(account), throwOnError: true })).data
+      .allowed_actions
   // No seeded certificate or submission yet: the routes are stubs, any well-formed id renders them.
   const placeholder = '00000000-0000-4000-8000-000000000000'
   return {
     accounts: { student, teacher, admin },
+    collectionActions: {
+      student: await actionsOf(student),
+      teacher: await actionsOf(teacher),
+      admin: await actionsOf(admin),
+    },
     params: {
       courseId: course.id,
       activityId: activity.id,
-      collectionId: collections.data.items[0]?.id ?? placeholder,
+      collectionId,
       username: 'e2e-teacher',
       certificateId: placeholder,
       submissionId: placeholder,

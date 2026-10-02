@@ -23,7 +23,7 @@ export function DetailPage({ title, meta, status, primaryAction, tabs, children 
       <header className="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold">{title}</h1>
+            <h1 className="min-w-0 text-2xl font-semibold wrap-anywhere">{title}</h1>
             {status}
           </div>
           {meta ? <p className="text-sm text-muted-foreground">{meta}</p> : null}

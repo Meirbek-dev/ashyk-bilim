@@ -40,6 +40,10 @@ function expected(leaf: Leaf, role: Role, seed: Seed): Outcome {
   if (leaf.group === '_public') return 'renders'
   if (leaf.group === '_guest') return role === 'guest' ? 'renders' : 'home'
   if (role === 'guest') return 'login'
+  // An object's page guarded by its `allowed_actions` (7.5): the seed reads them for each role.
+  if (leaf.id === '/_authed/collections/$collectionId/edit') {
+    return seed.collectionActions[role].includes('update') ? 'renders' : 'forbidden'
+  }
   const held = seed.accounts[role].session.capabilities
   return requiredCapabilities(leaf.path).every(capability => held.includes(capability)) ? 'renders' : 'forbidden'
 }

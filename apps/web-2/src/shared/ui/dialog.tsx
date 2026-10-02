@@ -9,8 +9,8 @@ import { IconButton } from './icon-button'
 type DialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** The kit Button that opens it. */
-  trigger: ReactElement
+  /** The kit Button that opens it; none when the app opens it (a 412 conflict). */
+  trigger?: ReactElement | undefined
   title: string
   description?: string | undefined
   /** A confirmation: role alertdialog, no dismissal by an outside click. */
@@ -35,7 +35,7 @@ export function Dialog({
 }: DialogProps) {
   return (
     <BaseDialog.Root open={open} onOpenChange={next => onOpenChange(next)} disablePointerDismissal={alert}>
-      <BaseDialog.Trigger render={trigger} />
+      {trigger ? <BaseDialog.Trigger render={trigger} /> : null}
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className="fixed inset-0 z-50 bg-background/80 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <BaseDialog.Popup

@@ -11,5 +11,29 @@
         "countPlural=other": "{count} курс"
       }
     }
-  ]
+  ],
+  "collections_search_label": "Атауы бойынша іздеу",
+  "collections_new": "Жаңа жинақ",
+  "collections_create_submit": "Жасау",
+  "collections_created": "Жинақ жасалды",
+  "collections_field_name": "Атауы",
+  "collections_field_description": "Сипаттама",
+  "collections_field_public": "Жалпыға ашық",
+  "collections_field_public_hint": "Барлығына, кірмегендерге де көрінеді.",
+  "collections_visibility_public": "Жалпыға ашық",
+  "collections_visibility_private": "Жеке",
+  "collections_action_update": "Өзгерту",
+  "collections_action_delete": "Жою",
+  "collections_courses_title": "Курстар",
+  "collections_courses_empty": "Бұл жинақта әлі курстар жоқ.",
+  "collections_not_found": "Жинақ табылмады",
+  "collections_all": "Барлық жинақтарға",
+  "collections_edit_title": "Жинақты өзгерту",
+  "collections_edit_section": "Негізгі",
+  "collections_edit_section_hint": "Атауы, сипаттамасы және көрінуі.",
+  "collections_saved": "Сақталды",
+  "collections_back": "Жинаққа оралу",
+  "collections_delete_title": "«{name}» атты жинақты жою керек пе?",
+  "collections_delete_consequence": "Курстар платформада қалады, тек жинақ жойылады.",
+  "collections_deleted": "Жинақ жойылды"
 }

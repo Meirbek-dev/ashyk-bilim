@@ -1,2 +1,6 @@
-export { collectionsListOptions } from './queries'
+export { collectionsSearchSchema } from './model/collections'
+export { collectionsListOptions, collectionsSearchOptions, ensureCollection } from './queries'
+export { CollectionEditPage } from './ui/collection-edit-page'
+export { CollectionNotFound } from './ui/collection-not-found'
+export { CollectionPage } from './ui/collection-page'
 export { CollectionsPage } from './ui/collections-page'

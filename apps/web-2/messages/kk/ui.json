@@ -18,5 +18,8 @@
   "ui_mode_light": "Ашық",
   "ui_mode_dark": "Күңгірт",
   "ui_locale": "Тіл",
-  "ui_locale_name": "Қазақша"
+  "ui_locale_name": "Қазақша",
+  "ui_conflict_title": "Жазба өзгерді",
+  "ui_conflict_text": "Сіз өңдеп жатқанда, оны басқа біреу сақтады. Енгізгеніңіз сақталды.",
+  "ui_conflict_retry": "Жаңартып, қайталау"
 }

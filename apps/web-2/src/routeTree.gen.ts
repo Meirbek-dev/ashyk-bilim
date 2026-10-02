@@ -45,6 +45,7 @@ import { Route as PublicCollectionsCollectionIdRouteImport } from './routes/_pub
 import { Route as PublicCoursesIndexRouteImport } from './routes/_public/courses/index'
 import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public/courses/$courseId'
 import { Route as PublicUsersUsernameRouteImport } from './routes/_public/users/$username'
+import { Route as AuthedCollectionsCollectionIdEditRouteImport } from './routes/_authed/collections/$collectionId/edit'
 import { Route as AuthedLearnCourseIdActivityIdRouteImport } from './routes/_authed/learn/$courseId/$activityId'
 import { Route as AuthedLearnCourseIdCompleteRouteImport } from './routes/_authed/learn/$courseId/complete'
 import { Route as AuthedTeachAnalyticsIndexRouteImport } from './routes/_authed/teach/analytics/index'
@@ -255,6 +256,12 @@ const PublicUsersUsernameRoute = PublicUsersUsernameRouteImport.update({
   path: '/users/$username',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthedCollectionsCollectionIdEditRoute =
+  AuthedCollectionsCollectionIdEditRouteImport.update({
+    id: '/collections/$collectionId/edit',
+    path: '/collections/$collectionId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedLearnCourseIdActivityIdRoute =
   AuthedLearnCourseIdActivityIdRouteImport.update({
     id: '/learn/$courseId/$activityId',
@@ -465,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/teach/': typeof AuthedTeachIndexRoute
   '/collections/': typeof PublicCollectionsIndexRoute
   '/courses/': typeof PublicCoursesIndexRoute
+  '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
@@ -524,6 +532,7 @@ export interface FileRoutesByTo {
   '/teach': typeof AuthedTeachIndexRoute
   '/collections': typeof PublicCollectionsIndexRoute
   '/courses': typeof PublicCoursesIndexRoute
+  '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
@@ -590,6 +599,7 @@ export interface FileRoutesById {
   '/_authed/teach/': typeof AuthedTeachIndexRoute
   '/_public/collections/': typeof PublicCollectionsIndexRoute
   '/_public/courses/': typeof PublicCoursesIndexRoute
+  '/_authed/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/_authed/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/_authed/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/_authed/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/teach/'
     | '/collections/'
     | '/courses/'
+    | '/collections/$collectionId/edit'
     | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
     | '/teach/analytics/learners'
@@ -715,6 +726,7 @@ export interface FileRouteTypes {
     | '/teach'
     | '/collections'
     | '/courses'
+    | '/collections/$collectionId/edit'
     | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
     | '/teach/analytics/learners'
@@ -780,6 +792,7 @@ export interface FileRouteTypes {
     | '/_authed/teach/'
     | '/_public/collections/'
     | '/_public/courses/'
+    | '/_authed/collections/$collectionId/edit'
     | '/_authed/learn/$courseId/$activityId'
     | '/_authed/learn/$courseId/complete'
     | '/_authed/teach/analytics/learners'
@@ -1070,6 +1083,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/$username'
       preLoaderRoute: typeof PublicUsersUsernameRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_authed/collections/$collectionId/edit': {
+      id: '/_authed/collections/$collectionId/edit'
+      path: '/collections/$collectionId/edit'
+      fullPath: '/collections/$collectionId/edit'
+      preLoaderRoute: typeof AuthedCollectionsCollectionIdEditRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/learn/$courseId/$activityId': {
       id: '/_authed/learn/$courseId/$activityId'
@@ -1435,6 +1455,7 @@ interface AuthedRouteChildren {
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedTeachRoute: typeof AuthedTeachRouteWithChildren
+  AuthedCollectionsCollectionIdEditRoute: typeof AuthedCollectionsCollectionIdEditRoute
   AuthedLearnCourseIdActivityIdRoute: typeof AuthedLearnCourseIdActivityIdRoute
   AuthedLearnCourseIdCompleteRoute: typeof AuthedLearnCourseIdCompleteRoute
 }
@@ -1447,6 +1468,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedTeachRoute: AuthedTeachRouteWithChildren,
+  AuthedCollectionsCollectionIdEditRoute:
+    AuthedCollectionsCollectionIdEditRoute,
   AuthedLearnCourseIdActivityIdRoute: AuthedLearnCourseIdActivityIdRoute,
   AuthedLearnCourseIdCompleteRoute: AuthedLearnCourseIdCompleteRoute,
 }

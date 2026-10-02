@@ -18,5 +18,8 @@
   "ui_mode_light": "Light",
   "ui_mode_dark": "Dark",
   "ui_locale": "Language",
-  "ui_locale_name": "English"
+  "ui_locale_name": "English",
+  "ui_conflict_title": "Changed by someone else",
+  "ui_conflict_text": "Someone saved it while you were editing. Your changes are kept.",
+  "ui_conflict_retry": "Reload and retry"
 }

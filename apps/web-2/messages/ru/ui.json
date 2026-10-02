@@ -18,5 +18,8 @@
   "ui_mode_light": "Светлое",
   "ui_mode_dark": "Тёмное",
   "ui_locale": "Язык",
-  "ui_locale_name": "Русский"
+  "ui_locale_name": "Русский",
+  "ui_conflict_title": "Запись изменилась",
+  "ui_conflict_text": "Пока вы редактировали, её сохранил кто-то другой. Ваш ввод не потерян.",
+  "ui_conflict_retry": "Обновить и повторить"
 }

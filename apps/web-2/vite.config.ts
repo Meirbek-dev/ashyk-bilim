@@ -183,7 +183,8 @@ const lint: OxlintConfig = {
       files: ['src/routes/**'],
       rules: { 'no-restricted-imports': restrictImports('routes'), 'unicorn/filename-case': 'off' },
     },
-    { files: ['src/shared/api/**'], rules: { 'no-restricted-globals': restrictGlobals('fetch') } },
+    // upload.ts: XMLHttpRequest is the only browser API with upload progress (spec 7.3).
+    { files: ['src/shared/api/**'], rules: { 'no-restricted-globals': restrictGlobals('fetch', 'XMLHttpRequest') } },
     {
       files: ['src/shared/lib/storage.ts', 'src/shared/lib/storage.browser.test.ts'],
       rules: {

@@ -1,64 +1,65 @@
 import { useMutation } from '@tanstack/react-query'
-import { useHydrated, useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
-import { safeRedirect } from '#/shared/auth/redirect'
 import { Button } from '#/shared/ui/button'
 import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Link } from '#/shared/ui/link'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
 
 import { loginOptions } from '../queries'
+import { AuthForm } from './auth-form'
+import { AuthPage } from './auth-page'
+import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
 
-const defaultValues: LoginRequest = { login: '', password: '' }
+const defaultValues: LoginRequest = { login: '', password: '', totp_code: null }
 
-/** Password sign-in; a 401 `mfa-required` adds the TOTP step and the same form is sent again. */
+/** Password sign-in; a 401 `mfa-required` turns the form into the code step and the same sign-in is sent again. */
 export function LoginPage() {
   const search = useSearch({ from: '/_guest/login' })
+  const redirect = search.redirect ?? '/home'
   const navigate = useNavigate()
   const login = useMutation(loginOptions())
   const [totpStep, setTotpStep] = useState(false)
-  // Before hydration, typed text would not reach the form state and a click would submit natively:
-  // the fields stay disabled until React owns them.
-  const hydrated = useHydrated()
   const form = useAppForm(vLoginRequest, {
     defaultValues,
     onSubmit: body =>
       login.mutateAsync(
-        { body },
+        { body: totpStep ? body : { ...body, totp_code: null } },
         {
-          onSuccess: () => navigate({ href: safeRedirect(search.redirect) }),
+          onSuccess: () => navigate({ href: redirect }),
           onError: error => {
             if (error instanceof ApiError && error.code === 'mfa-required') setTotpStep(true)
           },
         },
       ),
   })
-  const back = (
-    <Link to="/" variant="ghost">
-      <ArrowLeft aria-hidden />
-      {m.platform_back()}
-    </Link>
-  )
+  const backToPassword = () => {
+    setTotpStep(false)
+    login.reset()
+  }
   return (
-    <FocusPage back={back} title={m.auth_login_title()}>
-      <section className="mx-auto flex max-w-sm flex-col gap-6">
-        <h1 className="text-2xl font-semibold">{m.auth_login_title()}</h1>
-        <form
-          method="post"
-          className="flex flex-col gap-4"
-          onSubmit={event => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <fieldset disabled={!hydrated} className="flex flex-col gap-4">
+    <AuthPage title={m.auth_login_title()}>
+      {totpStep ? null : <GoogleSignIn redirect={redirect} />}
+      <AuthForm onSubmit={() => form.handleSubmit()}>
+        {totpStep ? (
+          <form.AppField name="totp_code">
+            {field => (
+              <field.TextField
+                label={m.auth_login_field_totp()}
+                description={m.auth_login_totp_hint()}
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                required
+              />
+            )}
+          </form.AppField>
+        ) : (
+          <>
             <form.AppField name="login">
               {field => <field.TextField label={m.auth_login_field_login()} autoComplete="username" required />}
             </form.AppField>
@@ -72,26 +73,21 @@ export function LoginPage() {
                 />
               )}
             </form.AppField>
-            {totpStep ? (
-              <form.AppField name="totp_code">
-                {field => (
-                  <field.TextField
-                    label={m.auth_login_field_totp()}
-                    description={m.auth_login_totp_hint()}
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    required
-                  />
-                )}
-              </form.AppField>
-            ) : null}
-            <LoginError error={login.error} />
-            <Button type="submit" size="block" pending={login.isPending}>
-              {m.auth_login_submit()}
-            </Button>
-          </fieldset>
-        </form>
-      </section>
-    </FocusPage>
+          </>
+        )}
+        <LoginError error={login.error} googleError={totpStep ? undefined : search.error} />
+        <Button type="submit" size="block" pending={login.isPending}>
+          {m.auth_login_submit()}
+        </Button>
+        {totpStep ? (
+          <Button variant="ghost" size="block" onClick={backToPassword}>
+            {m.auth_login_back()}
+          </Button>
+        ) : null}
+      </AuthForm>
+      <p className="text-sm text-muted-foreground">
+        {m.auth_login_no_account()} <Link to="/signup">{m.platform_nav_signup()}</Link>
+      </p>
+    </AuthPage>
   )
 }

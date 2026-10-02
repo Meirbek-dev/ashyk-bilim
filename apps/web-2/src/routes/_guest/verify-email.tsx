@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { UnderConstruction } from '#/features/platform'
+import { VerifyEmailPage, verifyEmailSearchSchema } from '#/features/auth'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_guest/verify-email')({
-  staticData: { title: m.platform_page_verify_email, layout: 'focus' },
-  component: UnderConstruction,
+  validateSearch: verifyEmailSearchSchema,
+  staticData: { title: m.auth_verify_title, layout: 'focus' },
+  component: VerifyEmailPage,
 })

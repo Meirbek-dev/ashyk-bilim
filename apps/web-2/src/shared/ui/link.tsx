@@ -20,7 +20,8 @@ const variants = {
 
 type AnchorProps = Omit<ComponentProps<'a'>, 'className'> & { variant?: keyof typeof variants }
 
-function Anchor({ variant = 'text', children, ...props }: AnchorProps) {
+/** Kit looks for a URL that is not a route (a browser navigation into the API, e.g. Google sign-in); routes use Link. */
+export function Anchor({ variant = 'text', children, ...props }: AnchorProps) {
   // className last: the router's default activeProps ({ className: 'active' }) must not replace the kit look.
   return (
     <a {...props} className={variants[variant]}>

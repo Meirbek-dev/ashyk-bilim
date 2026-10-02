@@ -11,5 +11,29 @@
         "countPlural=other": "{count} courses"
       }
     }
-  ]
+  ],
+  "collections_search_label": "Search by name",
+  "collections_new": "New collection",
+  "collections_create_submit": "Create",
+  "collections_created": "Collection created",
+  "collections_field_name": "Name",
+  "collections_field_description": "Description",
+  "collections_field_public": "Public",
+  "collections_field_public_hint": "Visible to everyone, including guests.",
+  "collections_visibility_public": "Public",
+  "collections_visibility_private": "Private",
+  "collections_action_update": "Edit",
+  "collections_action_delete": "Delete",
+  "collections_courses_title": "Courses",
+  "collections_courses_empty": "This collection has no courses yet.",
+  "collections_not_found": "Collection not found",
+  "collections_all": "All collections",
+  "collections_edit_title": "Edit collection",
+  "collections_edit_section": "Details",
+  "collections_edit_section_hint": "Name, description and visibility.",
+  "collections_saved": "Saved",
+  "collections_back": "Back to the collection",
+  "collections_delete_title": "Delete the collection “{name}”?",
+  "collections_delete_consequence": "The courses stay on the platform; only the collection goes.",
+  "collections_deleted": "Collection deleted"
 }
