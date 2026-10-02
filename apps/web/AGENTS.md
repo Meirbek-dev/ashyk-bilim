@@ -39,7 +39,7 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
   `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
   `bun run test` (vitest, `src/tests/**`), `bun run generate:api-types` +
   `bun run check:contracts` (generated client matches `openapi.v2.json`),
-  `bun run check:error-codes`. Baseline status: `docs/GATES-BASELINE.md`.
+  `bun run check:error-codes`. Baseline: `docs/INFRA.md`.
 - `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
   unrelated files, so run it deliberately and review the diff.
 - `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`

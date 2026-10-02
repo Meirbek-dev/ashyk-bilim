@@ -18,23 +18,24 @@ docker build `
 ## Run the web image
 
 ```powershell
-docker run -d --name ashyq-web --env-file extra/.env -p 3000:3000 ashyq-web:local
+docker run -d --name ashyq-web -p 3000:3000 ashyq-web:local
 ```
 
-The image exposes port 3000 (`ENV PORT=3000`).
+The image exposes port 3000 (`ENV PORT=3000`). Runtime env (`INTERNAL_API_URL`,
+`APP_URL`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`) goes in with `-e`.
 
-## Run via root `docker-compose` (recommended)
+## Run in the full stack
 
-The root `docker-compose.yml` builds and runs `web` together with `server`,
-`nginx` and the rest of the stack:
-
-```powershell
-docker compose up -d --build web
-```
+Production images are built by CI (`.github/workflows/ci.yaml`) and run by
+`compose.prod.yaml`. A prod-like stack locally: `IMAGE_TAG=<sha> just stack-up`
+(see `docs/INFRA.md`, "Stacks").
 
 ## Environment variables
 
 - `NEXT_PUBLIC_*` variables are baked into the bundle at build time.
-- The authoritative contract is documented in `/docs/FRONTEND_ENV.md`.
-- `extra/.env` is the deployment env file; `apps/web/.env.example` is the local web-only example.
-- `env_file` does not populate Docker build args; pass build-time public env via shell env or `--env-file`.
+- The contract between the web app and the infrastructure (and the
+  Next-specific leftovers stage 2 removes) is in `docs/INFRA.md`, "Web
+  contract for stage 2".
+- `apps/web/.env.example` is the local web-only example; production values
+  come from `compose.prod.yaml`.
+- `env_file` does not populate Docker build args; pass build-time public env via `--build-arg`.

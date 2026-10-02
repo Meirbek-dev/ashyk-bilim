@@ -11,6 +11,7 @@
 # shellcheck disable=SC2016 # $POSTGRES_USER expands inside the db container
 archive=${1:?usage: restore.sh <archive>}
 archive="$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")"
+# shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 use_stack
 [[ -f $archive ]] || die "no such archive: $archive"

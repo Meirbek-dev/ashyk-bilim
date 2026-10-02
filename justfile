@@ -37,7 +37,7 @@ stack-down:
 smoke origin="http://ashyq.test":
     STACK=smoke SMOKE_RESOLVE_IP="${SMOKE_RESOLVE_IP:-127.0.0.1}" bash infra/scripts/smoke.sh {{ origin }}
 
-# What infra.yaml runs: compose config for every stack, bash -n, nginx -t.
+# What the infra-gates CI job runs: compose config for every stack, bash -n, nginx -t.
 ci-infra:
     #!/usr/bin/env bash
     source infra/scripts/lib.sh

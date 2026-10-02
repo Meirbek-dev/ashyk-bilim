@@ -3,6 +3,7 @@
 # data services + init jobs (roles/DBs, Zitadel, buckets), Zitadel PAT into the
 # server env, migrations, Judge0 tuning. Safe to re-run; changes nothing when done.
 # The app tier is started by `just stack-up` / `just deploy`, not here.
+# shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 use_stack
 stack=${STACK:-prod}

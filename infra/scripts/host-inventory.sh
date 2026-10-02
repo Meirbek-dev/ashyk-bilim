@@ -78,6 +78,9 @@ if [[ -n $nginx ]]; then
       for (a in priv) printf "  private %s x%d\n", a, priv[a]
       print "(mostly one private address => a proxy/NAT in front of nginx)"
     }'
+  # Legacy nginx rewrites log addresses (real_ip); the TCP peers show the proxy itself.
+  echo "TCP peers of nginx (candidates for TRUSTED_PROXY_CIDR):"
+  docker exec "$nginx" sh -c 'netstat -tn 2>/dev/null' | awk '$4 ~ /:(80|443)$/ { sub(/:[0-9]+$/, "", $5); print $5 }' | sort | uniq -c | sort -rn | head -n 5
   try docker exec "$nginx" nginx -v
 else
   echo "(no running compose nginx container)"

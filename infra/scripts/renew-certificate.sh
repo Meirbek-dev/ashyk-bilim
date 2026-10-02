@@ -3,7 +3,8 @@
 # /etc/letsencrypt/renewal-hooks/deploy/ashyq). Also safe to run by hand.
 # Certificate paths come from TLS_CERT_FILE / TLS_KEY_FILE (shell, else ./.env,
 # else ./certs/{cert,key}.pem); the lineage must be named after NGINX_SERVER_NAME.
-source "$(dirname "$0")/lib.sh"
+# shellcheck source=infra/scripts/lib.sh
+source "$(dirname "$(readlink -f "$0")")/lib.sh"
 use_prod
 
 envval() { [[ ! -f .env ]] || sed -n "s/^$1=//p" .env | tail -n 1; }

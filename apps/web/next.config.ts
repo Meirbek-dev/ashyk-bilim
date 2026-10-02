@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
 
   // Local dev only: in production nginx serves /content/{key} from the public
-  // bucket (extra/nginx.v2.routes.conf). Without a proxy the browser has
+  // bucket (infra/nginx/routes.conf). Without a proxy the browser has
   // nothing at /content/, so every avatar and block asset 404s.
   async rewrites() {
     const bucket = process.env.CONTENT_REWRITE_TARGET

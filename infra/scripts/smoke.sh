@@ -6,6 +6,7 @@
 # The Judge0 token check runs only when judge0-server is up in the STACK (default prod).
 # Not covered: presigned PUT/GET (needs a verified, logged-in account; the session
 # cookie is Secure, so it would not survive the plain-http smoke stack either).
+# shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 
 origin=${1:?usage: smoke.sh <origin>}

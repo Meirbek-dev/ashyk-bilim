@@ -26,105 +26,82 @@ it in git history). The design rationale lives in `docs/ARCHITECTURE.md`
 ## Commands
 
 ```
-just check        # fmt-check + clippy(-D warnings) + sqlx offline check   — fast, run often
-just test         # nextest: unit + db + http suites (needs services up)
-just test-unit    # nextest: unit only — works with no DB/Docker (Windows sessions)
-just ci           # everything CI runs, in CI order
-just services     # compose up: db redis zitadel rustfs (../../docker-compose.dev.yml)
-just migrate      # sqlx migrate run (dev DB)
+just check        # fmt-check + clippy(-D warnings) - fast, run often
+just test         # nextest: unit + db + http suites (needs the dev stack)
+just test-unit    # nextest: unit only - works with no DB/containers (Windows sessions)
+just ci           # = CI server-gates: fmt-check clippy sqlx-check test deny machete cov openapi-check
+just services     # = root `just dev-up` (db redis zitadel rustfs + init jobs)
+just migrate      # sqlx migrate run (DATABASE_URL from apps/server/.env)
 just migration NAME  # create a new migration file pair
-just prepare      # cargo sqlx prepare — run after ANY .sql or query! change
-just openapi      # export openapi.v2.json + refresh insta snapshot
-just dev          # bacon watch loop (check + test-unit)
+just prepare      # cargo sqlx prepare - run after ANY .sql or query! change
+just sqlx-check   # committed .sqlx cache matches schema + queries
+just openapi      # export openapi.v2.json
+just openapi-check   # fail if the committed openapi.v2.json differs from a fresh export
+just dev          # bacon watch loop
 just cov          # coverage report + floor check
 ```
 
-## Local dev stack — podman (this machine has podman 6, not docker)
+From the repo root the same recipes run as `just server <recipe>` (e.g.
+`just server test`; it also sets `TEST_REDIS_URL` from `infra/env/dev.env`).
 
-**Build location (this machine):** X: is small and the debug target dir grows
-to 30+ GB — X: ran completely out of disk once (2026-08-16; symptom: LNK1180/
-LNK1318 / "IO failure on output stream: no space on device"). Set
-`$env:CARGO_TARGET_DIR = 'E:\dev-caches\cargo-target\ashyq-server'` at the start of every
-session before building. If builds still fail on space, delete that dir and
-rebuild. Since 2026-09-29 all Rust caches live on E: (user env vars):
-`CARGO_HOME=E:\dev-caches\cargo` (registry + installed tools, on PATH),
-`RUSTUP_HOME=E:\dev-caches\rustup`, default `CARGO_TARGET_DIR=E:\dev-caches\cargo-target`.
+## Local dev stack
 
-Linking the ~15 `ab-api` integration-test binaries in parallel can exhaust
-the Windows page file (`os error 1455`, surfacing as bogus `can't find crate`
-errors). Cap build parallelism for test builds:
-`cargo nextest run --workspace --build-jobs 4`.
-
-DB integration tests (validated commands, 2026-08-16):
+One command from the repo root, docker or podman (auto-detected; on this
+machine podman with the docker-compose provider):
 
 ```
-podman network create ashyq-dev
-podman run -d --rm --name ashyq-test-pg --network ashyq-dev -p 5433:5432 `
-  -e POSTGRES_USER=ashyq -e POSTGRES_PASSWORD=ashyq -e POSTGRES_DB=ashyq_test `
-  docker.io/pgvector/pgvector:pg18
-$env:DATABASE_URL='postgres://ashyq:ashyq@localhost:5433/ashyq_test'; cargo test --workspace
+just dev-up       # db redis zitadel rustfs + init jobs; ~30 s from zero, re-run = no-op
+just dev-down     # stop, keep data
+just dev-reset    # drop the stack and its volumes
 ```
 
-Zitadel (for auth work; version pinned in docker-compose.dev.yml —
-boots healthy in ~10s, writes a provisioning PAT to the mounted dir):
+It publishes on 127.0.0.1 (values: `infra/env/dev.env`, the single source;
+override `DEV_*_PORT` in the shell for a second copy):
 
-```
-podman run -d --rm --name ashyq-zitadel --network ashyq-dev -p 8081:8080 `
-  -v "$env:TEMP\zitadel-machinekey:/machinekey" `
-  -e ZITADEL_DATABASE_POSTGRES_HOST=ashyq-test-pg -e ZITADEL_DATABASE_POSTGRES_PORT=5432 `
-  -e ZITADEL_DATABASE_POSTGRES_DATABASE=zitadel `
-  -e ZITADEL_DATABASE_POSTGRES_USER_USERNAME=zitadel -e ZITADEL_DATABASE_POSTGRES_USER_PASSWORD=zitadelpw `
-  -e ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE=disable `
-  -e ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME=ashyq -e ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD=ashyq `
-  -e ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE=disable `
-  -e ZITADEL_EXTERNALDOMAIN=localhost -e ZITADEL_EXTERNALPORT=8081 -e ZITADEL_EXTERNALSECURE=false `
-  -e ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS=argon2,bcrypt `
-  -e ZITADEL_FIRSTINSTANCE_PATPATH=/machinekey/pat.txt `
-  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME=ashyq-provisioner `
-  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME=ashyq-provisioner `
-  -e ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE=2030-01-01T00:00:00Z `
-  ghcr.io/zitadel/zitadel:latest start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
-```
+| Service | Port | Credentials |
+| --- | --- | --- |
+| Postgres 18 + pgvector | 5433 | role `ashyq` / `ashyq` (CREATEDB, not superuser); databases `ashyq_dev`, `ashyq_test` |
+| Redis | 6380 | password `ashyq-dev` |
+| Zitadel | 8081 | PAT written to `tmp/dev/zitadel-pat.txt` (repo root) |
+| RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |
 
-RustFS (storage tests; buckets created once via aws-cli):
+Point the server at it: `cp apps/server/.env.example apps/server/.env` (the
+example already matches `dev.env`) and paste the PAT into `AB__ZITADEL__PAT`.
+Then from the repo root: `just server migrate` (dev database), `just server
+test` (sets `TEST_REDIS_URL`; `TEST_S3_ENDPOINT` defaults to
+`http://localhost:9002`). CI runs the same `just dev-up`, with `DATABASE_URL`
+on `ashyq_test`.
 
-```
-podman run -d --rm --name ashyq-rustfs --network ashyq-dev -p 9002:9000 `
-  -e RUSTFS_ACCESS_KEY=ashyq-dev -e RUSTFS_SECRET_KEY=ashyq-dev-secret `
-  -e RUSTFS_VOLUMES=/data docker.io/rustfs/rustfs:1.0.0
-podman run --rm --network ashyq-dev -e AWS_ACCESS_KEY_ID=ashyq-dev -e AWS_SECRET_ACCESS_KEY=ashyq-dev-secret `
-  docker.io/amazon/aws-cli:2.37.5 --endpoint-url http://ashyq-rustfs:9000 s3api create-bucket --bucket ab-public
-# …and --bucket ab-private. Tests read TEST_S3_ENDPOINT (default http://localhost:9002).
-```
+Gotchas (this machine):
 
-Redis for tests (port 6380):
-
-```
-podman run -d --rm --name ashyq-test-redis --network ashyq-dev -p 6380:6379 docker.io/library/redis:8
-```
-
-Gotchas (2026-09-05):
-
-- **Git Bash mangles container paths.** MSYS rewrites `/data` in
-  `-e RUSTFS_VOLUMES=/data` and `-v vol:/data` into `C:/Program Files/Git/data`
-  before podman sees it — RustFS then dies with `Volume not found`. Run
-  podman from PowerShell, or prefix Bash commands with `MSYS_NO_PATHCONV=1`.
-- RustFS wants a named volume: add `-v ashyq-rustfs-data:/data` to the
-  command above (rc.1 no longer creates the directory itself).
-- The `ashyq_dev` database (sqlx compile-time checks) lives in the same
-  Postgres container: after recreating it, `psql -c "CREATE DATABASE
-ashyq_dev"` then `cargo sqlx migrate run` with `DATABASE_URL` pointing at it.
+- **Build location.** X: is small and the debug target dir grows to 30+ GB
+  (X: ran out of disk once, 2026-08-16; symptom: LNK1180/LNK1318 / "IO failure
+  on output stream: no space on device"). Set
+  `$env:CARGO_TARGET_DIR = 'E:\dev-caches\cargo-target\ashyq-server'` at the
+  start of every session before building. If builds still fail on space,
+  delete that dir and rebuild. Since 2026-09-29 all Rust caches live on E:
+  (user env vars): `CARGO_HOME=E:\dev-caches\cargo` (registry + installed
+  tools, on PATH), `RUSTUP_HOME=E:\dev-caches\rustup`, default
+  `CARGO_TARGET_DIR=E:\dev-caches\cargo-target`.
+- **Page file.** Linking the ~15 `ab-api` integration-test binaries in
+  parallel can exhaust the Windows page file (`os error 1455`, surfacing as
+  bogus `can't find crate` errors). Cap build parallelism for test builds:
+  `cargo nextest run --workspace --build-jobs 4`.
+- **Git Bash mangles container paths** (`/data` becomes
+  `C:/Program Files/Git/data`). `infra/scripts/lib.sh` sets
+  `MSYS_NO_PATHCONV=1` for every recipe; set it yourself only for ad-hoc
+  container commands in Git Bash.
 - Build with `--workspace`. A `-p <crate>` subset changes feature
   unification and pulls in `aws-lc-sys`, whose C build fails on this
   machine; the workspace build never needs it.
 
-Validated against it (keep these working): `GET /debug/healthz`;
+Zitadel API calls validated against the dev stack (keep these working): `GET /debug/healthz`;
 `POST /v2/users/human` (password + pre-verified email);
 `POST /v2/sessions` with `checks.user.loginName` + `checks.password` → returns
 `sessionId`/`sessionToken`, wrong password → typed `CredentialsCheckError` with
 `failedAttempts`. Auth: `Authorization: Bearer <PAT from pat.txt>`.
 
-If podman is somehow unavailable: work test-first with `just check` +
+If no container runtime is available: work test-first with `just check` +
 `just test-unit`, write the DB/HTTP tests anyway, and note in the plan that CI
 validates them. Never skip writing the tests.
 

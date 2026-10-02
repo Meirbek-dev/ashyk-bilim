@@ -1,3 +1,5 @@
+> Legacy stack only. Until the stage 1 cutover (`docs/RUNBOOK.md`, "1. Cutover from the legacy stack") has run, this describes what prod runs; afterwards it is deleted.
+
 # Deployment Guide
 
 Operations reference for the Ashyq Bilim production stack (`docker-compose.yml`).

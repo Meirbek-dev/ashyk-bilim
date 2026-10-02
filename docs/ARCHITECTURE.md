@@ -6,7 +6,8 @@
 
 Companion documents:
 - [`docs/DECISIONS.md`](DECISIONS.md) — design deltas since ratification
-- [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) — production operations
+- [`docs/INFRA.md`](INFRA.md) - compose stacks, networks, secrets, CI/release, web contract
+- [`docs/RUNBOOK.md`](RUNBOOK.md) - production operations
 - [`apps/server/AGENTS.md`](../apps/server/AGENTS.md) — day-to-day agent playbook
 - [`docs/FINDINGS.md`](FINDINGS.md) — open production/infra issues
 
@@ -389,7 +390,7 @@ not the template. Redesign rules:
 - Transactions: domain services own transaction boundaries via a `Tx` helper
   (`ab-db::tx(pool, |tx| async { … })`); handlers never see transactions.
 - Migrations: `sqlx migrate` embedded via `migrate!()`; `ashyq migrate` runs them
-  explicitly (compose `migrate` service pattern is kept — never auto-run on boot).
+  explicitly (compose one-shot `server-migrate`, run by bootstrap and deploy; never auto-run on boot).
   Migration files are append-only after they land on `rewrite`.
 
 ## 9. Background jobs (`ab-db::queue` + `ab-jobs`)
@@ -510,7 +511,8 @@ Redis — one source of truth for coordination.
   token spend, upload bytes. Logfire dashboards + alerts are provisioned as part
   of the cutover checklist (FINDINGS #9: verify delivery, currently empty project).
 - `/api/v2/health` (liveness: process up) and `/api/v2/health/ready` (readiness:
-  PG + Redis + RustFS + Zitadel ping) — compose healthchecks point at these.
+  PG + Redis + RustFS + Zitadel ping). The image healthcheck uses liveness;
+  readiness is checked through nginx by `infra/scripts/smoke.sh`.
 
 ## 14. Testing & quality gates
 
@@ -540,14 +542,17 @@ Wiremock stubs live in testkit as **recorded-shape fixtures**: Zitadel Session A
 Judge0, Resend, OpenAI-compatible chat completions (incl. SSE streaming) — each
 stub asserts request shape, not just returns canned data.
 
-### CI (`.github/workflows/server-ci.yaml`)
+### CI (`.github/workflows/ci.yaml`, job `server-gates`)
 
-Triggers on `rewrite` and `main`, paths `apps/server/**`. Ubuntu runner with
-Postgres 18 (pgvector) + Redis services. Jobs: `fmt → clippy → sqlx-prepare-check →
-nextest (unit+db+http) → deny+machete → coverage floor → openapi snapshot →
-docker build`. Merge gate = green CI; agents commit directly to `rewrite` (Q25)
-and treat a red pipeline as a stop-the-line event: **the branch must be green at
-the end of every working session.**
+Runs on pushes to `main` and on pull requests when `apps/server/**` or infra
+files change. The services come from the dev stack (`just dev-up`: Postgres 18
++ pgvector, Redis, Zitadel, RustFS). Steps, all `just` recipes: `fmt-check ->
+migrate -> clippy -> sqlx-check -> test (nextest: unit+db+http) -> deny ->
+machete -> cov -> openapi-check`; `just ci` runs the same list locally. The
+server image is built by the `images` job only after every gate passed, and
+published as `<sha>` only after the full-stack smoke (`docs/INFRA.md`). Agents
+commit directly to `main` and treat a red pipeline as a stop-the-line event:
+**the branch must be green at the end of every working session.**
 
 ## 15. Frontend impact (in scope, Q28)
 
@@ -566,8 +571,9 @@ the end of every working session.**
 ## 16. Configuration & secrets
 
 - figment: embedded defaults → optional `config/dev.toml` (local only) → env
-  `AB__SECTION__KEY` (nested `__`). Prod is env-only via compose `.env`, same
-  operational model as today (`PLATFORM_*` becomes `AB__*`).
+  `AB__SECTION__KEY` (nested `__`). Prod is env-only: secrets in the host's
+  `server.env` (`env_file` of server/worker), topology keys set by
+  `compose.prod.yaml` from `.env` (`docs/INFRA.md`, "Secrets and config").
 - All secrets are `secrecy::SecretString` — they cannot Debug/Display into a log.
 - **Startup is fail-fast and loud**: config parses into typed structs with garde
   validation + posture checks (secure cookies required outside dev, CORS origin

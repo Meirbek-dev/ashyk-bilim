@@ -139,6 +139,10 @@ jobs:
         working-directory: .
         run: bun install --frozen-lockfile
 
+      # next-env.d.ts and .next/types are generated; lint and tsc are type-aware.
+      - name: Route types
+        run: bunx next typegen
+
       - id: lint
         name: Lint
         run: bun run lint

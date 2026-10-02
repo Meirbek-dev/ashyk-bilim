@@ -30,9 +30,14 @@ done
 
 k=$(keys_matching '^[A-Za-z_][A-Za-z0-9_]*=[[:space:]]*$' server.env)
 [[ -z $k ]] || fail "server.env: empty values: $k"
-for key in AB__DATABASE__URL AB__REDIS__URL AB__ZITADEL__PAT; do
+for key in AB__DATABASE__URL AB__ZITADEL__PAT; do
   [[ -n $(env_get "$key" server.env) ]] || fail "server.env: $key is not set"
 done
+
+# The server refuses to start with a Resend key and no sender.
+if [[ -n $(env_get AB__RESEND__API_KEY server.env) && -z $(env_get AB__RESEND__FROM server.env) ]]; then
+  fail "server.env: AB__RESEND__API_KEY is set without AB__RESEND__FROM"
+fi
 
 proj=$(env_get COMPOSE_PROJECT_NAME)
 [[ -n $proj ]] || fail ".env: COMPOSE_PROJECT_NAME is not set (prod: openu-prod)"
@@ -54,7 +59,8 @@ fi
 
 domain=$(env_get NGINX_SERVER_NAME)
 if command -v openssl >/dev/null; then
-  for cert in "/etc/letsencrypt/live/$domain/fullchain.pem" certs/cert.pem; do
+  tls=$(env_get TLS_CERT_FILE)
+  for cert in "${tls:-certs/cert.pem}" "/etc/letsencrypt/live/$domain/fullchain.pem"; do
     [[ -n $domain && -r $cert ]] || continue
     openssl x509 -checkend $((14 * 86400)) -noout -in "$cert" >/dev/null ||
       warn "TLS certificate $cert expires within 14 days"

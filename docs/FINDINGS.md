@@ -5,26 +5,32 @@ architecture analysis and pruned after the 2026-09-30 cutover. Items that died
 with the legacy Python API, or were fixed by the v2 stack, were removed (see git
 history). Ordered by severity.
 
+"Fixed in repo" = done by the stage 1 modernization (`docs/INFRA.md`); prod
+gets it with the stage 1 cutover (`docs/RUNBOOK.md` section 1). Delete those
+items once the cutover has run.
+
 ## Critical
 
-### 3. Backups never leave the machine
+### 3. Backups never leave the machine (accepted risk)
 `offen/docker-volume-backup` writes nightly archives to `./backups` **on the same
 disk** it is backing up, with 7-day retention. A disk failure, host compromise, or
 `rm` mistake loses the application *and* every backup of it.
 
-**Fix:** point offen at an offsite target (it natively supports S3-compatible
-storage, WebDAV, SSH). RustFS is *not* a valid offsite target (same box) — use an
-external bucket (e.g. Cloudflare R2, free at this size). Do a restore drill once.
+**Owner decision 2026-10-02: no offsite backups.** Kept here as an accepted
+risk. Stage 1 reduced what it can: archives are logical dumps plus volumes and
+secrets, restorable by one script and checked by `just restore-drill`
+(RUNBOOK 3.5). Copying an archive off the host by hand before risky work is
+the only offsite protection left.
 
 ### 2. Redis has no AUTH
-Redis holds live sessions and runs without `requirepass`. It is no longer
-published to the host (only `data-net` reaches it), which removes the external
-exposure; add `--requirepass` anyway as defence in depth.
+**Fixed in repo, takes effect at cutover (RUNBOOK).** Redis runs with
+`--requirepass` (`REDIS_PASSWORD`); the server URL carries it.
 
 ### 1. Judge0 has no auth token
-`judge0.conf` has empty `AUTHN_TOKEN` / `AUTHZ_TOKEN`. Its port is no longer
-published (only `exec-net`/`data-net` reach it); still set `AUTHN_TOKEN` and verify
-the VPS firewall blocks 2358.
+**Fixed in repo, takes effect at cutover (RUNBOOK).** Judge0 requires
+`AUTHN_TOKEN` (`JUDGE0_AUTHN_TOKEN`, sent by the server as
+`AB__JUDGE0__API_KEY`); smoke checks that a request without it gets 401. Its
+port is not published.
 
 ## High
 
@@ -33,33 +39,37 @@ The production admin password was pasted into a chat session during rewrite
 planning. Rotate it (now a Zitadel credential) and enable MFA on the admin account.
 
 ### 8. Judge0 shares the production Postgres and Redis instances
-`judge0-server`/`judge0-workers` point at the same `db` and `redis` containers as
-the application. Sandbox workloads contend with production for the same database
-server, and a Judge0 compromise has network line-of-sight to production data
-stores. **Fix:** give Judge0 its own Postgres database+user with no grants on the
-app database (verify), or its own lightweight Postgres/Redis on `exec-net` only.
+**Fixed in repo, takes effect at cutover (RUNBOOK).** Judge0 gets its own
+`judge0-db` and `judge0-redis` on the internal `exec-net` and has no network
+path to the app's `db` or `redis`.
 
 ## Medium
 
-### 9. No monitoring or alerting in production
+### 9. No monitoring or alerting in production (accepted risk)
 The server exports OTLP (`AB__TELEMETRY__OTLP_ENDPOINT`) but nothing alerts.
-Verify traces arrive in Logfire, add alert rules (error rate, job queue depth,
-disk), and add an external uptime check (the box cannot alert about itself).
+**Owner decision 2026-10-02: no external monitoring services** (no uptime
+check, no dead-man ping). Covered at deploy time only: `preflight` warns on
+Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over
+85%, and `smoke` checks readiness after every deploy and rollback. Between
+deploys an outage, a failed nightly backup or a filling disk goes unnoticed
+until someone looks.
 
 ### 10. Legacy secrets linger in the production `.env`
-The production `.env` still carries the legacy `PLATFORM_*` values (JWT secret,
-bootstrap admin email/password, SQL/Redis strings). Nothing reads them now;
-delete them.
+**Fixed in repo, takes effect at cutover (RUNBOOK).** `split-env.sh` moves
+the `PLATFORM_*` values out of `.env` into `.env.legacy-removed`, preflight
+fails while any remain in `.env`, and RUNBOOK 1.5 deletes that file.
 
 ### 11. deploy.sh builds on the production box
-Image builds compete with production for CPU/RAM during deploys. Rollback is
-cheap now (images are tagged by commit; `IMAGE_TAG=<old sha>`), but migrations
-are forward-only.
+**Fixed in repo, takes effect at cutover (RUNBOOK).** CI builds both images,
+smoke-tests the full stack and publishes `<sha>` tags to GHCR; `just deploy`
+pulls them and refuses a sha without images. Migrations are still
+forward-only: deploy dumps the database before a release that changes them.
 
 ### 13. Frontend tests/E2E have no CI path
-Vitest and Playwright suites run only by hand. `scripts/run-vitest.mjs` pins
-Vitest over a stale vite-plus bundle — remove the workaround when vite-plus
-catches up. Wire `vp test` + Playwright into CI.
+Half closed: lint, typecheck, unit tests, the API contract and the error-code
+check run in CI (`ci.yaml`, web-gates). Still open: Playwright runs only by
+hand, and `scripts/run-vitest.mjs` pins Vitest over a stale vite-plus bundle
+(remove when vite-plus catches up).
 
 ## Low
 

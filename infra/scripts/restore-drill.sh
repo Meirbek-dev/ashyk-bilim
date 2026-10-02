@@ -5,6 +5,7 @@
 #   restore-drill.sh [archive]      default: newest ./backups/backup-*.tar.zst
 # IMAGE_TAG comes from the archived .env unless set in the shell.
 # RESTORE_DIR scratch space (default ${TMPDIR:-/tmp}/ashyq-restore); DRILL_HTTP_PORT (18080).
+# shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 
 # shellcheck disable=SC2012 # names are backup-<timestamp>

@@ -1727,3 +1727,63 @@ BUG-183): `courses.archived_at/archived_by`.
   `<fieldset disabled>` (gradebook and review stay live). `canArchiveCourse`
   is `course:manage` or authorship because list payloads carry no roster
   roles; a plain contributor sees the action and gets the server 403.
+
+## Stage 1 modernization: owner answers and deviations from the spec (2026-10-02)
+
+Spec: `docs/MODERNIZATION-STAGE-1.md`. As built: `docs/INFRA.md`; operations:
+`docs/RUNBOOK.md`. Prod cutover is not executed yet (RUNBOOK 1).
+
+Owner answers (spec section 10), which replace the defaults there:
+
+- **No offsite backups.** `./backups` on the host, 7 days. No S3 target, so
+  no archive encryption either (Q2). Accepted risk: FINDINGS #3.
+- **A TLS-terminating university proxy sits in front of the host** (Q3). Port
+  80 serves the routes for it; `TRUSTED_PROXY_CIDR` names it for real-ip.
+- **GHCR packages are public** (Q4): the host pulls without credentials.
+- **The legacy `openu` database and the `app_content` volume stay** (Q5).
+  Not used, not in the new backups, never dropped by a script.
+- **No external monitoring services** (Q6): no uptime check, no dead-man
+  ping. preflight covers PAT/cert expiry and disk at deploy time.
+- **Brand: "Ashyq Bilim"** (Q8, closes QUESTIONS Q-2026-09-13-1).
+
+Deviations decided during implementation:
+
+- **One `ci.yaml` instead of `server.yaml`/`web.yaml`/`infra.yaml`.** A
+  release needs both images under the same `<sha>`; three workflows cannot
+  express "publish only when all three passed for this commit" without
+  cross-workflow polling.
+- **Images are pushed as `ci-<sha>` and retagged `<sha>` (and `latest`) only
+  after stack-smoke**, with `imagetools create` (no rebuild). deploy.sh accepts
+  `<sha>` tags only, so "image exists" equals "release is green".
+- **nginx network alias for the public hostname replaces
+  `extra_hosts: host-gateway`.** Inside the stack the domain resolves to nginx
+  on edge-net: same effect (signed S3 URLs keep the public host, no NAT
+  loopback) without depending on the host's routing.
+- **TLS files stay configurable (`TLS_CERT_FILE`/`TLS_KEY_FILE`, default
+  `./certs/{cert,key}.pem`) instead of mounting `/etc/letsencrypt`.** The host
+  layout is unverified (the inventory had not run), and the legacy `./certs`
+  layout keeps working unchanged. `renew-certificate.sh` copies in place and
+  reloads, or recreates nginx when the path is a symlink.
+- **db-init installs pgvector into `template1`.** `vector` is not a trusted
+  extension, so the non-superuser `ashyq` cannot create it; every database
+  created later (including `#[sqlx::test]` ones) inherits it and the
+  migration's `CREATE EXTENSION IF NOT EXISTS` is a no-op.
+- **`ZITADEL_TLS_ENABLED=false` next to `--tlsMode disabled`.** The `zitadel
+  ready` healthcheck reads only the config, not the start flags.
+- **Only `proxy_no_cache`, no `proxy_cache_bypass`.** The bypass decision is
+  taken before the upstream answers, so it cannot read
+  `$upstream_http_cache_control`; `proxy_no_cache` alone keeps non-immutable
+  responses out of the cache.
+- **Presigned PUT/GET are not in smoke.** They need a verified, logged-in
+  account, and the `Secure` session cookie would not survive the plain-http
+  smoke stack.
+- **Backups are unencrypted.** They never leave the host (owner answer above);
+  encryption would only add a passphrase to lose.
+- **Judge0 runs behind the compose profile `judge0`.** It needs `privileged`
+  and host cgroups; CI runners and rootless dev machines may not start it.
+  Prod sets `COMPOSE_PROFILES=judge0`; smoke runs without it.
+- **Root `vite.config.ts` deleted.** `apps/web/vite.config.ts` now excludes
+  `src/lib/api/generated/` from lint; web `lint` is non-mutating and the old
+  `--fix-dangerously` command is `lint:fix`.
+- **No `continue-on-error` web gates.** The two lint errors of the baseline
+  were fixed instead of waived, so every web gate is green and required.
