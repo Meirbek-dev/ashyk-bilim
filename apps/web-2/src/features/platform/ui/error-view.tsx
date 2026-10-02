@@ -3,24 +3,33 @@ import { useEffect } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { presentError } from '#/shared/i18n/errors'
 import { reportClientError } from '#/shared/lib/client-errors'
 import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
 
-/** Route error boundary: says what happened and gives the request id for support (spec 7.11). */
+import { ForbiddenView } from './forbidden-view'
+
+/** Route error boundary: what happened, Retry, and the request id for support (spec 7.11). 403 in place. */
 export function ErrorView({ error }: ErrorComponentProps) {
   const router = useRouter()
-  const requestId = error instanceof ApiError ? error.requestId : null
+  const apiError = error instanceof ApiError ? error : null
   useEffect(() => {
-    if (!(error instanceof ApiError)) reportClientError('render', error)
-  }, [error])
+    if (!apiError) reportClientError('render', error)
+  }, [apiError, error])
+  if (apiError?.status === 403) return <ForbiddenView />
   return (
-    <section className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-8">
-      <h1 className="text-xl font-semibold">{m.platform_error_title()}</h1>
-      {requestId ? <Alert>{m.platform_error_request_id({ id: requestId })}</Alert> : null}
-      <div>
-        <Button onClick={() => void router.invalidate()}>{m.platform_error_retry()}</Button>
-      </div>
+    <section className="flex max-w-prose flex-col items-start gap-4">
+      <h1 className="text-2xl font-semibold">{m.platform_error_title()}</h1>
+      {apiError ? <Alert>{presentError(apiError)}</Alert> : null}
+      {apiError?.requestId ? (
+        <p className="text-sm text-muted-foreground select-all">
+          {m.platform_error_request_id({ id: apiError.requestId })}
+        </p>
+      ) : null}
+      <Button variant="outline" onClick={() => void router.invalidate()}>
+        {m.platform_error_retry()}
+      </Button>
     </section>
   )
 }

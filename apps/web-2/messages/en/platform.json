@@ -7,9 +7,9 @@
   "platform_landing_title": "Learn at your own pace",
   "platform_landing_browse": "Browse collections",
   "platform_error_title": "Something went wrong",
-  "platform_error_request_id": "Request ID: {id}",
+  "platform_error_request_id": "Request ID for support: {id}",
   "platform_error_retry": "Try again",
   "platform_not_found_title": "Page not found",
   "platform_not_found_home": "Go to the main page",
-  "platform_loading": "Loading…"
+  "platform_forbidden_title": "No access"
 }

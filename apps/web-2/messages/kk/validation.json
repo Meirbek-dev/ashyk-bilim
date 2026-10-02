@@ -1,0 +1,13 @@
+{
+  "validation_required": "Бұл өрісті толтырыңыз.",
+  "validation_min_length": "Таңбалардың ең аз саны: {min}.",
+  "validation_max_length": "Таңбалардың ең көп саны: {max}.",
+  "validation_min_value": "Мән {min} мәнінен кем болмауы керек.",
+  "validation_max_value": "Мән {max} мәнінен аспауы керек.",
+  "validation_integer": "Бүтін сан енгізіңіз.",
+  "validation_format": "Мәннің пішімін тексеріңіз.",
+  "validation_duplicate": "Мұндай мән бұрыннан бар.",
+  "validation_invalid": "Бұл мәнді тексеріңіз.",
+  "validation_too_long": "Мән тым ұзын.",
+  "validation_out_of_range": "Мән рұқсат етілген ауқымнан тыс."
+}

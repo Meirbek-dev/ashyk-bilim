@@ -1,0 +1,13 @@
+{
+  "validation_required": "Заполните это поле.",
+  "validation_min_length": "Минимум символов: {min}.",
+  "validation_max_length": "Максимум символов: {max}.",
+  "validation_min_value": "Значение не меньше {min}.",
+  "validation_max_value": "Значение не больше {max}.",
+  "validation_integer": "Введите целое число.",
+  "validation_format": "Проверьте формат значения.",
+  "validation_duplicate": "Такое значение уже есть.",
+  "validation_invalid": "Проверьте это значение.",
+  "validation_too_long": "Значение слишком длинное.",
+  "validation_out_of_range": "Значение вне допустимого диапазона."
+}

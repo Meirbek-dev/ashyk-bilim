@@ -69,7 +69,8 @@ const PALETTE =
   /\b(?:bg|text|border|ring|fill|stroke|from|via|to|outline|decoration|shadow|accent|caret|divide|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white)(?:-\d{2,3})?\b/
 const TOKEN_RULES: [RegExp, string, string][] = [
   [PALETTE, 'tokens-palette', 'use a token class (bg-primary, text-muted-foreground, border-border...)'],
-  [/\bdark:/, 'tokens-dark-variant', 'dark mode comes from light-dark() tokens: drop the dark: variant'],
+  // A class variant (`dark:bg-x`), not an object key (`dark: m.ui_mode_dark`).
+  [/\bdark:(?=[\w[!-])/, 'tokens-dark-variant', 'dark mode comes from light-dark() tokens: drop the dark: variant'],
   [
     /\b[a-z][\w-]*-\[[^\]\s]+\]/,
     'tokens-arbitrary-value',

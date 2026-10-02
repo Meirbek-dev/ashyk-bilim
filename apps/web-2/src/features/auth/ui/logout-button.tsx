@@ -11,7 +11,7 @@ export function LogoutButton() {
   const navigate = useNavigate()
   return (
     <Button
-      variant="quiet"
+      variant="ghost"
       disabled={logout.isPending}
       onClick={() => logout.mutate({}, { onSuccess: () => navigate({ to: '/' }) })}
     >

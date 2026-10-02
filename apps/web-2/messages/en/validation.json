@@ -1,0 +1,13 @@
+{
+  "validation_required": "Fill in this field.",
+  "validation_min_length": "At least {min} characters.",
+  "validation_max_length": "At most {max} characters.",
+  "validation_min_value": "The value must be at least {min}.",
+  "validation_max_value": "The value must be at most {max}.",
+  "validation_integer": "Enter a whole number.",
+  "validation_format": "Check the format of this value.",
+  "validation_duplicate": "This value already exists.",
+  "validation_invalid": "Check this value.",
+  "validation_too_long": "The value is too long.",
+  "validation_out_of_range": "The value is out of range."
+}

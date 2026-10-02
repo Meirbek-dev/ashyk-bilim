@@ -1,7 +1,6 @@
-import { useForm } from '@tanstack/react-form'
 import { useMutation } from '@tanstack/react-query'
 import { useHydrated, useNavigate, useSearch } from '@tanstack/react-router'
-import { useState, type ChangeEvent } from 'react'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -9,23 +8,12 @@ import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
 import { safeRedirect } from '#/shared/auth/redirect'
 import { Button } from '#/shared/ui/button'
-import { TextField } from '#/shared/ui/text-field'
+import { useAppForm } from '#/shared/ui/form/use-app-form'
 
 import { loginOptions } from '../queries'
 import { LoginError } from './login-error'
 
 const defaultValues: LoginRequest = { login: '', password: '' }
-
-type BindableField = {
-  name: string
-  state: { value: string | null | undefined }
-  handleChange: (value: string) => void
-}
-const bind = (field: BindableField) => ({
-  name: field.name,
-  value: field.state.value ?? '',
-  onChange: (event: ChangeEvent<HTMLInputElement>) => field.handleChange(event.target.value),
-})
 
 /** Password sign-in; a 401 `mfa-required` adds the TOTP step and the same form is sent again. */
 export function LoginPage() {
@@ -36,12 +24,11 @@ export function LoginPage() {
   // Before hydration, typed text would not reach the form state and a click would submit natively:
   // the fields stay disabled until React owns them.
   const hydrated = useHydrated()
-  const form = useForm({
+  const form = useAppForm(vLoginRequest, {
     defaultValues,
-    validators: { onSubmit: vLoginRequest },
-    onSubmit: ({ value }) =>
-      login.mutate(
-        { body: value },
+    onSubmit: body =>
+      login.mutateAsync(
+        { body },
         {
           onSuccess: () => navigate({ href: safeRedirect(search.redirect) }),
           onError: error => {
@@ -62,38 +49,34 @@ export function LoginPage() {
         }}
       >
         <fieldset disabled={!hydrated} className="flex flex-col gap-4">
-          <form.Field name="login">
+          <form.AppField name="login">
+            {field => <field.TextField label={m.auth_login_field_login()} autoComplete="username" required />}
+          </form.AppField>
+          <form.AppField name="password">
             {field => (
-              <TextField label={m.auth_login_field_login()} {...bind(field)} autoComplete="username" required />
-            )}
-          </form.Field>
-          <form.Field name="password">
-            {field => (
-              <TextField
+              <field.TextField
                 label={m.auth_login_field_password()}
                 type="password"
-                {...bind(field)}
                 autoComplete="current-password"
                 required
               />
             )}
-          </form.Field>
+          </form.AppField>
           {totpStep ? (
-            <form.Field name="totp_code">
+            <form.AppField name="totp_code">
               {field => (
-                <TextField
+                <field.TextField
                   label={m.auth_login_field_totp()}
-                  hint={m.auth_login_totp_hint()}
-                  {...bind(field)}
+                  description={m.auth_login_totp_hint()}
                   autoComplete="one-time-code"
                   inputMode="numeric"
                   required
                 />
               )}
-            </form.Field>
+            </form.AppField>
           ) : null}
           <LoginError error={login.error} />
-          <Button type="submit" disabled={login.isPending}>
+          <Button type="submit" size="block" pending={login.isPending}>
             {m.auth_login_submit()}
           </Button>
         </fieldset>

@@ -1,0 +1,22 @@
+{
+  "ui_cancel": "Отмена",
+  "ui_close": "Закрыть",
+  "ui_save": "Сохранить",
+  "ui_retry": "Повторить",
+  "ui_show_more": "Показать ещё",
+  "ui_no_matches": "По этим фильтрам ничего не найдено.",
+  "ui_reset_filters": "Сбросить фильтры",
+  "ui_forbidden": "У вас нет доступа к этому разделу.",
+  "ui_filters": "Фильтры",
+  "ui_filters_count": "Фильтры ({count})",
+  "ui_more_actions": "Другие действия",
+  "ui_sections": "Разделы",
+  "ui_contents": "Содержание",
+  "ui_loading": "Загрузка…",
+  "ui_mode": "Оформление",
+  "ui_mode_system": "Как в системе",
+  "ui_mode_light": "Светлое",
+  "ui_mode_dark": "Тёмное",
+  "ui_locale": "Язык",
+  "ui_locale_name": "Русский"
+}

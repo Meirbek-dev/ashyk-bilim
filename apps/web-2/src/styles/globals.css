@@ -1,5 +1,11 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/inter/wght-italic.css';
+@import '@fontsource-variable/geist-mono/wght.css';
 @import './tokens.css';
+
+/* TanStack Router marks the link of the current route with aria-current="page" (tab links, nav). */
+@custom-variant current (&[aria-current='page']);
 
 body {
   @apply bg-background text-foreground antialiased;

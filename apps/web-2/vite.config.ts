@@ -42,19 +42,23 @@ const plugins = lazyPlugins(() => [
 const unit = {
   name: 'unit',
   include: ['src/**/*.test.{ts,tsx}', 'gates/**/*.test.ts'],
-  exclude: ['**/*.browser.test.*'],
+  exclude: ['**/*.browser.test.*', '**/*.themes.test.*'],
 }
-const browser = {
-  name: 'browser',
-  include: ['src/**/*.browser.test.{ts,tsx}'],
-  browser: { enabled: true, headless: true, provider: playwright(), instances: [{ browser: 'chromium' as const }] },
+const chromium = {
+  enabled: true,
+  headless: true,
+  provider: playwright(),
+  instances: [{ browser: 'chromium' as const }],
 }
+const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium }
+// G-15 is a phase gate (spec 9), not part of `vp test run`: `bun run g15` sets G15 and runs only this project.
+const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
 
 // ---- Lint (G-01, spec 7.2-7.3). Every rule is an error; each message names the one allowed way. ----
 const SDK = 'HTTP to the API goes through the generated SDK (#/shared/api/gen) on top of #/shared/api/client.ts.'
 const ROUTER_URL = 'URL state: validateSearch (Valibot) + Link / navigate({ search }); navigation via the router.'
 const FORMAT = 'Format dates and numbers with #/shared/i18n/format.ts (platform time zone Asia/Almaty).'
-const STORAGE = 'Browser storage goes through storageItem() from #/shared/lib/storage.ts.'
+const STORAGE = 'Browser storage goes through storageItem() / cookieItem() from #/shared/lib/storage.ts.'
 const TIMERS =
   'No hand-made timers or polling: TanStack Pacer for debounce/throttle; Query + the event stream for freshness.'
 const FEATURE_INDEX =
@@ -182,7 +186,10 @@ const lint: OxlintConfig = {
     { files: ['src/shared/api/**'], rules: { 'no-restricted-globals': restrictGlobals('fetch') } },
     {
       files: ['src/shared/lib/storage.ts', 'src/shared/lib/storage.browser.test.ts'],
-      rules: { 'no-restricted-globals': restrictGlobals('localStorage', 'sessionStorage') },
+      rules: {
+        'no-restricted-globals': restrictGlobals('localStorage', 'sessionStorage'),
+        'no-restricted-properties': restrictProperties('cookie'),
+      },
     },
     { files: ['src/shared/lib/client-errors.ts'], rules: { 'no-restricted-globals': restrictGlobals('location') } },
     {
@@ -227,6 +234,7 @@ export default defineConfig({
     projects: [
       { extends: true, test: unit },
       { extends: true, test: browser },
+      ...(process.env['G15'] ? [{ extends: true, test: themes }] : []),
     ],
   },
   lint,

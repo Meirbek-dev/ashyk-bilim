@@ -1,0 +1,22 @@
+{
+  "ui_cancel": "Cancel",
+  "ui_close": "Close",
+  "ui_save": "Save",
+  "ui_retry": "Retry",
+  "ui_show_more": "Show more",
+  "ui_no_matches": "Nothing matches these filters.",
+  "ui_reset_filters": "Reset filters",
+  "ui_forbidden": "You do not have access to this section.",
+  "ui_filters": "Filters",
+  "ui_filters_count": "Filters ({count})",
+  "ui_more_actions": "More actions",
+  "ui_sections": "Sections",
+  "ui_contents": "Contents",
+  "ui_loading": "Loading…",
+  "ui_mode": "Appearance",
+  "ui_mode_system": "System",
+  "ui_mode_light": "Light",
+  "ui_mode_dark": "Dark",
+  "ui_locale": "Language",
+  "ui_locale_name": "English"
+}

@@ -1,7 +1,6 @@
 {
   "collections_title": "Коллекции",
   "collections_empty": "Коллекций пока нет",
-  "collections_show_more": "Показать ещё",
   "collections_updated": "Обновлено {date}",
   "collections_course_count": [
     {

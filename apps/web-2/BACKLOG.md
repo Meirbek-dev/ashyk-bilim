@@ -13,12 +13,20 @@ Orchestration rules (not in the spec):
 - Removed by the owner from "not doing" (offline/PWA, user timezone, external monitoring, sitemap):
   not excluded forever, but not in this stage unless the spec body says so.
 
+- Stop hooks run `verify` only in linked worktrees; the main tree is checked by the pre-commit hook.
+- Subagents write their final report to `<scratchpad>/reports/<id>.md` (a stop hook can swallow the last message).
+- `gates/allowlist.json` has `contractReportOnly` until L-2 lands - remove it then.
+- Local API for e2e: copy `E:\dev-caches\cargo-targetshyq-server\debugshyq.exe` to
+  `E:\dev-cachesshyq-api-run\`, dot-source `<scratchpad>/api-env.ps1`, run `ashyq.exe serve` with cwd
+  `apps/server` (:8000). Seed: `e2e-admin`, `e2e-teacher`, `e2e-student1`, `e2e-student2`; password in
+  `reports/L-1.md`. Restart from a fresh copy after each server lane step.
+
 ## Server lane (sequential)
 
 | #    | Item                                              | Status |
 | ---- | ------------------------------------------------- | ------ |
-| L-1  | S-02 session + capabilities + allowed_actions; S-03 seed-e2e | wip |
-| L-2  | S-01 contract hygiene (wire-compatible)           | todo   |
+| L-1  | S-02 session + capabilities + allowed_actions; S-03 seed-e2e | done |
+| L-2  | S-01 contract hygiene (wire-compatible)           | wip    |
 | L-3  | S-04 concurrency + idempotency; S-05 pagination   | todo   |
 | L-4  | S-06 user event stream                            | todo   |
 | L-5  | S-08 password reset, resend code                  | todo   |
@@ -32,11 +40,11 @@ Orchestration rules (not in the spec):
 | #   | Item                                                              | Status |
 | --- | ----------------------------------------------------------------- | ------ |
 | 0.1 | freeze `apps/web`, explicit workspaces, `.gitignore`              | done   |
-| 0.3 | skeleton: Start + Paraglide + hey-api + srvx, gates, hooks        | wip    |
+| 0.3 | skeleton: Start + Paraglide + hey-api + srvx, gates, hooks        | done   |
 | 0.4 | e2e stand: local + CI job `web2-e2e`                              | todo   |
-| 0.5 | assumptions recorded in `docs/DECISIONS.md`                       | todo   |
-| 1.1 | DESIGN.md, tokens, typography, 63 themes, G-15                    | todo   |
-| 1.2 | kit, templates, shell, focus layout, states                       | todo   |
+| 0.5 | assumptions recorded in `docs/DECISIONS.md`                       | done   |
+| 1.1 | DESIGN.md, tokens, typography, 63 themes                          | done   |
+| 1.2 | a) kit, templates, states, theme infra, G-15 (wip); b) shell, full route tree, nav | wip |
 | 1.3 | shared/api (client, errors, events, upload), shared/auth, guards  | todo   |
 | 1.4 | i18n: strategy, format.ts, validation map, labels, glossary       | todo   |
 | 1.5 | request chain: CSP, request id, healthz, client-error             | todo   |

@@ -1,5 +1,12 @@
-import { m } from '#/paraglide/messages'
+import { ListSkeleton } from '#/shared/ui/list-skeleton'
+import { Skeleton } from '#/shared/ui/skeleton'
 
+/** A route still loading: the skeleton of a page (title, then rows). No spinner (DESIGN 7). */
 export function PendingView() {
-  return <output className="text-muted-foreground">{m.platform_loading()}</output>
+  return (
+    <div className="flex flex-col gap-gutter">
+      <Skeleton shape="title" />
+      <ListSkeleton />
+    </div>
+  )
 }

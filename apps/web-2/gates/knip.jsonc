@@ -7,7 +7,9 @@
   "ignoreDependencies": [
     // Loaded by path from project.inlang/settings.json "modules".
     "@inlang/plugin-message-format",
-    // Imported from CSS (@import 'tailwindcss'), which knip does not parse.
+    // Imported from CSS (src/styles/globals.css), which knip does not parse.
     "tailwindcss",
+    "@fontsource-variable/inter",
+    "@fontsource-variable/geist-mono",
   ],
 }

@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import { storageItem } from './storage'
+import { cookieItem, storageItem } from './storage'
 
 describe('storageItem (real Chromium storage)', () => {
   test('round-trips a typed value', () => {
@@ -15,5 +15,15 @@ describe('storageItem (real Chromium storage)', () => {
     sessionStorage.setItem('ab.test-json', 'not json')
     expect(storageItem('ab.test-shape', v.object({ at: v.number() })).get()).toBeNull()
     expect(storageItem('ab.test-json', v.number(), 'session').get()).toBeNull()
+  })
+})
+
+describe('cookieItem (real Chromium cookies)', () => {
+  test('round-trips a value and reads a value outside the schema as null', () => {
+    const mode = cookieItem('ab_test_mode', v.picklist(['light', 'dark']))
+    mode.set('dark')
+    expect(mode.get()).toBe('dark')
+    document.cookie = 'ab_test_mode=sepia; path=/'
+    expect(mode.get()).toBeNull()
   })
 })

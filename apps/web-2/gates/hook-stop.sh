@@ -25,6 +25,11 @@ cwd=${info#* }
 
 root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -d "$root/apps/web-2" ] || exit 0
+# The main tree is shared by several lanes (server agents, the orchestrator): a stop there would
+# report another agent's in-progress work. It is checked by the pre-commit hook instead; a linked
+# worktree has a single writer and is checked here.
+[ "$(git -C "$root" rev-parse --git-dir)" = "$(git -C "$root" rev-parse --git-common-dir)" ] &&
+  [ "${WEB2_STOP_HOOK_MAIN:-0}" != 1 ] && exit 0
 [ -z "$(git -C "$root" status --porcelain -- apps/web-2 | head -1)" ] && exit 0
 
 [ -d "$root/apps/web-2/node_modules" ] || red "$root/apps/web-2 has no node_modules: run 'bun install && bun run codegen' there"

@@ -1,0 +1,22 @@
+{
+  "ui_cancel": "Болдырмау",
+  "ui_close": "Жабу",
+  "ui_save": "Сақтау",
+  "ui_retry": "Қайталау",
+  "ui_show_more": "Тағы көрсету",
+  "ui_no_matches": "Бұл сүзгілер бойынша ештеңе табылмады.",
+  "ui_reset_filters": "Сүзгілерді тазалау",
+  "ui_forbidden": "Бұл бөлімге кіруге рұқсатыңыз жоқ.",
+  "ui_filters": "Сүзгілер",
+  "ui_filters_count": "Сүзгілер ({count})",
+  "ui_more_actions": "Басқа әрекеттер",
+  "ui_sections": "Бөлімдер",
+  "ui_contents": "Мазмұны",
+  "ui_loading": "Жүктелуде…",
+  "ui_mode": "Безендіру",
+  "ui_mode_system": "Жүйедегідей",
+  "ui_mode_light": "Ашық",
+  "ui_mode_dark": "Күңгірт",
+  "ui_locale": "Тіл",
+  "ui_locale_name": "Қазақша"
+}
