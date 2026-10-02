@@ -877,7 +877,7 @@
       "showPassword": "Show password",
       "signInWithGoogle": "Sign in with Google",
       "signup": "Sign up",
-      "title": "Login - Ashyk Bilim",
+      "title": "Login - Ashyq Bilim",
       "wrongCredentials": "Wrong login or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
@@ -899,7 +899,7 @@
     "passwordPlaceholder": "Enter your password",
     "showPassword": "Show password",
     "Signup": {
-      "title": "Sign up - Ashyk Bilim",
+      "title": "Sign up - Ashyq Bilim",
       "heading": "Create an account",
       "subtitle": "Fill in the form to start learning.",
       "firstName": "First name",
@@ -924,7 +924,7 @@
       "organizationPlaceholder": "University, school, college or company"
     },
     "VerifyEmail": {
-      "title": "Verify email - Ashyk Bilim",
+      "title": "Verify email - Ashyq Bilim",
       "heading": "Verify your email address",
       "subtitle": "Enter the code from the email we sent when you signed up.",
       "email": "Email",
@@ -989,7 +989,7 @@
       "hasSuccessfullyCompleted": "has successfully completed",
       "instructor": "Instructor",
       "instructorName": "Dr. Jane Smith",
-      "organizationLogoAlt": "Ashyk Bilim Logo",
+      "organizationLogoAlt": "Ashyq Bilim Logo",
       "previewNote": "The preview uses theme tokens only. Pattern choice now changes layout density and framing instead of custom color packs.",
       "qrLabel": "QR",
       "scanToVerify": "Scan to verify",
@@ -1045,7 +1045,7 @@
       "keywords": "{certificationName}, {courseName}, certificate, verification",
       "openGraph": {
         "description": "Check and verify the authenticity of the {certificationName} certificate for {courseName}.",
-        "siteName": "Ashyk Bilim",
+        "siteName": "Ashyq Bilim",
         "title": "Verify {certificationName} Certificate - {courseName}"
       },
       "title": "Certificate Verification - {certificationName} ({courseName})",
@@ -1246,8 +1246,8 @@
     },
     "googleLogo": "Google logo",
     "loading": "Loading...",
-    "logoAlt": "Ashyk Bilim logo",
-    "appLogoAlt": "Ashyk Bilim logo",
+    "logoAlt": "Ashyq Bilim logo",
+    "appLogoAlt": "Ashyq Bilim logo",
     "owner": "Owner",
     "save": "Save draft",
     "saved": "Saved",
@@ -1355,8 +1355,8 @@
       "autoSubmitThreshold": "Auto-submit threshold"
     },
     "AiChat": {
-      "assistantName": "Ashyk Ai",
-      "placeholder": "Ask Ashyk Ai…",
+      "assistantName": "Ashyq Ai",
+      "placeholder": "Ask Ashyq Ai…",
       "sendMessage": "Send message",
       "stopGeneration": "Stop generation",
       "copyResponse": "Copy response",
@@ -1876,12 +1876,12 @@
       "nextButtonLabel": "Next",
       "onboarding": "Onboarding",
       "step10Button": "Toraighyrov University",
-      "step10Desc": "To learn more about Ashyk Bilim, you can take our original courses at Toraighyrov University",
+      "step10Desc": "To learn more about Ashyq Bilim, you can take our original courses at Toraighyrov University",
       "step10Title": "To infinity and beyond",
-      "step1Desc": "Welcome to Ashyk Bilim, the LMS built for simplicity, usability and performance. Meet the new way to create, share and interact with educational content.",
+      "step1Desc": "Welcome to Ashyq Bilim, the LMS built for simplicity, usability and performance. Meet the new way to create, share and interact with educational content.",
       "step1Title": "Teach the world!",
       "step2Button": "Create a new Course",
-      "step2Desc": "Courses are the main building blocks of Ashyk Bilim, they always contain Chapters and Chapters contain Activities.",
+      "step2Desc": "Courses are the main building blocks of Ashyq Bilim, they always contain Chapters and Chapters contain Activities.",
       "step2Title": "Create Courses",
       "step3Button": "Learn more about Activities",
       "step3Desc": "Activities are the elements you can add to your Courses via Chapters: Dynamic Pages, Videos, Documents, Assessment tasks and more coming soon.",
@@ -1889,8 +1889,8 @@
       "step4Button": "Learn more about Dynamic Pages and the Editor",
       "step4Desc": "Dynamic pages are pages with dynamic content like Notion pages, they can include different components like Quizzes, Images, Videos, Documents, etc.",
       "step4Title": "Dynamic Pages and the Editor",
-      "step5Button": "Learn more about Ashyk Ai",
-      "step5Desc": "Thought tools made for both teachers and students, context aware, they can answer based on your courses and the unique content you create within Ashyk Bilim",
+      "step5Button": "Learn more about Ashyq Ai",
+      "step5Desc": "Thought tools made for both teachers and students, context aware, they can answer based on your courses and the unique content you create within Ashyq Bilim",
       "step5Title": "Artificial Intelligence",
       "step6Button": "Create User Groups",
       "step6Desc": "With User Groups, you can divide students into Groups and provide access to Courses depending on their needs",
@@ -1906,7 +1906,7 @@
       "account": "Account",
       "closeMenu": "Close menu",
       "language": "Language",
-      "logoAlt": "Ashyk Bilim logo",
+      "logoAlt": "Ashyq Bilim logo",
       "navigation": "Navigation",
       "openMenu": "Open menu",
       "overlayClose": "Close menu overlay",
@@ -2397,7 +2397,7 @@
       "adminTitle": "Administration",
       "adminDescription": "Manage platform settings and access control",
       "home": "Home",
-      "notMemberInfo": "You are not part of Ashyk Bilim yet",
+      "notMemberInfo": "You are not part of Ashyq Bilim yet",
       "signOut": "Sign Out"
     }
   },
@@ -3572,7 +3572,7 @@
         "badge": "System"
       },
       "noAccess": "You don’t have access to dashboard features yet.",
-      "appLogo": "Ashyk Bilim Logo",
+      "appLogo": "Ashyq Bilim Logo",
       "touUniversity": "Toraighyrov University",
       "welcomeUser": "Welcome, {name}",
       "defaultUser": "User",
@@ -4265,7 +4265,7 @@
           }
         },
         "courseOwnershipTypes": "Course Ownership Types",
-        "description": "Understanding Ashyk Bilim permissions, roles, and access controls based on RBAC system",
+        "description": "Understanding Ashyq Bilim permissions, roles, and access controls based on RBAC system",
         "roleHierarchy": "Role Hierarchy",
         "roles": {
           "admin": {
@@ -4313,7 +4313,7 @@
       "purchasedCourses": "Courses you have purchased or subscribed to",
       "title": "Courses"
     },
-    "DashboardTitle": "Ashyk Bilim Dashboard",
+    "DashboardTitle": "Ashyq Bilim Dashboard",
     "EditCourseContributors": {
       "active": "Active",
       "activeBadge": "Active",
@@ -5519,9 +5519,9 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Brief description of your organization",
           "descriptionRequired": "Short description is required",
-          "exploreDescription": "Share your organization's courses and content with the Ashyk Bilim community.<br/>Enable this to help learners discover your valuable educational resources.",
+          "exploreDescription": "Share your organization's courses and content with the Ashyq Bilim community.<br/>Enable this to help learners discover your valuable educational resources.",
           "exploreLabel": "EXPLORE",
-          "exploreTitle": "Showcase in Ashyk Bilim Explore",
+          "exploreTitle": "Showcase in Ashyq Bilim Explore",
           "labelLabel": "Organization Label",
           "labelPlaceholder": "Select organization label",
           "labelRequired": "Label is required",
@@ -7438,7 +7438,7 @@
       "title": "Courses"
     },
     "Welcome": {
-      "title": "Learn online with Ashyk Bilim",
+      "title": "Learn online with Ashyq Bilim",
       "description": "Courses, assignments and certificates in one place.",
       "signup": "Sign up",
       "login": "Log in"
@@ -7570,7 +7570,7 @@
       "manageCourses": "Manage courses",
       "manageUsers": "Manage users",
       "platformSettings": "Platform settings",
-      "appLogo": "Ashyk Bilim logo",
+      "appLogo": "Ashyq Bilim logo",
       "userAccountSettings": "User account settings",
       "userSettings": "User settings"
     },
@@ -7595,7 +7595,7 @@
       "users": "Users",
       "learning": "Learning"
     },
-    "platformName": "Ashyk Bilim",
+    "platformName": "Ashyq Bilim",
     "tooltips": {
       "admin": "Admin Dashboard",
       "analytics": "Teacher Analytics",
@@ -10081,7 +10081,7 @@
       "name": "Darkmatter"
     },
     "default": {
-      "description": "The default Ashyk Bilim theme",
+      "description": "The default Ashyq Bilim theme",
       "name": "Default"
     },
     "doom64": {
@@ -10553,7 +10553,7 @@
     "scope": "Scope",
     "description": "Description"
   },
-  "appLogo": "Ashyk Bilim logo",
+  "appLogo": "Ashyq Bilim logo",
   "previous": "Previous",
   "seconds": "Seconds",
   "selectDeadline": "Select a deadline for completing the task",

@@ -28,8 +28,11 @@ max_line_length = off
 indent_size = 2
 max_line_length = 100
 
-# Python interoperability
-[*.py]
+# Rust (rustfmt default)
+[*.rs]
+indent_size = 4
+
+[justfile]
 indent_size = 4
 
 # Shell scripts

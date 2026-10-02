@@ -31,6 +31,12 @@
       "skillPath": "skills/next-cache-components-adoption/SKILL.md",
       "computedHash": "825774334f00624aac9836ec4f29b8d62f1a6d5e31f81133bde0b4db17a3fa67"
     },
+    "next-cache-components-optimizer": {
+      "source": "vercel/next.js",
+      "sourceType": "github",
+      "skillPath": "skills/next-cache-components-optimizer/SKILL.md",
+      "computedHash": "b8d757a1fe10ebe7b10de1d5ee83f9bcdbd1de1e1147efc68cf249377f471067"
+    },
     "playwright-generate-test": {
       "source": "github/awesome-copilot",
       "sourceType": "github",

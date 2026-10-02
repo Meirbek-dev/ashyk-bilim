@@ -28,13 +28,13 @@ import { APIError } from '@/lib/api/assertSuccess'
 describe('activity page <title>', () => {
   it('carries the app-name suffix', async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ courseuuid: 'c1', activityid: 'a1' }) })
-    expect(meta.title).toBe('Урок 1 - лекция - gauntlet12-course - Ashyk Bilim')
+    expect(meta.title).toBe('Урок 1 - лекция - gauntlet12-course - Ashyq Bilim')
   })
 
   // UX-078: a malformed id (422) is the not-found title, not an empty one from the error boundary.
   it('maps a malformed id to the not-found title', async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ courseuuid: 'nope', activityid: 'a1' }) })
-    expect(meta.title).toBe('activityNotFound - Ashyk Bilim')
+    expect(meta.title).toBe('activityNotFound - Ashyq Bilim')
     expect(meta.robots).toEqual({ index: false })
   })
 })

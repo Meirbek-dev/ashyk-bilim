@@ -63,5 +63,7 @@ function collectMarkdownIssues(
   number?: number,
 ) {
   const gate = getMarkdownSaveGate(markdown, preset)
-  target.push(...gate.errors.map(issue => ({ field, preset, issue, ...(number === undefined ? {} : { number }) })))
+  for (const issue of gate.errors) {
+    target.push(number === undefined ? { field, preset, issue } : { field, preset, issue, number })
+  }
 }

@@ -1,78 +1,45 @@
-# Build context (repo root) for apps/web/Dockerfile and apps/server/Dockerfile.
+# Build context is the repo root for apps/web/Dockerfile and apps/server/Dockerfile.
+# They need package.json, bun.lock, apps/web/** and apps/server/** (incl. .sqlx).
 
-# Node / build outputs
-node_modules
-**/node_modules
-.next
-**/.next
-out
-dist
-**/dist
-
-# Logs and runtime data
-logs
-*.log
-**/*.log
-
-# Cache directories
-.cache
-.npm
-.eslintcache
-.nyc_output
-**/*.tsbuildinfo
-**/.eslintcache
-
-# Coverage
-coverage
-*.lcov
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# IDE / OS
+# VCS, CI, editors, agents
+.git
+.github
 .vscode
 .idea
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
+.agents
+.claude
+**/.DS_Store
 
-# Git
-.git
-.gitignore
-**/.gitignore
-.gitattributes
-.github
-
-# Docker files (not needed inside images)
-**/Dockerfile
-**/.dockerignore
-docker-compose*.yml
-
-# Documentation
-README.md
+# Docs
 docs/
-*.md
+**/*.md
 
-# Secrets / env (never bake into images)
-.env
-.env.*
-**/.env
-**/.env.*
+# Ops, infra and local data (never in an image)
+infra/
+extra/
 certs/
-**/target/
-
-# Backups and test artefacts
 backups/
 temp-restore/
-junit.xml
-test-results/
-.claude/
-.turbo/
+tmp/
+**/tmp/
+.deploy-history
+.deploy.lock
 
-# AI / agent files
-.agents
-.antigravitycli
-.kiro
+# Secrets / env
+**/.env
+**/.env.*
+**/server.env
+**/*.pem
+
+# Dependencies and build output (rebuilt inside the image)
+**/node_modules
+**/.next
+**/target
+**/*.tsbuildinfo
+
+# Test artefacts and logs
+**/coverage
+**/reports
+**/test-results
+**/playwright-report
+**/*.log

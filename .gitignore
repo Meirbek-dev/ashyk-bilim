@@ -1,73 +1,46 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
 
-# dependencies
-node_modules
-.pnp
-.pnp.js
-
-# testing
-coverage
-
-# next.js
+# Build output
 .next/
 out/
-build
+next-env.d.ts
+*.tsbuildinfo
+target/
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-mprocs.log
-
-# local env files
+# Env files (examples like .env.example stay tracked)
 .env
-.env.local
-.env.development
-.env.development.local
-.env.test.local
-.env.production
-.env.production.local
-.env*.bak
+.env.*
+!.env.example
+!**/e2e/.env.test
+server.env
+.env.legacy-removed
 
-# turbo
-.turbo
-
-# vercel
-.vercel
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# vscode
-.vscode/
-
-# Backup files
+# Ops state (never commit)
+certs/
 backups/
-.idea
+temp-restore/
+tmp/
+.deploy-history
+.deploy.lock
 
-# TLS certificates — managed outside source control
-certs/*.pem
-certs/*.crt
-certs/*.key
-temp-restore
-tmpclaude-*-cwd
-
-**/.eslintcache
-
-**/node_modules
-**/.venv
-**/.next
-**/coverage
-**/.turbo
-
-# AI
-.antigravitycli
-.kiro
-
-reports
+# Tests and reports
+coverage/
+reports/
+test-results/
+playwright-report/
 .vitest/
-/tmp/
+junit.xml
+
+# Logs and caches
+*.log
+.eslintcache
+
+# Editors / OS / agents
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.pem
+tmpclaude-*-cwd
+.claude/scheduled_tasks.lock

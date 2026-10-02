@@ -1,0 +1,142 @@
+# Edge. The nginx image renders this file with envsubst into conf.d/default.conf.
+# Env (compose.prod.yaml): NGINX_SERVER_NAME, FORCE_HTTPS (1|0), TRUSTED_PROXY_CIDR,
+# NGINX_LOCAL_RESOLVERS (set by the image when NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1).
+# Routes: snippets/routes.conf. Headers: snippets/security-headers.conf.
+
+log_format json escape=json '{"time":"$time_iso8601","request_id":"$request_id",'
+  '"remote_addr":"$remote_addr","host":"$host","method":"$request_method",'
+  '"uri":"$request_uri","status":$status,"bytes":$body_bytes_sent,'
+  '"request_time":$request_time,"upstream":"$upstream_addr",'
+  '"upstream_time":"$upstream_response_time","cache":"$upstream_cache_status",'
+  '"referer":"$http_referer","user_agent":"$http_user_agent"}';
+
+# Only what the web upstream marks immutable (content-hashed assets).
+proxy_cache_path /var/cache/nginx/app levels=1:2 keys_zone=app_cache:10m
+  max_size=1g inactive=60m use_temp_path=off;
+# Public media; keys are immutable (uuidv7-named).
+proxy_cache_path /var/cache/nginx/content levels=1:2 keys_zone=content_cache:10m
+  max_size=5g inactive=7d use_temp_path=off;
+
+map $upstream_http_cache_control $skip_cache {
+  default 1;
+  ~immutable 0;
+}
+
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
+limit_req_status 429;
+
+# Client IP from the TLS-terminating proxy in front of the host, and nobody else.
+real_ip_header X-Forwarded-For;
+set_real_ip_from ${TRUSTED_PROXY_CIDR};
+real_ip_recursive on;
+
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_types text/plain text/css text/javascript application/javascript
+  application/json application/problem+json application/xml image/svg+xml font/woff2;
+
+map $http_x_forwarded_proto $real_forwarded_proto {
+  https https;
+  http http;
+  default $scheme;
+}
+
+# Port 80 redirects to https when FORCE_HTTPS=1, except requests the upstream
+# proxy already terminated (X-Forwarded-Proto: https) and ACME challenges.
+map $http_x_forwarded_proto $https_redirect_proto {
+  https 0;
+  default ${FORCE_HTTPS};
+}
+map $uri $https_redirect {
+  ~^/\.well-known/acme-challenge/ 0;
+  default $https_redirect_proto;
+}
+
+# Upstreams re-resolve: a recreated container needs no reload.
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+upstream web_backend {
+  zone web_backend 64k;
+  server web:3000 resolve;
+  keepalive 32;
+  keepalive_timeout 60s;
+}
+
+upstream api_backend {
+  zone api_backend 64k;
+  server server:8000 resolve;
+  keepalive 32;
+  keepalive_timeout 60s;
+}
+
+upstream rustfs_backend {
+  zone rustfs_backend 64k;
+  server rustfs:9000 resolve;
+  keepalive 16;
+  keepalive_timeout 60s;
+}
+
+proxy_http_version 1.1;
+proxy_set_header Connection "";
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Port $server_port;
+proxy_set_header X-Forwarded-Proto $real_forwarded_proto;
+proxy_set_header X-Request-ID $request_id;
+proxy_socket_keepalive on;
+proxy_connect_timeout 10s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+proxy_buffer_size 128k;
+proxy_buffers 4 256k;
+proxy_busy_buffers_size 256k;
+
+# API bodies are JSON only; file bytes use presigned URLs (500M on /ab-*).
+client_max_body_size 10M;
+client_body_buffer_size 32k;
+client_header_buffer_size 32k;
+large_client_header_buffers 4 32k;
+
+server {
+  listen 80 so_keepalive=30s:10s:3;
+  server_name ${NGINX_SERVER_NAME};
+
+  # Server level: the image's nginx.conf already logs `main` at http level.
+  access_log /var/log/nginx/access.log json;
+  include /etc/nginx/snippets/security-headers.conf;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  if ($https_redirect) {
+    return 301 https://$host$request_uri;
+  }
+
+  include /etc/nginx/snippets/routes.conf;
+}
+
+server {
+  listen 443 ssl so_keepalive=30s:10s:3;
+  http2 on;
+  server_name ${NGINX_SERVER_NAME};
+
+  ssl_certificate /etc/nginx/certs/cert.pem;
+  ssl_certificate_key /etc/nginx/certs/key.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
+  ssl_session_tickets off;
+
+  access_log /var/log/nginx/access.log json;
+  include /etc/nginx/snippets/security-headers.conf;
+  include /etc/nginx/snippets/routes.conf;
+}

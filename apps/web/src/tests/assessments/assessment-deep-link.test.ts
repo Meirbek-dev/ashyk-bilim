@@ -58,6 +58,6 @@ describe('/assessments/[uuid]', () => {
   it('localizes the not-found title', async () => {
     getAssessmentByUuid.mockResolvedValue(null)
     const meta = await generateMetadata(props())
-    expect(meta.title).toBe('title - Ashyk Bilim')
+    expect(meta.title).toBe('title - Ashyq Bilim')
   })
 })

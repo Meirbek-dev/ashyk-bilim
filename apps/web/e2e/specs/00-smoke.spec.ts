@@ -13,7 +13,7 @@ import { getEnvOr } from '../env'
 test.describe('Smoke – Public pages', () => {
   test('home page has the correct title', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle(/Ashyk? Bilim|LMS/i)
+    await expect(page).toHaveTitle(/Ashyq Bilim|LMS/i)
   })
 
   test('login page renders the login and password fields', async ({ page }) => {

@@ -1,2 +1,13 @@
-extra/start.sh text eol=lf
-judge0.conf text eol=lf
+* text=auto eol=lf
+
+*.sh       text eol=lf
+*.conf     text eol=lf
+*.template text eol=lf
+*.yaml     text eol=lf
+*.yml      text eol=lf
+justfile   text eol=lf
+
+*.png  binary
+*.ico  binary
+*.avif binary
+*.ttf  binary

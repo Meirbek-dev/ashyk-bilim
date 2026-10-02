@@ -1,5 +1,5 @@
 /**
- * Embed provider registry for Ashyk Bilim LMS.
+ * Embed provider registry for Ashyq Bilim LMS.
  *
  * Icon names reference named exports from `@icons-pack/react-simple-icons`.
  * Usage in a component:

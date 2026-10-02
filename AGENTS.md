@@ -1,28 +1,25 @@
-<!--VITE PLUS START-->
-
-# Using Vite+, the Unified Toolchain for the Web
-
-This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
-
-Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
-
-## Review Checklist
-
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
-- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
-- [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
-
-<!--VITE PLUS END-->
-
 # Repository map
 
-- `apps/server/` — Rust backend (axum + sqlx), API at `/api/v2`. Read
-  `apps/server/AGENTS.md` before touching it; design in `docs/ARCHITECTURE.md`,
-  design deltas in `docs/DECISIONS.md`.
-- `apps/web/` — Next.js 16 frontend (Vite+ toolchain above); read `apps/web/AGENTS.md`.
-- `docker-compose.yml` — production stack (`bun run deploy`, see `docs/DEPLOYMENT.md`);
-  `docker-compose.dev.yml` — local dev services.
-- `docs/FINDINGS.md` — open production/infra issues; `docs/GAUNTLET*.md` — QA loop.
-- `QUESTIONS.md` — decisions only the owner can make.
-- Work happens on `main` (the only branch) with direct commits.
+- `justfile` - the single entry point. `just dev-up` starts local services, `just server <recipe>`
+  and `just web <script>` proxy into the apps, `just deploy` / `rollback` / `backup` / `restore`
+  run production ops. Add a recipe instead of documenting ad-hoc commands.
+- `apps/server/` - Rust API (axum + sqlx), `/api/v2`. Read `apps/server/AGENTS.md` first.
+- `apps/web/` - Next.js frontend. Read `apps/web/AGENTS.md` first.
+- `infra/` and `compose*.yaml` - stack definition (nginx, Postgres, Judge0, storage, env templates,
+  ops scripts).
+- `QUESTIONS.md` - decisions only the owner can make.
+
+## Docs
+
+- `docs/ARCHITECTURE.md` - server design; `docs/DECISIONS.md` - deviations from it.
+- `docs/INFRA.md` - stack, networks, secrets, web contract.
+- `docs/RUNBOOK.md` - deploy, rollback, backup, restore, certificates, incidents.
+- `docs/FINDINGS.md` - open production and infra issues.
+- `docs/GAUNTLET.md`, `docs/GAUNTLET-LOOP.md` - browser QA ledger and loop brief.
+- `docs/archive/` - finished one-off reports.
+
+## Rules
+
+- Work on `main` (the only branch) with direct commits.
+- Never edit an applied migration; add a new one.
+- Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.

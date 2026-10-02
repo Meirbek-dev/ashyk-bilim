@@ -1,5 +1,5 @@
 {
-  "name": "ashyk-bilim",
+  "name": "ashyq-bilim-web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,9 +17,9 @@
     "test:coverage": "node scripts/run-vitest.mjs run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "vp lint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
+    "lint": "vp lint --type-aware --type-check",
     "audit:errors": "node scripts/audit-error-handling.mjs",
-    "lint:fix": "eslint --fix . --cache",
+    "lint:fix": "vp lint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
     "lint:empty-folders": "node scripts/check-empty-folders.mjs",
     "lint:ai-dock-layout": "node scripts/check-ai-dock-layout.mjs",
     "format": "vp fmt --write",

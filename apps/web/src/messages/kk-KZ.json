@@ -767,7 +767,7 @@
     "enterFocusMode": "Фокус режиміне өту",
     "exitFocusMode": "Фокус режимінен шығу",
     "focusMode": "Фокус режимі",
-    "aiAssistant": "Ashyk AI",
+    "aiAssistant": "Ashyq AI",
     "keyboardShortcuts": "Пернелер тіркесімдері",
     "lastUpdated": "Соңғы жаңарту",
     "markAsComplete": "Аяқталды деп белгілеу",
@@ -876,7 +876,7 @@
       "signIn": "Кіру",
       "signInWithGoogle": "Google арқылы кіру",
       "signup": "Тіркелу",
-      "title": "Кіру - Ashyk Bilim",
+      "title": "Кіру - Ashyq Bilim",
       "wrongCredentials": "Логин немесе құпиясөз қате",
       "serviceUnavailable": "Қызмет уақытша қолжетімсіз. Қайталап көріңіз.",
       "rateLimited": "Тым көп әрекет жасалды. Кейінірек қайталап көріңіз.",
@@ -898,7 +898,7 @@
     "passwordPlaceholder": "Құпиясөзді енгізіңіз",
     "showPassword": "Құпиясөзді көрсету",
     "Signup": {
-      "title": "Тіркелу - Ashyk Bilim",
+      "title": "Тіркелу - Ashyq Bilim",
       "heading": "Аккаунт жасау",
       "subtitle": "Оқуды бастау үшін форманы толтырыңыз.",
       "firstName": "Аты",
@@ -923,7 +923,7 @@
       "organizationPlaceholder": "Университет, мектеп, колледж немесе компания"
     },
     "VerifyEmail": {
-      "title": "Поштаны растау - Ashyk Bilim",
+      "title": "Поштаны растау - Ashyq Bilim",
       "heading": "Электрондық пошта мекенжайын растаңыз",
       "subtitle": "Тіркелу кезінде жіберілген хаттағы кодты енгізіңіз.",
       "email": "Электрондық пошта",
@@ -988,7 +988,7 @@
       "hasSuccessfullyCompleted": "сәтті аяқтады",
       "instructor": "Мұғалім",
       "instructorName": "Дархан Сакенов",
-      "organizationLogoAlt": "Ashyk Bilim логотипі",
+      "organizationLogoAlt": "Ashyq Bilim логотипі",
       "previewNote": "Алдын ала қарау тек тақырыптық токендерді қолданады. Енді үлгі таңдауы жеке түстер жиынтығын емес, макет тығыздығы мен жиектеуді өзгертеді.",
       "qrLabel": "QR",
       "scanToVerify": "Тексеру үшін сканерлеңіз",
@@ -1044,7 +1044,7 @@
       "keywords": "{certificationName}, {courseName}, сертификат, тексеру",
       "openGraph": {
         "description": "{courseName} курсы үшін {certificationName} сертификатының шынайылығын тексеріңіз.",
-        "siteName": "Ashyk Bilim",
+        "siteName": "Ashyq Bilim",
         "title": "{courseName} үшін {certificationName} сертификатын тексеру"
       },
       "title": "Сертификатты тексеру - {certificationName} ({courseName})",
@@ -1245,8 +1245,8 @@
     },
     "googleLogo": "Google логотипі",
     "loading": "Жүктелуде...",
-    "logoAlt": "Ashyk Bilim логотипі",
-    "appLogoAlt": "Ashyk Bilim логотипі",
+    "logoAlt": "Ashyq Bilim логотипі",
+    "appLogoAlt": "Ashyq Bilim логотипі",
     "owner": "Иесі",
     "save": "Сақтау",
     "saved": "Сақталды",
@@ -1354,8 +1354,8 @@
       "autoSubmitThreshold": "Автоматты жіберу шегі"
     },
     "AiChat": {
-      "assistantName": "Ashyk Ai",
-      "placeholder": "Ashyk Ai-дан сұраңыз…",
+      "assistantName": "Ashyq Ai",
+      "placeholder": "Ashyq Ai-дан сұраңыз…",
       "sendMessage": "Хабар жіберу",
       "stopGeneration": "Генерацияны тоқтату",
       "copyResponse": "Жауапты көшіру",
@@ -1859,12 +1859,12 @@
       "nextButtonLabel": "Келесі",
       "onboarding": "Онбординг",
       "step10Button": "Торайгыров Университеті",
-      "step10Desc": "Ashyk Bilim туралы көбірек білу үшін, Торайғыров Университетіндегі түпнұсқа курстарымыздан өтуге болады",
+      "step10Desc": "Ashyq Bilim туралы көбірек білу үшін, Торайғыров Университетіндегі түпнұсқа курстарымыздан өтуге болады",
       "step10Title": "Шексіздікке",
-      "step1Desc": "Қарапайымдылық, қолдану ыңғайлылығы және өнімділік үшін жасалған Ashyk Bilim LMS-ке қош келдіңіз. Білім беру мазмұнын жасаудың, бөлісудің және онымен өзара әрекеттесудің жаңа тәсілін ашыңыз.",
+      "step1Desc": "Қарапайымдылық, қолдану ыңғайлылығы және өнімділік үшін жасалған Ashyq Bilim LMS-ке қош келдіңіз. Білім беру мазмұнын жасаудың, бөлісудің және онымен өзара әрекеттесудің жаңа тәсілін ашыңыз.",
       "step1Title": "Әлемді оқытыңыз!",
       "step2Button": "Жаңа курс жасау",
-      "step2Desc": "Курстар Ashyk Bilim-тің негізгі құрылыс блоктары болып табылады, олар әрқашан Тарауларды, ал Тараулар Белсенділіктерді қамтиды.",
+      "step2Desc": "Курстар Ashyq Bilim-тің негізгі құрылыс блоктары болып табылады, олар әрқашан Тарауларды, ал Тараулар Белсенділіктерді қамтиды.",
       "step2Title": "Курстарды жасау",
       "step3Button": "Белсенділіктер туралы көбірек білу",
       "step3Desc": "Белсенділіктер - бұл сіз өз курстарыңызға Тараулар арқылы қоса алатын элементтер: Динамикалық беттер, Бейнелер, Құжаттар, Оқу әрекеттері және т.б. жақын арада.",
@@ -1872,8 +1872,8 @@
       "step4Button": "Динамикалық беттер мен Редактор туралы көбірек білу",
       "step4Desc": "Динамикалық беттер - Notion беттері сияқты динамикалық мазмұны бар беттер, олар Тесттер, Суреттер, Бейнелер, Құжаттар және т.б. сияқты әртүрлі компоненттерді қамтуы мүмкін.",
       "step4Title": "Динамикалық беттер мен Редактор",
-      "step5Button": "Ashyk Ai туралы көбірек білу",
-      "step5Desc": "Мұғалімдер мен студенттер үшін жасалған, контекстті ескеретін құралдар, олар сіздің курстарыңызға және Ashyk Bilim-те жасайтын бірегей мазмұныңызға негізделген жауап бере алады",
+      "step5Button": "Ashyq Ai туралы көбірек білу",
+      "step5Desc": "Мұғалімдер мен студенттер үшін жасалған, контекстті ескеретін құралдар, олар сіздің курстарыңызға және Ashyq Bilim-те жасайтын бірегей мазмұныңызға негізделген жауап бере алады",
       "step5Title": "Жасанды интеллект",
       "step6Button": "Пайдаланушы топтарын жасау",
       "step6Desc": "Пайдаланушы топтары арқылы сіз студенттерді топтарға бөліп, олардың қажеттіліктеріне байланысты курстарға қол жеткізуге мүмкіндік бере аласыз",
@@ -1889,7 +1889,7 @@
       "account": "Шот",
       "closeMenu": "Мәзірді жабыңыз",
       "language": "Тіл",
-      "logoAlt": "Ashyk Bilim логотипі",
+      "logoAlt": "Ashyq Bilim логотипі",
       "navigation": "Шарлау",
       "openMenu": "Ашық мәзір",
       "overlayClose": "Мәзірді жабыңыз",
@@ -2127,7 +2127,7 @@
     "SignIn": {
       "emailLabel": "Электрондық пошта",
       "emailPlaceholder": "you@example.com",
-      "newToPlatform": "Ashyk Bilim жаңа?",
+      "newToPlatform": "Ashyq Bilim жаңа?",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Құпиясөзді енгізіңіз",
       "rememberMe": "Мені ұмытпаңыз",
@@ -3587,7 +3587,7 @@
         "badge": "Жүйелік"
       },
       "noAccess": "Сізде әлі бақылау тақтасының функцияларына рұқсат жоқ.",
-      "appLogo": "Ashyk Bilim логотипі",
+      "appLogo": "Ashyq Bilim логотипі",
       "touUniversity": "Торайғыров Университеті",
       "welcomeUser": "Қош келдіңіз, {name}",
       "defaultUser": "Пайдаланушы",
@@ -4280,7 +4280,7 @@
           }
         },
         "courseOwnershipTypes": "Курс иелену түрлері",
-        "description": "Ashyk Bilim жүйесіндегі құқықтар, рөлдер және қолжетімділік (RBAC негізінде)",
+        "description": "Ashyq Bilim жүйесіндегі құқықтар, рөлдер және қолжетімділік (RBAC негізінде)",
         "roleHierarchy": "Рөл иерархиясы",
         "roles": {
           "admin": {
@@ -4328,7 +4328,7 @@
       "purchasedCourses": "Сіз сатып алған немесе жазылған курстар",
       "title": "Курстар"
     },
-    "DashboardTitle": "Ashyk Bilim Басқару тақтасы",
+    "DashboardTitle": "Ashyq Bilim Басқару тақтасы",
     "EditCourseContributors": {
       "active": "Белсенді",
       "activeBadge": "Белсенді",
@@ -5534,9 +5534,9 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Ұйымыңыздың қысқаша сипаттамасы",
           "descriptionRequired": "Қысқаша сипаттама қажет",
-          "exploreDescription": "Ashyk Bilim қауымдастығымен ұйымыңыздың курстары мен мазмұнын бөлісіңіз.<br/>Оқушыларға құнды білім беру ресурстарыңызды табуға көмектесу үшін бұл функцияны қосыңыз.",
+          "exploreDescription": "Ashyq Bilim қауымдастығымен ұйымыңыздың курстары мен мазмұнын бөлісіңіз.<br/>Оқушыларға құнды білім беру ресурстарыңызды табуға көмектесу үшін бұл функцияны қосыңыз.",
           "exploreLabel": "ЗЕРТТЕУ",
-          "exploreTitle": "Ashyk Bilim Explore-да көрсету",
+          "exploreTitle": "Ashyq Bilim Explore-да көрсету",
           "labelLabel": "Ұйым белгісі",
           "labelPlaceholder": "Ұйым белгісін таңдаңыз",
           "labelRequired": "Белгі қажет",
@@ -7458,7 +7458,7 @@
       "title": "Курстар"
     },
     "Welcome": {
-      "title": "Ashyk Bilim-де онлайн оқыңыз",
+      "title": "Ashyq Bilim-де онлайн оқыңыз",
       "description": "Курстар, тапсырмалар және сертификаттар бір жерде.",
       "signup": "Тіркелу",
       "login": "Кіру"
@@ -7590,7 +7590,7 @@
       "manageCourses": "Курстарды басқару",
       "manageUsers": "Пайдаланушыларды басқару",
       "platformSettings": "Платформа параметрлері",
-      "appLogo": "Ashyk Bilim логотипі",
+      "appLogo": "Ashyq Bilim логотипі",
       "userAccountSettings": "Пайдаланушы шот параметрлері",
       "userSettings": "Пайдаланушы параметрлері"
     },
@@ -7615,7 +7615,7 @@
       "users": "Пайдаланушылар",
       "learning": "Оқу"
     },
-    "platformName": "Ashyk Bilim",
+    "platformName": "Ashyq Bilim",
     "tooltips": {
       "admin": "Әкімші басқару тақтасы",
       "analytics": "Аналитика",
@@ -10265,7 +10265,7 @@
       "name": "Қара материя"
     },
     "default": {
-      "description": "Әдепкі Ashyk Bilim тақырыбы",
+      "description": "Әдепкі Ashyq Bilim тақырыбы",
       "name": "Әдепкі"
     },
     "doom64": {
@@ -10737,7 +10737,7 @@
     "scope": "Аясы",
     "description": "Сипаттама"
   },
-  "appLogo": "Ashyk Bilim логотипі",
+  "appLogo": "Ashyq Bilim логотипі",
   "previous": "Алдыңғы",
   "seconds": "Секунд",
   "selectDeadline": "Оқу әрекетін аяқтау үшін мерзімді таңдаңыз",

@@ -27,7 +27,7 @@ export const ACCEPTED_FILE_FORMATS = {
   txt: 'text/plain',
 } as const
 
-export const APP_NAME = 'Ashyk Bilim'
+export const APP_NAME = 'Ashyq Bilim'
 export const APP_THUMBNAIL_IMAGE_PATH = '/app_logo_full.svg'
 export const NAVBAR_HEIGHT = 60
 

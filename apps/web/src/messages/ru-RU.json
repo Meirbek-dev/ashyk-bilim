@@ -768,7 +768,7 @@
     "enterFocusMode": "Войти в режим фокусировки",
     "exitFocusMode": "Выйти из режима фокусировки",
     "focusMode": "Режим фокусировки",
-    "aiAssistant": "Ashyk AI",
+    "aiAssistant": "Ashyq AI",
     "keyboardShortcuts": "Сочетания клавиш",
     "lastUpdated": "Последнее обновление",
     "markAsComplete": "Отметить как завершенное",
@@ -877,7 +877,7 @@
       "signIn": "Войти",
       "signInWithGoogle": "Войти с помощью Google",
       "signup": "Зарегистрироваться",
-      "title": "Вход - Ashyk Bilim",
+      "title": "Вход - Ashyq Bilim",
       "wrongCredentials": "Неверный логин или пароль",
       "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
       "rateLimited": "Слишком много попыток. Пожалуйста, попробуйте позже.",
@@ -899,7 +899,7 @@
     "passwordPlaceholder": "Введите ваш пароль",
     "showPassword": "Показать пароль",
     "Signup": {
-      "title": "Регистрация - Ashyk Bilim",
+      "title": "Регистрация - Ashyq Bilim",
       "heading": "Создать аккаунт",
       "subtitle": "Заполните форму, чтобы начать обучение.",
       "firstName": "Имя",
@@ -924,7 +924,7 @@
       "organizationPlaceholder": "Университет, школа, колледж или компания"
     },
     "VerifyEmail": {
-      "title": "Подтверждение почты - Ashyk Bilim",
+      "title": "Подтверждение почты - Ashyq Bilim",
       "heading": "Подтвердите адрес электронной почты",
       "subtitle": "Введите код из письма, которое мы отправили при регистрации.",
       "email": "Электронная почта",
@@ -1045,7 +1045,7 @@
       "keywords": "{certificationName}, {courseName}, сертификат, проверка",
       "openGraph": {
         "description": "Проверьте подлинность сертификата {certificationName} для курса {courseName}.",
-        "siteName": "Ashyk Bilim",
+        "siteName": "Ashyq Bilim",
         "title": "Проверить сертификат {certificationName} - {courseName}"
       },
       "title": "Проверка сертификата - {certificationName} ({courseName})",
@@ -1355,8 +1355,8 @@
       "autoSubmitThreshold": "Порог автосдачи"
     },
     "AiChat": {
-      "assistantName": "Ashyk Ai",
-      "placeholder": "Спросите Ashyk Ai…",
+      "assistantName": "Ashyq Ai",
+      "placeholder": "Спросите Ashyq Ai…",
       "sendMessage": "Отправить сообщение",
       "stopGeneration": "Остановить генерацию",
       "copyResponse": "Копировать ответ",
@@ -1859,10 +1859,10 @@
       "nextButton": "Далее",
       "nextButtonLabel": "Далее",
       "onboarding": "Онбординг",
-      "step10Button": "Ashyk Bilim",
-      "step10Desc": "Чтобы узнать больше о Ashyk Bilim, вы можете пройти наши оригинальные курсы в Ashyk Bilim",
+      "step10Button": "Ashyq Bilim",
+      "step10Desc": "Чтобы узнать больше о Ashyq Bilim, вы можете пройти наши оригинальные курсы в Ashyq Bilim",
       "step10Title": "К бесконечности",
-      "step1Desc": "Добро пожаловать в Ashyk Bilim, LMS, созданную для простоты, удобства использования и производительности. Откройте для себя новый способ создания, обмена и взаимодействия с образовательным контентом.",
+      "step1Desc": "Добро пожаловать в Ashyq Bilim, LMS, созданную для простоты, удобства использования и производительности. Откройте для себя новый способ создания, обмена и взаимодействия с образовательным контентом.",
       "step1Title": "Обучайте мир!",
       "step2Button": "Создать новый курс",
       "step2Desc": "Курсы являются основными строительными блоками, они всегда содержат Главы, а Главы содержат Активности.",
@@ -1873,7 +1873,7 @@
       "step4Button": "Узнать больше о Динамических страницах и Редакторе",
       "step4Desc": "Динамические страницы — это страницы с динамическим контентом, подобным страницам Notion, они могут включать различные компоненты, такие как Тесты, Изображения, Видео, Документы и т. д.",
       "step4Title": "Динамические страницы и Редактор",
-      "step5Button": "Узнать больше об Ashyk Ai",
+      "step5Button": "Узнать больше об Ashyq Ai",
       "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента",
       "step5Title": "Искусственный интеллект",
       "step6Button": "Создать группы пользователей",
@@ -2396,7 +2396,7 @@
       "adminTitle": "Администрирование",
       "fetchError": "Произошла ошибка при загрузке данных",
       "home": "На главную",
-      "notMemberInfo": "Вы еще не являетесь пользователем Ashyk Bilim",
+      "notMemberInfo": "Вы еще не являетесь пользователем Ashyq Bilim",
       "signOut": "Выйти"
     }
   },
@@ -3153,7 +3153,7 @@
         "deactivateUsers": "Деактивировать пользователей",
         "executeAction": "Выполнить действие",
         "exportData": "Экспорт данных",
-        "exportDescription": "Скачать данные Ashyk Bilim в CSV",
+        "exportDescription": "Скачать данные Ashyq Bilim в CSV",
         "failed": "Неудачно",
         "highPriority": "Высокий приоритет",
         "importData": "Импорт данных",
@@ -3527,7 +3527,7 @@
       "recentActions": "Недавние действия",
       "recentActionsDescription": "Журнал недавних административных операций",
       "recentActivity": "Недавняя активность",
-      "recentActivityDescription": "Последние события в Ashyk Bilim",
+      "recentActivityDescription": "Последние события в Ashyq Bilim",
       "retention": "Удержание",
       "retentionInfo": "Когорты, отток и коэффициенты возврата",
       "retry": "Повторить",
@@ -5342,7 +5342,7 @@
         "shareProgress": "Делиться прогрессом",
         "shareProgressDescription": "Разрешить делиться вашим прогрессом с другими пользователями",
         "showOnLeaderboard": "Показывать в рейтинге",
-        "showOnLeaderboardDescription": "Отображать ваш прогресс в рейтинге Ashyk Bilim",
+        "showOnLeaderboardDescription": "Отображать ваш прогресс в рейтинге Ashyq Bilim",
         "title": "Конфиденциальность и видимость"
       },
       "reachedLevel": "Вы достигли уровня {level}",
@@ -5642,7 +5642,7 @@
           "previews": "Предварительный просмотр",
           "thumbnail": "Эскиз"
         },
-        "description": "Управление логотипом, эскизом и изображениями предварительного просмотра Ashyk Bilim.",
+        "description": "Управление логотипом, эскизом и изображениями предварительного просмотра Ashyq Bilim.",
         "title": "Изображения и предварительный просмотр"
       },
       "Landing": {
@@ -5972,7 +5972,7 @@
           "progress": "Прогресс",
           "quickStats": "Быстрая статистика",
           "rank": "Место №{rank}",
-          "rankInOrg": "Место №{rank} в Ashyk Bilim",
+          "rankInOrg": "Место №{rank} в Ashyq Bilim",
           "recentAchievements": "Недавние достижения",
           "recentActivity": "Недавние активности",
           "title": "Прогресс обучения",
@@ -6215,7 +6215,7 @@
           "shareProgress": "Делиться прогрессом",
           "shareProgressDescription": "Разрешить делиться прогрессом обучения с другими",
           "showOnLeaderboard": "Показывать в таблице лидеров",
-          "showOnLeaderboardDescription": "Отображать прогресс в рейтингах Ashyk Bilim",
+          "showOnLeaderboardDescription": "Отображать прогресс в рейтингах Ashyq Bilim",
           "title": "Настройки конфиденциальности"
         },
         "profile": {
@@ -6839,16 +6839,16 @@
       "rolesDescription": "Создайте и управляйте ролями с конкретными разрешениями",
       "rolesTitle": "Роли",
       "signups": "Регистрация и коды приглашения",
-      "signupsDescription": "Выберите, откуда пользователи могут присоединиться к Ashyk Bilim",
+      "signupsDescription": "Выберите, откуда пользователи могут присоединиться к Ashyq Bilim",
       "signupsSection": {
         "actionsHeader": "Действия",
         "activeLabel": "Активно",
         "changeJoinMethodFailed": "Ошибка изменения метода присоединения.",
         "changeToClosedButton": "Изменить на закрытый",
-        "changeToClosedConfirmation": "Вы уверены, что хотите изменить механизм регистрации на закрытый? Это позволит пользователям присоединяться к Ashyk Bilim только по приглашению.",
+        "changeToClosedConfirmation": "Вы уверены, что хотите изменить механизм регистрации на закрытый? Это позволит пользователям присоединяться к Ashyq Bilim только по приглашению.",
         "changeToClosedModalTitle": "Изменить на закрытый?",
         "changeToOpenButton": "Изменить на открытый",
-        "changeToOpenConfirmation": "Вы уверены, что хотите изменить механизм регистрации на открытый? Это позволит пользователям свободно присоединяться к Ashyk Bilim.",
+        "changeToOpenConfirmation": "Вы уверены, что хотите изменить механизм регистрации на открытый? Это позволит пользователям свободно присоединяться к Ashyq Bilim.",
         "changeToOpenModalTitle": "Изменить на открытый?",
         "changingJoinMethod": "Изменение метода присоединения...",
         "closedDescription": "Пользователи могут присоединиться только по приглашению",
@@ -6857,10 +6857,10 @@
         "deleteCodeButton": "Удалить код",
         "deleteCodeModalMessage": "Вы уверены, что хотите удалить этот код приглашения?",
         "deleteCodeModalTitle": "Удалить код?",
-        "description": "Выберите, как пользователи могут присоединиться к Ashyk Bilim",
+        "description": "Выберите, как пользователи могут присоединиться к Ashyq Bilim",
         "expirationHeader": "Дата истечения срока действия",
         "generateCodeButton": "Сгенерировать код приглашения",
-        "generateCodeModalDescription": "Сгенерировать новый код приглашения к Ashyk Bilim",
+        "generateCodeModalDescription": "Сгенерировать новый код приглашения к Ashyq Bilim",
         "generateCodeModalTitle": "Сгенерировать код приглашения",
         "joinMethodChangedSuccess": "Метод присоединения изменен на {method}.",
         "joinMethodTitle": "Метод присоединения",
@@ -7443,7 +7443,7 @@
       "title": "Курсы"
     },
     "Welcome": {
-      "title": "Учитесь онлайн в Ashyk Bilim",
+      "title": "Учитесь онлайн в Ashyq Bilim",
       "description": "Курсы, задания и сертификаты в одном месте.",
       "signup": "Зарегистрироваться",
       "login": "Войти"
@@ -7600,7 +7600,7 @@
       "users": "Пользователи",
       "learning": "Обучение"
     },
-    "platformName": "Ashyk Bilim",
+    "platformName": "Ashyq Bilim",
     "tooltips": {
       "admin": "Панель администратора",
       "analytics": "Аналитика",
@@ -10094,7 +10094,7 @@
       "name": "Тёмная материя"
     },
     "default": {
-      "description": "Тема Ashyk Bilim по умолчанию",
+      "description": "Тема Ashyq Bilim по умолчанию",
       "name": "По умолчанию"
     },
     "doom64": {
@@ -10438,7 +10438,7 @@
     "errorSomethingWentWrong": "Что-то пошло не так. Пожалуйста, попробуйте позже.",
     "hi": "Здравствуйте",
     "join": "Присоединиться ",
-    "joinQuestion": "Присоединиться к Ashyk Bilim?",
+    "joinQuestion": "Присоединиться к Ashyq Bilim?",
     "submit": "Отправить "
   },
   "Trail": {

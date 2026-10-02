@@ -15,7 +15,6 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
 const webDir = path.resolve(import.meta.dirname, '..')
-const repoDir = path.resolve(webDir, '../..')
 
 const waitForWindowsFileHandles = async () => {
   if (process.platform === 'win32') {
@@ -39,7 +38,8 @@ await waitForWindowsFileHandles()
 run(process.execPath, ['scripts/postprocess-orval-output.mjs'], webDir)
 await waitForWindowsFileHandles()
 
-run('vp', ['fmt', '--write', 'apps/web/src/lib/api/generated'], repoDir, process.platform === 'win32')
+// Run from apps/web so vp picks up apps/web/vite.config.ts (the fmt config).
+run('vp', ['fmt', '--write', 'src/lib/api/generated'], webDir, process.platform === 'win32')
 await waitForWindowsFileHandles()
 
 run(process.execPath, ['scripts/postprocess-orval-output.mjs'], webDir)

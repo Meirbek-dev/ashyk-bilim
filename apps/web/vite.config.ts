@@ -102,6 +102,8 @@ export default defineConfig({
       '**/gen/',
       '**/.turbo/',
       '**/.genenv/',
+      // Orval output (`bun run generate:api-types`); never edited by hand.
+      'src/lib/api/generated/',
       'e2e/',
       'scripts/',
       'playwright.config.ts',

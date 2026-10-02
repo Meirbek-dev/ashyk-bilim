@@ -1,0 +1,314 @@
+# One workflow for gates, images, stack smoke and publish, so every green
+# main commit gets BOTH images under the same <sha> tag. Pull requests run
+# the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
+# only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# PRs: a newer push cancels the running one. main: never cancelled while
+# running (a queued main run may be superseded by a newer commit).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_REPO: ghcr.io/meirbek-dev
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      web: ${{ steps.filter.outputs.web }}
+      infra: ${{ steps.filter.outputs.infra }}
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'apps/server/**'
+            web:
+              - 'apps/web/**'
+              - 'package.json'
+              - 'bun.lock'
+              - '.node-version'
+              - 'apps/server/openapi.v2.json'
+            infra:
+              - 'compose*.yaml'
+              - 'infra/**'
+              - '.github/**'
+              - 'justfile'
+      # Same 8-char prefix deploy.sh uses on the host.
+      - id: sha
+        run: echo "sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+  server-gates:
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      CARGO_TERM_COLOR: always
+      SQLX_OFFLINE: 'false'
+      # Must match infra/env/dev.env (services come from `just dev-up`).
+      DATABASE_URL: postgres://ashyq:ashyq@localhost:5433/ashyq_test
+      TEST_REDIS_URL: redis://:ashyq-dev@localhost:6380
+      TEST_S3_ENDPOINT: http://localhost:9002
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/server
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,cargo-llvm-cov,cargo-deny,cargo-machete,sqlx-cli,just
+
+      - name: Format
+        run: just fmt-check
+
+      - name: Dev services (db, redis, zitadel, rustfs)
+        working-directory: .
+        run: just dev-up
+
+      - name: Migrate test database
+        run: just migrate
+
+      - name: Clippy (deny warnings)
+        run: just clippy
+
+      - name: SQLx offline cache check
+        run: just sqlx-check
+
+      - name: Tests (nextest)
+        run: just test
+
+      - name: cargo-deny
+        run: just deny
+
+      - name: cargo-machete
+        run: just machete
+
+      - name: Coverage floor
+        run: just cov
+
+      - name: OpenAPI export is committed and current
+        run: just openapi-check
+
+  # Each gate is its own step with an id. A gate that is red at the stage-1
+  # baseline gets `continue-on-error: true` plus `# baseline-red: <reason>`
+  # (listed in docs/INFRA.md). All green at the stage-1 baseline, all required.
+  web-gates:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install
+        working-directory: .
+        run: bun install --frozen-lockfile
+
+      - id: lint
+        name: Lint
+        run: bun run lint
+
+      - id: typecheck
+        name: Typecheck
+        run: bun run typecheck
+
+      - id: test
+        name: Unit tests
+        run: bun run test
+
+      - id: contract
+        name: API contract is regenerated and committed
+        run: |
+          bun run generate:api-types
+          bun run check:contracts
+          git diff --exit-code
+
+      - id: error-codes
+        name: Error codes have messages in every locale
+        run: bun run check:error-codes
+
+  infra-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # gitleaks scans the pushed commit range
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: just ci-infra
+        run: just ci-infra
+
+      - name: shellcheck
+        run: shellcheck -x infra/scripts/*.sh
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  images:
+    needs: [changes, server-gates, web-gates, infra-gates]
+    # Gates may be skipped (path filter) but never failed.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !failure() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: server
+          - image: web
+            # stage-2: the only Next-specific spot; the web image is bound to
+            # the prod domain until it gets runtime config.
+            build-args: |
+              NEXT_PUBLIC_SITE_URL=https://${{ vars.PROD_DOMAIN }}/
+              NEXT_PUBLIC_API_URL=https://${{ vars.PROD_DOMAIN }}/api/v2/
+              NEXT_PUBLIC_MEDIA_URL=https://${{ vars.PROD_DOMAIN }}/
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require PROD_DOMAIN
+        if: matrix.image == 'web'
+        env:
+          PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
+        run: test -n "$PROD_DOMAIN" || { echo "::error::repository variable PROD_DOMAIN is not set"; exit 1; }
+
+      # The release compile ran out of disk on stock runners (runs #45/#46).
+      - name: Free runner disk for the release build
+        if: matrix.image == 'server'
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          df -h /
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/${{ matrix.image }}/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          build-args: ${{ matrix.build-args }}
+          cache-from: type=gha,scope=${{ matrix.image }}-image
+          cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
+
+  stack-smoke:
+    needs: [changes, images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
+      SMOKE_RESOLVE_IP: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Stack up (from scratch, bootstrap included)
+        run: just stack-up
+
+      - name: Smoke
+        run: just smoke
+
+      # R-09: the edge must not depend on Next.js. Swap web for a stub and
+      # smoke again; only web and nginx are recreated.
+      - name: Smoke with stub web
+        env:
+          WEB_IMAGE: ashyq-stub-web:ci
+        run: |
+          docker build -t "$WEB_IMAGE" infra/smoke/stub-web
+          bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --pull never --force-recreate --wait web nginx'
+          just smoke
+
+      - name: Compose logs
+        if: failure()
+        run: bash -c 'source infra/scripts/lib.sh && use_smoke && compose ps -a && compose logs --no-color --timestamps --tail 500'
+
+  publish:
+    needs: [changes, stack-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag ci-<sha> as <sha> and latest (no rebuild)
+        env:
+          SHA: ${{ needs.changes.outputs.sha }}
+        run: |
+          for img in server web; do
+            ref="$IMAGE_REPO/ashyq-$img"
+            docker buildx imagetools create -t "$ref:$SHA" -t "$ref:latest" "$ref:ci-$SHA"
+          done

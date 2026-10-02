@@ -1,5 +1,6 @@
-# Ashyq server — the only entry point for builds/tests/tooling.
-# CI runs `just ci`; agents run the same recipes locally. See AGENTS.md.
+# Ashyq server recipes (Rust workspace). Repo-wide tasks live in the root
+# justfile. `just ci` runs every server gate CI runs, in CI order; CI calls
+# the same recipes one by one. See AGENTS.md.
 
 set dotenv-load := true
 
@@ -26,7 +27,7 @@ clippy:
 test:
     cargo nextest run --workspace
 
-# Unit tests only — no Postgres/Redis/Docker required (Windows sessions).
+# Unit tests only - no Postgres/Redis/Docker required (Windows sessions).
 test-unit:
     cargo nextest run --workspace --lib --bins
 
@@ -50,8 +51,17 @@ migration NAME:
 openapi:
     cargo run -p ashyq-server -- openapi > openapi.v2.json
 
-# Coverage with floor (ratchet up as phases land — never down).
-# Scaffold floor 30 → 80 after P3 (measured 88% lines, 2026-09-05).
+# Fail if the committed openapi.v2.json differs from a fresh export.
+openapi-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp="$(mktemp)"
+    trap 'rm -f "$tmp"' EXIT
+    cargo run -q -p ashyq-server -- openapi > "$tmp"
+    diff -u openapi.v2.json "$tmp"
+
+# Coverage with floor (ratchet up as phases land - never down).
+# Scaffold floor 30 -> 80 after P3 (measured 88% lines, 2026-09-05).
 # main.rs is the process entrypoint and is not held to the floor.
 cov:
     cargo llvm-cov nextest --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/]server[\\/]src[\\/]main\.rs'
@@ -63,11 +73,11 @@ machete:
     cargo machete
 
 # Everything CI runs, in CI order. Green here == green CI.
-ci: fmt-check clippy test deny machete
+ci: fmt-check clippy sqlx-check test deny machete cov openapi-check
 
-# Dev stack (requires Docker): db redis zitadel rustfs.
+# Dev stack (db, redis, zitadel, rustfs) via the root justfile.
 services:
-    docker compose -f ../../docker-compose.dev.yml up -d db redis zitadel rustfs
+    just --justfile ../../justfile dev-up
 
 dev:
     bacon

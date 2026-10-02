@@ -15,13 +15,13 @@ describe('search page <title>', () => {
       params: Promise.resolve({ locale: 'ru-RU' }),
       searchParams: Promise.resolve({ q: 'Python' }),
     })
-    expect(meta.title).toBe('Результаты поиска: Python - Ashyk Bilim')
+    expect(meta.title).toBe('Результаты поиска: Python - Ashyq Bilim')
     expect(String(meta.title)).not.toMatch(/\s{2}|"/)
 
     const typed = await generateMetadata({
       params: Promise.resolve({ locale: 'ru-RU' }),
       searchParams: Promise.resolve({ q: 'Python', type: 'courses' }),
     })
-    expect(typed.title).toBe('Курсы: Python - Ashyk Bilim')
+    expect(typed.title).toBe('Курсы: Python - Ashyq Bilim')
   })
 })

@@ -5,7 +5,9 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": [
         "run",
-        "dev:web"
+        "--cwd",
+        "apps/web",
+        "dev"
       ],
       "port": 3000
     }

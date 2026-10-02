@@ -8,7 +8,24 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# apps/web — frontend conventions (v2 contract, P9)
+<!--VITE PLUS START-->
+
+# Using Vite+, the Unified Toolchain for the Web
+
+This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
+
+Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
+
+## Review Checklist
+
+- [ ] Run `vp install` after pulling remote changes and before getting started.
+- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
+- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
+- [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
+
+<!--VITE PLUS END-->
+
+# apps/web - frontend conventions (v2 contract, P9)
 
 The app talks to the Rust backend (`apps/server`, `/api/v2`), the only backend.
 The legacy Python API was removed after the 2026-09-30 cutover (git tag
@@ -17,9 +34,17 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 ## Toolchain
 
 - `bun install`, `bun run dev`, `bun run build`.
-- Gates: `bun run typecheck` (tsc), `bun run lint` (oxlint/eslint via vp, applies
-  fixes), `bun run test` (vitest, `src/tests/**`), `bun run check:error-codes`,
-  `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
+- From the repo root use `just web <script>` (= `bun run --cwd apps/web <script>`).
+- CI gates (`.github/workflows/ci.yaml`, web job): `bun run lint` (oxlint via
+  `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
+  `bun run test` (vitest, `src/tests/**`), `bun run generate:api-types` +
+  `bun run check:contracts` (generated client matches `openapi.v2.json`),
+  `bun run check:error-codes`. Baseline status: `docs/GATES-BASELINE.md`.
+- `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
+  unrelated files, so run it deliberately and review the diff.
+- `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`
+  in this directory, vitest uses `vitest.config.ts`.
+- `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
 - `bunx knip` reports dead files/exports (generated code is ignored).
 
 ## The contract and the generated client
@@ -53,7 +78,7 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - **Listings are keyset pages** `{ items, next_cursor }` (`Page<T>` in
   `@/lib/api/contract`, `collectPages` walks them). Pass `next_cursor` back as
   `cursor`; there is no offset paging or `total` except where the contract
-  says so (work queue, leaderboard, and every `analytics/teacher/*` listing —
+  says so (work queue, leaderboard, and every `analytics/teacher/*` listing -
   those keep legacy `page`/`page_size` deliberately, see DECISIONS.md
   "Analytics (2026-09-06, P7)"). Do not "fix" those into cursors.
 - **Errors are `application/problem+json`** (`{type,title,status,code,detail,
@@ -73,14 +98,14 @@ details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
   submission submit) send `Idempotency-Key` via `idempotencyHeaders(key)`; keep
   the same key when retrying one logical action.
 - **Uploads never go through the API:** `uploadFile(file, purpose)`
-  (`@/services/media/uploads`) does `POST /uploads` → presigned `PUT` →
+  (`@/services/media/uploads`) does `POST /uploads` -> presigned `PUT` ->
   `POST /uploads/{id}/finalize` and returns `{id, key}`; attach the `id` to the
   owner (`avatar_upload_id`, block create, file-submission draft). Public
   objects are addressed by storage `key` and served at `/content/<key>`
   (`getContentUrl(key)` in `@/services/media/media`).
 - **SSE:** `GET /submissions/{id}/events` (one submission),
   `GET /courses/{id}/grading/events` (every grade change and hand-in on a
-  course, graders only — `useCourseGradingEvents` invalidates
+  course, graders only - `useCourseGradingEvents` invalidates
   `queryKeys.grading.*`; polling is the fallback while it is down),
   `POST /ai/runs/{id}/stream` and `POST /ai/qa/{course}/chat` (AG-UI);
   `Last-Event-ID` resumes.
@@ -92,10 +117,10 @@ details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
 
 ## Feature layout
 
-- `src/services/**` — plain async functions per resource (server and client
-  safe), `src/features/<area>/**` — TanStack Query options/hooks + feature UI,
-  `src/app/[locale]/**` — routes, `src/app/_shared/**` — page implementations,
-  `src/components/**` — shared UI. Query keys are centralised in
+- `src/services/**` - plain async functions per resource (server and client
+  safe), `src/features/<area>/**` - TanStack Query options/hooks + feature UI,
+  `src/app/[locale]/**` - routes, `src/app/_shared/**` - page implementations,
+  `src/components/**` - shared UI. Query keys are centralised in
   `src/lib/react-query/queryKeys.ts` (edit, never rewrite the file).
 - i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (next-intl). Add
   keys to all three; Russian first, kk/en translations.
@@ -105,7 +130,7 @@ details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
 ## Not in v2 (do not re-add without a contract change)
 
 Password reset (self-registration `/signup`, email verification and
-password change came back 2026-09-12 — DECISIONS.md), refresh tokens, numeric ids,
+password change came back 2026-09-12 - DECISIONS.md), refresh tokens, numeric ids,
 `*_uuid` strings, multipart uploads through the API, offset pagination,
 `/members`, `/roles/{id}` numeric role ids,
 batch grading, bulk zip download of file submissions, `/trail/start`.

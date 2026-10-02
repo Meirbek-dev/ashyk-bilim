@@ -1,0 +1,292 @@
+# Shared tier: data services, Judge0 (profile `judge0`) and one-shot init jobs.
+# Never used alone; infra/scripts/lib.sh selects the file set:
+#   prod  = compose.yaml:compose.prod.yaml
+#   dev   = compose.yaml:compose.dev.yaml                  (just dev-up)
+#   smoke = compose.yaml:compose.prod.yaml:compose.smoke.yaml
+#
+# Networks: edge-net (nginx and everything it or the apps must reach, has egress),
+# data-net (internal: db, redis, zitadel, rustfs, init jobs), exec-net (internal: Judge0).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+x-zitadel-db: &zitadel-db
+  ZITADEL_DATABASE_POSTGRES_HOST: db
+  ZITADEL_DATABASE_POSTGRES_PORT: 5432
+  ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+  ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+  ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${ZITADEL_DB_PASSWORD:?}
+  ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+
+x-judge0: &judge0
+  image: docker.io/judge0/judge0:1.13.1
+  profiles: [judge0]
+  privileged: true
+  restart: unless-stopped
+  volumes:
+    - ./infra/judge0/judge0.conf:/judge0.conf:ro
+    - judge0_box:/box
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  environment:
+    REDIS_HOST: judge0-redis
+    REDIS_PASSWORD: ${JUDGE0_REDIS_PASSWORD:?}
+    POSTGRES_HOST: judge0-db
+    POSTGRES_DB: judge0
+    POSTGRES_USER: judge0
+    POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:?}
+    AUTHN_TOKEN: ${JUDGE0_AUTHN_TOKEN:?}
+  networks: [exec-net]
+  depends_on:
+    judge0-db:
+      condition: service_healthy
+    judge0-redis:
+      condition: service_healthy
+  logging: *logging
+
+networks:
+  edge-net: {}
+  data-net:
+    internal: true
+  exec-net:
+    internal: true
+
+services:
+  # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
+  db:
+    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:60cddfb66e0c6c077f33a81c974ad12f688f2d26e055d38cd696004af7911cd8
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks: [data-net]
+    healthcheck:
+      # TCP, not the socket: the initdb-time server listens on the socket only.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '2.0'
+    logging: *logging
+
+  # Roles and databases (infra/postgres/init.sql), idempotent, as the superuser.
+  db-init:
+    image: *pg-image
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        exec psql -v ON_ERROR_STOP=1
+        -v ashyq_password="$$ASHYQ_DB_PASSWORD"
+        -v zitadel_password="$$ZITADEL_DB_PASSWORD"
+        -v databases="$$ASHYQ_DATABASES"
+        -v createdb="$$ASHYQ_DB_CREATEDB"
+        -f /init.sql
+    environment:
+      PGHOST: db
+      PGDATABASE: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?}
+      ASHYQ_DB_PASSWORD: ${ASHYQ_DB_PASSWORD:?}
+      ZITADEL_DB_PASSWORD: ${ZITADEL_DB_PASSWORD:?}
+      ASHYQ_DATABASES: ${ASHYQ_DATABASES:-ashyq}
+      ASHYQ_DB_CREATEDB: ${ASHYQ_DB_CREATEDB:-false}
+    volumes:
+      - ./infra/postgres/init.sql:/init.sql:ro
+    networks: [data-net]
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+
+  # --- Cache
+  redis:
+    image: docker.io/library/redis:8.10-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?}']
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?}
+    volumes:
+      - redis_data:/data
+    networks: [data-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '1.0'
+    logging: *logging
+
+  # --- Identity: Zitadel, internal only (no public route)
+  # Empty volumes belong to root; Zitadel (uid 1000) must write pat.txt.
+  volume-init:
+    image: *pg-image
+    entrypoint: ['sh', '-c', 'chown 1000:1000 /machinekey && chmod 0700 /machinekey']
+    volumes:
+      - zitadel_machinekey:/machinekey
+    network_mode: none
+    logging: *logging
+
+  # The only place holding the Postgres admin credentials for Zitadel.
+  zitadel-init:
+    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:956a298405189a8f6cd4ec92e8828b1bd10caa7da8b139c39d251d7053e33784 # v4.19.2
+    command: ['init']
+    environment:
+      <<: *zitadel-db
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_USER:-postgres}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:?}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+    networks: [data-net]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    logging: *logging
+
+  zitadel:
+    image: *zitadel-image
+    restart: unless-stopped
+    command: ['start-from-setup', '--masterkeyFromEnv', '--tlsMode', 'disabled']
+    environment:
+      <<: *zitadel-db
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?32 characters}
+      ZITADEL_EXTERNALDOMAIN: zitadel
+      ZITADEL_EXTERNALPORT: 8080
+      ZITADEL_EXTERNALSECURE: 'false'
+      # Same as --tlsMode disabled; `zitadel ready` (healthcheck) reads only the config.
+      ZITADEL_TLS_ENABLED: 'false'
+      # Imported users still carry Argon2id hashes until their next login.
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS: argon2,bcrypt
+      ZITADEL_FIRSTINSTANCE_PATPATH: /machinekey/pat.txt
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: ashyq-provisioner
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: ${ZITADEL_PAT_EXPIRATION:?RFC3339}
+    volumes:
+      - zitadel_machinekey:/machinekey
+    networks: [data-net]
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+      zitadel-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', '/app/zitadel', 'ready']
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 6
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '1.0'
+    logging: *logging
+
+  # --- Object storage (S3)
+  rustfs:
+    image: docker.io/rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - rustfs_data:/data
+    networks: [edge-net, data-net]
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
+    logging: *logging
+
+  # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
+  storage-init:
+    image: docker.io/amazon/aws-cli:2.37.5
+    entrypoint: ['bash', '/storage/init.sh']
+    environment:
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs:9000
+      AWS_PAGER: ''
+      STORAGE_CORS_ORIGINS: ${STORAGE_CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      - ./infra/storage:/storage:ro
+    networks: [data-net]
+    depends_on:
+      rustfs:
+        condition: service_started
+    logging: *logging
+
+  # --- Code execution (profile `judge0`: privileged, may not start on rootless/CI)
+  judge0-server:
+    <<: *judge0
+    command: ['bash', '-c', 'sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/server']
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS -H "X-Auth-Token: $$AUTHN_TOKEN" http://127.0.0.1:2358/languages >/dev/null']
+      interval: 15s
+      timeout: 10s
+      start_period: 180s
+      retries: 5
+
+  judge0-workers:
+    <<: *judge0
+    command: ['bash', '-c', 'sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/workers']
+
+  # Judge0's own state: ephemeral, never backed up, no path to the app data.
+  judge0-db:
+    image: *pg-image
+    profiles: [judge0]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:?}
+      POSTGRES_DB: judge0
+    networks: [exec-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U judge0']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  judge0-redis:
+    image: docker.io/library/redis:8.10-alpine
+    profiles: [judge0]
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${JUDGE0_REDIS_PASSWORD:?}']
+    environment:
+      REDISCLI_AUTH: ${JUDGE0_REDIS_PASSWORD:?}
+    networks: [exec-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging: *logging
+
+# Names are load-bearing: prod volumes are <project>_<name>; renaming = empty volumes.
+volumes:
+  postgres_data:
+  redis_data:
+  rustfs_data:
+  zitadel_machinekey:
+  judge0_box:

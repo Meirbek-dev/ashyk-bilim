@@ -239,7 +239,7 @@ export function MarkdownContent({
             const codeNode = node?.children[0]
             if (codeNode?.type !== 'element' || codeNode.tagName !== 'code') return <pre>{children}</pre>
             const classes = codeNode.properties.className
-            const match = /language-(\w+)/.exec(Array.isArray(classes) ? classes.join(' ') : String(classes ?? ''))
+            const match = /language-(\w+)/.exec(Array.isArray(classes) ? classes.join(' ') : (classes ?? ''))
             const code = codeNode.children
               .map(child => (child.type === 'text' ? child.value : ''))
               .join('')

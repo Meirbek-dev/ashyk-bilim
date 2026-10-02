@@ -54,7 +54,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       : typeof course_meta.learnings === 'string'
         ? [course_meta.learnings]
         : []
-    // Same «… - Ashyk Bilim» suffix as every other page (UX-052).
+    // Same «… - Ashyq Bilim» suffix as every other page (UX-052).
     const pageTitle = `${isCourseEnd ? courseName : `${activity?.name ?? ''} - ${courseName}`} - ${APP_NAME}`
 
     return {
