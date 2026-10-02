@@ -12,6 +12,7 @@ import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/use
 import { useTranslations } from 'next-intl'
 import type { XPTransaction } from '@/types/gamification'
 import { BookOpen } from 'lucide-react'
+import { isCourseArchived } from '@/lib/course-management'
 
 const emptySubscribe = () => () => {}
 
@@ -97,9 +98,15 @@ function Trail() {
             </div>
           ) : (
             <div className="space-y-3">
-              {trail.runs.map((run: AppTrailRun) => (
-                <TrailCourseElement key={run.course.course_uuid} run={run} course={run.course} />
-              ))}
+              {/* Archived courses stay (history, certificates) but sink below the live ones. */}
+              {trail.runs
+                .toSorted(
+                  (a: AppTrailRun, b: AppTrailRun) =>
+                    Number(isCourseArchived(a.course)) - Number(isCourseArchived(b.course)),
+                )
+                .map((run: AppTrailRun) => (
+                  <TrailCourseElement key={run.course.course_uuid} run={run} course={run.course} />
+                ))}
             </div>
           )}
         </section>

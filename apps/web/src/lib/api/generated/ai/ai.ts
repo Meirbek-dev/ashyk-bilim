@@ -2939,8 +2939,8 @@ export const getStudentRemediationUrl = (userId: UserId) => {
 
 /**
  * @summary A learner's sessions: their own, or anyone's with the platform-scoped
-`platform:read` (platform admins). Course staff — instructors,
-contributors — do not have it and get 403 for another learner.
+`platform:read` (platform admins). Course staff - instructors,
+contributors - do not have it and get 403 for another learner.
  */
 export const studentRemediation = async (
   userId: UserId,
@@ -3038,8 +3038,8 @@ export function useStudentRemediation<
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary A learner's sessions: their own, or anyone's with the platform-scoped
-`platform:read` (platform admins). Course staff — instructors,
-contributors — do not have it and get 403 for another learner.
+`platform:read` (platform admins). Course staff - instructors,
+contributors - do not have it and get 403 for another learner.
  */
 
 export function useStudentRemediation<
@@ -3126,8 +3126,8 @@ export function useStudentRemediationSuspense<
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary A learner's sessions: their own, or anyone's with the platform-scoped
-`platform:read` (platform admins). Course staff — instructors,
-contributors — do not have it and get 403 for another learner.
+`platform:read` (platform admins). Course staff - instructors,
+contributors - do not have it and get 403 for another learner.
  */
 
 export function useStudentRemediationSuspense<
@@ -3343,7 +3343,7 @@ export const getLatestRemediationUrl = (submissionId: AiSubjectId) => {
 }
 
 /**
- * @summary The newest remediation session on a submission — `null` when none —
+ * @summary The newest remediation session on a submission - `null` when none -
 for whoever may read the work (the grader's gate card, UX-115).
  */
 export const latestRemediation = async (
@@ -3444,7 +3444,7 @@ export function useLatestRemediation<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The newest remediation session on a submission — `null` when none —
+ * @summary The newest remediation session on a submission - `null` when none -
 for whoever may read the work (the grader's gate card, UX-115).
  */
 
@@ -3531,7 +3531,7 @@ export function useLatestRemediationSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The newest remediation session on a submission — `null` when none —
+ * @summary The newest remediation session on a submission - `null` when none -
 for whoever may read the work (the grader's gate card, UX-115).
  */
 

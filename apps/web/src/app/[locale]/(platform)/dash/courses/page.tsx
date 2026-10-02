@@ -1,6 +1,7 @@
 import { APP_NAME } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getEditableCourses } from '@services/courses/editable'
+import { parsePreset } from '@/lib/course-management'
 import type { PageSearchParams } from '@/lib/search-params'
 import type { Action, Resource, Scope } from '@/types/permissions'
 import { requireSession } from '@/lib/auth/session'
@@ -30,12 +31,6 @@ function parseQuery(value: string | string[] | undefined): string {
 function parseSort(value: string | string[] | undefined): 'updated' | 'name' {
   const raw = Array.isArray(value) ? value[0] : value
   return raw === 'name' ? 'name' : 'updated'
-}
-
-function parsePreset(value: string | string[] | undefined): string {
-  const raw = Array.isArray(value) ? value[0] : value
-  const valid = ['all', 'drafts', 'published', 'private', 'recent', 'attention']
-  return valid.includes(raw ?? '') ? (raw ?? 'all') : 'all'
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {

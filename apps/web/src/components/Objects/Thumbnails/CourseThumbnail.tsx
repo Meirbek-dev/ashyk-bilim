@@ -2,6 +2,8 @@
 
 import {
   AlertTriangle,
+  Archive,
+  ArchiveRestore,
   Award,
   BookMinus,
   Calendar,
@@ -12,10 +14,13 @@ import {
   Play,
   Settings2,
 } from 'lucide-react'
-import { buildCourseWorkspacePath, isCourseAuthor, isCourseCreator } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseArchived, isCourseAuthor, isCourseCreator } from '@/lib/course-management'
+import { CourseArchiveDialog, CourseRestoreDialog } from '@components/Dashboard/Courses/CourseArchiveDialog'
+import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatDate } from '@/lib/date'
+import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import type { FC } from 'react'
 import { toast } from 'sonner'
@@ -64,6 +69,7 @@ export interface Course {
   update_date?: string | null
   creator_id?: string | null | undefined
   contributor_ids?: string[] | undefined
+  archived_at_unix?: number | null | undefined
 }
 
 export interface CourseThumbnailProps {
@@ -98,6 +104,7 @@ interface CourseImageProps {
   courseUrl: string
   t: AppTranslator
   isOwner?: boolean
+  isArchived?: boolean
   priority?: boolean
 }
 
@@ -110,6 +117,7 @@ const CourseImage: FC<CourseImageProps> = ({
   courseUrl,
   t,
   isOwner = false,
+  isArchived = false,
   priority = false,
 }) => (
   <Link
@@ -145,6 +153,17 @@ const CourseImage: FC<CourseImageProps> = ({
           <Crown className="h-3 w-3" />
           {t('ownerBadge')}
         </Badge>
+      )}
+
+      {/* An archived course stays on the trail and in the editable list; the cover says so. */}
+      {isArchived && (
+        <CourseStatusBadge
+          status="archived"
+          className={cn(
+            'absolute bottom-2.5 left-2.5 backdrop-blur-sm',
+            isOwner && 'top-2.5 bottom-auto left-auto right-2.5',
+          )}
+        />
       )}
 
       {/* «Last updated» matters to the course's authors; learners see the cover alone. */}
@@ -328,8 +347,10 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   const router = useRouter()
   const { can, user: _thumbnailUser } = useSession()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [lifecycleDialog, setLifecycleDialog] = useState<'archive' | 'restore' | null>(null)
   const [isPending, startTransition] = useTransition()
   const currentUserId = _thumbnailUser?.id
+  const isArchived = isCourseArchived(course)
 
   // `:own` update applies to every author (creator or active contributor), as on
   // the server; `:own` delete to the creator only (UX-166).
@@ -341,7 +362,16 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
     can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
     (isCourseCreator(course, currentUserId) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
-  const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])]
+  // Archive / restore follow the course-manage gate, like publish in the table.
+  const canManage =
+    can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
+    (isCourseAuthor(course, currentUserId) && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
+
+  const availableActions = [
+    ...(canUpdate ? ['update'] : []),
+    ...(canManage ? ['manage'] : []),
+    ...(canDelete ? ['delete'] : []),
+  ]
 
   const handleDelete = () => {
     startTransition(async () => {
@@ -366,6 +396,13 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
       icon: Settings2,
       onClick: () => router.push(buildCourseWorkspacePath(courseIdClean, 'details')),
       requiresAction: 'update',
+    },
+    {
+      id: isArchived ? 'restore' : 'archive',
+      label: isArchived ? t('restore') : t('archive'),
+      icon: isArchived ? ArchiveRestore : Archive,
+      onClick: () => setLifecycleDialog(isArchived ? 'restore' : 'archive'),
+      requiresAction: 'manage',
     },
     {
       id: 'delete',
@@ -402,6 +439,22 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
         isPending={isPending}
         onConfirm={handleDelete}
       />
+      {lifecycleDialog === 'archive' ? (
+        <CourseArchiveDialog
+          open
+          onOpenChange={open => setLifecycleDialog(open ? 'archive' : null)}
+          courseUuid={courseIdClean}
+          courseName={course.name || ''}
+        />
+      ) : null}
+      {lifecycleDialog === 'restore' ? (
+        <CourseRestoreDialog
+          open
+          onOpenChange={open => setLifecycleDialog(open ? 'restore' : null)}
+          courseUuid={courseIdClean}
+          courseName={course.name || ''}
+        />
+      ) : null}
     </>
   )
 }
@@ -513,6 +566,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
         courseUrl={courseUrl}
         t={t}
         isOwner={isOwner}
+        isArchived={isCourseArchived(course)}
         priority={priority}
       />
 

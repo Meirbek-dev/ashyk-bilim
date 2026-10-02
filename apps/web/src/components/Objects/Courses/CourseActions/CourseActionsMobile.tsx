@@ -79,8 +79,15 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
   const tActions = useTranslations('Courses.CoursesActions')
   const { user: currentUser } = useSession()
   // Same CTA branches and toasts as the desktop sidebar (UX-174/175).
-  const { action, hasNoLiveActivities, isActionLoading, handleCourseAction, isProgressOpen, setIsProgressOpen } =
-    useCourseCta({ courseuuid, course, trailData, learnerState })
+  const {
+    action,
+    hasNoLiveActivities,
+    hideCta,
+    isActionLoading,
+    handleCourseAction,
+    isProgressOpen,
+    setIsProgressOpen,
+  } = useCourseCta({ courseuuid, course, trailData, learnerState })
 
   // The roster is a signed-in read (anonymous → 401), like CourseAuthors.
   const { data: roster } = useContributors(courseuuid, { enabled: Boolean(currentUser) })
@@ -95,7 +102,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
 
         {hasNoLiveActivities ? (
           <p className="text-muted-foreground text-sm">{t('noPublishedActivities')}</p>
-        ) : (
+        ) : hideCta ? null : (
           <Button
             type="button"
             onClick={handleCourseAction}
@@ -113,7 +120,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
               <>
                 {action === 'start' ? (
                   <LogIn className="h-4 w-4" />
-                ) : action === 'continue' || action === 'preview' ? (
+                ) : action === 'continue' || action === 'preview' || action === 'open' ? (
                   <BookOpen className="h-4 w-4" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />

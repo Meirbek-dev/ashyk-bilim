@@ -21,6 +21,8 @@ import { InlineError } from '@/components/ui/error-state'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { AICommandList, useActivityAIUrlState } from '@/features/ai-experience'
+import { useQuery } from '@tanstack/react-query'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { fromUnix } from '@/lib/api/contract'
 
 import { useQAThread } from '../api/use-ask-question'
@@ -35,6 +37,9 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   const t = useTranslations('AiExperience.qaInput')
   const { setThread, thread: selectedThreadUuid } = useActivityAIUrlState('ask')
   const threadQuery = useQAThread(courseUuid, selectedThreadUuid ?? '')
+  // Archived course: the thread is history, no new questions (COURSE_ARCHIVING 9.4).
+  const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
+  const courseArchived = learnerState.data?.permissions.denial_reason === 'course_archived'
   const threadsQuery = useQAThreads(courseUuid)
   const deleteThread = useDeleteQAThread(courseUuid)
   const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null)
@@ -87,7 +92,11 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   return (
     <section className="@container/qa-panel grid min-h-full shrink-0 gap-4 @min-[40rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem] @min-[40rem]/qa-panel:grid-rows-1">
       <div className="flex min-h-0 flex-col gap-4">
-        <AICommandList surface="course" disabled={chat.pending} onCommand={command => submitQuestion(command.prompt)} />
+        <AICommandList
+          surface="course"
+          disabled={chat.pending || courseArchived}
+          onCommand={command => submitQuestion(command.prompt)}
+        />
         <ScrollArea className="bg-background min-h-40 flex-1 rounded-lg border p-3 [content-visibility:auto]">
           {threadQuery.isError ? (
             <InlineError description={threadQuery.error.message} error={threadQuery.error} />
@@ -126,7 +135,12 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
         ) : null}
         {/* The question box stays in reach while the panel scrolls. */}
         <div className="bg-background sticky bottom-0 z-10 pt-1">
-          <QAInput pending={chat.pending} onStop={chat.stop} onSubmit={submitQuestion} />
+          <QAInput
+            pending={chat.pending}
+            disabledReason={courseArchived ? t('courseArchived') : null}
+            onStop={chat.stop}
+            onSubmit={submitQuestion}
+          />
         </div>
       </div>
       <QAThreadList

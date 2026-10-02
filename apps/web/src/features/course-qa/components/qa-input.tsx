@@ -9,13 +9,18 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } fro
 
 interface QAInputProps {
   pending?: boolean
+  /** Shown instead of the box when asking is off (archived course); the history stays. */
+  disabledReason?: string | null
   onStop?: () => void
   onSubmit: (question: string) => void
 }
 
-export function QAInput({ pending, onStop, onSubmit }: QAInputProps) {
+export function QAInput({ pending, disabledReason, onStop, onSubmit }: QAInputProps) {
   const t = useTranslations('AiExperience.qaInput')
   const [question, setQuestion] = useState('')
+  if (disabledReason) {
+    return <p className="text-muted-foreground rounded-lg border p-3 text-sm">{disabledReason}</p>
+  }
   return (
     <Field>
       <FieldLabel htmlFor="course-qa-question">{t('label')}</FieldLabel>

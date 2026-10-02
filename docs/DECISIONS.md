@@ -1698,3 +1698,32 @@ Implements three more items of the owner answers above. Routes:
   `raw_score`/`penalty_pct`/`final_score` outside 0..=100 are clamped as
   before, and each clamp is a `submission_field`/`grading_entry_field` drop
   naming the legacy value.
+
+## Course archive is orthogonal to `public`; enrolled learners keep read access (2026-10-02)
+
+Spec: `docs/COURSE_ARCHIVING.md`. A third way out of a course besides delete
+(cascades history) and unpublish (hides the course from its own learners,
+BUG-183): `courses.archived_at/archived_by`.
+
+- **Discovery vs reads.** Archived courses leave the catalogue, search, user
+  profile, collection contents, work queues and analytics rollups;
+  `course_visible` gains an arm that keeps an archived course readable for
+  every learner with a `trail_runs` row, even when private. `public` is not
+  touched, so restore returns the previous visibility without a readiness
+  check ([Р5]); a public archived course stays reachable by direct link ([Р4]).
+- **Frozen for everyone.** Every mutation answers 409 `course-archived`
+  (`CourseRow::ensure_not_archived`, called in write-only gates such as
+  `require_writable`, `load_for_edit`, `require_course_open`,
+  `require_gradable`), never in shared read helpers, so author reads,
+  gradebook and exports keep working. Grading freezes too ([Р2]); roster and
+  usergroup links freeze ([Р3]). The auto-submit sweep still finalizes timed
+  drafts. Archive/restore use the roster-manager gate ([Р1]).
+- **Scheduled assessments drop to draft on archive** (with an audit event),
+  so `publish-due` never fires inside a frozen course or right after restore.
+- **Analytics scope splits** into `course_ids` (active, default lists,
+  rollup, `managed_course_count`) and `reachable` (incl. archived) so an
+  archived course's dashboard and exports still open.
+- **Web:** the course workspace wraps editing tabs in a native
+  `<fieldset disabled>` (gradebook and review stay live). `canArchiveCourse`
+  is `course:manage` or authorship because list payloads carry no roster
+  roles; a plain contributor sees the action and gets the server 403.

@@ -1,5 +1,5 @@
 import type { Action, Resource, Scope } from '@/types/permissions'
-import { isCourseAuthor } from '@/lib/course-management'
+import { isCourseArchived, isCourseAuthor } from '@/lib/course-management'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { getCourseMetadata } from '@services/courses/courses'
@@ -19,6 +19,12 @@ export interface CourseWorkspaceCapabilities {
   canManageCertificate: boolean
   canReviewCourse: boolean
   canDeleteCourse: boolean
+  /** Archive / restore (COURSE_ARCHIVING 6.2): platform course manager or an author. */
+  canArchiveCourse: boolean
+  /** Archived courses are read-only: every `canEdit*` / `canManage*` above is off. */
+  isArchived: boolean
+  /** Which workspace tabs the viewer may open; an archived course keeps them readable. */
+  stages: Record<CourseWorkspaceStage, boolean>
 }
 
 type AuthSession = Awaited<ReturnType<typeof requireSession>>
@@ -77,17 +83,38 @@ export function deriveCourseWorkspaceCapabilities(
   const canGrade = canOwnOrPlatform(session, permsSet, isAuthor, Resources.ASSESSMENT, Actions.GRADE)
   const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canGrade
 
+  const stages: Record<CourseWorkspaceStage, boolean> = {
+    overview: canReviewCourse || canManageSettings,
+    details: canEditDetails,
+    curriculum: canEditCurriculum,
+    gradebook: canReviewCourse,
+    access: canManageSettings,
+    collaboration: canManageCollaboration,
+    certificate: canManageCertificate,
+    review: canReviewCourse,
+  }
+  // The server's roster-manager gate (creator, active maintainer, platform
+  // manager): the course payload carries no roster roles, so a plain
+  // contributor sees the item and gets the server's 403 - as with publish.
+  const canArchiveCourse = canManage
+  // Archived: frozen for every role (writes answer 409 `course-archived`);
+  // the tabs stay open for reading, the gradebook for export.
+  const isArchived = isCourseArchived(course)
+
   return {
-    canViewWorkspace: canReviewCourse || canManageSettings,
+    canViewWorkspace: stages.overview,
     canCreateCourse: hasCreateCoursePermission(session, permsSet),
-    canEditDetails,
-    canEditCurriculum,
-    canManageAccess,
-    canManageCollaboration,
-    canManageSettings,
-    canManageCertificate,
+    canEditDetails: canEditDetails && !isArchived,
+    canEditCurriculum: canEditCurriculum && !isArchived,
+    canManageAccess: canManageAccess && !isArchived,
+    canManageCollaboration: canManageCollaboration && !isArchived,
+    canManageSettings: canManageSettings && !isArchived,
+    canManageCertificate: canManageCertificate && !isArchived,
     canReviewCourse,
     canDeleteCourse,
+    canArchiveCourse,
+    isArchived,
+    stages,
   }
 }
 
@@ -112,18 +139,7 @@ export async function requireCourseWorkspaceStageAccess(
 ): Promise<CourseWorkspaceCapabilities> {
   const capabilities = await getCourseWorkspaceCapabilitiesForCourse(courseuuid)
 
-  const allowedByStage: Record<CourseWorkspaceStage, boolean> = {
-    overview: capabilities.canViewWorkspace,
-    details: capabilities.canEditDetails,
-    curriculum: capabilities.canEditCurriculum,
-    gradebook: capabilities.canReviewCourse,
-    access: capabilities.canManageSettings,
-    collaboration: capabilities.canManageCollaboration,
-    certificate: capabilities.canManageCertificate,
-    review: capabilities.canReviewCourse,
-  }
-
-  if (!allowedByStage[stage]) {
+  if (!capabilities.stages[stage]) {
     const locale = await getLocale()
     redirect({ href: '/unauthorized', locale })
   }

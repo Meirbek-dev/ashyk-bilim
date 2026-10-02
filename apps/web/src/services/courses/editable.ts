@@ -18,9 +18,11 @@ export interface EditableCoursesSummary {
   ready: number
   private: number
   attention: number
+  /** Archived courses (the `archived` preset); `total` and the others count the rest. */
+  archived: number
 }
 
-const EMPTY_SUMMARY: EditableCoursesSummary = { total: 0, ready: 0, private: 0, attention: 0 }
+const EMPTY_SUMMARY: EditableCoursesSummary = { total: 0, ready: 0, private: 0, attention: 0, archived: 0 }
 
 /** The web's `private` chip is the server's `drafts` preset. */
 const toServerPreset = (preset: string): ListCoursesParams['preset'] => {

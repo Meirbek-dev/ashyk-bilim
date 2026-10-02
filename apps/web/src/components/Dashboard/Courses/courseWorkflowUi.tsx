@@ -120,7 +120,8 @@ export function CourseStatusBadge({
     live: { label: t('live'), status: LmsStatuses.PUBLISHED },
     scheduled: { label: t('scheduled'), status: LmsStatuses.IN_PROGRESS },
     draft: { label: t('draft'), status: LmsStatuses.DRAFT },
-    archived: { label: t('archived'), status: LmsStatuses.UNAVAILABLE },
+    // An archive is a state, not a failure: the same neutral tone as «Приватный».
+    archived: { label: t('archived'), status: LmsStatuses.PRIVATE },
   }[status]
 
   return (

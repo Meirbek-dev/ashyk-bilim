@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
+import { isCourseArchived } from '@/lib/course-management'
+import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 
 interface TrailCourseElementProps {
   course: AppCourse
@@ -47,6 +49,8 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
   const course_completed_steps = learnerProgress.isLoaded ? learnerProgress.completed : 0
   const course_progress = learnerProgress.isLoaded ? learnerProgress.percent : 0
   const isCompleted = course_progress === 100
+  // Archived: the run stays for history and the certificate; leaving is a write the server refuses.
+  const isArchived = isCourseArchived(course)
   // UX-252: a course with no certification shows no certificate row at all;
   // «недоступен» is for one that certifies but has not issued yet.
   const showCertificate = isCompleted && learnerProgress.certificateConfigured
@@ -109,16 +113,20 @@ function TrailCourseElement({ course, run }: TrailCourseElementProps) {
               </h3>
             </Link>
           </div>
-          <button
-            type="button"
-            onClick={() => setConfirmQuit(true)}
-            aria-label={t('quitCourseButton')}
-            title={t('quitCourseButton')}
-            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
-          >
-            <X className="h-3 w-3" />
-            <span className="hidden sm:inline">{t('quitCourseButton')}</span>
-          </button>
+          {isArchived ? (
+            <CourseStatusBadge status="archived" className="mt-0.5 shrink-0" />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmQuit(true)}
+              aria-label={t('quitCourseButton')}
+              title={t('quitCourseButton')}
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+            >
+              <X className="h-3 w-3" />
+              <span className="hidden sm:inline">{t('quitCourseButton')}</span>
+            </button>
+          )}
         </div>
 
         {/* Progress — UX-232: nothing required yet reads like the landing, not «0 / 0 шагов». */}

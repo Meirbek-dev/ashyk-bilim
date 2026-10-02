@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Code2,
   ListChecks,
+  Lock,
   File,
   FileArchive,
   ImageIcon,
@@ -39,7 +40,8 @@ import { useMemo, useState } from 'react'
 import NextImage from '@components/ui/NextImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { buildCourseOverviewPath, isCourseAuthor } from '@/lib/course-management'
+import { buildCourseOverviewPath, isCourseArchived, isCourseAuthor } from '@/lib/course-management'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
@@ -165,6 +167,8 @@ function CourseClient(props: CourseClientProps) {
   }, [course?.learnings])
 
   const isEnrolled = learnerState?.enrolled ?? false
+  // Archived: enrolment is closed, every write 409s; the page stays readable (COURSE_ARCHIVING 9.4).
+  const isArchived = isCourseArchived(course) || learnerState?.permissions.denial_reason === 'course_archived'
   const hasActivities = (course?.chapters ?? []).some((chapter: AppChapter) => (chapter.activities?.length ?? 0) > 0)
 
   const [prevCourse, setPrevCourse] = useState(course)
@@ -250,6 +254,13 @@ function CourseClient(props: CourseClientProps) {
                     </Button>
                   ) : null}
                 </div>
+                {isArchived ? (
+                  <Alert>
+                    <Lock className="size-4" />
+                    <AlertDescription>{t('courseArchived')}</AlertDescription>
+                  </Alert>
+                ) : null}
+
                 {/* CSS, not useIsMobile: the phone CTA is in the server HTML (no pop-in after hydration). */}
                 <div className={cn('md:hidden', !hasActivities && 'hidden')}>
                   <CourseActionsMobile
@@ -541,6 +552,7 @@ function CourseClient(props: CourseClientProps) {
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}
+                  readOnly={isArchived}
                 />
               </div>
 

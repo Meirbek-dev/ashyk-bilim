@@ -9,13 +9,14 @@ import * as zod from 'zod'
 
 export const CourseSummary = zod
   .object({
+    archived: zod.int().describe('Archived courses (the `archived` preset).'),
     attention: zod.int().describe('Courses matching the `attention` preset.'),
     private: zod.int().describe('Drafts.'),
     ready: zod.int().describe('Published courses.'),
     total: zod.int(),
   })
   .describe(
-    "Counts over the caller's editable courses (only with `mine=true`;\nunaffected by `q`, `preset` or paging).",
+    "Counts over the caller's editable courses (only with `mine=true`;\nunaffected by `q`, `preset` or paging). Archived courses count under\n`archived` only.",
   )
 
 export type CourseSummary = zod.input<typeof CourseSummary>

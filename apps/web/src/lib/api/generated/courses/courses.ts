@@ -34,6 +34,7 @@ import {
   ChapterId,
   Contributor,
   Course,
+  CourseArchivePreview,
   CourseId,
   CourseLifecycleRequest,
   CoursePage,
@@ -1597,7 +1598,7 @@ export const getListCoursesQueryKey = (params?: ListCoursesParams) => {
 
 export const getListCoursesQueryOptions = <
   TData = Awaited<ReturnType<typeof listCourses>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   params?: ListCoursesParams,
   options?: {
@@ -1620,9 +1621,9 @@ export const getListCoursesQueryOptions = <
 }
 
 export type ListCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof listCourses>>>
-export type ListCoursesQueryError = ErrorType<unknown>
+export type ListCoursesQueryError = ErrorType<Problem>
 
-export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params: undefined | ListCoursesParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>> &
@@ -1638,7 +1639,7 @@ export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, 
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>> &
@@ -1654,7 +1655,7 @@ export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, 
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -1666,7 +1667,7 @@ export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, 
  * @summary Course listing.
  */
 
-export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -1685,7 +1686,7 @@ export function useListCourses<TData = Awaited<ReturnType<typeof listCourses>>, 
 
 export const getListCoursesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof listCourses>>,
-  TError = ErrorType<unknown>,
+  TError = ErrorType<Problem>,
 >(
   params?: ListCoursesParams,
   options?: {
@@ -1710,9 +1711,9 @@ export const getListCoursesSuspenseQueryOptions = <
 }
 
 export type ListCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listCourses>>>
-export type ListCoursesSuspenseQueryError = ErrorType<unknown>
+export type ListCoursesSuspenseQueryError = ErrorType<Problem>
 
-export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params: undefined | ListCoursesParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -1720,7 +1721,7 @@ export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCou
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -1728,7 +1729,7 @@ export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCou
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -1740,7 +1741,7 @@ export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCou
  * @summary Course listing.
  */
 
-export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<unknown>>(
+export function useListCoursesSuspense<TData = Awaited<ReturnType<typeof listCourses>>, TError = ErrorType<Problem>>(
   params?: ListCoursesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourses>>, TError, TData>>
@@ -2183,6 +2184,223 @@ export const useUpdateCourse = <TError = ErrorType<Problem>, TContext = unknown>
 ): UseMutationResult<Awaited<ReturnType<typeof updateCourse>>, TError, UpdateCourseMutationVariables, TContext> => {
   return useMutation(getUpdateCourseMutationOptions(options), queryClient)
 }
+export const getCourseArchivePreviewUrl = (id: CourseId) => {
+  return `/api/v2/courses/${id}/archive-preview`
+}
+
+/**
+ * @summary What archiving the course would freeze - the numbers for the
+confirmation dialog (creator, active maintainer or
+`course:manage:platform`; warnings, never blockers).
+ */
+export const courseArchivePreview = async (
+  id: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CourseArchivePreview> => {
+  return orvalMutator<CourseArchivePreview>(
+    getCourseArchivePreviewUrl(id),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CourseArchivePreview,
+  )
+}
+
+export const getCourseArchivePreviewQueryKey = (id: CourseId) => {
+  return [`/api/v2/courses/${id}/archive-preview`] as const
+}
+
+export const getCourseArchivePreviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseArchivePreviewQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseArchivePreview>>> = ({ signal }) =>
+    courseArchivePreview(id, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof courseArchivePreview>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CourseArchivePreviewQueryResult = NonNullable<Awaited<ReturnType<typeof courseArchivePreview>>>
+export type CourseArchivePreviewQueryError = ErrorType<Problem>
+
+export function useCourseArchivePreview<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseArchivePreview>>,
+          TError,
+          Awaited<ReturnType<typeof courseArchivePreview>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseArchivePreview<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseArchivePreview>>,
+          TError,
+          Awaited<ReturnType<typeof courseArchivePreview>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseArchivePreview<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What archiving the course would freeze - the numbers for the
+confirmation dialog (creator, active maintainer or
+`course:manage:platform`; warnings, never blockers).
+ */
+
+export function useCourseArchivePreview<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseArchivePreviewQueryOptions(id, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseArchivePreviewSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseArchivePreviewQueryKey(id)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseArchivePreview>>> = ({ signal }) =>
+    courseArchivePreview(id, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type CourseArchivePreviewSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseArchivePreview>>>
+export type CourseArchivePreviewSuspenseQueryError = ErrorType<Problem>
+
+export function useCourseArchivePreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseArchivePreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseArchivePreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What archiving the course would freeze - the numbers for the
+confirmation dialog (creator, active maintainer or
+`course:manage:platform`; warnings, never blockers).
+ */
+
+export function useCourseArchivePreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseArchivePreview>>,
+  TError = ErrorType<Problem>,
+>(
+  id: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseArchivePreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseArchivePreviewSuspenseQueryOptions(id, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getCreateChapterUrl = (id: CourseId) => {
   return `/api/v2/courses/${id}/chapters`
 }
@@ -3064,7 +3282,11 @@ export const getCourseLifecycleUrl = (id: CourseId) => {
 }
 
 /**
- * @summary Publish/unpublish (legacy lifecycle semantics).
+ * 409 `conflict`: `archive` on an archived course, `restore` on an active
+ * one. 409 `course-archived`: `publish` / `unpublish` on an archived one.
+ * @summary Lifecycle: `publish` / `unpublish` (course write access, readiness
+gated), `archive` / `restore` (creator, active maintainer or
+`course:manage:platform`; see docs/COURSE_ARCHIVING.md).
  */
 export const courseLifecycle = async (
   id: CourseId,
@@ -3138,7 +3360,9 @@ export type CourseLifecycleMutationError = ErrorType<Problem>
 export type CourseLifecycleMutationVariables = { id: CourseId; data: BodyType<CourseLifecycleRequest> }
 
 /**
- * @summary Publish/unpublish (legacy lifecycle semantics).
+ * @summary Lifecycle: `publish` / `unpublish` (course write access, readiness
+gated), `archive` / `restore` (creator, active maintainer or
+`course:manage:platform`; see docs/COURSE_ARCHIVING.md).
  */
 export const useCourseLifecycle = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

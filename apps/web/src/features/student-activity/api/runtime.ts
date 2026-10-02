@@ -136,6 +136,21 @@ function primaryAction(
   current: OutlineActivity,
   next: RuntimeNavItem | null,
   staffPreview: boolean,
+  courseArchived: boolean,
+): StudentActivityRuntime['primary_action'] {
+  const action = liveAction(current, next, staffPreview)
+  // COURSE_ARCHIVING 9.4: reading and moving on stay; marking, starting and
+  // handing in are frozen (the server answers 409 `course-archived`).
+  if (courseArchived && action.id !== 'next_activity' && action.id !== 'back_to_course') {
+    return { id: 'none', enabled: false, reason: 'course_archived' }
+  }
+  return action
+}
+
+function liveAction(
+  current: OutlineActivity,
+  next: RuntimeNavItem | null,
+  staffPreview: boolean,
 ): StudentActivityRuntime['primary_action'] {
   if (!current.available || current.state === 'locked') {
     return {
@@ -190,6 +205,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     can_update: false,
     staff_preview: state.permissions.denial_reason === 'staff_preview',
   }
+  const courseArchived = state.permissions.denial_reason === 'course_archived'
   const flat = state.outline.flatMap(chapter =>
     chapter.activities.map((activity, index) => ({ activity, chapter, index })),
   )
@@ -240,7 +256,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
     policy: { due_at: dueAt },
     previous,
     next,
-    primary_action: primaryAction(activity, next, permissions.staff_preview),
+    primary_action: primaryAction(activity, next, permissions.staff_preview, courseArchived),
     progress: {
       state: activity.available ? activity.state : 'unavailable',
       complete: activity.complete,

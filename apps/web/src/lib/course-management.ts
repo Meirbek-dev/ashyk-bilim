@@ -14,6 +14,21 @@ export type CourseReadinessItemId = 'details' | 'media' | 'curriculum' | 'collab
 
 export type CourseManagementBadgeId = 'public' | 'private' | 'readyToPublish' | 'needsAttention' | 'noActivitiesYet'
 export type CourseManagementSurface = 'card' | 'row' | 'bulk'
+export type CourseStatusBadgeKind = 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'archived'
+
+/** The teacher list's `preset` query param; anything else reads as `all`. */
+export const COURSE_LIST_PRESETS = ['all', 'drafts', 'published', 'private', 'recent', 'attention', 'archived'] as const
+export type CourseListPreset = (typeof COURSE_LIST_PRESETS)[number]
+
+export function parsePreset(value: string | string[] | undefined): CourseListPreset {
+  const raw = Array.isArray(value) ? value[0] : value
+  return (COURSE_LIST_PRESETS as readonly string[]).includes(raw ?? '') ? (raw as CourseListPreset) : 'all'
+}
+
+/** Archived courses are frozen and undiscoverable (COURSE_ARCHIVING.md); orthogonal to `public`. */
+export function isCourseArchived(course: { archived_at_unix?: number | null | undefined }): boolean {
+  return course.archived_at_unix !== null && course.archived_at_unix !== undefined
+}
 
 export interface CourseChecklistItem {
   id: CourseReadinessItemId
@@ -176,11 +191,15 @@ export function getCourseManagementContext(course: AppCourse, surface: CourseMan
     learnerPreviewHref: `/course/${cleanUuid}?preview=learner`,
     readyToPublish: readiness.readyToPublish,
     needsAttention: courseNeedsAttention(course),
-    statusBadges: [
-      course.public ? 'public' : 'private',
-      readiness.readyToPublish ? 'ready' : 'needs-review',
-      // «Есть замечания» already says it; a second «Внимание» badge only repeats it.
-      ...(readiness.readyToPublish && courseNeedsAttention(course) ? ['attention' as const] : []),
-    ] as const,
+    // An archived course shows the archive alone: visibility and readiness
+    // are frozen with it (COURSE_ARCHIVING 9.1).
+    statusBadges: (isCourseArchived(course)
+      ? ['archived']
+      : [
+          course.public ? 'public' : 'private',
+          readiness.readyToPublish ? 'ready' : 'needs-review',
+          // «Есть замечания» already says it; a second «Внимание» badge only repeats it.
+          ...(readiness.readyToPublish && courseNeedsAttention(course) ? ['attention'] : []),
+        ]) as readonly CourseStatusBadgeKind[],
   }
 }

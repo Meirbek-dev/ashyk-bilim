@@ -20,24 +20,31 @@ export const LearnerCourseState = zod.object({
   course_id: zod.uuid(),
   enrolled: zod.boolean(),
   enrollment_state: zod.enum(['not_enrolled', 'in_progress', 'completed']),
-  next_action: zod.object({
-    activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-    enabled: zod.boolean(),
-    href: zod.string().nullish(),
-    id: zod.enum([
-      'enroll',
-      'start',
-      'continue',
-      'revise',
-      'view_feedback',
-      'wait_for_grade',
-      'view_certificate',
-      'review_completion',
-      'none',
-    ]),
-    label: zod.string(),
-    reason: zod.string(),
-  }),
+  next_action: zod
+    .union([
+      zod
+        .object({
+          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+          enabled: zod.boolean(),
+          href: zod.string().nullish(),
+          id: zod.enum([
+            'enroll',
+            'start',
+            'continue',
+            'revise',
+            'view_feedback',
+            'wait_for_grade',
+            'view_certificate',
+            'review_completion',
+            'none',
+          ]),
+          label: zod.string(),
+          reason: zod.string(),
+        })
+        .describe('`null` on an archived course: nothing is left to do there.'),
+      zod.null(),
+    ])
+    .optional(),
   outline: zod.array(
     zod.object({
       activities: zod.array(

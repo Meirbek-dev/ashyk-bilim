@@ -24,10 +24,10 @@ import { Button } from '@/components/ui/button'
 import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/features/learner-course/api'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
-import { buildCourseWorkspacePath } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseArchived } from '@/lib/course-management'
 import Link from '@components/ui/AppLink'
 
-export type CourseCta = 'start' | 'continue' | 'certificate' | 'review' | 'preview'
+export type CourseCta = 'start' | 'continue' | 'certificate' | 'review' | 'preview' | 'open'
 
 /** `Courses.CoursesActions` label per CTA - one wording on desktop and phone (UX-174). */
 export const CTA_LABEL = {
@@ -36,6 +36,8 @@ export const CTA_LABEL = {
   certificate: 'viewCertificate',
   review: 'reviewCompletion',
   preview: 'openCourse',
+  // An archived course is read-only: «Открыть», not «Продолжить».
+  open: 'openCourse',
 } as const satisfies Record<CourseCta, string>
 
 interface CourseCtaInput {
@@ -79,6 +81,8 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
   const hasNoLiveActivities = learnerState !== null && learnerState !== undefined && activityCount === 0
   // BUG-287: the course's staff preview it - the server refuses to enrol them.
   const isStaffPreview = learnerState?.permissions.denial_reason === 'staff_preview'
+  // COURSE_ARCHIVING 9.4: no enrolment on an archived course; the enrolled open it.
+  const isArchived = isCourseArchived(course) || learnerState?.permissions.denial_reason === 'course_archived'
   const action: CourseCta = isStaffPreview
     ? 'preview'
     : !isStarted
@@ -87,7 +91,10 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
         ? 'certificate'
         : isReviewCompletion
           ? 'review'
-          : 'continue'
+          : isArchived
+            ? 'open'
+            : 'continue'
+  const hideCta = isArchived && action === 'start'
 
   // UX-119: Back within the learner-state staleTime must show the enrolled landing.
   const refreshEnrolment = () =>
@@ -126,6 +133,10 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
       openActivity(activities[0])
       return
     }
+    if (action === 'open') {
+      openActivity(nextUnfinished ?? activities[0])
+      return
+    }
 
     setIsActionLoading(true)
     // Enrolled on the wire but no trail run (left with submissions): bring the
@@ -162,6 +173,8 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
     action,
     isStarted,
     hasNoLiveActivities,
+    /** Archived and not enrolled: nothing to offer (the landing banner says why). */
+    hideCta,
     isActionLoading,
     handleCourseAction,
     isProgressOpen,

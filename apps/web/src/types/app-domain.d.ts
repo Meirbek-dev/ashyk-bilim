@@ -156,6 +156,8 @@ declare global {
     creator_id?: string | null | undefined
     /** Active co-authors (v2 `Course.contributor_ids`). */
     contributor_ids?: string[] | undefined
+    /** Set while the course is archived (v2 `Course.archived_at_unix`): read-only and undiscoverable. */
+    archived_at_unix?: number | null | undefined
     update_date?: string
     creation_date?: string
     created_at?: string

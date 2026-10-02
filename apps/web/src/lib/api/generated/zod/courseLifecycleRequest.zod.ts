@@ -8,7 +8,11 @@
 import * as zod from 'zod'
 
 export const CourseLifecycleRequest = zod.object({
-  action: zod.string().describe('`publish` or `unpublish`.'),
+  action: zod
+    .string()
+    .describe(
+      '`publish` | `unpublish` (course write access, readiness-gated) |\n`archive` | `restore` (creator, active maintainer or\n`course:manage:platform`).',
+    ),
 })
 
 export type CourseLifecycleRequest = zod.input<typeof CourseLifecycleRequest>

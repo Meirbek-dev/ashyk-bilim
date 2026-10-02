@@ -21,10 +21,15 @@ import {
   Globe,
   LayoutDashboard,
   LayoutGrid,
+  Lock,
   Users,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
-import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management'
+import { buildCourseWorkspacePath, isCourseArchived, prefixedCourseUuid } from '@/lib/course-management'
+import { CourseRestoreDialog } from './CourseArchiveDialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { formatDate } from '@/lib/date'
+import { unixToIso } from '@/lib/api/contract'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { CourseProvider, useCourse } from '@components/Contexts/CourseContext'
 import type { CourseWorkspaceStage } from '@/lib/course-management'
@@ -34,9 +39,9 @@ import { useDirtyGuard } from '@/hooks/useDirtyGuard'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import { useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { cn } from '@/lib/utils'
 
 const emptySubscribe = () => () => {}
@@ -58,7 +63,11 @@ function CourseWorkspaceChrome({
   children,
 }: Omit<CourseWorkspacePageShellProps, 'initialCourse'>) {
   const t = useTranslations('DashPage.CourseManagement.Workspace')
+  const tArchive = useTranslations('DashPage.CourseManagement.Archive')
+  const locale = useLocale()
   const course = useCourse()
+  const isArchived = isCourseArchived(course.courseStructure)
+  const [restoreOpen, setRestoreOpen] = useState(false)
   // Same server verdict the review tab renders — the client-side checklist
   // (`getCourseReadinessSummary`) disagreed with it ("needs review" vs "ready").
   const readinessQuery = useQuery(courseReadinessQueryOptions(course.courseStructure.course_uuid))
@@ -69,57 +78,19 @@ function CourseWorkspaceChrome({
     interceptInAppNavigation: true,
     message: t('unsavedChangesWarning'),
   })
+  // The overview tab follows the details stage, as before the stage map existed.
   const stageConfig = [
-    {
-      key: 'overview',
-      label: t('tabs.overview'),
-      icon: LayoutGrid,
-      capability: 'canEditDetails',
-    },
-    {
-      key: 'details',
-      label: t('tabs.details'),
-      icon: FileCog,
-      capability: 'canEditDetails',
-    },
-    {
-      key: 'curriculum',
-      label: t('tabs.content'),
-      icon: FileStack,
-      capability: 'canEditCurriculum',
-    },
-    {
-      key: 'gradebook',
-      label: t('tabs.gradebook'),
-      icon: LayoutDashboard,
-      capability: 'canReviewCourse',
-    },
-    {
-      key: 'access',
-      label: t('tabs.settings'),
-      icon: Globe,
-      capability: 'canManageAccess',
-    },
-    {
-      key: 'collaboration',
-      label: t('tabs.collaboration'),
-      icon: Users,
-      capability: 'canManageCollaboration',
-    },
-    {
-      key: 'certificate',
-      label: t('tabs.certificate'),
-      icon: Award,
-      capability: 'canManageCertificate',
-    },
-    {
-      key: 'review',
-      label: t('tabs.publish'),
-      icon: CheckCircle2,
-      capability: 'canReviewCourse',
-    },
+    { key: 'overview', label: t('tabs.overview'), icon: LayoutGrid, stage: 'details' },
+    { key: 'details', label: t('tabs.details'), icon: FileCog, stage: 'details' },
+    { key: 'curriculum', label: t('tabs.content'), icon: FileStack, stage: 'curriculum' },
+    { key: 'gradebook', label: t('tabs.gradebook'), icon: LayoutDashboard, stage: 'gradebook' },
+    { key: 'access', label: t('tabs.settings'), icon: Globe, stage: 'access' },
+    { key: 'collaboration', label: t('tabs.collaboration'), icon: Users, stage: 'collaboration' },
+    { key: 'certificate', label: t('tabs.certificate'), icon: Award, stage: 'certificate' },
+    { key: 'review', label: t('tabs.publish'), icon: CheckCircle2, stage: 'review' },
   ] as const
-  const visibleStages = stageConfig.filter(stage => capabilities[stage.capability])
+  // Archived: the stages stay readable (`stages`), the edit flags are off.
+  const visibleStages = stageConfig.filter(stage => capabilities.stages[stage.stage])
 
   return (
     <div className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
@@ -152,8 +123,14 @@ function CourseWorkspaceChrome({
         title={course.courseStructure.name || t('untitledCourse')}
         badge={
           <div className="ml-1 flex flex-wrap items-center gap-1.5">
-            <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
-            {readiness ? <CourseStatusBadge status={readiness.ready ? 'ready' : 'needs-review'} /> : null}
+            {isArchived ? (
+              <CourseStatusBadge status="archived" />
+            ) : (
+              <>
+                <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
+                {readiness ? <CourseStatusBadge status={readiness.ready ? 'ready' : 'needs-review'} /> : null}
+              </>
+            )}
             {dirtyGuard.hasDrafts ? <CourseStatusBadge status="unsaved" /> : null}
           </div>
         }
@@ -202,9 +179,38 @@ function CourseWorkspaceChrome({
         </div>
       </DashHeader>
 
+      {isArchived ? (
+        // Every write answers 409 `course-archived`; say so once, up top (COURSE_ARCHIVING 9.3).
+        <Alert className="rounded-none border-x-0 border-t-0">
+          <Lock className="size-4" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {tArchive('workspaceBanner', {
+                date: formatDate(unixToIso(course.courseStructure.archived_at_unix) ?? '', locale),
+              })}
+            </span>
+            {capabilities.canArchiveCourse ? (
+              <Button size="sm" variant="outline" onClick={() => setRestoreOpen(true)}>
+                {tArchive('restoreAction')}
+              </Button>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      <CourseRestoreDialog
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        courseUuid={courseuuid}
+        courseName={course.courseStructure.name || t('untitledCourse')}
+      />
+
       <section className="min-w-0 flex-1 px-4 py-8 lg:px-8">
         <ConflictAlert />
-        {children}
+        {/* Archived = view only: the native fieldset disables every control in the
+            editing tabs; gradebook (exports) and review (restore) stay live. */}
+        <fieldset disabled={isArchived && activeStage !== 'gradebook' && activeStage !== 'review'} className="contents">
+          {children}
+        </fieldset>
       </section>
     </div>
   )

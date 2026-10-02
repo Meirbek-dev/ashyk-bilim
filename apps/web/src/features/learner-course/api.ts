@@ -53,7 +53,7 @@ export function learnerCourseProgress(state: LearnerCourseState | null | undefin
      * may take (BUG-318: never a `blocked_reason` one, e.g. off the allowlist).
      */
     nextActivityId:
-      state?.next_action.activity_id ??
+      state?.next_action?.activity_id ??
       activities.find(activity => !activity.complete && !activity.blocked_reason)?.id ??
       null,
   }

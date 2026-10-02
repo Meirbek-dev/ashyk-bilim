@@ -18,7 +18,7 @@ export const AdminUser = zod
     status: zod.string().describe('`active` or `disabled`.'),
     username: zod.string(),
   })
-  .describe('Admin listing row (includes email + status — platform:read gated).')
+  .describe('Admin listing row (includes email + status - platform:read gated).')
 
 export type AdminUser = zod.input<typeof AdminUser>
 export type AdminUserOutput = zod.output<typeof AdminUser>

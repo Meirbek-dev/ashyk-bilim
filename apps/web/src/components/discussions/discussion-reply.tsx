@@ -31,6 +31,7 @@ interface DiscussionReplyProps {
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
+  readOnly?: boolean
 }
 
 export default function DiscussionReply({
@@ -39,6 +40,7 @@ export default function DiscussionReply({
   onVoteReply,
   onDeleteReply,
   onEditReply,
+  readOnly = false,
 }: DiscussionReplyProps) {
   const t = useTranslations('CoursePage')
   const [editing, setEditing] = useState(false)
@@ -96,7 +98,7 @@ export default function DiscussionReply({
             </div>
 
             {/* Action buttons */}
-            {(canUpdate || canDelete) && !editing && (
+            {(canUpdate || canDelete) && !editing && !readOnly && (
               <div className="mr-5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 {canUpdate && (
                   <Button
@@ -162,60 +164,62 @@ export default function DiscussionReply({
               </div>
 
               {/* Voting section */}
-              <div className="flex items-center gap-3">
-                <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onVoteReply(postId, reply.id, 'up')}
-                    aria-pressed={reply.userVote === 'up'}
-                    aria-label={t('upvote')}
-                    className={cn(
-                      'h-8 rounded-none border-border border-r px-3 transition-all',
-                      reply.userVote === 'up'
-                        ? 'bg-lime-100 text-lime-800 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:hover:bg-lime-900/50'
-                        : 'text-muted-foreground hover:bg-muted/70 hover:text-lime-700 dark:hover:text-lime-400',
-                    )}
-                  >
-                    <ArrowBigUp size={14} className="mr-1" />
-                    <span className="text-sm font-medium">{reply.upvotes}</span>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onVoteReply(postId, reply.id, 'down')}
-                    aria-pressed={reply.userVote === 'down'}
-                    aria-label={t('downvote')}
-                    className={cn(
-                      'h-8 rounded-none px-3 transition-all',
-                      reply.userVote === 'down'
-                        ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
-                        : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
-                    )}
-                  >
-                    <ArrowBigDown size={14} className="mr-1" />
-                    <span className="text-sm font-medium">{reply.downvotes}</span>
-                  </Button>
-                </div>
-
-                {/* Net score indicator */}
-                {Math.abs(netScore) > 0 && (
-                  <div className="flex items-center">
-                    <div
+              {readOnly ? null : (
+                <div className="flex items-center gap-3">
+                  <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onVoteReply(postId, reply.id, 'up')}
+                      aria-pressed={reply.userVote === 'up'}
+                      aria-label={t('upvote')}
                       className={cn(
-                        'flex items-center gap-1 rounded-full px-2 py-1 font-medium text-xs',
-                        netScore > 0
-                          ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
-                          : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+                        'h-8 rounded-none border-border border-r px-3 transition-all',
+                        reply.userVote === 'up'
+                          ? 'bg-lime-100 text-lime-800 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:hover:bg-lime-900/50'
+                          : 'text-muted-foreground hover:bg-muted/70 hover:text-lime-700 dark:hover:text-lime-400',
                       )}
                     >
-                      {netScore > 0 ? '+' : ''}
-                      {netScore}
-                    </div>
+                      <ArrowBigUp size={14} className="mr-1" />
+                      <span className="text-sm font-medium">{reply.upvotes}</span>
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onVoteReply(postId, reply.id, 'down')}
+                      aria-pressed={reply.userVote === 'down'}
+                      aria-label={t('downvote')}
+                      className={cn(
+                        'h-8 rounded-none px-3 transition-all',
+                        reply.userVote === 'down'
+                          ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                          : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
+                      )}
+                    >
+                      <ArrowBigDown size={14} className="mr-1" />
+                      <span className="text-sm font-medium">{reply.downvotes}</span>
+                    </Button>
                   </div>
-                )}
-              </div>
+
+                  {/* Net score indicator */}
+                  {Math.abs(netScore) > 0 && (
+                    <div className="flex items-center">
+                      <div
+                        className={cn(
+                          'flex items-center gap-1 rounded-full px-2 py-1 font-medium text-xs',
+                          netScore > 0
+                            ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
+                            : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+                        )}
+                      >
+                        {netScore > 0 ? '+' : ''}
+                        {netScore}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

@@ -82,6 +82,26 @@ export async function updateCourseLifecycle(courseUuid: string, makePublic: bool
   return { ...result, data: toAppCourse(result.data) }
 }
 
+/**
+ * `archive` freezes the course (read-only, undiscoverable), `restore` brings it
+ * back as it was (COURSE_ARCHIVING.md). Roster managers only; a repeat is 409
+ * `conflict`, publish / unpublish on an archived course 409 `course-archived`.
+ */
+export async function setCourseArchived(courseUuid: string, archived: boolean) {
+  const id = stripEntityPrefix(courseUuid)
+  const result = await apiResult(
+    `courses/${id}/lifecycle`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: archived ? 'archive' : 'restore' }),
+    },
+    value => Course.parse(value),
+  )
+  await revalidateCourse(id)
+  return { ...result, data: toAppCourse(result.data) }
+}
+
 /** Claim a finalized `course-thumbnail` upload (`uploadFile(file, 'course-thumbnail').id`) as the thumbnail. */
 /** `null` removes the current thumbnail (UX-147). */
 export async function updateCourseThumbnail(course_uuid: string, uploadId: string | null) {

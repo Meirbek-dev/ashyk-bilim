@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, ExternalLink, Eye, Loader2 } from 'lucide-react'
+import { AlertTriangle, Archive, ArchiveRestore, CheckCircle2, ExternalLink, Eye, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -13,6 +13,7 @@ import {
   useReadinessIssueMessage,
 } from './courseWorkflowUi'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
+import { CourseArchiveDialog, CourseRestoreDialog } from './CourseArchiveDialog'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { InlineError } from '@/components/ui/error-state'
@@ -40,8 +41,10 @@ export default function CourseReviewPublish({
   capabilities: CourseWorkspaceCapabilities
 }) {
   const t = useTranslations('DashPage.CourseManagement.Review')
+  const tArchive = useTranslations('DashPage.CourseManagement.Archive')
   const course = useCourse()
-  const { updateAccess } = useCoursesMutations(course.courseStructure.course_uuid, true)
+  const { refreshCourse, updateAccess } = useCoursesMutations(course.courseStructure.course_uuid, true)
+  const [lifecycleDialog, setLifecycleDialog] = useState<'archive' | 'restore' | null>(null)
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -97,6 +100,55 @@ export default function CourseReviewPublish({
 
   const publishDisabled = !isPublic && (!readiness?.ready || readinessQuery.isLoading || readinessQuery.isError)
 
+  const lifecycleDialogs = (
+    <>
+      <CourseArchiveDialog
+        open={lifecycleDialog === 'archive'}
+        onOpenChange={open => setLifecycleDialog(open ? 'archive' : null)}
+        courseUuid={courseuuid}
+        courseName={course.courseStructure.name ?? ''}
+        onDone={() => void refreshCourse()}
+      />
+      <CourseRestoreDialog
+        open={lifecycleDialog === 'restore'}
+        onOpenChange={open => setLifecycleDialog(open ? 'restore' : null)}
+        courseUuid={courseuuid}
+        courseName={course.courseStructure.name ?? ''}
+        onDone={() => void refreshCourse()}
+      />
+    </>
+  )
+
+  if (capabilities.isArchived) {
+    // Frozen: no readiness, no publish - the way back is «Восстановить» (COURSE_ARCHIVING 9.3).
+    return (
+      <div className="flex flex-col gap-6">
+        <section className={`${courseWorkflowCardClass} p-6`}>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
+                  {tArchive('reviewTitle')}
+                </h1>
+                <CourseStatusBadge status="archived" />
+              </div>
+              <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-6 text-pretty">
+                {tArchive('reviewDescription')}
+              </p>
+            </div>
+            {capabilities.canArchiveCourse ? (
+              <Button onClick={() => setLifecycleDialog('restore')}>
+                <ArchiveRestore data-icon="inline-start" aria-hidden />
+                {tArchive('restoreAction')}
+              </Button>
+            ) : null}
+          </div>
+        </section>
+        {lifecycleDialogs}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <section className={`${courseWorkflowCardClass} p-6`}>
@@ -135,6 +187,12 @@ export default function CourseReviewPublish({
               >
                 {isPending || isRefreshing ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
                 {isPublic ? t('movePrivate') : t('publishCourse')}
+              </Button>
+            ) : null}
+            {capabilities.canArchiveCourse ? (
+              <Button variant="outline" onClick={() => setLifecycleDialog('archive')} disabled={isBusy}>
+                <Archive data-icon="inline-start" aria-hidden />
+                {tArchive('archiveAction')}
               </Button>
             ) : null}
             <AlertDialog open={privateConfirmOpen} onOpenChange={setPrivateConfirmOpen}>
@@ -181,6 +239,7 @@ export default function CourseReviewPublish({
           <ReadinessIssues readiness={readiness} />
         ) : null}
       </section>
+      {lifecycleDialogs}
     </div>
   )
 }

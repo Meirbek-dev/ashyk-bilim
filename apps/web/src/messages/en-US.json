@@ -837,7 +837,8 @@
     "attemptsUsed": "{used} of {max} attempts used",
     "attemptsUnlimited": "Unlimited attempts",
     "dueDate": "Due date",
-    "readToEnd": "Read to the end"
+    "readToEnd": "Read to the end",
+    "courseArchived": "Course archived"
   },
   "AdminUtils": {
     "priority": {
@@ -1601,7 +1602,9 @@
       "toastDeleteError": "Failed to delete course. Please try again.",
       "toastDeleteSuccess": "Course deleted successfully",
       "updated": "Updated",
-      "updatedDate": "Updated {updateDate, date, medium}"
+      "updatedDate": "Updated {updateDate, date, medium}",
+      "archive": "Archive",
+      "restore": "Restore"
     },
     "Dialog": {
       "cancel": "Cancel",
@@ -2932,7 +2935,9 @@
       "deleted": "Message deleted"
     },
     "quiz": "Quiz",
-    "editCourse": "Edit course"
+    "editCourse": "Edit course",
+    "courseArchived": "This course is archived. Enrolment is closed.",
+    "discussionsArchived": "The course is archived; the discussion is closed."
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -3588,7 +3593,9 @@
           "delete": "Delete selected",
           "movePrivate": "Move selected to private",
           "publish": "Publish selected",
-          "selectedCount": "{count, plural, one {# selected} other {# selected}}"
+          "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+          "archive": "Archive selected",
+          "restore": "Restore selected"
         },
         "dialogs": {
           "delete": {
@@ -3605,6 +3612,16 @@
             "confirm": "Publish courses",
             "description": "This will make {count, plural, one {# selected course} other {# selected courses}} public wherever learners can access {count, plural, one {it} other {them}}.",
             "title": "Publish selected courses?"
+          },
+          "archive": {
+            "title": "Archive the selected courses?",
+            "description": "{count, plural, one {# selected course} other {# selected courses}} will leave the catalog and search and become read-only. Learners keep access to their materials and results. You can restore at any time.",
+            "confirm": "Archive"
+          },
+          "restore": {
+            "title": "Restore the selected courses?",
+            "description": "{count, plural, one {# selected course} other {# selected courses}} will return to the previous state (public or private). Assessments unscheduled by the archive stay drafts.",
+            "confirm": "Restore"
           }
         },
         "empty": {
@@ -3637,7 +3654,8 @@
           "drafts": "Drafts",
           "private": "Private",
           "published": "Released",
-          "recent": "Recently updated"
+          "recent": "Recently updated",
+          "archived": "Archive"
         },
         "resultsSummary": "{visible} visible on this page, {total} total in the workspace.",
         "resultsSummaryWithQuery": "{total} found for the query, {visible} on this page.",
@@ -3654,7 +3672,9 @@
           "useAsTemplate": "Use as template",
           "visibilityError": "Unable to update course visibility.",
           "visibilityMovedPrivate": "Course moved to private.",
-          "visibilityPublished": "Course is now public."
+          "visibilityPublished": "Course is now public.",
+          "archive": "Archive",
+          "restore": "Restore"
         },
         "search": {
           "clear": "Clear",
@@ -3712,7 +3732,9 @@
           "deleted": "{count, plural, one {Deleted # course.} other {Deleted # courses.}}",
           "movedPrivate": "{count, plural, one {Moved # course to private.} other {Moved # courses to private.}}",
           "published": "{count, plural, one {Published # course.} other {Published # courses.}}",
-          "updateFailed": "{count, plural, one {# selected course could not be updated.} other {# selected courses could not be updated.}}"
+          "updateFailed": "{count, plural, one {# selected course could not be updated.} other {# selected courses could not be updated.}}",
+          "archived": "{count, plural, one {Archived # course.} other {Archived # courses.}}",
+          "restored": "{count, plural, one {Restored # course.} other {Restored # courses.}}"
         },
         "viewMode": {
           "cards": "Card view",
@@ -4110,6 +4132,28 @@
         "unsavedDialogStay": "Stay here",
         "unsavedDialogTitle": "Leave with unsaved changes?",
         "unsavedChangesWarning": "You have unsaved course changes. Leave this workspace?"
+      },
+      "Archive": {
+        "archiveAction": "Archive",
+        "restoreAction": "Restore",
+        "archiveTitle": "Archive \"{courseName}\"?",
+        "restoreTitle": "Restore \"{courseName}\"?",
+        "learnersInProgress": "{count, plural, one {# learner is} other {# learners are}} taking the course. They keep access to materials, results and certificates but cannot hand in work.",
+        "ungradedSubmissions": "{count, plural, one {# submission is} other {# submissions are}} ungraded. Grading is closed after archiving.",
+        "openAttempts": "{count, plural, one {# unfinished attempt} other {# unfinished attempts}}. Timed ones submit automatically when their time runs out; the rest stay unsubmitted.",
+        "scheduledAssessments": "{count, plural, one {# scheduled assessment returns} other {# scheduled assessments return}} to draft.",
+        "summary": "The course leaves the catalog and search. You can restore it at any time.",
+        "restoreDescription": "The course returns to its previous state (public or private). Assessments unscheduled by the archive stay drafts.",
+        "previewLoading": "Checking what archiving affects…",
+        "previewUnavailable": "The summary could not be loaded. Archiving still works.",
+        "confirmArchive": "Archive",
+        "confirmRestore": "Restore",
+        "archived": "Course archived.",
+        "restored": "Course restored.",
+        "alreadyChanged": "The course was already changed; the data has been refreshed.",
+        "workspaceBanner": "Archived since {date}: view only. Restore the course to make changes.",
+        "reviewTitle": "Course archived",
+        "reviewDescription": "The course is out of the catalog and search and every tab is read-only. Learners keep access to materials, results and certificates."
       }
     },
     "Courses": {
@@ -6985,7 +7029,8 @@
       "unsupported-media-type": "This file type is not allowed here.",
       "link-preview-failed": "Could not fetch a preview for the link. Check the address and try again later.",
       "grade-own-attempt": "You cannot grade your own attempt.",
-      "assessment-read-only": "This assessment can no longer be edited: it is archived, scheduled, or already has submissions."
+      "assessment-read-only": "This assessment can no longer be edited: it is archived, scheduled, or already has submissions.",
+      "course-archived": "The course is archived: changes are not available. Restore the course to continue."
     },
     "fields": {
       "required": "This field is required.",
@@ -10531,7 +10576,8 @@
       "MAX_ATTEMPTS_REACHED": "You have used all your allowed attempts.",
       "TIME_LIMIT_EXPIRED": "The time limit for this attempt has expired.",
       "REMEDIATION_REQUIRED": "Finish the assigned remediation first.",
-      "UNKNOWN": "Action unavailable."
+      "UNKNOWN": "Action unavailable.",
+      "COURSE_ARCHIVED": "The course is archived."
     }
   },
   "Overrides": {
@@ -10928,7 +10974,8 @@
       "threadDeleted": "Thread deleted",
       "courseContext": "Using course material",
       "emptyTitleCourse": "Ask about this course",
-      "emptyDescCourse": "Answers are grounded in the course material; inspect the sources before you rely on an answer."
+      "emptyDescCourse": "Answers are grounded in the course material; inspect the sources before you rely on an answer.",
+      "courseArchived": "The course is archived: new questions are off, the history stays."
     },
     "courseAIHub": {
       "title": "AI assistant",

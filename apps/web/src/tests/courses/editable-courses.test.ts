@@ -84,7 +84,7 @@ describe('getEditableCourses', () => {
     await expect(getEditableCourses()).resolves.toEqual({
       courses: [],
       total: 0,
-      summary: { total: 0, ready: 0, private: 0, attention: 0 },
+      summary: { total: 0, ready: 0, private: 0, attention: 0, archived: 0 },
     })
     expect(mocks.listCourses).not.toHaveBeenCalled()
   })

@@ -24,7 +24,7 @@ import { toast } from 'sonner'
 import DiscussionPost from './discussion-post'
 import DiscussionForm from './discussion-form'
 import { Badge } from '@/components/ui/badge'
-import { MessageCircle } from 'lucide-react'
+import { Lock, MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useApiError } from '@/hooks/useApiError'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
@@ -37,6 +37,7 @@ interface DiscussionListProps {
   currentUser: AppUserSummary | null
   courseUuid: string
   onMutate?: () => void
+  readOnly?: boolean
 }
 
 /** Fallback author when the server omits `author` (never in v2, kept for the optimistic path). */
@@ -94,7 +95,13 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
   replies: (discussion.replies ?? []).map(reply => toReplyData(reply, anonymousLabel)),
 })
 
-export default function DiscussionList({ initialPosts, currentUser, courseUuid, onMutate }: DiscussionListProps) {
+export default function DiscussionList({
+  initialPosts,
+  currentUser,
+  courseUuid,
+  onMutate,
+  readOnly = false,
+}: DiscussionListProps) {
   const t = useTranslations('CoursePage')
   const { toastApiError } = useApiError()
   const anonymousLabel = t('anonymous')
@@ -436,7 +443,13 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         </Badge>
       </div>
 
-      {currentUser ? (
+      {readOnly ? (
+        // Archived course: the composer and reactions are gone, the thread stays readable.
+        <p className="text-muted-foreground flex items-center gap-2 px-1 text-sm">
+          <Lock size={16} className="shrink-0" />
+          {t('discussionsArchived')}
+        </p>
+      ) : currentUser ? (
         <DiscussionForm currentUser={discussionUser} onSubmit={handleSubmitDiscussion} />
       ) : (
         // UX-109: posting needs a session — a sign-in prompt instead of a
@@ -463,6 +476,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
             onEditPost={handleEditPost}
             onEditReply={handleEditReply}
             onSubmitReply={handleSubmitReply}
+            readOnly={readOnly}
           />
         ))}
 

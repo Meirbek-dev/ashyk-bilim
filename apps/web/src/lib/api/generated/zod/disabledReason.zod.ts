@@ -12,6 +12,7 @@ export const DisabledReason = zod
     'NOT_PUBLISHED',
     'SCHEDULED_NOT_OPEN',
     'ARCHIVED',
+    'COURSE_ARCHIVED',
     'PAST_DUE',
     'MAX_ATTEMPTS_REACHED',
     'TIME_LIMIT_EXPIRED',

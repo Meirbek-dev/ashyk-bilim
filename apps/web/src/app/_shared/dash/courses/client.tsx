@@ -15,12 +15,15 @@ import {
   buildCourseCreationPath,
   getCourseContentStats,
   getCourseManagementContext,
+  isCourseArchived,
   isCourseAuthor,
   isCourseCreator,
 } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertTriangle,
+  Archive,
+  ArchiveRestore,
   Globe,
   LayoutGrid,
   List,
@@ -36,7 +39,8 @@ import {
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbnails/CourseThumbnail'
-import { updateCourseAccess } from '@services/courses/course-writes'
+import { CourseArchiveDialog, CourseRestoreDialog } from '@components/Dashboard/Courses/CourseArchiveDialog'
+import { setCourseArchived, updateCourseAccess } from '@services/courses/course-writes'
 import { deleteCourseFromBackend } from '@services/courses/course-delete'
 import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
@@ -77,10 +81,11 @@ interface CourseProps {
     ready: number
     private: number
     attention: number
+    archived: number
   }
 }
 
-type BulkActionKind = 'publish' | 'private' | 'delete'
+type BulkActionKind = 'publish' | 'private' | 'archive' | 'restore' | 'delete'
 
 function CoursesHome({
   courses,
@@ -121,6 +126,8 @@ function CoursesHome({
   // state names the section instead of «всего 0 / Создать первый курс».
   const hasPreset = preset !== 'all'
   const presetLabel = t(`presets.${preset}`)
+  // The archive preset lists frozen courses only: restore is the one bulk edit.
+  const isArchivePreset = preset === 'archived'
 
   const updateRoute = (updates: Record<string, string | null>) => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -255,6 +262,33 @@ function CoursesHome({
     })
   }
 
+  const runBulkArchive = (archived: boolean) => {
+    const targetCourses = selectedCourses.filter(course => canManageCourse(course))
+    if (targetCourses.length === 0) {
+      toast.error(t('errors.cannotUpdateSelection'))
+      return
+    }
+
+    startBulkTransition(async () => {
+      const results = await Promise.allSettled(
+        targetCourses.map(course => setCourseArchived(course.course_uuid, archived)),
+      )
+      const successCount = results.filter(result => result.status === 'fulfilled').length
+      const failedCount = targetCourses.length - successCount
+
+      if (successCount > 0) {
+        toast.success(
+          archived ? t('toasts.archived', { count: successCount }) : t('toasts.restored', { count: successCount }),
+        )
+        setSelectedCourseUuids([])
+        router.refresh()
+      }
+      if (failedCount > 0) {
+        toast.error(t('toasts.updateFailed', { count: failedCount }))
+      }
+    })
+  }
+
   const runBulkDelete = () => {
     if (!(selectedCourses.length > 0)) {
       return
@@ -298,6 +332,13 @@ function CoursesHome({
       return
     }
 
+    if (pendingBulkAction === 'archive' || pendingBulkAction === 'restore') {
+      const archived = pendingBulkAction === 'archive'
+      setPendingBulkAction(null)
+      runBulkArchive(archived)
+      return
+    }
+
     if (pendingBulkAction === 'delete') {
       setPendingBulkAction(null)
       runBulkDelete()
@@ -325,40 +366,73 @@ function CoursesHome({
             variant: 'default' as const,
             mediaClassName: 'bg-muted text-foreground',
           }
-        : pendingBulkAction === 'delete'
+        : pendingBulkAction === 'archive' || pendingBulkAction === 'restore'
           ? {
-              title: t('dialogs.delete.title'),
-              description: t('dialogs.delete.description', {
+              title: t(`dialogs.${pendingBulkAction}.title`),
+              description: t(`dialogs.${pendingBulkAction}.description`, {
                 count: selectedCourses.length,
               }),
-              confirmLabel: t('dialogs.delete.confirm'),
-              variant: 'destructive' as const,
-              mediaClassName: 'bg-destructive/10 text-destructive',
+              confirmLabel: t(`dialogs.${pendingBulkAction}.confirm`),
+              variant: 'default' as const,
+              mediaClassName: 'bg-muted text-foreground',
             }
-          : null
+          : pendingBulkAction === 'delete'
+            ? {
+                title: t('dialogs.delete.title'),
+                description: t('dialogs.delete.description', {
+                  count: selectedCourses.length,
+                }),
+                confirmLabel: t('dialogs.delete.confirm'),
+                variant: 'destructive' as const,
+                mediaClassName: 'bg-destructive/10 text-destructive',
+              }
+            : null
 
   const bulkToolbar =
     selectedCourses.length > 0 ? (
       <div className="bg-muted flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
         <Badge variant="outline">{t('bulk.selectedCount', { count: selectedCourses.length })}</Badge>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-          onClick={() => setPendingBulkAction('publish')}
-        >
-          {t('bulk.publish')}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-          onClick={() => setPendingBulkAction('private')}
-        >
-          {t('bulk.movePrivate')}
-        </Button>
+        {isArchivePreset ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
+            onClick={() => setPendingBulkAction('restore')}
+          >
+            {t('bulk.restore')}
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
+              onClick={() => setPendingBulkAction('publish')}
+            >
+              {t('bulk.publish')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
+              onClick={() => setPendingBulkAction('private')}
+            >
+              {t('bulk.movePrivate')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
+              onClick={() => setPendingBulkAction('archive')}
+            >
+              {t('bulk.archive')}
+            </Button>
+          </>
+        )}
         <Button
           type="button"
           size="sm"
@@ -500,6 +574,10 @@ function CoursesHome({
     { key: 'private', label: t('presets.private'), count: summaryCounts.private },
     { key: 'recent', label: t('presets.recent') },
     { key: 'attention', label: t('presets.attention'), count: summaryCounts.attention },
+    // The archive chip appears once there is something in it (or it is selected).
+    ...(summaryCounts.archived > 0 || isArchivePreset
+      ? [{ key: 'archived', label: t('presets.archived'), count: summaryCounts.archived }]
+      : []),
   ]
 
   return (
@@ -765,6 +843,8 @@ export function CourseRowActions({
   const { toastApiError } = useApiError()
   const [isPending, startTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [lifecycleDialog, setLifecycleDialog] = useState<'archive' | 'restore' | null>(null)
+  const isArchived = isCourseArchived(course)
 
   const canManageCourse =
     can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
@@ -839,10 +919,16 @@ export function CourseRowActions({
             <LayoutGrid className="size-4" />
             {t('rowActions.useAsTemplate')}
           </DropdownMenuItem>
-          {canManageCourse ? (
+          {canManageCourse && !isArchived ? (
             <DropdownMenuItem onClick={handleToggleVisibility}>
               {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
               {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
+            </DropdownMenuItem>
+          ) : null}
+          {canManageCourse ? (
+            <DropdownMenuItem onClick={() => setLifecycleDialog(isArchived ? 'restore' : 'archive')}>
+              {isArchived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+              {isArchived ? t('rowActions.restore') : t('rowActions.archive')}
             </DropdownMenuItem>
           ) : null}
           {canDeleteCourse ? (
@@ -860,6 +946,22 @@ export function CourseRowActions({
         isPending={isPending}
         onConfirm={handleDelete}
       />
+      {lifecycleDialog === 'archive' ? (
+        <CourseArchiveDialog
+          open
+          onOpenChange={open => setLifecycleDialog(open ? 'archive' : null)}
+          courseUuid={course.course_uuid}
+          courseName={course.name}
+        />
+      ) : null}
+      {lifecycleDialog === 'restore' ? (
+        <CourseRestoreDialog
+          open
+          onOpenChange={open => setLifecycleDialog(open ? 'restore' : null)}
+          courseUuid={course.course_uuid}
+          courseName={course.name}
+        />
+      ) : null}
     </>
   )
 }

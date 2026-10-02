@@ -21,7 +21,7 @@ export const AdminUserPage = zod
           status: zod.string().describe('`active` or `disabled`.'),
           username: zod.string(),
         })
-        .describe('Admin listing row (includes email + status — platform:read gated).'),
+        .describe('Admin listing row (includes email + status - platform:read gated).'),
     ),
     next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
   })

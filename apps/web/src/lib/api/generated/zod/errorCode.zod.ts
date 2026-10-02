@@ -22,6 +22,7 @@ export const ErrorCode = zod
     'payload-too-large',
     'activity-not-ready',
     'course-not-ready',
+    'course-archived',
     'unsupported-media-type',
     'service-unavailable',
     'invalid-credentials',

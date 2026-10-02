@@ -9,6 +9,13 @@ import * as zod from 'zod'
 
 export const Course = zod.object({
   about: zod.string(),
+  archived_at_unix: zod
+    .int()
+    .nullish()
+    .describe(
+      'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
+    ),
+  archived_by: zod.union([zod.uuid(), zod.null()]).optional(),
   contributor_ids: zod
     .array(zod.uuid())
     .describe(

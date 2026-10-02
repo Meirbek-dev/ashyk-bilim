@@ -24,6 +24,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     action,
     isStarted,
     hasNoLiveActivities,
+    hideCta,
     isActionLoading,
     handleCourseAction,
     isProgressOpen,
@@ -164,7 +165,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
         {renderProgressSection()}
 
         {/* Start/Continue Course Button */}
-        {hasNoLiveActivities ? null : (
+        {hasNoLiveActivities || hideCta ? null : (
           <Button onClick={handleCourseAction} disabled={isActionLoading} className="h-12 w-full gap-2 text-base">
             {isActionLoading ? <Loader2 className="size-5 animate-spin" /> : renderActionButton(action)}
           </Button>

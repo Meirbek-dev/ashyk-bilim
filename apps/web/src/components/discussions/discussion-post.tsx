@@ -39,6 +39,7 @@ interface DiscussionPostProps {
   onEditPost: (postId: string, newMessage: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
   onSubmitReply: (postId: string, replyText: string) => void
+  readOnly?: boolean
 }
 
 export default function DiscussionPost({
@@ -51,6 +52,7 @@ export default function DiscussionPost({
   onEditPost,
   onEditReply,
   onSubmitReply,
+  readOnly = false,
 }: DiscussionPostProps) {
   const t = useTranslations('CoursePage')
   const [replyingTo, setReplyingTo] = useState(false)
@@ -109,7 +111,7 @@ export default function DiscussionPost({
                     <RelativeTime date={post.createDate} />
                   </div>
                 </div>
-                {(canDelete || canUpdate) && !editingPost && (
+                {(canDelete || canUpdate) && !editingPost && !readOnly && (
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <PermissionTooltip enabled={canUpdate} action="update">
                       <Button
@@ -173,80 +175,82 @@ export default function DiscussionPost({
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onVotePost(post.id, 'up')}
-                      aria-pressed={post.userVote === 'up'}
-                      aria-label={t('upvote')}
-                      className={cn(
-                        'h-8 rounded-none border-border border-r px-3 transition-all',
-                        post.userVote === 'up'
-                          ? 'bg-lime-100 text-lime-800 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:hover:bg-lime-900/50'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-lime-700 dark:hover:text-lime-400',
-                      )}
-                    >
-                      <ArrowBigUp size={16} className="mr-1" />
-                      <span className="text-sm font-medium">{post.upvotes}</span>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onVotePost(post.id, 'down')}
-                      aria-pressed={post.userVote === 'down'}
-                      aria-label={t('downvote')}
-                      className={cn(
-                        'h-8 rounded-none px-3 transition-all',
-                        post.userVote === 'down'
-                          ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
-                      )}
-                    >
-                      <ArrowBigDown size={16} className="mr-1" />
-                      <span className="text-sm font-medium">{post.downvotes}</span>
-                    </Button>
-                  </div>
-
-                  {/* Net score indicator */}
-                  {Math.abs(netScore) > 0 && (
-                    <div className="flex items-center">
-                      <div
+              {readOnly ? null : (
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onVotePost(post.id, 'up')}
+                        aria-pressed={post.userVote === 'up'}
+                        aria-label={t('upvote')}
                         className={cn(
-                          'rounded-full px-2 py-1 font-medium text-xs',
-                          netScore > 0
-                            ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
-                            : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+                          'h-8 rounded-none border-border border-r px-3 transition-all',
+                          post.userVote === 'up'
+                            ? 'bg-lime-100 text-lime-800 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:hover:bg-lime-900/50'
+                            : 'text-muted-foreground hover:bg-muted/70 hover:text-lime-700 dark:hover:text-lime-400',
                         )}
                       >
-                        {netScore > 0 ? '+' : ''}
-                        {netScore}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                        <ArrowBigUp size={16} className="mr-1" />
+                        <span className="text-sm font-medium">{post.upvotes}</span>
+                      </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setReplyingTo(!replyingTo)}
-                  className={cn(
-                    'h-8 rounded-full px-3 text-muted-foreground transition-all',
-                    replyingTo && 'bg-primary/10 text-primary',
-                  )}
-                >
-                  <Reply size={16} className="mr-1" />
-                  <span>{t('reply')}</span>
-                  {post.replies && post.replies.length > 0 && (
-                    <span className="bg-secondary/20 text-muted-foreground ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                      {post.replies.length}
-                    </span>
-                  )}
-                </Button>
-              </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onVotePost(post.id, 'down')}
+                        aria-pressed={post.userVote === 'down'}
+                        aria-label={t('downvote')}
+                        className={cn(
+                          'h-8 rounded-none px-3 transition-all',
+                          post.userVote === 'down'
+                            ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                            : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
+                        )}
+                      >
+                        <ArrowBigDown size={16} className="mr-1" />
+                        <span className="text-sm font-medium">{post.downvotes}</span>
+                      </Button>
+                    </div>
+
+                    {/* Net score indicator */}
+                    {Math.abs(netScore) > 0 && (
+                      <div className="flex items-center">
+                        <div
+                          className={cn(
+                            'rounded-full px-2 py-1 font-medium text-xs',
+                            netScore > 0
+                              ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+                          )}
+                        >
+                          {netScore > 0 ? '+' : ''}
+                          {netScore}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setReplyingTo(!replyingTo)}
+                    className={cn(
+                      'h-8 rounded-full px-3 text-muted-foreground transition-all',
+                      replyingTo && 'bg-primary/10 text-primary',
+                    )}
+                  >
+                    <Reply size={16} className="mr-1" />
+                    <span>{t('reply')}</span>
+                    {post.replies && post.replies.length > 0 && (
+                      <span className="bg-secondary/20 text-muted-foreground ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                        {post.replies.length}
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              )}
 
               {replyingTo ? (
                 <form action={handleSubmitReply} className="mt-4">
@@ -303,6 +307,7 @@ export default function DiscussionPost({
                   onVoteReply={onVoteReply}
                   onDeleteReply={onDeleteReply}
                   onEditReply={onEditReply}
+                  readOnly={readOnly}
                 />
               ))}
             </div>

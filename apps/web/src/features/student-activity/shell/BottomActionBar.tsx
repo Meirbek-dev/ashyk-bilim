@@ -334,6 +334,9 @@ function getDisabledReason(reason: string, t: (key: string) => string): string {
     case 'locked': {
       return t('accessBlocked')
     }
+    case 'course_archived': {
+      return t('courseArchived')
+    }
     default: {
       return reason.replace(/_/g, ' ')
     }
