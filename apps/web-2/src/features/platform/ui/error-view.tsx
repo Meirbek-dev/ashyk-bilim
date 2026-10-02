@@ -1,22 +1,18 @@
 import { useRouter, type ErrorComponentProps } from '@tanstack/react-router'
-import { useEffect } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import { presentError } from '#/shared/i18n/errors'
-import { reportClientError } from '#/shared/lib/client-errors'
 import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
 
 import { ForbiddenView } from './forbidden-view'
 
-/** Route error boundary: what happened, Retry, and the request id for support (spec 7.11). 403 in place. */
+/** Route error boundary: what happened, Retry, and the request id for support (spec 7.11). 403 in place.
+ * Unexpected errors are reported by `onCaughtError` in src/client.tsx. */
 export function ErrorView({ error }: ErrorComponentProps) {
   const router = useRouter()
   const apiError = error instanceof ApiError ? error : null
-  useEffect(() => {
-    if (!apiError) reportClientError('render', error)
-  }, [apiError, error])
   if (apiError?.status === 403) return <ForbiddenView />
   return (
     <section className="flex max-w-prose flex-col items-start gap-4">

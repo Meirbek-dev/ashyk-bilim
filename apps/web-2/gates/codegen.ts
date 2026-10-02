@@ -34,13 +34,15 @@ export function generateApi(outputDir = './src/shared/api/gen'): void {
 }
 
 // The footer TanStack Start's Vite plugin appends; kept identical so `vp dev` and codegen write the same bytes.
+// With src/start.ts present the plugin also registers its options (serialization adapters).
 const START_FOOTER = [
   `import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }`,
 ]

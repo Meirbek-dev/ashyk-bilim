@@ -1,12 +1,11 @@
 import { m } from '#/paraglide/messages'
 
+import { e2ePassword } from '../fixtures/seed'
 import { expect, test } from '../fixtures/test'
 
 // `ashyq admin seed-e2e` (S-03) creates e2e-student1 with the password from E2E_PASSWORD.
 function seededStudent(): { login: string; password: string } {
-  const password = process.env['E2E_PASSWORD']
-  if (!password) throw new Error('Set E2E_PASSWORD to the password `ashyq admin seed-e2e` used')
-  return { login: process.env['E2E_STUDENT_LOGIN'] ?? 'e2e-student1', password }
+  return { login: process.env['E2E_STUDENT_LOGIN'] ?? 'e2e-student1', password: e2ePassword() }
 }
 
 const ru = { locale: 'ru' } as const
@@ -24,7 +23,8 @@ test(
     await expect(page).toHaveURL(/\/home$/)
     await expect(page.getByRole('heading', { name: m.home_title({}, ru) })).toBeVisible()
 
-    await page.getByRole('button', { name: m.auth_logout({}, ru) }).click()
+    await page.getByRole('button', { name: m.platform_profile_menu({}, ru) }).click()
+    await page.getByRole('menuitem', { name: m.auth_logout({}, ru) }).click()
     await expect(page).toHaveURL(/\/$/)
     await page.goto('/home')
     await expect(page).toHaveURL(/\/login\?redirect=/)

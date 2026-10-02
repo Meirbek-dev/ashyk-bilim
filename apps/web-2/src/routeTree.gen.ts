@@ -12,10 +12,68 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as AuthedAchievementsRouteImport } from './routes/_authed/achievements'
+import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedHomeRouteImport } from './routes/_authed/home'
+import { Route as AuthedLearningRouteImport } from './routes/_authed/learning'
+import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
+import { Route as AuthedTeachRouteImport } from './routes/_authed/teach'
 import { Route as GuestIndexRouteImport } from './routes/_guest/index'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
-import { Route as PublicCollectionsRouteImport } from './routes/_public/collections'
+import { Route as GuestResetPasswordRouteImport } from './routes/_guest/reset-password'
+import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
+import { Route as GuestVerifyEmailRouteImport } from './routes/_guest/verify-email'
+import { Route as PublicSearchRouteImport } from './routes/_public/search'
+import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
+import { Route as AuthedAdminAiRouteImport } from './routes/_authed/admin/ai'
+import { Route as AuthedAdminAnalyticsRouteImport } from './routes/_authed/admin/analytics'
+import { Route as AuthedAdminGamificationRouteImport } from './routes/_authed/admin/gamification'
+import { Route as AuthedAdminPlatformRouteImport } from './routes/_authed/admin/platform'
+import { Route as AuthedAdminRolesRouteImport } from './routes/_authed/admin/roles'
+import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
+import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedSettingsAppearanceRouteImport } from './routes/_authed/settings/appearance'
+import { Route as AuthedSettingsNotificationsRouteImport } from './routes/_authed/settings/notifications'
+import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile'
+import { Route as AuthedSettingsSecurityRouteImport } from './routes/_authed/settings/security'
+import { Route as AuthedTeachIndexRouteImport } from './routes/_authed/teach/index'
+import { Route as AuthedTeachAnalyticsRouteImport } from './routes/_authed/teach/analytics'
+import { Route as AuthedTeachGroupsRouteImport } from './routes/_authed/teach/groups'
+import { Route as PublicCollectionsIndexRouteImport } from './routes/_public/collections/index'
+import { Route as PublicCollectionsCollectionIdRouteImport } from './routes/_public/collections/$collectionId'
+import { Route as PublicCoursesIndexRouteImport } from './routes/_public/courses/index'
+import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public/courses/$courseId'
+import { Route as PublicUsersUsernameRouteImport } from './routes/_public/users/$username'
+import { Route as AuthedLearnCourseIdActivityIdRouteImport } from './routes/_authed/learn/$courseId/$activityId'
+import { Route as AuthedLearnCourseIdCompleteRouteImport } from './routes/_authed/learn/$courseId/complete'
+import { Route as AuthedTeachAnalyticsIndexRouteImport } from './routes/_authed/teach/analytics/index'
+import { Route as AuthedTeachAnalyticsLearnersRouteImport } from './routes/_authed/teach/analytics/learners'
+import { Route as AuthedTeachAnalyticsOperationsRouteImport } from './routes/_authed/teach/analytics/operations'
+import { Route as AuthedTeachAnalyticsOverviewRouteImport } from './routes/_authed/teach/analytics/overview'
+import { Route as AuthedTeachAnalyticsPerformanceRouteImport } from './routes/_authed/teach/analytics/performance'
+import { Route as AuthedTeachCoursesIndexRouteImport } from './routes/_authed/teach/courses/index'
+import { Route as AuthedTeachCoursesCourseIdRouteImport } from './routes/_authed/teach/courses/$courseId'
+import { Route as PublicCertificatesCertificateIdVerifyRouteImport } from './routes/_public/certificates/$certificateId/verify'
+import { Route as PublicCoursesCourseIdIndexRouteImport } from './routes/_public/courses/$courseId/index'
+import { Route as PublicCoursesCourseIdAboutRouteImport } from './routes/_public/courses/$courseId/about'
+import { Route as PublicCoursesCourseIdDiscussionsRouteImport } from './routes/_public/courses/$courseId/discussions'
+import { Route as PublicCoursesCourseIdUpdatesRouteImport } from './routes/_public/courses/$courseId/updates'
+import { Route as AuthedTeachCoursesCourseIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId/index'
+import { Route as AuthedTeachCoursesCourseIdContentRouteImport } from './routes/_authed/teach/courses/$courseId/content'
+import { Route as AuthedTeachCoursesCourseIdGradebookRouteImport } from './routes/_authed/teach/courses/$courseId/gradebook'
+import { Route as AuthedTeachCoursesCourseIdLearnersRouteImport } from './routes/_authed/teach/courses/$courseId/learners'
+import { Route as AuthedTeachCoursesCourseIdOverviewRouteImport } from './routes/_authed/teach/courses/$courseId/overview'
+import { Route as AuthedTeachCoursesCourseIdPublishRouteImport } from './routes/_authed/teach/courses/$courseId/publish'
+import { Route as AuthedTeachCoursesCourseIdSettingsRouteImport } from './routes/_authed/teach/courses/$courseId/settings'
+import { Route as AuthedTeachCoursesCourseIdTeamRouteImport } from './routes/_authed/teach/courses/$courseId/team'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/index'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdEditRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/edit'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/results'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/settings'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -29,9 +87,39 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedAchievementsRoute = AuthedAchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminRoute = AuthedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedHomeRoute = AuthedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedLearningRoute = AuthedLearningRouteImport.update({
+  id: '/learning',
+  path: '/learning',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTeachRoute = AuthedTeachRouteImport.update({
+  id: '/teach',
+  path: '/teach',
   getParentRoute: () => AuthedRoute,
 } as any)
 const GuestIndexRoute = GuestIndexRouteImport.update({
@@ -44,48 +132,683 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => GuestRoute,
 } as any)
-const PublicCollectionsRoute = PublicCollectionsRouteImport.update({
-  id: '/collections',
-  path: '/collections',
+const GuestResetPasswordRoute = GuestResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => GuestRoute,
+} as any)
+const GuestSignupRoute = GuestSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => GuestRoute,
+} as any)
+const GuestVerifyEmailRoute = GuestVerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => GuestRoute,
+} as any)
+const PublicSearchRoute = PublicSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminAiRoute = AuthedAdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminAnalyticsRoute = AuthedAdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminGamificationRoute = AuthedAdminGamificationRouteImport.update({
+  id: '/gamification',
+  path: '/gamification',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminPlatformRoute = AuthedAdminPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminRolesRoute = AuthedAdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsAppearanceRoute =
+  AuthedSettingsAppearanceRouteImport.update({
+    id: '/appearance',
+    path: '/appearance',
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
+const AuthedSettingsNotificationsRoute =
+  AuthedSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
+const AuthedSettingsProfileRoute = AuthedSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsSecurityRoute = AuthedSettingsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedTeachIndexRoute = AuthedTeachIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedTeachRoute,
+} as any)
+const AuthedTeachAnalyticsRoute = AuthedTeachAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthedTeachRoute,
+} as any)
+const AuthedTeachGroupsRoute = AuthedTeachGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => AuthedTeachRoute,
+} as any)
+const PublicCollectionsIndexRoute = PublicCollectionsIndexRouteImport.update({
+  id: '/collections/',
+  path: '/collections/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCollectionsCollectionIdRoute =
+  PublicCollectionsCollectionIdRouteImport.update({
+    id: '/collections/$collectionId',
+    path: '/collections/$collectionId',
+    getParentRoute: () => PublicRoute,
+  } as any)
+const PublicCoursesIndexRoute = PublicCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCoursesCourseIdRoute = PublicCoursesCourseIdRouteImport.update({
+  id: '/courses/$courseId',
+  path: '/courses/$courseId',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicUsersUsernameRoute = PublicUsersUsernameRouteImport.update({
+  id: '/users/$username',
+  path: '/users/$username',
+  getParentRoute: () => PublicRoute,
+} as any)
+const AuthedLearnCourseIdActivityIdRoute =
+  AuthedLearnCourseIdActivityIdRouteImport.update({
+    id: '/learn/$courseId/$activityId',
+    path: '/learn/$courseId/$activityId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedLearnCourseIdCompleteRoute =
+  AuthedLearnCourseIdCompleteRouteImport.update({
+    id: '/learn/$courseId/complete',
+    path: '/learn/$courseId/complete',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedTeachAnalyticsIndexRoute =
+  AuthedTeachAnalyticsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedTeachAnalyticsRoute,
+  } as any)
+const AuthedTeachAnalyticsLearnersRoute =
+  AuthedTeachAnalyticsLearnersRouteImport.update({
+    id: '/learners',
+    path: '/learners',
+    getParentRoute: () => AuthedTeachAnalyticsRoute,
+  } as any)
+const AuthedTeachAnalyticsOperationsRoute =
+  AuthedTeachAnalyticsOperationsRouteImport.update({
+    id: '/operations',
+    path: '/operations',
+    getParentRoute: () => AuthedTeachAnalyticsRoute,
+  } as any)
+const AuthedTeachAnalyticsOverviewRoute =
+  AuthedTeachAnalyticsOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AuthedTeachAnalyticsRoute,
+  } as any)
+const AuthedTeachAnalyticsPerformanceRoute =
+  AuthedTeachAnalyticsPerformanceRouteImport.update({
+    id: '/performance',
+    path: '/performance',
+    getParentRoute: () => AuthedTeachAnalyticsRoute,
+  } as any)
+const AuthedTeachCoursesIndexRoute = AuthedTeachCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => AuthedTeachRoute,
+} as any)
+const AuthedTeachCoursesCourseIdRoute =
+  AuthedTeachCoursesCourseIdRouteImport.update({
+    id: '/courses/$courseId',
+    path: '/courses/$courseId',
+    getParentRoute: () => AuthedTeachRoute,
+  } as any)
+const PublicCertificatesCertificateIdVerifyRoute =
+  PublicCertificatesCertificateIdVerifyRouteImport.update({
+    id: '/certificates/$certificateId/verify',
+    path: '/certificates/$certificateId/verify',
+    getParentRoute: () => PublicRoute,
+  } as any)
+const PublicCoursesCourseIdIndexRoute =
+  PublicCoursesCourseIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PublicCoursesCourseIdRoute,
+  } as any)
+const PublicCoursesCourseIdAboutRoute =
+  PublicCoursesCourseIdAboutRouteImport.update({
+    id: '/about',
+    path: '/about',
+    getParentRoute: () => PublicCoursesCourseIdRoute,
+  } as any)
+const PublicCoursesCourseIdDiscussionsRoute =
+  PublicCoursesCourseIdDiscussionsRouteImport.update({
+    id: '/discussions',
+    path: '/discussions',
+    getParentRoute: () => PublicCoursesCourseIdRoute,
+  } as any)
+const PublicCoursesCourseIdUpdatesRoute =
+  PublicCoursesCourseIdUpdatesRouteImport.update({
+    id: '/updates',
+    path: '/updates',
+    getParentRoute: () => PublicCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdIndexRoute =
+  AuthedTeachCoursesCourseIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdContentRoute =
+  AuthedTeachCoursesCourseIdContentRouteImport.update({
+    id: '/content',
+    path: '/content',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdGradebookRoute =
+  AuthedTeachCoursesCourseIdGradebookRouteImport.update({
+    id: '/gradebook',
+    path: '/gradebook',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdLearnersRoute =
+  AuthedTeachCoursesCourseIdLearnersRouteImport.update({
+    id: '/learners',
+    path: '/learners',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdOverviewRoute =
+  AuthedTeachCoursesCourseIdOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdPublishRoute =
+  AuthedTeachCoursesCourseIdPublishRouteImport.update({
+    id: '/publish',
+    path: '/publish',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdSettingsRoute =
+  AuthedTeachCoursesCourseIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdTeamRoute =
+  AuthedTeachCoursesCourseIdTeamRouteImport.update({
+    id: '/team',
+    path: '/team',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport.update({
+    id: '/courses/$courseId_/activities/$activityId',
+    path: '/courses/$courseId/activities/$activityId',
+    getParentRoute: () => AuthedTeachRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRouteImport.update({
+    id: '/results',
+    path: '/results',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRouteImport.update({
+    id: '/submissions',
+    path: '/submissions',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRouteImport.update(
+    {
+      id: '/courses/$courseId_/activities/$activityId_/submissions/$submissionId',
+      path: '/courses/$courseId/activities/$activityId/submissions/$submissionId',
+      getParentRoute: () => AuthedTeachRoute,
+    } as any,
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof GuestIndexRoute
+  '/achievements': typeof AuthedAchievementsRoute
+  '/admin': typeof AuthedAdminRouteWithChildren
   '/home': typeof AuthedHomeRoute
+  '/learning': typeof AuthedLearningRoute
+  '/notifications': typeof AuthedNotificationsRoute
+  '/settings': typeof AuthedSettingsRouteWithChildren
+  '/teach': typeof AuthedTeachRouteWithChildren
   '/login': typeof GuestLoginRoute
-  '/collections': typeof PublicCollectionsRoute
+  '/reset-password': typeof GuestResetPasswordRoute
+  '/signup': typeof GuestSignupRoute
+  '/verify-email': typeof GuestVerifyEmailRoute
+  '/search': typeof PublicSearchRoute
+  '/admin/ai': typeof AuthedAdminAiRoute
+  '/admin/analytics': typeof AuthedAdminAnalyticsRoute
+  '/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/admin/platform': typeof AuthedAdminPlatformRoute
+  '/admin/roles': typeof AuthedAdminRolesRoute
+  '/admin/users': typeof AuthedAdminUsersRoute
+  '/settings/appearance': typeof AuthedSettingsAppearanceRoute
+  '/settings/notifications': typeof AuthedSettingsNotificationsRoute
+  '/settings/profile': typeof AuthedSettingsProfileRoute
+  '/settings/security': typeof AuthedSettingsSecurityRoute
+  '/teach/analytics': typeof AuthedTeachAnalyticsRouteWithChildren
+  '/teach/groups': typeof AuthedTeachGroupsRoute
+  '/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
+  '/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
+  '/users/$username': typeof PublicUsersUsernameRoute
+  '/admin/': typeof AuthedAdminIndexRoute
+  '/settings/': typeof AuthedSettingsIndexRoute
+  '/teach/': typeof AuthedTeachIndexRoute
+  '/collections/': typeof PublicCollectionsIndexRoute
+  '/courses/': typeof PublicCoursesIndexRoute
+  '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
+  '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
+  '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
+  '/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
+  '/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
+  '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
+  '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
+  '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
+  '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
+  '/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/teach/analytics/': typeof AuthedTeachAnalyticsIndexRoute
+  '/teach/courses/': typeof AuthedTeachCoursesIndexRoute
+  '/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
+  '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
+  '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
+  '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
+  '/teach/courses/$courseId/overview': typeof AuthedTeachCoursesCourseIdOverviewRoute
+  '/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
+  '/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
+  '/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
+  '/teach/courses/$courseId/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
+  '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
+  '/teach/courses/$courseId/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
+  '/teach/courses/$courseId/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
+  '/teach/courses/$courseId/activities/$activityId/submissions': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute
+  '/teach/courses/$courseId/activities/$activityId/': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute
+  '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof GuestIndexRoute
+  '/achievements': typeof AuthedAchievementsRoute
   '/home': typeof AuthedHomeRoute
+  '/learning': typeof AuthedLearningRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/login': typeof GuestLoginRoute
-  '/collections': typeof PublicCollectionsRoute
+  '/reset-password': typeof GuestResetPasswordRoute
+  '/signup': typeof GuestSignupRoute
+  '/verify-email': typeof GuestVerifyEmailRoute
+  '/search': typeof PublicSearchRoute
+  '/admin/ai': typeof AuthedAdminAiRoute
+  '/admin/analytics': typeof AuthedAdminAnalyticsRoute
+  '/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/admin/platform': typeof AuthedAdminPlatformRoute
+  '/admin/roles': typeof AuthedAdminRolesRoute
+  '/admin/users': typeof AuthedAdminUsersRoute
+  '/settings/appearance': typeof AuthedSettingsAppearanceRoute
+  '/settings/notifications': typeof AuthedSettingsNotificationsRoute
+  '/settings/profile': typeof AuthedSettingsProfileRoute
+  '/settings/security': typeof AuthedSettingsSecurityRoute
+  '/teach/groups': typeof AuthedTeachGroupsRoute
+  '/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
+  '/users/$username': typeof PublicUsersUsernameRoute
+  '/admin': typeof AuthedAdminIndexRoute
+  '/settings': typeof AuthedSettingsIndexRoute
+  '/teach': typeof AuthedTeachIndexRoute
+  '/collections': typeof PublicCollectionsIndexRoute
+  '/courses': typeof PublicCoursesIndexRoute
+  '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
+  '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
+  '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
+  '/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
+  '/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
+  '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
+  '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
+  '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
+  '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
+  '/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/teach/analytics': typeof AuthedTeachAnalyticsIndexRoute
+  '/teach/courses': typeof AuthedTeachCoursesIndexRoute
+  '/courses/$courseId': typeof PublicCoursesCourseIdIndexRoute
+  '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
+  '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
+  '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
+  '/teach/courses/$courseId/overview': typeof AuthedTeachCoursesCourseIdOverviewRoute
+  '/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
+  '/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
+  '/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdIndexRoute
+  '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
+  '/teach/courses/$courseId/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
+  '/teach/courses/$courseId/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
+  '/teach/courses/$courseId/activities/$activityId/submissions': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute
+  '/teach/courses/$courseId/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute
+  '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_authed/achievements': typeof AuthedAchievementsRoute
+  '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/home': typeof AuthedHomeRoute
+  '/_authed/learning': typeof AuthedLearningRoute
+  '/_authed/notifications': typeof AuthedNotificationsRoute
+  '/_authed/settings': typeof AuthedSettingsRouteWithChildren
+  '/_authed/teach': typeof AuthedTeachRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
-  '/_public/collections': typeof PublicCollectionsRoute
+  '/_guest/reset-password': typeof GuestResetPasswordRoute
+  '/_guest/signup': typeof GuestSignupRoute
+  '/_guest/verify-email': typeof GuestVerifyEmailRoute
+  '/_public/search': typeof PublicSearchRoute
   '/_guest/': typeof GuestIndexRoute
+  '/_authed/admin/ai': typeof AuthedAdminAiRoute
+  '/_authed/admin/analytics': typeof AuthedAdminAnalyticsRoute
+  '/_authed/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/_authed/admin/platform': typeof AuthedAdminPlatformRoute
+  '/_authed/admin/roles': typeof AuthedAdminRolesRoute
+  '/_authed/admin/users': typeof AuthedAdminUsersRoute
+  '/_authed/settings/appearance': typeof AuthedSettingsAppearanceRoute
+  '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRoute
+  '/_authed/settings/profile': typeof AuthedSettingsProfileRoute
+  '/_authed/settings/security': typeof AuthedSettingsSecurityRoute
+  '/_authed/teach/analytics': typeof AuthedTeachAnalyticsRouteWithChildren
+  '/_authed/teach/groups': typeof AuthedTeachGroupsRoute
+  '/_public/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
+  '/_public/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
+  '/_public/users/$username': typeof PublicUsersUsernameRoute
+  '/_authed/admin/': typeof AuthedAdminIndexRoute
+  '/_authed/settings/': typeof AuthedSettingsIndexRoute
+  '/_authed/teach/': typeof AuthedTeachIndexRoute
+  '/_public/collections/': typeof PublicCollectionsIndexRoute
+  '/_public/courses/': typeof PublicCoursesIndexRoute
+  '/_authed/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
+  '/_authed/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
+  '/_authed/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
+  '/_authed/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
+  '/_authed/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
+  '/_authed/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
+  '/_authed/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  '/_public/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
+  '/_public/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
+  '/_public/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
+  '/_public/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/_authed/teach/analytics/': typeof AuthedTeachAnalyticsIndexRoute
+  '/_authed/teach/courses/': typeof AuthedTeachCoursesIndexRoute
+  '/_public/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
+  '/_authed/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
+  '/_authed/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
+  '/_authed/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
+  '/_authed/teach/courses/$courseId/overview': typeof AuthedTeachCoursesCourseIdOverviewRoute
+  '/_authed/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
+  '/_authed/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
+  '/_authed/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/_authed/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
+  '/_authed/teach/courses/$courseId_/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId/submissions': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId/': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute
+  '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/home' | '/login' | '/collections'
+  fullPaths:
+    | '/'
+    | '/achievements'
+    | '/admin'
+    | '/home'
+    | '/learning'
+    | '/notifications'
+    | '/settings'
+    | '/teach'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
+    | '/verify-email'
+    | '/search'
+    | '/admin/ai'
+    | '/admin/analytics'
+    | '/admin/gamification'
+    | '/admin/platform'
+    | '/admin/roles'
+    | '/admin/users'
+    | '/settings/appearance'
+    | '/settings/notifications'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/teach/analytics'
+    | '/teach/groups'
+    | '/collections/$collectionId'
+    | '/courses/$courseId'
+    | '/users/$username'
+    | '/admin/'
+    | '/settings/'
+    | '/teach/'
+    | '/collections/'
+    | '/courses/'
+    | '/learn/$courseId/$activityId'
+    | '/learn/$courseId/complete'
+    | '/teach/analytics/learners'
+    | '/teach/analytics/operations'
+    | '/teach/analytics/overview'
+    | '/teach/analytics/performance'
+    | '/teach/courses/$courseId'
+    | '/certificates/$certificateId/verify'
+    | '/courses/$courseId/about'
+    | '/courses/$courseId/discussions'
+    | '/courses/$courseId/updates'
+    | '/teach/analytics/'
+    | '/teach/courses/'
+    | '/courses/$courseId/'
+    | '/teach/courses/$courseId/content'
+    | '/teach/courses/$courseId/gradebook'
+    | '/teach/courses/$courseId/learners'
+    | '/teach/courses/$courseId/overview'
+    | '/teach/courses/$courseId/publish'
+    | '/teach/courses/$courseId/settings'
+    | '/teach/courses/$courseId/team'
+    | '/teach/courses/$courseId/'
+    | '/teach/courses/$courseId/activities/$activityId'
+    | '/teach/courses/$courseId/activities/$activityId/edit'
+    | '/teach/courses/$courseId/activities/$activityId/results'
+    | '/teach/courses/$courseId/activities/$activityId/settings'
+    | '/teach/courses/$courseId/activities/$activityId/submissions'
+    | '/teach/courses/$courseId/activities/$activityId/'
+    | '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/login' | '/collections'
+  to:
+    | '/'
+    | '/achievements'
+    | '/home'
+    | '/learning'
+    | '/notifications'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
+    | '/verify-email'
+    | '/search'
+    | '/admin/ai'
+    | '/admin/analytics'
+    | '/admin/gamification'
+    | '/admin/platform'
+    | '/admin/roles'
+    | '/admin/users'
+    | '/settings/appearance'
+    | '/settings/notifications'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/teach/groups'
+    | '/collections/$collectionId'
+    | '/users/$username'
+    | '/admin'
+    | '/settings'
+    | '/teach'
+    | '/collections'
+    | '/courses'
+    | '/learn/$courseId/$activityId'
+    | '/learn/$courseId/complete'
+    | '/teach/analytics/learners'
+    | '/teach/analytics/operations'
+    | '/teach/analytics/overview'
+    | '/teach/analytics/performance'
+    | '/certificates/$certificateId/verify'
+    | '/courses/$courseId/about'
+    | '/courses/$courseId/discussions'
+    | '/courses/$courseId/updates'
+    | '/teach/analytics'
+    | '/teach/courses'
+    | '/courses/$courseId'
+    | '/teach/courses/$courseId/content'
+    | '/teach/courses/$courseId/gradebook'
+    | '/teach/courses/$courseId/learners'
+    | '/teach/courses/$courseId/overview'
+    | '/teach/courses/$courseId/publish'
+    | '/teach/courses/$courseId/settings'
+    | '/teach/courses/$courseId/team'
+    | '/teach/courses/$courseId'
+    | '/teach/courses/$courseId/activities/$activityId/edit'
+    | '/teach/courses/$courseId/activities/$activityId/results'
+    | '/teach/courses/$courseId/activities/$activityId/settings'
+    | '/teach/courses/$courseId/activities/$activityId/submissions'
+    | '/teach/courses/$courseId/activities/$activityId'
+    | '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId'
   id:
     | '__root__'
     | '/_authed'
     | '/_guest'
     | '/_public'
+    | '/_authed/achievements'
+    | '/_authed/admin'
     | '/_authed/home'
+    | '/_authed/learning'
+    | '/_authed/notifications'
+    | '/_authed/settings'
+    | '/_authed/teach'
     | '/_guest/login'
-    | '/_public/collections'
+    | '/_guest/reset-password'
+    | '/_guest/signup'
+    | '/_guest/verify-email'
+    | '/_public/search'
     | '/_guest/'
+    | '/_authed/admin/ai'
+    | '/_authed/admin/analytics'
+    | '/_authed/admin/gamification'
+    | '/_authed/admin/platform'
+    | '/_authed/admin/roles'
+    | '/_authed/admin/users'
+    | '/_authed/settings/appearance'
+    | '/_authed/settings/notifications'
+    | '/_authed/settings/profile'
+    | '/_authed/settings/security'
+    | '/_authed/teach/analytics'
+    | '/_authed/teach/groups'
+    | '/_public/collections/$collectionId'
+    | '/_public/courses/$courseId'
+    | '/_public/users/$username'
+    | '/_authed/admin/'
+    | '/_authed/settings/'
+    | '/_authed/teach/'
+    | '/_public/collections/'
+    | '/_public/courses/'
+    | '/_authed/learn/$courseId/$activityId'
+    | '/_authed/learn/$courseId/complete'
+    | '/_authed/teach/analytics/learners'
+    | '/_authed/teach/analytics/operations'
+    | '/_authed/teach/analytics/overview'
+    | '/_authed/teach/analytics/performance'
+    | '/_authed/teach/courses/$courseId'
+    | '/_public/certificates/$certificateId/verify'
+    | '/_public/courses/$courseId/about'
+    | '/_public/courses/$courseId/discussions'
+    | '/_public/courses/$courseId/updates'
+    | '/_authed/teach/analytics/'
+    | '/_authed/teach/courses/'
+    | '/_public/courses/$courseId/'
+    | '/_authed/teach/courses/$courseId/content'
+    | '/_authed/teach/courses/$courseId/gradebook'
+    | '/_authed/teach/courses/$courseId/learners'
+    | '/_authed/teach/courses/$courseId/overview'
+    | '/_authed/teach/courses/$courseId/publish'
+    | '/_authed/teach/courses/$courseId/settings'
+    | '/_authed/teach/courses/$courseId/team'
+    | '/_authed/teach/courses/$courseId/'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/results'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/settings'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,11 +840,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/achievements': {
+      id: '/_authed/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AuthedAchievementsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/home': {
       id: '/_authed/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AuthedHomeRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/learning': {
+      id: '/_authed/learning'
+      path: '/learning'
+      fullPath: '/learning'
+      preLoaderRoute: typeof AuthedLearningRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/notifications': {
+      id: '/_authed/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthedNotificationsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/teach': {
+      id: '/_authed/teach'
+      path: '/teach'
+      fullPath: '/teach'
+      preLoaderRoute: typeof AuthedTeachRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_guest/': {
@@ -138,22 +903,552 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRoute
     }
-    '/_public/collections': {
-      id: '/_public/collections'
-      path: '/collections'
-      fullPath: '/collections'
-      preLoaderRoute: typeof PublicCollectionsRouteImport
+    '/_guest/reset-password': {
+      id: '/_guest/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof GuestResetPasswordRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_guest/signup': {
+      id: '/_guest/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof GuestSignupRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_guest/verify-email': {
+      id: '/_guest/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof GuestVerifyEmailRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_public/search': {
+      id: '/_public/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof PublicSearchRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_authed/admin/': {
+      id: '/_authed/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthedAdminIndexRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/ai': {
+      id: '/_authed/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AuthedAdminAiRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/analytics': {
+      id: '/_authed/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AuthedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/gamification': {
+      id: '/_authed/admin/gamification'
+      path: '/gamification'
+      fullPath: '/admin/gamification'
+      preLoaderRoute: typeof AuthedAdminGamificationRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/platform': {
+      id: '/_authed/admin/platform'
+      path: '/platform'
+      fullPath: '/admin/platform'
+      preLoaderRoute: typeof AuthedAdminPlatformRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/roles': {
+      id: '/_authed/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AuthedAdminRolesRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/users': {
+      id: '/_authed/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthedAdminUsersRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/settings/': {
+      id: '/_authed/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthedSettingsIndexRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/appearance': {
+      id: '/_authed/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof AuthedSettingsAppearanceRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/notifications': {
+      id: '/_authed/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AuthedSettingsNotificationsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/profile': {
+      id: '/_authed/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AuthedSettingsProfileRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/security': {
+      id: '/_authed/settings/security'
+      path: '/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof AuthedSettingsSecurityRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/teach/': {
+      id: '/_authed/teach/'
+      path: '/'
+      fullPath: '/teach/'
+      preLoaderRoute: typeof AuthedTeachIndexRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/analytics': {
+      id: '/_authed/teach/analytics'
+      path: '/analytics'
+      fullPath: '/teach/analytics'
+      preLoaderRoute: typeof AuthedTeachAnalyticsRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/groups': {
+      id: '/_authed/teach/groups'
+      path: '/groups'
+      fullPath: '/teach/groups'
+      preLoaderRoute: typeof AuthedTeachGroupsRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_public/collections/': {
+      id: '/_public/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof PublicCollectionsIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/collections/$collectionId': {
+      id: '/_public/collections/$collectionId'
+      path: '/collections/$collectionId'
+      fullPath: '/collections/$collectionId'
+      preLoaderRoute: typeof PublicCollectionsCollectionIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/courses/': {
+      id: '/_public/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof PublicCoursesIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/courses/$courseId': {
+      id: '/_public/courses/$courseId'
+      path: '/courses/$courseId'
+      fullPath: '/courses/$courseId'
+      preLoaderRoute: typeof PublicCoursesCourseIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/users/$username': {
+      id: '/_public/users/$username'
+      path: '/users/$username'
+      fullPath: '/users/$username'
+      preLoaderRoute: typeof PublicUsersUsernameRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_authed/learn/$courseId/$activityId': {
+      id: '/_authed/learn/$courseId/$activityId'
+      path: '/learn/$courseId/$activityId'
+      fullPath: '/learn/$courseId/$activityId'
+      preLoaderRoute: typeof AuthedLearnCourseIdActivityIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/learn/$courseId/complete': {
+      id: '/_authed/learn/$courseId/complete'
+      path: '/learn/$courseId/complete'
+      fullPath: '/learn/$courseId/complete'
+      preLoaderRoute: typeof AuthedLearnCourseIdCompleteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/teach/analytics/': {
+      id: '/_authed/teach/analytics/'
+      path: '/'
+      fullPath: '/teach/analytics/'
+      preLoaderRoute: typeof AuthedTeachAnalyticsIndexRouteImport
+      parentRoute: typeof AuthedTeachAnalyticsRoute
+    }
+    '/_authed/teach/analytics/learners': {
+      id: '/_authed/teach/analytics/learners'
+      path: '/learners'
+      fullPath: '/teach/analytics/learners'
+      preLoaderRoute: typeof AuthedTeachAnalyticsLearnersRouteImport
+      parentRoute: typeof AuthedTeachAnalyticsRoute
+    }
+    '/_authed/teach/analytics/operations': {
+      id: '/_authed/teach/analytics/operations'
+      path: '/operations'
+      fullPath: '/teach/analytics/operations'
+      preLoaderRoute: typeof AuthedTeachAnalyticsOperationsRouteImport
+      parentRoute: typeof AuthedTeachAnalyticsRoute
+    }
+    '/_authed/teach/analytics/overview': {
+      id: '/_authed/teach/analytics/overview'
+      path: '/overview'
+      fullPath: '/teach/analytics/overview'
+      preLoaderRoute: typeof AuthedTeachAnalyticsOverviewRouteImport
+      parentRoute: typeof AuthedTeachAnalyticsRoute
+    }
+    '/_authed/teach/analytics/performance': {
+      id: '/_authed/teach/analytics/performance'
+      path: '/performance'
+      fullPath: '/teach/analytics/performance'
+      preLoaderRoute: typeof AuthedTeachAnalyticsPerformanceRouteImport
+      parentRoute: typeof AuthedTeachAnalyticsRoute
+    }
+    '/_authed/teach/courses/': {
+      id: '/_authed/teach/courses/'
+      path: '/courses'
+      fullPath: '/teach/courses/'
+      preLoaderRoute: typeof AuthedTeachCoursesIndexRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/courses/$courseId': {
+      id: '/_authed/teach/courses/$courseId'
+      path: '/courses/$courseId'
+      fullPath: '/teach/courses/$courseId'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_public/certificates/$certificateId/verify': {
+      id: '/_public/certificates/$certificateId/verify'
+      path: '/certificates/$certificateId/verify'
+      fullPath: '/certificates/$certificateId/verify'
+      preLoaderRoute: typeof PublicCertificatesCertificateIdVerifyRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/courses/$courseId/': {
+      id: '/_public/courses/$courseId/'
+      path: '/'
+      fullPath: '/courses/$courseId/'
+      preLoaderRoute: typeof PublicCoursesCourseIdIndexRouteImport
+      parentRoute: typeof PublicCoursesCourseIdRoute
+    }
+    '/_public/courses/$courseId/about': {
+      id: '/_public/courses/$courseId/about'
+      path: '/about'
+      fullPath: '/courses/$courseId/about'
+      preLoaderRoute: typeof PublicCoursesCourseIdAboutRouteImport
+      parentRoute: typeof PublicCoursesCourseIdRoute
+    }
+    '/_public/courses/$courseId/discussions': {
+      id: '/_public/courses/$courseId/discussions'
+      path: '/discussions'
+      fullPath: '/courses/$courseId/discussions'
+      preLoaderRoute: typeof PublicCoursesCourseIdDiscussionsRouteImport
+      parentRoute: typeof PublicCoursesCourseIdRoute
+    }
+    '/_public/courses/$courseId/updates': {
+      id: '/_public/courses/$courseId/updates'
+      path: '/updates'
+      fullPath: '/courses/$courseId/updates'
+      preLoaderRoute: typeof PublicCoursesCourseIdUpdatesRouteImport
+      parentRoute: typeof PublicCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/': {
+      id: '/_authed/teach/courses/$courseId/'
+      path: '/'
+      fullPath: '/teach/courses/$courseId/'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdIndexRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/content': {
+      id: '/_authed/teach/courses/$courseId/content'
+      path: '/content'
+      fullPath: '/teach/courses/$courseId/content'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdContentRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/gradebook': {
+      id: '/_authed/teach/courses/$courseId/gradebook'
+      path: '/gradebook'
+      fullPath: '/teach/courses/$courseId/gradebook'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdGradebookRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/learners': {
+      id: '/_authed/teach/courses/$courseId/learners'
+      path: '/learners'
+      fullPath: '/teach/courses/$courseId/learners'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdLearnersRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/overview': {
+      id: '/_authed/teach/courses/$courseId/overview'
+      path: '/overview'
+      fullPath: '/teach/courses/$courseId/overview'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdOverviewRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/publish': {
+      id: '/_authed/teach/courses/$courseId/publish'
+      path: '/publish'
+      fullPath: '/teach/courses/$courseId/publish'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdPublishRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/settings': {
+      id: '/_authed/teach/courses/$courseId/settings'
+      path: '/settings'
+      fullPath: '/teach/courses/$courseId/settings'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdSettingsRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/team': {
+      id: '/_authed/teach/courses/$courseId/team'
+      path: '/team'
+      fullPath: '/teach/courses/$courseId/team'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdTeamRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId'
+      path: '/courses/$courseId/activities/$activityId'
+      fullPath: '/teach/courses/$courseId/activities/$activityId'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/'
+      path: '/'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/edit': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
+      path: '/edit'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/edit'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/results': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/results'
+      path: '/results'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/results'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/settings': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/settings'
+      path: '/settings'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/settings'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/submissions': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
+      path: '/submissions'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/submissions'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
+      path: '/courses/$courseId/activities/$activityId/submissions/$submissionId'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRouteImport
+      parentRoute: typeof AuthedTeachRoute
     }
   }
 }
 
+interface AuthedAdminRouteChildren {
+  AuthedAdminAiRoute: typeof AuthedAdminAiRoute
+  AuthedAdminAnalyticsRoute: typeof AuthedAdminAnalyticsRoute
+  AuthedAdminGamificationRoute: typeof AuthedAdminGamificationRoute
+  AuthedAdminPlatformRoute: typeof AuthedAdminPlatformRoute
+  AuthedAdminRolesRoute: typeof AuthedAdminRolesRoute
+  AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
+  AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
+}
+
+const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
+  AuthedAdminAiRoute: AuthedAdminAiRoute,
+  AuthedAdminAnalyticsRoute: AuthedAdminAnalyticsRoute,
+  AuthedAdminGamificationRoute: AuthedAdminGamificationRoute,
+  AuthedAdminPlatformRoute: AuthedAdminPlatformRoute,
+  AuthedAdminRolesRoute: AuthedAdminRolesRoute,
+  AuthedAdminUsersRoute: AuthedAdminUsersRoute,
+  AuthedAdminIndexRoute: AuthedAdminIndexRoute,
+}
+
+const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
+  AuthedAdminRouteChildren,
+)
+
+interface AuthedSettingsRouteChildren {
+  AuthedSettingsAppearanceRoute: typeof AuthedSettingsAppearanceRoute
+  AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRoute
+  AuthedSettingsProfileRoute: typeof AuthedSettingsProfileRoute
+  AuthedSettingsSecurityRoute: typeof AuthedSettingsSecurityRoute
+  AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
+}
+
+const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
+  AuthedSettingsAppearanceRoute: AuthedSettingsAppearanceRoute,
+  AuthedSettingsNotificationsRoute: AuthedSettingsNotificationsRoute,
+  AuthedSettingsProfileRoute: AuthedSettingsProfileRoute,
+  AuthedSettingsSecurityRoute: AuthedSettingsSecurityRoute,
+  AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
+}
+
+const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
+  AuthedSettingsRouteChildren,
+)
+
+interface AuthedTeachAnalyticsRouteChildren {
+  AuthedTeachAnalyticsLearnersRoute: typeof AuthedTeachAnalyticsLearnersRoute
+  AuthedTeachAnalyticsOperationsRoute: typeof AuthedTeachAnalyticsOperationsRoute
+  AuthedTeachAnalyticsOverviewRoute: typeof AuthedTeachAnalyticsOverviewRoute
+  AuthedTeachAnalyticsPerformanceRoute: typeof AuthedTeachAnalyticsPerformanceRoute
+  AuthedTeachAnalyticsIndexRoute: typeof AuthedTeachAnalyticsIndexRoute
+}
+
+const AuthedTeachAnalyticsRouteChildren: AuthedTeachAnalyticsRouteChildren = {
+  AuthedTeachAnalyticsLearnersRoute: AuthedTeachAnalyticsLearnersRoute,
+  AuthedTeachAnalyticsOperationsRoute: AuthedTeachAnalyticsOperationsRoute,
+  AuthedTeachAnalyticsOverviewRoute: AuthedTeachAnalyticsOverviewRoute,
+  AuthedTeachAnalyticsPerformanceRoute: AuthedTeachAnalyticsPerformanceRoute,
+  AuthedTeachAnalyticsIndexRoute: AuthedTeachAnalyticsIndexRoute,
+}
+
+const AuthedTeachAnalyticsRouteWithChildren =
+  AuthedTeachAnalyticsRoute._addFileChildren(AuthedTeachAnalyticsRouteChildren)
+
+interface AuthedTeachCoursesCourseIdRouteChildren {
+  AuthedTeachCoursesCourseIdContentRoute: typeof AuthedTeachCoursesCourseIdContentRoute
+  AuthedTeachCoursesCourseIdGradebookRoute: typeof AuthedTeachCoursesCourseIdGradebookRoute
+  AuthedTeachCoursesCourseIdLearnersRoute: typeof AuthedTeachCoursesCourseIdLearnersRoute
+  AuthedTeachCoursesCourseIdOverviewRoute: typeof AuthedTeachCoursesCourseIdOverviewRoute
+  AuthedTeachCoursesCourseIdPublishRoute: typeof AuthedTeachCoursesCourseIdPublishRoute
+  AuthedTeachCoursesCourseIdSettingsRoute: typeof AuthedTeachCoursesCourseIdSettingsRoute
+  AuthedTeachCoursesCourseIdTeamRoute: typeof AuthedTeachCoursesCourseIdTeamRoute
+  AuthedTeachCoursesCourseIdIndexRoute: typeof AuthedTeachCoursesCourseIdIndexRoute
+}
+
+const AuthedTeachCoursesCourseIdRouteChildren: AuthedTeachCoursesCourseIdRouteChildren =
+  {
+    AuthedTeachCoursesCourseIdContentRoute:
+      AuthedTeachCoursesCourseIdContentRoute,
+    AuthedTeachCoursesCourseIdGradebookRoute:
+      AuthedTeachCoursesCourseIdGradebookRoute,
+    AuthedTeachCoursesCourseIdLearnersRoute:
+      AuthedTeachCoursesCourseIdLearnersRoute,
+    AuthedTeachCoursesCourseIdOverviewRoute:
+      AuthedTeachCoursesCourseIdOverviewRoute,
+    AuthedTeachCoursesCourseIdPublishRoute:
+      AuthedTeachCoursesCourseIdPublishRoute,
+    AuthedTeachCoursesCourseIdSettingsRoute:
+      AuthedTeachCoursesCourseIdSettingsRoute,
+    AuthedTeachCoursesCourseIdTeamRoute: AuthedTeachCoursesCourseIdTeamRoute,
+    AuthedTeachCoursesCourseIdIndexRoute: AuthedTeachCoursesCourseIdIndexRoute,
+  }
+
+const AuthedTeachCoursesCourseIdRouteWithChildren =
+  AuthedTeachCoursesCourseIdRoute._addFileChildren(
+    AuthedTeachCoursesCourseIdRouteChildren,
+  )
+
+interface AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren {
+  AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
+  AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute
+  AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute
+}
+
+const AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren: AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren =
+  {
+    AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute,
+    AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute,
+    AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute,
+    AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRoute,
+    AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute,
+  }
+
+const AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdRoute._addFileChildren(
+    AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren,
+  )
+
+interface AuthedTeachRouteChildren {
+  AuthedTeachAnalyticsRoute: typeof AuthedTeachAnalyticsRouteWithChildren
+  AuthedTeachGroupsRoute: typeof AuthedTeachGroupsRoute
+  AuthedTeachIndexRoute: typeof AuthedTeachIndexRoute
+  AuthedTeachCoursesCourseIdRoute: typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  AuthedTeachCoursesIndexRoute: typeof AuthedTeachCoursesIndexRoute
+  AuthedTeachCoursesCourseIdActivitiesActivityIdRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
+}
+
+const AuthedTeachRouteChildren: AuthedTeachRouteChildren = {
+  AuthedTeachAnalyticsRoute: AuthedTeachAnalyticsRouteWithChildren,
+  AuthedTeachGroupsRoute: AuthedTeachGroupsRoute,
+  AuthedTeachIndexRoute: AuthedTeachIndexRoute,
+  AuthedTeachCoursesCourseIdRoute: AuthedTeachCoursesCourseIdRouteWithChildren,
+  AuthedTeachCoursesIndexRoute: AuthedTeachCoursesIndexRoute,
+  AuthedTeachCoursesCourseIdActivitiesActivityIdRoute:
+    AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren,
+  AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute:
+    AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute,
+}
+
+const AuthedTeachRouteWithChildren = AuthedTeachRoute._addFileChildren(
+  AuthedTeachRouteChildren,
+)
+
 interface AuthedRouteChildren {
+  AuthedAchievementsRoute: typeof AuthedAchievementsRoute
+  AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedHomeRoute: typeof AuthedHomeRoute
+  AuthedLearningRoute: typeof AuthedLearningRoute
+  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
+  AuthedTeachRoute: typeof AuthedTeachRouteWithChildren
+  AuthedLearnCourseIdActivityIdRoute: typeof AuthedLearnCourseIdActivityIdRoute
+  AuthedLearnCourseIdCompleteRoute: typeof AuthedLearnCourseIdCompleteRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAchievementsRoute: AuthedAchievementsRoute,
+  AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedHomeRoute: AuthedHomeRoute,
+  AuthedLearningRoute: AuthedLearningRoute,
+  AuthedNotificationsRoute: AuthedNotificationsRoute,
+  AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
+  AuthedTeachRoute: AuthedTeachRouteWithChildren,
+  AuthedLearnCourseIdActivityIdRoute: AuthedLearnCourseIdActivityIdRoute,
+  AuthedLearnCourseIdCompleteRoute: AuthedLearnCourseIdCompleteRoute,
 }
 
 const AuthedRouteWithChildren =
@@ -161,22 +1456,60 @@ const AuthedRouteWithChildren =
 
 interface GuestRouteChildren {
   GuestLoginRoute: typeof GuestLoginRoute
+  GuestResetPasswordRoute: typeof GuestResetPasswordRoute
+  GuestSignupRoute: typeof GuestSignupRoute
+  GuestVerifyEmailRoute: typeof GuestVerifyEmailRoute
   GuestIndexRoute: typeof GuestIndexRoute
 }
 
 const GuestRouteChildren: GuestRouteChildren = {
   GuestLoginRoute: GuestLoginRoute,
+  GuestResetPasswordRoute: GuestResetPasswordRoute,
+  GuestSignupRoute: GuestSignupRoute,
+  GuestVerifyEmailRoute: GuestVerifyEmailRoute,
   GuestIndexRoute: GuestIndexRoute,
 }
 
 const GuestRouteWithChildren = GuestRoute._addFileChildren(GuestRouteChildren)
 
+interface PublicCoursesCourseIdRouteChildren {
+  PublicCoursesCourseIdAboutRoute: typeof PublicCoursesCourseIdAboutRoute
+  PublicCoursesCourseIdDiscussionsRoute: typeof PublicCoursesCourseIdDiscussionsRoute
+  PublicCoursesCourseIdUpdatesRoute: typeof PublicCoursesCourseIdUpdatesRoute
+  PublicCoursesCourseIdIndexRoute: typeof PublicCoursesCourseIdIndexRoute
+}
+
+const PublicCoursesCourseIdRouteChildren: PublicCoursesCourseIdRouteChildren = {
+  PublicCoursesCourseIdAboutRoute: PublicCoursesCourseIdAboutRoute,
+  PublicCoursesCourseIdDiscussionsRoute: PublicCoursesCourseIdDiscussionsRoute,
+  PublicCoursesCourseIdUpdatesRoute: PublicCoursesCourseIdUpdatesRoute,
+  PublicCoursesCourseIdIndexRoute: PublicCoursesCourseIdIndexRoute,
+}
+
+const PublicCoursesCourseIdRouteWithChildren =
+  PublicCoursesCourseIdRoute._addFileChildren(
+    PublicCoursesCourseIdRouteChildren,
+  )
+
 interface PublicRouteChildren {
-  PublicCollectionsRoute: typeof PublicCollectionsRoute
+  PublicSearchRoute: typeof PublicSearchRoute
+  PublicCollectionsCollectionIdRoute: typeof PublicCollectionsCollectionIdRoute
+  PublicCoursesCourseIdRoute: typeof PublicCoursesCourseIdRouteWithChildren
+  PublicUsersUsernameRoute: typeof PublicUsersUsernameRoute
+  PublicCollectionsIndexRoute: typeof PublicCollectionsIndexRoute
+  PublicCoursesIndexRoute: typeof PublicCoursesIndexRoute
+  PublicCertificatesCertificateIdVerifyRoute: typeof PublicCertificatesCertificateIdVerifyRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
-  PublicCollectionsRoute: PublicCollectionsRoute,
+  PublicSearchRoute: PublicSearchRoute,
+  PublicCollectionsCollectionIdRoute: PublicCollectionsCollectionIdRoute,
+  PublicCoursesCourseIdRoute: PublicCoursesCourseIdRouteWithChildren,
+  PublicUsersUsernameRoute: PublicUsersUsernameRoute,
+  PublicCollectionsIndexRoute: PublicCollectionsIndexRoute,
+  PublicCoursesIndexRoute: PublicCoursesIndexRoute,
+  PublicCertificatesCertificateIdVerifyRoute:
+    PublicCertificatesCertificateIdVerifyRoute,
 }
 
 const PublicRouteWithChildren =
@@ -192,10 +1525,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

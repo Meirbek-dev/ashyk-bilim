@@ -229,7 +229,14 @@ export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
   server: { port: 3000, strictPort: true, proxy },
-  build: { manifest: true },
+  build: {
+    manifest: true,
+    // Spec 7.4: response schemas leave the production bundle. With the validators stripped, an unused
+    // `v.object(...)` in valibot.gen.ts is dead code, but a bundler cannot know that valibot calls are pure.
+    // Every `v.<fn>()` result is now droppable when unused: call a valibot side effect by its named import
+    // (`setGlobalMessage` in shared/ui/form/use-app-form.ts), never as `v.<fn>()`.
+    rolldownOptions: { treeshake: { manualPureFunctions: ['v'] } },
+  },
   test: {
     projects: [
       { extends: true, test: unit },

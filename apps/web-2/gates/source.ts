@@ -21,6 +21,22 @@ export function apiCoverage(phaseOverride?: number): { findings: Finding[]; enfo
   return { findings, enforced: phase >= policy.enforceFromPhase, summary }
 }
 
+/** Route files still rendering the shared UnderConstruction stub (phase 1.2b); each slice replaces its own. */
+export function underConstruction(phaseOverride?: number): { findings: Finding[]; enforced: boolean; summary: string } {
+  const policy = allowlist().underConstruction
+  const findings = walk('src/routes', CODE).flatMap(file =>
+    matches(read(file), /\bcomponent: UnderConstruction\b/).map(({ line }) => ({
+      file,
+      line,
+      rule: 'under-construction',
+      fix: 'build the slice and bind its component here',
+    })),
+  )
+  const phase = phaseOverride ?? policy.phase
+  const summary = `under-construction: ${findings.length} route(s) still stubbed (phase ${phase}, enforced from ${policy.enforceFromPhase})`
+  return { findings, enforced: phase >= policy.enforceFromPhase, summary }
+}
+
 const TEST_FILE = /(\.test\.tsx?|\.spec\.ts)$/
 const BEHAVIOR_ID = /\bB-[A-Z]+-\d+\b/
 

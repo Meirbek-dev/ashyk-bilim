@@ -33,7 +33,7 @@
   "errors_compile_error": "The code does not compile. Fix the errors and try again.",
   "errors_language_not_allowed": "This programming language is not allowed for the task.",
   "errors_assessment_read_only": "This assessment can no longer be edited: it is archived, scheduled or already has submissions.",
-  "errors_grade_not_released": "The grade for this work is not released yet.",
+  "errors_grade_not_released": "The grade for this submission is not published yet.",
   "errors_grade_own_attempt": "You cannot grade your own attempt.",
   "errors_ai_disabled": "AI features are turned off.",
   "errors_ai_budget_exhausted": "The AI token budget is used up. Try again later.",

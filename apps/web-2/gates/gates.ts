@@ -4,7 +4,7 @@ import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
 import { allowlist, type Finding } from './lib.ts'
 import { budgets, codegenDrift, freeze, knip } from './repo.ts'
-import { apiCoverage, docs, suppressions, tokens, trace } from './source.ts'
+import { apiCoverage, docs, suppressions, tokens, trace, underConstruction } from './source.ts'
 
 const MAX_LINES = 30
 const phaseFlag = process.argv.indexOf('--phase')
@@ -14,6 +14,24 @@ function coverage(): Finding[] {
   const result = apiCoverage(phase)
   if (result.enforced) return result.findings
   process.stdout.write(`${result.summary} - report only (gates/allowlist.json apiCoverage)\n`)
+  return []
+}
+
+// Report-only until phase 7: the summary always, the route list when the gate is run on its own.
+function stubs(): Finding[] {
+  const result = underConstruction(phase)
+  if (result.enforced) return result.findings
+  process.stdout.write(`${result.summary} - report only (gates/allowlist.json underConstruction)\n`)
+  // Run on its own, it lists every stubbed route (one line each), not just the first 30.
+  if (process.argv[2] === 'under-construction')
+    process.stdout.write(
+      result.findings
+        .map(
+          finding => `${finding.file}:${finding.line}
+`,
+        )
+        .join(''),
+    )
   return []
 }
 
@@ -30,6 +48,7 @@ const GATES: Record<string, () => Finding[] | Promise<Finding[]>> = {
   i18n, // G-03
   knip, // G-04
   'api-coverage': coverage, // G-07
+  'under-construction': stubs, // stub routes, enforced from phase 7
   contract: contractGate, // G-08
   codegen: codegenDrift, // G-09
   trace, // G-10

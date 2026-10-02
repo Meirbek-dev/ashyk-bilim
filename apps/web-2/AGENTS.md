@@ -12,7 +12,7 @@ frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until 
 | `src/features/<name>/`             | `SPEC.md`, `index.ts` (public entry), `queries.ts`, `model/`, `ui/`          |
 | `src/shared/api/`                  | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`      |
 | `src/shared/api/gen/`              | generated SDK, types, Valibot schemas, query options. Never edit             |
-| `src/shared/auth/`                 | `session.ts` (session query, guards), `access.ts` (capabilities)             |
+| `src/shared/auth/`                 | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
 | `src/shared/i18n/`                 | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
 | `src/shared/lib/`                  | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
 | `src/shared/ui/`                   | kit components; the only place with raw `<button>`, `<input>`, `<a>`         |
@@ -28,41 +28,63 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## Commands (run in apps/web-2)
 
-| Command                          | Does                                                                                            |
-| -------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                 |
-| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                       |
-| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                            |
-| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                         |
-| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`         |
-| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage contract codegen trace tokens suppressions freeze docs budgets |
-| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                 |
-| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                         |
-| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                      |
-| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                |
+| Command                          | Does                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                                    |
+| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                          |
+| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                                               |
+| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
+| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
+| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                                    |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
+| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
+| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
 
 ## One way to do each thing (lint and gates reject the alternatives)
 
-| Task            | The way                                                                      |
-| --------------- | ---------------------------------------------------------------------------- |
-| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`    |
-| Read            | route `loader: ensureQueryData(xOptions())` + `useSuspenseQuery(xOptions())` |
-| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`      |
-| Query keys      | generated `xQueryKey()`; never literal arrays                                |
-| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability`        |
-| Action access   | `allowed_actions` from the API response; never roles or permission strings   |
-| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                 |
-| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`   |
-| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                |
-| Dates, numbers  | `#/shared/i18n/format`                                                       |
-| Screens         | a template from `#/shared/ui/templates`; lists through `ListState`           |
-| UI elements     | `#/shared/ui`; colors and spacing only via tokens and the Tailwind scale     |
-| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`  |
-| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                 |
-| Memoization     | none: React Compiler                                                         |
+| Task            | The way                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`     |
+| Read            | route `loader: ensureQueryData(xOptions())` + `useSuspenseQuery(xOptions())`  |
+| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`       |
+| Query keys      | generated `xQueryKey()`; never literal arrays                                 |
+| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table) |
+| Action access   | `allowed_actions` from the API response; never roles or permission strings    |
+| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                  |
+| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`    |
+| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                 |
+| Dates, numbers  | `#/shared/i18n/format`                                                        |
+| Screens         | a template from `#/shared/ui/templates`; lists through `ListState`            |
+| UI elements     | `#/shared/ui`; colors and spacing only via tokens and the Tailwind scale      |
+| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`   |
+| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                  |
+| Memoization     | none: React Compiler                                                          |
 
 No suppressions: `oxlint-disable`, `@ts-expect-error`, `as any`, `test.skip`, TODO are errors unless
 listed in `gates/allowlist.json` with a reason (G-12).
+
+## Routes, access, shell
+
+- Tree = spec 5.3: `_public` (`ssr: true`), `_guest` (signed-in -> `/home`), `_authed` (`ssr: 'data-only'`) with
+  `teach.tsx` / `admin.tsx` guarded by `requireCapability`. `shared/auth/access.ts` is the one table "workspace ->
+  section -> capability": guards, sidebar, bottom bar, switcher (and the palette) read it. A new nav section = a row.
+- Route `staticData`: `title` (document title, layout heading, stub heading), `layout: 'focus'` (the route draws
+  `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment). Tabs live
+  in the layout route file; its `index.tsx` redirects to the first tab. A 403 thrown in `beforeLoad` renders in place
+  (`ErrorView` -> `ForbiddenView`) and SSR answers with the ApiError's status (`shared/lib/ssr-status.ts`).
+- A stub route has `component: UnderConstruction`. To build it: in that route file only, replace the component with
+  the feature's (add `validateSearch`, `loader`, `head`), keep `staticData.title`. `bun gates/gates.ts
+under-construction` lists what is left; report-only until phase 7 (`gates/allowlist.json` `underConstruction`).
+- Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
+  signed-in). Set the slice's component there; an unset slot renders nothing. Menus in the shell load lazily.
+
+## e2e locally
+
+API on `http://127.0.0.1:8000` (`vp dev` proxies `/api/v2`; another address: `API_PROXY_TARGET`), seeded by
+`ashyq admin seed-e2e`. Run `E2E_PASSWORD=<seed password> vp run e2e [--grep x]`: it reuses or starts `vp dev`.
+Never write the password into the repo. `e2e/fixtures/seed.ts` gives `seed` (accounts and route params, read with the
+SDK) and `signInAs(role)`; `access.spec.ts` walks every route of `routeTree.gen.ts` for guest, student, teacher, admin.
 
 ## Slice cycle (one feature)
 

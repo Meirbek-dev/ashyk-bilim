@@ -1,5 +1,5 @@
 import { createFormHook, type DeepKeys } from '@tanstack/react-form'
-import * as v from 'valibot'
+import { setGlobalMessage, type GenericSchema } from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
 import { validationMessage } from '#/shared/i18n/validation'
@@ -30,10 +30,11 @@ type AppFormOptions<T> = {
  * A form validated on submit by the generated body schema (`vXxxRequest`), with the kit fields bound
  * (`form.AppField` -> `field.TextField`...). Server `field_errors` are shown under the matching fields.
  */
-export function useAppForm<T>(schema: v.GenericSchema<T>, { defaultValues, onSubmit }: AppFormOptions<T>) {
+export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmit }: AppFormOptions<T>) {
   // Every Valibot issue text comes from the Paraglide map (spec 7.8). Set here, not at import time, so the
-  // module has no side effect and stays out of bundles that only import a feature's index.
-  v.setGlobalMessage(validationMessage)
+  // module has no side effect and stays out of bundles that only import a feature's index. A named import: the
+  // build treats `v.<fn>()` calls as pure (vite.config.ts), which would drop this one.
+  setGlobalMessage(validationMessage)
   const form = useKitForm({
     defaultValues,
     validators: { onSubmit: schema },

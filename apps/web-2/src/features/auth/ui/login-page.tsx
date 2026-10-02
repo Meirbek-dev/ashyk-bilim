@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useHydrated, useNavigate, useSearch } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -9,6 +10,8 @@ import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
 import { safeRedirect } from '#/shared/auth/redirect'
 import { Button } from '#/shared/ui/button'
 import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { Link } from '#/shared/ui/link'
+import { FocusPage } from '#/shared/ui/templates/focus-page'
 
 import { loginOptions } from '../queries'
 import { LoginError } from './login-error'
@@ -37,50 +40,58 @@ export function LoginPage() {
         },
       ),
   })
+  const back = (
+    <Link to="/" variant="ghost">
+      <ArrowLeft aria-hidden />
+      {m.platform_back()}
+    </Link>
+  )
   return (
-    <section className="mx-auto flex max-w-sm flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{m.auth_login_title()}</h1>
-      <form
-        method="post"
-        className="flex flex-col gap-4"
-        onSubmit={event => {
-          event.preventDefault()
-          void form.handleSubmit()
-        }}
-      >
-        <fieldset disabled={!hydrated} className="flex flex-col gap-4">
-          <form.AppField name="login">
-            {field => <field.TextField label={m.auth_login_field_login()} autoComplete="username" required />}
-          </form.AppField>
-          <form.AppField name="password">
-            {field => (
-              <field.TextField
-                label={m.auth_login_field_password()}
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            )}
-          </form.AppField>
-          {totpStep ? (
-            <form.AppField name="totp_code">
+    <FocusPage back={back} title={m.auth_login_title()}>
+      <section className="mx-auto flex max-w-sm flex-col gap-6">
+        <h1 className="text-2xl font-semibold">{m.auth_login_title()}</h1>
+        <form
+          method="post"
+          className="flex flex-col gap-4"
+          onSubmit={event => {
+            event.preventDefault()
+            void form.handleSubmit()
+          }}
+        >
+          <fieldset disabled={!hydrated} className="flex flex-col gap-4">
+            <form.AppField name="login">
+              {field => <field.TextField label={m.auth_login_field_login()} autoComplete="username" required />}
+            </form.AppField>
+            <form.AppField name="password">
               {field => (
                 <field.TextField
-                  label={m.auth_login_field_totp()}
-                  description={m.auth_login_totp_hint()}
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
+                  label={m.auth_login_field_password()}
+                  type="password"
+                  autoComplete="current-password"
                   required
                 />
               )}
             </form.AppField>
-          ) : null}
-          <LoginError error={login.error} />
-          <Button type="submit" size="block" pending={login.isPending}>
-            {m.auth_login_submit()}
-          </Button>
-        </fieldset>
-      </form>
-    </section>
+            {totpStep ? (
+              <form.AppField name="totp_code">
+                {field => (
+                  <field.TextField
+                    label={m.auth_login_field_totp()}
+                    description={m.auth_login_totp_hint()}
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    required
+                  />
+                )}
+              </form.AppField>
+            ) : null}
+            <LoginError error={login.error} />
+            <Button type="submit" size="block" pending={login.isPending}>
+              {m.auth_login_submit()}
+            </Button>
+          </fieldset>
+        </form>
+      </section>
+    </FocusPage>
   )
 }

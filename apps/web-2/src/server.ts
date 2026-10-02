@@ -3,6 +3,7 @@ import handler from '@tanstack/react-start/server-entry'
 import { paraglideMiddleware } from '#/paraglide/server'
 import { NONCE_HEADER, contentSecurityPolicy } from '#/shared/lib/csp'
 import { serverEnv } from '#/shared/lib/env.server'
+import { SSR_STATUS_HEADER } from '#/shared/lib/ssr-status'
 
 // The web server's request chain (spec 7.4): /healthz, /_client-error, then locale, request id,
 // CSP nonce and the Start handler. Static files never get here: serve.ts answers them first.
@@ -52,7 +53,10 @@ async function render(request: Request, requestId: string): Promise<Response> {
   // A fresh Request: srvx hands over a lightweight Node request that undici cannot clone.
   const forwarded = new Request(request.url, { method: request.method, headers, signal: request.signal })
   const rendered = await paraglideMiddleware(forwarded, ({ request: localized }) => handler.fetch(localized))
-  const response = new Response(rendered.body, rendered)
+  // A route error renders as 500; an ApiError thrown during SSR asked for its own status (shared/lib/ssr-status.ts).
+  const status = Number(rendered.headers.get(SSR_STATUS_HEADER))
+  const response = new Response(rendered.body, status >= 400 ? { status, headers: rendered.headers } : rendered)
+  response.headers.delete(SSR_STATUS_HEADER)
   if (response.headers.get('content-type')?.startsWith('text/html')) {
     response.headers.set('cache-control', 'private, no-store')
     if (!import.meta.env.DEV) response.headers.set('content-security-policy', contentSecurityPolicy(nonce))

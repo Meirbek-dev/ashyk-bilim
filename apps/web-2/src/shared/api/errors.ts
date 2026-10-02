@@ -1,3 +1,4 @@
+import { createSerializationAdapter } from '@tanstack/react-router'
 import * as v from 'valibot'
 
 import type { ErrorCode, FieldError } from './gen/types.gen'
@@ -50,3 +51,17 @@ export const isSessionLost = (error: unknown): boolean =>
   error instanceof ApiError &&
   error.status === 401 &&
   (error.code === 'unauthenticated' || error.code === 'session-expired')
+
+/** Keeps an ApiError an ApiError across SSR (loader or guard on the server, error view in the browser). */
+export const apiErrorAdapter = createSerializationAdapter({
+  key: 'ab-api-error',
+  test: (value: unknown) => value instanceof ApiError,
+  toSerializable: ({ status, code, fieldErrors, requestId, retryAfter }: ApiError) => ({
+    status,
+    code,
+    fieldErrors,
+    requestId,
+    retryAfter,
+  }),
+  fromSerializable: (init: ApiErrorInit) => new ApiError(init),
+})
