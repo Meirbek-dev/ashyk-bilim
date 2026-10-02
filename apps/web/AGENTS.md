@@ -122,8 +122,11 @@ details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
   `src/app/[locale]/**` - routes, `src/app/_shared/**` - page implementations,
   `src/components/**` - shared UI. Query keys are centralised in
   `src/lib/react-query/queryKeys.ts` (edit, never rewrite the file).
-- i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (next-intl). Add
-  keys to all three; Russian first, kk/en translations.
+- i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (inlang message format,
+  configured in `project.inlang/settings.json` for the Paraglide migration).
+  Keep nested keys; complex messages are arrays with declarations and match variants.
+  Add keys to all three; Russian first, kk/en translations. Verify with
+  `just web check:messages`. The existing Next.js consumers still need migration.
 - Tests: `src/tests/**/*.test.ts(x)` (vitest + testing-library), Playwright in
   `e2e/` (page objects in `e2e/page-objects`, specs in `e2e/specs`).
 

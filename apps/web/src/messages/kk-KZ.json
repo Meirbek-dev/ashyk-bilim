@@ -1,4 +1,5 @@
 {
+  "$schema": "https://inlang.com/schema/inlang-message-format",
   "Activities": {
     "AiAssistantPanel": {
       "title": "ЖИ ассистенті",
@@ -616,7 +617,16 @@
       "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетін растау, ? - бұл хабарды көрсету",
       "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
       "manageQuestions": "Сұрақтарды басқару",
-      "minutes": "{count, plural, =1 {# минут} other {# минут}}",
+      "minutes": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=1, count_plural=*": "{count_number} минут",
+            "count=*, count_plural=*": "{count_number} минут"
+          }
+        }
+      ],
       "navigationError": "Келесі әрекетке өту мүмкін болмады",
       "next": "Келесі",
       "noAttemptsRemaining": "Бұл емтиханға қалған әрекеттеріңіз жоқ",
@@ -631,7 +641,17 @@
         "unsatisfactory": "Жақсартуды қажет етеді"
       },
       "pleaseRefresh": "Бетті жаңартып, қайталап көріңіз",
-      "points": "{count, plural, =0 {# ұпай} one {# ұпай} other {# ұпай}}",
+      "points": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "{count_number} ұпай",
+            "count=*, count_plural=one": "{count_number} ұпай",
+            "count=*, count_plural=*": "{count_number} ұпай"
+          }
+        }
+      ],
       "pointsLabel": "Ұпайлар",
       "pointsValue": "{points} ұпайға бағаланады",
       "previewExam": "Емтиханды алдын ала қарау",
@@ -640,7 +660,16 @@
       "proceedToNextActivity": "Келесі әрекет",
       "progress": "Прогресс",
       "question": "Сұрақ",
-      "questionAriaLabel": "Сұрақ {number}{answered, select, true { - жауап берілді} other {}}",
+      "questionAriaLabel": [
+        {
+          "declarations": ["input number", "input answered"],
+          "selectors": ["answered"],
+          "match": {
+            "answered=true": "Сұрақ {number} - жауап берілді",
+            "answered=*": "Сұрақ {number}"
+          }
+        }
+      ],
       "questionNavigator": "Сұрақтар навигаторы",
       "questionNavigatorDescription": "Кез келген сұраққа өту үшін басыңыз",
       "questionNumber": "{number} сұрағы",
@@ -880,7 +909,19 @@
       "wrongCredentials": "Логин немесе құпиясөз қате",
       "serviceUnavailable": "Қызмет уақытша қолжетімсіз. Қайталап көріңіз.",
       "rateLimited": "Тым көп әрекет жасалды. Кейінірек қайталап көріңіз.",
-      "rateLimitedRetry": "Тым көп әрекет жасалды. {minutes, plural, other {# минуттан}} кейін қайталап көріңіз.",
+      "rateLimitedRetry": [
+        {
+          "declarations": [
+            "input minutes",
+            "local minutes_plural = minutes: plural",
+            "local minutes_number = minutes: number"
+          ],
+          "selectors": ["minutes_plural"],
+          "match": {
+            "minutes_plural=*": "Тым көп әрекет жасалды. {minutes_number} минуттан кейін қайталап көріңіз."
+          }
+        }
+      ],
       "noAccount": "Аккаунтыңыз жоқ па?",
       "loginIdentifier": "Электрондық пошта немесе пайдаланушы аты",
       "loginIdentifierPlaceholder": "Поштаны немесе пайдаланушы атын енгізіңіз",
@@ -1483,7 +1524,17 @@
           "backlog": "Кезек",
           "pass_rate": "Өту көрсеткіші"
         },
-        "rows": "{count, plural, one {# жол} few {# жол} other {# жол}}",
+        "rows": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} жол",
+              "count_plural=few": "{count_number} жол",
+              "count_plural=*": "{count_number} жол"
+            }
+          }
+        ],
         "chooseMetric": "Көз жолдарын жүктеу үшін метриканы таңдаңыз.",
         "noSourceRows": "Бұл метрика үшін көз жолдары табылмады.",
         "yes": "Иә",
@@ -1527,7 +1578,18 @@
       "newCourse": "Жаңа курс"
     },
     "CollectionThumbnail": {
-      "courseCount": "{count, plural, =0 {0 курс} one {# курс} few {# курс} other {# курс}}",
+      "courseCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "0 курс",
+            "count=*, count_plural=one": "{count_number} курс",
+            "count=*, count_plural=few": "{count_number} курс",
+            "count=*, count_plural=*": "{count_number} курс"
+          }
+        }
+      ],
       "deleteButtonText": "Жинақты жою",
       "deleteConfirmationMessage": "Бұл жинақты жойғыңыз келетініне сенімдісіз бе?",
       "deleteConfirmationTitle": "{collectionName} жою керек пе?",
@@ -1561,7 +1623,16 @@
     "CourseThumbnail": {
       "viewCertificate": "Сертификатты қарау",
       "reviewCompletion": "Курс қорытындысын қарау",
-      "authorLabel": "{count, plural, one {Автор} other {Авторлар}}",
+      "authorLabel": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Автор",
+            "count_plural=*": "Авторлар"
+          }
+        }
+      ],
       "authors": "Авторлар",
       "continueLearning": "Оқуды жалғастыру",
       "courseOptions": "Курстың нұсқалары",
@@ -1585,7 +1656,17 @@
       "toastDeleteError": "Курсты жою мүмкін болмады",
       "toastDeleteSuccess": "Курс сәтті жойылды",
       "updated": "Жаңартылды",
-      "updatedDate": "Жаңартылған {updateDate, date, medium}",
+      "updatedDate": [
+        {
+          "declarations": [
+            "input updateDate",
+            "local updateDate_datetime_month_short_day_numeric_year_numeric = updateDate: datetime month=short day=numeric year=numeric"
+          ],
+          "match": {
+            "updateDate=*": "Жаңартылған {updateDate_datetime_month_short_day_numeric_year_numeric}"
+          }
+        }
+      ],
       "archive": "Мұрағатқа",
       "restore": "Қалпына келтіру"
     },
@@ -1976,7 +2057,16 @@
       "system": "Жүйелік",
       "custom": "Пайдаланушылық",
       "systemRoleReadOnly": "Жүйелік рөл: платформа басқарады, өзгерту мүмкін емес",
-      "grantsCount": "{count, plural, one {# құқық} other {# құқық}}",
+      "grantsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} құқық",
+            "count_plural=*": "{count_number} құқық"
+          }
+        }
+      ],
       "managePermissionsTitle": "«{roleName}» рөлінің құқықтары",
       "managePermissionsDescription": "Құқықтар ресурс:әрекет:аумақ форматында. Тізімнен таңдаңыз немесе қолмен енгізіңіз.",
       "grantPlaceholder": "мысалы, course:read:all",
@@ -2053,7 +2143,16 @@
       "optional": "Міндетті емес",
       "points": "Ұпайлар",
       "pointsLabel": "Ұпайлар",
-      "pointsValue": "{points} {points, plural, one {ұпай} other {ұпай}}",
+      "pointsValue": [
+        {
+          "declarations": ["input points", "local points_plural = points: plural"],
+          "selectors": ["points_plural"],
+          "match": {
+            "points_plural=one": "{points} ұпай",
+            "points_plural=*": "{points} ұпай"
+          }
+        }
+      ],
       "questionBank": "Сұрақтар банкі",
       "questionCreated": "Сұрақ сәтті жасалды",
       "questionDeleted": "Сұрақ сәтті жойылды",
@@ -2154,7 +2253,17 @@
       "authRequired": "Авторизация қажет. Жүйеге кіріңіз.",
       "autoGradedBySystem": "Жүйе автоматты түрде бағалады",
       "blankPlaceholder": "Дұрыс жауапты енгізіңіз",
-      "blanksCount": "{count, plural, =0 {0 бос орын} one {# бос орын} other {# бос орын}}",
+      "blanksCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "0 бос орын",
+            "count=*, count_plural=one": "{count_number} бос орын",
+            "count=*, count_plural=*": "{count_number} бос орын"
+          }
+        }
+      ],
       "correct": "Дұрыс",
       "correctAnswer": "Дұрыс жауап",
       "correctAnswerLabel": "Дұрыс жауап",
@@ -2299,10 +2408,28 @@
       "noSubtitlesYet": "Субтитрлер әлі қосылмаған",
       "organizationDataNotLoaded": "Ұйым туралы мәліметтер жүктелген жоқ. Бетті жаңартыңыз.",
       "playbackOptions": "Ойнату опциялары",
-      "processingFiles": "{count, plural, one {# файл} other {# файл}} өңделуде...",
+      "processingFiles": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} файл өңделуде...",
+            "count_plural=*": "{count_number} файл өңделуде..."
+          }
+        }
+      ],
       "removeSubtitleAriaLabel": "{filename} жою",
       "seconds": "сек",
-      "settingsActiveCount": "{count, plural, one {# белсенді} other {# белсенді}}",
+      "settingsActiveCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} белсенді",
+            "count_plural=*": "{count_number} белсенді"
+          }
+        }
+      ],
       "startMuted": "Дыбыссыз бастау",
       "startMutedDescription": "Дыбыс бастапқыда өшірілген",
       "startTimeLabel": "Бастау уақыты",
@@ -2438,7 +2565,16 @@
       "saved": "Сақталды",
       "saveFailed": "Сақтау сәтсіз аяқталды",
       "issueToggle": "{count} қате",
-      "wordCount": "{count, plural, one {# сөз} other {# сөз}}"
+      "wordCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} сөз",
+            "count_plural=*": "{count_number} сөз"
+          }
+        }
+      ]
     },
     "linkDialog": {
       "title": "Сілтеме кірістіру",
@@ -2821,7 +2957,17 @@
     "deleteChapter": "Тарауды жою",
     "deleteChapterButton": "Тарауды жою",
     "deleteChapterConfirmation": "Бұл тарауды жойғыңыз келетініне сенімдісіз бе?",
-    "deleteChapterConfirmationWithCount": "Бұл тарау және оның {count, plural, =0 {0 белсенділігі} one {# белсенділігі} other {# белсенділігі}} біржола жойылады.",
+    "deleteChapterConfirmationWithCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Бұл тарау және оның 0 белсенділігі біржола жойылады.",
+          "count=*, count_plural=one": "Бұл тарау және оның {count_number} белсенділігі біржола жойылады.",
+          "count=*, count_plural=*": "Бұл тарау және оның {count_number} белсенділігі біржола жойылады."
+        }
+      }
+    ],
     "deleteChapterTitle": "{name} жою керек пе?",
     "chapterUpdatedSuccess": "Тарау атауы жаңартылды",
     "chapterUpdateFailed": "Тарауды жаңарту мүмкін болмады",
@@ -2831,7 +2977,23 @@
     "edit": "Өңдеу",
     "editButton": "Өңдеу",
     "noActivities": "Белсенділіктер әлі жоқ",
-    "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} нобай) біржола жояды.",
+    "deleteChapterConfirmationBreakdown": [
+      {
+        "declarations": [
+          "input count",
+          "input published",
+          "input drafts",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Бұл тарауды және оның 0 сабақты ({published} жарияланған, {drafts} нобай) біржола жояды.",
+          "count=*, count_plural=one": "Бұл тарауды және оның {count_number} сабақты ({published} жарияланған, {drafts} нобай) біржола жояды.",
+          "count=*, count_plural=*": "Бұл тарауды және оның {count_number} сабақты ({published} жарияланған, {drafts} нобай) біржола жояды."
+        }
+      }
+    ],
     "noActivitiesHint": "Төменде бірінші оқу әрекетін қосыңыз",
     "save": "Сақтау",
     "cancel": "Болдырмау",
@@ -2848,7 +3010,17 @@
     "about": "Туралы",
     "access": "Қол жеткізу",
     "activitiesCount": "{count} белсенділік",
-    "activityCount": "{count, plural, =0 {0 белсенділік} one {# белсенділік} other {# белсенділік}}",
+    "activityCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 белсенділік",
+          "count=*, count_plural=one": "{count_number} белсенділік",
+          "count=*, count_plural=*": "{count_number} белсенділік"
+        }
+      }
+    ],
     "activityCounter": "{current} дан {total}",
     "activityNotPublished": "Бұл белсенділік әлі жарияланбаған",
     "admin": "Әкімші",
@@ -2953,7 +3125,16 @@
     "CourseAuthors": {
       "unknownAuthor": "Белгісіз",
       "and": " және ",
-      "andMoreAuthors": "& {count, plural, one {# автор} other {# автор}}",
+      "andMoreAuthors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "& {count_number} автор",
+            "count_plural=*": "& {count_number} автор"
+          }
+        }
+      ],
       "authorsAndUpdates": "Авторлар мен жаңартулар",
       "cancel": "Болдырмау",
       "contentRequired": "Мазмұн міндетті",
@@ -3005,7 +3186,18 @@
       "contentRequired": "Мазмұн міндетті",
       "courseLabel": "Курс",
       "createdAt": "{date} жасалды",
-      "createdAtFull": "{date, date, long} {date, time, short} жасалды",
+      "createdAtFull": [
+        {
+          "declarations": [
+            "input date",
+            "local date_datetime_month_long_day_numeric_year_numeric = date: datetime month=long day=numeric year=numeric",
+            "local date_datetime_hour_numeric_minute_numeric = date: datetime hour=numeric minute=numeric"
+          ],
+          "match": {
+            "date=*": "{date_datetime_month_long_day_numeric_year_numeric} {date_datetime_hour_numeric_minute_numeric} жасалды"
+          }
+        }
+      ],
       "createdAtRelative": "{time} бұрын",
       "createdAtTooltipPrefix": "Жасалған ",
       "delete": "Жою",
@@ -3486,7 +3678,15 @@
       "coursesCompleted": "Аяқталған курстар",
       "coursesStarted": "Басталған курстар",
       "dailyActiveUsers": "Күнделікті белсенді пайдаланушылар",
-      "enrollments": "{count, plural, other {# тіркелу}}",
+      "enrollments": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=*": "{count_number} тіркелу"
+          }
+        }
+      ],
       "errorLoadingAlertsData": "Хабарламаларды жүктеу қатесі",
       "errorLoadingAnalyticsData": "Аналитика деректерін жүктеу қатесі",
       "errorLoadingGamificationData": "Геймификация деректерін жүктеу қатесі",
@@ -3615,27 +3815,92 @@
         "dialogs": {
           "delete": {
             "confirm": "Курстарды жою",
-            "description": "Бұл әрекет {count, plural, one {# таңдалған курсты} other {# таңдалған курсты}} біржола жояды. Бұл әрекетті кері қайтару мүмкін емес.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Бұл әрекет {count_number} таңдалған курсты біржола жояды. Бұл әрекетті кері қайтару мүмкін емес.",
+                  "count_plural=*": "Бұл әрекет {count_number} таңдалған курсты біржола жояды. Бұл әрекетті кері қайтару мүмкін емес."
+                }
+              }
+            ],
             "title": "Таңдалған курстарды жою керек пе?"
           },
           "private": {
             "confirm": "Жабық ету",
-            "description": "Бұл әрекет {count, plural, one {# таңдалған курсты} other {# таңдалған курсты}} қайта жариялағанға дейін көпшілікке көрсетпейді.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Бұл әрекет {count_number} таңдалған курсты қайта жариялағанға дейін көпшілікке көрсетпейді.",
+                  "count_plural=*": "Бұл әрекет {count_number} таңдалған курсты қайта жариялағанға дейін көпшілікке көрсетпейді."
+                }
+              }
+            ],
             "title": "Таңдалған курстарды жабық ету керек пе?"
           },
           "publish": {
             "confirm": "Курстарды жариялау",
-            "description": "Бұл әрекет {count, plural, one {# таңдалған курсты} other {# таңдалған курсты}} білім алушылар қол жеткізе алатын жерде жария етеді.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Бұл әрекет {count_number} таңдалған курсты білім алушылар қол жеткізе алатын жерде жария етеді.",
+                  "count_plural=*": "Бұл әрекет {count_number} таңдалған курсты білім алушылар қол жеткізе алатын жерде жария етеді."
+                }
+              }
+            ],
             "title": "Таңдалған курстарды жариялау керек пе?"
           },
           "archive": {
             "title": "Таңдалған курстарды мұрағаттау керек пе?",
-            "description": "{count, plural, one {# таңдалған курс} other {# таңдалған курс}} каталог пен іздеуден жоғалып, тек оқуға арналған болады. Оқушылар материалдар мен нәтижелерге қолжетімділікті сақтайды. Кез келген уақытта қалпына келтіруге болады.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} таңдалған курс каталог пен іздеуден жоғалып, тек оқуға арналған болады. Оқушылар материалдар мен нәтижелерге қолжетімділікті сақтайды. Кез келген уақытта қалпына келтіруге болады.",
+                  "count_plural=*": "{count_number} таңдалған курс каталог пен іздеуден жоғалып, тек оқуға арналған болады. Оқушылар материалдар мен нәтижелерге қолжетімділікті сақтайды. Кез келген уақытта қалпына келтіруге болады."
+                }
+              }
+            ],
             "confirm": "Мұрағаттау"
           },
           "restore": {
             "title": "Таңдалған курстарды қалпына келтіру керек пе?",
-            "description": "{count, plural, one {# таңдалған курс} other {# таңдалған курс}} бұрынғы күйіне (ашық немесе жабық) оралады. Мұрағаттау кезінде кестеден алынған тапсырмалар қаралама күйінде қалады.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} таңдалған курс бұрынғы күйіне (ашық немесе жабық) оралады. Мұрағаттау кезінде кестеден алынған тапсырмалар қаралама күйінде қалады.",
+                  "count_plural=*": "{count_number} таңдалған курс бұрынғы күйіне (ашық немесе жабық) оралады. Мұрағаттау кезінде кестеден алынған тапсырмалар қаралама күйінде қалады."
+                }
+              }
+            ],
             "confirm": "Қалпына келтіру"
           }
         },
@@ -3748,8 +4013,34 @@
           "movedPrivate": "{count} курс жабық күйге ауыстырылды.",
           "published": "{count} курс жарияланды.",
           "updateFailed": "{count} таңдалған курсты жаңарту мүмкін болмады.",
-          "archived": "{count, plural, one {# курс мұрағатталды.} other {# курс мұрағатталды.}}",
-          "restored": "{count, plural, one {# курс қалпына келтірілді.} other {# курс қалпына келтірілді.}}"
+          "archived": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} курс мұрағатталды.",
+                "count_plural=*": "{count_number} курс мұрағатталды."
+              }
+            }
+          ],
+          "restored": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} курс қалпына келтірілді.",
+                "count_plural=*": "{count_number} курс қалпына келтірілді."
+              }
+            }
+          ]
         },
         "viewMode": {
           "cards": "Карта көрінісі",
@@ -3762,20 +4053,51 @@
       },
       "Overview": {
         "access": {
-          "privateNoGroupsWarning": "Бұл жабық курсқа ешбір пайдаланушы тобы байланыстырылмаған. Білім алушылар оған кіре алмайды. Топтарды <link>Қолжетімділік</link> бөлімінде қосыңыз.",
+          "privateNoGroupsWarning": "Бұл жабық курсқа ешбір пайдаланушы тобы байланыстырылмаған. Білім алушылар оған кіре алмайды. Топтарды {#link}Қолжетімділік{/link} бөлімінде қосыңыз.",
           "privateState": "Бұл курс қазір жабық.",
           "publicState": "Бұл курс қазір жария."
         },
         "activities": "Белсенділіктер",
-        "activityCountDescription": "{count, plural, one {Курс құрылымында # белсенділік бар.} other {Курс құрылымында # белсенділік бар.}}",
+        "activityCountDescription": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Курс құрылымында {count_number} белсенділік бар.",
+              "count_plural=*": "Курс құрылымында {count_number} белсенділік бар."
+            }
+          }
+        ],
         "certificate": {
           "configured": "Бұл курс үшін сертификат баптауы бар.",
           "notConfigured": "Бұл курс үшін сертификат баптауы әлі жасалмаған."
         },
-        "chapterCount": "{count, plural, one {# тарау} other {# тарау}}",
+        "chapterCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} тарау",
+              "count_plural=*": "{count_number} тарау"
+            }
+          }
+        ],
         "chapters": "Тараулар",
         "collaboration": {
-          "loadedRecords": "{count, plural, one {# қатысушы жазбасы жүктелді.} other {# қатысушы жазбасы жүктелді.}}"
+          "loadedRecords": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} қатысушы жазбасы жүктелді.",
+                "count_plural=*": "{count_number} қатысушы жазбасы жүктелді."
+              }
+            }
+          ]
         },
         "contributors": "Қатысушылар",
         "curriculumSnapshot": "Оқу жоспарының көрінісі",
@@ -4153,10 +4475,46 @@
         "restoreAction": "Қалпына келтіру",
         "archiveTitle": "«{courseName}» курсын мұрағаттау керек пе?",
         "restoreTitle": "«{courseName}» курсын қалпына келтіру керек пе?",
-        "learnersInProgress": "{count, plural, one {# оқушы курсты өтіп жатыр} other {# оқушы курсты өтіп жатыр}}. Олар материалдарға, нәтижелерге және сертификаттарға қолжетімділікті сақтайды, бірақ тапсырма тапсыра алмайды.",
-        "ungradedSubmissions": "{count, plural, one {# жұмыс тексерілмеген} other {# жұмыс тексерілмеген}}. Мұрағаттаудан кейін оларды бағалау мүмкін болмайды.",
-        "openAttempts": "{count, plural, one {# аяқталмаған талпыныс} other {# аяқталмаған талпыныс}}. Уақыты шектеулілері уақыт біткенде автоматты түрде тапсырылады, қалғандары тапсырылмаған күйінде қалады.",
-        "scheduledAssessments": "{count, plural, one {# жоспарланған тапсырма} other {# жоспарланған тапсырма}} қараламаға оралады.",
+        "learnersInProgress": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} оқушы курсты өтіп жатыр. Олар материалдарға, нәтижелерге және сертификаттарға қолжетімділікті сақтайды, бірақ тапсырма тапсыра алмайды.",
+              "count_plural=*": "{count_number} оқушы курсты өтіп жатыр. Олар материалдарға, нәтижелерге және сертификаттарға қолжетімділікті сақтайды, бірақ тапсырма тапсыра алмайды."
+            }
+          }
+        ],
+        "ungradedSubmissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} жұмыс тексерілмеген. Мұрағаттаудан кейін оларды бағалау мүмкін болмайды.",
+              "count_plural=*": "{count_number} жұмыс тексерілмеген. Мұрағаттаудан кейін оларды бағалау мүмкін болмайды."
+            }
+          }
+        ],
+        "openAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} аяқталмаған талпыныс. Уақыты шектеулілері уақыт біткенде автоматты түрде тапсырылады, қалғандары тапсырылмаған күйінде қалады.",
+              "count_plural=*": "{count_number} аяқталмаған талпыныс. Уақыты шектеулілері уақыт біткенде автоматты түрде тапсырылады, қалғандары тапсырылмаған күйінде қалады."
+            }
+          }
+        ],
+        "scheduledAssessments": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} жоспарланған тапсырма қараламаға оралады.",
+              "count_plural=*": "{count_number} жоспарланған тапсырма қараламаға оралады."
+            }
+          }
+        ],
         "summary": "Курс каталог пен іздеуден жоғалады. Оны кез келген уақытта қалпына келтіруге болады.",
         "restoreDescription": "Курс бұрынғы күйіне (ашық немесе жабық) оралады. Мұрағаттау кезінде кестеден алынған тапсырмалар қаралама күйінде қалады.",
         "previewLoading": "Мұрағаттау неге әсер ететінін тексеріп жатырмыз…",
@@ -4350,7 +4708,16 @@
       "contributorUpdateErrorDetailed": "Қатысушыны жаңарту сәтсіз аяқталды: {error}",
       "contributorUpdateErrorGeneric": "Қатысушыны жаңарту сәтсіз аяқталды",
       "contributorUpdateSuccess": "Қатысушы сәтті жаңартылды",
-      "contributorsSelectedMessage": "{count, plural, one {# қатысушы таңдалды} other {# қатысушы таңдалды}}",
+      "contributorsSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} қатысушы таңдалды",
+            "count_plural=*": "{count_number} қатысушы таңдалды"
+          }
+        }
+      ],
       "courseContributorsSubtitle": "Қатысушыларды басқарыңыз және курсыңызға жаңасын қосыңыз",
       "courseContributorsTitle": "Курс қатысушылары",
       "creator": "Жасаушы",
@@ -4367,8 +4734,26 @@
       "failedToRemoveContributor": "{username} жою сәтсіз аяқталды: {reason}",
       "failedToRemoveContributorsGeneral": "Қатысушыларды жою сәтсіз аяқталды",
       "failedToRemoveSelectedContributors": "Таңдалған қатысушыларды жою сәтсіз аяқталды",
-      "removeSelectedConfirmMessage": "Бұл курстан {count, plural, one {# қатысушыны} other {# қатысушыларды}} жояды.",
-      "removeSelectedConfirmTitle": "{count, plural, one {# қатысушыны} other {# қатысушыларды}} жою керек пе?",
+      "removeSelectedConfirmMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Бұл курстан {count_number} қатысушыны жояды.",
+            "count_plural=*": "Бұл курстан {count_number} қатысушыларды жояды."
+          }
+        }
+      ],
+      "removeSelectedConfirmTitle": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} қатысушыны жою керек пе?",
+            "count_plural=*": "{count_number} қатысушыларды жою керек пе?"
+          }
+        }
+      ],
       "failedToUpdateContributor": "Қатысушыны жаңарту сәтсіз аяқталды",
       "rowAlreadyGone": "Өтінім қайтарып алынған — тізім жаңартылды",
       "inactive": "Белсенді емес",
@@ -4398,8 +4783,26 @@
       "statusColumn": "Мәртебе",
       "statusInactive": "Белсенді емес",
       "statusPending": "Күтуде",
-      "successfullyAddedContributors": "Сәтті қосылды {count, plural, one {# қатысушы} other {# қатысушы}}",
-      "successfullyRemovedContributors": "Сәтті жойылды {count, plural, one {# қатысушы} other {# қатысушы}}",
+      "successfullyAddedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Сәтті қосылды {count_number} қатысушы",
+            "count_plural=*": "Сәтті қосылды {count_number} қатысушы"
+          }
+        }
+      ],
+      "successfullyRemovedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Сәтті жойылды {count_number} қатысушы",
+            "count_plural=*": "Сәтті жойылды {count_number} қатысушы"
+          }
+        }
+      ],
       "successfullyUpdatedContributor": "Қатысушы сәтті жаңартылды",
       "tableHeaderEmail": "Эл. пошта",
       "tableHeaderName": "Аты",
@@ -4407,7 +4810,16 @@
       "tableHeaderStatus": "Мәртебе",
       "title": "Курс қатысушылары",
       "usernameColumn": "Пайдаланушы аты",
-      "usersSelectedMessage": "{count, plural, one {# пайдаланушы таңдалды} other {# пайдаланушы таңдалды}}",
+      "usersSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} пайдаланушы таңдалды",
+            "count_plural=*": "{count_number} пайдаланушы таңдалды"
+          }
+        }
+      ],
       "contributorPolicyStagedTitle": "Қатысушылық саясаты Сақтау басқанша сақталмайды",
       "contributorPolicyStagedDescription": "Ашық немесе жабық қатысу саясаты бұл бөлімді сақтағанша дейін локалды болып қалады.",
       "rosterActionsImmediateTitle": "Қатысушылармен әрекеттер бірден қолданылады",
@@ -5521,7 +5933,17 @@
       "CollectionPage": {
         "courses": "Осы жинақтағы курстар",
         "description": "Жинақ сипаттамасы",
-        "lastUpdated": "Соңғы жаңартылған күні {date, date, short}",
+        "lastUpdated": [
+          {
+            "declarations": [
+              "input date",
+              "local date_datetime_month_numeric_day_numeric_year_2_digit = date: datetime month=numeric day=numeric year=2-digit"
+            ],
+            "match": {
+              "date=*": "Соңғы жаңартылған күні {date_datetime_month_numeric_day_numeric_year_2_digit}"
+            }
+          }
+        ],
         "title": "Жинақ"
       },
       "General": {
@@ -5534,7 +5956,7 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Ұйымыңыздың қысқаша сипаттамасы",
           "descriptionRequired": "Қысқаша сипаттама қажет",
-          "exploreDescription": "Ashyq Bilim қауымдастығымен ұйымыңыздың курстары мен мазмұнын бөлісіңіз.<br/>Оқушыларға құнды білім беру ресурстарыңызды табуға көмектесу үшін бұл функцияны қосыңыз.",
+          "exploreDescription": "Ashyq Bilim қауымдастығымен ұйымыңыздың курстары мен мазмұнын бөлісіңіз.{#br/}Оқушыларға құнды білім беру ресурстарыңызды табуға көмектесу үшін бұл функцияны қосыңыз.",
           "exploreLabel": "ЗЕРТТЕУ",
           "exploreTitle": "Ashyq Bilim Explore-да көрсету",
           "labelLabel": "Ұйым белгісі",
@@ -5927,7 +6349,20 @@
           "showLevelBadge": "Деңгей белгісін көрсету",
           "title": "Аватар баптауы",
           "unlockedAt": "{level} деңгейінде ашылды",
-          "unlockedItems": "{count, plural, one {# зат ашылды} other {# зат ашылды}}"
+          "unlockedItems": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} зат ашылды",
+                "count_plural=*": "{count_number} зат ашылды"
+              }
+            }
+          ]
         },
         "avatarUpdated": "Аватар сәтті жаңартылды",
         "cancel": "Болдырмау",
@@ -6072,13 +6507,39 @@
           },
           "gold": "Алтын",
           "lastUpdated": "Соңғы жаңартылған",
-          "learningStreakTooltip": "{count, plural, =1 {1 күндік оқу сериясы} other {# күндік оқу сериясы}}",
+          "learningStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 күндік оқу сериясы",
+                "count=*, count_plural=*": "{count_number} күндік оқу сериясы"
+              }
+            }
+          ],
           "level": "Деңгей",
           "levelLabel": "Деңгей {level}",
           "levelShort": "Дең.{level}",
           "loading": "Көшбасшылар тақтасы жүктелуде...",
           "loadingTimeout": "Уақыт аяқталды. Қайта көріңіз.",
-          "loginStreakTooltip": "{count, plural, =1 {1 күндік кіру сериясы} other {# күндік кіру сериясы}}",
+          "loginStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 күндік кіру сериясы",
+                "count=*, count_plural=*": "{count_number} күндік кіру сериясы"
+              }
+            }
+          ],
           "noEntries": "Әзірге көшбасшы жазбалар жоқ",
           "noLeaderboard": "Бөртеліктің деректері жоқ",
           "noParticipants": "Әзірге қатысушылар жоқ",
@@ -6271,7 +6732,20 @@
           "totalXP": "Барлығы ТӨ"
         },
         "streakWidget": {
-          "days": "{count, plural, one {# күн} other {# күн}}",
+          "days": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} күн",
+                "count_plural=*": "{count_number} күн"
+              }
+            }
+          ],
           "error": "Серия деректерін жүктеу мүмкін емес",
           "errors": {
             "timeout": "Уақыт аяқталды. Қайта көріңіз.",
@@ -6569,7 +7043,22 @@
           "toggleMode": "Жарық / қараңғы режимді ауыстыру",
           "previousTheme": "Алдыңғы тақырып",
           "nextTheme": "Келесі тақырып",
-          "themeCount": "{count, plural, one {# тақырып} few {# тақырып} many {# тақырып} other {# тақырып}}"
+          "themeCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} тақырып",
+                "count_plural=few": "{count_number} тақырып",
+                "count_plural=many": "{count_number} тақырып",
+                "count_plural=*": "{count_number} тақырып"
+              }
+            }
+          ]
         },
         "title": "Аккаунт параметрлері",
         "uploadingAvatar": "Жүктелуде",
@@ -6839,7 +7328,6 @@
         "emailSentNo": "Жоқ",
         "emailSentYes": "Жіберілді",
         "enterEmailAddress": "Электрондық пошта мекенжайын енгізіңіз",
-        "errors": {},
         "signupStatusHeader": "Тіркелу күйі",
         "statusPending": "Күтуде",
         "statusSigned": "Тіркелді",
@@ -6969,8 +7457,32 @@
     "technicalDetails": "Техникалық мәліметтер:",
     "tryAgain": "Қайтадан көріңіз",
     "rateLimited": "Сұраулар тым көп. Сәл кейінірек қайталап көріңіз.",
-    "rateLimitedRetry": "Тым көп әрекет жасалды. {minutes, plural, other {# минуттан}} кейін қайталап көріңіз.",
-    "rateLimitedRetrySeconds": "Тым көп әрекет жасалды. {seconds, plural, other {# секундтан}} кейін қайталап көріңіз.",
+    "rateLimitedRetry": [
+      {
+        "declarations": [
+          "input minutes",
+          "local minutes_plural = minutes: plural",
+          "local minutes_number = minutes: number"
+        ],
+        "selectors": ["minutes_plural"],
+        "match": {
+          "minutes_plural=*": "Тым көп әрекет жасалды. {minutes_number} минуттан кейін қайталап көріңіз."
+        }
+      }
+    ],
+    "rateLimitedRetrySeconds": [
+      {
+        "declarations": [
+          "input seconds",
+          "local seconds_plural = seconds: plural",
+          "local seconds_number = seconds: number"
+        ],
+        "selectors": ["seconds_plural"],
+        "match": {
+          "seconds_plural=*": "Тым көп әрекет жасалды. {seconds_number} секундтан кейін қайталап көріңіз."
+        }
+      }
+    ],
     "networkUnavailable": "Желіге қосылым жоқ. Байланысты тексеріңіз.",
     "sessionExpired": "Сеанс мерзімі аяқталды. Қайта кіріңіз.",
     "permissionDenied": "Бұл әрекетке рұқсатыңыз жоқ.",
@@ -7516,7 +8028,17 @@
     "selectAllButton": "Барлығын таңдау",
     "selectCoursesDescription": "Осы жинаққа қосылатын курстарды таңдаңыз",
     "selectCoursesLabel": "Курстарды таңдау",
-    "selectedCount": "{count, plural, =0 {Курстар таңдалмаған} one {# курс таңдалды} other {# курс таңдалды}}",
+    "selectedCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Курстар таңдалмаған",
+          "count=*, count_plural=one": "{count_number} курс таңдалды",
+          "count=*, count_plural=*": "{count_number} курс таңдалды"
+        }
+      }
+    ],
     "title": "Жаңа жинақ жасау",
     "toast": {
       "failure": "Жинақ жасау сәтсіз аяқталды. Қайтадан көріңіз.",
@@ -7562,7 +8084,17 @@
     },
     "collections": "Жинақтар",
     "courses": "Курстар",
-    "coursesCount": "{count, plural, =0 {0 курс} one {# курс} other {# курс}}",
+    "coursesCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 курс",
+          "count=*, count_plural=one": "{count_number} курс",
+          "count=*, count_plural=*": "{count_number} курс"
+        }
+      }
+    ],
     "filterAll": "Барлығы",
     "filterCollections": "Жинақтар",
     "filterCourses": "Курстар",
@@ -8238,7 +8770,14 @@
       },
       "engagement_dropped": {
         "title": "Белсенділік төмендеді",
-        "body": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {delta_pct, number}%-ға азайды."
+        "body": [
+          {
+            "declarations": ["input delta_pct", "local delta_pct_number = delta_pct: number"],
+            "match": {
+              "delta_pct=*": "Белсенді оқушылар алдыңғы кезеңмен салыстырғанда {delta_pct_number}%-ға азайды."
+            }
+          }
+        ]
       },
       "content_stale": {
         "title": "Контент ескірген болуы мүмкін",
@@ -8250,11 +8789,43 @@
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: тексеру мерзімі асып кетті",
-        "body": "«{course_name}» курсындағы {breaches, number} жұмыс {target_hours, number} сағаттық тексеру мерзімінен асып кетті; кезекте әлі {awaiting, number} жұмыс, ең ескісі {oldest_hours, number} сағат бұрын жіберілген."
+        "body": [
+          {
+            "declarations": [
+              "input course_name",
+              "input breaches",
+              "input target_hours",
+              "input awaiting",
+              "input oldest_hours",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local awaiting_number = awaiting: number",
+              "local oldest_hours_number = oldest_hours: number"
+            ],
+            "match": {
+              "course_name=*, breaches=*, target_hours=*, awaiting=*, oldest_hours=*": "«{course_name}» курсындағы {breaches_number} жұмыс {target_hours_number} сағаттық тексеру мерзімінен асып кетті; кезекте әлі {awaiting_number} жұмыс, ең ескісі {oldest_hours_number} сағат бұрын жіберілген."
+            }
+          }
+        ]
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: тексеру мерзімі таусылуда",
-        "body": "«{course_name}» курсында {awaiting, number} жұмыс күтуде; ең ескісі {target_hours, number} сағаттық мақсатқа қарсы {oldest_hours, number} сағат ашық тұр."
+        "body": [
+          {
+            "declarations": [
+              "input course_name",
+              "input awaiting",
+              "input target_hours",
+              "input oldest_hours",
+              "local awaiting_number = awaiting: number",
+              "local target_hours_number = target_hours: number",
+              "local oldest_hours_number = oldest_hours: number"
+            ],
+            "match": {
+              "course_name=*, awaiting=*, target_hours=*, oldest_hours=*": "«{course_name}» курсында {awaiting_number} жұмыс күтуде; ең ескісі {target_hours_number} сағаттық мақсатқа қарсы {oldest_hours_number} сағат ашық тұр."
+            }
+          }
+        ]
       },
       "completion_target_miss": {
         "title": "{course_name}: оқушылар аяқтау мақсатына жетпеуі мүмкін",
@@ -8262,7 +8833,14 @@
       },
       "course_completion_deadline": {
         "title": "{course_name}: 14 күндік аяқтау болжамы",
-        "body": "Ағымдағы қарқында күтілетін аяқтау үлесі — {expected_pct, number}%."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Ағымдағы қарқында күтілетін аяқтау үлесі — {expected_pct_number}%."
+            }
+          }
+        ]
       },
       "grading_backlog_7d": {
         "title": "7 күннен кейінгі күтілетін тексеру кезегі",
@@ -8270,7 +8848,14 @@
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: сәтсіздік тәуекелі жоғары",
-        "body": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {expected_pct, number}%."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Келесі мерзімге дейін күтілетін сәтсіздік үлесі — {expected_pct_number}%."
+            }
+          }
+        ]
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: белсенділіктің күрт төмендеуі",
@@ -8293,23 +8878,70 @@
         "body": "Тәуекел әр оқушының өз базалық деңгейіне қарағанда өсті; бақылау тізімін қараңыз."
       },
       "low_pass_rate": {
-        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "«{assessment_title}» тапсырғандар үлесі — {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "Төмен тапсыру үлесі осы бағалауды ерекшелейді."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "«{assessment_title}» тапсырғандар үлесі — {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "«{assessment_title}» тапсырғандар үлесі — {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "Сапа диагностикасы осы бағалауды ерекшелейді."
       },
       "content_bottleneck": {
         "title": "«{activity_name}» — контенттің тар жері",
-        "body": "{signal, select, high_time_low_completion {Көп уақыт, төмен аяқтау.} exit_after_open {Оқушылар ашып, аяқтамай кетеді.} repeated_assessment_failures {Бағалау нәтижелері осы оқу тапсырмасының маңында төмендейді.} stale_low_performance {Ескірген контент төмен нәтижелермен байланысты.} other {Оқушылар осы оқу тапсырмасында тұрып қалады.}}"
+        "body": [
+          {
+            "declarations": ["input signal"],
+            "selectors": ["signal"],
+            "match": {
+              "signal=high_time_low_completion": "Көп уақыт, төмен аяқтау.",
+              "signal=exit_after_open": "Оқушылар ашып, аяқтамай кетеді.",
+              "signal=repeated_assessment_failures": "Бағалау нәтижелері осы оқу тапсырмасының маңында төмендейді.",
+              "signal=stale_low_performance": "Ескірген контент төмен нәтижелермен байланысты.",
+              "signal=*": "Оқушылар осы оқу тапсырмасында тұрып қалады."
+            }
+          }
+        ]
       },
       "workload_backlog": {
         "title": "{count} жұмыс тексеруді күтуде",
-        "body": "{breaches, number} жұмыс {target_hours, number} сағаттық тексеру мерзімінен асып кетті; 7 күндік болжам — {forecast_7d, number}."
+        "body": [
+          {
+            "declarations": [
+              "input breaches",
+              "input target_hours",
+              "input forecast_7d",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local forecast_7d_number = forecast_7d: number"
+            ],
+            "match": {
+              "breaches=*, target_hours=*, forecast_7d=*": "{breaches_number} жұмыс {target_hours_number} сағаттық тексеру мерзімінен асып кетті; 7 күндік болжам — {forecast_7d_number}."
+            }
+          }
+        ]
       },
       "completion_improved": {
-        "title": "«{course_name}» курсын аяқтау {delta_pts, number} тармаққа өсті",
+        "title": [
+          {
+            "declarations": ["input course_name", "input delta_pts", "local delta_pts_number = delta_pts: number"],
+            "match": {
+              "course_name=*, delta_pts=*": "«{course_name}» курсын аяқтау {delta_pts_number} тармаққа өсті"
+            }
+          }
+        ],
         "body": "Бұл когорта курстың тарихи базалық деңгейінен озып тұр."
       },
       "missing_event_sources": {
@@ -8380,7 +9012,15 @@
         "selectCell": "Прогресс ұяшығын таңдау",
         "actionRequired": "Тексеру қажет",
         "late": "Кеш",
-        "attempts": "{count, plural, other {# әрекет}}",
+        "attempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=*": "{count_number} әрекет"
+            }
+          }
+        ],
         "pendingAttempt": "Тексеруде · {attempt}-әрекет",
         "awaitingReleaseAttempt": "Жариялауды күтуде · {attempt}-әрекет",
         "releaseGrade": "Бағаны жариялау",
@@ -8539,7 +9179,19 @@
             "releaseFinished": "Бағаларды жариялау аяқталды",
             "releaseDetail": "Жаңадан көрінгені: {published}. Бұрыннан көрінгені: {alreadyVisible}.",
             "releaseNeedsGrading": "{count} жұмыс әлі тексеруді күтуде және жарияланған жоқ",
-            "releaseSkipped": "{count, plural, other {# жұмыс жасырын қалды: жариялау кезінде өзгерді (қайта жариялаңыз) немесе бұл сіздің әрекетіңіз}}"
+            "releaseSkipped": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=*": "{count_number} жұмыс жасырын қалды: жариялау кезінде өзгерді (қайта жариялаңыз) немесе бұл сіздің әрекетіңіз"
+                }
+              }
+            ]
           },
           "failedSubmissionsTitle": "{count} жұмыс(ы) жаңарту мүмкін болмады:",
           "preview": {
@@ -8782,7 +9434,23 @@
           "itemsMetricLabel": "{itemNoun}",
           "pointsMetricLabel": "Жалпы балл",
           "publishReadinessLabel": "Дайындық",
-          "issuesMetricValue": "{count, plural, =0 {Мәселе жоқ} one {# мәселе} few {# мәселе} many {# мәселе} other {# мәселе}}",
+          "issuesMetricValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Мәселе жоқ",
+                "count=*, count_plural=one": "{count_number} мәселе",
+                "count=*, count_plural=few": "{count_number} мәселе",
+                "count=*, count_plural=many": "{count_number} мәселе",
+                "count=*, count_plural=*": "{count_number} мәселе"
+              }
+            }
+          ],
           "setupStepLabel": "Баптау",
           "setupStepDescription": "Белсенділікті атаңыз және бағалау ережелерін қойыңыз.",
           "contentStepLabel": "Мазмұн",
@@ -8847,7 +9515,7 @@
             "requiredLabel": "Міндетті"
           },
           "Items": {
-            "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\LaTeX$ қолданылады.",
+            "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\\\LaTeX$ қолданылады.",
             "OpenText": {
               "prompt": "Сұрақ",
               "minWords": "Сөздердің минималды саны",
@@ -9073,7 +9741,21 @@
           "openLearnerPreview": "Оқушы көрінісін ашу",
           "previewGateDesc": "Жариялау күйін өзгертпес бұрын студент тәжірибесін тексеріңіз.",
           "previewGateHighStakesDesc": "Бұл оқу тапсырмасы жоғары мәнді деп саналады. Жариялау немесе жоспарлау алдында кемінде бір алдын ала тексеруді іске қосыңыз.",
-          "previewCompletedCount": "{count, plural, =0 {Алдын ала тексеру іске қосылмады} =1 {# тексеру іске қосылды} other {# тексеру іске қосылды}}",
+          "previewCompletedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Алдын ала тексеру іске қосылмады",
+                "count=1, count_plural=*": "{count_number} тексеру іске қосылды",
+                "count=*, count_plural=*": "{count_number} тексеру іске қосылды"
+              }
+            }
+          ],
           "previewScenarioGeneric": "Жалпы оқушы",
           "previewScenarioGenericDesc": "Қолжетімді оқушының әдепкі көрінісі",
           "previewScenarioSpecific": "Нақты оқушы",
@@ -9178,13 +9860,39 @@
           "previewNote": "Тізімде курс мүшелері (курсқа жазылған оқушылар) және курсқа байланған топтар; іздеу осы тізімді сүзеді.",
           "overrideBadge": "Жеке шарт",
           "expandGroup": "Топ кеңеюін көрсету",
-          "groupExpansion": "Бұл топ жеке алып тастауларға дейін {count, plural, =1 {# оқушыға} other {# оқушыға}} кеңейеді.",
+          "groupExpansion": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "Бұл топ жеке алып тастауларға дейін {count_number} оқушыға кеңейеді.",
+                "count=*, count_plural=*": "Бұл топ жеке алып тастауларға дейін {count_number} оқушыға кеңейеді."
+              }
+            }
+          ],
           "selectedDrawerTitle": "Таңдалған аудитория",
           "selectedDrawerDesc": "Сақтау алдында таңдалған оқушыларды, топтарды және саясат ерекшеліктерін тексеріңіз.",
           "selectedEmpty": "Шектелген аудитория таңдалмаған.",
           "removeSelected": "Таңдалған аудиториядан алып тастау",
           "clearOverride": "Тазарту",
-          "groupMembers": "{count, plural, =1 {# қатысушы} other {# қатысушы}}",
+          "groupMembers": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} қатысушы",
+                "count=*, count_plural=*": "{count_number} қатысушы"
+              }
+            }
+          ],
           "accommodationsTitle": "Жеке жеңілдіктер",
           "accommodationsDesc": "Таңдалған оқушыларға мерзім, әрекет саны және кешігу айыбы бойынша ерекшеліктер қолданыңыз.",
           "overrideAttempts": "Әрекет лимиті",
@@ -9193,14 +9901,54 @@
           "waiveLatePenalty": "Кешігу айыбын алып тастау",
           "overrideNote": "Ішкі ескертпе",
           "overrideNotePlaceholder": "Себебі немесе келісім сілтемесі",
-          "applyOverrides": "{count, plural, =0 {0 оқушыға} =1 {# оқушыға} other {# оқушыға}} қолдану",
+          "applyOverrides": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "0 оқушыға қолдану",
+                "count=1, count_plural=*": "{count_number} оқушыға қолдану",
+                "count=*, count_plural=*": "{count_number} оқушыға қолдану"
+              }
+            }
+          ],
           "overrideNoUsers": "Жеке жеңілдіктерді қолданбас бұрын кемінде бір оқушыны таңдаңыз.",
           "overrideSaveFailed": "Жеке жеңілдіктерді сақтау мүмкін болмады.",
-          "overrideSaved": "Жеке жеңілдіктер {count, plural, =1 {# оқушыға} other {# оқушыға}} сақталды.",
+          "overrideSaved": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "Жеке жеңілдіктер {count_number} оқушыға сақталды.",
+                "count=*, count_plural=*": "Жеке жеңілдіктер {count_number} оқушыға сақталды."
+              }
+            }
+          ],
           "overrideDeleteFailed": "Жеке жеңілдікті тазарту мүмкін болмады.",
           "overrideDeleted": "Жеке жеңілдік тазартылды.",
           "retryOverrides": "Жеңілдіктерді қайталау",
-          "overrideAttemptsValue": "{count, plural, =1 {# әрекет} other {# әрекет}}",
+          "overrideAttemptsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} әрекет",
+                "count=*, count_plural=*": "{count_number} әрекет"
+              }
+            }
+          ],
           "overrideDueValue": "жеке мерзім",
           "overrideWaiveLateValue": "кешігу айыбы алынды"
         },
@@ -9217,9 +9965,35 @@
           "scoreDistributionTitle": "Балл таралымы",
           "queueTitle": "Тексеру кезегі",
           "queueBody": "Қолмен бағаланатын элементтерді бағалаңыз, дайын нәтижелерді жариялаңыз және әрекеттерді түзетуге қайтарыңыз.",
-          "queueTotal": "{count, plural, =1 {# жіберілім} other {# жіберілім}}",
+          "queueTotal": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} жіберілім",
+                "count=*, count_plural=*": "{count_number} жіберілім"
+              }
+            }
+          ],
           "queueTotalAtLeast": "{count}+ жіберілім",
-          "queueSelected": "{count, plural, =1 {# таңдалды} other {# таңдалды}}",
+          "queueSelected": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} таңдалды",
+                "count=*, count_plural=*": "{count_number} таңдалды"
+              }
+            }
+          ],
           "searchLearner": "Оқушыны іздеу",
           "statusFilter": "Күй сүзгісі",
           "filterAll": "Барлығы",
@@ -9248,7 +10022,20 @@
           "releaseAwaiting": "Жариялауды күтуде",
           "releaseVisible": "Көрінеді",
           "releaseReturned": "Қайтарылды",
-          "integrityEventsValue": "{count, plural, =1 {# оқиға} other {# оқиға}}",
+          "integrityEventsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} оқиға",
+                "count=*, count_plural=*": "{count_number} оқиға"
+              }
+            }
+          ],
           "noIntegrityEvents": "Оқиға жоқ",
           "reviewSubmission": "Тексеру",
           "previousPage": "Алдыңғы",
@@ -9261,7 +10048,20 @@
           "integrityEmptyBody": "Қазіргі кезек терезесінде тұтастық оқиғалары жоқ.",
           "questionActionTitle": "Сұрақ әрекеттері",
           "questionActionBody": "Аналитика түзету немесе қайта бағалау қажет сұрақтарға нақты әрекет береді.",
-          "analyticsPromptCount": "{count, plural, =1 {# әрекет ұсынысы} other {# әрекет ұсынысы}}",
+          "analyticsPromptCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} әрекет ұсынысы",
+                "count=*, count_plural=*": "{count_number} әрекет ұсынысы"
+              }
+            }
+          ],
           "colQuestion": "Сұрақ",
           "colKind": "Түрі",
           "colMaxScore": "Балдар",
@@ -9363,7 +10163,7 @@
           "selectMatch": "Сәйкестікті таңдаңыз",
           "points": "{count} ұпай",
           "prompt": "Сұрақ",
-          "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\LaTeX$ қолдаылады.",
+          "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\\\LaTeX$ қолдаылады.",
           "type": "Түрі",
           "trueLabel": "Дұрыс",
           "falseLabel": "Бұрыс",
@@ -9569,7 +10369,20 @@
           "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетін растау, ? - бұл хабарды көрсету",
           "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
           "manageQuestions": "Сұрақтарды басқару",
-          "minutes": "{count, plural, =1 {# минут} other {# минут}}",
+          "minutes": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} минут",
+                "count=*, count_plural=*": "{count_number} минут"
+              }
+            }
+          ],
           "navigationError": "Келесі әрекетке өту мүмкін болмады",
           "next": "Келесі",
           "noAttemptsRemaining": "Бұл емтиханға қалған әрекеттеріңіз жоқ",
@@ -9584,7 +10397,21 @@
             "unsatisfactory": "Жақсартуды қажет етеді"
           },
           "pleaseRefresh": "Бетті жаңартып, қайталап көріңіз",
-          "points": "{count, plural, =0 {# ұпай} one {# ұпай} other {# ұпай}}",
+          "points": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} ұпай",
+                "count=*, count_plural=one": "{count_number} ұпай",
+                "count=*, count_plural=*": "{count_number} ұпай"
+              }
+            }
+          ],
           "pointsLabel": "Ұпайлар",
           "pointsValue": "{points} ұпайға бағаланады",
           "previewExam": "Емтиханды алдын ала қарау",
@@ -9593,7 +10420,16 @@
           "proceedToNextActivity": "Келесі әрекет",
           "progress": "Прогресс",
           "question": "Сұрақ",
-          "questionAriaLabel": "Сұрақ {number}{answered, select, true { - жауап берілді} other {}}",
+          "questionAriaLabel": [
+            {
+              "declarations": ["input number", "input answered"],
+              "selectors": ["answered"],
+              "match": {
+                "answered=true": "Сұрақ {number} - жауап берілді",
+                "answered=*": "Сұрақ {number}"
+              }
+            }
+          ],
           "questionNavigator": "Сұрақтар навигаторы",
           "questionNavigatorDescription": "Кез келген сұраққа өту үшін басыңыз",
           "questionNumber": "{number} сұрағы",
@@ -9897,7 +10733,23 @@
           "selectCell": "Үлгерім ұяшығын таңдау",
           "actionRequired": "Тексеру қажет",
           "late": "Кешіктірілген",
-          "attempts": "{count, plural, =0 {# әрекет} one {# әрекет} few {# әрекет} many {# әрекет} other {# әрекет}}",
+          "attempts": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} әрекет",
+                "count=*, count_plural=one": "{count_number} әрекет",
+                "count=*, count_plural=few": "{count_number} әрекет",
+                "count=*, count_plural=many": "{count_number} әрекет",
+                "count=*, count_plural=*": "{count_number} әрекет"
+              }
+            }
+          ],
           "refresh": "Жаңарту",
           "export": "Экспорт",
           "noScore": "Баға әлі жоқ",
@@ -10059,7 +10911,15 @@
         "selectCell": "Прогресс ұяшығын таңдау",
         "actionRequired": "Әрекет",
         "late": "Кеш",
-        "attempts": "{count, plural, other {# әрекет}}",
+        "attempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=*": "{count_number} әрекет"
+            }
+          }
+        ],
         "refresh": "Жаңарту",
         "export": "Экспорт",
         "noScore": "Баға әлі жоқ",
@@ -10849,9 +11709,27 @@
       "audio": "Аудио",
       "anyFile": "Кез келген файл"
     },
-    "requirementMaxFiles": "{count, plural, one {# файлға дейін} other {# файлға дейін}}",
+    "requirementMaxFiles": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} файлға дейін",
+          "count_plural=*": "{count_number} файлға дейін"
+        }
+      }
+    ],
     "requirementMaxSize": "Әр файл {size} МБ дейін",
-    "maxFilesAllowed": "{count, plural, one {Ең көбі # файл} other {Ең көбі # файл}}",
+    "maxFilesAllowed": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Ең көбі {count_number} файл",
+          "count_plural=*": "Ең көбі {count_number} файл"
+        }
+      }
+    ],
     "fileTooLarge": "Файл {size} МБ-тан үлкен",
     "fileTypeNotAllowed": "Файл түріне рұқсат жоқ ({type})",
     "noExtension": "кеңейтімсіз",
@@ -10880,7 +11758,16 @@
     "attemptNumber": "№{number} әрекет",
     "attemptOrdinal": "№{number}",
     "draft": "Нобай",
-    "fileCount": "{count, plural, one {# файл} other {# файл}}",
+    "fileCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} файл",
+          "count_plural=*": "{count_number} файл"
+        }
+      }
+    ],
     "submissionReceived": "Тапсыру қабылданды",
     "attempt": "Әрекет",
     "files": "Файлдар",
@@ -10920,7 +11807,21 @@
     "openButton": "Ашу",
     "downloadButton": "Жүктеп алу",
     "noSubmissions": "Бұл көрініске сәйкес келетін тапсырыстар жоқ.",
-    "attemptInfo": "№{attemptNumber} әрекет · {count, plural, one {# файл} other {# файл}}",
+    "attemptInfo": [
+      {
+        "declarations": [
+          "input attemptNumber",
+          "input count",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "№{attemptNumber} әрекет · {count_number} файл",
+          "count_plural=*": "№{attemptNumber} әрекет · {count_number} файл"
+        }
+      }
+    ],
     "submittedAt": "Тапсырылды: {date}",
     "submittedAsDraft": "Нобай ретінде сақталды",
     "late": "Кешікті",
@@ -11148,7 +12049,16 @@
       "confirmDelete": "Диалогты жою",
       "threadsLoading": "Диалогтар жүктелуде…",
       "threadsEmpty": "Сақталған диалогтар жоқ.",
-      "threadMessageCount": "{count, plural, one {# хабарлама} other {# хабарлама}}",
+      "threadMessageCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} хабарлама",
+            "count_plural=*": "{count_number} хабарлама"
+          }
+        }
+      ],
       "streamingStatus": "Таңдалған курс материалдары бойынша жауап дайындалуда.",
       "cancelledStatus": "Жауап тоқтатылды. Жартылай жауап сақталды.",
       "error": "Жауапты аяқтау мүмкін болмады. Сұрағыңыз сақталды.",

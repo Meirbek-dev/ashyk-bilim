@@ -1,4 +1,5 @@
 {
+  "$schema": "https://inlang.com/schema/inlang-message-format",
   "Activities": {
     "AiAssistantPanel": {
       "title": "Ассистент ИИ",
@@ -247,7 +248,18 @@
       "passed": "Пройден",
       "points": "Баллы",
       "pointsDescription": "Максимум баллов за эту задачу",
-      "pointsShort": "{count, plural, one {# балл} few {# балла} many {# баллов} other {# балла}}",
+      "pointsShort": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} балл",
+            "count_plural=few": "{count_number} балла",
+            "count_plural=many": "{count_number} баллов",
+            "count_plural=*": "{count_number} балла"
+          }
+        }
+      ],
       "popularLanguages": "Популярные",
       "removeTestCase": "Удалить",
       "results": "Результаты",
@@ -335,7 +347,17 @@
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value} мс",
       "timeSecondsValue": "{value} с",
-      "hiddenTestsCount": "{count, plural, one {# скрытый тест} few {# скрытых теста} other {# скрытых тестов}}",
+      "hiddenTestsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} скрытый тест",
+            "count_plural=few": "{count_number} скрытых теста",
+            "count_plural=*": "{count_number} скрытых тестов"
+          }
+        }
+      ],
       "memoryLimitValue": "{value} МБ",
       "courseChallenges": "Курс / Задачи",
       "problems": "Задачи",
@@ -526,7 +548,17 @@
       "exportFailed": "Не удалось экспортировать тесты.",
       "importSuccess": "Успешно импортировано тестов: {count}.",
       "importFailed": "Неверный формат файла импорта.",
-      "requirementsPending": "{count, plural, one {осталось # требование} few {осталось # требования} other {осталось # требований}}",
+      "requirementsPending": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "осталось {count_number} требование",
+            "count_plural=few": "осталось {count_number} требования",
+            "count_plural=*": "осталось {count_number} требований"
+          }
+        }
+      ],
       "allChecksPassed": "Все проверки пройдены",
       "solutionAccepted": "Решение принято",
       "submissionRequiresReview": "Решение требует проверки",
@@ -617,7 +649,17 @@
       "keyboardShortcutsHelp": "Сочетания клавиш: ← / → навигация, 1-9 выбор ответа, Ctrl/Cmd+Enter открыть подтверждение отправки, ? показать это сообщение",
       "manageExam": "Управление вопросами и настройками теста",
       "manageQuestions": "Редактировать вопросы",
-      "minutes": "{count, plural, =1 {# минута} few {# минуты} other {# минут}}",
+      "minutes": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=1, count_plural=*": "{count_number} минута",
+            "count=*, count_plural=few": "{count_number} минуты",
+            "count=*, count_plural=*": "{count_number} минут"
+          }
+        }
+      ],
       "navigationError": "Не удалось перейти к следующей активности",
       "next": "Следующий",
       "noAttemptsRemaining": "У вас не осталось попыток для этого теста",
@@ -632,7 +674,18 @@
         "unsatisfactory": "Требуется улучшение"
       },
       "pleaseRefresh": "Пожалуйста, обновите страницу и попробуйте снова",
-      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} other {# баллов}}",
+      "points": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "{count_number} баллов",
+            "count=*, count_plural=one": "{count_number} балл",
+            "count=*, count_plural=few": "{count_number} балла",
+            "count=*, count_plural=*": "{count_number} баллов"
+          }
+        }
+      ],
       "pointsLabel": "Баллы",
       "pointsValue": "{points} балл",
       "previewExam": "Предпросмотр теста",
@@ -641,7 +694,16 @@
       "proceedToNextActivity": "Следующая активность",
       "progress": "Прогресс",
       "question": "Вопрос",
-      "questionAriaLabel": "Вопрос {number}{answered, select, true { - отвечено} other {}}",
+      "questionAriaLabel": [
+        {
+          "declarations": ["input number", "input answered"],
+          "selectors": ["answered"],
+          "match": {
+            "answered=true": "Вопрос {number} - отвечено",
+            "answered=*": "Вопрос {number}"
+          }
+        }
+      ],
       "questionNavigator": "Навигатор вопросов",
       "questionNavigatorDescription": "Нажмите, чтобы перейти к любому вопросу",
       "questionNumber": "Вопрос {number}",
@@ -684,7 +746,17 @@
       "timeRemaining": "Осталось времени",
       "totalQuestions": "Всего вопросов",
       "unanswered": "Без ответа",
-      "unansweredQuestionsWarning": "У вас {count, plural, one {# вопрос} few {# вопроса} other {# вопросов}} без ответа. Вы уверены, что хотите отправить?",
+      "unansweredQuestionsWarning": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "У вас {count_number} вопрос без ответа. Вы уверены, что хотите отправить?",
+            "count_plural=few": "У вас {count_number} вопроса без ответа. Вы уверены, что хотите отправить?",
+            "count_plural=*": "У вас {count_number} вопросов без ответа. Вы уверены, что хотите отправить?"
+          }
+        }
+      ],
       "unlimited": "Неограниченно",
       "unlimitedAttempts": "Неограниченные попытки",
       "unsupportedQuestionType": "Неподдерживаемый тип вопроса",
@@ -695,7 +767,17 @@
       "violationDialogGuidance": "Как избежать: оставайтесь в полноэкранном режиме (если требуется), не переключайтесь между вкладками и не используйте инструменты разработчика или копирование/вставку во время теста.",
       "violationDialogTitle": "Обнаружено нарушение безопасности",
       "violationWarning": "Нарушения: {count}/{max}. Осталось {remaining} до автоматической отправки.",
-      "violationsRecorded": "Зафиксировано {count, plural, one {# нарушение} few {# нарушения} other {# нарушений}} во время теста",
+      "violationsRecorded": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Зафиксировано {count_number} нарушение во время теста",
+            "count_plural=few": "Зафиксировано {count_number} нарушения во время теста",
+            "count_plural=*": "Зафиксировано {count_number} нарушений во время теста"
+          }
+        }
+      ],
       "yourAnswer": "Ваш ответ",
       "latestSubmission": "Последняя отправка",
       "resumedDraft": "Черновик восстановлен",
@@ -848,10 +930,40 @@
       "medium": "Средний"
     },
     "relativeTime": {
-      "day": "{count, plural, one {# день назад} few {# дня назад} other {# дней назад}}",
-      "hour": "{count, plural, one {# час назад} few {# часа назад} other {# часов назад}}",
+      "day": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} день назад",
+            "count_plural=few": "{count_number} дня назад",
+            "count_plural=*": "{count_number} дней назад"
+          }
+        }
+      ],
+      "hour": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} час назад",
+            "count_plural=few": "{count_number} часа назад",
+            "count_plural=*": "{count_number} часов назад"
+          }
+        }
+      ],
       "justNow": "только что",
-      "minute": "{count, plural, one {# минуту назад} few {# минуты назад} other {# минут назад}}"
+      "minute": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} минуту назад",
+            "count_plural=few": "{count_number} минуты назад",
+            "count_plural=*": "{count_number} минут назад"
+          }
+        }
+      ]
     },
     "status": {
       "active": "Активен",
@@ -881,7 +993,21 @@
       "wrongCredentials": "Неверный логин или пароль",
       "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
       "rateLimited": "Слишком много попыток. Пожалуйста, попробуйте позже.",
-      "rateLimitedRetry": "Слишком много попыток. Попробуйте через {minutes, plural, one {# минуту} few {# минуты} other {# минут}}.",
+      "rateLimitedRetry": [
+        {
+          "declarations": [
+            "input minutes",
+            "local minutes_plural = minutes: plural",
+            "local minutes_number = minutes: number"
+          ],
+          "selectors": ["minutes_plural"],
+          "match": {
+            "minutes_plural=one": "Слишком много попыток. Попробуйте через {minutes_number} минуту.",
+            "minutes_plural=few": "Слишком много попыток. Попробуйте через {minutes_number} минуты.",
+            "minutes_plural=*": "Слишком много попыток. Попробуйте через {minutes_number} минут."
+          }
+        }
+      ],
       "noAccount": "Нет аккаунта?",
       "loginIdentifier": "Электронная почта или имя пользователя",
       "loginIdentifierPlaceholder": "Введите почту или имя пользователя",
@@ -1211,7 +1337,17 @@
     "DataTable": {
       "searchPlaceholder": "Поиск по таблице...",
       "emptyMessage": "Строки не найдены.",
-      "visibleRows": "{count, plural, one {# видимая строка} few {# видимых строки} other {# видимых строк}}",
+      "visibleRows": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} видимая строка",
+            "count_plural=few": "{count_number} видимых строки",
+            "count_plural=*": "{count_number} видимых строк"
+          }
+        }
+      ],
       "showingRows": "{from}–{to} из {total}",
       "page": "Страница {current} из {total}",
       "prev": "Назад",
@@ -1484,7 +1620,17 @@
           "backlog": "Очередь",
           "pass_rate": "Процент прохождения"
         },
-        "rows": "{count, plural, one {# строка} few {# строки} other {# строк}}",
+        "rows": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} строка",
+              "count_plural=few": "{count_number} строки",
+              "count_plural=*": "{count_number} строк"
+            }
+          }
+        ],
         "chooseMetric": "Выберите метрику, чтобы загрузить исходные строки.",
         "noSourceRows": "Исходные строки не найдены для этой метрики.",
         "yes": "Да",
@@ -1528,7 +1674,18 @@
       "newCourse": "Новый курс"
     },
     "CollectionThumbnail": {
-      "courseCount": "{count, plural, =0 {0 курсов} one {# курс} few {# курса} other {# курсов}}",
+      "courseCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "0 курсов",
+            "count=*, count_plural=one": "{count_number} курс",
+            "count=*, count_plural=few": "{count_number} курса",
+            "count=*, count_plural=*": "{count_number} курсов"
+          }
+        }
+      ],
       "deleteButtonText": "Удалить коллекцию",
       "deleteConfirmationMessage": "Вы уверены, что хотите удалить эту коллекцию?",
       "deleteConfirmationTitle": "Удалить {collectionName}?",
@@ -1562,7 +1719,16 @@
     "CourseThumbnail": {
       "viewCertificate": "Просмотреть сертификат",
       "reviewCompletion": "Посмотреть итоги курса",
-      "authorLabel": "{count, plural, one {Автор} other {Авторы}}",
+      "authorLabel": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Автор",
+            "count_plural=*": "Авторы"
+          }
+        }
+      ],
       "authors": "Авторы",
       "continueLearning": "Продолжить обучение",
       "courseOptions": "Опции курса",
@@ -1586,7 +1752,17 @@
       "toastDeleteError": "Не удалось удалить курс. Пожалуйста, попробуйте снова.",
       "toastDeleteSuccess": "Курс успешно удалён",
       "updated": "Обновлён",
-      "updatedDate": "Обновлено {updateDate, date, medium}",
+      "updatedDate": [
+        {
+          "declarations": [
+            "input updateDate",
+            "local updateDate_datetime_month_short_day_numeric_year_numeric = updateDate: datetime month=short day=numeric year=numeric"
+          ],
+          "match": {
+            "updateDate=*": "Обновлено {updateDate_datetime_month_short_day_numeric_year_numeric}"
+          }
+        }
+      ],
       "archive": "В архив",
       "restore": "Восстановить"
     },
@@ -1977,7 +2153,17 @@
       "system": "Системная",
       "custom": "Пользовательская",
       "systemRoleReadOnly": "Системная роль: управляется платформой, изменить нельзя",
-      "grantsCount": "{count, plural, one {# право} few {# права} other {# прав}}",
+      "grantsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} право",
+            "count_plural=few": "{count_number} права",
+            "count_plural=*": "{count_number} прав"
+          }
+        }
+      ],
       "managePermissionsTitle": "Права роли «{roleName}»",
       "managePermissionsDescription": "Права в формате ресурс:действие:область. Выберите из списка или введите вручную.",
       "grantPlaceholder": "например, course:read:all",
@@ -2054,7 +2240,17 @@
       "optional": "Необязательно",
       "points": "Баллы",
       "pointsLabel": "Баллы",
-      "pointsValue": "{points} {points, plural, one {балл} few {балла} other {баллов}}",
+      "pointsValue": [
+        {
+          "declarations": ["input points", "local points_plural = points: plural"],
+          "selectors": ["points_plural"],
+          "match": {
+            "points_plural=one": "{points} балл",
+            "points_plural=few": "{points} балла",
+            "points_plural=*": "{points} баллов"
+          }
+        }
+      ],
       "questionBank": "Банк вопросов",
       "questionCreated": "Вопрос успешно создан",
       "questionDeleted": "Вопрос успешно удален",
@@ -2065,8 +2261,39 @@
       "questionType": "Тип вопроса",
       "questionUpdated": "Вопрос успешно обновлен",
       "questionsExported": "Вопросы успешно экспортированы",
-      "questionsImported": "{count} {count, plural, one {вопрос импортирован} few {вопроса импортировано} other {вопросов импортировано}} успешно",
-      "questionsImportedWithErrors": "{imported} {imported, plural, one {вопрос импортирован} few {вопроса импортировано} other {вопросов импортировано}}, {errors} {errors, plural, one {ошибка} few {ошибки} other {ошибок}}",
+      "questionsImported": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count} вопрос импортирован успешно",
+            "count_plural=few": "{count} вопроса импортировано успешно",
+            "count_plural=*": "{count} вопросов импортировано успешно"
+          }
+        }
+      ],
+      "questionsImportedWithErrors": [
+        {
+          "declarations": [
+            "input imported",
+            "input errors",
+            "local imported_plural = imported: plural",
+            "local errors_plural = errors: plural"
+          ],
+          "selectors": ["imported_plural", "errors_plural"],
+          "match": {
+            "imported_plural=one, errors_plural=one": "{imported} вопрос импортирован, {errors} ошибка",
+            "imported_plural=one, errors_plural=few": "{imported} вопрос импортирован, {errors} ошибки",
+            "imported_plural=one, errors_plural=*": "{imported} вопрос импортирован, {errors} ошибок",
+            "imported_plural=few, errors_plural=one": "{imported} вопроса импортировано, {errors} ошибка",
+            "imported_plural=few, errors_plural=few": "{imported} вопроса импортировано, {errors} ошибки",
+            "imported_plural=few, errors_plural=*": "{imported} вопроса импортировано, {errors} ошибок",
+            "imported_plural=*, errors_plural=one": "{imported} вопросов импортировано, {errors} ошибка",
+            "imported_plural=*, errors_plural=few": "{imported} вопросов импортировано, {errors} ошибки",
+            "imported_plural=*, errors_plural=*": "{imported} вопросов импортировано, {errors} ошибок"
+          }
+        }
+      ],
       "questionsReordered": "Вопросы успешно переупорядочены",
       "rightSide": "Правая сторона",
       "save": "Сохранить",
@@ -2154,7 +2381,18 @@
       "authRequired": "Требуется авторизация. Пожалуйста, войдите в систему.",
       "autoGradedBySystem": "Оценено системой автоматически",
       "blankPlaceholder": "Введите правильный ответ",
-      "blanksCount": "{count, plural, =0 {0 пропусков} one {# пропуск} few {# пропуска} other {# пропусков}}",
+      "blanksCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "0 пропусков",
+            "count=*, count_plural=one": "{count_number} пропуск",
+            "count=*, count_plural=few": "{count_number} пропуска",
+            "count=*, count_plural=*": "{count_number} пропусков"
+          }
+        }
+      ],
       "correct": "Верно",
       "correctAnswer": "Правильный ответ",
       "correctAnswerLabel": "Правильный ответ",
@@ -2299,10 +2537,30 @@
       "noSubtitlesYet": "Субтитры еще не добавлены",
       "organizationDataNotLoaded": "Данные организации не загружены. Пожалуйста, обновите страницу.",
       "playbackOptions": "Опции воспроизведения",
-      "processingFiles": "Обработка {count, plural, one {# файла} few {# файлов} other {# файлов}}...",
+      "processingFiles": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Обработка {count_number} файла...",
+            "count_plural=few": "Обработка {count_number} файлов...",
+            "count_plural=*": "Обработка {count_number} файлов..."
+          }
+        }
+      ],
       "removeSubtitleAriaLabel": "Удалить {filename}",
       "seconds": "сек",
-      "settingsActiveCount": "{count, plural, one {# активна} few {# активны} other {# активно}}",
+      "settingsActiveCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} активна",
+            "count_plural=few": "{count_number} активны",
+            "count_plural=*": "{count_number} активно"
+          }
+        }
+      ],
       "startMuted": "Начать без звука",
       "startMutedDescription": "Звук изначально отключен",
       "startTimeLabel": "Время начала",
@@ -2437,8 +2695,29 @@
       "saving": "Сохранение…",
       "saved": "Сохранено",
       "saveFailed": "Ошибка сохранения",
-      "issueToggle": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}",
-      "wordCount": "{count, plural, one {# слово} few {# слова} many {# слов} other {# слова}}"
+      "issueToggle": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} проблема",
+            "count_plural=few": "{count_number} проблемы",
+            "count_plural=*": "{count_number} проблем"
+          }
+        }
+      ],
+      "wordCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} слово",
+            "count_plural=few": "{count_number} слова",
+            "count_plural=many": "{count_number} слов",
+            "count_plural=*": "{count_number} слова"
+          }
+        }
+      ]
     },
     "linkDialog": {
       "title": "Вставить ссылку",
@@ -2466,7 +2745,17 @@
     },
     "validation": {
       "required": "Содержимое обязательно.",
-      "tooLong": "Содержимое превышает лимит на {count, plural, one {# символ} few {# символа} other {# символов}}.",
+      "tooLong": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Содержимое превышает лимит на {count_number} символ.",
+            "count_plural=few": "Содержимое превышает лимит на {count_number} символа.",
+            "count_plural=*": "Содержимое превышает лимит на {count_number} символов."
+          }
+        }
+      ],
       "nearLimit": "Содержимое приближается к лимиту символов.",
       "rawHtml": "Встроенный HTML не поддерживается.",
       "unsafeLink": "Одна или несколько ссылок используют небезопасный протокол.",
@@ -2723,7 +3012,17 @@
         "atLeastOneLearningItem": "Добавьте хотя бы один пункт с текстом",
         "invalidFormat": "Неверный формат",
         "invalidJsonFormat": "Неверный формат JSON",
-        "maxLength": "Должно быть не более {count, plural, one {# символа} few {# символов} other {# символов}}",
+        "maxLength": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Должно быть не более {count_number} символа",
+              "count_plural=few": "Должно быть не более {count_number} символов",
+              "count_plural=*": "Должно быть не более {count_number} символов"
+            }
+          }
+        ],
         "required": "Поле {fieldName} обязательно для заполнения",
         "saveFailed": "Не удалось сохранить общую информацию о курсе."
       },
@@ -2821,7 +3120,18 @@
     "deleteChapter": "Удалить главу",
     "deleteChapterButton": "Удалить главу",
     "deleteChapterConfirmation": "Вы уверены, что хотите удалить эту главу?",
-    "deleteChapterConfirmationWithCount": "Это навсегда удалит главу и {count, plural, =0 {0 активностей} one {# активность} few {# активности} other {# активностей}}.",
+    "deleteChapterConfirmationWithCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Это навсегда удалит главу и 0 активностей.",
+          "count=*, count_plural=one": "Это навсегда удалит главу и {count_number} активность.",
+          "count=*, count_plural=few": "Это навсегда удалит главу и {count_number} активности.",
+          "count=*, count_plural=*": "Это навсегда удалит главу и {count_number} активностей."
+        }
+      }
+    ],
     "deleteChapterTitle": "Удалить {name}?",
     "chapterUpdatedSuccess": "Название главы обновлено",
     "chapterUpdateFailed": "Не удалось обновить главу",
@@ -2831,7 +3141,24 @@
     "edit": "Редактировать",
     "editButton": "Редактировать",
     "noActivities": "Пока нет активностей",
-    "deleteChapterConfirmationBreakdown": "Это безвозвратно удалит раздел и его {count, plural, =0 {0 занятий} one {# занятие} few {# занятия} other {# занятий}} ({published} опубликованных, {drafts} черновиков).",
+    "deleteChapterConfirmationBreakdown": [
+      {
+        "declarations": [
+          "input count",
+          "input published",
+          "input drafts",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Это безвозвратно удалит раздел и его 0 занятий ({published} опубликованных, {drafts} черновиков).",
+          "count=*, count_plural=one": "Это безвозвратно удалит раздел и его {count_number} занятие ({published} опубликованных, {drafts} черновиков).",
+          "count=*, count_plural=few": "Это безвозвратно удалит раздел и его {count_number} занятия ({published} опубликованных, {drafts} черновиков).",
+          "count=*, count_plural=*": "Это безвозвратно удалит раздел и его {count_number} занятий ({published} опубликованных, {drafts} черновиков)."
+        }
+      }
+    ],
     "noActivitiesHint": "Добавьте первую активность",
     "save": "Сохранить",
     "cancel": "Отмена"
@@ -2846,8 +3173,29 @@
     "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
     "about": "О курсе",
     "access": "Доступ",
-    "activitiesCount": "{count, plural, one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
-    "activityCount": "{count, plural, =0 {0 учебных задач} one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
+    "activitiesCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} учебная задача",
+          "count_plural=few": "{count_number} учебные задачи",
+          "count_plural=*": "{count_number} учебных задач"
+        }
+      }
+    ],
+    "activityCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 учебных задач",
+          "count=*, count_plural=one": "{count_number} учебная задача",
+          "count=*, count_plural=few": "{count_number} учебные задачи",
+          "count=*, count_plural=*": "{count_number} учебных задач"
+        }
+      }
+    ],
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта учебная задача ещё не опубликована",
     "admin": "Админ",
@@ -2895,7 +3243,17 @@
     "reply": "Ответить",
     "save": "Сохранить",
     "saveChanges": "Сохранить изменения",
-    "showReplies": "Показать {count, plural, one {# ответ} few {# ответа} other {# ответов}}",
+    "showReplies": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Показать {count_number} ответ",
+          "count_plural=few": "Показать {count_number} ответа",
+          "count_plural=*": "Показать {count_number} ответов"
+        }
+      }
+    ],
     "startDiscussionPlaceholder": "Начните обсуждение этого курса...",
     "statusComplete": "Завершено",
     "statusGraded": "Оценено",
@@ -2952,7 +3310,18 @@
     "CourseAuthors": {
       "unknownAuthor": "Неизвестно",
       "and": " и ",
-      "andMoreAuthors": "& {count, plural, one {# автор} few {# автора} many {# авторов} other {# авторов}}",
+      "andMoreAuthors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "& {count_number} автор",
+            "count_plural=few": "& {count_number} автора",
+            "count_plural=many": "& {count_number} авторов",
+            "count_plural=*": "& {count_number} авторов"
+          }
+        }
+      ],
       "authorsAndUpdates": "Авторы и обновления",
       "cancel": "Отмена",
       "contentRequired": "Содержимое обязательно",
@@ -2979,7 +3348,17 @@
       "updateContentPlaceholder": "Поделитесь деталями вашего обновления...",
       "pageStatus": "Страница {current} из {total}",
       "previousPage": "Предыдущая",
-      "resultsCount": "{count, plural, one {# курс} few {# курса} other {# курсов}}",
+      "resultsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} курс",
+            "count_plural=few": "{count_number} курса",
+            "count_plural=*": "{count_number} курсов"
+          }
+        }
+      ],
       "rightsGuide": "Права и доступ",
       "searchButton": "Поиск",
       "searchPlaceholder": "Поиск редактируемых курсов",
@@ -3004,7 +3383,18 @@
       "contentRequired": "Содержимое обязательно",
       "courseLabel": "Курс",
       "createdAt": "Создано {date}",
-      "createdAtFull": "Создано {date, date, long} {date, time, short}",
+      "createdAtFull": [
+        {
+          "declarations": [
+            "input date",
+            "local date_datetime_month_long_day_numeric_year_numeric = date: datetime month=long day=numeric year=numeric",
+            "local date_datetime_hour_numeric_minute_numeric = date: datetime hour=numeric minute=numeric"
+          ],
+          "match": {
+            "date=*": "Создано {date_datetime_month_long_day_numeric_year_numeric} {date_datetime_hour_numeric_minute_numeric}"
+          }
+        }
+      ],
       "createdAtRelative": "{time} назад",
       "createdAtTooltipPrefix": "Создано ",
       "delete": "Удалить",
@@ -3071,7 +3461,22 @@
       "moreAuthors": "& еще {count}",
       "progressCard": {
         "activitiesCompletedLabel": "активностей завершено",
-        "chapterActivitiesCount": "{completed}/{total, plural, one {# активность} few {# активности} other {# активностей}}",
+        "chapterActivitiesCount": [
+          {
+            "declarations": [
+              "input completed",
+              "input total",
+              "local total_plural = total: plural",
+              "local total_number = total: number"
+            ],
+            "selectors": ["total_plural"],
+            "match": {
+              "total_plural=one": "{completed}/{total_number} активность",
+              "total_plural=few": "{completed}/{total_number} активности",
+              "total_plural=*": "{completed}/{total_number} активностей"
+            }
+          }
+        ],
         "complete": "Завершено",
         "completedAllActivities": "Отличная работа! Вы завершили все активности.",
         "courseCompleted": "Курс завершён!"
@@ -3080,7 +3485,21 @@
       "startCourse": "Начать курс",
       "openCourse": "Открыть курс",
       "startCourseError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
-      "startLearningJourney": "В курсе {totalActivities, plural, one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
+      "startLearningJourney": [
+        {
+          "declarations": [
+            "input totalActivities",
+            "local totalActivities_plural = totalActivities: plural",
+            "local totalActivities_number = totalActivities: number"
+          ],
+          "selectors": ["totalActivities_plural"],
+          "match": {
+            "totalActivities_plural=one": "В курсе {totalActivities_number} учебная задача",
+            "totalActivities_plural=few": "В курсе {totalActivities_number} учебные задачи",
+            "totalActivities_plural=*": "В курсе {totalActivities_number} учебных задач"
+          }
+        }
+      ],
       "startSuccess": "Курс успешно начат",
       "startedCourseSuccess": "Курс успешно начат",
       "startingCourse": "Начинаем курс...",
@@ -3425,10 +3844,52 @@
           "medium": "Средний"
         },
         "relativeTime": {
-          "day": "{count, plural, one {# день назад} few {# дня назад} other {# дней назад}}",
-          "hour": "{count, plural, one {# час назад} few {# часа назад} other {# часов назад}}",
+          "day": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} день назад",
+                "count_plural=few": "{count_number} дня назад",
+                "count_plural=*": "{count_number} дней назад"
+              }
+            }
+          ],
+          "hour": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} час назад",
+                "count_plural=few": "{count_number} часа назад",
+                "count_plural=*": "{count_number} часов назад"
+              }
+            }
+          ],
           "justNow": "только что",
-          "minute": "{count, plural, one {# минуту назад} few {# минуты назад} other {# минут назад}}"
+          "minute": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} минуту назад",
+                "count_plural=few": "{count_number} минуты назад",
+                "count_plural=*": "{count_number} минут назад"
+              }
+            }
+          ]
         },
         "status": {
           "active": "Активный",
@@ -3469,7 +3930,17 @@
       "avgProgress": "Средний прогресс",
       "backupData": "Резервное копирование данных",
       "basedOnLoginStreaks": "Основано на серии входов",
-      "bulkOperationCompletedDescription": "Успешно обработано {count, plural, one {# пользователь} few {# пользователя} other {# пользователей}}",
+      "bulkOperationCompletedDescription": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Успешно обработано {count_number} пользователь",
+            "count_plural=few": "Успешно обработано {count_number} пользователя",
+            "count_plural=*": "Успешно обработано {count_number} пользователей"
+          }
+        }
+      ],
       "bulkOperationCompletedTitle": "Массовая операция завершена",
       "bulkOperationFailedDescription": "Попробуйте еще раз",
       "bulkOperationFailedTitle": "Ошибка массовой операции",
@@ -3484,7 +3955,18 @@
       "coursesCompleted": "Завершенные курсы",
       "coursesStarted": "Начатые курсы",
       "dailyActiveUsers": "Ежедневные активные пользователи",
-      "enrollments": "{count, plural, one {# регистрация} few {# регистрации} many {# регистраций} other {# регистрации}}",
+      "enrollments": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} регистрация",
+            "count_plural=few": "{count_number} регистрации",
+            "count_plural=many": "{count_number} регистраций",
+            "count_plural=*": "{count_number} регистрации"
+          }
+        }
+      ],
       "errorLoadingAlertsData": "Ошибка загрузки оповещений",
       "errorLoadingAnalyticsData": "Ошибка загрузки аналитики",
       "errorLoadingGamificationData": "Ошибка загрузки данных геймификации",
@@ -3612,27 +4094,102 @@
         "dialogs": {
           "delete": {
             "confirm": "Удалить курсы",
-            "description": "Это навсегда удалит {count, plural, one {# выбранный курс} few {# выбранных курса} many {# выбранных курсов} other {# выбранных курсов}}. Это действие нельзя отменить.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Это навсегда удалит {count_number} выбранный курс. Это действие нельзя отменить.",
+                  "count_plural=few": "Это навсегда удалит {count_number} выбранных курса. Это действие нельзя отменить.",
+                  "count_plural=many": "Это навсегда удалит {count_number} выбранных курсов. Это действие нельзя отменить.",
+                  "count_plural=*": "Это навсегда удалит {count_number} выбранных курсов. Это действие нельзя отменить."
+                }
+              }
+            ],
             "title": "Удалить выбранные курсы?"
           },
           "private": {
             "confirm": "Сделать приватными",
-            "description": "Это скроет {count, plural, one {# выбранный курс} few {# выбранных курса} many {# выбранных курсов} other {# выбранных курсов}} от публичного доступа, пока вы не опубликуете {count, plural, one {его} few {их} many {их} other {их}} снова.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Это скроет {count_number} выбранный курс от публичного доступа, пока вы не опубликуете его снова.",
+                  "count_plural=few": "Это скроет {count_number} выбранных курса от публичного доступа, пока вы не опубликуете их снова.",
+                  "count_plural=many": "Это скроет {count_number} выбранных курсов от публичного доступа, пока вы не опубликуете их снова.",
+                  "count_plural=*": "Это скроет {count_number} выбранных курсов от публичного доступа, пока вы не опубликуете их снова."
+                }
+              }
+            ],
             "title": "Сделать выбранные курсы приватными?"
           },
           "publish": {
             "confirm": "Опубликовать курсы",
-            "description": "Это сделает {count, plural, one {# выбранный курс} few {# выбранных курса} many {# выбранных курсов} other {# выбранных курсов}} публично доступным там, где учащиеся могут получить к {count, plural, one {нему} few {ним} many {ним} other {ним}} доступ.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Это сделает {count_number} выбранный курс публично доступным там, где учащиеся могут получить к нему доступ.",
+                  "count_plural=few": "Это сделает {count_number} выбранных курса публично доступным там, где учащиеся могут получить к ним доступ.",
+                  "count_plural=many": "Это сделает {count_number} выбранных курсов публично доступным там, где учащиеся могут получить к ним доступ.",
+                  "count_plural=*": "Это сделает {count_number} выбранных курсов публично доступным там, где учащиеся могут получить к ним доступ."
+                }
+              }
+            ],
             "title": "Опубликовать выбранные курсы?"
           },
           "archive": {
             "title": "Архивировать выбранные курсы?",
-            "description": "{count, plural, one {# выбранный курс пропадёт} few {# выбранных курса пропадут} many {# выбранных курсов пропадут} other {# выбранных курсов пропадут}} из каталога и поиска и станут только для чтения. Учащиеся сохранят доступ к материалам и результатам. Восстановить можно в любой момент.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} выбранный курс пропадёт из каталога и поиска и станут только для чтения. Учащиеся сохранят доступ к материалам и результатам. Восстановить можно в любой момент.",
+                  "count_plural=few": "{count_number} выбранных курса пропадут из каталога и поиска и станут только для чтения. Учащиеся сохранят доступ к материалам и результатам. Восстановить можно в любой момент.",
+                  "count_plural=many": "{count_number} выбранных курсов пропадут из каталога и поиска и станут только для чтения. Учащиеся сохранят доступ к материалам и результатам. Восстановить можно в любой момент.",
+                  "count_plural=*": "{count_number} выбранных курсов пропадут из каталога и поиска и станут только для чтения. Учащиеся сохранят доступ к материалам и результатам. Восстановить можно в любой момент."
+                }
+              }
+            ],
             "confirm": "Архивировать"
           },
           "restore": {
             "title": "Восстановить выбранные курсы?",
-            "description": "{count, plural, one {# выбранный курс вернётся} few {# выбранных курса вернутся} many {# выбранных курсов вернутся} other {# выбранных курсов вернутся}} в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} выбранный курс вернётся в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками.",
+                  "count_plural=few": "{count_number} выбранных курса вернутся в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками.",
+                  "count_plural=many": "{count_number} выбранных курсов вернутся в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками.",
+                  "count_plural=*": "{count_number} выбранных курсов вернутся в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками."
+                }
+              }
+            ],
             "confirm": "Восстановить"
           }
         },
@@ -3735,18 +4292,137 @@
           "updated": "Обновлено",
           "selectAll": "Выбрать все работы на этой странице",
           "selectSubmission": "Выбрать работу для {student}",
-          "selectedCount": "{count, plural, one {# работа} few {# работы} other {# работ}} выбрано",
+          "selectedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} работа выбрано",
+                "count_plural=few": "{count_number} работы выбрано",
+                "count_plural=*": "{count_number} работ выбрано"
+              }
+            }
+          ],
           "clearSelection": "Снять выбор",
           "batchGrade": "Пакетная оценка"
         },
         "toasts": {
-          "deleteFailed": "{count, plural, one {# выбранный курс не удалось удалить.} few {# выбранных курса не удалось удалить.} many {# выбранных курсов не удалось удалить.} other {# выбранных курсов не удалось удалить.}}",
-          "deleted": "{count, plural, one {Удалён # курс.} few {Удалено # курса.} many {Удалено # курсов.} other {Удалено # курсов.}}",
-          "movedPrivate": "{count, plural, one {# курс переведён в приватный режим.} few {# курса переведены в приватный режим.} many {# курсов переведены в приватный режим.} other {# курсов переведены в приватный режим.}}",
-          "published": "{count, plural, one {Опубликован # курс.} few {Опубликовано # курса.} many {Опубликовано # курсов.} other {Опубликовано # курсов.}}",
-          "updateFailed": "{count, plural, one {# выбранный курс не удалось обновить.} few {# выбранных курса не удалось обновить.} many {# выбранных курсов не удалось обновить.} other {# выбранных курсов не удалось обновить.}}",
-          "archived": "{count, plural, one {Архивирован # курс.} few {Архивировано # курса.} many {Архивировано # курсов.} other {Архивировано # курсов.}}",
-          "restored": "{count, plural, one {Восстановлен # курс.} few {Восстановлено # курса.} many {Восстановлено # курсов.} other {Восстановлено # курсов.}}"
+          "deleteFailed": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} выбранный курс не удалось удалить.",
+                "count_plural=few": "{count_number} выбранных курса не удалось удалить.",
+                "count_plural=many": "{count_number} выбранных курсов не удалось удалить.",
+                "count_plural=*": "{count_number} выбранных курсов не удалось удалить."
+              }
+            }
+          ],
+          "deleted": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Удалён {count_number} курс.",
+                "count_plural=few": "Удалено {count_number} курса.",
+                "count_plural=many": "Удалено {count_number} курсов.",
+                "count_plural=*": "Удалено {count_number} курсов."
+              }
+            }
+          ],
+          "movedPrivate": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} курс переведён в приватный режим.",
+                "count_plural=few": "{count_number} курса переведены в приватный режим.",
+                "count_plural=many": "{count_number} курсов переведены в приватный режим.",
+                "count_plural=*": "{count_number} курсов переведены в приватный режим."
+              }
+            }
+          ],
+          "published": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Опубликован {count_number} курс.",
+                "count_plural=few": "Опубликовано {count_number} курса.",
+                "count_plural=many": "Опубликовано {count_number} курсов.",
+                "count_plural=*": "Опубликовано {count_number} курсов."
+              }
+            }
+          ],
+          "updateFailed": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} выбранный курс не удалось обновить.",
+                "count_plural=few": "{count_number} выбранных курса не удалось обновить.",
+                "count_plural=many": "{count_number} выбранных курсов не удалось обновить.",
+                "count_plural=*": "{count_number} выбранных курсов не удалось обновить."
+              }
+            }
+          ],
+          "archived": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Архивирован {count_number} курс.",
+                "count_plural=few": "Архивировано {count_number} курса.",
+                "count_plural=many": "Архивировано {count_number} курсов.",
+                "count_plural=*": "Архивировано {count_number} курсов."
+              }
+            }
+          ],
+          "restored": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Восстановлен {count_number} курс.",
+                "count_plural=few": "Восстановлено {count_number} курса.",
+                "count_plural=many": "Восстановлено {count_number} курсов.",
+                "count_plural=*": "Восстановлено {count_number} курсов."
+              }
+            }
+          ]
         },
         "viewMode": {
           "cards": "Карточки",
@@ -3759,20 +4435,57 @@
       },
       "Overview": {
         "access": {
-          "privateNoGroupsWarning": "Приватный курс без привязанных групп пользователей. Учащиеся не смогут получить к нему доступ. Добавьте группы в разделе <link>Доступ</link>.",
+          "privateNoGroupsWarning": "Приватный курс без привязанных групп пользователей. Учащиеся не смогут получить к нему доступ. Добавьте группы в разделе {#link}Доступ{/link}.",
           "privateState": "Этот курс сейчас приватный.",
           "publicState": "Этот курс сейчас публичный."
         },
         "activities": "Активности",
-        "activityCountDescription": "{count, plural, one {# активность сейчас находится в структуре курса.} few {# активности сейчас находятся в структуре курса.} many {# активностей сейчас находятся в структуре курса.} other {# активностей сейчас находятся в структуре курса.}}",
+        "activityCountDescription": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} активность сейчас находится в структуре курса.",
+              "count_plural=few": "{count_number} активности сейчас находятся в структуре курса.",
+              "count_plural=many": "{count_number} активностей сейчас находятся в структуре курса.",
+              "count_plural=*": "{count_number} активностей сейчас находятся в структуре курса."
+            }
+          }
+        ],
         "certificate": {
           "configured": "Для этого курса настроен сертификат.",
           "notConfigured": "Для этого курса сертификат ещё не настроен."
         },
-        "chapterCount": "{count, plural, one {# глава} few {# главы} many {# глав} other {# глав}}",
+        "chapterCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} глава",
+              "count_plural=few": "{count_number} главы",
+              "count_plural=many": "{count_number} глав",
+              "count_plural=*": "{count_number} глав"
+            }
+          }
+        ],
         "chapters": "Главы",
         "collaboration": {
-          "loadedRecords": "{count, plural, one {Загружена # запись участника.} few {Загружено # записи участников.} many {Загружено # записей участников.} other {Загружено # записей участников.}}"
+          "loadedRecords": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Загружена {count_number} запись участника.",
+                "count_plural=few": "Загружено {count_number} записи участников.",
+                "count_plural=many": "Загружено {count_number} записей участников.",
+                "count_plural=*": "Загружено {count_number} записей участников."
+              }
+            }
+          ]
         },
         "contributors": "Участники",
         "curriculumSnapshot": "Снимок учебного плана",
@@ -4150,10 +4863,54 @@
         "restoreAction": "Восстановить",
         "archiveTitle": "Архивировать «{courseName}»?",
         "restoreTitle": "Восстановить «{courseName}»?",
-        "learnersInProgress": "{count, plural, one {# учащийся проходит} few {# учащихся проходят} many {# учащихся проходят} other {# учащихся проходят}} курс. Они сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать задания.",
-        "ungradedSubmissions": "{count, plural, one {# работа не проверена} few {# работы не проверены} many {# работ не проверены} other {# работ не проверены}}. После архивации оценивать их будет нельзя.",
-        "openAttempts": "{count, plural, one {# незавершённая попытка} few {# незавершённые попытки} many {# незавершённых попыток} other {# незавершённых попыток}}. Таймированные будут сданы автоматически по истечении времени, остальные останутся несданными.",
-        "scheduledAssessments": "{count, plural, one {# запланированное задание вернётся} few {# запланированных задания вернутся} many {# запланированных заданий вернутся} other {# запланированных заданий вернутся}} в черновик.",
+        "learnersInProgress": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} учащийся проходит курс. Они сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать задания.",
+              "count_plural=few": "{count_number} учащихся проходят курс. Они сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать задания.",
+              "count_plural=many": "{count_number} учащихся проходят курс. Они сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать задания.",
+              "count_plural=*": "{count_number} учащихся проходят курс. Они сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать задания."
+            }
+          }
+        ],
+        "ungradedSubmissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} работа не проверена. После архивации оценивать их будет нельзя.",
+              "count_plural=few": "{count_number} работы не проверены. После архивации оценивать их будет нельзя.",
+              "count_plural=many": "{count_number} работ не проверены. После архивации оценивать их будет нельзя.",
+              "count_plural=*": "{count_number} работ не проверены. После архивации оценивать их будет нельзя."
+            }
+          }
+        ],
+        "openAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} незавершённая попытка. Таймированные будут сданы автоматически по истечении времени, остальные останутся несданными.",
+              "count_plural=few": "{count_number} незавершённые попытки. Таймированные будут сданы автоматически по истечении времени, остальные останутся несданными.",
+              "count_plural=many": "{count_number} незавершённых попыток. Таймированные будут сданы автоматически по истечении времени, остальные останутся несданными.",
+              "count_plural=*": "{count_number} незавершённых попыток. Таймированные будут сданы автоматически по истечении времени, остальные останутся несданными."
+            }
+          }
+        ],
+        "scheduledAssessments": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} запланированное задание вернётся в черновик.",
+              "count_plural=few": "{count_number} запланированных задания вернутся в черновик.",
+              "count_plural=many": "{count_number} запланированных заданий вернутся в черновик.",
+              "count_plural=*": "{count_number} запланированных заданий вернутся в черновик."
+            }
+          }
+        ],
         "summary": "Курс пропадёт из каталога и поиска. Восстановить его можно в любой момент.",
         "restoreDescription": "Курс вернётся в прежнее состояние (публичный или приватный). Задания, снятые с расписания при архивации, останутся черновиками.",
         "previewLoading": "Проверяем, что затронет архивация…",
@@ -4202,8 +4959,30 @@
         "accessPolicyStagedDescription": "Изменения видимости остаются локальными до сохранения этого раздела.",
         "readinessReadyTitle": "Готово к публикации",
         "readinessReadyDescription": "Ничто не мешает публикации.",
-        "readinessBlockedTitle": "Публикацию блокирует {count, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
-        "readinessWarningsTitle": "Готово с {count, plural, one {# предупреждением} few {# предупреждениями} many {# предупреждениями} other {# предупреждения}}",
+        "readinessBlockedTitle": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Публикацию блокирует {count_number} проблема",
+              "count_plural=few": "Публикацию блокирует {count_number} проблемы",
+              "count_plural=many": "Публикацию блокирует {count_number} проблем",
+              "count_plural=*": "Публикацию блокирует {count_number} проблемы"
+            }
+          }
+        ],
+        "readinessWarningsTitle": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Готово с {count_number} предупреждением",
+              "count_plural=few": "Готово с {count_number} предупреждениями",
+              "count_plural=many": "Готово с {count_number} предупреждениями",
+              "count_plural=*": "Готово с {count_number} предупреждения"
+            }
+          }
+        ],
         "userGroupLinksImmediateTitle": "Привязки групп пользователей применяются немедленно",
         "userGroupLinksImmediateDescription": "Эти привязки вступают в силу сразу после подтверждения. Храните изменения политики доступа отдельно и сохраняйте явно."
       },
@@ -4234,7 +5013,17 @@
         "noCoursesAvailable": "Курсы пока недоступны",
         "pageStatus": "Страница {current} из {total}",
         "previousPage": "Предыдущая",
-        "resultsCount": "{count, plural, one {# курс} few {# курса} other {# курсов}}",
+        "resultsCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} курс",
+              "count_plural=few": "{count_number} курса",
+              "count_plural=*": "{count_number} курсов"
+            }
+          }
+        ],
         "rightsGuide": "Права и доступ",
         "searchButton": "Поиск",
         "searchPlaceholder": "Поиск редактируемых курсов",
@@ -4347,7 +5136,18 @@
       "contributorUpdateErrorDetailed": "Не удалось обновить соавтора: {error}",
       "contributorUpdateErrorGeneric": "Не удалось обновить соавтора",
       "contributorUpdateSuccess": "Соавтор успешно обновлен",
-      "contributorsSelectedMessage": "{count, plural, one {# соавтор выбран} few {# соавтора выбрано} many {# соавторов выбрано} other {# соавторов выбрано}}",
+      "contributorsSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} соавтор выбран",
+            "count_plural=few": "{count_number} соавтора выбрано",
+            "count_plural=many": "{count_number} соавторов выбрано",
+            "count_plural=*": "{count_number} соавторов выбрано"
+          }
+        }
+      ],
       "courseContributorsSubtitle": "Управляйте соавторами и добавляйте новых в ваш курс",
       "courseContributorsTitle": "Соавторы курса",
       "creator": "Создатель",
@@ -4364,8 +5164,30 @@
       "failedToRemoveContributor": "Не удалось удалить {username}: {reason}",
       "failedToRemoveContributorsGeneral": "Не удалось удалить соавторов",
       "failedToRemoveSelectedContributors": "Не удалось удалить выбранных соавторов",
-      "removeSelectedConfirmMessage": "Это удалит {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}} из курса.",
-      "removeSelectedConfirmTitle": "Удалить {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}}?",
+      "removeSelectedConfirmMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Это удалит {count_number} соавтора из курса.",
+            "count_plural=few": "Это удалит {count_number} соавторов из курса.",
+            "count_plural=many": "Это удалит {count_number} соавторов из курса.",
+            "count_plural=*": "Это удалит {count_number} соавторов из курса."
+          }
+        }
+      ],
+      "removeSelectedConfirmTitle": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Удалить {count_number} соавтора?",
+            "count_plural=few": "Удалить {count_number} соавторов?",
+            "count_plural=many": "Удалить {count_number} соавторов?",
+            "count_plural=*": "Удалить {count_number} соавторов?"
+          }
+        }
+      ],
       "failedToUpdateContributor": "Не удалось обновить соавтора",
       "rowAlreadyGone": "Заявка уже отозвана — список обновлён",
       "inactive": "Неактивный",
@@ -4395,8 +5217,30 @@
       "statusColumn": "Статус",
       "statusInactive": "Неактивный",
       "statusPending": "В ожидании",
-      "successfullyAddedContributors": "Успешно добавлено {count, plural, one {# соавтор} few {# соавтора} many {# соавторов} other {# соавторов}}",
-      "successfullyRemovedContributors": "Успешно удалено {count, plural, one {# соавтор} few {# соавтора} many {# соавторов} other {# соавторов}}",
+      "successfullyAddedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Успешно добавлено {count_number} соавтор",
+            "count_plural=few": "Успешно добавлено {count_number} соавтора",
+            "count_plural=many": "Успешно добавлено {count_number} соавторов",
+            "count_plural=*": "Успешно добавлено {count_number} соавторов"
+          }
+        }
+      ],
+      "successfullyRemovedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Успешно удалено {count_number} соавтор",
+            "count_plural=few": "Успешно удалено {count_number} соавтора",
+            "count_plural=many": "Успешно удалено {count_number} соавторов",
+            "count_plural=*": "Успешно удалено {count_number} соавторов"
+          }
+        }
+      ],
       "successfullyUpdatedContributor": "Соавтор успешно обновлен",
       "tableHeaderEmail": "Эл. почта",
       "tableHeaderName": "Имя",
@@ -4404,7 +5248,18 @@
       "tableHeaderStatus": "Статус",
       "title": "Соавторы курса",
       "usernameColumn": "Имя пользователя",
-      "usersSelectedMessage": "{count, plural, one {# пользователь выбран} few {# пользователя выбрано} many {# пользователей выбрано} other {# пользователей выбрано}}",
+      "usersSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} пользователь выбран",
+            "count_plural=few": "{count_number} пользователя выбрано",
+            "count_plural=many": "{count_number} пользователей выбрано",
+            "count_plural=*": "{count_number} пользователей выбрано"
+          }
+        }
+      ],
       "contributorPolicyStagedTitle": "Политика соавторства не сохраняется до нажатия кнопки «Сохранить»",
       "contributorPolicyStagedDescription": "Политика открытого или закрытого доступа остаётся локальной до сохранения этого раздела.",
       "rosterActionsImmediateTitle": "Действия с участниками применяются немедленно",
@@ -5364,7 +6219,17 @@
       },
       "title": "Настройки геймификации",
       "toast": {
-        "fromActivities": "из {count, plural, one {# активности} few {# активностей} other {# активностей}}",
+        "fromActivities": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "из {count_number} активности",
+              "count_plural=few": "из {count_number} активностей",
+              "count_plural=*": "из {count_number} активностей"
+            }
+          }
+        ],
         "levelUp": "Новый уровень!"
       }
     },
@@ -5392,9 +6257,29 @@
         "errorMessageDefault": "Неверный ввод",
         "invalidEmail": "Неверный адрес электронной почты",
         "invalidUrl": "Введите ссылку, начинающуюся с http:// или https://",
-        "maxChars": "Должно быть не более {count, plural, one {# символа} few {# символов} other {# символов}}",
+        "maxChars": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Должно быть не более {count_number} символа",
+              "count_plural=few": "Должно быть не более {count_number} символов",
+              "count_plural=*": "Должно быть не более {count_number} символов"
+            }
+          }
+        ],
         "minAmount": "Сумма должна быть не менее {min}",
-        "minChars": "Должно быть не менее {count, plural, one {# символа} few {# символов} other {# символов}}",
+        "minChars": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Должно быть не менее {count_number} символа",
+              "count_plural=few": "Должно быть не менее {count_number} символов",
+              "count_plural=*": "Должно быть не менее {count_number} символов"
+            }
+          }
+        ],
         "positiveNumber": "Должно быть положительное число",
         "requiredField": "Поле {fieldName} обязательно для заполнения"
       },
@@ -5509,7 +6394,17 @@
       "CollectionPage": {
         "courses": "Курсы в этой коллекции",
         "description": "Описание коллекции",
-        "lastUpdated": "Последнее обновление {date, date, short}",
+        "lastUpdated": [
+          {
+            "declarations": [
+              "input date",
+              "local date_datetime_month_numeric_day_numeric_year_2_digit = date: datetime month=numeric day=numeric year=2-digit"
+            ],
+            "match": {
+              "date=*": "Последнее обновление {date_datetime_month_numeric_day_numeric_year_2_digit}"
+            }
+          }
+        ],
         "title": "Коллекция"
       },
       "General": {
@@ -5609,7 +6504,21 @@
         "Errors": {
           "invalidVideoUrl": "Пожалуйста, введите действительный URL-адрес {type}.",
           "logoUploadFailed": "Не удалось загрузить логотип.",
-          "maxPreviewsError": "Вы можете добавить только {count, plural, one {# больше предварительный просмотр} few {# больше предварительных просмотра} other {# больше предварительных просмотров}}.",
+          "maxPreviewsError": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Вы можете добавить только {count_number} больше предварительный просмотр.",
+                "count_plural=few": "Вы можете добавить только {count_number} больше предварительных просмотра.",
+                "count_plural=*": "Вы можете добавить только {count_number} больше предварительных просмотров."
+              }
+            }
+          ],
           "previewOrderUpdateFailed": "Не удалось обновить порядок предварительного просмотра.",
           "previewRemoveFailed": "Не удалось удалить предварительный просмотр.",
           "previewsUploadFailed": "Не удалось загрузить предварительные просмотры.",
@@ -5627,12 +6536,40 @@
           "logoUpdatedSuccess": "Логотип успешно обновлен.",
           "previewOrderUpdatedSuccess": "Порядок предварительного просмотра успешно обновлен.",
           "previewRemovedSuccess": "Предварительный просмотр успешно удален.",
-          "previewsAddedSuccess": "{count, plural, one {# предварительный просмотр успешно добавлен} few {# предварительных просмотра успешно добавлены} other {# предварительных просмотров успешно добавлены}}.",
+          "previewsAddedSuccess": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} предварительный просмотр успешно добавлен.",
+                "count_plural=few": "{count_number} предварительных просмотра успешно добавлены.",
+                "count_plural=*": "{count_number} предварительных просмотров успешно добавлены."
+              }
+            }
+          ],
           "removingPreview": "Удаление предварительного просмотра...",
           "thumbnailUpdatedSuccess": "Эскиз успешно обновлен.",
           "updatingPreviewOrder": "Обновление порядка предварительного просмотра...",
           "uploadingLogo": "Загрузка логотипа...",
-          "uploadingPreviews": "Загрузка {count, plural, one {# предварительного просмотра} few {# предварительных просмотров} other {# предварительных просмотров}}...",
+          "uploadingPreviews": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Загрузка {count_number} предварительного просмотра...",
+                "count_plural=few": "Загрузка {count_number} предварительных просмотров...",
+                "count_plural=*": "Загрузка {count_number} предварительных просмотров..."
+              }
+            }
+          ],
           "uploadingThumbnail": "Загрузка эскиза...",
           "videoPreviewAddFailed": "Не удалось добавить предварительный просмотр видео.",
           "videoPreviewAddedSuccess": "Предварительный просмотр видео успешно добавлен."
@@ -5912,7 +6849,22 @@
           "showLevelBadge": "Показать значок уровня",
           "title": "Настройка аватара",
           "unlockedAt": "Разблокировано на уровне {level}",
-          "unlockedItems": "{count, plural, one {# предмет разблокирован} few {# предмета разблокировано} many {# предметов разблокировано} other {# предметов разблокировано}}"
+          "unlockedItems": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} предмет разблокирован",
+                "count_plural=few": "{count_number} предмета разблокировано",
+                "count_plural=many": "{count_number} предметов разблокировано",
+                "count_plural=*": "{count_number} предметов разблокировано"
+              }
+            }
+          ]
         },
         "avatarUpdated": "Аватар успешно обновлён",
         "cancel": "Отмена",
@@ -6057,13 +7009,39 @@
           },
           "gold": "Золото",
           "lastUpdated": "Последнее обновление",
-          "learningStreakTooltip": "{count, plural, =1 {Серия обучения 1 день} other {Серия обучения # дней}}",
+          "learningStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "Серия обучения 1 день",
+                "count=*, count_plural=*": "Серия обучения {count_number} дней"
+              }
+            }
+          ],
           "level": "Уровень {level}",
           "levelLabel": "Уровень {level}",
           "levelShort": "Ур.{level}",
           "loading": "Загрузка таблицы лидеров...",
           "loadingTimeout": "Время ожидания истекло. Попробуйте еще раз.",
-          "loginStreakTooltip": "{count, plural, =1 {Серия входов 1 день} other {Серия входов # дней}}",
+          "loginStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "Серия входов 1 день",
+                "count=*, count_plural=*": "Серия входов {count_number} дней"
+              }
+            }
+          ],
           "noEntries": "Пока нет записей в таблице лидеров",
           "noLeaderboard": "Нет данных таблицы лидеров",
           "noParticipants": "Пока нет участников",
@@ -6256,7 +7234,22 @@
           "totalXP": "Всего ОП"
         },
         "streakWidget": {
-          "days": "{count, plural, one {# день} few {# дня} many {# дней} other {# дня}}",
+          "days": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} день",
+                "count_plural=few": "{count_number} дня",
+                "count_plural=many": "{count_number} дней",
+                "count_plural=*": "{count_number} дня"
+              }
+            }
+          ],
           "error": "Не удалось загрузить данные серии",
           "errors": {
             "timeout": "Время ожидания истекло. Попробуйте еще раз.",
@@ -6332,7 +7325,21 @@
         "toast": {
           "dailyLoginBonus": "Ежедневный бонус за вход!",
           "earnedXP": "Заработано {xp} опыта.",
-          "fromActivities": "из {count, plural, one {# действия} few {# действий} other {# действий}}",
+          "fromActivities": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "из {count_number} действия",
+                "count_plural=few": "из {count_number} действий",
+                "count_plural=*": "из {count_number} действий"
+              }
+            }
+          ],
           "levelUp": "Уровень выше!",
           "preferencesError": "Не удалось сохранить настройки",
           "preferencesReset": "Настройки сброшены по умолчанию",
@@ -6554,7 +7561,22 @@
           "toggleMode": "Переключить светлый / тёмный режим",
           "previousTheme": "Предыдущая тема",
           "nextTheme": "Следующая тема",
-          "themeCount": "{count, plural, one {# тема} few {# темы} many {# тем} other {# темы}}"
+          "themeCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} тема",
+                "count_plural=few": "{count_number} темы",
+                "count_plural=many": "{count_number} тем",
+                "count_plural=*": "{count_number} темы"
+              }
+            }
+          ]
         },
         "title": "Настройки аккаунта",
         "uploadingAvatar": "Загрузка",
@@ -6824,7 +7846,6 @@
         "emailSentNo": "Нет",
         "emailSentYes": "Отправлено",
         "enterEmailAddress": "Введите адрес электронной почты",
-        "errors": {},
         "signupStatusHeader": "Статус регистрации",
         "statusPending": "В ожидании",
         "statusSigned": "Зарегистрирован",
@@ -6954,8 +7975,36 @@
     "technicalDetails": "Технические детали:",
     "tryAgain": "Попробуйте снова",
     "rateLimited": "Слишком много запросов. Попробуйте чуть позже.",
-    "rateLimitedRetry": "Слишком много попыток. Попробуйте через {minutes, plural, one {# минуту} few {# минуты} other {# минут}}.",
-    "rateLimitedRetrySeconds": "Слишком много попыток. Попробуйте через {seconds, plural, one {# секунду} few {# секунды} other {# секунд}}.",
+    "rateLimitedRetry": [
+      {
+        "declarations": [
+          "input minutes",
+          "local minutes_plural = minutes: plural",
+          "local minutes_number = minutes: number"
+        ],
+        "selectors": ["minutes_plural"],
+        "match": {
+          "minutes_plural=one": "Слишком много попыток. Попробуйте через {minutes_number} минуту.",
+          "minutes_plural=few": "Слишком много попыток. Попробуйте через {minutes_number} минуты.",
+          "minutes_plural=*": "Слишком много попыток. Попробуйте через {minutes_number} минут."
+        }
+      }
+    ],
+    "rateLimitedRetrySeconds": [
+      {
+        "declarations": [
+          "input seconds",
+          "local seconds_plural = seconds: plural",
+          "local seconds_number = seconds: number"
+        ],
+        "selectors": ["seconds_plural"],
+        "match": {
+          "seconds_plural=one": "Слишком много попыток. Попробуйте через {seconds_number} секунду.",
+          "seconds_plural=few": "Слишком много попыток. Попробуйте через {seconds_number} секунды.",
+          "seconds_plural=*": "Слишком много попыток. Попробуйте через {seconds_number} секунд."
+        }
+      }
+    ],
     "networkUnavailable": "Нет соединения с сетью. Проверьте подключение.",
     "sessionExpired": "Сеанс истёк. Войдите снова.",
     "permissionDenied": "У вас нет прав для этого действия.",
@@ -7325,7 +8374,17 @@
       "republishGrade": "Опубликовать заново"
     },
     "Batch": {
-      "title": "Пакетное оценивание ({count, plural, one {# работа} few {# работы} other {# работ}})",
+      "title": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Пакетное оценивание ({count_number} работа)",
+            "count_plural=few": "Пакетное оценивание ({count_number} работы)",
+            "count_plural=*": "Пакетное оценивание ({count_number} работ)"
+          }
+        }
+      ],
       "subtitle": "Изменено черновиков: {count}",
       "close": "Закрыть панель пакетного оценивания",
       "position": "Студент {current} из {total}: {student}",
@@ -7336,7 +8395,17 @@
       "submitAll": "Отправить все ({count})",
       "submitting": "Отправка...",
       "confirmSubmitTitle": "Отправить оценки выбранным студентам?",
-      "confirmSubmitDesc": "Отправить оценки для {count, plural, one {# студента} few {# студентов} other {# студентов}}? Это действие нельзя отменить.",
+      "confirmSubmitDesc": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Отправить оценки для {count_number} студента? Это действие нельзя отменить.",
+            "count_plural=few": "Отправить оценки для {count_number} студентов? Это действие нельзя отменить.",
+            "count_plural=*": "Отправить оценки для {count_number} студентов? Это действие нельзя отменить."
+          }
+        }
+      ],
       "confirmSubmitAction": "Отправить все ({count})",
       "nothingToSubmit": "Измените хотя бы одну работу перед отправкой",
       "scoreRequired": "Для каждой изменённой работы нужна итоговая оценка",
@@ -7501,7 +8570,17 @@
     "selectAllButton": "Выбрать все",
     "selectCoursesDescription": "Выберите курсы, которые хотите включить в эту коллекцию",
     "selectCoursesLabel": "Выберите курсы",
-    "selectedCount": "{count, plural, =0 {Курсы не выбраны} one {# курс выбран} other {# курсов выбрано}}",
+    "selectedCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "Курсы не выбраны",
+          "count=*, count_plural=one": "{count_number} курс выбран",
+          "count=*, count_plural=*": "{count_number} курсов выбрано"
+        }
+      }
+    ],
     "title": "Создать новую коллекцию",
     "toast": {
       "failure": "Не удалось создать коллекцию. Пожалуйста, попробуйте снова.",
@@ -7547,7 +8626,17 @@
     },
     "collections": "Коллекции",
     "courses": "Курсы",
-    "coursesCount": "{count, plural, =0 {0 курсов} one {# курс} other {# курсов}}",
+    "coursesCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 курсов",
+          "count=*, count_plural=one": "{count_number} курс",
+          "count=*, count_plural=*": "{count_number} курсов"
+        }
+      }
+    ],
     "filterAll": "Все",
     "filterCollections": "Коллекции",
     "filterCourses": "Курсы",
@@ -7555,7 +8644,22 @@
     "noResultsMessage": "Мы не смогли найти результаты для \"{query}\". Попробуйте изменить поисковые термины или просмотреть наш рекомендуемый контент.",
     "noResultsTitle": "Результаты не найдены",
     "searching": "Ищем «{query}»…",
-    "resultsFound": "По запросу «{query}» {count, plural, one {найден # результат} few {найдено # результата} other {найдено # результатов}}",
+    "resultsFound": [
+      {
+        "declarations": [
+          "input query",
+          "input count",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "По запросу «{query}» найден {count_number} результат",
+          "count_plural=few": "По запросу «{query}» найдено {count_number} результата",
+          "count_plural=*": "По запросу «{query}» найдено {count_number} результатов"
+        }
+      }
+    ],
     "searchButton": "Поиск",
     "searchInputPlaceholder": "Поиск курсов, коллекций, пользователей...",
     "searchTitle": "Поиск",
@@ -7666,7 +8770,17 @@
     },
     "filters": {
       "label": "Аналитика",
-      "scopedCourses": "{count, plural, one {# курс} few {# курса} other {# курсов}} в охвате",
+      "scopedCourses": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} курс в охвате",
+            "count_plural=few": "{count_number} курса в охвате",
+            "count_plural=*": "{count_number} курсов в охвате"
+          }
+        }
+      ],
       "buckets": "шаги: {bucket}",
       "windowPrefix": "Период: {window}",
       "comparePrefix": "Сравнение: {compare}",
@@ -7833,7 +8947,17 @@
     "table": {
       "searchDefault": "Поиск...",
       "emptyDefault": "Строки не найдены для выбранных фильтров.",
-      "visibleRows": "{count, plural, one {# видимая строка} few {# видимых строки} other {# видимых строк}}",
+      "visibleRows": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} видимая строка",
+            "count_plural=few": "{count_number} видимых строки",
+            "count_plural=*": "{count_number} видимых строк"
+          }
+        }
+      ],
       "showingRows": "{from}–{to} из {total}",
       "page": "Страница {current} из {total}",
       "pagination": "Пагинация",
@@ -7864,7 +8988,21 @@
     "riskDistribution": {
       "title": "Распределение рисков",
       "description": "Учащиеся в зоне риска (средний и высокий риск) по уровню для текущего охвата.",
-      "preview": "Показаны топ-{shown} из {total, plural, one {# регистрации} other {# регистраций}} в зоне риска.",
+      "preview": [
+        {
+          "declarations": [
+            "input shown",
+            "input total",
+            "local total_plural = total: plural",
+            "local total_number = total: number"
+          ],
+          "selectors": ["total_plural"],
+          "match": {
+            "total_plural=one": "Показаны топ-{shown} из {total_number} регистрации в зоне риска.",
+            "total_plural=*": "Показаны топ-{shown} из {total_number} регистраций в зоне риска."
+          }
+        }
+      ],
       "learners": "Учащиеся",
       "emptyState": "Нет учащихся в зоне риска для текущего охвата."
     },
@@ -7903,10 +9041,30 @@
       "healthy": "В норме",
       "searchPlaceholder": "Поиск по учебными задачами...",
       "emptyMessage": "Нет проблемных учебных задач для текущего охвата.",
-      "rowCount": "{count, plural, one {# проблемная учебная задача} few {# проблемные учебные задачи} other {# проблемных учебных задач}}"
+      "rowCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} проблемная учебная задача",
+            "count_plural=few": "{count_number} проблемные учебные задачи",
+            "count_plural=*": "{count_number} проблемных учебных задач"
+          }
+        }
+      ]
     },
     "atRisk": {
-      "interventionsCount": "{count, plural, one {# мера поддержки зафиксирована} few {# меры поддержки зафиксировано} other {# мер поддержки зафиксировано}}",
+      "interventionsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} мера поддержки зафиксирована",
+            "count_plural=few": "{count_number} меры поддержки зафиксировано",
+            "count_plural=*": "{count_number} мер поддержки зафиксировано"
+          }
+        }
+      ],
       "noInterventions": "Меры поддержки не зафиксированы",
       "interventions": {
         "message": "Отметить: сообщение отправлено",
@@ -7928,7 +9086,17 @@
       "emptyMessage": "Нет учащихся в зоне риска для текущих фильтров.",
       "interventionLogged": "Мера поддержки зафиксирована",
       "interventionLogFailed": "Не удалось зафиксировать меру поддержки",
-      "gradeSubmissions": "Проверить {count, plural, one {# работу} few {# работы} other {# работ}}",
+      "gradeSubmissions": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Проверить {count_number} работу",
+            "count_plural=few": "Проверить {count_number} работы",
+            "count_plural=*": "Проверить {count_number} работ"
+          }
+        }
+      ],
       "riskComponents": {
         "inactivity": "Неактивность",
         "progress": "Отставание",
@@ -7986,7 +9154,18 @@
       "atRiskUnavailableDesc": "Для просмотра учащихся в зоне риска требуется аутентифицированный сеанс.",
       "atRiskLoadError": "Не удалось загрузить представление рисков учащихся.",
       "atRiskPageTitle": "Полный список учащихся в зоне риска",
-      "atRiskPageDescription": "{total, plural, one {# регистрация в охвате, по убыванию риска.} few {# регистрации в охвате, по убыванию риска.} many {# регистраций в охвате, по убыванию риска.} other {# регистрации в охвате, по убыванию риска.}}",
+      "atRiskPageDescription": [
+        {
+          "declarations": ["input total", "local total_plural = total: plural", "local total_number = total: number"],
+          "selectors": ["total_plural"],
+          "match": {
+            "total_plural=one": "{total_number} регистрация в охвате, по убыванию риска.",
+            "total_plural=few": "{total_number} регистрации в охвате, по убыванию риска.",
+            "total_plural=many": "{total_number} регистраций в охвате, по убыванию риска.",
+            "total_plural=*": "{total_number} регистрации в охвате, по убыванию риска."
+          }
+        }
+      ],
       "courseDetailBadge": "Детали курса",
       "courseStatCompletion": "Завершение",
       "courseStatAvgProgress": "Средний прогресс",
@@ -8099,7 +9278,22 @@
       "assessmentPassThresholdExam": "Проходной порог из настроек экзамена",
       "assessmentPassThreshold": "Проходной порог: {value}%",
       "assessmentStatGenerated": "Сформировано",
-      "assessmentOpsAuditBulkSummary": "{action} для {count, plural, one {# учащегося} few {# учащихся} other {# учащихся}}",
+      "assessmentOpsAuditBulkSummary": [
+        {
+          "declarations": [
+            "input action",
+            "input count",
+            "local count_plural = count: plural",
+            "local count_number = count: number"
+          ],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{action} для {count_number} учащегося",
+            "count_plural=few": "{action} для {count_number} учащихся",
+            "count_plural=*": "{action} для {count_number} учащихся"
+          }
+        }
+      ],
       "assessmentItemAccuracy": "Точность {value}%",
       "courseContentHealthNoLearners": "Пока нет данных: в курсе ещё нет учащихся.",
       "teacherFilterDenied": "Фильтр по преподавателю недоступен: просмотр аналитики другого преподавателя требует платформенного доступа.",
@@ -8219,43 +9413,154 @@
     "messages": {
       "grading_backlog": {
         "title": "Очередь проверки требует внимания",
-        "body": "{count, plural, one {# работа всё ещё ожидает} few {# работы всё ещё ожидают} other {# работ всё ещё ожидают}} проверки."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} работа всё ещё ожидает проверки.",
+              "count_plural=few": "{count_number} работы всё ещё ожидают проверки.",
+              "count_plural=*": "{count_number} работ всё ещё ожидают проверки."
+            }
+          }
+        ]
       },
       "engagement_dropped": {
         "title": "Вовлечённость снизилась",
-        "body": "Активных учащихся стало меньше на {delta_pct, number}% по сравнению с предыдущим периодом."
+        "body": [
+          {
+            "declarations": ["input delta_pct", "local delta_pct_number = delta_pct: number"],
+            "match": {
+              "delta_pct=*": "Активных учащихся стало меньше на {delta_pct_number}% по сравнению с предыдущим периодом."
+            }
+          }
+        ]
       },
       "content_stale": {
         "title": "Контент мог устареть",
-        "body": "Курс не обновлялся {days, plural, one {# день} few {# дня} other {# дней}}."
+        "body": [
+          {
+            "declarations": ["input days", "local days_plural = days: plural", "local days_number = days: number"],
+            "selectors": ["days_plural"],
+            "match": {
+              "days_plural=one": "Курс не обновлялся {days_number} день.",
+              "days_plural=few": "Курс не обновлялся {days_number} дня.",
+              "days_plural=*": "Курс не обновлялся {days_number} дней."
+            }
+          }
+        ]
       },
       "risk_spike": {
         "title": "Учащимся в зоне риска нужна поддержка",
-        "body": "{count, plural, one {# учащийся} few {# учащихся} other {# учащихся}} в охвате со средним или высоким риском."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} учащийся в охвате со средним или высоким риском.",
+              "count_plural=few": "{count_number} учащихся в охвате со средним или высоким риском.",
+              "count_plural=*": "{count_number} учащихся в охвате со средним или высоким риском."
+            }
+          }
+        ]
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: превышен срок проверки",
-        "body": "{breaches, plural, one {# работа} few {# работы} other {# работ}} в курсе «{course_name}» превысили целевой срок проверки {target_hours, number} ч; в очереди ещё {awaiting, number}, самая старая отправлена {oldest_hours, number} ч назад."
+        "body": [
+          {
+            "declarations": [
+              "input breaches",
+              "input course_name",
+              "input target_hours",
+              "input awaiting",
+              "input oldest_hours",
+              "local breaches_plural = breaches: plural",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local awaiting_number = awaiting: number",
+              "local oldest_hours_number = oldest_hours: number"
+            ],
+            "selectors": ["breaches_plural"],
+            "match": {
+              "breaches_plural=one": "{breaches_number} работа в курсе «{course_name}» превысили целевой срок проверки {target_hours_number} ч; в очереди ещё {awaiting_number}, самая старая отправлена {oldest_hours_number} ч назад.",
+              "breaches_plural=few": "{breaches_number} работы в курсе «{course_name}» превысили целевой срок проверки {target_hours_number} ч; в очереди ещё {awaiting_number}, самая старая отправлена {oldest_hours_number} ч назад.",
+              "breaches_plural=*": "{breaches_number} работ в курсе «{course_name}» превысили целевой срок проверки {target_hours_number} ч; в очереди ещё {awaiting_number}, самая старая отправлена {oldest_hours_number} ч назад."
+            }
+          }
+        ]
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: срок проверки на исходе",
-        "body": "{awaiting, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} в курсе «{course_name}»; самая старая открыта уже {oldest_hours, number} ч при цели {target_hours, number} ч."
+        "body": [
+          {
+            "declarations": [
+              "input awaiting",
+              "input course_name",
+              "input oldest_hours",
+              "input target_hours",
+              "local awaiting_plural = awaiting: plural",
+              "local awaiting_number = awaiting: number",
+              "local oldest_hours_number = oldest_hours: number",
+              "local target_hours_number = target_hours: number"
+            ],
+            "selectors": ["awaiting_plural"],
+            "match": {
+              "awaiting_plural=one": "{awaiting_number} работа ожидает в курсе «{course_name}»; самая старая открыта уже {oldest_hours_number} ч при цели {target_hours_number} ч.",
+              "awaiting_plural=few": "{awaiting_number} работы ожидают в курсе «{course_name}»; самая старая открыта уже {oldest_hours_number} ч при цели {target_hours_number} ч.",
+              "awaiting_plural=*": "{awaiting_number} работ ожидают в курсе «{course_name}»; самая старая открыта уже {oldest_hours_number} ч при цели {target_hours_number} ч."
+            }
+          }
+        ]
       },
       "completion_target_miss": {
         "title": "{course_name}: учащиеся рискуют не достичь цели по завершению",
-        "body": "{count, plural, one {# учащийся неактивен или ниже 70% прогресса} few {# учащихся неактивны или ниже 70% прогресса} other {# учащихся неактивны или ниже 70% прогресса}}."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} учащийся неактивен или ниже 70% прогресса.",
+              "count_plural=few": "{count_number} учащихся неактивны или ниже 70% прогресса.",
+              "count_plural=*": "{count_number} учащихся неактивны или ниже 70% прогресса."
+            }
+          }
+        ]
       },
       "course_completion_deadline": {
         "title": "{course_name}: прогноз завершения на 14 дней",
-        "body": "Ожидаемая доля завершения — {expected_pct, number}% при текущем темпе."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Ожидаемая доля завершения — {expected_pct_number}% при текущем темпе."
+            }
+          }
+        ]
       },
       "grading_backlog_7d": {
         "title": "Ожидаемая очередь проверки через 7 дней",
-        "body": "Очередь может вырасти до {count, plural, one {# работы} few {# работ} other {# работ}}."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Очередь может вырасти до {count_number} работы.",
+              "count_plural=few": "Очередь может вырасти до {count_number} работ.",
+              "count_plural=*": "Очередь может вырасти до {count_number} работ."
+            }
+          }
+        ]
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: повышенный риск провала",
-        "body": "Ожидаемая доля провалов — {expected_pct, number}% до следующего дедлайна."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Ожидаемая доля провалов — {expected_pct_number}% до следующего дедлайна."
+            }
+          }
+        ]
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: резкое падение вовлечённости",
@@ -8274,27 +9579,99 @@
         "body": "Средний балл изменился после последнего обновления контента."
       },
       "new_at_risk_learners": {
-        "title": "{count, plural, one {# новый учащийся в зоне риска} few {# новых учащихся в зоне риска} other {# новых учащихся в зоне риска}} в курсе «{course_name}»",
+        "title": [
+          {
+            "declarations": [
+              "input count",
+              "input course_name",
+              "local count_plural = count: plural",
+              "local count_number = count: number"
+            ],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} новый учащийся в зоне риска в курсе «{course_name}»",
+              "count_plural=few": "{count_number} новых учащихся в зоне риска в курсе «{course_name}»",
+              "count_plural=*": "{count_number} новых учащихся в зоне риска в курсе «{course_name}»"
+            }
+          }
+        ],
         "body": "Риск вырос относительно собственной базы каждого учащегося; просмотрите список наблюдения."
       },
       "low_pass_rate": {
-        "title": "Доля сдавших «{assessment_title}» — {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "Доля сдавших «{assessment_title}» — {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "Низкая доля сдавших выделяет это оценивание."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "Доля сдавших «{assessment_title}» — {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "Доля сдавших «{assessment_title}» — {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "Диагностика качества выделяет это оценивание."
       },
       "content_bottleneck": {
         "title": "«{activity_name}» — узкое место контента",
-        "body": "{signal, select, high_time_low_completion {Много времени, низкое завершение.} exit_after_open {Учащиеся открывают и уходят, не завершив.} repeated_assessment_failures {Результаты оценивания падают вокруг этой учебной задачи.} stale_low_performance {Устаревший контент коррелирует с низкими результатами.} other {Учащиеся застревают на этой учебной задаче.}}"
+        "body": [
+          {
+            "declarations": ["input signal"],
+            "selectors": ["signal"],
+            "match": {
+              "signal=high_time_low_completion": "Много времени, низкое завершение.",
+              "signal=exit_after_open": "Учащиеся открывают и уходят, не завершив.",
+              "signal=repeated_assessment_failures": "Результаты оценивания падают вокруг этой учебной задачи.",
+              "signal=stale_low_performance": "Устаревший контент коррелирует с низкими результатами.",
+              "signal=*": "Учащиеся застревают на этой учебной задаче."
+            }
+          }
+        ]
       },
       "workload_backlog": {
-        "title": "{count, plural, one {# работа ожидает} few {# работы ожидают} other {# работ ожидают}} проверки",
-        "body": "{breaches, number} превысили целевой срок проверки {target_hours, number} ч; прогноз на 7 дней — {forecast_7d, number}."
+        "title": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} работа ожидает проверки",
+              "count_plural=few": "{count_number} работы ожидают проверки",
+              "count_plural=*": "{count_number} работ ожидают проверки"
+            }
+          }
+        ],
+        "body": [
+          {
+            "declarations": [
+              "input breaches",
+              "input target_hours",
+              "input forecast_7d",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local forecast_7d_number = forecast_7d: number"
+            ],
+            "match": {
+              "breaches=*, target_hours=*, forecast_7d=*": "{breaches_number} превысили целевой срок проверки {target_hours_number} ч; прогноз на 7 дней — {forecast_7d_number}."
+            }
+          }
+        ]
       },
       "completion_improved": {
-        "title": "Завершение курса «{course_name}» выросло на {delta_pts, number} п.",
+        "title": [
+          {
+            "declarations": ["input course_name", "input delta_pts", "local delta_pts_number = delta_pts: number"],
+            "match": {
+              "course_name=*, delta_pts=*": "Завершение курса «{course_name}» выросло на {delta_pts_number} п."
+            }
+          }
+        ],
         "body": "Эта когорта опережает исторический базовый уровень курса."
       },
       "missing_event_sources": {
@@ -8303,7 +9680,17 @@
       },
       "thin_course_data": {
         "title": "В некоторых курсах слишком мало данных",
-        "body": "{count, plural, one {# курс} few {# курса} other {# курсов}} с менее чем 5 учащимися."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} курс с менее чем 5 учащимися.",
+              "count_plural=few": "{count_number} курса с менее чем 5 учащимися.",
+              "count_plural=*": "{count_number} курсов с менее чем 5 учащимися."
+            }
+          }
+        ]
       },
       "stale_rollup": {
         "title": "Агрегации старше 24 часов",
@@ -8365,7 +9752,19 @@
         "selectCell": "Выбрать ячейку прогресса",
         "actionRequired": "Требует проверки",
         "late": "Поздно",
-        "attempts": "{count, plural, =0 {# попыток} one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
+        "attempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count", "count_plural"],
+            "match": {
+              "count=0, count_plural=*": "{count_number} попыток",
+              "count=*, count_plural=one": "{count_number} попытка",
+              "count=*, count_plural=few": "{count_number} попытки",
+              "count=*, count_plural=many": "{count_number} попыток",
+              "count=*, count_plural=*": "{count_number} попытки"
+            }
+          }
+        ],
         "pendingAttempt": "На проверке · попытка {attempt}",
         "awaitingReleaseAttempt": "Ожидает публикации · попытка {attempt}",
         "releaseGrade": "Публикация оценки",
@@ -8419,14 +9818,35 @@
           "form": "Форма",
           "file": "Файл"
         },
-        "exportDone": "CSV сохранён: {count} {count, plural, one {учащийся} few {учащихся} many {учащихся} other {учащихся}}",
+        "exportDone": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "CSV сохранён: {count} учащийся",
+              "count_plural=few": "CSV сохранён: {count} учащихся",
+              "count_plural=many": "CSV сохранён: {count} учащихся",
+              "count_plural=*": "CSV сохранён: {count} учащихся"
+            }
+          }
+        ],
         "noLearnersTitle": "В курсе пока нет учащихся",
         "noLearnersDescription": "Учащиеся появятся здесь, когда запишутся на курс."
       },
       "Review": {
         "layout": {
           "title": "Проверка работ",
-          "queueDescription": "{count} {count, plural, one {работа требует} few {работы требуют} other {работ требуют}} проверки из {total} всего",
+          "queueDescription": [
+            {
+              "declarations": ["input count", "input total", "local count_plural = count: plural"],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count} работа требует проверки из {total} всего",
+                "count_plural=few": "{count} работы требуют проверки из {total} всего",
+                "count_plural=*": "{count} работ требуют проверки из {total} всего"
+              }
+            }
+          ],
           "stats": {
             "total": "Всего",
             "needsGrading": "На проверке",
@@ -8451,7 +9871,21 @@
             "attempt": "Попытка"
           },
           "totals": {
-            "submissions": "{count, plural, one {# работа} few {# работы} other {# работ}}",
+            "submissions": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} работа",
+                  "count_plural=few": "{count_number} работы",
+                  "count_plural=*": "{count_number} работ"
+                }
+              }
+            ],
             "submissionsAtLeast": "{count}+ работ",
             "selected": "{count} выбрано"
           },
@@ -8527,10 +9961,38 @@
             "published": "Выбранные оценки опубликованы",
             "returned": "Выбранные работы возвращены",
             "bulkActionFailed": "Массовое действие не удалось",
-            "bulkPartialFailure": "Не удалось обновить {failed, plural, one {# работу} few {# работы} many {# работ} other {# работы}} — подробности ниже.",
+            "bulkPartialFailure": [
+              {
+                "declarations": [
+                  "input failed",
+                  "local failed_plural = failed: plural",
+                  "local failed_number = failed: number"
+                ],
+                "selectors": ["failed_plural"],
+                "match": {
+                  "failed_plural=one": "Не удалось обновить {failed_number} работу — подробности ниже.",
+                  "failed_plural=few": "Не удалось обновить {failed_number} работы — подробности ниже.",
+                  "failed_plural=many": "Не удалось обновить {failed_number} работ — подробности ниже.",
+                  "failed_plural=*": "Не удалось обновить {failed_number} работы — подробности ниже."
+                }
+              }
+            ],
             "deadlineQueued": "Продление срока поставлено в очередь",
             "extendFailed": "Не удалось продлить срок",
-            "deadlineExtended": "Срок продлён для {count, plural, one {# учащегося} other {# учащихся}}",
+            "deadlineExtended": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Срок продлён для {count_number} учащегося",
+                  "count_plural=*": "Срок продлён для {count_number} учащихся"
+                }
+              }
+            ],
             "hiddenReleased": "Скрытые оценки опубликованы",
             "releaseFailed": "Не удалось открыть скрытые оценки",
             "publishedWithSkipped": "Опубликовано: {count}. Без оценки пропущено: {skipped}.",
@@ -8549,10 +10011,52 @@
             "deadlineDetail": "Затронуто учащихся: {count}. {reason}",
             "releaseFinished": "Публикация оценок завершена",
             "releaseDetail": "Новых видимых: {published}. Уже видимых: {alreadyVisible}.",
-            "releaseNeedsGrading": "{count, plural, one {# работа ещё ждёт проверки и не была опубликована} few {# работы ещё ждут проверки и не были опубликованы} other {# работ ещё ждут проверки и не были опубликованы}}",
-            "releaseSkipped": "{count, plural, one {# работа осталась скрытой: изменилась во время публикации (опубликуйте ещё раз) или это ваша попытка} few {# работы остались скрытыми: изменились во время публикации (опубликуйте ещё раз) или это ваши попытки} other {# работ остались скрытыми: изменились во время публикации (опубликуйте ещё раз) или это ваши попытки}}"
+            "releaseNeedsGrading": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} работа ещё ждёт проверки и не была опубликована",
+                  "count_plural=few": "{count_number} работы ещё ждут проверки и не были опубликованы",
+                  "count_plural=*": "{count_number} работ ещё ждут проверки и не были опубликованы"
+                }
+              }
+            ],
+            "releaseSkipped": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} работа осталась скрытой: изменилась во время публикации (опубликуйте ещё раз) или это ваша попытка",
+                  "count_plural=few": "{count_number} работы остались скрытыми: изменились во время публикации (опубликуйте ещё раз) или это ваши попытки",
+                  "count_plural=*": "{count_number} работ остались скрытыми: изменились во время публикации (опубликуйте ещё раз) или это ваши попытки"
+                }
+              }
+            ]
           },
-          "failedSubmissionsTitle": "{count, plural, one {# работу} few {# работы} other {# работ}} не удалось обновить:",
+          "failedSubmissionsTitle": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} работу не удалось обновить:",
+                "count_plural=few": "{count_number} работы не удалось обновить:",
+                "count_plural=*": "{count_number} работ не удалось обновить:"
+              }
+            }
+          ],
           "preview": {
             "selectedSubmissions": "Выбранные работы",
             "gradeReady": "Готово к оценке",
@@ -8564,9 +10068,38 @@
             "notSet": "Не задано",
             "noReason": "Причина не указана",
             "dueDatePast": "Новый срок должен быть в будущем.",
-            "notReturnable": "{count, plural, one {# опубликованная работа} few {# опубликованные работы} other {# опубликованных работ}} нельзя вернуть — они пропущены.",
+            "notReturnable": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} опубликованная работа нельзя вернуть — они пропущены.",
+                  "count_plural=few": "{count_number} опубликованные работы нельзя вернуть — они пропущены.",
+                  "count_plural=*": "{count_number} опубликованных работ нельзя вернуть — они пропущены."
+                }
+              }
+            ],
             "releaseHiddenDescription": "Будут открыты все проверенные, но ещё скрытые работы по этой учебной задаче — независимо от того, что выбрано в списке.",
-            "notGraded": "{count, plural, one {# работа без оценки будет пропущена} few {# работы без оценки будут пропущены} other {# работ без оценки будут пропущены}}: {names}",
+            "notGraded": [
+              {
+                "declarations": [
+                  "input count",
+                  "input names",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} работа без оценки будет пропущена: {names}",
+                  "count_plural=few": "{count_number} работы без оценки будут пропущены: {names}",
+                  "count_plural=*": "{count_number} работ без оценки будут пропущены: {names}"
+                }
+              }
+            ],
             "notEnrolled": "Не записаны на курс — продление их не коснётся: {names}",
             "staff": "Команда курса — продление их не коснётся: {names}"
           },
@@ -8719,7 +10252,17 @@
           "curriculum": "Учебный план",
           "studio": "Студия"
         },
-        "issueCount": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}",
+        "issueCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} проблема",
+              "count_plural=few": "{count_number} проблемы",
+              "count_plural=*": "{count_number} проблем"
+            }
+          }
+        ],
         "preview": "Предпросмотр",
         "scheduleOptions": "Параметры планирования",
         "schedulePublication": "Запланировать публикацию",
@@ -8732,7 +10275,17 @@
         "hideInspector": "Скрыть инспектор",
         "showInspector": "Показать инспектор",
         "publishNow": "Опубликовать сейчас",
-        "issueBlocks": "{count} {count, plural, one {проблема блокирует} few {проблемы блокируют} other {проблем блокируют}} публикацию.",
+        "issueBlocks": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count} проблема блокирует публикацию.",
+              "count_plural=few": "{count} проблемы блокируют публикацию.",
+              "count_plural=*": "{count} проблем блокируют публикацию."
+            }
+          }
+        ],
         "assessmentLabel": "Активность",
         "itemsLabel": "Элементы",
         "outlineEmptyMessage": "Пока нет элементов. Нажмите +, чтобы добавить.",
@@ -8744,7 +10297,16 @@
             "question": "Вопрос",
             "task": "Учебная задача"
           },
-          "outlineTitle": "{itemNoun, select, Вопрос {Структура вопросов} other {Структура: {itemNoun}}}",
+          "outlineTitle": [
+            {
+              "declarations": ["input itemNoun"],
+              "selectors": ["itemNoun"],
+              "match": {
+                "itemNoun=Вопрос": "Структура вопросов",
+                "itemNoun=*": "Структура: {itemNoun}"
+              }
+            }
+          ],
           "outlinePoints": "Всего баллов: {points}",
           "outlineDescription": "Добавьте {itemNoun}, чтобы начать.",
           "kindLabels": {
@@ -8768,16 +10330,43 @@
           "createFailed": "Не удалось создать {itemNoun}",
           "deleteFailed": "Не удалось удалить {itemNoun}",
           "duplicateFailed": "Не удалось дублировать {itemNoun}",
-          "copyOfItem": "{itemNoun, select, Вопрос {Копия вопроса} other {Копия: {itemNoun}}}",
+          "copyOfItem": [
+            {
+              "declarations": ["input itemNoun"],
+              "selectors": ["itemNoun"],
+              "match": {
+                "itemNoun=Вопрос": "Копия вопроса",
+                "itemNoun=*": "Копия: {itemNoun}"
+              }
+            }
+          ],
           "assessmentDetailsTitle": "Детали активности",
           "assessmentDetailsExamDescription": "Название, инструкции, расписание и политика экзамена.",
-          "itemMetadataTitle": "{itemNoun, select, Вопрос {Метаданные вопроса} other {Метаданные: {itemNoun}}}",
+          "itemMetadataTitle": [
+            {
+              "declarations": ["input itemNoun"],
+              "selectors": ["itemNoun"],
+              "match": {
+                "itemNoun=Вопрос": "Метаданные вопроса",
+                "itemNoun=*": "Метаданные: {itemNoun}"
+              }
+            }
+          ],
           "itemMetadataDescription": "Общее название, инструкция и количество баллов.",
           "titleLabel": "Название",
           "pointsLabel": "Баллы",
           "pointsCompact": "{points} б.",
           "moreIssues": "...и еще {count}",
-          "itemContentTitle": "{itemNoun, select, Вопрос {Содержимое вопроса} other {Содержимое: {itemNoun}}}",
+          "itemContentTitle": [
+            {
+              "declarations": ["input itemNoun"],
+              "selectors": ["itemNoun"],
+              "match": {
+                "itemNoun=Вопрос": "Содержимое вопроса",
+                "itemNoun=*": "Содержимое: {itemNoun}"
+              }
+            }
+          ],
           "itemContentDescription": "Редактирование содержимого.",
           "pointsAbbreviation": "б.",
           "weightLabel": "вес",
@@ -8798,7 +10387,16 @@
           "allowResultReviewLabel": "Разрешить просмотр результатов",
           "showCorrectAnswersLabel": "Показывать правильные ответы",
           "readOnlyBadge": "Только чтение",
-          "workflowTitle": "{itemNoun, select, Вопрос {Рабочий процесс вопроса} other {Рабочий процесс: {itemNoun}}}",
+          "workflowTitle": [
+            {
+              "declarations": ["input itemNoun"],
+              "selectors": ["itemNoun"],
+              "match": {
+                "itemNoun=Вопрос": "Рабочий процесс вопроса",
+                "itemNoun=*": "Рабочий процесс: {itemNoun}"
+              }
+            }
+          ],
           "workflowDescription": "Настройте детали, содержание и проверки публикации в одной студии до того, как это увидят студенты.",
           "readyToPublish": "Готово к публикации",
           "needsWork": "Нужно доработать",
@@ -8806,7 +10404,23 @@
           "itemsMetricLabel": "{itemNoun}",
           "pointsMetricLabel": "Всего баллов",
           "publishReadinessLabel": "Готовность",
-          "issuesMetricValue": "{count, plural, =0 {Нет проблем} one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
+          "issuesMetricValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Нет проблем",
+                "count=*, count_plural=one": "{count_number} проблема",
+                "count=*, count_plural=few": "{count_number} проблемы",
+                "count=*, count_plural=many": "{count_number} проблем",
+                "count=*, count_plural=*": "{count_number} проблемы"
+              }
+            }
+          ],
           "setupStepLabel": "Настройка",
           "setupStepDescription": "Назовите активность и задайте правила оценивания.",
           "contentStepLabel": "Содержание",
@@ -8872,7 +10486,7 @@
           },
           "errorLoading": "Ошибка при загрузке студии",
           "Items": {
-            "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
+            "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\\\LaTeX$.",
             "OpenText": {
               "prompt": "Вопрос",
               "minWords": "Минимальное количество слов",
@@ -8933,7 +10547,21 @@
           "impactIntegrity": "Контроль",
           "summaryTimed": "{minutes} мин. после старта",
           "summaryUntimed": "Без таймера",
-          "summaryAttempts": "{count, plural, one {# попытка} few {# попытки} other {# попыток}}",
+          "summaryAttempts": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} попытка",
+                "count_plural=few": "{count_number} попытки",
+                "count_plural=*": "{count_number} попыток"
+              }
+            }
+          ],
           "summaryUnlimitedAttempts": "Без ограничения попыток",
           "summaryIntegrityOn": "Включены контрольные ограничения",
           "summaryIntegrityOff": "Контрольные ограничения выключены",
@@ -9034,7 +10662,21 @@
           "previewEmptyPair": "Пустое значение",
           "previewEmptyField": "Поле без названия",
           "previewFieldMeta": "{type} · {required}",
-          "previewMinWords": "Развернутый ответ студента · минимум {count, plural, one {# слово} few {# слова} other {# слов}}",
+          "previewMinWords": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Развернутый ответ студента · минимум {count_number} слово",
+                "count_plural=few": "Развернутый ответ студента · минимум {count_number} слова",
+                "count_plural=*": "Развернутый ответ студента · минимум {count_number} слов"
+              }
+            }
+          ],
           "previewOpenText": "Развернутый ответ студента",
           "correct": "Верно",
           "required": "обязательное",
@@ -9079,14 +10721,40 @@
           "goToQuestion": "Исправить",
           "goToQuestions": "Добавить вопрос",
           "questionContext": "В{number}: {title}",
-          "questionIssueSummary": "{count, plural, =1 {1 проблема в этом вопросе} one {# проблема в этом вопросе} few {# проблемы в этом вопросе} many {# проблем в этом вопросе} other {# проблемы в этом вопросе}}",
+          "questionIssueSummary": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 проблема в этом вопросе",
+                "count=*, count_plural=one": "{count_number} проблема в этом вопросе",
+                "count=*, count_plural=few": "{count_number} проблемы в этом вопросе",
+                "count=*, count_plural=many": "{count_number} проблем в этом вопросе",
+                "count=*, count_plural=*": "{count_number} проблемы в этом вопросе"
+              }
+            }
+          ],
           "untitledQuestion": "Вопрос без названия",
           "unknownQuestion": "Неизвестный вопрос",
           "statusPublished": "Опубликован",
           "statusPublishedDesc": "Студенты теперь могут получить доступ к этой учебной задаче.",
           "statusScheduled": "Запланирован",
           "statusScheduledDesc": "Учебная задача будет опубликована в запланированное время.",
-          "statusHasIssues": "{count} {count, plural, =1 {проблема} few {проблемы} other {проблем}} нужно устранить перед публикацией",
+          "statusHasIssues": [
+            {
+              "declarations": ["input count", "local count_plural = count: plural"],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count} проблема нужно устранить перед публикацией",
+                "count=*, count_plural=few": "{count} проблемы нужно устранить перед публикацией",
+                "count=*, count_plural=*": "{count} проблем нужно устранить перед публикацией"
+              }
+            }
+          ],
           "statusHasIssuesDesc": "Устраните все проблемы в списке для разблокировки публикации.",
           "statusReadyToPublish": "Готов к публикации",
           "statusReadyDesc": "Все проверки пройдены. Вы можете опубликовать сейчас или запланировать.",
@@ -9102,7 +10770,23 @@
           "openLearnerPreview": "Открыть предпросмотр учащегося",
           "previewGateDesc": "Проверьте студенческий опыт перед изменением статуса публикации.",
           "previewGateHighStakesDesc": "Эта учебная задача считается высокозначимой. Запустите хотя бы один предпросмотр перед публикацией или планированием.",
-          "previewCompletedCount": "{count, plural, =0 {Предпросмотры не запускались} one {# предпросмотр} few {# предпросмотра} many {# предпросмотров} other {# предпросмотра}}",
+          "previewCompletedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Предпросмотры не запускались",
+                "count=*, count_plural=one": "{count_number} предпросмотр",
+                "count=*, count_plural=few": "{count_number} предпросмотра",
+                "count=*, count_plural=many": "{count_number} предпросмотров",
+                "count=*, count_plural=*": "{count_number} предпросмотра"
+              }
+            }
+          ],
           "previewScenarioGeneric": "Обычный учащийся",
           "previewScenarioGenericDesc": "Стандартный вид доступного студента",
           "previewScenarioSpecific": "Конкретный учащийся",
@@ -9176,7 +10860,22 @@
           "lockoutDesc": "Никто не сможет пройти эту учебную задачу, пока вы не добавите учащихся или группы. Сохранить всё равно?",
           "lockoutConfirm": "Сохранить всё равно",
           "dropAttemptsTitle": "Учащиеся с попытками потеряют доступ",
-          "dropAttemptsDesc": "{count, plural, one {# учащийся, у которого уже есть попытки, больше не сможет} few {# учащихся, у которых уже есть попытки, больше не смогут} many {# учащихся, у которых уже есть попытки, больше не смогут} other {# учащегося, у которых уже есть попытки, больше не смогут}} проходить эту учебную задачу. Свои результаты они по-прежнему увидят. Сохранить?",
+          "dropAttemptsDesc": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} учащийся, у которого уже есть попытки, больше не сможет проходить эту учебную задачу. Свои результаты они по-прежнему увидят. Сохранить?",
+                "count_plural=few": "{count_number} учащихся, у которых уже есть попытки, больше не смогут проходить эту учебную задачу. Свои результаты они по-прежнему увидят. Сохранить?",
+                "count_plural=many": "{count_number} учащихся, у которых уже есть попытки, больше не смогут проходить эту учебную задачу. Свои результаты они по-прежнему увидят. Сохранить?",
+                "count_plural=*": "{count_number} учащегося, у которых уже есть попытки, больше не смогут проходить эту учебную задачу. Свои результаты они по-прежнему увидят. Сохранить?"
+              }
+            }
+          ],
           "fixHighlighted": "Исправьте отмеченные записи.",
           "eligible": "Доступны",
           "effective": "Итог",
@@ -9207,13 +10906,43 @@
           "previewNote": "В списке — участники курса (записанные на курс учащиеся) и группы, привязанные к курсу; поиск фильтрует этот список.",
           "overrideBadge": "Исключение",
           "expandGroup": "Показать раскрытие группы",
-          "groupExpansion": "Эта группа раскрывается в {count, plural, one {# учащегося} few {# учащихся} many {# учащихся} other {# учащегося}} до индивидуальных исключений.",
+          "groupExpansion": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Эта группа раскрывается в {count_number} учащегося до индивидуальных исключений.",
+                "count_plural=few": "Эта группа раскрывается в {count_number} учащихся до индивидуальных исключений.",
+                "count_plural=many": "Эта группа раскрывается в {count_number} учащихся до индивидуальных исключений.",
+                "count_plural=*": "Эта группа раскрывается в {count_number} учащегося до индивидуальных исключений."
+              }
+            }
+          ],
           "selectedDrawerTitle": "Выбранная аудитория",
           "selectedDrawerDesc": "Проверьте выбранных учащихся, группы и исключения политики перед сохранением.",
           "selectedEmpty": "Ограниченная аудитория не выбрана.",
           "removeSelected": "Удалить из выбранной аудитории",
           "clearOverride": "Очистить",
-          "groupMembers": "{count, plural, one {# участник} few {# участника} many {# участников} other {# участника}}",
+          "groupMembers": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} участник",
+                "count_plural=few": "{count_number} участника",
+                "count_plural=many": "{count_number} участников",
+                "count_plural=*": "{count_number} участника"
+              }
+            }
+          ],
           "accommodationsTitle": "Индивидуальные условия",
           "accommodationsDesc": "Примените исключения по сроку, попыткам и штрафу за опоздание к выбранным учащимся.",
           "overrideAttempts": "Лимит попыток",
@@ -9222,14 +10951,60 @@
           "waiveLatePenalty": "Отменить штраф за опоздание",
           "overrideNote": "Внутренняя заметка",
           "overrideNotePlaceholder": "Причина или ссылка на согласование",
-          "applyOverrides": "Применить к {count, plural, =0 {0 учащимся} one {# учащемуся} few {# учащимся} many {# учащимся} other {# учащегося}}",
+          "applyOverrides": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Применить к 0 учащимся",
+                "count=*, count_plural=one": "Применить к {count_number} учащемуся",
+                "count=*, count_plural=few": "Применить к {count_number} учащимся",
+                "count=*, count_plural=many": "Применить к {count_number} учащимся",
+                "count=*, count_plural=*": "Применить к {count_number} учащегося"
+              }
+            }
+          ],
           "overrideNoUsers": "Выберите хотя бы одного учащегося перед применением индивидуальных условий.",
           "overrideSaveFailed": "Не удалось сохранить индивидуальные условия.",
-          "overrideSaved": "Индивидуальные условия сохранены для {count, plural, one {# учащегося} few {# учащихся} many {# учащихся} other {# учащегося}}.",
+          "overrideSaved": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Индивидуальные условия сохранены для {count_number} учащегося.",
+                "count_plural=few": "Индивидуальные условия сохранены для {count_number} учащихся.",
+                "count_plural=many": "Индивидуальные условия сохранены для {count_number} учащихся.",
+                "count_plural=*": "Индивидуальные условия сохранены для {count_number} учащегося."
+              }
+            }
+          ],
           "overrideDeleteFailed": "Не удалось очистить индивидуальные условия.",
           "overrideDeleted": "Индивидуальные условия очищены.",
           "retryOverrides": "Повторить условия",
-          "overrideAttemptsValue": "{count, plural, one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
+          "overrideAttemptsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} попытка",
+                "count_plural=few": "{count_number} попытки",
+                "count_plural=many": "{count_number} попыток",
+                "count_plural=*": "{count_number} попытки"
+              }
+            }
+          ],
           "overrideDueValue": "индивидуальный срок",
           "overrideWaiveLateValue": "штраф за опоздание отменен"
         },
@@ -9246,9 +11021,39 @@
           "scoreDistributionTitle": "Распределение баллов",
           "queueTitle": "Очередь проверки",
           "queueBody": "Оценивайте ручные задания, публикуйте завершенные результаты и возвращайте попытки на доработку.",
-          "queueTotal": "{count, plural, one {# сдача} few {# сдачи} many {# сдач} other {# сдачи}}",
+          "queueTotal": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} сдача",
+                "count_plural=few": "{count_number} сдачи",
+                "count_plural=many": "{count_number} сдач",
+                "count_plural=*": "{count_number} сдачи"
+              }
+            }
+          ],
           "queueTotalAtLeast": "{count}+ сдач",
-          "queueSelected": "{count, plural, one {# выбрана} few {# выбраны} many {# выбрано} other {# выбрано}}",
+          "queueSelected": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} выбрана",
+                "count_plural=few": "{count_number} выбраны",
+                "count_plural=many": "{count_number} выбрано",
+                "count_plural=*": "{count_number} выбрано"
+              }
+            }
+          ],
           "searchLearner": "Поиск учащегося",
           "statusFilter": "Фильтр статуса",
           "filterAll": "Все",
@@ -9277,7 +11082,22 @@
           "releaseAwaiting": "Ожидает публикации",
           "releaseVisible": "Видно",
           "releaseReturned": "Возвращено",
-          "integrityEventsValue": "{count, plural, one {# событие} few {# события} many {# событий} other {# события}}",
+          "integrityEventsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} событие",
+                "count_plural=few": "{count_number} события",
+                "count_plural=many": "{count_number} событий",
+                "count_plural=*": "{count_number} события"
+              }
+            }
+          ],
           "noIntegrityEvents": "Нет событий",
           "reviewSubmission": "Проверить",
           "previousPage": "Назад",
@@ -9290,7 +11110,22 @@
           "integrityEmptyBody": "В текущем окне очереди нет событий честности.",
           "questionActionTitle": "Действия по вопросам",
           "questionActionBody": "Подсказки аналитики ведут к вопросам, которые нужно исправить или рассмотреть для переоценки.",
-          "analyticsPromptCount": "{count, plural, one {# подсказка} few {# подсказки} many {# подсказок} other {# подсказки}}",
+          "analyticsPromptCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} подсказка",
+                "count_plural=few": "{count_number} подсказки",
+                "count_plural=many": "{count_number} подсказок",
+                "count_plural=*": "{count_number} подсказки"
+              }
+            }
+          ],
           "colQuestion": "Вопрос",
           "colKind": "Тип",
           "colMaxScore": "Баллы",
@@ -9351,8 +11186,23 @@
       "Items": {
         "Choice": {
           "prompt": "Формулировка",
-          "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} other {# баллов}}",
-          "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
+          "points": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} баллов",
+                "count=*, count_plural=one": "{count_number} балл",
+                "count=*, count_plural=few": "{count_number} балла",
+                "count=*, count_plural=*": "{count_number} баллов"
+              }
+            }
+          ],
+          "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\\\LaTeX$.",
           "type": "Тип",
           "trueLabel": "Верно",
           "falseLabel": "Неверно",
@@ -9501,7 +11351,22 @@
           "answerReview": "Просмотр ответов",
           "answered": "Отвечено",
           "answeredCount": "Отвечено {answered} из {total}",
-          "answeredSummary": "{count, plural, one {Отвечено на # вопрос} few {Отвечено на # вопроса} many {Отвечено на # вопросов} other {Отвечено на # вопроса}}",
+          "answeredSummary": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Отвечено на {count_number} вопрос",
+                "count_plural=few": "Отвечено на {count_number} вопроса",
+                "count_plural=many": "Отвечено на {count_number} вопросов",
+                "count_plural=*": "Отвечено на {count_number} вопроса"
+              }
+            }
+          ],
           "answersRecovered": "Ваши предыдущие ответы восстановлены",
           "antiCheatingDescription": "Нарушения отслеживаются. После {threshold} нарушений ваш тест будет автоматически завершён.",
           "antiCheatingEnabled": "Включена защита от списывания",
@@ -9551,7 +11416,21 @@
           "focus": "Фокус",
           "returnedForRevisionTitle": "Возвращено на доработку",
           "returnedForRevisionDescription": "Преподаватель вернул вашу работу для внесения исправлений. Пожалуйста, ознакомьтесь с комментариями и отправьте работу повторно.",
-          "violationsRecorded": "Зафиксировано {count, plural, one {# нарушение} few {# нарушения} other {# нарушений}} во время теста",
+          "violationsRecorded": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Зафиксировано {count_number} нарушение во время теста",
+                "count_plural=few": "Зафиксировано {count_number} нарушения во время теста",
+                "count_plural=*": "Зафиксировано {count_number} нарушений во время теста"
+              }
+            }
+          ],
           "antiCheatDefaultNotice": "Могут применяться меры защиты от копирования, навигации и полноэкранного режима.",
           "antiCheatCopyPaste": "блокировка копирования и вставки",
           "antiCheatTabSwitch": "отслеживание переключения вкладок",
@@ -9578,7 +11457,21 @@
           "keyboardShortcutsHelp": "Сочетания клавиш: ← / → навигация, 1-9 выбор ответа, Ctrl/Cmd+Enter открыть подтверждение отправки, ? показать это сообщение",
           "manageExam": "Управление вопросами и настройками теста",
           "manageQuestions": "Редактировать вопросы",
-          "minutes": "{count, plural, =1 {# минута} few {# минуты} other {# минут}}",
+          "minutes": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} минута",
+                "count=*, count_plural=few": "{count_number} минуты",
+                "count=*, count_plural=*": "{count_number} минут"
+              }
+            }
+          ],
           "navigationError": "Не удалось перейти к следующей активности",
           "next": "Следующий",
           "noAttemptsRemaining": "У вас не осталось попыток для этого теста",
@@ -9593,7 +11486,22 @@
             "unsatisfactory": "Требуется улучшение"
           },
           "pleaseRefresh": "Пожалуйста, обновите страницу и попробуйте снова",
-          "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} other {# баллов}}",
+          "points": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} баллов",
+                "count=*, count_plural=one": "{count_number} балл",
+                "count=*, count_plural=few": "{count_number} балла",
+                "count=*, count_plural=*": "{count_number} баллов"
+              }
+            }
+          ],
           "pointsLabel": "Баллы",
           "pointsValue": "{points} балл",
           "previewExam": "Предпросмотр теста",
@@ -9602,7 +11510,16 @@
           "proceedToNextActivity": "Следующая активность",
           "progress": "Прогресс",
           "question": "Вопрос",
-          "questionAriaLabel": "Вопрос {number}{answered, select, true { - отвечено} other {}}",
+          "questionAriaLabel": [
+            {
+              "declarations": ["input number", "input answered"],
+              "selectors": ["answered"],
+              "match": {
+                "answered=true": "Вопрос {number} - отвечено",
+                "answered=*": "Вопрос {number}"
+              }
+            }
+          ],
           "questionNavigator": "Навигатор вопросов",
           "questionNavigatorDescription": "Нажмите, чтобы перейти к любому вопросу",
           "questionNumber": "Вопрос {number}",
@@ -9644,7 +11561,21 @@
           "timeRemaining": "Осталось времени",
           "totalQuestions": "Всего вопросов",
           "unanswered": "Без ответа",
-          "unansweredQuestionsWarning": "У вас {count, plural, one {# вопрос} few {# вопроса} other {# вопросов}} без ответа. Вы уверены, что хотите отправить?",
+          "unansweredQuestionsWarning": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "У вас {count_number} вопрос без ответа. Вы уверены, что хотите отправить?",
+                "count_plural=few": "У вас {count_number} вопроса без ответа. Вы уверены, что хотите отправить?",
+                "count_plural=*": "У вас {count_number} вопросов без ответа. Вы уверены, что хотите отправить?"
+              }
+            }
+          ],
           "unlimited": "Неограниченно",
           "unlimitedAttempts": "Неограниченные попытки",
           "unsupportedQuestionType": "Неподдерживаемый тип вопроса",
@@ -9677,7 +11608,30 @@
           "connectionLostTitle": "Подключение потеряно",
           "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
           "draftConflictDescription": "Более новая версия #{latestVersion} ваших ответов была сохранена на сервере в {latestSavedAt}. Какую версию вы хотите использовать?",
-          "draftConflictAnswerCounts": "Локально: {localCount, plural, one {# ответ} few {# ответа} other {# ответов}} | На сервере: {serverCount, plural, one {# ответ} few {# ответа} other {# ответов}}",
+          "draftConflictAnswerCounts": [
+            {
+              "declarations": [
+                "input localCount",
+                "input serverCount",
+                "local localCount_plural = localCount: plural",
+                "local localCount_number = localCount: number",
+                "local serverCount_plural = serverCount: plural",
+                "local serverCount_number = serverCount: number"
+              ],
+              "selectors": ["localCount_plural", "serverCount_plural"],
+              "match": {
+                "localCount_plural=one, serverCount_plural=one": "Локально: {localCount_number} ответ | На сервере: {serverCount_number} ответ",
+                "localCount_plural=one, serverCount_plural=few": "Локально: {localCount_number} ответ | На сервере: {serverCount_number} ответа",
+                "localCount_plural=one, serverCount_plural=*": "Локально: {localCount_number} ответ | На сервере: {serverCount_number} ответов",
+                "localCount_plural=few, serverCount_plural=one": "Локально: {localCount_number} ответа | На сервере: {serverCount_number} ответ",
+                "localCount_plural=few, serverCount_plural=few": "Локально: {localCount_number} ответа | На сервере: {serverCount_number} ответа",
+                "localCount_plural=few, serverCount_plural=*": "Локально: {localCount_number} ответа | На сервере: {serverCount_number} ответов",
+                "localCount_plural=*, serverCount_plural=one": "Локально: {localCount_number} ответов | На сервере: {serverCount_number} ответ",
+                "localCount_plural=*, serverCount_plural=few": "Локально: {localCount_number} ответов | На сервере: {serverCount_number} ответа",
+                "localCount_plural=*, serverCount_plural=*": "Локально: {localCount_number} ответов | На сервере: {serverCount_number} ответов"
+              }
+            }
+          ],
           "timeRemainingValue": "Осталось времени: {time}"
         },
         "CodeChallenge": {
@@ -9799,7 +11753,22 @@
           "passed": "Пройден",
           "points": "Баллы",
           "pointsDescription": "Максимум баллов за эту задачу",
-          "pointsShort": "{count, plural, one {# балл} few {# балла} many {# баллов} other {# балла}}",
+          "pointsShort": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} балл",
+                "count_plural=few": "{count_number} балла",
+                "count_plural=many": "{count_number} баллов",
+                "count_plural=*": "{count_number} балла"
+              }
+            }
+          ],
           "popularLanguages": "Популярные",
           "removeTestCase": "Удалить",
           "results": "Результаты",
@@ -9887,7 +11856,23 @@
           "selectCell": "Выбрать ячейку прогресса",
           "actionRequired": "Требует проверки",
           "late": "Поздно",
-          "attempts": "{count, plural, =0 {# попыток} one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
+          "attempts": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} попыток",
+                "count=*, count_plural=one": "{count_number} попытка",
+                "count=*, count_plural=few": "{count_number} попытки",
+                "count=*, count_plural=many": "{count_number} попыток",
+                "count=*, count_plural=*": "{count_number} попытки"
+              }
+            }
+          ],
           "refresh": "Обновить",
           "export": "Экспорт",
           "noScore": "Оценки пока нет",
@@ -10447,7 +12432,22 @@
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
     "stepsLabel": "шагов",
-    "stepsProgress": "{completed} / {total, plural, one {# шаг} few {# шага} other {# шагов}}",
+    "stepsProgress": [
+      {
+        "declarations": [
+          "input completed",
+          "input total",
+          "local total_plural = total: plural",
+          "local total_number = total: number"
+        ],
+        "selectors": ["total_plural"],
+        "match": {
+          "total_plural=one": "{completed} / {total_number} шаг",
+          "total_plural=few": "{completed} / {total_number} шага",
+          "total_plural=*": "{completed} / {total_number} шагов"
+        }
+      }
+    ],
     "viewCertificate": "Просмотреть сертификат",
     "quitCourseConfirmTitle": "Покинуть курс «{course}»?",
     "quitCourseConfirmDescription": "Отметки о прохождении уроков будут сброшены; отправленные работы и оценки сохранятся. Это действие нельзя отменить.",
@@ -10679,9 +12679,31 @@
       "audio": "Аудио",
       "anyFile": "Любой файл"
     },
-    "requirementMaxFiles": "{count, plural, one {До # файла} few {До # файлов} many {До # файлов} other {До # файла}}",
+    "requirementMaxFiles": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "До {count_number} файла",
+          "count_plural=few": "До {count_number} файлов",
+          "count_plural=many": "До {count_number} файлов",
+          "count_plural=*": "До {count_number} файла"
+        }
+      }
+    ],
     "requirementMaxSize": "До {size} МБ каждый",
-    "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",
+    "maxFilesAllowed": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Можно загрузить не больше {count_number} файла",
+          "count_plural=few": "Можно загрузить не больше {count_number} файлов",
+          "count_plural=many": "Можно загрузить не больше {count_number} файлов",
+          "count_plural=*": "Можно загрузить не больше {count_number} файла"
+        }
+      }
+    ],
     "fileTooLarge": "Файл больше {size} МБ",
     "fileTypeNotAllowed": "Недопустимый тип файла ({type})",
     "noExtension": "без расширения",
@@ -10710,7 +12732,18 @@
     "attemptNumber": "Попытка №{number}",
     "attemptOrdinal": "№{number}",
     "draft": "Черновик",
-    "fileCount": "{count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "fileCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} файл",
+          "count_plural=few": "{count_number} файла",
+          "count_plural=many": "{count_number} файлов",
+          "count_plural=*": "{count_number} файла"
+        }
+      }
+    ],
     "submissionReceived": "Отправка получена",
     "attempt": "Попытка",
     "files": "Файлы",
@@ -10750,7 +12783,23 @@
     "openButton": "Открыть",
     "downloadButton": "Скачать",
     "noSubmissions": "Нет отправок, соответствующих этому фильтру.",
-    "attemptInfo": "Попытка №{attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "attemptInfo": [
+      {
+        "declarations": [
+          "input attemptNumber",
+          "input count",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Попытка №{attemptNumber} · {count_number} файл",
+          "count_plural=few": "Попытка №{attemptNumber} · {count_number} файла",
+          "count_plural=many": "Попытка №{attemptNumber} · {count_number} файлов",
+          "count_plural=*": "Попытка №{attemptNumber} · {count_number} файла"
+        }
+      }
+    ],
     "submittedAt": "Отправлено {date}",
     "submittedAsDraft": "Сохранено как черновик",
     "late": "С опозданием",
@@ -10978,7 +13027,18 @@
       "confirmDelete": "Удалить диалог",
       "threadsLoading": "Загрузка диалогов…",
       "threadsEmpty": "Сохранённых диалогов пока нет.",
-      "threadMessageCount": "{count, plural, one {# сообщение} few {# сообщения} many {# сообщений} other {# сообщения}}",
+      "threadMessageCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} сообщение",
+            "count_plural=few": "{count_number} сообщения",
+            "count_plural=many": "{count_number} сообщений",
+            "count_plural=*": "{count_number} сообщения"
+          }
+        }
+      ],
       "streamingStatus": "Формируем ответ по выбранным материалам курса.",
       "cancelledStatus": "Ответ остановлен. Частичный текст сохранён.",
       "error": "Не удалось завершить ответ. Ваш вопрос сохранён.",
@@ -11021,7 +13081,18 @@
       "published": "Опубликовано",
       "modelRecorded": "Модель: {name}",
       "modelNotRecorded": "Модель не указана",
-      "citationsCount": "{count, plural, one {# источник} few {# источника} many {# источников} other {# источника}}",
+      "citationsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} источник",
+            "count_plural=few": "{count_number} источника",
+            "count_plural=many": "{count_number} источников",
+            "count_plural=*": "{count_number} источника"
+          }
+        }
+      ],
       "criticalBlockers": "Критические проблемы",
       "contentStrengths": "Сильные стороны материала",
       "findings": "Выводы",
@@ -11305,7 +13376,23 @@
         "description": "Оценка в курсе «{course}» сохранена, но ещё не видна учащемуся.",
         "action": "Проверить и опубликовать"
       },
-      "grouped": "«{course}»: {count, plural, one {# работа ждёт} few {# работы ждут} many {# работ ждут} other {# работы ждут}} проверки."
+      "grouped": [
+        {
+          "declarations": [
+            "input course",
+            "input count",
+            "local count_plural = count: plural",
+            "local count_number = count: number"
+          ],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "«{course}»: {count_number} работа ждёт проверки.",
+            "count_plural=few": "«{course}»: {count_number} работы ждут проверки.",
+            "count_plural=many": "«{course}»: {count_number} работ ждут проверки.",
+            "count_plural=*": "«{course}»: {count_number} работы ждут проверки."
+          }
+        }
+      ]
     },
     "sections": {
       "learner": {
@@ -11426,10 +13513,52 @@
       }
     },
     "metrics": {
-      "courses": "{count, plural, one {# курс} few {# курса} many {# курсов} other {# курса}}",
-      "breaches": "{count, plural, one {# нарушение} few {# нарушения} many {# нарушений} other {# нарушения}}",
-      "submissions": "{count, plural, one {# работа} few {# работы} many {# работ} other {# работы}}",
-      "awaitingReview": "{count, plural, one {# ожидает проверки} other {# ожидают проверки}}",
+      "courses": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} курс",
+            "count_plural=few": "{count_number} курса",
+            "count_plural=many": "{count_number} курсов",
+            "count_plural=*": "{count_number} курса"
+          }
+        }
+      ],
+      "breaches": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} нарушение",
+            "count_plural=few": "{count_number} нарушения",
+            "count_plural=many": "{count_number} нарушений",
+            "count_plural=*": "{count_number} нарушения"
+          }
+        }
+      ],
+      "submissions": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} работа",
+            "count_plural=few": "{count_number} работы",
+            "count_plural=many": "{count_number} работ",
+            "count_plural=*": "{count_number} работы"
+          }
+        }
+      ],
+      "awaitingReview": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} ожидает проверки",
+            "count_plural=*": "{count_number} ожидают проверки"
+          }
+        }
+      ],
       "forecast": "прогноз: {count}",
       "percentUsed": "{count} % использовано"
     },

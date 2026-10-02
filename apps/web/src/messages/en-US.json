@@ -1,4 +1,5 @@
 {
+  "$schema": "https://inlang.com/schema/inlang-message-format",
   "Activities": {
     "AiAssistantPanel": {
       "title": "AI Assistant",
@@ -23,7 +24,16 @@
       "sourcesAvailable": "{count} modes available",
       "contextLabel": "Context used",
       "courseContext": "Current course",
-      "sourceCount": "{count, plural, one {# source} other {# sources}} included",
+      "sourceCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} source included",
+            "count_plural=*": "{count_number} sources included"
+          }
+        }
+      ],
       "visibility": {
         "student": "Published material only",
         "teacher": "Teacher context",
@@ -244,7 +254,16 @@
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value} ms",
       "timeSecondsValue": "{value} s",
-      "hiddenTestsCount": "{count, plural, one {# hidden test} other {# hidden tests}}",
+      "hiddenTestsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} hidden test",
+            "count_plural=*": "{count_number} hidden tests"
+          }
+        }
+      ],
       "memoryLimitValue": "{value} MB",
       "otherLanguages": "Other Languages",
       "output": "Output",
@@ -252,7 +271,16 @@
       "passed": "Passed",
       "points": "Points",
       "pointsDescription": "Maximum points for this challenge",
-      "pointsShort": "{count, plural, one {# pt} other {# pts}}",
+      "pointsShort": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} pt",
+            "count_plural=*": "{count_number} pts"
+          }
+        }
+      ],
       "popularLanguages": "Popular",
       "removeTestCase": "Remove",
       "results": "Results",
@@ -526,7 +554,16 @@
       "exportFailed": "Failed to export test suite.",
       "importSuccess": "Successfully imported {count} test cases.",
       "importFailed": "Invalid import file format.",
-      "requirementsPending": "{count, plural, one {# requirement pending} other {# requirements pending}}",
+      "requirementsPending": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} requirement pending",
+            "count_plural=*": "{count_number} requirements pending"
+          }
+        }
+      ],
       "allChecksPassed": "All checks passed",
       "solutionAccepted": "Solution Accepted",
       "submissionRequiresReview": "Submission Requires Review",
@@ -617,7 +654,16 @@
       "keyboardShortcutsHelp": "Shortcuts: ← / → navigate questions, 1-9 select answers, Ctrl/Cmd+Enter open submit confirmation, ? show this message",
       "manageExam": "Manage exam questions and settings",
       "manageQuestions": "Manage Questions",
-      "minutes": "{count, plural, =1 {# minute} other {# minutes}}",
+      "minutes": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=1, count_plural=*": "{count_number} minute",
+            "count=*, count_plural=*": "{count_number} minutes"
+          }
+        }
+      ],
       "navigationError": "Failed to navigate to next activity",
       "next": "Next",
       "noAttemptsRemaining": "You have no attempts remaining for this exam",
@@ -632,7 +678,17 @@
         "unsatisfactory": "Needs improvement"
       },
       "pleaseRefresh": "Please refresh the page and try again",
-      "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
+      "points": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "{count_number} points",
+            "count=*, count_plural=one": "{count_number} point",
+            "count=*, count_plural=*": "{count_number} points"
+          }
+        }
+      ],
       "pointsLabel": "Points",
       "pointsValue": "Worth {points} points",
       "previewExam": "Preview Exam",
@@ -641,7 +697,16 @@
       "proceedToNextActivity": "Next activity",
       "progress": "Progress",
       "question": "Question",
-      "questionAriaLabel": "Question {number}{answered, select, true { - answered} other {}}",
+      "questionAriaLabel": [
+        {
+          "declarations": ["input number", "input answered"],
+          "selectors": ["answered"],
+          "match": {
+            "answered=true": "Question {number} - answered",
+            "answered=*": "Question {number}"
+          }
+        }
+      ],
       "questionNavigator": "Question Navigator",
       "questionNavigatorDescription": "Click to jump to any question",
       "questionNumber": "Question {number}",
@@ -684,7 +749,16 @@
       "timeRemaining": "Time remaining",
       "totalQuestions": "Total Questions",
       "unanswered": "Unanswered",
-      "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
+      "unansweredQuestionsWarning": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "You have {count_number} unanswered question. Are you sure you want to submit?",
+            "count_plural=*": "You have {count_number} unanswered questions. Are you sure you want to submit?"
+          }
+        }
+      ],
       "unlimited": "Unlimited",
       "unlimitedAttempts": "Unlimited Attempts",
       "unsupportedQuestionType": "Unsupported question type",
@@ -695,7 +769,16 @@
       "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
       "violationDialogTitle": "Security violation detected",
       "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-      "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
+      "violationsRecorded": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} violation recorded during this exam",
+            "count_plural=*": "{count_number} violations recorded during this exam"
+          }
+        }
+      ],
       "yourAnswer": "Your Answer",
       "latestSubmission": "Latest submission",
       "resultsWaitingForReleaseTitle": "Results awaiting publication",
@@ -824,7 +907,16 @@
     "accessBlocked": "Access blocked",
     "attemptExhausted": "Attempts exhausted",
     "signInRequired": "Sign in to continue",
-    "attemptLimit": "{count, plural, one {# attempt} other {# attempts}} allowed",
+    "attemptLimit": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} attempt allowed",
+          "count_plural=*": "{count_number} attempts allowed"
+        }
+      }
+    ],
     "passingScore": "Passing score: {score}%",
     "releaseMode": "Release: {mode}",
     "submittedAt": "Submitted {date}",
@@ -848,10 +940,37 @@
       "medium": "Medium"
     },
     "relativeTime": {
-      "day": "{count, plural, one {# day ago} other {# days ago}}",
-      "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
+      "day": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} day ago",
+            "count_plural=*": "{count_number} days ago"
+          }
+        }
+      ],
+      "hour": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} hour ago",
+            "count_plural=*": "{count_number} hours ago"
+          }
+        }
+      ],
       "justNow": "just now",
-      "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
+      "minute": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} minute ago",
+            "count_plural=*": "{count_number} minutes ago"
+          }
+        }
+      ]
     },
     "status": {
       "active": "Active",
@@ -881,7 +1000,20 @@
       "wrongCredentials": "Wrong login or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "rateLimited": "Too many attempts. Please try again later.",
-      "rateLimitedRetry": "Too many attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+      "rateLimitedRetry": [
+        {
+          "declarations": [
+            "input minutes",
+            "local minutes_plural = minutes: plural",
+            "local minutes_number = minutes: number"
+          ],
+          "selectors": ["minutes_plural"],
+          "match": {
+            "minutes_plural=one": "Too many attempts. Try again in {minutes_number} minute.",
+            "minutes_plural=*": "Too many attempts. Try again in {minutes_number} minutes."
+          }
+        }
+      ],
       "noAccount": "No account yet?",
       "loginIdentifier": "Email or username",
       "loginIdentifierPlaceholder": "Enter your email or username",
@@ -1211,7 +1343,16 @@
     "DataTable": {
       "searchPlaceholder": "Search table...",
       "emptyMessage": "No rows found.",
-      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
+      "visibleRows": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} visible row",
+            "count_plural=*": "{count_number} visible rows"
+          }
+        }
+      ],
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "prev": "Previous",
@@ -1484,7 +1625,16 @@
           "backlog": "Backlog",
           "pass_rate": "Pass rate"
         },
-        "rows": "{count, plural, one {# row} other {# rows}}",
+        "rows": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} row",
+              "count_plural=*": "{count_number} rows"
+            }
+          }
+        ],
         "chooseMetric": "Choose a metric to load its source rows.",
         "noSourceRows": "No source rows found for this metric.",
         "yes": "Yes",
@@ -1544,7 +1694,17 @@
       "settings": "Settings"
     },
     "CollectionThumbnail": {
-      "courseCount": "{count, plural, =0 {0 courses} one {# course} other {# courses}}",
+      "courseCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "0 courses",
+            "count=*, count_plural=one": "{count_number} course",
+            "count=*, count_plural=*": "{count_number} courses"
+          }
+        }
+      ],
       "deleteButtonText": "Delete Collection",
       "deleteConfirmationMessage": "Are you sure you want to delete this collection?",
       "deleteConfirmationTitle": "Delete {collectionName}?",
@@ -1578,7 +1738,16 @@
     "CourseThumbnail": {
       "viewCertificate": "View certificate",
       "reviewCompletion": "Review course summary",
-      "authorLabel": "{count, plural, one {Author} other {Authors}}",
+      "authorLabel": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Author",
+            "count_plural=*": "Authors"
+          }
+        }
+      ],
       "authors": "Authors",
       "ownerBadge": "Owner",
       "continueLearning": "Continue Learning",
@@ -1602,7 +1771,17 @@
       "toastDeleteError": "Failed to delete course. Please try again.",
       "toastDeleteSuccess": "Course deleted successfully",
       "updated": "Updated",
-      "updatedDate": "Updated {updateDate, date, medium}",
+      "updatedDate": [
+        {
+          "declarations": [
+            "input updateDate",
+            "local updateDate_datetime_month_short_day_numeric_year_numeric = updateDate: datetime month=short day=numeric year=numeric"
+          ],
+          "match": {
+            "updateDate=*": "Updated {updateDate_datetime_month_short_day_numeric_year_numeric}"
+          }
+        }
+      ],
       "archive": "Archive",
       "restore": "Restore"
     },
@@ -1993,7 +2172,16 @@
       "system": "System",
       "custom": "Custom",
       "systemRoleReadOnly": "System role: managed by the platform, cannot be edited",
-      "grantsCount": "{count, plural, one {# permission} other {# permissions}}",
+      "grantsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} permission",
+            "count_plural=*": "{count_number} permissions"
+          }
+        }
+      ],
       "managePermissionsTitle": "Permissions of “{roleName}”",
       "managePermissionsDescription": "Permissions are resource:action:scope triples. Pick from the list or type one.",
       "grantPlaceholder": "e.g. course:read:all",
@@ -2070,7 +2258,16 @@
       "optional": "Optional",
       "points": "Points",
       "pointsLabel": "Points",
-      "pointsValue": "{points} {points, plural, one {point} other {points}}",
+      "pointsValue": [
+        {
+          "declarations": ["input points", "local points_plural = points: plural"],
+          "selectors": ["points_plural"],
+          "match": {
+            "points_plural=one": "{points} point",
+            "points_plural=*": "{points} points"
+          }
+        }
+      ],
       "questionBank": "Question Bank",
       "questionCreated": "Question created successfully",
       "questionDeleted": "Question deleted successfully",
@@ -2155,7 +2352,17 @@
       "authRequired": "Authentication required. Please log in.",
       "autoGradedBySystem": "Auto graded by system",
       "blankPlaceholder": "Enter the correct answer",
-      "blanksCount": "{count, plural, =0 {# blanks} one {# blank} other {# blanks}}",
+      "blanksCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=0, count_plural=*": "{count_number} blanks",
+            "count=*, count_plural=one": "{count_number} blank",
+            "count=*, count_plural=*": "{count_number} blanks"
+          }
+        }
+      ],
       "correct": "Correct",
       "correctAnswer": "Correct Answer",
       "correctAnswerLabel": "Correct Answer",
@@ -2300,10 +2507,28 @@
       "noSubtitlesYet": "No subtitles added yet",
       "organizationDataNotLoaded": "Organization data is not loaded. Please refresh the page.",
       "playbackOptions": "Playback Options",
-      "processingFiles": "Processing {count, plural, one {# file} other {# files}}...",
+      "processingFiles": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Processing {count_number} file...",
+            "count_plural=*": "Processing {count_number} files..."
+          }
+        }
+      ],
       "removeSubtitleAriaLabel": "Remove {filename}",
       "seconds": "sec",
-      "settingsActiveCount": "{count, plural, one {# active} other {# active}}",
+      "settingsActiveCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} active",
+            "count_plural=*": "{count_number} active"
+          }
+        }
+      ],
       "startMuted": "Start muted",
       "startMutedDescription": "Audio is muted initially",
       "startTimeLabel": "Start Time",
@@ -2438,8 +2663,26 @@
       "saving": "Saving…",
       "saved": "Saved",
       "saveFailed": "Save failed",
-      "issueToggle": "{count, plural, one {# issue} other {# issues}}",
-      "wordCount": "{count, plural, one {# word} other {# words}}"
+      "issueToggle": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} issue",
+            "count_plural=*": "{count_number} issues"
+          }
+        }
+      ],
+      "wordCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} word",
+            "count_plural=*": "{count_number} words"
+          }
+        }
+      ]
     },
     "linkDialog": {
       "title": "Insert link",
@@ -2467,7 +2710,16 @@
     },
     "validation": {
       "required": "Content is required.",
-      "tooLong": "Content is {count, plural, one {# character} other {# characters}} over the limit.",
+      "tooLong": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Content is {count_number} character over the limit.",
+            "count_plural=*": "Content is {count_number} characters over the limit."
+          }
+        }
+      ],
       "nearLimit": "Content is approaching the character limit.",
       "rawHtml": "Raw HTML is not supported.",
       "unsafeLink": "One or more links use an unsafe protocol.",
@@ -2724,7 +2976,16 @@
         "atLeastOneLearningItem": "Add at least one outcome with text",
         "invalidFormat": "Invalid format",
         "invalidJsonFormat": "Invalid JSON format",
-        "maxLength": "Must be {count, plural, one {# character} other {# characters}} or less",
+        "maxLength": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Must be {count_number} character or less",
+              "count_plural=*": "Must be {count_number} characters or less"
+            }
+          }
+        ],
         "required": "{fieldName} is required",
         "saveFailed": "Failed to save course general info."
       },
@@ -2823,7 +3084,17 @@
     "deleteChapter": "Delete Chapter",
     "deleteChapterButton": "Delete Chapter",
     "deleteChapterConfirmation": "Are you sure you want to delete this chapter?",
-    "deleteChapterConfirmationWithCount": "This will permanently delete the chapter and its {count, plural, =0 {0 activities} one {# activity} other {# activities}}.",
+    "deleteChapterConfirmationWithCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "This will permanently delete the chapter and its 0 activities.",
+          "count=*, count_plural=one": "This will permanently delete the chapter and its {count_number} activity.",
+          "count=*, count_plural=*": "This will permanently delete the chapter and its {count_number} activities."
+        }
+      }
+    ],
     "deleteChapterTitle": "Delete {name}?",
     "chapterUpdatedSuccess": "Chapter name updated",
     "chapterUpdateFailed": "Failed to update the chapter",
@@ -2833,7 +3104,23 @@
     "edit": "Edit",
     "editButton": "Edit",
     "noActivities": "No activities yet",
-    "deleteChapterConfirmationBreakdown": "This will permanently delete the chapter and its {count, plural, =0 {0 activities} one {# activity} other {# activities}} ({published} published, {drafts} drafts).",
+    "deleteChapterConfirmationBreakdown": [
+      {
+        "declarations": [
+          "input count",
+          "input published",
+          "input drafts",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "This will permanently delete the chapter and its 0 activities ({published} published, {drafts} drafts).",
+          "count=*, count_plural=one": "This will permanently delete the chapter and its {count_number} activity ({published} published, {drafts} drafts).",
+          "count=*, count_plural=*": "This will permanently delete the chapter and its {count_number} activities ({published} published, {drafts} drafts)."
+        }
+      }
+    ],
     "noActivitiesHint": "Add your first activity below",
     "save": "Save draft",
     "cancel": "Cancel"
@@ -2848,8 +3135,27 @@
     "noPublishedActivities": "This course has no published lessons yet",
     "about": "About",
     "access": "Access",
-    "activitiesCount": "{count, plural, one {# Activity} other {# Activities}}",
-    "activityCount": "{count, plural, =0 {0 Activities} one {# Activity} other {# Activities}}",
+    "activitiesCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} Activity",
+          "count_plural=*": "{count_number} Activities"
+        }
+      }
+    ],
+    "activityCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 Activities",
+          "count=*, count_plural=one": "{count_number} Activity",
+          "count=*, count_plural=*": "{count_number} Activities"
+        }
+      }
+    ],
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "admin": "Admin",
@@ -2897,7 +3203,16 @@
     "reply": "Reply",
     "save": "Save draft",
     "saveChanges": "Save Changes",
-    "showReplies": "Show {count, plural, one {# reply} other {# replies}}",
+    "showReplies": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Show {count_number} reply",
+          "count_plural=*": "Show {count_number} replies"
+        }
+      }
+    ],
     "startDiscussionPlaceholder": "Start a discussion about this course...",
     "statusComplete": "Complete",
     "statusGraded": "Graded",
@@ -2954,7 +3269,16 @@
     "CourseAuthors": {
       "unknownAuthor": "Unknown",
       "and": " & ",
-      "andMoreAuthors": "& {count, plural, one {# more} other {# more}}",
+      "andMoreAuthors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "& {count_number} more",
+            "count_plural=*": "& {count_number} more"
+          }
+        }
+      ],
       "authorsAndUpdates": "Authors & Updates ",
       "cancel": "Cancel",
       "contentRequired": "Content is required",
@@ -2991,7 +3315,18 @@
       "contentRequired": "Content is required",
       "courseLabel": "Course",
       "createdAt": "Created at {date}",
-      "createdAtFull": "Created at {date, date, long} {date, time, short}",
+      "createdAtFull": [
+        {
+          "declarations": [
+            "input date",
+            "local date_datetime_month_long_day_numeric_year_numeric = date: datetime month=long day=numeric year=numeric",
+            "local date_datetime_hour_numeric_minute_numeric = date: datetime hour=numeric minute=numeric"
+          ],
+          "match": {
+            "date=*": "Created at {date_datetime_month_long_day_numeric_year_numeric} {date_datetime_hour_numeric_minute_numeric}"
+          }
+        }
+      ],
       "createdAtRelative": "{time} ago",
       "createdAtTooltipPrefix": "Created at ",
       "delete": "Delete",
@@ -3058,7 +3393,21 @@
       "moreAuthors": "& {count} more",
       "progressCard": {
         "activitiesCompletedLabel": "activities completed",
-        "chapterActivitiesCount": "{completed}/{total, plural, one {# activity} other {# activities}}",
+        "chapterActivitiesCount": [
+          {
+            "declarations": [
+              "input completed",
+              "input total",
+              "local total_plural = total: plural",
+              "local total_number = total: number"
+            ],
+            "selectors": ["total_plural"],
+            "match": {
+              "total_plural=one": "{completed}/{total_number} activity",
+              "total_plural=*": "{completed}/{total_number} activities"
+            }
+          }
+        ],
         "complete": "Complete",
         "completedAllActivities": "Great job! You have completed all activities.",
         "courseCompleted": "Course Completed!"
@@ -3068,7 +3417,20 @@
       "openCourse": "Open course",
       "startCourseError": "Failed to start the course. Please try again later.",
       "startError": "Failed to start the course. Please try again later.",
-      "startLearningJourney": "{totalActivities, plural, one {# activity} other {# activities}} in this course",
+      "startLearningJourney": [
+        {
+          "declarations": [
+            "input totalActivities",
+            "local totalActivities_plural = totalActivities: plural",
+            "local totalActivities_number = totalActivities: number"
+          ],
+          "selectors": ["totalActivities_plural"],
+          "match": {
+            "totalActivities_plural=one": "{totalActivities_number} activity in this course",
+            "totalActivities_plural=*": "{totalActivities_number} activities in this course"
+          }
+        }
+      ],
       "startSuccess": "Successfully started the course",
       "startedCourseSuccess": "Successfully started the course",
       "startingCourse": "Starting course...",
@@ -3412,10 +3774,49 @@
           "medium": "Medium"
         },
         "relativeTime": {
-          "day": "{count, plural, one {# day ago} other {# days ago}}",
-          "hour": "{count, plural, one {# hour ago} other {# hours ago}}",
+          "day": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} day ago",
+                "count_plural=*": "{count_number} days ago"
+              }
+            }
+          ],
+          "hour": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} hour ago",
+                "count_plural=*": "{count_number} hours ago"
+              }
+            }
+          ],
           "justNow": "just now",
-          "minute": "{count, plural, one {# minute ago} other {# minutes ago}}"
+          "minute": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} minute ago",
+                "count_plural=*": "{count_number} minutes ago"
+              }
+            }
+          ]
         },
         "status": {
           "active": "Active",
@@ -3456,7 +3857,16 @@
       "avgProgress": "Avg. Progress",
       "backupData": "Backup Data",
       "basedOnLoginStreaks": "Based on login streaks",
-      "bulkOperationCompletedDescription": "Successfully processed {count, plural, one {# user} other {# users}}",
+      "bulkOperationCompletedDescription": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Successfully processed {count_number} user",
+            "count_plural=*": "Successfully processed {count_number} users"
+          }
+        }
+      ],
       "bulkOperationCompletedTitle": "Bulk Operation Completed",
       "bulkOperationFailedDescription": "Please try again",
       "bulkOperationFailedTitle": "Bulk Operation Failed",
@@ -3471,7 +3881,16 @@
       "coursesCompleted": "Courses Completed",
       "coursesStarted": "Courses Started",
       "dailyActiveUsers": "Daily Active Users",
-      "enrollments": "{count, plural, one {# enrollment} other {# enrollments}}",
+      "enrollments": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} enrollment",
+            "count_plural=*": "{count_number} enrollments"
+          }
+        }
+      ],
       "errorLoadingAlertsData": "Error loading alerts",
       "errorLoadingAnalyticsData": "Error loading analytics data",
       "errorLoadingGamificationData": "Error loading gamification data",
@@ -3593,34 +4012,112 @@
           "delete": "Delete selected",
           "movePrivate": "Move selected to private",
           "publish": "Publish selected",
-          "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+          "selectedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} selected",
+                "count_plural=*": "{count_number} selected"
+              }
+            }
+          ],
           "archive": "Archive selected",
           "restore": "Restore selected"
         },
         "dialogs": {
           "delete": {
             "confirm": "Delete courses",
-            "description": "This permanently deletes {count, plural, one {# selected course} other {# selected courses}}. This action cannot be undone.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "This permanently deletes {count_number} selected course. This action cannot be undone.",
+                  "count_plural=*": "This permanently deletes {count_number} selected courses. This action cannot be undone."
+                }
+              }
+            ],
             "title": "Delete selected courses?"
           },
           "private": {
             "confirm": "Move to private",
-            "description": "This will hide {count, plural, one {# selected course} other {# selected courses}} from public access until you publish {count, plural, one {it} other {them}} again.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "This will hide {count_number} selected course from public access until you publish it again.",
+                  "count_plural=*": "This will hide {count_number} selected courses from public access until you publish them again."
+                }
+              }
+            ],
             "title": "Move selected courses to private?"
           },
           "publish": {
             "confirm": "Publish courses",
-            "description": "This will make {count, plural, one {# selected course} other {# selected courses}} public wherever learners can access {count, plural, one {it} other {them}}.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "This will make {count_number} selected course public wherever learners can access it.",
+                  "count_plural=*": "This will make {count_number} selected courses public wherever learners can access them."
+                }
+              }
+            ],
             "title": "Publish selected courses?"
           },
           "archive": {
             "title": "Archive the selected courses?",
-            "description": "{count, plural, one {# selected course} other {# selected courses}} will leave the catalog and search and become read-only. Learners keep access to their materials and results. You can restore at any time.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} selected course will leave the catalog and search and become read-only. Learners keep access to their materials and results. You can restore at any time.",
+                  "count_plural=*": "{count_number} selected courses will leave the catalog and search and become read-only. Learners keep access to their materials and results. You can restore at any time."
+                }
+              }
+            ],
             "confirm": "Archive"
           },
           "restore": {
             "title": "Restore the selected courses?",
-            "description": "{count, plural, one {# selected course} other {# selected courses}} will return to the previous state (public or private). Assessments unscheduled by the archive stay drafts.",
+            "description": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} selected course will return to the previous state (public or private). Assessments unscheduled by the archive stay drafts.",
+                  "count_plural=*": "{count_number} selected courses will return to the previous state (public or private). Assessments unscheduled by the archive stay drafts."
+                }
+              }
+            ],
             "confirm": "Restore"
           }
         },
@@ -3713,7 +4210,20 @@
           "course": "Course",
           "selectAll": "Select all submissions on this page",
           "selectSubmission": "Select submission for {student}",
-          "selectedCount": "{count, plural, one {# submission} other {# submissions}} selected",
+          "selectedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} submission selected",
+                "count_plural=*": "{count_number} submissions selected"
+              }
+            }
+          ],
           "clearSelection": "Clear selection",
           "batchGrade": "Batch Grade",
           "emptyMessage": "No courses match the current filters.",
@@ -3728,13 +4238,104 @@
           "updated": "Updated"
         },
         "toasts": {
-          "deleteFailed": "{count, plural, one {# selected course could not be deleted.} other {# selected courses could not be deleted.}}",
-          "deleted": "{count, plural, one {Deleted # course.} other {Deleted # courses.}}",
-          "movedPrivate": "{count, plural, one {Moved # course to private.} other {Moved # courses to private.}}",
-          "published": "{count, plural, one {Published # course.} other {Published # courses.}}",
-          "updateFailed": "{count, plural, one {# selected course could not be updated.} other {# selected courses could not be updated.}}",
-          "archived": "{count, plural, one {Archived # course.} other {Archived # courses.}}",
-          "restored": "{count, plural, one {Restored # course.} other {Restored # courses.}}"
+          "deleteFailed": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} selected course could not be deleted.",
+                "count_plural=*": "{count_number} selected courses could not be deleted."
+              }
+            }
+          ],
+          "deleted": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Deleted {count_number} course.",
+                "count_plural=*": "Deleted {count_number} courses."
+              }
+            }
+          ],
+          "movedPrivate": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Moved {count_number} course to private.",
+                "count_plural=*": "Moved {count_number} courses to private."
+              }
+            }
+          ],
+          "published": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Published {count_number} course.",
+                "count_plural=*": "Published {count_number} courses."
+              }
+            }
+          ],
+          "updateFailed": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} selected course could not be updated.",
+                "count_plural=*": "{count_number} selected courses could not be updated."
+              }
+            }
+          ],
+          "archived": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Archived {count_number} course.",
+                "count_plural=*": "Archived {count_number} courses."
+              }
+            }
+          ],
+          "restored": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Restored {count_number} course.",
+                "count_plural=*": "Restored {count_number} courses."
+              }
+            }
+          ]
         },
         "viewMode": {
           "cards": "Card view",
@@ -3747,20 +4348,51 @@
       },
       "Overview": {
         "access": {
-          "privateNoGroupsWarning": "Private course with no linked user groups. Learners cannot access it. Add user groups in <link>Access</link>.",
+          "privateNoGroupsWarning": "Private course with no linked user groups. Learners cannot access it. Add user groups in {#link}Access{/link}.",
           "privateState": "This course is currently private.",
           "publicState": "This course is currently public."
         },
         "activities": "Activities",
-        "activityCountDescription": "{count, plural, one {# activity is currently in the course structure.} other {# activities are currently in the course structure.}}",
+        "activityCountDescription": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} activity is currently in the course structure.",
+              "count_plural=*": "{count_number} activities are currently in the course structure."
+            }
+          }
+        ],
         "certificate": {
           "configured": "Certificate configuration exists for this course.",
           "notConfigured": "No certificate configuration has been created yet."
         },
-        "chapterCount": "{count, plural, one {# chapter} other {# chapters}}",
+        "chapterCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} chapter",
+              "count_plural=*": "{count_number} chapters"
+            }
+          }
+        ],
         "chapters": "Chapters",
         "collaboration": {
-          "loadedRecords": "{count, plural, one {# contributor record loaded.} other {# contributor records loaded.}}"
+          "loadedRecords": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} contributor record loaded.",
+                "count_plural=*": "{count_number} contributor records loaded."
+              }
+            }
+          ]
         },
         "contributors": "Contributors",
         "curriculumSnapshot": "Curriculum snapshot",
@@ -4138,10 +4770,46 @@
         "restoreAction": "Restore",
         "archiveTitle": "Archive \"{courseName}\"?",
         "restoreTitle": "Restore \"{courseName}\"?",
-        "learnersInProgress": "{count, plural, one {# learner is} other {# learners are}} taking the course. They keep access to materials, results and certificates but cannot hand in work.",
-        "ungradedSubmissions": "{count, plural, one {# submission is} other {# submissions are}} ungraded. Grading is closed after archiving.",
-        "openAttempts": "{count, plural, one {# unfinished attempt} other {# unfinished attempts}}. Timed ones submit automatically when their time runs out; the rest stay unsubmitted.",
-        "scheduledAssessments": "{count, plural, one {# scheduled assessment returns} other {# scheduled assessments return}} to draft.",
+        "learnersInProgress": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} learner is taking the course. They keep access to materials, results and certificates but cannot hand in work.",
+              "count_plural=*": "{count_number} learners are taking the course. They keep access to materials, results and certificates but cannot hand in work."
+            }
+          }
+        ],
+        "ungradedSubmissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} submission is ungraded. Grading is closed after archiving.",
+              "count_plural=*": "{count_number} submissions are ungraded. Grading is closed after archiving."
+            }
+          }
+        ],
+        "openAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} unfinished attempt. Timed ones submit automatically when their time runs out; the rest stay unsubmitted.",
+              "count_plural=*": "{count_number} unfinished attempts. Timed ones submit automatically when their time runs out; the rest stay unsubmitted."
+            }
+          }
+        ],
+        "scheduledAssessments": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} scheduled assessment returns to draft.",
+              "count_plural=*": "{count_number} scheduled assessments return to draft."
+            }
+          }
+        ],
         "summary": "The course leaves the catalog and search. You can restore it at any time.",
         "restoreDescription": "The course returns to its previous state (public or private). Assessments unscheduled by the archive stay drafts.",
         "previewLoading": "Checking what archiving affects…",
@@ -4190,8 +4858,26 @@
         "accessPolicyStagedDescription": "Visibility changes stay local until you save this section.",
         "readinessReadyTitle": "Ready to publish",
         "readinessReadyDescription": "Nothing is blocking publication.",
-        "readinessBlockedTitle": "Publishing blocked by {count, plural, one {# issue} other {# issues}}",
-        "readinessWarningsTitle": "Ready with {count, plural, one {# warning} other {# warnings}}",
+        "readinessBlockedTitle": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Publishing blocked by {count_number} issue",
+              "count_plural=*": "Publishing blocked by {count_number} issues"
+            }
+          }
+        ],
+        "readinessWarningsTitle": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Ready with {count_number} warning",
+              "count_plural=*": "Ready with {count_number} warnings"
+            }
+          }
+        ],
         "userGroupLinksImmediateTitle": "User-group links apply immediately",
         "userGroupLinksImmediateDescription": "These links take effect as soon as you confirm them. Keep access policy changes above separate and save them explicitly."
       },
@@ -4222,7 +4908,16 @@
         "noCoursesAvailable": "No courses available yet",
         "pageStatus": "Page {current} of {total}",
         "previousPage": "Previous",
-        "resultsCount": "{count, plural, one {# course} other {# courses}}",
+        "resultsCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} course",
+              "count_plural=*": "{count_number} courses"
+            }
+          }
+        ],
         "rightsGuide": "Rights Guide",
         "searchButton": "Search",
         "searchPlaceholder": "Search editable courses",
@@ -4335,7 +5030,16 @@
       "contributorUpdateErrorDetailed": "Failed to update contributor: {error}",
       "contributorUpdateErrorGeneric": "Failed to update contributor",
       "contributorUpdateSuccess": "Contributor updated successfully",
-      "contributorsSelectedMessage": "{count, plural, one {# contributor selected} other {# contributors selected}}",
+      "contributorsSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} contributor selected",
+            "count_plural=*": "{count_number} contributors selected"
+          }
+        }
+      ],
       "courseContributorsSubtitle": "                Manage contributors and add new ones to your course",
       "courseContributorsTitle": "Course Contributors",
       "creator": "Creator",
@@ -4352,8 +5056,26 @@
       "failedToRemoveContributor": "Failed to remove {username}: {reason}",
       "failedToRemoveContributorsGeneral": "Failed to remove contributors",
       "failedToRemoveSelectedContributors": "Failed to remove selected contributors",
-      "removeSelectedConfirmMessage": "This will remove {count, plural, one {# contributor} other {# contributors}} from the course.",
-      "removeSelectedConfirmTitle": "Remove {count, plural, one {# contributor} other {# contributors}}?",
+      "removeSelectedConfirmMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "This will remove {count_number} contributor from the course.",
+            "count_plural=*": "This will remove {count_number} contributors from the course."
+          }
+        }
+      ],
+      "removeSelectedConfirmTitle": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Remove {count_number} contributor?",
+            "count_plural=*": "Remove {count_number} contributors?"
+          }
+        }
+      ],
       "failedToUpdateContributor": "Failed to update contributor",
       "rowAlreadyGone": "The application was already withdrawn — the list has been refreshed",
       "inactive": "Inactive",
@@ -4383,8 +5105,26 @@
       "statusColumn": "Status",
       "statusInactive": "Inactive",
       "statusPending": "Awaiting grade",
-      "successfullyAddedContributors": "Successfully added {count, plural, one {# contributor} other {# contributors}}",
-      "successfullyRemovedContributors": "Successfully removed {count, plural, one {# contributor} other {# contributors}}",
+      "successfullyAddedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Successfully added {count_number} contributor",
+            "count_plural=*": "Successfully added {count_number} contributors"
+          }
+        }
+      ],
+      "successfullyRemovedContributors": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Successfully removed {count_number} contributor",
+            "count_plural=*": "Successfully removed {count_number} contributors"
+          }
+        }
+      ],
       "successfullyUpdatedContributor": "Successfully updated contributor",
       "tableHeaderEmail": "Email",
       "tableHeaderName": "Name",
@@ -4392,7 +5132,16 @@
       "tableHeaderStatus": "Status",
       "title": "Course Contributors",
       "usernameColumn": "Username",
-      "usersSelectedMessage": "{count, plural, one {# user selected} other {# users selected}}",
+      "usersSelectedMessage": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} user selected",
+            "count_plural=*": "{count_number} users selected"
+          }
+        }
+      ],
       "contributorPolicyStagedTitle": "Contributor policy is staged until you save",
       "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section.",
       "rosterActionsImmediateTitle": "Roster actions apply immediately",
@@ -5352,7 +6101,16 @@
       },
       "title": "Gamification Settings",
       "toast": {
-        "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
+        "fromActivities": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "from {count_number} activity",
+              "count_plural=*": "from {count_number} activities"
+            }
+          }
+        ],
         "levelUp": "Level Up!"
       }
     },
@@ -5380,9 +6138,27 @@
         "errorMessageDefault": "Invalid input",
         "invalidEmail": "Invalid email",
         "invalidUrl": "Enter a link starting with http:// or https://",
-        "maxChars": "Must be {count, plural, one {# character} other {# characters}} or less",
+        "maxChars": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Must be {count_number} character or less",
+              "count_plural=*": "Must be {count_number} characters or less"
+            }
+          }
+        ],
         "minAmount": "Amount must be at least {min}",
-        "minChars": "Must be at least {count, plural, one {# character} other {# characters}}",
+        "minChars": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "Must be at least {count_number} character",
+              "count_plural=*": "Must be at least {count_number} characters"
+            }
+          }
+        ],
         "positiveNumber": "Must be a positive number",
         "requiredField": "{fieldName} is required"
       },
@@ -5506,7 +6282,17 @@
       "CollectionPage": {
         "courses": "Courses in this collection",
         "description": "Collection description",
-        "lastUpdated": "Last updated {date, date, short}",
+        "lastUpdated": [
+          {
+            "declarations": [
+              "input date",
+              "local date_datetime_month_numeric_day_numeric_year_2_digit = date: datetime month=numeric day=numeric year=2-digit"
+            ],
+            "match": {
+              "date=*": "Last updated {date_datetime_month_numeric_day_numeric_year_2_digit}"
+            }
+          }
+        ],
         "title": "Collection"
       },
       "General": {
@@ -5519,7 +6305,7 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Brief description of your organization",
           "descriptionRequired": "Short description is required",
-          "exploreDescription": "Share your organization's courses and content with the Ashyq Bilim community.<br/>Enable this to help learners discover your valuable educational resources.",
+          "exploreDescription": "Share your organization's courses and content with the Ashyq Bilim community.{#br/}Enable this to help learners discover your valuable educational resources.",
           "exploreLabel": "EXPLORE",
           "exploreTitle": "Showcase in Ashyq Bilim Explore",
           "labelLabel": "Organization Label",
@@ -5609,7 +6395,20 @@
         "Errors": {
           "invalidVideoUrl": "Please enter a valid {type} URL.",
           "logoUploadFailed": "Failed to upload logo.",
-          "maxPreviewsError": "You can only add {count, plural, one {# more preview} other {# more previews}}.",
+          "maxPreviewsError": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "You can only add {count_number} more preview.",
+                "count_plural=*": "You can only add {count_number} more previews."
+              }
+            }
+          ],
           "previewOrderUpdateFailed": "Failed to update preview order.",
           "previewRemoveFailed": "Failed to remove preview.",
           "previewsUploadFailed": "Failed to upload previews.",
@@ -5627,12 +6426,38 @@
           "logoUpdatedSuccess": "Logo updated successfully.",
           "previewOrderUpdatedSuccess": "Preview order updated successfully.",
           "previewRemovedSuccess": "Preview removed successfully.",
-          "previewsAddedSuccess": "{count, plural, one {# preview} other {# previews}} added successfully.",
+          "previewsAddedSuccess": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} preview added successfully.",
+                "count_plural=*": "{count_number} previews added successfully."
+              }
+            }
+          ],
           "removingPreview": "Removing preview...",
           "thumbnailUpdatedSuccess": "Thumbnail updated successfully.",
           "updatingPreviewOrder": "Updating preview order...",
           "uploadingLogo": "Uploading logo...",
-          "uploadingPreviews": "Uploading {count, plural, one {# preview} other {# previews}}...",
+          "uploadingPreviews": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Uploading {count_number} preview...",
+                "count_plural=*": "Uploading {count_number} previews..."
+              }
+            }
+          ],
           "uploadingThumbnail": "Uploading thumbnail...",
           "videoPreviewAddFailed": "Failed to add video preview.",
           "videoPreviewAddedSuccess": "Video preview added successfully."
@@ -5912,7 +6737,20 @@
           "showLevelBadge": "Show Level Badge",
           "title": "Avatar Customization",
           "unlockedAt": "Unlocked at Level {level}",
-          "unlockedItems": "{count, plural, one {# item unlocked} other {# items unlocked}}"
+          "unlockedItems": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} item unlocked",
+                "count_plural=*": "{count_number} items unlocked"
+              }
+            }
+          ]
         },
         "avatarUpdated": "Avatar updated successfully",
         "cancel": "Cancel",
@@ -6057,13 +6895,39 @@
           },
           "gold": "Gold",
           "lastUpdated": "Last updated",
-          "learningStreakTooltip": "{count, plural, =1 {1 day learning streak} other {# days learning streak}}",
+          "learningStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 day learning streak",
+                "count=*, count_plural=*": "{count_number} days learning streak"
+              }
+            }
+          ],
           "level": "Level",
           "levelLabel": "Level {level}",
           "levelShort": "L{level}",
           "loading": "Loading leaderboard...",
           "loadingTimeout": "Request timed out. Please try again.",
-          "loginStreakTooltip": "{count, plural, =1 {1 day login streak} other {# days login streak}}",
+          "loginStreakTooltip": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 day login streak",
+                "count=*, count_plural=*": "{count_number} days login streak"
+              }
+            }
+          ],
           "noEntries": "No leaderboard entries yet",
           "noLeaderboard": "No leaderboard data available",
           "noParticipants": "No participants yet",
@@ -6256,7 +7120,20 @@
           "totalXP": "Total XP"
         },
         "streakWidget": {
-          "days": "{count, plural, one {# day} other {# days}}",
+          "days": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} day",
+                "count_plural=*": "{count_number} days"
+              }
+            }
+          ],
           "error": "Unable to load streak data",
           "errors": {
             "timeout": "Request timed out. Please try again.",
@@ -6270,7 +7147,20 @@
           "retry": "Retry",
           "retryLimit": "Maximum retry attempts reached. Please refresh the page.",
           "streakMessages": {
-            "active": "{count, plural, one {# day strong! 🔥} other {# days strong! 🔥}}",
+            "active": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} day strong! 🔥",
+                  "count_plural=*": "{count_number} days strong! 🔥"
+                }
+              }
+            ],
             "atRisk": "Don't break your streak! {action} today.",
             "broken": "Start your {type} streak today!",
             "completeAction": "Complete an activity",
@@ -6332,7 +7222,20 @@
         "toast": {
           "dailyLoginBonus": "Daily Login Bonus!",
           "earnedXP": "Earned {xp} XP",
-          "fromActivities": "from {count, plural, one {# activity} other {# activities}}",
+          "fromActivities": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "from {count_number} activity",
+                "count_plural=*": "from {count_number} activities"
+              }
+            }
+          ],
           "levelUp": "Level Up!",
           "preferencesError": "Failed to save preferences",
           "preferencesReset": "Preferences reset to defaults",
@@ -6554,7 +7457,20 @@
           "toggleMode": "Toggle light / dark mode",
           "previousTheme": "Previous theme",
           "nextTheme": "Next theme",
-          "themeCount": "{count, plural, one {# theme} other {# themes}}"
+          "themeCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} theme",
+                "count_plural=*": "{count_number} themes"
+              }
+            }
+          ]
         },
         "title": "Account Settings",
         "uploadingAvatar": "Uploading",
@@ -6824,7 +7740,6 @@
         "emailSentNo": "No",
         "emailSentYes": "Sent",
         "enterEmailAddress": "Enter email address",
-        "errors": {},
         "signupStatusHeader": "Signup Status",
         "statusPending": "Awaiting grade",
         "statusSigned": "Signed",
@@ -6954,8 +7869,34 @@
     "technicalDetails": "Technical details:",
     "tryAgain": "Try again",
     "rateLimited": "Too many requests. Please try again shortly.",
-    "rateLimitedRetry": "Too many attempts. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
-    "rateLimitedRetrySeconds": "Too many attempts. Try again in {seconds, plural, one {# second} other {# seconds}}.",
+    "rateLimitedRetry": [
+      {
+        "declarations": [
+          "input minutes",
+          "local minutes_plural = minutes: plural",
+          "local minutes_number = minutes: number"
+        ],
+        "selectors": ["minutes_plural"],
+        "match": {
+          "minutes_plural=one": "Too many attempts. Try again in {minutes_number} minute.",
+          "minutes_plural=*": "Too many attempts. Try again in {minutes_number} minutes."
+        }
+      }
+    ],
+    "rateLimitedRetrySeconds": [
+      {
+        "declarations": [
+          "input seconds",
+          "local seconds_plural = seconds: plural",
+          "local seconds_number = seconds: number"
+        ],
+        "selectors": ["seconds_plural"],
+        "match": {
+          "seconds_plural=one": "Too many attempts. Try again in {seconds_number} second.",
+          "seconds_plural=*": "Too many attempts. Try again in {seconds_number} seconds."
+        }
+      }
+    ],
     "networkUnavailable": "Network unavailable. Please check your connection.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "permissionDenied": "You do not have permission to perform this action.",
@@ -7320,7 +8261,16 @@
       "republishGrade": "Publish again"
     },
     "Batch": {
-      "title": "Batch Grade ({count, plural, one {# submission} other {# submissions}})",
+      "title": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Batch Grade ({count_number} submission)",
+            "count_plural=*": "Batch Grade ({count_number} submissions)"
+          }
+        }
+      ],
       "subtitle": "{count} drafts edited",
       "close": "Close batch grading panel",
       "position": "Student {current} of {total}: {student}",
@@ -7331,7 +8281,16 @@
       "submitAll": "Submit All ({count})",
       "submitting": "Submitting...",
       "confirmSubmitTitle": "Submit grades for selected students?",
-      "confirmSubmitDesc": "Submit grades for {count, plural, one {# student} other {# students}}? This cannot be undone.",
+      "confirmSubmitDesc": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Submit grades for {count_number} student? This cannot be undone.",
+            "count_plural=*": "Submit grades for {count_number} students? This cannot be undone."
+          }
+        }
+      ],
       "confirmSubmitAction": "Submit All ({count})",
       "nothingToSubmit": "Edit at least one submission before submitting",
       "scoreRequired": "Every edited submission must have a final score",
@@ -7496,7 +8455,17 @@
     "selectAllButton": "Select All",
     "selectCoursesDescription": "Choose courses to include in this collection",
     "selectCoursesLabel": "Select Courses",
-    "selectedCount": "{count, plural, =0 {No courses selected} one {# course selected} other {# courses selected}}",
+    "selectedCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "No courses selected",
+          "count=*, count_plural=one": "{count_number} course selected",
+          "count=*, count_plural=*": "{count_number} courses selected"
+        }
+      }
+    ],
     "title": "Create New Collection",
     "toast": {
       "failure": "Failed to create collection. Please try again.",
@@ -7542,7 +8511,17 @@
     },
     "collections": "Collections",
     "courses": "Courses",
-    "coursesCount": "{count, plural, =0 {0 courses} one {# course} other {# courses}}",
+    "coursesCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count", "count_plural"],
+        "match": {
+          "count=0, count_plural=*": "0 courses",
+          "count=*, count_plural=one": "{count_number} course",
+          "count=*, count_plural=*": "{count_number} courses"
+        }
+      }
+    ],
     "filterAll": "All",
     "filterCollections": "Collections",
     "filterCourses": "Courses",
@@ -7550,7 +8529,21 @@
     "noResultsMessage": "We couldn't find any results for \"{query}\". Try adjusting your search terms or browse our featured content.",
     "noResultsTitle": "No results found",
     "searching": "Searching for \"{query}\"…",
-    "resultsFound": "{count, plural, one {# result} other {# results}} found for “{query}”",
+    "resultsFound": [
+      {
+        "declarations": [
+          "input count",
+          "input query",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} result found for “{query}”",
+          "count_plural=*": "{count_number} results found for “{query}”"
+        }
+      }
+    ],
     "searchButton": "Search",
     "searchInputPlaceholder": "Search for courses, collections, users...",
     "searchTitle": "Search",
@@ -7661,7 +8654,16 @@
     },
     "filters": {
       "label": "Teacher Analytics",
-      "scopedCourses": "{count, plural, one {# scoped course} other {# scoped courses}}",
+      "scopedCourses": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} scoped course",
+            "count_plural=*": "{count_number} scoped courses"
+          }
+        }
+      ],
       "buckets": "{bucket} buckets",
       "windowPrefix": "Window: {window}",
       "comparePrefix": "Compare: {compare}",
@@ -7828,7 +8830,16 @@
     "table": {
       "searchDefault": "Search...",
       "emptyDefault": "No rows found for the selected filters.",
-      "visibleRows": "{count, plural, one {# visible row} other {# visible rows}}",
+      "visibleRows": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} visible row",
+            "count_plural=*": "{count_number} visible rows"
+          }
+        }
+      ],
       "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
       "pagination": "Pagination",
@@ -7849,7 +8860,21 @@
     "riskDistribution": {
       "title": "Risk distribution",
       "description": "At-risk learners (medium and high risk) by level for the current scope.",
-      "preview": "Showing top {shown} of {total, plural, one {# at-risk enrollment} other {# at-risk enrollments}}.",
+      "preview": [
+        {
+          "declarations": [
+            "input shown",
+            "input total",
+            "local total_plural = total: plural",
+            "local total_number = total: number"
+          ],
+          "selectors": ["total_plural"],
+          "match": {
+            "total_plural=one": "Showing top {shown} of {total_number} at-risk enrollment.",
+            "total_plural=*": "Showing top {shown} of {total_number} at-risk enrollments."
+          }
+        }
+      ],
       "learners": "Learners",
       "emptyState": "No at-risk learners are currently in view for the selected scope."
     },
@@ -7888,10 +8913,28 @@
       "healthy": "Healthy",
       "searchPlaceholder": "Search assessments...",
       "emptyMessage": "No assessment outliers match the current scope.",
-      "rowCount": "{count, plural, one {# assessment outlier} other {# assessment outliers}}"
+      "rowCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} assessment outlier",
+            "count_plural=*": "{count_number} assessment outliers"
+          }
+        }
+      ]
     },
     "atRisk": {
-      "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
+      "interventionsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count", "count_plural"],
+          "match": {
+            "count=1, count_plural=*": "{count_number} intervention logged",
+            "count=*, count_plural=*": "{count_number} interventions logged"
+          }
+        }
+      ],
       "noInterventions": "No interventions logged",
       "interventions": {
         "message": "Mark: message sent",
@@ -7913,7 +8956,16 @@
       "emptyMessage": "No at-risk learners are visible for the current filters.",
       "interventionLogged": "Intervention logged",
       "interventionLogFailed": "Failed to log intervention",
-      "gradeSubmissions": "Grade {count, plural, one {# pending submission} other {# pending submissions}}",
+      "gradeSubmissions": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Grade {count_number} pending submission",
+            "count_plural=*": "Grade {count_number} pending submissions"
+          }
+        }
+      ],
       "riskComponents": {
         "inactivity": "Inactivity",
         "progress": "Progress gap",
@@ -7971,7 +9023,16 @@
       "atRiskUnavailableDesc": "An authenticated session is required to inspect at-risk learners.",
       "atRiskLoadError": "The learner risk view could not be loaded.",
       "atRiskPageTitle": "Full at-risk learner list",
-      "atRiskPageDescription": "Showing {total, plural, one {# scoped enrollment} other {# scoped enrollments}} ranked by risk score.",
+      "atRiskPageDescription": [
+        {
+          "declarations": ["input total", "local total_plural = total: plural", "local total_number = total: number"],
+          "selectors": ["total_plural"],
+          "match": {
+            "total_plural=one": "Showing {total_number} scoped enrollment ranked by risk score.",
+            "total_plural=*": "Showing {total_number} scoped enrollments ranked by risk score."
+          }
+        }
+      ],
       "courseDetailBadge": "Course detail",
       "courseStatCompletion": "Completion",
       "courseStatAvgProgress": "Average progress",
@@ -8084,7 +9145,21 @@
       "assessmentPassThresholdExam": "Pass threshold from exam settings",
       "assessmentPassThreshold": "Pass threshold: {value}%",
       "assessmentStatGenerated": "Generated",
-      "assessmentOpsAuditBulkSummary": "{action} for {count, plural, one {# learner} other {# learners}}",
+      "assessmentOpsAuditBulkSummary": [
+        {
+          "declarations": [
+            "input action",
+            "input count",
+            "local count_plural = count: plural",
+            "local count_number = count: number"
+          ],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{action} for {count_number} learner",
+            "count_plural=*": "{action} for {count_number} learners"
+          }
+        }
+      ],
       "assessmentItemAccuracy": "Accuracy {value}%",
       "courseContentHealthNoLearners": "No data yet: the course has no learners.",
       "teacherFilterDenied": "The teacher filter is unavailable: viewing another teacher’s analytics needs platform-wide access.",
@@ -8204,43 +9279,147 @@
     "messages": {
       "grading_backlog": {
         "title": "Grading queue needs attention",
-        "body": "{count, plural, one {# submission is} other {# submissions are}} still awaiting review."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} submission is still awaiting review.",
+              "count_plural=*": "{count_number} submissions are still awaiting review."
+            }
+          }
+        ]
       },
       "engagement_dropped": {
         "title": "Engagement dropped",
-        "body": "Active learners fell by {delta_pct, number}% compared with the previous period."
+        "body": [
+          {
+            "declarations": ["input delta_pct", "local delta_pct_number = delta_pct: number"],
+            "match": {
+              "delta_pct=*": "Active learners fell by {delta_pct_number}% compared with the previous period."
+            }
+          }
+        ]
       },
       "content_stale": {
         "title": "Content may be stale",
-        "body": "This course has not been updated for {days, plural, one {# day} other {# days}}."
+        "body": [
+          {
+            "declarations": ["input days", "local days_plural = days: plural", "local days_number = days: number"],
+            "selectors": ["days_plural"],
+            "match": {
+              "days_plural=one": "This course has not been updated for {days_number} day.",
+              "days_plural=*": "This course has not been updated for {days_number} days."
+            }
+          }
+        ]
       },
       "risk_spike": {
         "title": "At-risk learners need intervention",
-        "body": "{count, plural, one {# learner} other {# learners}} in scope at medium or high risk."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} learner in scope at medium or high risk.",
+              "count_plural=*": "{count_number} learners in scope at medium or high risk."
+            }
+          }
+        ]
       },
       "grading_slo_breached": {
         "title": "{assessment_title}: outside the grading target",
-        "body": "{breaches, plural, one {# submission} other {# submissions}} in {course_name} exceeded the {target_hours, number} h grading target; {awaiting, number} still queued, the oldest submitted {oldest_hours, number} h ago."
+        "body": [
+          {
+            "declarations": [
+              "input breaches",
+              "input course_name",
+              "input target_hours",
+              "input awaiting",
+              "input oldest_hours",
+              "local breaches_plural = breaches: plural",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local awaiting_number = awaiting: number",
+              "local oldest_hours_number = oldest_hours: number"
+            ],
+            "selectors": ["breaches_plural"],
+            "match": {
+              "breaches_plural=one": "{breaches_number} submission in {course_name} exceeded the {target_hours_number} h grading target; {awaiting_number} still queued, the oldest submitted {oldest_hours_number} h ago.",
+              "breaches_plural=*": "{breaches_number} submissions in {course_name} exceeded the {target_hours_number} h grading target; {awaiting_number} still queued, the oldest submitted {oldest_hours_number} h ago."
+            }
+          }
+        ]
       },
       "grading_slo_watch": {
         "title": "{assessment_title}: approaching the grading target",
-        "body": "{awaiting, plural, one {# submission is} other {# submissions are}} waiting in {course_name}; the oldest has been open for {oldest_hours, number} h against a {target_hours, number} h target."
+        "body": [
+          {
+            "declarations": [
+              "input awaiting",
+              "input course_name",
+              "input oldest_hours",
+              "input target_hours",
+              "local awaiting_plural = awaiting: plural",
+              "local awaiting_number = awaiting: number",
+              "local oldest_hours_number = oldest_hours: number",
+              "local target_hours_number = target_hours: number"
+            ],
+            "selectors": ["awaiting_plural"],
+            "match": {
+              "awaiting_plural=one": "{awaiting_number} submission is waiting in {course_name}; the oldest has been open for {oldest_hours_number} h against a {target_hours_number} h target.",
+              "awaiting_plural=*": "{awaiting_number} submissions are waiting in {course_name}; the oldest has been open for {oldest_hours_number} h against a {target_hours_number} h target."
+            }
+          }
+        ]
       },
       "completion_target_miss": {
         "title": "{course_name}: learners likely to miss the completion target",
-        "body": "{count, plural, one {# learner is} other {# learners are}} inactive or below 70% progress."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} learner is inactive or below 70% progress.",
+              "count_plural=*": "{count_number} learners are inactive or below 70% progress."
+            }
+          }
+        ]
       },
       "course_completion_deadline": {
         "title": "{course_name}: 14-day completion forecast",
-        "body": "Expected completion rate is {expected_pct, number}% if the current pace holds."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Expected completion rate is {expected_pct_number}% if the current pace holds."
+            }
+          }
+        ]
       },
       "grading_backlog_7d": {
         "title": "Expected grading backlog in 7 days",
-        "body": "The queue is projected to reach {count, plural, one {# submission} other {# submissions}}."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "The queue is projected to reach {count_number} submission.",
+              "count_plural=*": "The queue is projected to reach {count_number} submissions."
+            }
+          }
+        ]
       },
       "assessment_failure_risk": {
         "title": "{assessment_title}: elevated failure risk",
-        "body": "Expected failure rate is {expected_pct, number}% before the next deadline."
+        "body": [
+          {
+            "declarations": ["input expected_pct", "local expected_pct_number = expected_pct: number"],
+            "match": {
+              "expected_pct=*": "Expected failure rate is {expected_pct_number}% before the next deadline."
+            }
+          }
+        ]
       },
       "sharp_engagement_drop": {
         "title": "{course_name}: sharp engagement drop",
@@ -8259,27 +9438,97 @@
         "body": "The average score changed after the last content update."
       },
       "new_at_risk_learners": {
-        "title": "{count, plural, one {# new at-risk learner} other {# new at-risk learners}} in {course_name}",
+        "title": [
+          {
+            "declarations": [
+              "input count",
+              "input course_name",
+              "local count_plural = count: plural",
+              "local count_number = count: number"
+            ],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} new at-risk learner in {course_name}",
+              "count_plural=*": "{count_number} new at-risk learners in {course_name}"
+            }
+          }
+        ],
         "body": "Risk rose against each learner's own baseline; review the watchlist."
       },
       "low_pass_rate": {
-        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "Pass rate for {assessment_title} is {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "The low pass rate flags this assessment."
       },
       "low_pass_rate_with_diagnostics": {
-        "title": "Pass rate for {assessment_title} is {pass_rate, number}%",
+        "title": [
+          {
+            "declarations": ["input assessment_title", "input pass_rate", "local pass_rate_number = pass_rate: number"],
+            "match": {
+              "assessment_title=*, pass_rate=*": "Pass rate for {assessment_title} is {pass_rate_number}%"
+            }
+          }
+        ],
         "body": "The quality diagnostics flag this assessment."
       },
       "content_bottleneck": {
         "title": "{activity_name} is a content bottleneck",
-        "body": "{signal, select, high_time_low_completion {High time spent, low completion.} exit_after_open {Learners open and leave without completing.} repeated_assessment_failures {Assessment results drop around this activity.} stale_low_performance {Stale content correlates with low performance.} other {Learners get stuck on this activity.}}"
+        "body": [
+          {
+            "declarations": ["input signal"],
+            "selectors": ["signal"],
+            "match": {
+              "signal=high_time_low_completion": "High time spent, low completion.",
+              "signal=exit_after_open": "Learners open and leave without completing.",
+              "signal=repeated_assessment_failures": "Assessment results drop around this activity.",
+              "signal=stale_low_performance": "Stale content correlates with low performance.",
+              "signal=*": "Learners get stuck on this activity."
+            }
+          }
+        ]
       },
       "workload_backlog": {
-        "title": "{count, plural, one {# submission is} other {# submissions are}} awaiting review",
-        "body": "{breaches, number} breached the {target_hours, number} h grading target; the 7-day forecast is {forecast_7d, number}."
+        "title": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} submission is awaiting review",
+              "count_plural=*": "{count_number} submissions are awaiting review"
+            }
+          }
+        ],
+        "body": [
+          {
+            "declarations": [
+              "input breaches",
+              "input target_hours",
+              "input forecast_7d",
+              "local breaches_number = breaches: number",
+              "local target_hours_number = target_hours: number",
+              "local forecast_7d_number = forecast_7d: number"
+            ],
+            "match": {
+              "breaches=*, target_hours=*, forecast_7d=*": "{breaches_number} breached the {target_hours_number} h grading target; the 7-day forecast is {forecast_7d_number}."
+            }
+          }
+        ]
       },
       "completion_improved": {
-        "title": "Completion for {course_name} improved by {delta_pts, number} points",
+        "title": [
+          {
+            "declarations": ["input course_name", "input delta_pts", "local delta_pts_number = delta_pts: number"],
+            "match": {
+              "course_name=*, delta_pts=*": "Completion for {course_name} improved by {delta_pts_number} points"
+            }
+          }
+        ],
         "body": "This cohort outperforms the course's historical baseline."
       },
       "missing_event_sources": {
@@ -8288,7 +9537,16 @@
       },
       "thin_course_data": {
         "title": "Some courses have too little data",
-        "body": "{count, plural, one {# course has} other {# courses have}} fewer than 5 learners."
+        "body": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} course has fewer than 5 learners.",
+              "count_plural=*": "{count_number} courses have fewer than 5 learners."
+            }
+          }
+        ]
       },
       "stale_rollup": {
         "title": "Rollups older than 24 hours",
@@ -8350,7 +9608,17 @@
         "selectCell": "Select progress cell",
         "actionRequired": "Needs review",
         "late": "Late",
-        "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
+        "attempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count", "count_plural"],
+            "match": {
+              "count=0, count_plural=*": "{count_number} attempts",
+              "count=*, count_plural=one": "{count_number} attempt",
+              "count=*, count_plural=*": "{count_number} attempts"
+            }
+          }
+        ],
         "pendingAttempt": "Awaiting grading · attempt {attempt}",
         "awaitingReleaseAttempt": "Awaiting release · attempt {attempt}",
         "releaseGrade": "Release grade",
@@ -8404,7 +9672,16 @@
           "form": "Form",
           "file": "File"
         },
-        "exportDone": "CSV saved: {count} {count, plural, one {learner} other {learners}}",
+        "exportDone": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "CSV saved: {count} learner",
+              "count_plural=*": "CSV saved: {count} learners"
+            }
+          }
+        ],
         "noLearnersTitle": "No learners in this course yet",
         "noLearnersDescription": "Learners appear here once they enroll in the course."
       },
@@ -8436,7 +9713,20 @@
             "attempt": "Attempt"
           },
           "totals": {
-            "submissions": "{count, plural, one {# submission} other {# submissions}}",
+            "submissions": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} submission",
+                  "count_plural=*": "{count_number} submissions"
+                }
+              }
+            ],
             "submissionsAtLeast": "{count}+ submissions",
             "selected": "{count} selected"
           },
@@ -8512,10 +9802,36 @@
             "published": "Selected grades published",
             "returned": "Selected submissions returned",
             "bulkActionFailed": "Bulk action failed",
-            "bulkPartialFailure": "{failed, plural, one {# submission} other {# submissions}} could not be updated — see details below.",
+            "bulkPartialFailure": [
+              {
+                "declarations": [
+                  "input failed",
+                  "local failed_plural = failed: plural",
+                  "local failed_number = failed: number"
+                ],
+                "selectors": ["failed_plural"],
+                "match": {
+                  "failed_plural=one": "{failed_number} submission could not be updated — see details below.",
+                  "failed_plural=*": "{failed_number} submissions could not be updated — see details below."
+                }
+              }
+            ],
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
-            "deadlineExtended": "Deadline extended for {count, plural, one {# learner} other {# learners}}",
+            "deadlineExtended": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "Deadline extended for {count_number} learner",
+                  "count_plural=*": "Deadline extended for {count_number} learners"
+                }
+              }
+            ],
             "hiddenReleased": "Hidden grades released",
             "releaseFailed": "Failed to release hidden grades",
             "publishedWithSkipped": "Published: {count}. Skipped without a grade: {skipped}.",
@@ -8534,10 +9850,49 @@
             "deadlineDetail": "Learners targeted: {count}. {reason}",
             "releaseFinished": "Grade release finished",
             "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}.",
-            "releaseNeedsGrading": "{count, plural, one {# submission still awaits grading and was not published} other {# submissions still await grading and were not published}}",
-            "releaseSkipped": "{count, plural, one {# submission stayed hidden: it changed during the release (release again) or it is your own attempt} other {# submissions stayed hidden: they changed during the release (release again) or they are your own attempts}}"
+            "releaseNeedsGrading": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} submission still awaits grading and was not published",
+                  "count_plural=*": "{count_number} submissions still await grading and were not published"
+                }
+              }
+            ],
+            "releaseSkipped": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} submission stayed hidden: it changed during the release (release again) or it is your own attempt",
+                  "count_plural=*": "{count_number} submissions stayed hidden: they changed during the release (release again) or they are your own attempts"
+                }
+              }
+            ]
           },
-          "failedSubmissionsTitle": "{count, plural, one {# submission} other {# submissions}} failed to update:",
+          "failedSubmissionsTitle": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} submission failed to update:",
+                "count_plural=*": "{count_number} submissions failed to update:"
+              }
+            }
+          ],
           "preview": {
             "selectedSubmissions": "Selected submissions",
             "gradeReady": "Grade-ready",
@@ -8549,9 +9904,36 @@
             "notSet": "Not set",
             "noReason": "No reason provided",
             "dueDatePast": "The new due date must be in the future.",
-            "notReturnable": "{count, plural, one {# published submission} other {# published submissions}} cannot be returned — skipped.",
+            "notReturnable": [
+              {
+                "declarations": [
+                  "input count",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} published submission cannot be returned — skipped.",
+                  "count_plural=*": "{count_number} published submissions cannot be returned — skipped."
+                }
+              }
+            ],
             "releaseHiddenDescription": "Every graded submission of this activity that is still hidden will be released — regardless of what is selected in the list.",
-            "notGraded": "{count, plural, one {# ungraded submission is skipped} other {# ungraded submissions are skipped}}: {names}",
+            "notGraded": [
+              {
+                "declarations": [
+                  "input count",
+                  "input names",
+                  "local count_plural = count: plural",
+                  "local count_number = count: number"
+                ],
+                "selectors": ["count_plural"],
+                "match": {
+                  "count_plural=one": "{count_number} ungraded submission is skipped: {names}",
+                  "count_plural=*": "{count_number} ungraded submissions are skipped: {names}"
+                }
+              }
+            ],
             "notEnrolled": "Not enrolled in the course — the extension skips them: {names}",
             "staff": "Course staff — the extension skips them: {names}"
           },
@@ -8701,8 +10083,22 @@
       "Items": {
         "Choice": {
           "prompt": "Prompt",
-          "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
-          "promptPlaceholder": "Write your question here. Supports **Markdown** and $\\LaTeX$ math.",
+          "points": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} points",
+                "count=*, count_plural=one": "{count_number} point",
+                "count=*, count_plural=*": "{count_number} points"
+              }
+            }
+          ],
+          "promptPlaceholder": "Write your question here. Supports **Markdown** and $\\\\LaTeX$ math.",
           "type": "Type",
           "trueLabel": "True",
           "falseLabel": "False",
@@ -8850,7 +10246,20 @@
           "answerReview": "Answer Review",
           "answered": "Answered",
           "answeredCount": "{answered} of {total} answered",
-          "answeredSummary": "{count, plural, one {# answered} other {# answered}}",
+          "answeredSummary": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} answered",
+                "count_plural=*": "{count_number} answered"
+              }
+            }
+          ],
           "answersRecovered": "Your previous answers have been recovered",
           "antiCheatingDescription": "Violations are being monitored. After {threshold} violations, your exam will be auto-submitted.",
           "antiCheatingEnabled": "Anti-Cheating Protection Enabled",
@@ -8907,7 +10316,20 @@
           "keyboardShortcutsHelp": "Shortcuts: ← / → navigate questions, 1-9 select answers, Ctrl/Cmd+Enter open submit confirmation, ? show this message",
           "manageExam": "Manage exam questions and settings",
           "manageQuestions": "Manage Questions",
-          "minutes": "{count, plural, =1 {# minute} other {# minutes}}",
+          "minutes": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} minute",
+                "count=*, count_plural=*": "{count_number} minutes"
+              }
+            }
+          ],
           "navigationError": "Failed to navigate to next activity",
           "next": "Next",
           "noAttemptsRemaining": "You have no attempts remaining for this exam",
@@ -8923,7 +10345,21 @@
             "unsatisfactory": "Needs improvement"
           },
           "pleaseRefresh": "Please refresh the page and try again",
-          "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
+          "points": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} points",
+                "count=*, count_plural=one": "{count_number} point",
+                "count=*, count_plural=*": "{count_number} points"
+              }
+            }
+          ],
           "pointsLabel": "Points",
           "pointsValue": "Worth {points} points",
           "previewExam": "Preview Exam",
@@ -8932,7 +10368,16 @@
           "proceedToNextActivity": "Next activity",
           "progress": "Progress",
           "question": "Question",
-          "questionAriaLabel": "Question {number}{answered, select, true { - answered} other {}}",
+          "questionAriaLabel": [
+            {
+              "declarations": ["input number", "input answered"],
+              "selectors": ["answered"],
+              "match": {
+                "answered=true": "Question {number} - answered",
+                "answered=*": "Question {number}"
+              }
+            }
+          ],
           "questionNavigator": "Question Navigator",
           "questionNavigatorDescription": "Click to jump to any question",
           "questionNumber": "Question {number}",
@@ -8974,7 +10419,20 @@
           "timeRemaining": "Time remaining",
           "totalQuestions": "Total Questions",
           "unanswered": "Unanswered",
-          "unansweredQuestionsWarning": "You have {count, plural, one {# unanswered question} other {# unanswered questions}}. Are you sure you want to submit?",
+          "unansweredQuestionsWarning": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "You have {count_number} unanswered question. Are you sure you want to submit?",
+                "count_plural=*": "You have {count_number} unanswered questions. Are you sure you want to submit?"
+              }
+            }
+          ],
           "unlimited": "Unlimited",
           "unlimitedAttempts": "Unlimited Attempts",
           "unsupportedQuestionType": "Unsupported question type",
@@ -8985,7 +10443,20 @@
           "violationDialogGuidance": "How to avoid: stay in fullscreen (if required), avoid switching tabs, and do not use developer tools or copy/paste during the exam. If you'd like to appeal, follow the link below.",
           "violationDialogTitle": "Security violation detected",
           "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
-          "violationsRecorded": "{count, plural, one {# violation} other {# violations}} recorded during this exam",
+          "violationsRecorded": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} violation recorded during this exam",
+                "count_plural=*": "{count_number} violations recorded during this exam"
+              }
+            }
+          ],
           "yourAnswer": "Your Answer",
           "focus": "Focus",
           "exitFocus": "Exit focus mode",
@@ -9026,7 +10497,25 @@
           "connectionLostTitle": "Connection Lost",
           "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
           "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
-          "draftConflictAnswerCounts": "Local: {localCount, plural, one {# answer} other {# answers}} | Server: {serverCount, plural, one {# answer} other {# answers}}",
+          "draftConflictAnswerCounts": [
+            {
+              "declarations": [
+                "input localCount",
+                "input serverCount",
+                "local localCount_plural = localCount: plural",
+                "local localCount_number = localCount: number",
+                "local serverCount_plural = serverCount: plural",
+                "local serverCount_number = serverCount: number"
+              ],
+              "selectors": ["localCount_plural", "serverCount_plural"],
+              "match": {
+                "localCount_plural=one, serverCount_plural=one": "Local: {localCount_number} answer | Server: {serverCount_number} answer",
+                "localCount_plural=one, serverCount_plural=*": "Local: {localCount_number} answer | Server: {serverCount_number} answers",
+                "localCount_plural=*, serverCount_plural=one": "Local: {localCount_number} answers | Server: {serverCount_number} answer",
+                "localCount_plural=*, serverCount_plural=*": "Local: {localCount_number} answers | Server: {serverCount_number} answers"
+              }
+            }
+          ],
           "timeRemainingValue": "Time remaining: {time}"
         },
         "CodeChallenge": {
@@ -9149,7 +10638,20 @@
           "passed": "Passed",
           "points": "Points",
           "pointsDescription": "Maximum points for this challenge",
-          "pointsShort": "{count, plural, one {# pt} other {# pts}}",
+          "pointsShort": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} pt",
+                "count_plural=*": "{count_number} pts"
+              }
+            }
+          ],
           "popularLanguages": "Popular",
           "removeTestCase": "Remove",
           "results": "Results",
@@ -9247,7 +10749,16 @@
           "curriculum": "Curriculum",
           "studio": "Studio"
         },
-        "issueCount": "{count, plural, one {# issue} other {# issues}}",
+        "issueCount": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} issue",
+              "count_plural=*": "{count_number} issues"
+            }
+          }
+        ],
         "preview": "Preview",
         "scheduleOptions": "Schedule options",
         "schedulePublication": "Schedule publication",
@@ -9260,7 +10771,16 @@
         "hideInspector": "Hide inspector",
         "showInspector": "Show inspector",
         "publishNow": "Publish now",
-        "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
+        "issueBlocks": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural"],
+            "selectors": ["count", "count_plural"],
+            "match": {
+              "count=1, count_plural=*": "{count} issue blocks publishing.",
+              "count=*, count_plural=*": "{count} issues block publishing."
+            }
+          }
+        ],
         "assessmentLabel": "Assessment",
         "itemsLabel": "Items",
         "jumpToItem": "Jump to item",
@@ -9333,7 +10853,21 @@
           "itemsMetricLabel": "{itemNoun}s",
           "pointsMetricLabel": "Total points",
           "publishReadinessLabel": "Readiness",
-          "issuesMetricValue": "{count, plural, =0 {No issues} one {# issue} other {# issues}}",
+          "issuesMetricValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "No issues",
+                "count=*, count_plural=one": "{count_number} issue",
+                "count=*, count_plural=*": "{count_number} issues"
+              }
+            }
+          ],
           "setupStepLabel": "Setup",
           "setupStepDescription": "Name the activity and define grading rules.",
           "contentStepLabel": "Content",
@@ -9399,7 +10933,7 @@
           },
           "errorLoading": "Error loading studio",
           "Items": {
-            "promptPlaceholder": "Write your prompt here. Supports **Markdown** and $\\LaTeX$ math.",
+            "promptPlaceholder": "Write your prompt here. Supports **Markdown** and $\\\\LaTeX$ math.",
             "OpenText": {
               "prompt": "Prompt",
               "minWords": "Minimum words",
@@ -9460,7 +10994,20 @@
           "impactIntegrity": "Integrity",
           "summaryTimed": "{minutes} minutes after start",
           "summaryUntimed": "No timer",
-          "summaryAttempts": "{count, plural, one {# attempt} other {# attempts}}",
+          "summaryAttempts": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} attempt",
+                "count_plural=*": "{count_number} attempts"
+              }
+            }
+          ],
           "summaryUnlimitedAttempts": "Unlimited attempts",
           "summaryIntegrityOn": "Deterrent checks enabled",
           "summaryIntegrityOff": "No deterrent checks",
@@ -9561,7 +11108,20 @@
           "previewEmptyPair": "Empty value",
           "previewEmptyField": "Untitled field",
           "previewFieldMeta": "{type} · {required}",
-          "previewMinWords": "Student long answer · minimum {count, plural, one {# word} other {# words}}",
+          "previewMinWords": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "Student long answer · minimum {count_number} word",
+                "count_plural=*": "Student long answer · minimum {count_number} words"
+              }
+            }
+          ],
           "previewOpenText": "Student long answer",
           "correct": "Correct",
           "required": "required",
@@ -9606,14 +11166,36 @@
           "goToQuestion": "Fix",
           "goToQuestions": "Add question",
           "questionContext": "Q{number}: {title}",
-          "questionIssueSummary": "{count, plural, =1 {1 issue in this question} other {# issues in this question}}",
+          "questionIssueSummary": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "1 issue in this question",
+                "count=*, count_plural=*": "{count_number} issues in this question"
+              }
+            }
+          ],
           "untitledQuestion": "Untitled question",
           "unknownQuestion": "Unknown question",
           "statusPublished": "Published",
           "statusPublishedDesc": "Students can now access this assessment.",
           "statusScheduled": "Scheduled",
           "statusScheduledDesc": "This assessment will be published at the scheduled time.",
-          "statusHasIssues": "{count} {count, plural, =1 {issue} other {issues}} must be fixed before publishing",
+          "statusHasIssues": [
+            {
+              "declarations": ["input count", "local count_plural = count: plural"],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count} issue must be fixed before publishing",
+                "count=*, count_plural=*": "{count} issues must be fixed before publishing"
+              }
+            }
+          ],
           "statusHasIssuesDesc": "Resolve all issues in the checklist to unlock publishing.",
           "statusReadyToPublish": "Ready to Publish",
           "statusReadyDesc": "All checks passed. You can publish now or schedule.",
@@ -9629,7 +11211,21 @@
           "openLearnerPreview": "Open learner preview",
           "previewGateDesc": "Preview the student experience before changing lifecycle state.",
           "previewGateHighStakesDesc": "This assessment is treated as high-stakes. Run at least one preview before publishing or scheduling.",
-          "previewCompletedCount": "{count, plural, =0 {No previews run} =1 {# preview run} other {# previews run}}",
+          "previewCompletedCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "No previews run",
+                "count=1, count_plural=*": "{count_number} preview run",
+                "count=*, count_plural=*": "{count_number} previews run"
+              }
+            }
+          ],
           "previewScenarioGeneric": "Generic learner",
           "previewScenarioGenericDesc": "Default eligible student view",
           "previewScenarioSpecific": "Specific learner",
@@ -9703,7 +11299,20 @@
           "lockoutDesc": "Nobody will be able to take it until you add learners or groups. Save anyway?",
           "lockoutConfirm": "Save anyway",
           "dropAttemptsTitle": "Learners with attempts will lose access",
-          "dropAttemptsDesc": "{count, plural, one {# learner who already has attempts} other {# learners who already have attempts}} will no longer be able to take this assessment. They will still see their own results. Save?",
+          "dropAttemptsDesc": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count_plural"],
+              "match": {
+                "count_plural=one": "{count_number} learner who already has attempts will no longer be able to take this assessment. They will still see their own results. Save?",
+                "count_plural=*": "{count_number} learners who already have attempts will no longer be able to take this assessment. They will still see their own results. Save?"
+              }
+            }
+          ],
           "fixHighlighted": "Fix the highlighted entries.",
           "eligible": "Eligible",
           "effective": "Effective",
@@ -9734,13 +11343,39 @@
           "previewNote": "The list holds the course members (enrolled learners) and the groups linked to the course; search filters that list.",
           "overrideBadge": "Accommodation",
           "expandGroup": "Show group expansion",
-          "groupExpansion": "This group expands to {count, plural, =1 {# learner} other {# learners}} before individual exclusions.",
+          "groupExpansion": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "This group expands to {count_number} learner before individual exclusions.",
+                "count=*, count_plural=*": "This group expands to {count_number} learners before individual exclusions."
+              }
+            }
+          ],
           "selectedDrawerTitle": "Selected audience",
           "selectedDrawerDesc": "Review selected learners, groups, and policy exceptions before saving.",
           "selectedEmpty": "No restricted audience selected.",
           "removeSelected": "Remove from selected audience",
           "clearOverride": "Clear",
-          "groupMembers": "{count, plural, =1 {# member} other {# members}}",
+          "groupMembers": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} member",
+                "count=*, count_plural=*": "{count_number} members"
+              }
+            }
+          ],
           "accommodationsTitle": "Individual accommodations",
           "accommodationsDesc": "Apply deadline, attempt, and late-penalty exceptions to selected learners.",
           "overrideAttempts": "Attempt limit",
@@ -9749,14 +11384,54 @@
           "waiveLatePenalty": "Waive late penalty",
           "overrideNote": "Internal note",
           "overrideNotePlaceholder": "Reason or approval reference",
-          "applyOverrides": "Apply to {count, plural, =0 {0 learners} =1 {# learner} other {# learners}}",
+          "applyOverrides": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "Apply to 0 learners",
+                "count=1, count_plural=*": "Apply to {count_number} learner",
+                "count=*, count_plural=*": "Apply to {count_number} learners"
+              }
+            }
+          ],
           "overrideNoUsers": "Select at least one learner before applying accommodations.",
           "overrideSaveFailed": "Failed to save accommodations.",
-          "overrideSaved": "Accommodations saved for {count, plural, =1 {# learner} other {# learners}}.",
+          "overrideSaved": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "Accommodations saved for {count_number} learner.",
+                "count=*, count_plural=*": "Accommodations saved for {count_number} learners."
+              }
+            }
+          ],
           "overrideDeleteFailed": "Failed to clear accommodation.",
           "overrideDeleted": "Accommodation cleared.",
           "retryOverrides": "Retry accommodations",
-          "overrideAttemptsValue": "{count, plural, =1 {# attempt} other {# attempts}}",
+          "overrideAttemptsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} attempt",
+                "count=*, count_plural=*": "{count_number} attempts"
+              }
+            }
+          ],
           "overrideDueValue": "custom due date",
           "overrideWaiveLateValue": "late penalty waived"
         },
@@ -9773,9 +11448,35 @@
           "scoreDistributionTitle": "Score distribution",
           "queueTitle": "Review queue",
           "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
-          "queueTotal": "{count, plural, =1 {# submission} other {# submissions}}",
+          "queueTotal": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} submission",
+                "count=*, count_plural=*": "{count_number} submissions"
+              }
+            }
+          ],
           "queueTotalAtLeast": "{count}+ submissions",
-          "queueSelected": "{count, plural, =1 {# selected} other {# selected}}",
+          "queueSelected": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} selected",
+                "count=*, count_plural=*": "{count_number} selected"
+              }
+            }
+          ],
           "searchLearner": "Search learner",
           "statusFilter": "Status filter",
           "filterAll": "All",
@@ -9804,7 +11505,20 @@
           "releaseAwaiting": "Awaiting release",
           "releaseVisible": "Visible",
           "releaseReturned": "Returned",
-          "integrityEventsValue": "{count, plural, =1 {# event} other {# events}}",
+          "integrityEventsValue": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} event",
+                "count=*, count_plural=*": "{count_number} events"
+              }
+            }
+          ],
           "noIntegrityEvents": "No events",
           "reviewSubmission": "Review",
           "previousPage": "Previous",
@@ -9817,7 +11531,20 @@
           "integrityEmptyBody": "No integrity events in the current queue window.",
           "questionActionTitle": "Question actions",
           "questionActionBody": "Analytics prompts point to questions that need revision or regrade consideration.",
-          "analyticsPromptCount": "{count, plural, =1 {# action prompt} other {# action prompts}}",
+          "analyticsPromptCount": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=1, count_plural=*": "{count_number} action prompt",
+                "count=*, count_plural=*": "{count_number} action prompts"
+              }
+            }
+          ],
           "colQuestion": "Question",
           "colKind": "Type",
           "colMaxScore": "Points",
@@ -9874,7 +11601,21 @@
           "selectCell": "Select progress cell",
           "actionRequired": "Needs review",
           "late": "Late",
-          "attempts": "{count, plural, =0 {# attempts} one {# attempt} other {# attempts}}",
+          "attempts": [
+            {
+              "declarations": [
+                "input count",
+                "local count_plural = count: plural",
+                "local count_number = count: number"
+              ],
+              "selectors": ["count", "count_plural"],
+              "match": {
+                "count=0, count_plural=*": "{count_number} attempts",
+                "count=*, count_plural=one": "{count_number} attempt",
+                "count=*, count_plural=*": "{count_number} attempts"
+              }
+            }
+          ],
           "refresh": "Refresh",
           "export": "Export",
           "noScore": "No score yet",
@@ -10433,7 +12174,21 @@
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
     "stepsLabel": "steps",
-    "stepsProgress": "{completed} / {total, plural, one {# step} other {# steps}}",
+    "stepsProgress": [
+      {
+        "declarations": [
+          "input completed",
+          "input total",
+          "local total_plural = total: plural",
+          "local total_number = total: number"
+        ],
+        "selectors": ["total_plural"],
+        "match": {
+          "total_plural=one": "{completed} / {total_number} step",
+          "total_plural=*": "{completed} / {total_number} steps"
+        }
+      }
+    ],
     "viewCertificate": "View Certificate",
     "quitCourseConfirmTitle": "Quit “{course}”?",
     "quitCourseConfirmDescription": "Lesson completion marks will be reset; submitted work and grades are kept. This cannot be undone.",
@@ -10665,9 +12420,27 @@
       "audio": "Audio",
       "anyFile": "Any file"
     },
-    "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
+    "requirementMaxFiles": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Up to {count_number} file",
+          "count_plural=*": "Up to {count_number} files"
+        }
+      }
+    ],
     "requirementMaxSize": "{size} MB each",
-    "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",
+    "maxFilesAllowed": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Maximum {count_number} file allowed",
+          "count_plural=*": "Maximum {count_number} files allowed"
+        }
+      }
+    ],
     "fileTooLarge": "File exceeds {size} MB",
     "fileTypeNotAllowed": "File type not allowed ({type})",
     "noExtension": "no extension",
@@ -10696,7 +12469,16 @@
     "attemptNumber": "Attempt #{number}",
     "attemptOrdinal": "#{number}",
     "draft": "Draft",
-    "fileCount": "{count, plural, one {# file} other {# files}}",
+    "fileCount": [
+      {
+        "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "{count_number} file",
+          "count_plural=*": "{count_number} files"
+        }
+      }
+    ],
     "submissionReceived": "Submission received",
     "attempt": "Attempt",
     "files": "Files",
@@ -10736,7 +12518,21 @@
     "openButton": "Open",
     "downloadButton": "Download",
     "noSubmissions": "No submissions match this view.",
-    "attemptInfo": "Attempt #{attemptNumber} · {count, plural, one {# file} other {# files}}",
+    "attemptInfo": [
+      {
+        "declarations": [
+          "input attemptNumber",
+          "input count",
+          "local count_plural = count: plural",
+          "local count_number = count: number"
+        ],
+        "selectors": ["count_plural"],
+        "match": {
+          "count_plural=one": "Attempt #{attemptNumber} · {count_number} file",
+          "count_plural=*": "Attempt #{attemptNumber} · {count_number} files"
+        }
+      }
+    ],
     "submittedAt": "Submitted {date}",
     "submittedAsDraft": "Submitted as draft",
     "late": "Late",
@@ -10964,7 +12760,16 @@
       "confirmDelete": "Delete thread",
       "threadsLoading": "Loading threads…",
       "threadsEmpty": "No saved threads yet.",
-      "threadMessageCount": "{count, plural, one {# message} other {# messages}}",
+      "threadMessageCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} message",
+            "count_plural=*": "{count_number} messages"
+          }
+        }
+      ],
       "streamingStatus": "Answering from the selected course material.",
       "cancelledStatus": "Answer stopped. The partial response is preserved.",
       "error": "The answer could not be completed. Your question is still here.",
@@ -11007,7 +12812,16 @@
       "published": "Published",
       "modelRecorded": "Model: {name}",
       "modelNotRecorded": "Model: not recorded",
-      "citationsCount": "{count, plural, one {# source} other {# sources}}",
+      "citationsCount": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} source",
+            "count_plural=*": "{count_number} sources"
+          }
+        }
+      ],
       "criticalBlockers": "Critical blockers",
       "contentStrengths": "Content strengths",
       "findings": "Findings",
@@ -11123,7 +12937,16 @@
       "title": "Run operations",
       "description": "Filter recent runs, spot stuck work, and inspect a redacted event trail.",
       "timeRange": "Time range",
-      "days": "{count, plural, one {Last day} other {Last # days}}",
+      "days": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "Last day",
+            "count_plural=*": "Last {count_number} days"
+          }
+        }
+      ],
       "statusFilter": "Run status",
       "featureFilter": "Feature",
       "providerFilter": "Provider or model",
@@ -11291,7 +13114,21 @@
         "description": "A grade in {course} is saved but not visible to the learner.",
         "action": "Review and release"
       },
-      "grouped": "{course}: {count, plural, one {# submission is} other {# submissions are}} waiting for review."
+      "grouped": [
+        {
+          "declarations": [
+            "input course",
+            "input count",
+            "local count_plural = count: plural",
+            "local count_number = count: number"
+          ],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{course}: {count_number} submission is waiting for review.",
+            "count_plural=*": "{course}: {count_number} submissions are waiting for review."
+          }
+        }
+      ]
     },
     "sections": {
       "learner": {
@@ -11412,9 +13249,36 @@
       }
     },
     "metrics": {
-      "courses": "{count, plural, one {# course} other {# courses}}",
-      "breaches": "{count, plural, one {# breach} other {# breaches}}",
-      "submissions": "{count, plural, one {# submission} other {# submissions}}",
+      "courses": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} course",
+            "count_plural=*": "{count_number} courses"
+          }
+        }
+      ],
+      "breaches": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} breach",
+            "count_plural=*": "{count_number} breaches"
+          }
+        }
+      ],
+      "submissions": [
+        {
+          "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+          "selectors": ["count_plural"],
+          "match": {
+            "count_plural=one": "{count_number} submission",
+            "count_plural=*": "{count_number} submissions"
+          }
+        }
+      ],
       "awaitingReview": "{count} awaiting review",
       "forecast": "forecast: {count}",
       "percentUsed": "{count}% used"

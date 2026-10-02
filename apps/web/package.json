@@ -11,6 +11,7 @@
     "generate:contracts": "bun run generate:api-types",
     "check:contracts": "node scripts/check_contracts.mjs",
     "check:error-codes": "node scripts/sync-error-codes.mjs",
+    "check:messages": "node scripts/check-messages.mjs",
     "test": "node scripts/run-vitest.mjs run",
     "test:ui": "node scripts/run-vitest.mjs --browser.enabled --browser.name=chromium",
     "test:browser": "node scripts/run-vitest.mjs --browser.enabled",
