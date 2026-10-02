@@ -1,7 +1,7 @@
 # Stand-in for the web app (WEB_IMAGE=<this image>): proves the edge and the
 # smoke checks do not depend on the web framework. Contract: :3000, non-root,
 # HEALTHCHECK, `/` answers 200.
-FROM docker.io/library/busybox:1.37
+FROM docker.io/library/busybox:1.38
 RUN mkdir /www && echo 'stub web' >/www/index.html
 USER 65534
 EXPOSE 3000
