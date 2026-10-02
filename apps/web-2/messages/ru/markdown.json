@@ -1,0 +1,18 @@
+{
+  "markdown_image": "Изображение: {alt}",
+  "markdown_image_untitled": "Изображение",
+  "markdown_code_plain": "Текст",
+  "markdown_copy": "Копировать код",
+  "markdown_copied": "Код скопирован",
+  "markdown_toolbar": "Форматирование",
+  "markdown_bold": "Жирный",
+  "markdown_italic": "Наклонный",
+  "markdown_code": "Код в строке",
+  "markdown_heading": "Заголовок",
+  "markdown_bullet_list": "Маркированный список",
+  "markdown_ordered_list": "Нумерованный список",
+  "markdown_quote": "Цитата",
+  "markdown_code_block": "Блок кода",
+  "markdown_undo": "Отменить",
+  "markdown_redo": "Повторить"
+}
