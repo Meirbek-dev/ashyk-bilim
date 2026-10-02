@@ -46,7 +46,7 @@ pub async fn create_course(
             request.tags.unwrap_or_default(),
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(course.into())))
+    Ok((StatusCode::CREATED, Json(Course::for_actor(course, &actor))))
 }
 
 /// Course listing.
@@ -95,7 +95,10 @@ pub async fn list_courses(
         None
     };
     Ok(Json(CoursePage {
-        items: courses.into_iter().map(Into::into).collect(),
+        items: courses
+            .into_iter()
+            .map(|c| Course::for_actor(c, &actor))
+            .collect(),
         next_cursor,
         summary,
     }))
@@ -325,7 +328,10 @@ pub async fn get_course(
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Course>> {
-    Ok(Json(state.courses.get(&actor, id).await?.into()))
+    Ok(Json(Course::for_actor(
+        state.courses.get(&actor, id).await?,
+        &actor,
+    )))
 }
 
 /// Partial update (creator with `course:update:own` or platform updaters).
@@ -370,7 +376,7 @@ pub async fn update_course(
             },
         )
         .await?;
-    Ok(Json(course.into()))
+    Ok(Json(Course::for_actor(course, &actor)))
 }
 
 /// Lifecycle: `publish` / `unpublish` (course write access, readiness
@@ -419,7 +425,7 @@ pub async fn course_lifecycle(
             .await?
         }
     };
-    Ok(Json(course.into()))
+    Ok(Json(Course::for_actor(course, &actor)))
 }
 
 /// What archiving the course would freeze - the numbers for the

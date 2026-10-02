@@ -1787,3 +1787,115 @@ Deviations decided during implementation:
   `--fix-dangerously` command is `lint:fix`.
 - **No `continue-on-error` web gates.** The two lint errors of the baseline
   were fixed instead of waived, so every web gate is green and required.
+
+## UI rights: `capabilities` on the session, `allowed_actions` on resources (2026-10-03, stage 2 S-02/S-03)
+
+Stage 2 (docs/MODERNIZATION-STAGE-2.md 7.5, 10.1) makes the web draw navigation
+and actions from server-computed rights instead of parsing `resource:action:scope`
+strings. All additive on the wire (old fields, paths and statuses unchanged;
+the `can_*` flags and `permissions` go in phase 9).
+
+**`GET /auth/session` (and the `POST /auth/login` body)** gain `user` (the
+`UserProfile` subset the shell needs) and `capabilities: Capability[]`, a closed
+OpenAPI enum. The mapping lives in one place,
+`crates/domain/src/identity/capabilities.rs`; each capability calls the gate the
+matching endpoints enforce:
+
+| capability | rule |
+| --- | --- |
+| `course.create` | `CoursesService::require_create` (`course:create:platform`) |
+| `collection.create` | `CollectionsService::require_create` (`collection:create:platform`) |
+| `groups.manage` | `usergroup:read:platform` + `UsergroupsService::require_writer` |
+| `analytics.view` / `analytics.export` | `analytics::scope::ensure_access(read / export)` (`analytics:*:{assigned,platform,all}`) |
+| `teach` | authors any course, `require_some_authoring` grant, `course:{update,manage}:platform`, `assessment:grade:platform`, or any of `course.create`, `analytics.view`, `groups.manage` |
+| `admin.users` | `RbacAdminService::require_read_users` (`platform:read:platform`) |
+| `admin.roles` | `RbacAdminService::require_read_roles` (`role:read:platform`) |
+| `admin.platform` | `PlatformService::require_update` (`platform:update:platform`) |
+| `admin.ai` | `ai::policy::require_admin` (`platform:read:platform`) |
+| `admin.gamification` | `GamificationService::require_manage` (`platform:manage:platform`) |
+| `admin.analytics` | `analytics::scope::has_platform_scope(read)` |
+| `admin` | any `admin.*` |
+
+A session whose `users` row is missing now answers 401 (it can only happen to a
+test-minted session; production sessions die with the account).
+
+**`allowed_actions: <Resource>Action[]`** (closed enum per resource) on the
+detail and list items of: `Course` (everywhere it is embedded - collections,
+search, trail, certificates), `Chapter`, `Activity`, `Collection`,
+`Discussion` (posts and replies), `Usergroup`, `Assessment`, `TeacherSubmission`
++ grading `ReviewItem` (`GradeAction`), file-submission `Attempt` +
+`FileReviewItem` (`FileGradeAction`), `Certification`, `AdminUser`, `Role`.
+Each list is computed by a domain function sharing the predicate with the
+mutation (`CoursesService::allowed_actions`, `CurriculumService::editable`,
+`grade_actions`, ...). Rule: an action is listed iff the mutation would pass
+its access gate *and* the object's state allows it (an archived course lists
+only `restore` / `delete`; a published course `unpublish`, a draft `publish`;
+a published file grade only `publish`). Input validation (422, e.g. readiness
+blockers) is not predicted. `api/tests/access_flow.rs` proves listed ⇔ not 403
+for course, collection and discussion across owner / other teacher / staff
+role / student / admin.
+
+Refinement for this: `CourseRow` carries `maintainer_ids` (active
+maintainers), so the roster-manager gate is a pure predicate instead of a
+per-check DB read.
+
+Not covered: the `FileSubmission` config (its activity's `allowed_actions`
+cover editing), learner-side attempt actions (already `ActivityState` /
+work-queue `allowed_actions`).
+
+**`ashyq admin seed-e2e`** (S-03, `just seed-e2e`): idempotent fixtures for the
+web e2e suites - verified accounts `e2e-admin` (admin), `e2e-teacher`
+(instructor), `e2e-student1`, `e2e-student2` (`<key>@e2e.test`, password from
+`E2E_PASSWORD`, created through Zitadel like `POST /users`, so `POST
+/auth/login` works on the dev stack) and the teacher's published course with
+one activity of each type (dynamic, video, document, file submission, quiz,
+exam, code challenge), student 1 enrolled. Refuses `AB__ENVIRONMENT=production`
+(`Config::environment`, the same switch that hardens cookies and CORS). Existing
+accounts keep their password; the document activity has no file attached.
+
+## Web (stage 2) (2026-10-03, phase 0 skeleton)
+
+Spec: `docs/MODERNIZATION-STAGE-2.md`; code: `apps/web-2`. One entry per Ф0 assumption (spec 12),
+then deviations from the spec.
+
+- **srvx + Start handler: confirmed.** `serve.ts` runs srvx 1.0.5 on Node 26 (types stripped by
+  Node): `/assets/*` get `public, max-age=31536000, immutable`, the document streams (chunked),
+  `gracefulShutdown` drains on SIGTERM. One catch: srvx hands a lightweight Node request that undici
+  cannot clone, so `src/server.ts` builds a fresh `Request` for Start. Nitro is not needed.
+- **hey-api from the unpatched contract: confirmed with three workarounds in our code, none in the
+  config.** SDK, Valibot and `queryOptions` generate from `openapi.v2.json` as is. (1) Query keys
+  embed the client `baseUrl`, so SSR and browser share a placeholder origin (`https://api.invalid`)
+  that `shared/api/client.ts` swaps for the real one; otherwise hydration refetches and the internal
+  API address leaks into the page. (2) Generated infinite options type `queryFn` as skippable, which
+  `useSuspenseInfiniteQuery` rejects: lists compose key + SDK call by hand in `queries.ts`. (3)
+  Generated mutation error types are the problem body; at runtime they are `ApiError`. Binary
+  responses not verified: the contract still describes PDF/CSV as strings (C-02, server S-01).
+- **Paraglide with several files per locale: confirmed.** `@inlang/plugin-message-format` 4.4.4
+  takes a `pathPattern` array; every `messages/{locale}/<feature>.json` is listed in
+  `project.inlang/settings.json`. The plugin silently skips a missing or unlisted file, so G-03
+  fails on both. No merge step.
+- **Router puts the nonce on every SSR script: confirmed.** `router.ssr.nonce` is read per request
+  from a header `src/server.ts` sets; scripts, preloads and meta all carry it, CSP is
+  `'nonce-…' 'strict-dynamic'`. CSP is sent in production builds only: Vite's dev client is not
+  nonce-aware.
+- **oxlint covers table 7.3: mostly confirmed.** Built-ins with custom messages (restricted
+  imports with regex layer patterns, globals incl. `window.*`, properties, forbid-elements,
+  filename case, size limits, cycles, floating promises) plus four jsPlugin rules in
+  `gates/lint-plugin.ts` (JSX text, `?? []` over query data, literal query keys, `m[...]`). In
+  `gates.ts` instead: G-03, G-07..G-13. Not machine-checked: "useEffect + request" and "component
+  name = file name"; `react/no-multi-comp` allows one component per file, stricter than the spec.
+- **React Compiler with Vite 8 + Start: confirmed.** `@rolldown/plugin-babel` + `reactCompilerPreset`;
+  the client bundle carries the compiler's memo cache, SSR and hydration behave.
+- **@tanstack/charts, Pacer, Hotkeys under SSR: not checked.** Nothing in the skeleton uses them;
+  each is checked with its first consumer (spec 7.10: a primitive arrives with its consumer).
+- **Intl `kk`: fell back to a month table.** Node 26 formats kk; Playwright's Chromium has no kk
+  ICU data ("2026 M02 1"). `formatDate` builds kk dates from numeric parts + a month table on both
+  sides; `format.browser.test.ts` pins it. kk numbers are still to be checked with `formatNumber`.
+- **Deviations.** `typescript` is pinned to 6.0.3: hey-api needs the TS JS API, which TS 7 lacks;
+  type checking itself is tsgolint (TS 7). tsconfig repeats `#/*` in `paths` because TS does not
+  probe extensions for package `imports`. vitest and `@vitest/browser-playwright` stay on 5.0.1, the
+  version vite-plus 1.0.0 pins. Scripts live in package.json (7.13); `vp run` rejects a name defined
+  in both places; `"workspaces": []` makes apps/web-2 its own `vp run` root (the repo root lists only
+  apps/web). G-07 is report-only until phase 7 (`gates/allowlist.json`). The login form is disabled
+  until hydration: text typed earlier never reached TanStack Form state. The Dockerfile does not
+  copy `openapi.v2.json`: the generated client is committed and the build never reads the contract.

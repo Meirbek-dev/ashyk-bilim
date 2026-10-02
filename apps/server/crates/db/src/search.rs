@@ -108,6 +108,10 @@ pub async fn search_courses(
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship = 'maintainer')
+                      AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses

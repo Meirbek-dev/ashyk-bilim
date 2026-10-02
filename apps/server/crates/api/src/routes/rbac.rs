@@ -27,7 +27,12 @@ pub async fn list_roles(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<Vec<Role>>> {
     let roles = state.rbac.list_roles(&actor).await?;
-    Ok(Json(roles.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        roles
+            .into_iter()
+            .map(|r| Role::for_actor(r, &actor))
+            .collect(),
+    ))
 }
 
 /// Assign a role to a user (requires `role:manage:platform`). Live sessions

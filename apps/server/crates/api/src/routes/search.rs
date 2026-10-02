@@ -27,5 +27,5 @@ pub async fn search(
         .search
         .search(&actor, &query.q, query.limit.unwrap_or(10))
         .await?;
-    Ok(Json(results.into()))
+    Ok(Json(SearchResults::for_actor(results, &actor)))
 }

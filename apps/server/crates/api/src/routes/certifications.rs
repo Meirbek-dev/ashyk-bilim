@@ -38,7 +38,14 @@ pub async fn create_certification(
         .certifications
         .create(&actor, request.course_id, &request.config)
         .await?;
-    Ok((StatusCode::CREATED, Json(created.into())))
+    let actions = state
+        .certifications
+        .allowed_actions_for(&actor, created.course_id)
+        .await?;
+    Ok((
+        StatusCode::CREATED,
+        Json(Certification::new(created, actions)),
+    ))
 }
 
 /// One template (course-scoped `certificate:read`).
@@ -52,7 +59,12 @@ pub async fn get_certification(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CertificationId>,
 ) -> ApiResult<Json<Certification>> {
-    Ok(Json(state.certifications.get(&actor, id).await?.into()))
+    let row = state.certifications.get(&actor, id).await?;
+    let actions = state
+        .certifications
+        .allowed_actions_for(&actor, row.course_id)
+        .await?;
+    Ok(Json(Certification::new(row, actions)))
 }
 
 /// Replace the template document.
@@ -71,13 +83,15 @@ pub async fn update_certification(
     // UX-311: permission before the body.
     state.certifications.require_updatable(&actor, id).await?;
     let request = ValidJson::<UpdateCertificationRequest>::parse(&body)?;
-    Ok(Json(
-        state
-            .certifications
-            .update(&actor, id, &request.config)
-            .await?
-            .into(),
-    ))
+    let row = state
+        .certifications
+        .update(&actor, id, &request.config)
+        .await?;
+    let actions = state
+        .certifications
+        .allowed_actions_for(&actor, row.course_id)
+        .await?;
+    Ok(Json(Certification::new(row, actions)))
 }
 
 /// Remove the template and every certificate issued from it.
@@ -107,7 +121,12 @@ pub async fn list_course_certifications(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<Certification>>> {
     let rows = state.certifications.list_for_course(&actor, id).await?;
-    Ok(Json(rows.into_iter().map(Into::into).collect()))
+    let actions = state.certifications.allowed_actions_for(&actor, id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|row| Certification::new(row, actions.clone()))
+            .collect(),
+    ))
 }
 
 /// The caller's certificates for a course; a completed course issues on
@@ -123,7 +142,11 @@ pub async fn my_course_certificates(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<IssuedCertificate>>> {
     let rows = state.certifications.mine_for_course(&actor, id).await?;
-    Ok(Json(rows.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        rows.into_iter()
+            .map(|i| IssuedCertificate::for_actor(i, &actor))
+            .collect(),
+    ))
 }
 
 /// Every certificate the caller holds.
@@ -136,7 +159,11 @@ pub async fn my_certificates(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<Vec<IssuedCertificate>>> {
     let rows = state.certifications.mine(&actor).await?;
-    Ok(Json(rows.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        rows.into_iter()
+            .map(|i| IssuedCertificate::for_actor(i, &actor))
+            .collect(),
+    ))
 }
 
 /// Public verification by code - no session needed.

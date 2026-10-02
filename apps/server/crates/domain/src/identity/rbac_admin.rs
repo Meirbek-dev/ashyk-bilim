@@ -46,6 +46,32 @@ pub struct RoleWithGrants {
     pub permissions: Vec<String>,
 }
 
+/// What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AdminUserAction {
+    /// Assign / unassign roles.
+    ManageRoles,
+    /// Disable an active account (never one's own).
+    Disable,
+    /// Re-enable a disabled account.
+    Enable,
+}
+
+/// What the caller may do to a role (`Role.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RoleAction {
+    /// Assign it to / remove it from users.
+    Assign,
+    /// Metadata (custom roles only).
+    Update,
+    /// Custom roles only.
+    Delete,
+    /// Replace the grant set (custom roles only).
+    SetPermissions,
+}
+
 #[derive(Clone)]
 pub struct RbacAdminService {
     pool: PgPool,
@@ -70,12 +96,60 @@ impl RbacAdminService {
         actor.require(MANAGE_PLATFORM)
     }
 
-    pub async fn list_roles(&self, actor: &Actor) -> Result<Vec<RoleWithGrants>> {
+    /// The user-admin gates as a list: roles (`role:manage`), status
+    /// (`platform:manage`, never the caller's own account).
+    #[must_use]
+    pub fn user_actions(actor: &Actor, user: &AdminUser) -> Vec<AdminUserAction> {
+        let platform = Self::require_manage_platform(actor).is_ok();
+        let active = user.status == "active";
+        let own = user.id == actor.user_id;
+        [
+            (
+                AdminUserAction::ManageRoles,
+                Self::require_manage_roles(actor).is_ok(),
+            ),
+            (AdminUserAction::Disable, platform && active && !own),
+            (AdminUserAction::Enable, platform && !active),
+        ]
+        .into_iter()
+        .filter_map(|(action, ok)| ok.then_some(action))
+        .collect()
+    }
+
+    /// The role-admin gates as a list: `role:manage`, and system roles
+    /// are seed-managed (only assignable).
+    #[must_use]
+    pub fn role_actions(actor: &Actor, role: &RoleWithGrants) -> Vec<RoleAction> {
+        if Self::require_manage_roles(actor).is_err() {
+            return Vec::new();
+        }
+        if role.is_system {
+            return vec![RoleAction::Assign];
+        }
+        vec![
+            RoleAction::Assign,
+            RoleAction::Update,
+            RoleAction::Delete,
+            RoleAction::SetPermissions,
+        ]
+    }
+
+    /// `role:read:platform` - the role listing (`admin.roles`).
+    pub fn require_read_roles(actor: &Actor) -> Result<()> {
         actor.require(Permission {
             resource: ResourceType::Role,
             action: Action::Read,
             scope: Some(Scope::Platform),
-        })?;
+        })
+    }
+
+    /// `platform:read:platform` - the user directory (`admin.users`).
+    pub fn require_read_users(actor: &Actor) -> Result<()> {
+        actor.require(READ_PLATFORM)
+    }
+
+    pub async fn list_roles(&self, actor: &Actor) -> Result<Vec<RoleWithGrants>> {
+        Self::require_read_roles(actor)?;
         let mut out = Vec::new();
         for role in ab_db::identity::list_roles(&self.pool).await? {
             let permissions = ab_db::identity::role_grants(&self.pool, role.id).await?;
@@ -299,7 +373,7 @@ impl RbacAdminService {
         cursor: Option<UserId>,
         limit: i64,
     ) -> Result<(Vec<AdminUser>, Option<UserId>)> {
-        actor.require(READ_PLATFORM)?;
+        Self::require_read_users(actor)?;
         let limit = ab_core::page_limit(limit, 100)?;
         let mut rows = ab_db::identity::list_users(&self.pool, q, cursor, limit + 1).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {

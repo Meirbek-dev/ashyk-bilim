@@ -14,6 +14,8 @@ pub struct Usergroup {
     /// or courses (`usergroup:manage:platform`, or creator with
     /// `usergroup:create:platform`).
     pub can_write: bool,
+    /// What the caller may do to this group now.
+    pub allowed_actions: Vec<ab_domain::identity::usergroups::UsergroupAction>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -22,6 +24,7 @@ impl Usergroup {
     pub fn for_actor(g: ab_domain::identity::usergroups::Usergroup, actor: &Actor) -> Self {
         Self {
             can_write: UsergroupsService::can_write(actor, &g),
+            allowed_actions: UsergroupsService::allowed_actions(actor, &g),
             id: g.id,
             name: g.name,
             description: g.description,

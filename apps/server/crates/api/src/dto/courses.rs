@@ -1,4 +1,5 @@
 use ab_core::id::{CourseId, UserId};
+use ab_domain::identity::Actor;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -29,13 +30,17 @@ pub struct Course {
     /// keep reading it. Orthogonal to `public`.
     pub archived_at_unix: Option<i64>,
     pub archived_by: Option<UserId>,
+    /// What the caller may do to this course now - draw only these actions.
+    pub allowed_actions: Vec<ab_domain::catalog::courses::CourseAction>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
-impl From<ab_domain::catalog::courses::Course> for Course {
-    fn from(c: ab_domain::catalog::courses::Course) -> Self {
+impl Course {
+    /// The course as `actor` sees it (`allowed_actions` are theirs).
+    pub fn for_actor(c: ab_domain::catalog::courses::Course, actor: &Actor) -> Self {
         Self {
+            allowed_actions: ab_domain::catalog::CoursesService::allowed_actions(actor, &c),
             id: c.id,
             name: c.name,
             description: c.description,

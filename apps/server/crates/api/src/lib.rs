@@ -12,6 +12,7 @@ pub mod error;
 pub mod extract;
 pub mod middleware;
 pub mod routes;
+pub mod seed;
 pub mod state;
 
 pub use app::{build_router, openapi_doc};

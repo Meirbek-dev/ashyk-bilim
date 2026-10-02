@@ -161,7 +161,10 @@ pub async fn create_user(
                 request.roles.as_deref().unwrap_or_default(),
             )
             .await?;
-        Ok((StatusCode::CREATED, Json(user.into())))
+        Ok((
+            StatusCode::CREATED,
+            Json(AdminUser::for_actor(user, &actor)),
+        ))
     })
     .await
 }
@@ -197,7 +200,10 @@ pub async fn list_users(
         )
         .await?;
     Ok(Json(AdminUserPage {
-        items: users.into_iter().map(Into::into).collect(),
+        items: users
+            .into_iter()
+            .map(|u| AdminUser::for_actor(u, &actor))
+            .collect(),
         next_cursor,
     }))
 }
@@ -323,7 +329,10 @@ pub async fn user_courses(
         .list_by_user(&actor, user, query.cursor, query.limit.unwrap_or(20))
         .await?;
     Ok(Json(CoursePage {
-        items: courses.into_iter().map(Into::into).collect(),
+        items: courses
+            .into_iter()
+            .map(|c| crate::dto::courses::Course::for_actor(c, &actor))
+            .collect(),
         next_cursor,
         summary: None,
     }))

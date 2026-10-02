@@ -80,9 +80,45 @@ pub struct TotpVerifyRequest {
 pub struct SessionInfo {
     pub user_id: UserId,
     pub roles: Vec<String>,
+    /// Raw grant strings (legacy contract). New clients read
+    /// `capabilities` and per-object `allowed_actions` instead and never
+    /// parse these.
     pub permissions: Vec<String>,
     /// TOTP enrolled on the account.
     pub mfa_enabled: bool,
+    /// What the app shell draws (name, avatar, locale, theme) - no second
+    /// request to `GET /users/me`.
+    pub user: SessionUser,
+    /// UI-level rights for navigation and route guards, computed by the
+    /// server from the grants (mapping: `ab_domain::identity::capabilities`).
+    pub capabilities: Vec<ab_domain::identity::Capability>,
+}
+
+/// The signed-in user as the app shell shows them (a subset of `UserProfile`).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SessionUser {
+    pub id: UserId,
+    pub username: String,
+    pub email: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+    pub locale: String,
+    /// UI theme slug; `null` = the web default.
+    pub theme: Option<String>,
+}
+
+impl From<ab_domain::identity::users::Profile> for SessionUser {
+    fn from(p: ab_domain::identity::users::Profile) -> Self {
+        Self {
+            id: p.id,
+            username: p.username,
+            email: p.email,
+            display_name: p.display_name,
+            avatar_key: p.avatar_key,
+            locale: p.locale,
+            theme: p.theme,
+        }
+    }
 }
 
 /// One of the caller's live sessions. `handle` is a non-bearer identifier

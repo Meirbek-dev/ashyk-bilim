@@ -77,6 +77,9 @@ pub fn test_config() -> Config {
 
 pub struct TestApp {
     router: Router,
+    /// The wired services behind the router (for non-HTTP entry points,
+    /// e.g. `ab_api::seed`).
+    pub state: ab_api::AppState,
     ai: ab_domain::ai::AiService,
     pub pool: PgPool,
     pub sessions: ab_domain::identity::SessionStore,
@@ -186,9 +189,10 @@ impl TestApp {
         );
         let state = state.expect("test state must build");
         let ai = state.ai.clone();
-        let router = ab_api::build_router(state).expect("test router must build");
+        let router = ab_api::build_router(state.clone()).expect("test router must build");
         Self {
             router,
+            state,
             ai,
             pool,
             sessions,
@@ -410,6 +414,7 @@ impl TestApp {
     }
 }
 
+#[derive(Clone)]
 pub struct MintedSession {
     pub user_id: UserId,
     /// Ready-to-use `Cookie` header value.

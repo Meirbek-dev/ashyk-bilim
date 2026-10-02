@@ -14,13 +14,19 @@ pub struct Certification {
     /// The client's PDF designer document (opaque to the server).
     #[schema(value_type = Object)]
     pub config: serde_json::Value,
+    /// What the caller may do to this template now.
+    pub allowed_actions: Vec<domain::CertificationAction>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
-impl From<ab_db::certifications::CertificationRow> for Certification {
-    fn from(r: ab_db::certifications::CertificationRow) -> Self {
+impl Certification {
+    pub fn new(
+        r: ab_db::certifications::CertificationRow,
+        allowed_actions: Vec<domain::CertificationAction>,
+    ) -> Self {
         Self {
+            allowed_actions,
             id: r.id,
             course_id: r.course_id,
             config: r.config,
@@ -88,12 +94,13 @@ pub struct IssuedCertificate {
     pub instructor_name: Option<String>,
 }
 
-impl From<domain::IssuedCertificate> for IssuedCertificate {
-    fn from(i: domain::IssuedCertificate) -> Self {
+impl IssuedCertificate {
+    pub fn for_actor(i: domain::IssuedCertificate, actor: &ab_domain::identity::Actor) -> Self {
+        let actions = domain::CertificationsService::allowed_actions(actor, &i.course);
         Self {
             certificate: i.certificate.into(),
-            certification: i.certification.into(),
-            course: i.course.into(),
+            certification: Certification::new(i.certification, actions),
+            course: Course::for_actor(i.course, actor),
             instructor_name: i.instructor_name,
         }
     }
@@ -135,12 +142,13 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
                 verify_code: c.verify_code,
                 issued_at_unix: c.created_at,
             },
-            certification: v.issued.certification.into(),
+            // Public view: nobody acts on it.
+            certification: Certification::new(v.issued.certification, Vec::new()),
             // Public view: no user ids at all (BUG-137) - `creator_id` is optional on the wire.
             course: Course {
                 creator_id: None,
                 contributor_ids: Vec::new(),
-                ..v.issued.course.into()
+                ..Course::for_actor(v.issued.course, &ab_domain::identity::Actor::anonymous())
             },
             holder: CertificateHolder {
                 display_name: v.holder_display_name,

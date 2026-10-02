@@ -131,8 +131,10 @@ async fn session_endpoint_requires_authentication(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn minted_session_authenticates_and_carries_grants(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
+    // The session answer reads the account row (`user`).
+    let user = app.create_user("minted", "minted@example.com", &[]).await;
     let session = app
-        .mint_session(&["course:read:all", "assessment:submit:assigned"])
+        .mint_session_for(user, &["course:read:all", "assessment:submit:assigned"])
         .await;
 
     let res = app.get_as(&session, "/api/v2/auth/session").await;

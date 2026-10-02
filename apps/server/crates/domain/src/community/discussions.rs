@@ -38,6 +38,24 @@ pub struct Discussion {
     pub can_update: bool,
     pub can_delete: bool,
     pub can_moderate: bool,
+    pub allowed_actions: Vec<DiscussionAction>,
+}
+
+/// What the caller may do to a post or reply (`Discussion.allowed_actions`):
+/// the gates of `update`, `delete`, `create` (reply) and `toggle`, plus the
+/// archive freeze (409) and the post's state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscussionAction {
+    /// Edit the content.
+    Update,
+    Delete,
+    /// Change the status (hide / restore) - moderators only.
+    Moderate,
+    /// Reply under it (active top-level posts).
+    Reply,
+    /// Like / dislike (active posts).
+    React,
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +82,10 @@ struct Abilities {
     delete_any: bool,
     update_own: bool,
     delete_own: bool,
+    /// `discussion:create` - the posting half of `postable_course`.
+    post: bool,
+    /// The course is not archived (every write is 409 otherwise).
+    open: bool,
 }
 
 impl Abilities {
@@ -77,20 +99,44 @@ impl Abilities {
             delete_any: moderate || actor.has(perm(Action::Delete, Scope::Platform)),
             update_own: actor.has(perm(Action::Update, Scope::Own)),
             delete_own: actor.has(perm(Action::Delete, Scope::Own)),
+            post: may_post(actor),
+            open: course.archived_at.is_none(),
         }
     }
 
     fn resolve(self, actor: &Actor, row: DiscussionRow, replies: Vec<Discussion>) -> Discussion {
         let is_owner = row.user_id == Some(actor.user_id);
+        let can_update = self.update_any || (is_owner && self.update_own);
+        let can_delete = self.delete_any || (is_owner && self.delete_own);
+        let active = row.status == DiscussionStatus::Active;
+        let allowed_actions = [
+            (DiscussionAction::Update, can_update),
+            (DiscussionAction::Delete, can_delete),
+            (DiscussionAction::Moderate, self.moderate),
+            (
+                DiscussionAction::Reply,
+                self.post && active && row.parent_id.is_none(),
+            ),
+            (DiscussionAction::React, active),
+        ]
+        .into_iter()
+        .filter_map(|(action, ok)| (ok && self.open).then_some(action))
+        .collect();
         Discussion {
             is_owner,
-            can_update: self.update_any || (is_owner && self.update_own),
-            can_delete: self.delete_any || (is_owner && self.delete_own),
+            can_update,
+            can_delete,
             can_moderate: self.moderate,
+            allowed_actions,
             row,
             replies,
         }
     }
+}
+
+/// The grant half of `postable_course`.
+fn may_post(actor: &Actor) -> bool {
+    actor.has(perm(Action::Create, Scope::Platform)) || actor.has(perm(Action::Create, Scope::Own))
 }
 
 /// Text left after dropping `<...>` tags and whitespace.
@@ -154,9 +200,7 @@ impl DiscussionsService {
     pub async fn postable_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.readable_course(actor, course_id).await?;
         course.ensure_not_archived()?;
-        if actor.has(perm(Action::Create, Scope::Platform))
-            || actor.has(perm(Action::Create, Scope::Own))
-        {
+        if may_post(actor) {
             return Ok(course);
         }
         Err(Error::forbidden("missing permission discussion:create"))

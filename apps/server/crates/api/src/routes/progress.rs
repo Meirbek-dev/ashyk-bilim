@@ -20,7 +20,10 @@ pub async fn get_trail(
     State(state): State<AppState>,
     MaybeActor(actor): MaybeActor,
 ) -> ApiResult<Json<Trail>> {
-    Ok(Json(state.trail.get(&actor).await?.into()))
+    Ok(Json(Trail::for_actor(
+        state.trail.get(&actor).await?,
+        &actor,
+    )))
 }
 
 /// Start (or keep) a run for a course the caller can access.
@@ -46,7 +49,13 @@ pub async fn add_course(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Trail>> {
-    detached(async move { Ok(Json(state.trail.add_course(&actor, id).await?.into())) }).await
+    detached(async move {
+        Ok(Json(Trail::for_actor(
+            state.trail.add_course(&actor, id).await?,
+            &actor,
+        )))
+    })
+    .await
 }
 
 /// Drop the run for a course and every step in it.
@@ -75,7 +84,13 @@ pub async fn remove_course(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Trail>> {
-    detached(async move { Ok(Json(state.trail.remove_course(&actor, id).await?.into())) }).await
+    detached(async move {
+        Ok(Json(Trail::for_actor(
+            state.trail.remove_course(&actor, id).await?,
+            &actor,
+        )))
+    })
+    .await
 }
 
 /// Mark an activity done (lesson-type activities also complete in the
@@ -90,7 +105,13 @@ pub async fn add_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<Trail>> {
-    detached(async move { Ok(Json(state.trail.add_activity(&actor, id).await?.into())) }).await
+    detached(async move {
+        Ok(Json(Trail::for_actor(
+            state.trail.add_activity(&actor, id).await?,
+            &actor,
+        )))
+    })
+    .await
 }
 
 /// Un-mark an activity.
@@ -104,7 +125,13 @@ pub async fn remove_activity(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<Trail>> {
-    detached(async move { Ok(Json(state.trail.remove_activity(&actor, id).await?.into())) }).await
+    detached(async move {
+        Ok(Json(Trail::for_actor(
+            state.trail.remove_activity(&actor, id).await?,
+            &actor,
+        )))
+    })
+    .await
 }
 
 /// The learner-facing course state: outline with per-activity work state,

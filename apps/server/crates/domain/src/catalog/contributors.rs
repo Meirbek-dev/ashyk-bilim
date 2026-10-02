@@ -41,7 +41,7 @@ impl CoursesService {
     /// archive / restore gate (`courses.rs`), so no archive check here.
     pub(crate) async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.get(actor, course_id).await?;
-        if self.manages_roster(actor, &course).await? {
+        if Self::manages_roster(actor, &course) {
             return Ok(course);
         }
         Err(Error::forbidden(
@@ -50,17 +50,10 @@ impl CoursesService {
     }
 
     /// The creator, an active maintainer, or `course:manage:platform`.
-    async fn manages_roster(&self, actor: &Actor, course: &Course) -> Result<bool> {
-        if actor.has(perm(Action::Manage, Scope::Platform))
+    pub(crate) fn manages_roster(actor: &Actor, course: &Course) -> bool {
+        actor.has(perm(Action::Manage, Scope::Platform))
             || course.creator_id == Some(actor.user_id)
-        {
-            return Ok(true);
-        }
-        Ok(
-            ab_db::catalog::get_contributor(&self.pool, course.id, actor.user_id)
-                .await?
-                .is_some_and(|row| row.role == "maintainer" && row.status == "active"),
-        )
+            || course.maintainer_ids.contains(&actor.user_id)
     }
 
     fn not_creator(course: &Course, user_id: UserId) -> Result<()> {
@@ -83,7 +76,7 @@ impl CoursesService {
     ) -> Result<Vec<Contributor>> {
         let course = self.get(actor, course_id).await?;
         let mut rows = ab_db::catalog::list_contributors(&self.pool, course_id).await?;
-        if !self.manages_roster(actor, &course).await? {
+        if !Self::manages_roster(actor, &course) {
             rows.retain(|row| row.status == "active" || row.user_id == actor.user_id);
         }
         if let Some(creator) = ab_db::catalog::creator_row(&self.pool, course.id).await? {

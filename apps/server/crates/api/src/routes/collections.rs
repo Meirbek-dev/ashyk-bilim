@@ -55,7 +55,10 @@ pub async fn create_collection(
                     request.courses.unwrap_or_default(),
                 )
                 .await?;
-            Ok((StatusCode::CREATED, Collection::from(collection)))
+            Ok((
+                StatusCode::CREATED,
+                Collection::for_actor(collection, &actor),
+            ))
         },
     )
     .await
@@ -82,7 +85,10 @@ pub async fn list_collections(
         .list(&actor, query.cursor, query.limit.unwrap_or(20))
         .await?;
     Ok(Json(CollectionPage {
-        items: collections.into_iter().map(Into::into).collect(),
+        items: collections
+            .into_iter()
+            .map(|c| Collection::for_actor(c, &actor))
+            .collect(),
         next_cursor,
     }))
 }
@@ -105,7 +111,10 @@ pub async fn get_collection(
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CollectionId>,
 ) -> ApiResult<Response> {
-    Ok(with_etag(state.collections.get(&actor, id).await?.into()))
+    Ok(with_etag(Collection::for_actor(
+        state.collections.get(&actor, id).await?,
+        &actor,
+    )))
 }
 
 /// The collection JSON with an `ETag` carrying its version (the `If-Match`
@@ -162,7 +171,7 @@ pub async fn update_collection(
             },
         )
         .await?;
-    Ok(with_etag(collection.into()))
+    Ok(with_etag(Collection::for_actor(collection, &actor)))
 }
 
 /// Delete a collection (membership rows cascade; courses stay).

@@ -145,25 +145,7 @@ impl From<domain::FileSubmission> for FileSubmission {
             grade_release_mode: s.row.grade_release_mode,
             rubric: s.row.rubric,
             settings: s.row.settings,
-            current_attempt: attempts.first().map(|a| Attempt {
-                id: a.id,
-                status: a.status,
-                attempt_number: a.attempt_number,
-                files: a.files.clone(),
-                is_late: a.is_late,
-                late_penalty_pct: a.late_penalty_pct,
-                raw_score: a.raw_score,
-                final_score: a.final_score,
-                feedback: a.feedback.clone(),
-                rubric_scores: a.rubric_scores.clone(),
-                version: a.version,
-                started_at_unix: a.started_at_unix,
-                submitted_at_unix: a.submitted_at_unix,
-                graded_at_unix: a.graded_at_unix,
-                created_at_unix: a.created_at_unix,
-                updated_at_unix: a.updated_at_unix,
-                user: a.user.clone(),
-            }),
+            current_attempt: attempts.first().cloned(),
             attempts,
             disabled_reasons: s.disabled_reasons,
             published_at_unix: s.row.published_at,
@@ -201,6 +183,9 @@ pub struct Attempt {
     /// Present on grader views and on `GET file-submission-attempts/{id}`
     /// (the owner's own summary there, UX-199).
     pub user: Option<UserSummary>,
+    /// The grade saves the caller may make now (`POST .../grade` `action`);
+    /// empty on a learner's own view.
+    pub allowed_actions: Vec<FileGradeAction>,
 }
 
 impl From<domain::Attempt> for Attempt {
@@ -224,6 +209,7 @@ impl From<domain::Attempt> for Attempt {
             created_at_unix: a.row.created_at,
             updated_at_unix: a.row.updated_at,
             user: a.user,
+            allowed_actions: a.allowed_actions.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -255,12 +241,22 @@ pub struct SubmitRequest {
     pub files: Option<Vec<FileRefRequest>>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum FileGradeAction {
     Save,
     Publish,
     Return,
+}
+
+impl From<domain::FileGradeAction> for FileGradeAction {
+    fn from(a: domain::FileGradeAction) -> Self {
+        match a {
+            domain::FileGradeAction::Save => Self::Save,
+            domain::FileGradeAction::Publish => Self::Publish,
+            domain::FileGradeAction::Return => Self::Return,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
@@ -318,6 +314,8 @@ pub struct FileReviewItem {
     pub final_score: Option<f64>,
     pub version: i64,
     pub file_count: i64,
+    /// The grade saves the caller may make now.
+    pub allowed_actions: Vec<FileGradeAction>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -343,6 +341,7 @@ impl From<domain::ReviewPage> for FileReviewPage {
                     final_score: i.final_score,
                     version: i.version,
                     file_count: i.file_count,
+                    allowed_actions: i.allowed_actions.into_iter().map(Into::into).collect(),
                 })
                 .collect(),
             next_cursor: p.next_cursor,

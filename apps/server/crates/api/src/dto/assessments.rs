@@ -200,14 +200,17 @@ pub struct Assessment {
     pub policy: Policy,
     pub access_mode: AccessMode,
     pub creator_id: Option<UserId>,
+    /// What the caller may do to this assessment now.
+    pub allowed_actions: Vec<service::AssessmentAction>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
-impl From<service::Assessment> for Assessment {
-    fn from(a: service::Assessment) -> Self {
+impl Assessment {
+    pub fn new(a: service::Assessment, allowed_actions: Vec<service::AssessmentAction>) -> Self {
         let policy = PolicyInput::from_row(&a).into();
         Self {
+            allowed_actions,
             id: a.id,
             activity_id: a.activity_id,
             course_id: a.course_id,
@@ -299,10 +302,13 @@ pub struct AssessmentDetail {
     pub items: Vec<AssessmentItem>,
 }
 
-impl From<service::AssessmentDetail> for AssessmentDetail {
-    fn from(d: service::AssessmentDetail) -> Self {
+impl AssessmentDetail {
+    pub fn new(
+        d: service::AssessmentDetail,
+        allowed_actions: Vec<service::AssessmentAction>,
+    ) -> Self {
         Self {
-            assessment: d.assessment.into(),
+            assessment: Assessment::new(d.assessment, allowed_actions),
             items: d.items.into_iter().map(Into::into).collect(),
         }
     }

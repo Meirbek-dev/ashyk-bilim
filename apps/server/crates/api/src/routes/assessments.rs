@@ -69,7 +69,10 @@ pub async fn create_assessment(
             },
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(detail.into())))
+    Ok((
+        StatusCode::CREATED,
+        Json(detail_view(&state, &actor, detail).await?),
+    ))
 }
 
 /// Full assessment with items and policy. Authors always; learners only
@@ -88,7 +91,8 @@ pub async fn get_assessment(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
 ) -> ApiResult<Json<AssessmentDetail>> {
-    Ok(Json(state.assessments.get(&actor, id).await?.into()))
+    let detail = state.assessments.get(&actor, id).await?;
+    Ok(Json(detail_view(&state, &actor, detail).await?))
 }
 
 /// The assessment behind an activity (same access rules as by id).
@@ -106,9 +110,8 @@ pub async fn get_activity_assessment(
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
 ) -> ApiResult<Json<AssessmentDetail>> {
-    Ok(Json(
-        state.assessments.get_by_activity(&actor, id).await?.into(),
-    ))
+    let detail = state.assessments.get_by_activity(&actor, id).await?;
+    Ok(Json(detail_view(&state, &actor, detail).await?))
 }
 
 /// Course overview: authors see every assessment, others only published.
@@ -123,7 +126,12 @@ pub async fn list_course_assessments(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<Assessment>>> {
     let rows = state.assessments.list_for_course(&actor, id).await?;
-    Ok(Json(rows.into_iter().map(Into::into).collect()))
+    let actions = state.assessments.allowed_actions_for(&actor, id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|a| Assessment::new(a, actions.clone()))
+            .collect(),
+    ))
 }
 
 /// Title/description/weight/grading type. Archived assessments are
@@ -160,7 +168,7 @@ pub async fn update_assessment(
             },
         )
         .await?;
-    Ok(Json(detail.into()))
+    Ok(Json(detail_view(&state, &actor, detail).await?))
 }
 
 /// Replace the whole policy block (bumps `policy_version`).
@@ -189,7 +197,7 @@ pub async fn set_policy(
             .assessments
             .set_policy(&actor, id, request.into())
             .await?;
-        Ok(Json(detail.into()))
+        Ok(Json(detail_view(&state, &actor, detail).await?))
     })
     .await
 }
@@ -234,7 +242,7 @@ pub async fn lifecycle(
                 request.note.as_deref(),
             )
             .await?;
-        Ok(Json(detail.into()))
+        Ok(Json(detail_view(&state, &actor, detail).await?))
     })
     .await
 }
@@ -265,7 +273,10 @@ pub async fn duplicate_assessment(
         .assessments
         .duplicate(&actor, id, request.title.as_deref(), request.chapter_id)
         .await?;
-    Ok((StatusCode::CREATED, Json(detail.into())))
+    Ok((
+        StatusCode::CREATED,
+        Json(detail_view(&state, &actor, detail).await?),
+    ))
 }
 
 /// What blocks publication right now.
@@ -628,4 +639,17 @@ pub async fn attempt_state(
     Ok(Json(
         state.assessments.reading_state(&actor, id).await?.into(),
     ))
+}
+
+/// The detail with the caller's `allowed_actions` (one course read).
+async fn detail_view(
+    state: &AppState,
+    actor: &ab_domain::identity::Actor,
+    detail: ab_domain::assessments::service::AssessmentDetail,
+) -> ab_core::Result<AssessmentDetail> {
+    let actions = state
+        .assessments
+        .allowed_actions_for(actor, detail.assessment.course_id)
+        .await?;
+    Ok(AssessmentDetail::new(detail, actions))
 }

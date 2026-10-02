@@ -29,6 +29,8 @@ pub struct CourseRow {
     /// Active `resource_authors` rows that write (maintainer / contributor);
     /// reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
+    /// The active maintainers among them (roster managers with the creator).
+    pub maintainer_ids: Vec<UserId>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -108,6 +110,10 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship = 'maintainer')
+                      AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses WHERE id = $1"#,
@@ -200,6 +206,10 @@ pub async fn list_courses(
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship = 'maintainer')
+                      AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
@@ -315,6 +325,10 @@ pub async fn list_user_courses(
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship = 'maintainer')
+                      AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
@@ -371,6 +385,10 @@ pub async fn update_course<'e>(
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
+                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                        WHERE ra.course_id = courses.id AND ra.status = 'active'
+                          AND ra.authorship = 'maintainer')
+                      AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!""#,
         id.0,

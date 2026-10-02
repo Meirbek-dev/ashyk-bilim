@@ -68,6 +68,13 @@ enum AdminCommand {
         #[arg(long, default_value = "smoke")]
         dataset: String,
     },
+    /// Create the web end-to-end fixtures (dev/test stacks only; refuses
+    /// `AB__ENVIRONMENT=production`): verified accounts `e2e-admin`,
+    /// `e2e-teacher`, `e2e-student1`, `e2e-student2` (`*@e2e.test`, password
+    /// from `E2E_PASSWORD`) and a published course of the teacher with one
+    /// activity of every type, student 1 enrolled. Idempotent; prints the
+    /// logins as JSON.
+    SeedE2e,
 }
 
 #[tokio::main]
@@ -87,7 +94,14 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let config = Config::load()?;
-    let _telemetry = ab_core::telemetry::init(&config.telemetry);
+    // seed-e2e's stdout is its JSON report: no log lines in it.
+    let quiet = matches!(
+        cli.command,
+        Command::Admin {
+            command: AdminCommand::SeedE2e
+        }
+    );
+    let _telemetry = (!quiet).then(|| ab_core::telemetry::init(&config.telemetry));
 
     match cli.command {
         Command::Openapi => unreachable!("handled above"),
@@ -149,6 +163,9 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Command::Admin {
+            command: AdminCommand::SeedE2e,
+        } => seed_e2e(config).await,
+        Command::Admin {
             command: AdminCommand::ZitadelCheck,
         } => {
             let zitadel_config = config
@@ -193,7 +210,46 @@ async fn ai_eval(config: Config, dataset: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// `ashyq admin seed-e2e` - see [`ab_api::seed`].
+async fn seed_e2e(config: Config) -> anyhow::Result<()> {
+    if config.environment.is_production() {
+        anyhow::bail!("seed-e2e refuses to run with AB__ENVIRONMENT=production");
+    }
+    let password = std::env::var("E2E_PASSWORD")
+        .ok()
+        .filter(|p| !p.is_empty())
+        .ok_or_else(|| {
+            anyhow::anyhow!("E2E_PASSWORD must be set (the seeded accounts' password)")
+        })?;
+    let state = build_state(config).await?;
+    let report = ab_api::seed::seed_e2e(&state, &secrecy::SecretString::from(password)).await?;
+    writeln!(
+        std::io::stdout(),
+        "{}",
+        serde_json::to_string_pretty(&report)?
+    )?;
+    Ok(())
+}
+
 async fn serve(config: Config) -> anyhow::Result<()> {
+    let addr = format!("{}:{}", config.server.host, config.server.port);
+    let router = ab_api::build_router(build_state(config).await?)?;
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    tracing::info!(%addr, "ashyq serving");
+    // The TCP peer is the last-resort client address (`ClientIp`, BUG-147).
+    axum::serve(
+        listener,
+        router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
+    tracing::info!("server drained and stopped");
+    Ok(())
+}
+
+/// The API's wiring (serve, seed-e2e): DB, sessions, Zitadel, mail,
+/// Google, storage, Judge0.
+async fn build_state(config: Config) -> anyhow::Result<AppState> {
     let pool = ab_db::connect(&config.database).await?;
     let pending = ab_db::MIGRATOR.iter().len();
     tracing::info!(migrations = pending, "database connected");
@@ -260,21 +316,9 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let storage = build_storage(&config)?;
     let judge0 = build_judge0(&config)?;
 
-    let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(AppState::new(
+    Ok(AppState::new(
         pool, config, identity, google, storage, judge0,
-    )?)?;
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    tracing::info!(%addr, "ashyq serving");
-    // The TCP peer is the last-resort client address (`ClientIp`, BUG-147).
-    axum::serve(
-        listener,
-        router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await?;
-    tracing::info!("server drained and stopped");
-    Ok(())
+    )?)
 }
 
 /// Storage is required by serve (uploads) and worker (reaper).

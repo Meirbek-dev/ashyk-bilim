@@ -111,6 +111,13 @@ expression: json
           "activity_type": {
             "type": "string"
           },
+          "allowed_actions": {
+            "description": "What the caller may do to this activity now.",
+            "items": {
+              "$ref": "#/components/schemas/ActivityAction"
+            },
+            "type": "array"
+          },
           "chapter_id": {
             "$ref": "#/components/schemas/ChapterId"
           },
@@ -146,9 +153,19 @@ expression: json
           "activity_sub_type",
           "published",
           "position",
-          "version"
+          "version",
+          "allowed_actions"
         ],
         "type": "object"
+      },
+      "ActivityAction": {
+        "description": "What the caller may do to an activity (`Activity.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "move"
+        ],
+        "type": "string"
       },
       "ActivityDetail": {
         "allOf": [
@@ -768,6 +785,13 @@ expression: json
       "AdminUser": {
         "description": "Admin listing row (includes email + status - platform:read gated).",
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this account now.",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserAction"
+            },
+            "type": "array"
+          },
           "created_at_unix": {
             "format": "int64",
             "type": "integer"
@@ -807,9 +831,19 @@ expression: json
           "organization",
           "status",
           "roles",
-          "created_at_unix"
+          "created_at_unix",
+          "allowed_actions"
         ],
         "type": "object"
+      },
+      "AdminUserAction": {
+        "description": "What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).",
+        "enum": [
+          "manage_roles",
+          "disable",
+          "enable"
+        ],
+        "type": "string"
       },
       "AdminUserPage": {
         "description": "Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.",
@@ -1196,6 +1230,13 @@ expression: json
           "activity_id": {
             "$ref": "#/components/schemas/ActivityId"
           },
+          "allowed_actions": {
+            "description": "What the caller may do to this assessment now.",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentAction"
+            },
+            "type": "array"
+          },
           "archived_at_unix": {
             "format": "int64",
             "type": [
@@ -1286,10 +1327,21 @@ expression: json
           "policy_version",
           "policy",
           "access_mode",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "AssessmentAction": {
+        "description": "What the caller may do to an assessment (`Assessment.allowed_actions`).",
+        "enum": [
+          "update",
+          "transition",
+          "duplicate",
+          "grade"
+        ],
+        "type": "string"
       },
       "AssessmentAuditEventRow": {
         "properties": {
@@ -2202,6 +2254,13 @@ expression: json
       "Attempt": {
         "description": "One attempt. For its owner, `final_score`, `feedback` and\n`rubric_scores` are `null` until the grade is published or the work\nreturned.",
         "properties": {
+          "allowed_actions": {
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`);\nempty on a learner's own view.",
+            "items": {
+              "$ref": "#/components/schemas/FileGradeAction"
+            },
+            "type": "array"
+          },
           "attempt_number": {
             "format": "int32",
             "type": "integer"
@@ -2307,7 +2366,8 @@ expression: json
           "late_penalty_pct",
           "version",
           "created_at_unix",
-          "updated_at_unix"
+          "updated_at_unix",
+          "allowed_actions"
         ],
         "type": "object"
       },
@@ -2572,6 +2632,25 @@ expression: json
         ],
         "type": "string"
       },
+      "Capability": {
+        "description": "A UI-level right: may the caller enter a workspace / see an entry point.\nClosed set; object-level rights travel as `allowed_actions` instead.",
+        "enum": [
+          "teach",
+          "course.create",
+          "collection.create",
+          "groups.manage",
+          "analytics.view",
+          "analytics.export",
+          "admin",
+          "admin.users",
+          "admin.roles",
+          "admin.platform",
+          "admin.ai",
+          "admin.gamification",
+          "admin.analytics"
+        ],
+        "type": "string"
+      },
       "CaseResult": {
         "description": "One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/\n`stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).",
         "properties": {
@@ -2748,6 +2827,13 @@ expression: json
       },
       "Certification": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this template now.",
+            "items": {
+              "$ref": "#/components/schemas/CertificationAction"
+            },
+            "type": "array"
+          },
           "config": {
             "description": "The client's PDF designer document (opaque to the server).",
             "type": "object"
@@ -2771,10 +2857,19 @@ expression: json
           "id",
           "course_id",
           "config",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "CertificationAction": {
+        "description": "What the caller may do to a certificate template (`Certification.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete"
+        ],
+        "type": "string"
       },
       "CertificationId": {
         "format": "uuid",
@@ -2799,6 +2894,13 @@ expression: json
       },
       "Chapter": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this chapter now.",
+            "items": {
+              "$ref": "#/components/schemas/ChapterAction"
+            },
+            "type": "array"
+          },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
           },
@@ -2822,9 +2924,20 @@ expression: json
           "course_id",
           "name",
           "description",
-          "position"
+          "position",
+          "allowed_actions"
         ],
         "type": "object"
+      },
+      "ChapterAction": {
+        "description": "What the caller may do to a chapter (`Chapter.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "move",
+          "add_activity"
+        ],
+        "type": "string"
       },
       "ChapterId": {
         "format": "uuid",
@@ -3152,6 +3265,13 @@ expression: json
       },
       "Collection": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this collection now.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionAction"
+            },
+            "type": "array"
+          },
           "can_delete": {
             "description": "The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).",
             "type": "boolean"
@@ -3207,10 +3327,19 @@ expression: json
           "version",
           "courses",
           "can_delete",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "CollectionAction": {
+        "description": "What the caller may do to a collection (`Collection.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete"
+        ],
+        "type": "string"
       },
       "CollectionHit": {
         "description": "Collections in search results are light - no embedded courses.",
@@ -3594,6 +3723,13 @@ expression: json
           "about": {
             "type": "string"
           },
+          "allowed_actions": {
+            "description": "What the caller may do to this course now - draw only these actions.",
+            "items": {
+              "$ref": "#/components/schemas/CourseAction"
+            },
+            "type": "array"
+          },
           "archived_at_unix": {
             "description": "Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.",
             "format": "int64",
@@ -3690,10 +3826,24 @@ expression: json
           "open_to_contributors",
           "learnings",
           "contributor_ids",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "CourseAction": {
+        "description": "What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].",
+        "enum": [
+          "update",
+          "publish",
+          "unpublish",
+          "archive",
+          "restore",
+          "delete",
+          "manage_contributors"
+        ],
+        "type": "string"
       },
       "CourseAnalysis": {
         "properties": {
@@ -4736,6 +4886,13 @@ expression: json
       },
       "Discussion": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this post now (supersedes the `can_*` flags).",
+            "items": {
+              "$ref": "#/components/schemas/DiscussionAction"
+            },
+            "type": "array"
+          },
           "author": {
             "oneOf": [
               {
@@ -4830,10 +4987,22 @@ expression: json
           "can_update",
           "can_delete",
           "can_moderate",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "DiscussionAction": {
+        "description": "What the caller may do to a post or reply (`Discussion.allowed_actions`):\nthe gates of `update`, `delete`, `create` (reply) and `toggle`, plus the\narchive freeze (409) and the post's state.",
+        "enum": [
+          "update",
+          "delete",
+          "moderate",
+          "reply",
+          "react"
+        ],
+        "type": "string"
       },
       "DiscussionAuthor": {
         "description": "The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone.",
@@ -5422,6 +5591,13 @@ expression: json
       },
       "FileReviewItem": {
         "properties": {
+          "allowed_actions": {
+            "description": "The grade saves the caller may make now.",
+            "items": {
+              "$ref": "#/components/schemas/FileGradeAction"
+            },
+            "type": "array"
+          },
           "attempt_number": {
             "format": "int32",
             "type": "integer"
@@ -5475,7 +5651,8 @@ expression: json
           "attempt_number",
           "is_late",
           "version",
-          "file_count"
+          "file_count",
+          "allowed_actions"
         ],
         "type": "object"
       },
@@ -9568,6 +9745,13 @@ expression: json
       },
       "ReviewItem": {
         "properties": {
+          "allowed_actions": {
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`).",
+            "items": {
+              "$ref": "#/components/schemas/GradeAction"
+            },
+            "type": "array"
+          },
           "attempt_number": {
             "format": "int32",
             "type": "integer"
@@ -9634,7 +9818,8 @@ expression: json
           "is_late",
           "version",
           "enrolled",
-          "staff"
+          "staff",
+          "allowed_actions"
         ],
         "type": "object"
       },
@@ -9725,6 +9910,13 @@ expression: json
       },
       "Role": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this role now.",
+            "items": {
+              "$ref": "#/components/schemas/RoleAction"
+            },
+            "type": "array"
+          },
           "description": {
             "type": [
               "string",
@@ -9768,9 +9960,20 @@ expression: json
           "description_key",
           "priority",
           "is_system",
-          "permissions"
+          "permissions",
+          "allowed_actions"
         ],
         "type": "object"
+      },
+      "RoleAction": {
+        "description": "What the caller may do to a role (`Role.allowed_actions`).",
+        "enum": [
+          "assign",
+          "update",
+          "delete",
+          "set_permissions"
+        ],
+        "type": "string"
       },
       "RunAggregate": {
         "properties": {
@@ -10331,11 +10534,19 @@ expression: json
       "SessionInfo": {
         "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
         "properties": {
+          "capabilities": {
+            "description": "UI-level rights for navigation and route guards, computed by the\nserver from the grants (mapping: `ab_domain::identity::capabilities`).",
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            },
+            "type": "array"
+          },
           "mfa_enabled": {
             "description": "TOTP enrolled on the account.",
             "type": "boolean"
           },
           "permissions": {
+            "description": "Raw grant strings (legacy contract). New clients read\n`capabilities` and per-object `allowed_actions` instead and never\nparse these.",
             "items": {
               "type": "string"
             },
@@ -10347,6 +10558,10 @@ expression: json
             },
             "type": "array"
           },
+          "user": {
+            "$ref": "#/components/schemas/SessionUser",
+            "description": "What the app shell draws (name, avatar, locale, theme) - no second\nrequest to `GET /users/me`."
+          },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
           }
@@ -10355,7 +10570,9 @@ expression: json
           "user_id",
           "roles",
           "permissions",
-          "mfa_enabled"
+          "mfa_enabled",
+          "user",
+          "capabilities"
         ],
         "type": "object"
       },
@@ -10394,6 +10611,47 @@ expression: json
           "current",
           "created_at_unix",
           "last_seen_unix"
+        ],
+        "type": "object"
+      },
+      "SessionUser": {
+        "description": "The signed-in user as the app shell shows them (a subset of `UserProfile`).",
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "theme": {
+            "description": "UI theme slug; `null` = the web default.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "locale"
         ],
         "type": "object"
       },
@@ -11701,6 +11959,13 @@ expression: json
       "TeacherSubmission": {
         "description": "A submission as the grader sees it - nothing redacted.",
         "properties": {
+          "allowed_actions": {
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`).",
+            "items": {
+              "$ref": "#/components/schemas/GradeAction"
+            },
+            "type": "array"
+          },
           "answers": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ItemAnswer"
@@ -11846,7 +12111,8 @@ expression: json
           "version",
           "content_version",
           "policy_version",
-          "feedback"
+          "feedback",
+          "allowed_actions"
         ],
         "type": "object"
       },
@@ -12833,6 +13099,13 @@ expression: json
       },
       "Usergroup": {
         "properties": {
+          "allowed_actions": {
+            "description": "What the caller may do to this group now.",
+            "items": {
+              "$ref": "#/components/schemas/UsergroupAction"
+            },
+            "type": "array"
+          },
           "can_write": {
             "description": "Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).",
             "type": "boolean"
@@ -12875,10 +13148,21 @@ expression: json
           "description",
           "member_count",
           "can_write",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "type": "object"
+      },
+      "UsergroupAction": {
+        "description": "What the caller may do to a usergroup (`Usergroup.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "manage_members",
+          "manage_courses"
+        ],
+        "type": "string"
       },
       "UsergroupCoursesRequest": {
         "additionalProperties": false,

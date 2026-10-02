@@ -17,7 +17,7 @@ pub use ab_db::usergroups::{MemberRow as Member, UsergroupRow as Usergroup};
 use crate::catalog::courses::CoursesService;
 use crate::identity::Actor;
 
-const fn perm(action: Action) -> Permission {
+pub(crate) const fn perm(action: Action) -> Permission {
     Permission {
         resource: ResourceType::Usergroup,
         action,
@@ -55,6 +55,18 @@ fn trimmed_name(name: &str) -> Result<String> {
     ab_core::required_text("name", name)
 }
 
+/// What the caller may do to a usergroup (`Usergroup.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum UsergroupAction {
+    Update,
+    Delete,
+    /// Add / remove members.
+    ManageMembers,
+    /// Link / unlink courses (each course also needs course write access).
+    ManageCourses,
+}
+
 #[derive(Clone)]
 pub struct UsergroupsService {
     pool: PgPool,
@@ -83,6 +95,21 @@ impl UsergroupsService {
     pub fn can_write(actor: &Actor, group: &Usergroup) -> bool {
         actor.has(perm(Action::Manage))
             || (group.creator_id == Some(actor.user_id) && actor.has(perm(Action::Create)))
+    }
+
+    /// Every group write goes through [`Self::can_write`].
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor, group: &Usergroup) -> Vec<UsergroupAction> {
+        if Self::can_write(actor, group) {
+            vec![
+                UsergroupAction::Update,
+                UsergroupAction::Delete,
+                UsergroupAction::ManageMembers,
+                UsergroupAction::ManageCourses,
+            ]
+        } else {
+            Vec::new()
+        }
     }
 
     async fn writable(&self, actor: &Actor, id: UsergroupId) -> Result<Usergroup> {

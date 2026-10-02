@@ -104,6 +104,8 @@ pub struct Attempt {
     pub user: Option<UserSummary>,
     /// Grade fields are visible (owner sees them only once released).
     pub grade_visible: bool,
+    /// The grade saves the caller may make ([`file_grade_actions`]).
+    pub allowed_actions: Vec<FileGradeAction>,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +119,34 @@ pub enum FileGradeAction {
     Save,
     Publish,
     Return,
+}
+
+/// `grade`'s gates as a list: grading on a course that is not archived,
+/// not the grader's own counted attempt, not a draft; a published grade
+/// only re-publishes.
+#[must_use]
+pub fn file_grade_actions(
+    actor: &Actor,
+    course: &Course,
+    learner: UserId,
+    preview: bool,
+    status: FileAttemptStatus,
+) -> Vec<FileGradeAction> {
+    let gradable = AssessmentsService::require_scoped(actor, course, Action::Grade, "").is_ok()
+        && course.archived_at.is_none()
+        && (learner != actor.user_id || preview)
+        && status != FileAttemptStatus::Draft;
+    if !gradable {
+        return Vec::new();
+    }
+    if status == FileAttemptStatus::Published {
+        return vec![FileGradeAction::Publish];
+    }
+    vec![
+        FileGradeAction::Save,
+        FileGradeAction::Publish,
+        FileGradeAction::Return,
+    ]
 }
 
 pub struct FileGradeInput {
@@ -149,6 +179,7 @@ pub struct ReviewItem {
     pub final_score: Option<f64>,
     pub version: i64,
     pub file_count: i64,
+    pub allowed_actions: Vec<FileGradeAction>,
 }
 
 #[derive(Debug, Clone)]
@@ -367,12 +398,13 @@ impl FileSubmissionsService {
         &self,
         actor: &Actor,
         id: FileAttemptId,
-    ) -> Result<(AttemptRow, FileSubmissionRow)> {
+    ) -> Result<(AttemptRow, FileSubmissionRow, Course)> {
         let attempt = ab_db::file_submissions::get_attempt(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
         let row = self.load(attempt.file_submission_id).await?;
-        self.scoped(actor, &row, Action::Grade, "grading")
+        let course = self
+            .scoped(actor, &row, Action::Grade, "grading")
             .await
             .map_err(|err| match err {
                 Error::App {
@@ -380,9 +412,9 @@ impl FileSubmissionsService {
                     ..
                 } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
                 other => other,
-            })?
-            .ensure_not_archived()?;
-        Ok((attempt, row))
+            })?;
+        course.ensure_not_archived()?;
+        Ok((attempt, row, course))
     }
 
     /// Visible course (404 otherwise) + the given scoped action.
@@ -528,6 +560,7 @@ impl FileSubmissionsService {
                         .collect(),
                     user,
                     grade_visible,
+                    allowed_actions: Vec::new(),
                     row,
                 }
             })
@@ -1259,7 +1292,7 @@ impl FileSubmissionsService {
         filter: ReviewFilter<'_>,
     ) -> Result<ReviewPage> {
         let row = self.load(id).await?;
-        self.scoped(actor, &row, Action::Grade, "grading").await?;
+        let course = self.scoped(actor, &row, Action::Grade, "grading").await?;
         let limit = ab_core::page_limit(filter.limit, MAX_REVIEW_PAGE)?;
         let mut rows = ab_db::file_submissions::list_for_review(
             &self.pool,
@@ -1281,6 +1314,8 @@ impl FileSubmissionsService {
             items: rows
                 .into_iter()
                 .map(|r| ReviewItem {
+                    // The queue holds no previews (`list_for_review`).
+                    allowed_actions: file_grade_actions(actor, &course, r.user_id, false, r.status),
                     id: r.id,
                     user: UserSummary {
                         id: r.user_id,
@@ -1309,16 +1344,37 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("attempt"))?;
         let row = self.load(attempt.file_submission_id).await?;
         if attempt.user_id == actor.user_id {
-            self.require_submit_access(actor, &row).await?;
+            let (course, _) = self.require_submit_access(actor, &row).await?;
+            let allowed_actions = file_grade_actions(
+                actor,
+                &course,
+                attempt.user_id,
+                attempt.preview,
+                attempt.status,
+            );
             // UX-199: the owner's view names its owner too, so a grader
             // opening their own attempt in the review workspace sees it as
             // theirs (grade fields stay redacted until released).
-            return self.attempt_view(attempt, true, true).await;
+            return Ok(Attempt {
+                allowed_actions,
+                ..self.attempt_view(attempt, true, true).await?
+            });
         }
-        self.scoped(actor, &row, Action::Grade, "grading")
+        let course = self
+            .scoped(actor, &row, Action::Grade, "grading")
             .await
             .map_err(|_| Error::not_found("attempt"))?;
-        self.attempt_view(attempt, true, false).await
+        let allowed_actions = file_grade_actions(
+            actor,
+            &course,
+            attempt.user_id,
+            attempt.preview,
+            attempt.status,
+        );
+        Ok(Attempt {
+            allowed_actions,
+            ..self.attempt_view(attempt, true, false).await?
+        })
     }
 
     /// Save / publish / return a grade under the `version` lock. A score is
@@ -1331,7 +1387,7 @@ impl FileSubmissionsService {
     ) -> Result<Attempt> {
         // UX-134: a stranger gets the unknown-id 404, not a 403 that
         // confirms another learner's attempt id (the owner keeps the 403).
-        let (attempt, row) = self.gradable(actor, id).await?;
+        let (attempt, row, course) = self.gradable(actor, id).await?;
         if attempt.user_id == actor.user_id && !attempt.preview {
             return Err(crate::grading::teacher::own_attempt());
         }
@@ -1406,7 +1462,12 @@ impl FileSubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
         self.emit_course(&row, &fresh).await;
-        self.attempt_view(fresh, true, false).await
+        let allowed_actions =
+            file_grade_actions(actor, &course, fresh.user_id, fresh.preview, fresh.status);
+        Ok(Attempt {
+            allowed_actions,
+            ..self.attempt_view(fresh, true, false).await?
+        })
     }
 
     /// CSV of every attempt (graders); header and status / yes-no words

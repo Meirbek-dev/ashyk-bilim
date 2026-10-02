@@ -157,7 +157,47 @@ pub struct CertificationsService {
     projector: ProgressProjector,
 }
 
+/// What the caller may do to a certificate template (`Certification.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CertificationAction {
+    Update,
+    Delete,
+}
+
 impl CertificationsService {
+    /// The template write predicate of [`Self::scoped_course`]: a platform
+    /// grant or authorship (the `:own` scope).
+    fn may(actor: &Actor, course: &Course, action: Action) -> bool {
+        actor.has(perm(action, Scope::Platform)) || course.is_author(actor.user_id)
+    }
+
+    /// `Certification.allowed_actions` on `course`'s templates: the
+    /// update / delete gates, frozen with an archived course (409).
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<CertificationAction> {
+        if course.archived_at.is_some() {
+            return Vec::new();
+        }
+        [
+            (CertificationAction::Update, Action::Update),
+            (CertificationAction::Delete, Action::Delete),
+        ]
+        .into_iter()
+        .filter_map(|(out, action)| Self::may(actor, course, action).then_some(out))
+        .collect()
+    }
+
+    /// [`Self::allowed_actions`] by course id (404 when invisible).
+    pub async fn allowed_actions_for(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+    ) -> Result<Vec<CertificationAction>> {
+        let course = self.courses.get(actor, course_id).await?;
+        Ok(Self::allowed_actions(actor, &course))
+    }
+
     #[must_use]
     pub fn new(pool: PgPool, courses: CoursesService, assessments: AssessmentsService) -> Self {
         Self {
@@ -177,8 +217,7 @@ impl CertificationsService {
         action: Action,
     ) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
-        let allowed = actor.has(perm(action, Scope::Platform)) || course.is_author(actor.user_id);
-        if !allowed {
+        if !Self::may(actor, &course, action) {
             return Err(Error::forbidden(format!(
                 "missing permission certificate:{}",
                 action.as_str()

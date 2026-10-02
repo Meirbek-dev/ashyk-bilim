@@ -100,7 +100,8 @@ pub async fn create_chapter(
             request.description.as_deref().unwrap_or(""),
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(chapter.into())))
+    // Created behind the curriculum write gate: editable.
+    Ok((StatusCode::CREATED, Json(Chapter::new(chapter, true))))
 }
 
 /// Rename/redescribe a chapter.
@@ -134,7 +135,8 @@ pub async fn update_chapter(
             request.description.as_deref(),
         )
         .await?;
-    Ok(Json(chapter.into()))
+    // Updated behind the curriculum write gate: editable.
+    Ok(Json(Chapter::new(chapter, true)))
 }
 
 /// Delete a chapter and its activities; siblings renumber to stay contiguous.
@@ -225,7 +227,8 @@ pub async fn create_activity(
             &request.activity_sub_type,
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(activity.into())))
+    // Created behind the curriculum write gate: editable.
+    Ok((StatusCode::CREATED, Json(Activity::new(activity, true))))
 }
 
 /// Full activity including content/details/settings. Unpublished

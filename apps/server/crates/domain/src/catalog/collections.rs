@@ -39,6 +39,16 @@ pub struct CollectionWithCourses {
     pub courses: Vec<Course>,
     /// The viewer may `DELETE` it (creator with `delete:own`, or `delete:platform`).
     pub can_delete: bool,
+    pub allowed_actions: Vec<CollectionAction>,
+}
+
+/// What the caller may do to a collection (`Collection.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CollectionAction {
+    /// `PATCH /collections/{id}` (fields and membership).
+    Update,
+    Delete,
 }
 
 #[derive(Clone)]
@@ -62,6 +72,24 @@ impl CollectionsService {
         } else {
             Err(Error::not_found("collection"))
         }
+    }
+
+    /// The gates of `update` and `delete`, as a list.
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor, collection: &Collection) -> Vec<CollectionAction> {
+        [
+            (
+                CollectionAction::Update,
+                Self::require_write(actor, collection).is_ok(),
+            ),
+            (
+                CollectionAction::Delete,
+                Self::can_delete(actor, collection),
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(action, ok)| ok.then_some(action))
+        .collect()
     }
 
     fn can_delete(actor: &Actor, collection: &Collection) -> bool {
@@ -181,6 +209,7 @@ impl CollectionsService {
         let courses = self.visible_courses(actor, id).await?;
         Ok(CollectionWithCourses {
             can_delete: Self::can_delete(actor, &collection),
+            allowed_actions: Self::allowed_actions(actor, &collection),
             collection,
             courses,
         })
@@ -215,6 +244,7 @@ impl CollectionsService {
             let courses = self.visible_courses(actor, collection.id).await?;
             out.push(CollectionWithCourses {
                 can_delete: Self::can_delete(actor, &collection),
+                allowed_actions: Self::allowed_actions(actor, &collection),
                 collection,
                 courses,
             });

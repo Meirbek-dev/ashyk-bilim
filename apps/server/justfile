@@ -75,6 +75,11 @@ machete:
 # Everything CI runs, in CI order. Green here == green CI.
 ci: fmt-check clippy sqlx-check test deny machete cov openapi-check
 
+# Web e2e fixtures (accounts + a published course; idempotent). Needs the
+# dev stack incl. Zitadel and E2E_PASSWORD; refuses AB__ENVIRONMENT=production.
+seed-e2e:
+    cargo run -p ashyq-server -- admin seed-e2e
+
 # Dev stack (db, redis, zitadel, rustfs) via the root justfile.
 services:
     just --justfile ../../justfile dev-up

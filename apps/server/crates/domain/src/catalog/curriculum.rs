@@ -48,6 +48,53 @@ fn clamp_position(position: i32, len: usize) -> usize {
 pub struct CurriculumChapter {
     pub chapter: Chapter,
     pub activities: Vec<Activity>,
+    /// The caller passes the curriculum write gate ([`CurriculumService::editable`]).
+    pub editable: bool,
+}
+
+/// What the caller may do to a chapter (`Chapter.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ChapterAction {
+    Update,
+    Delete,
+    Move,
+    /// `POST /chapters/{id}/activities` (and assessments / file submissions under it).
+    AddActivity,
+}
+
+/// What the caller may do to an activity (`Activity.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ActivityAction {
+    /// Content, settings, publish toggle, blocks.
+    Update,
+    Delete,
+    Move,
+}
+
+impl ChapterAction {
+    /// Every chapter write shares the course's curriculum gate.
+    #[must_use]
+    pub fn allowed(editable: bool) -> Vec<Self> {
+        if editable {
+            vec![Self::Update, Self::Delete, Self::Move, Self::AddActivity]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+impl ActivityAction {
+    /// Every activity write shares the course's curriculum gate.
+    #[must_use]
+    pub fn allowed(editable: bool) -> Vec<Self> {
+        if editable {
+            vec![Self::Update, Self::Delete, Self::Move]
+        } else {
+            Vec::new()
+        }
+    }
 }
 
 /// Partial activity update. `type_pair` changes type+subtype together -
@@ -68,6 +115,8 @@ pub struct ActivityChanges<'a> {
 pub struct ActivityDetail {
     pub activity: Activity,
     pub content: ActivityContent,
+    /// The caller passes the curriculum write gate.
+    pub editable: bool,
 }
 
 /// Block create request: file-backed types claim a finalized upload; the
@@ -104,6 +153,13 @@ impl CurriculumService {
         CoursesService::require_write(actor, course).is_ok()
     }
 
+    /// The curriculum write gate as a predicate: write access and not
+    /// archived - exactly what `writable_course` enforces (403 / 409).
+    #[must_use]
+    pub fn editable(actor: &Actor, course: &Course) -> bool {
+        Self::is_editor(actor, course) && course.archived_at.is_none()
+    }
+
     /// UX-147: an activity of an invisible course reads exactly like an
     /// unknown one (BUG-209 did the same for chapters).
     fn as_activity_404(err: Error) -> Error {
@@ -116,7 +172,11 @@ impl CurriculumService {
     /// An activity the actor may read: the course must be visible and,
     /// unless the actor edits the course, the activity published - drafts
     /// do not exist for learners (404, no leak).
-    async fn readable_activity(&self, actor: &Actor, activity_id: ActivityId) -> Result<Activity> {
+    async fn readable_activity(
+        &self,
+        actor: &Actor,
+        activity_id: ActivityId,
+    ) -> Result<(Activity, Course)> {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -128,7 +188,7 @@ impl CurriculumService {
         if !activity.published && !Self::is_editor(actor, &course) {
             return Err(Error::not_found("activity"));
         }
-        Ok(activity)
+        Ok((activity, course))
     }
 
     /// Load the course and require write access (shared authoring gate):
@@ -140,6 +200,12 @@ impl CurriculumService {
         course.ensure_not_archived()
     }
 
+    /// [`Self::editable`] by course id (404 when the course is invisible).
+    pub async fn editable_course(&self, actor: &Actor, course_id: CourseId) -> Result<bool> {
+        let course = self.courses.get(actor, course_id).await?;
+        Ok(Self::editable(actor, &course))
+    }
+
     pub async fn curriculum(
         &self,
         actor: &Actor,
@@ -149,6 +215,7 @@ impl CurriculumService {
         // drafts are listed for editors only.
         let course = self.courses.get(actor, course_id).await?;
         let editor = Self::is_editor(actor, &course);
+        let editable = Self::editable(actor, &course);
         let chapters = ab_db::catalog::list_chapters(&self.pool, course_id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course_id).await?;
         let mut out: Vec<CurriculumChapter> = chapters
@@ -156,6 +223,7 @@ impl CurriculumService {
             .map(|chapter| CurriculumChapter {
                 chapter,
                 activities: Vec::new(),
+                editable,
             })
             .collect();
         for activity in activities.into_iter().filter(|a| editor || a.published) {
@@ -308,11 +376,15 @@ impl CurriculumService {
         actor: &Actor,
         activity_id: ActivityId,
     ) -> Result<ActivityDetail> {
-        let activity = self.readable_activity(actor, activity_id).await?;
+        let (activity, course) = self.readable_activity(actor, activity_id).await?;
         let content = ab_db::catalog::get_activity_content(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        Ok(ActivityDetail { activity, content })
+        Ok(ActivityDetail {
+            activity,
+            content,
+            editable: Self::editable(actor, &course),
+        })
     }
 
     /// An activity goes live only behind a published backing object: a

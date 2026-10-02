@@ -81,16 +81,18 @@ pub async fn login(
                 user_agent: user_agent(&headers),
             })
             .await?;
-        let jar = jar.add(session_cookie(&state, ok.session_id));
-        Ok((
-            jar,
-            Json(SessionInfo {
-                user_id: ok.user_id,
-                roles: ok.roles,
-                permissions: ok.permissions,
-                mfa_enabled: ok.mfa_enabled,
-            }),
-        ))
+        let actor = ab_domain::identity::Actor {
+            user_id: ok.user_id,
+            permissions: ab_core::permission::PermissionSet::parse(
+                ok.permissions.iter().map(String::as_str),
+            )?,
+            roles: ok.roles,
+            permission_strings: ok.permissions,
+            mfa_enabled: ok.mfa_enabled,
+            ..ab_domain::identity::Actor::anonymous()
+        };
+        let info = session_info(&state, actor).await?;
+        Ok((jar.add(session_cookie(&state, ok.session_id)), Json(info)))
     })
     .await
 }
@@ -271,12 +273,31 @@ pub async fn logout(
          content_type = "application/problem+json"),
     )
 )]
-pub async fn current_session(CurrentActor(actor): CurrentActor) -> Json<SessionInfo> {
-    Json(SessionInfo {
+pub async fn current_session(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+) -> ApiResult<Json<SessionInfo>> {
+    Ok(Json(session_info(&state, actor).await?))
+}
+
+/// The session answer of login and `GET /auth/session`: grants, the shell's
+/// user block and the capabilities. A session without its account row is
+/// no session (401).
+async fn session_info(
+    state: &AppState,
+    actor: ab_domain::identity::Actor,
+) -> ab_core::Result<SessionInfo> {
+    let profile = ab_db::identity::get_profile(&state.pool, actor.user_id)
+        .await?
+        .ok_or_else(Error::unauthenticated)?;
+    let capabilities = ab_domain::identity::capabilities::capabilities(&state.pool, &actor).await?;
+    Ok(SessionInfo {
         user_id: actor.user_id,
         roles: actor.roles,
         permissions: actor.permission_strings,
         mfa_enabled: actor.mfa_enabled,
+        user: profile.into(),
+        capabilities,
     })
 }
 

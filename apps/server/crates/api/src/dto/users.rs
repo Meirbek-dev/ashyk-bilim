@@ -161,11 +161,17 @@ pub struct AdminUser {
     pub status: String,
     pub roles: Vec<String>,
     pub created_at_unix: i64,
+    /// What the caller may do to this account now.
+    pub allowed_actions: Vec<ab_domain::identity::rbac_admin::AdminUserAction>,
 }
 
-impl From<ab_domain::identity::rbac_admin::AdminUser> for AdminUser {
-    fn from(u: ab_domain::identity::rbac_admin::AdminUser) -> Self {
+impl AdminUser {
+    pub fn for_actor(
+        u: ab_domain::identity::rbac_admin::AdminUser,
+        actor: &ab_domain::identity::Actor,
+    ) -> Self {
         Self {
+            allowed_actions: ab_domain::identity::RbacAdminService::user_actions(actor, &u),
             id: u.id,
             username: u.username,
             email: u.email,

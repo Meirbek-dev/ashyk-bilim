@@ -39,6 +39,28 @@ pub(crate) const fn perm(action: Action, scope: Scope) -> Permission {
     }
 }
 
+/// What the caller may do to a course right now (`Course.allowed_actions`).
+/// Each variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CourseAction {
+    /// `PATCH /courses/{id}`, announcements, the curriculum (chapters,
+    /// activities, blocks), certificates.
+    Update,
+    /// Lifecycle `publish` (currently a draft).
+    Publish,
+    /// Lifecycle `unpublish` (currently published).
+    Unpublish,
+    /// Lifecycle `archive` (+ `GET archive-preview`).
+    Archive,
+    /// Lifecycle `restore` (currently archived).
+    Restore,
+    /// `DELETE /courses/{id}`.
+    Delete,
+    /// Roster writes (`/courses/{id}/contributors`).
+    ManageContributors,
+}
+
 #[derive(Debug, Default)]
 pub struct CourseChanges {
     pub name: Option<String>,
@@ -167,6 +189,36 @@ impl CoursesService {
             return Ok(());
         }
         Err(Error::forbidden("no write access to this course"))
+    }
+
+    /// The delete gate: platform deleters, or the creator with the delete
+    /// grant (legacy matrix: course:delete:own) - stricter than update.
+    fn may_delete(actor: &Actor, course: &Course) -> bool {
+        actor.has(perm(Action::Delete, Scope::Platform))
+            || (course.creator_id == Some(actor.user_id)
+                && actor.has(perm(Action::Delete, Scope::Own)))
+    }
+
+    /// `Course.allowed_actions`: the same predicates the mutations enforce
+    /// (write, roster manager, delete) plus the archive state - an action
+    /// that would answer 403 or 409 is not listed.
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<CourseAction> {
+        let write = Self::require_write(actor, course).is_ok();
+        let roster = Self::manages_roster(actor, course);
+        let open = course.archived_at.is_none();
+        [
+            (CourseAction::Update, write && open),
+            (CourseAction::Publish, write && open && !course.public),
+            (CourseAction::Unpublish, write && open && course.public),
+            (CourseAction::Archive, roster && open),
+            (CourseAction::Restore, roster && !open),
+            (CourseAction::Delete, Self::may_delete(actor, course)),
+            (CourseAction::ManageContributors, roster && open),
+        ]
+        .into_iter()
+        .filter_map(|(action, ok)| ok.then_some(action))
+        .collect()
     }
 
     /// Visibility: public, author (creator / active contributor), active
@@ -517,12 +569,7 @@ impl CoursesService {
 
     pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {
         let course = self.get(actor, id).await?;
-        // Delete is stricter than update: platform deleters, or creators with
-        // the delete grant (legacy matrix: course:delete:own).
-        if !(actor.has(perm(Action::Delete, Scope::Platform))
-            || (course.creator_id == Some(actor.user_id)
-                && actor.has(perm(Action::Delete, Scope::Own))))
-        {
+        if !Self::may_delete(actor, &course) {
             return Err(Error::forbidden("no delete access to this course"));
         }
         // BUG-209: the cascade drops the rows; the thumbnail and block

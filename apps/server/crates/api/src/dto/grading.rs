@@ -89,6 +89,8 @@ pub struct ReviewItem {
     /// The learner is on the course staff - never a member (BUG-287), so
     /// named as staff rather than as a leaver (UX-199).
     pub staff: bool,
+    /// The grade saves the caller may make now (`POST .../grade` `action`).
+    pub allowed_actions: Vec<GradeAction>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -117,6 +119,7 @@ impl From<domain::ReviewPage> for ReviewPage {
                     version: i.version,
                     enrolled: i.enrolled,
                     staff: i.staff,
+                    allowed_actions: i.allowed_actions.into_iter().map(Into::into).collect(),
                 })
                 .collect(),
             next_cursor: p.next_cursor,
@@ -185,6 +188,8 @@ pub struct TeacherSubmission {
     pub content_version: i32,
     pub policy_version: i32,
     pub feedback: Vec<ItemFeedbackView>,
+    /// The grade saves the caller may make now (`POST .../grade` `action`).
+    pub allowed_actions: Vec<GradeAction>,
 }
 
 impl From<domain::TeacherSubmission> for TeacherSubmission {
@@ -214,11 +219,12 @@ impl From<domain::TeacherSubmission> for TeacherSubmission {
             content_version: s.content_version,
             policy_version: s.policy_version,
             feedback: s.feedback,
+            allowed_actions: s.allowed_actions.into_iter().map(Into::into).collect(),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GradeAction {
     /// Keep teacher-only (`graded`).
@@ -227,6 +233,16 @@ pub enum GradeAction {
     Publish,
     /// Send back for revision (`returned`).
     Return,
+}
+
+impl From<domain::GradeAction> for GradeAction {
+    fn from(a: domain::GradeAction) -> Self {
+        match a {
+            domain::GradeAction::Save => Self::Save,
+            domain::GradeAction::Publish => Self::Publish,
+            domain::GradeAction::Return => Self::Return,
+        }
+    }
 }
 
 impl From<GradeAction> for domain::GradeAction {

@@ -481,7 +481,53 @@ pub struct AssessmentsService {
     pub(crate) courses: CoursesService,
 }
 
+/// What the caller may do to an assessment (`Assessment.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AssessmentAction {
+    /// Details, policy, items, access and overrides (the authoring gate).
+    Update,
+    /// `POST /assessments/{id}/lifecycle` (the publishing gate; which
+    /// transitions apply follows `lifecycle`).
+    Transition,
+    /// `POST /assessments/{id}/duplicate`.
+    Duplicate,
+    /// Review and grade its submissions (the grading gate).
+    Grade,
+}
+
 impl AssessmentsService {
+    /// `Assessment.allowed_actions` for `course`'s assessments: the
+    /// author / publish / grade gates of [`Self::require_scoped`], all
+    /// frozen with an archived course (409).
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<AssessmentAction> {
+        if course.archived_at.is_some() {
+            return Vec::new();
+        }
+        let may = |action| Self::require_scoped(actor, course, action, "").is_ok();
+        let author = may(Action::Author);
+        [
+            (AssessmentAction::Update, author),
+            (AssessmentAction::Transition, may(Action::Publish)),
+            (AssessmentAction::Duplicate, author),
+            (AssessmentAction::Grade, may(Action::Grade)),
+        ]
+        .into_iter()
+        .filter_map(|(out, ok)| ok.then_some(out))
+        .collect()
+    }
+
+    /// [`Self::allowed_actions`] by course id (404 when invisible).
+    pub async fn allowed_actions_for(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+    ) -> Result<Vec<AssessmentAction>> {
+        let course = self.courses.get(actor, course_id).await?;
+        Ok(Self::allowed_actions(actor, &course))
+    }
+
     #[must_use]
     pub const fn new(pool: PgPool, courses: CoursesService) -> Self {
         Self { pool, courses }
@@ -494,13 +540,20 @@ impl AssessmentsService {
     /// and `Publish`.
     /// UX-311: the write handlers check it before reading the body.
     pub async fn require_some_authoring(&self, actor: &Actor) -> Result<()> {
-        if actor.has(perm(Action::Author, Scope::Platform))
-            || actor.has(perm(Action::Publish, Scope::Platform))
+        if Self::has_platform_authoring(actor)
             || ab_db::catalog::authors_any_course(&self.pool, actor.user_id).await?
         {
             return Ok(());
         }
         Err(Error::forbidden("no authoring access to any course"))
+    }
+
+    /// The grant half of [`Self::require_some_authoring`]: authoring or
+    /// publishing on every course.
+    #[must_use]
+    pub fn has_platform_authoring(actor: &Actor) -> bool {
+        actor.has(perm(Action::Author, Scope::Platform))
+            || actor.has(perm(Action::Publish, Scope::Platform))
     }
 
     /// An assessment's author-write gate on its own (+ not archived, 409).

@@ -326,6 +326,15 @@ ever see. OIDC stays available on the same Zitadel for future federation.
   `Sec-Fetch-Site`/`Origin` checks on mutations (as today).
 - Frontend impact: the `/api/auth/refresh` Next route-handler bridge and 401
   single-flight refresh logic are **deleted**, not ported.
+- The session answer (`GET /auth/session`, also the body of `POST /auth/login`):
+  `user_id`, `roles`, raw `permissions` (legacy contract), `mfa_enabled`, plus
+  `user` (id, username, email, display name, avatar key, locale, theme - what the
+  app shell draws, no second request) and `capabilities`: a closed enum of
+  UI-level rights (`teach`, `course.create`, `admin`, `admin.users`, ...)
+  computed by the server's own gates (`ab_domain::identity::capabilities`,
+  DECISIONS 2026-10-03). Clients never parse permission strings; per-object
+  rights travel as `allowed_actions` on the resources. A session whose account
+  row is gone answers 401.
 
 ### RBAC — ours, in Postgres
 

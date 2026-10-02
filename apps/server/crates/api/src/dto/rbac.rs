@@ -13,11 +13,17 @@ pub struct Role {
     pub priority: i32,
     pub is_system: bool,
     pub permissions: Vec<String>,
+    /// What the caller may do to this role now.
+    pub allowed_actions: Vec<ab_domain::identity::rbac_admin::RoleAction>,
 }
 
-impl From<ab_domain::identity::rbac_admin::RoleWithGrants> for Role {
-    fn from(r: ab_domain::identity::rbac_admin::RoleWithGrants) -> Self {
+impl Role {
+    pub fn for_actor(
+        r: ab_domain::identity::rbac_admin::RoleWithGrants,
+        actor: &ab_domain::identity::Actor,
+    ) -> Self {
         Self {
+            allowed_actions: ab_domain::identity::RbacAdminService::role_actions(actor, &r),
             slug: r.slug,
             display_name_key: r.display_name_key,
             description_key: r.description_key,

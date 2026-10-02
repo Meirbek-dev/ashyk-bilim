@@ -53,36 +53,45 @@ pub struct TrailStep {
     pub updated_at_unix: i64,
 }
 
-impl From<domain::Trail> for Trail {
-    fn from(t: domain::Trail) -> Self {
+impl Trail {
+    pub fn for_actor(t: domain::Trail, actor: &ab_domain::identity::Actor) -> Self {
         Self {
             id: t.row.as_ref().map(|r| r.id),
             user_id: t.user_id,
             created_at_unix: t.row.as_ref().map(|r| r.created_at),
             updated_at_unix: t.row.as_ref().map(|r| r.updated_at),
-            runs: t.runs.into_iter().map(Into::into).collect(),
+            runs: t
+                .runs
+                .into_iter()
+                .map(|r| TrailRun::for_actor(r, actor))
+                .collect(),
         }
     }
 }
 
-impl From<domain::TrailRun> for TrailRun {
-    fn from(r: domain::TrailRun) -> Self {
+impl TrailRun {
+    fn for_actor(r: domain::TrailRun, actor: &ab_domain::identity::Actor) -> Self {
+        let editable = ab_domain::catalog::CurriculumService::editable(actor, &r.course);
         Self {
             id: r.row.id,
             course_id: r.row.course_id,
             status: r.row.status,
-            course: r.course.into(),
+            course: Course::for_actor(r.course, actor),
             course_total_steps: r.course_total_steps,
             progress_pct: r.progress_pct,
-            steps: r.steps.into_iter().map(Into::into).collect(),
+            steps: r
+                .steps
+                .into_iter()
+                .map(|s| TrailStep::new(s, editable))
+                .collect(),
             created_at_unix: r.row.created_at,
             updated_at_unix: r.row.updated_at,
         }
     }
 }
 
-impl From<domain::TrailStep> for TrailStep {
-    fn from(s: domain::TrailStep) -> Self {
+impl TrailStep {
+    fn new(s: domain::TrailStep, editable: bool) -> Self {
         Self {
             id: s.row.id,
             activity_id: s.row.activity_id,
@@ -90,7 +99,7 @@ impl From<domain::TrailStep> for TrailStep {
             complete: s.row.complete,
             teacher_verified: s.row.teacher_verified,
             grade: s.row.grade,
-            activity: s.activity.into(),
+            activity: Activity::new(s.activity, editable),
             created_at_unix: s.row.created_at,
             updated_at_unix: s.row.updated_at,
         }

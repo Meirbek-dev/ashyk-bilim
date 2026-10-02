@@ -30,10 +30,17 @@ pub struct SearchResults {
     pub users: Vec<UserHit>,
 }
 
-impl From<ab_domain::catalog::search::SearchResults> for SearchResults {
-    fn from(r: ab_domain::catalog::search::SearchResults) -> Self {
+impl SearchResults {
+    pub fn for_actor(
+        r: ab_domain::catalog::search::SearchResults,
+        actor: &ab_domain::identity::Actor,
+    ) -> Self {
         Self {
-            courses: r.courses.into_iter().map(Into::into).collect(),
+            courses: r
+                .courses
+                .into_iter()
+                .map(|c| Course::for_actor(c, actor))
+                .collect(),
             collections: r
                 .collections
                 .into_iter()

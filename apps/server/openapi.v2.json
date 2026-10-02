@@ -12868,7 +12868,8 @@
           "activity_sub_type",
           "published",
           "position",
-          "version"
+          "version",
+          "allowed_actions"
         ],
         "properties": {
           "activity_sub_type": {
@@ -12876,6 +12877,13 @@
           },
           "activity_type": {
             "type": "string"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityAction"
+            },
+            "description": "What the caller may do to this activity now."
           },
           "chapter_id": {
             "$ref": "#/components/schemas/ChapterId"
@@ -12903,6 +12911,15 @@
             "description": "Optimistic lock - send back as `If-Match` on the content PATCH."
           }
         }
+      },
+      "ActivityAction": {
+        "type": "string",
+        "description": "What the caller may do to an activity (`Activity.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "move"
+        ]
       },
       "ActivityDetail": {
         "allOf": [
@@ -13530,9 +13547,17 @@
           "organization",
           "status",
           "roles",
-          "created_at_unix"
+          "created_at_unix",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserAction"
+            },
+            "description": "What the caller may do to this account now."
+          },
           "created_at_unix": {
             "type": "integer",
             "format": "int64"
@@ -13564,6 +13589,15 @@
             "type": "string"
           }
         }
+      },
+      "AdminUserAction": {
+        "type": "string",
+        "description": "What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).",
+        "enum": [
+          "manage_roles",
+          "disable",
+          "enable"
+        ]
       },
       "AdminUserPage": {
         "type": "object",
@@ -13958,6 +13992,7 @@
           "policy_version",
           "policy",
           "access_mode",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
@@ -13967,6 +14002,13 @@
           },
           "activity_id": {
             "$ref": "#/components/schemas/ActivityId"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentAction"
+            },
+            "description": "What the caller may do to this assessment now."
           },
           "archived_at_unix": {
             "type": [
@@ -14044,6 +14086,16 @@
             "format": "double"
           }
         }
+      },
+      "AssessmentAction": {
+        "type": "string",
+        "description": "What the caller may do to an assessment (`Assessment.allowed_actions`).",
+        "enum": [
+          "update",
+          "transition",
+          "duplicate",
+          "grade"
+        ]
       },
       "AssessmentAuditEventRow": {
         "type": "object",
@@ -14965,9 +15017,17 @@
           "late_penalty_pct",
           "version",
           "created_at_unix",
-          "updated_at_unix"
+          "updated_at_unix",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileGradeAction"
+            },
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`);\nempty on a learner's own view."
+          },
           "attempt_number": {
             "type": "integer",
             "format": "int32"
@@ -15326,6 +15386,25 @@
           "batch_grade"
         ]
       },
+      "Capability": {
+        "type": "string",
+        "description": "A UI-level right: may the caller enter a workspace / see an entry point.\nClosed set; object-level rights travel as `allowed_actions` instead.",
+        "enum": [
+          "teach",
+          "course.create",
+          "collection.create",
+          "groups.manage",
+          "analytics.view",
+          "analytics.export",
+          "admin",
+          "admin.users",
+          "admin.roles",
+          "admin.platform",
+          "admin.ai",
+          "admin.gamification",
+          "admin.analytics"
+        ]
+      },
       "CaseResult": {
         "type": "object",
         "description": "One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/\n`stdout`/`stderr` for non-authors (see [`CodeRun::masked`]).",
@@ -15506,10 +15585,18 @@
           "id",
           "course_id",
           "config",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificationAction"
+            },
+            "description": "What the caller may do to this template now."
+          },
           "config": {
             "type": "object",
             "description": "The client's PDF designer document (opaque to the server)."
@@ -15529,6 +15616,14 @@
             "format": "int64"
           }
         }
+      },
+      "CertificationAction": {
+        "type": "string",
+        "description": "What the caller may do to a certificate template (`Certification.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete"
+        ]
       },
       "CertificationId": {
         "type": "string",
@@ -15558,9 +15653,17 @@
           "course_id",
           "name",
           "description",
-          "position"
+          "position",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterAction"
+            },
+            "description": "What the caller may do to this chapter now."
+          },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
           },
@@ -15579,6 +15682,16 @@
             "description": "1-based, contiguous within the course."
           }
         }
+      },
+      "ChapterAction": {
+        "type": "string",
+        "description": "What the caller may do to a chapter (`Chapter.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "move",
+          "add_activity"
+        ]
       },
       "ChapterId": {
         "type": "string",
@@ -15914,10 +16027,18 @@
           "version",
           "courses",
           "can_delete",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionAction"
+            },
+            "description": "What the caller may do to this collection now."
+          },
           "can_delete": {
             "type": "boolean",
             "description": "The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`)."
@@ -15965,6 +16086,14 @@
             "description": "Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279)."
           }
         }
+      },
+      "CollectionAction": {
+        "type": "string",
+        "description": "What the caller may do to a collection (`Collection.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete"
+        ]
       },
       "CollectionHit": {
         "type": "object",
@@ -16355,12 +16484,20 @@
           "open_to_contributors",
           "learnings",
           "contributor_ids",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
           "about": {
             "type": "string"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseAction"
+            },
+            "description": "What the caller may do to this course now - draw only these actions."
           },
           "archived_at_unix": {
             "type": [
@@ -16448,6 +16585,19 @@
             "format": "int64"
           }
         }
+      },
+      "CourseAction": {
+        "type": "string",
+        "description": "What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].",
+        "enum": [
+          "update",
+          "publish",
+          "unpublish",
+          "archive",
+          "restore",
+          "delete",
+          "manage_contributors"
+        ]
       },
       "CourseAnalysis": {
         "type": "object",
@@ -17505,10 +17655,18 @@
           "can_update",
           "can_delete",
           "can_moderate",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscussionAction"
+            },
+            "description": "What the caller may do to this post now (supersedes the `can_*` flags)."
+          },
           "author": {
             "oneOf": [
               {
@@ -17588,6 +17746,17 @@
             "format": "int64"
           }
         }
+      },
+      "DiscussionAction": {
+        "type": "string",
+        "description": "What the caller may do to a post or reply (`Discussion.allowed_actions`):\nthe gates of `update`, `delete`, `create` (reply) and `toggle`, plus the\narchive freeze (409) and the post's state.",
+        "enum": [
+          "update",
+          "delete",
+          "moderate",
+          "reply",
+          "react"
+        ]
       },
       "DiscussionAuthor": {
         "type": "object",
@@ -18183,9 +18352,17 @@
           "attempt_number",
           "is_late",
           "version",
-          "file_count"
+          "file_count",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileGradeAction"
+            },
+            "description": "The grade saves the caller may make now."
+          },
           "attempt_number": {
             "type": "integer",
             "format": "int32"
@@ -22330,9 +22507,17 @@
           "is_late",
           "version",
           "enrolled",
-          "staff"
+          "staff",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradeAction"
+            },
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`)."
+          },
           "attempt_number": {
             "type": "integer",
             "format": "int32"
@@ -22485,9 +22670,17 @@
           "description_key",
           "priority",
           "is_system",
-          "permissions"
+          "permissions",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleAction"
+            },
+            "description": "What the caller may do to this role now."
+          },
           "description": {
             "type": [
               "string",
@@ -22525,6 +22718,16 @@
             "type": "string"
           }
         }
+      },
+      "RoleAction": {
+        "type": "string",
+        "description": "What the caller may do to a role (`Role.allowed_actions`).",
+        "enum": [
+          "assign",
+          "update",
+          "delete",
+          "set_permissions"
+        ]
       },
       "RunAggregate": {
         "type": "object",
@@ -23089,9 +23292,18 @@
           "user_id",
           "roles",
           "permissions",
-          "mfa_enabled"
+          "mfa_enabled",
+          "user",
+          "capabilities"
         ],
         "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            },
+            "description": "UI-level rights for navigation and route guards, computed by the\nserver from the grants (mapping: `ab_domain::identity::capabilities`)."
+          },
           "mfa_enabled": {
             "type": "boolean",
             "description": "TOTP enrolled on the account."
@@ -23100,13 +23312,18 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Raw grant strings (legacy contract). New clients read\n`capabilities` and per-object `allowed_actions` instead and never\nparse these."
           },
           "roles": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "user": {
+            "$ref": "#/components/schemas/SessionUser",
+            "description": "What the app shell draws (name, avatar, locale, theme) - no second\nrequest to `GET /users/me`."
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
@@ -23148,6 +23365,47 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "SessionUser": {
+        "type": "object",
+        "description": "The signed-in user as the app shell shows them (a subset of `UserProfile`).",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "locale"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "theme": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "UI theme slug; `null` = the web default."
+          },
+          "username": {
+            "type": "string"
           }
         }
       },
@@ -24471,9 +24729,17 @@
           "version",
           "content_version",
           "policy_version",
-          "feedback"
+          "feedback",
+          "allowed_actions"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradeAction"
+            },
+            "description": "The grade saves the caller may make now (`POST .../grade` `action`)."
+          },
           "answers": {
             "type": "object",
             "additionalProperties": {
@@ -25593,10 +25859,18 @@
           "description",
           "member_count",
           "can_write",
+          "allowed_actions",
           "created_at_unix",
           "updated_at_unix"
         ],
         "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsergroupAction"
+            },
+            "description": "What the caller may do to this group now."
+          },
           "can_write": {
             "type": "boolean",
             "description": "Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`)."
@@ -25633,6 +25907,16 @@
             "format": "int64"
           }
         }
+      },
+      "UsergroupAction": {
+        "type": "string",
+        "description": "What the caller may do to a usergroup (`Usergroup.allowed_actions`).",
+        "enum": [
+          "update",
+          "delete",
+          "manage_members",
+          "manage_courses"
+        ]
       },
       "UsergroupCoursesRequest": {
         "type": "object",

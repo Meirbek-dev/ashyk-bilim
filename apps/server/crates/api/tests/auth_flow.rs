@@ -1310,7 +1310,9 @@ async fn password_change_limits_wrong_current_password_guesses(pool: PgPool) {
 async fn revoking_another_users_session_handle_is_not_found(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let alice = app.mint_session(&[]).await;
-    let bob = app.mint_session(&[]).await;
+    // `GET /auth/session` reads bob's account row.
+    let bob_id = app.create_user("bob", "bob@example.com", &[]).await;
+    let bob = app.mint_session_for(bob_id, &[]).await;
     let bob_list = app.get_as(&bob, "/api/v2/auth/sessions").await;
     let handle = bob_list.json()[0]["handle"].as_str().unwrap().to_owned();
 
@@ -1381,7 +1383,8 @@ async fn expired_sessions_do_not_count_toward_the_cap(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn session_past_the_absolute_cap_is_expired(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let session = app.mint_session(&[]).await;
+    let user = app.create_user("capped", "capped@example.com", &[]).await;
+    let session = app.mint_session_for(user, &[]).await;
     assert_eq!(
         app.get_as(&session, "/api/v2/auth/session").await.status,
         StatusCode::OK

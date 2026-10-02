@@ -134,6 +134,7 @@ pub struct ReviewItem {
     pub version: i64,
     pub enrolled: bool,
     pub staff: bool,
+    pub allowed_actions: Vec<GradeAction>,
 }
 
 #[derive(Debug, Clone)]
@@ -194,6 +195,7 @@ pub struct TeacherSubmission {
     pub content_version: i32,
     pub policy_version: i32,
     pub feedback: Vec<ItemFeedbackView>,
+    pub allowed_actions: Vec<GradeAction>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -205,7 +207,8 @@ pub struct ItemFeedbackView {
     pub created_at_unix: i64,
 }
 
-/// Where a grade save lands.
+/// Where a grade save lands. Also the submission's `allowed_actions`
+/// ([`grade_actions`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GradeAction {
     /// Teacher-only (`graded`; `pending` while a manual item is unscored).
@@ -217,6 +220,8 @@ pub enum GradeAction {
 }
 
 impl GradeAction {
+    pub const ALL: [Self; 3] = [Self::Save, Self::Publish, Self::Return];
+
     const fn target(self) -> SubmissionStatus {
         match self {
             Self::Save => SubmissionStatus::Graded,
@@ -579,6 +584,28 @@ const fn transition_allowed(from: SubmissionStatus, to: SubmissionStatus) -> boo
     }
 }
 
+/// `save_grade`'s gates as a list (`allowed_actions`).
+///
+/// Grading on the course, not the grader's own counted attempt, not a
+/// draft, course not archived, and a legal transition.
+#[must_use]
+pub fn grade_actions(
+    actor: &Actor,
+    course: &Course,
+    learner: UserId,
+    preview: bool,
+    status: SubmissionStatus,
+) -> Vec<GradeAction> {
+    let gradable = AssessmentsService::require_scoped(actor, course, Action::Grade, "").is_ok()
+        && (learner != actor.user_id || preview)
+        && status != SubmissionStatus::Draft
+        && course.archived_at.is_none();
+    GradeAction::ALL
+        .into_iter()
+        .filter(|a| gradable && transition_allowed(status, a.target()))
+        .collect()
+}
+
 fn summary(row: ab_db::identity::UserSummaryRow) -> UserSummary {
     UserSummary {
         id: row.id,
@@ -764,7 +791,7 @@ impl GradingService {
         assessment_id: AssessmentId,
         filter: ReviewFilter<'_>,
     ) -> Result<ReviewPage> {
-        self.grader_context(actor, assessment_id).await?;
+        let (_, course) = self.grader_context(actor, assessment_id).await?;
         let limit = ab_core::page_limit(filter.limit, MAX_REVIEW_PAGE)?;
         let queue = ReviewCursorScope {
             assessment_id,
@@ -797,6 +824,8 @@ impl GradingService {
         let items = rows
             .into_iter()
             .map(|r| ReviewItem {
+                // The queue holds no previews (`list_for_review`).
+                allowed_actions: grade_actions(actor, &course, r.user_id, false, r.status),
                 id: r.id,
                 user: UserSummary {
                     id: r.user_id,
@@ -1039,7 +1068,14 @@ impl GradingService {
             .collect()
     }
 
-    async fn view(&self, row: SubmissionRow, assessment: &Assessment) -> Result<TeacherSubmission> {
+    async fn view(
+        &self,
+        actor: &Actor,
+        course: &Course,
+        row: SubmissionRow,
+        assessment: &Assessment,
+    ) -> Result<TeacherSubmission> {
+        let allowed_actions = grade_actions(actor, course, row.user_id, row.preview, row.status);
         let users = users_by_id(&self.pool, &[row.user_id]).await?;
         let release = release_state(&self.pool, &row).await?;
         let feedback = ab_db::submissions::list_item_feedback(&self.pool, row.id, false)
@@ -1083,13 +1119,14 @@ impl GradingService {
             content_version: assessment.content_version,
             policy_version: assessment.policy_version,
             feedback,
+            allowed_actions,
         })
     }
 
     /// One submission with answers, breakdown, versions and feedback.
     pub async fn submission(&self, actor: &Actor, id: SubmissionId) -> Result<TeacherSubmission> {
-        let (row, assessment, _) = self.gradable_submission(actor, id).await?;
-        self.view(row, &assessment).await
+        let (row, assessment, course) = self.gradable_submission(actor, id).await?;
+        self.view(actor, &course, row, &assessment).await
     }
 
     /// The append-only grading ledger, newest first.
@@ -1387,7 +1424,7 @@ impl GradingService {
             Some(actor.user_id),
         )
         .await;
-        self.view(fresh, &assessment).await
+        self.view(actor, &course, fresh, &assessment).await
     }
 
     /// The ledger side of a save: grading entry, item feedback rows, audit.

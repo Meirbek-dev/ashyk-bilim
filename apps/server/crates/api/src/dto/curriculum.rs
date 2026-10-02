@@ -1,4 +1,5 @@
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId};
+use ab_domain::catalog::curriculum::{ActivityAction, ChapterAction};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -10,11 +11,16 @@ pub struct Chapter {
     pub description: String,
     /// 1-based, contiguous within the course.
     pub position: i32,
+    /// What the caller may do to this chapter now.
+    pub allowed_actions: Vec<ChapterAction>,
 }
 
-impl From<ab_domain::catalog::curriculum::Chapter> for Chapter {
-    fn from(c: ab_domain::catalog::curriculum::Chapter) -> Self {
+impl Chapter {
+    /// `editable`: the caller passes the course's curriculum write gate
+    /// (`CurriculumService::editable`).
+    pub fn new(c: ab_domain::catalog::curriculum::Chapter, editable: bool) -> Self {
         Self {
+            allowed_actions: ChapterAction::allowed(editable),
             id: c.id,
             course_id: c.course_id,
             name: c.name,
@@ -37,11 +43,16 @@ pub struct Activity {
     pub position: i32,
     /// Optimistic lock - send back as `If-Match` on the content PATCH.
     pub version: i32,
+    /// What the caller may do to this activity now.
+    pub allowed_actions: Vec<ActivityAction>,
 }
 
-impl From<ab_domain::catalog::curriculum::Activity> for Activity {
-    fn from(a: ab_domain::catalog::curriculum::Activity) -> Self {
+impl Activity {
+    /// `editable`: the caller passes the course's curriculum write gate
+    /// (`CurriculumService::editable`).
+    pub fn new(a: ab_domain::catalog::curriculum::Activity, editable: bool) -> Self {
         Self {
+            allowed_actions: ActivityAction::allowed(editable),
             id: a.id,
             chapter_id: a.chapter_id,
             course_id: a.course_id,
@@ -66,8 +77,12 @@ pub struct CurriculumChapter {
 impl From<ab_domain::catalog::curriculum::CurriculumChapter> for CurriculumChapter {
     fn from(c: ab_domain::catalog::curriculum::CurriculumChapter) -> Self {
         Self {
-            chapter: c.chapter.into(),
-            activities: c.activities.into_iter().map(Into::into).collect(),
+            chapter: Chapter::new(c.chapter, c.editable),
+            activities: c
+                .activities
+                .into_iter()
+                .map(|a| Activity::new(a, c.editable))
+                .collect(),
         }
     }
 }
@@ -131,7 +146,7 @@ pub struct ActivityDetail {
 impl From<ab_domain::catalog::curriculum::ActivityDetail> for ActivityDetail {
     fn from(d: ab_domain::catalog::curriculum::ActivityDetail) -> Self {
         Self {
-            activity: d.activity.into(),
+            activity: Activity::new(d.activity, d.editable),
             content: d.content.content,
             details: d.content.details,
             settings: d.content.settings,

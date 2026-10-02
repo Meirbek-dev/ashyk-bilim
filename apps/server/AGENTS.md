@@ -39,7 +39,26 @@ just openapi      # export openapi.v2.json
 just openapi-check   # fail if the committed openapi.v2.json differs from a fresh export
 just dev          # bacon watch loop
 just cov          # coverage report + floor check
+just seed-e2e     # web e2e fixtures (see below)
 ```
+
+### E2E fixtures (`just seed-e2e`)
+
+`ashyq admin seed-e2e` creates, idempotently, the accounts and course the web
+e2e suites use and prints them as JSON (never the password):
+
+- verified accounts `e2e-admin` (admin), `e2e-teacher` (instructor),
+  `e2e-student1`, `e2e-student2` - emails `<key>@e2e.test`, password from
+  `E2E_PASSWORD` (required; set on first creation only - `just dev-reset` to
+  change it). Login is `POST /auth/login` with the username or email: it checks
+  the password in Zitadel, so the stack needs Zitadel up and `AB__ZITADEL__PAT`
+  set (accounts are created through Zitadel exactly like `POST /users`).
+- `E2E seed course` owned by the teacher, published, one chapter with one
+  activity of every type (dynamic page, video, document - no file, file
+  submission, quiz, exam, code challenge in Python), `e2e-student1` enrolled.
+
+It refuses `AB__ENVIRONMENT=production`. Run from `apps/server` with the same
+env as the API (`.env`): `E2E_PASSWORD=... just seed-e2e`.
 
 From the repo root the same recipes run as `just server <recipe>` (e.g.
 `just server test`; it also sets `TEST_REDIS_URL` from `infra/env/dev.env`).

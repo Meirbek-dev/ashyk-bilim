@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors,\n                  c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM c.archived_at))::bigint AS \"archived_at?\",\n                  c.archived_by AS \"archived_by: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND course_visible(c, $3, $2)\n             AND (c.archived_at IS NULL OR $2\n                  OR EXISTS (SELECT 1 FROM collections col\n                             WHERE col.id = cc.collection_id AND col.creator_id = $3))\n           ORDER BY cc.position, c.id",
+  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  archived_by AS \"archived_by: UserId\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  ARRAY(SELECT ra.user_id FROM resource_authors ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship = 'maintainer')\n                      AS \"maintainer_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses\n           WHERE search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $5, $6, $7)\n             AND course_visible(courses, $3, $2)\n             AND archived_at IS NULL\n           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -149,12 +149,18 @@
       },
       {
         "ordinal": 14,
+        "name": "maintainer_ids!: Vec<UserId>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 15,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -162,9 +168,13 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
+        "Text",
         "Bool",
-        "Uuid"
+        "Uuid",
+        "Int8",
+        "TextArray",
+        "TextArray",
+        "TextArray"
       ]
     },
     "nullable": [
@@ -183,8 +193,9 @@
       true,
       null,
       null,
+      null,
       null
     ]
   },
-  "hash": "e78a26442d95022ef773b907ff38427ca3e6cbfaaf426f7ab2658bbdb5a60d48"
+  "hash": "9f050fcb6635e8665e563d01f985835e75f321a9a73e86c129775254f718e61f"
 }
