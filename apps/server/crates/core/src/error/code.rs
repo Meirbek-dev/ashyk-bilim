@@ -59,6 +59,7 @@ error_codes! {
     // Catalog
     ActivityNotReady => ("activity-not-ready", 409, "Activity is not ready to publish"),
     CourseNotReady => ("course-not-ready", 422, "Course has publish blockers"),
+    CourseArchived => ("course-archived", 409, "Course is archived"),
     // Files
     UnsupportedMediaType => ("unsupported-media-type", 415, "Unsupported media type"),
     ServiceUnavailable => ("service-unavailable", 503, "Service temporarily unavailable"),

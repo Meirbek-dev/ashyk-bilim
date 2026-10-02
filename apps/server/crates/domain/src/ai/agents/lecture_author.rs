@@ -266,6 +266,7 @@ impl AiService {
             .ok_or_else(|| Error::not_found("lecture review"))?;
         let course = self.visible_course(actor, review.course_id).await?;
         policy::require_course_update(actor, &course)?;
+        course.ensure_not_archived()?;
         let suggestion_id = suggestion_id.trim();
         if suggestion_id.is_empty() || suggestion_id.chars().count() > 200 {
             return Err(Error::validation(vec![FieldError {

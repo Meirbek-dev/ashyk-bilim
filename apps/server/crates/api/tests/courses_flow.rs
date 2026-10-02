@@ -587,7 +587,7 @@ async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
     assert_eq!(names, vec!["Beta", "Alpha", "Gamma draft"]);
     assert_eq!(
         body["summary"],
-        serde_json::json!({ "total": 3, "ready": 2, "private": 1, "attention": 2 })
+        serde_json::json!({ "total": 3, "ready": 2, "private": 1, "attention": 2, "archived": 0 })
     );
 
     let by_name = app

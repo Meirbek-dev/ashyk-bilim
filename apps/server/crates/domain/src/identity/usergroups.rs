@@ -234,6 +234,7 @@ impl UsergroupsService {
             if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
                 courses.require_read(actor, &course).await?;
                 CoursesService::require_write(actor, &course)?;
+                course.ensure_not_archived()?;
                 known.push(course_id);
             }
         }
@@ -254,6 +255,8 @@ impl UsergroupsService {
         for &course_id in course_ids {
             if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await? {
                 courses.require_read(actor, &course).await?;
+                // [P3]: cohort links are frozen with the course.
+                course.ensure_not_archived()?;
             }
         }
         ab_db::usergroups::remove_courses(&self.pool, id, course_ids).await

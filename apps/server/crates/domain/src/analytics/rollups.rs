@@ -196,7 +196,9 @@ pub fn engagement_rows(
     reason = "one legacy code path kept whole for line-by-line comparison"
 )]
 pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
-    let course_ids = ab_db::analytics::all_course_ids(pool).await?;
+    // Archived courses are frozen: no new snapshots, no risk rows; their
+    // historical rows stay (docs/COURSE_ARCHIVING.md section 8).
+    let course_ids = ab_db::analytics::all_course_ids(pool, false).await?;
     let filters = AnalyticsFilters::default();
     let now = super::context::now_unix();
     let (previous_start, _) = filters.previous_window_bounds(now);

@@ -22,6 +22,10 @@ pub struct CourseRow {
     /// Legacy video thumbnail (read-only; only migrated courses have one).
     pub thumbnail_video_key: Option<String>,
     pub creator_id: Option<UserId>,
+    /// Set while the course is archived (frozen, undiscoverable; see
+    /// docs/COURSE_ARCHIVING.md). Orthogonal to `public`.
+    pub archived_at: Option<i64>,
+    pub archived_by: Option<UserId>,
     /// Active `resource_authors` rows that write (maintainer / contributor);
     /// reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
@@ -36,6 +40,21 @@ impl CourseRow {
     #[must_use]
     pub fn is_author(&self, user_id: UserId) -> bool {
         self.creator_id == Some(user_id) || self.contributor_ids.contains(&user_id)
+    }
+
+    /// The read-only rule of an archived course: every mutation of anything
+    /// the course owns answers 409 `course-archived` (restore, delete and
+    /// reads are the exceptions). Called by the mutating service methods,
+    /// never by the shared gates that reads go through too.
+    pub fn ensure_not_archived(&self) -> Result<()> {
+        match self.archived_at {
+            None => Ok(()),
+            Some(at) => Err(ab_core::Error::app_with_details(
+                ab_core::ErrorCode::CourseArchived,
+                "the course is archived; restore it to make changes",
+                serde_json::json!({ "archived_at_unix": at }),
+            )),
+        }
     }
 }
 
@@ -83,6 +102,8 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -134,7 +155,8 @@ pub struct CourseFilter<'a> {
     /// `name` (ascending), `progress` (the viewer's in-progress courses
     /// first, UX-274) or anything else = `updated_at` descending.
     pub sort: &'a str,
-    /// `drafts` | `published` | `recent` | `attention` | anything else = all.
+    /// `drafts` | `published` | `recent` | `attention` | `archived` |
+    /// anything else = all. Archived courses only show under `archived`.
     pub preset: &'a str,
 }
 
@@ -142,7 +164,8 @@ pub struct CourseFilter<'a> {
 ///
 /// Visible: SQL `course_visible` (BUG-190) - public courses, their own,
 /// courses they actively co-author, and courses reached through a linked
-/// usergroup (cohort access); shared with search and collections. `cursor` = id
+/// usergroup (cohort access); shared with search and collections. Archived
+/// courses are excluded unless `preset = archived`. `cursor` = id
 /// of the last row from the previous page; the keyset is `(updated_at, id)`
 /// or `(name, id)` depending on `sort`, resolved from that id so the cursor
 /// stays a plain course id.
@@ -171,6 +194,8 @@ pub async fn list_courses(
            SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -185,6 +210,7 @@ pub async fn list_courses(
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $6, $9, $10)
+             AND (archived_at IS NULL) = ($7::text <> 'archived')
              AND CASE $7::text
                    WHEN 'drafts' THEN NOT public
                    WHEN 'published' THEN public
@@ -229,11 +255,13 @@ pub async fn list_courses(
 }
 
 /// Counts over the editable set (`mine`), ignoring `q`/`preset`/paging.
+/// Archived courses count under `archived` only.
 pub struct CourseSummaryRow {
     pub total: i64,
     pub ready: i64,
     pub private: i64,
     pub attention: i64,
+    pub archived: i64,
 }
 
 pub async fn summarize_courses(
@@ -243,13 +271,14 @@ pub async fn summarize_courses(
 ) -> Result<CourseSummaryRow> {
     let row = sqlx::query_as!(
         CourseSummaryRow,
-        r#"SELECT count(*) AS "total!",
-                  count(*) FILTER (WHERE public) AS "ready!",
-                  count(*) FILTER (WHERE NOT public) AS "private!",
-                  count(*) FILTER (WHERE
+        r#"SELECT count(*) FILTER (WHERE archived_at IS NULL) AS "total!",
+                  count(*) FILTER (WHERE archived_at IS NULL AND public) AS "ready!",
+                  count(*) FILTER (WHERE archived_at IS NULL AND NOT public) AS "private!",
+                  count(*) FILTER (WHERE archived_at IS NULL AND (
                      (public AND NOT EXISTS (SELECT 1 FROM activities a
                                              WHERE a.course_id = courses.id AND a.published))
-                     OR (NOT public AND created_at < now() - interval '30 days')) AS "attention!"
+                     OR (NOT public AND created_at < now() - interval '30 days'))) AS "attention!",
+                  count(*) FILTER (WHERE archived_at IS NOT NULL) AS "archived!"
            FROM courses
            WHERE $1 OR creator_id = $2
               OR EXISTS (SELECT 1 FROM resource_authors ra
@@ -266,7 +295,7 @@ pub async fn summarize_courses(
 /// Newest-first page of courses `user` created or actively co-authors.
 ///
 /// As `viewer` sees them (SQL `course_visible`, BUG-190 - the profile is
-/// not a sixth rule, UX-133).
+/// not a sixth rule, UX-133); archived courses are not listed.
 pub async fn list_user_courses(
     pool: &PgPool,
     user: UserId,
@@ -280,6 +309,8 @@ pub async fn list_user_courses(
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -292,6 +323,7 @@ pub async fn list_user_courses(
                              WHERE ra.course_id = courses.id AND ra.user_id = $1
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND course_visible(courses, $2, $5)
+             AND archived_at IS NULL
              AND ($3::uuid IS NULL OR id < $3)
            ORDER BY id DESC
            LIMIT $4"#,
@@ -333,6 +365,8 @@ pub async fn update_course<'e>(
            RETURNING id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -388,6 +422,89 @@ pub async fn set_course_public(pool: &PgPool, id: CourseId, public: bool) -> Res
     .fetch_optional(pool)
     .await?;
     Ok(previous)
+}
+
+/// Lock the course row for an archive / restore; returns its `archived_at`.
+///
+/// `None` = no such course. Lock order course → assessments (BUG-242): the
+/// caller touches only this course's assessments afterwards.
+pub async fn lock_course_archive(
+    conn: &mut sqlx::PgConnection,
+    id: CourseId,
+) -> Result<Option<Option<i64>>> {
+    let row = sqlx::query_scalar!(
+        r#"SELECT (extract(epoch FROM archived_at))::bigint AS "archived_at?"
+           FROM courses WHERE id = $1 FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(conn)
+    .await?;
+    Ok(row)
+}
+
+/// Set (`Some(actor)`) or clear (`None`) the archive mark.
+pub async fn set_course_archived(
+    conn: &mut sqlx::PgConnection,
+    id: CourseId,
+    archived_by: Option<UserId>,
+) -> Result<()> {
+    sqlx::query!(
+        r#"UPDATE courses
+           SET archived_at = CASE WHEN $2::uuid IS NULL THEN NULL ELSE now() END,
+               archived_by = $2
+           WHERE id = $1"#,
+        id.0,
+        archived_by.map(|u| u.0)
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// What an archive would freeze - the confirmation dialog's numbers.
+/// Staff previews never count; `ungraded` = handed in without a released
+/// grade; `open` = unfinished drafts (quiz / code / file).
+pub struct CourseArchivePreviewRow {
+    pub learners_enrolled: i64,
+    pub learners_in_progress: i64,
+    pub ungraded_submissions: i64,
+    pub open_attempts: i64,
+    pub scheduled_assessments: i64,
+}
+
+pub async fn course_archive_preview(
+    pool: &PgPool,
+    id: CourseId,
+) -> Result<CourseArchivePreviewRow> {
+    let row = sqlx::query_as!(
+        CourseArchivePreviewRow,
+        r#"SELECT
+             (SELECT count(*) FROM trail_runs tr
+              WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id))
+                 AS "learners_enrolled!",
+             (SELECT count(*) FROM trail_runs tr
+              LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
+              WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id)
+                AND coalesce(cp.progress_pct, 0) < 100)
+                 AS "learners_in_progress!",
+             (SELECT count(*) FROM submissions s
+              WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('pending', 'graded'))
+             + (SELECT count(*) FROM file_submission_attempts fa
+                WHERE fa.course_id = $1 AND NOT fa.preview AND fa.status IN ('submitted', 'graded'))
+                 AS "ungraded_submissions!",
+             (SELECT count(*) FROM submissions s
+              WHERE s.course_id = $1 AND NOT s.preview AND s.status = 'draft')
+             + (SELECT count(*) FROM file_submission_attempts fa
+                WHERE fa.course_id = $1 AND NOT fa.preview AND fa.status = 'draft')
+                 AS "open_attempts!",
+             (SELECT count(*) FROM assessments a
+              WHERE a.course_id = $1 AND a.lifecycle = 'scheduled')
+                 AS "scheduled_assessments!""#,
+        id.0
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row)
 }
 
 /// Delete a course and release every upload it owns.

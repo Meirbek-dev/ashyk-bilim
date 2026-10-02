@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessments SET lifecycle = 'draft', scheduled_at = NULL\n           WHERE course_id = $1 AND lifecycle = 'scheduled'\n           RETURNING id AS \"id: AssessmentId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "697948bd16a8bcc6809538ef0252dcde442f3620ef3dc1e2a624f77d5ef1bfe6"
+}

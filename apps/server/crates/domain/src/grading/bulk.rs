@@ -85,6 +85,7 @@ impl GradingService {
         input: DeadlineExtension<'_>,
     ) -> Result<BulkAction> {
         let (_, course) = self.grader_context(actor, assessment_id).await?;
+        course.ensure_not_archived()?;
         let mut errors = Vec::new();
         if input.user_ids.is_empty() || input.user_ids.len() > MAX_EXTENSION_TARGETS {
             errors.push(FieldError {
@@ -272,6 +273,8 @@ async fn performer_may_grade(
     AssessmentsService::require_scoped(&actor, &course, Action::Grade, "grading").map_err(
         |_| Error::forbidden("the performer no longer has grading access to this course"),
     )?;
+    // The course may have been archived between the enqueue and the run.
+    course.ensure_not_archived()?;
     Ok(course)
 }
 

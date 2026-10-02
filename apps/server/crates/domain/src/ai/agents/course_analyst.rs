@@ -292,6 +292,7 @@ impl AiService {
             .ok_or_else(|| Error::not_found("course analysis"))?;
         let course = self.visible_course(actor, analysis.course_id).await?;
         policy::require_course_update(actor, &course)?;
+        course.ensure_not_archived()?;
         Ok(analysis)
     }
 

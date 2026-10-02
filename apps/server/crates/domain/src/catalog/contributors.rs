@@ -29,14 +29,17 @@ pub enum Target {
 }
 
 impl CoursesService {
-    /// The roster gate on its own.
+    /// The roster-write gate on its own (+ not archived, 409).
     /// UX-311: the write handlers check it before reading the body.
     pub async fn require_roster_manager(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
-        self.manageable(actor, course_id).await.map(drop)
+        self.manageable(actor, course_id)
+            .await?
+            .ensure_not_archived()
     }
 
-    /// Visible course (404) + roster-management rights (403).
-    async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
+    /// Visible course (404) + roster-management rights (403). Also the
+    /// archive / restore gate (`courses.rs`), so no archive check here.
+    pub(crate) async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.get(actor, course_id).await?;
         if self.manages_roster(actor, &course).await? {
             return Ok(course);
@@ -99,6 +102,7 @@ impl CoursesService {
         role: &str,
     ) -> Result<Contributor> {
         let course = self.manageable(actor, course_id).await?;
+        course.ensure_not_archived()?;
         let user_id = match target {
             Target::UserId(id) => ab_db::identity::user_status(&self.pool, id)
                 .await?
@@ -133,6 +137,7 @@ impl CoursesService {
         status: Option<&str>,
     ) -> Result<Contributor> {
         let course = self.manageable(actor, course_id).await?;
+        course.ensure_not_archived()?;
         Self::not_creator(&course, user_id)?;
         if !ab_db::catalog::update_contributor(&self.pool, course_id, user_id, role, status).await?
         {
@@ -156,6 +161,8 @@ impl CoursesService {
         user_id: UserId,
     ) -> Result<()> {
         let course = self.get(actor, course_id).await?;
+        // [P3]: the roster is frozen with the course, withdrawals included.
+        course.ensure_not_archived()?;
         if user_id == actor.user_id {
             Self::not_creator(&course, user_id)?;
             // Self-service: no row at all is a 404 (the application was
@@ -193,6 +200,7 @@ impl CoursesService {
         course_id: CourseId,
     ) -> Result<Contributor> {
         let course = self.get(actor, course_id).await?;
+        course.ensure_not_archived()?;
         if !course.open_to_contributors {
             return Err(Error::conflict("course is not open to contributors"));
         }

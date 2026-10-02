@@ -32,7 +32,7 @@ pub struct LearnerWorkRow {
 ///
 /// Member courses only (run ∧
 /// ¬staff, as `has_trail_run`): a leaver's or a staffer's kept rows are not
-/// their work (BUG-299).
+/// their work (BUG-299). Archived courses are frozen - nothing is due there.
 pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<LearnerWorkRow>> {
     let rows = sqlx::query_as!(
         LearnerWorkRow,
@@ -52,6 +52,7 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
              AND a.published
              AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',
                              'passed', 'failed')
+             AND c.archived_at IS NULL
              AND EXISTS (SELECT 1 FROM trail_runs r
                          WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                            AND NOT is_course_staff(r.course_id, r.user_id))"#,
@@ -88,12 +89,13 @@ pub struct TeacherWorkRow {
 /// target (BUG-301 - a grader never grades their own, BUG-286).
 ///
 /// BUG-309: a non-member's row (leaver, or now staff) is never re-projected
-/// - grader writes on it record the grade only (BUG-260/270) - so for them
+/// (grader writes on it record the grade only, BUG-260/270), so for them
 /// the flag is read from the attempts: the latest submission `pending`, or a
 /// `submitted` file attempt. Their pending work stays gradable (pass 23).
 ///
 /// Grading courses: creator, or an active non-reporter `resource_authors`
-/// entry (the authorship rule of `Course::is_author`). The review target is
+/// entry (the authorship rule of `Course::is_author`), never archived ones
+/// (grading is frozen with the course). The review target is
 /// the latest submission, else the newest `submitted` file attempt.
 pub async fn list_teacher_grading_work(
     pool: &PgPool,
@@ -133,6 +135,7 @@ pub async fn list_teacher_grading_work(
                               WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                                 AND fa.status = 'submitted' AND NOT fa.preview)
              END
+             AND c.archived_at IS NULL
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
@@ -182,6 +185,7 @@ pub async fn list_teacher_release_work(
                      SELECT 1 FROM trail_runs r
                      WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                        AND NOT is_course_staff(r.course_id, r.user_id)))
+             AND c.archived_at IS NULL
              AND (c.creator_id = $1 OR EXISTS (
                      SELECT 1 FROM resource_authors ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'

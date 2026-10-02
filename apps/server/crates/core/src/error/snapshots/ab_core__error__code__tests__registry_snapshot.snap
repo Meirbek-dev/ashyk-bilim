@@ -51,6 +51,10 @@ expression: registry
     409,
     "Conflict"
   ],
+  "course-archived": [
+    409,
+    "Course is archived"
+  ],
   "course-not-ready": [
     422,
     "Course has publish blockers"

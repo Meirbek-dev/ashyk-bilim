@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE courses\n           SET archived_at = CASE WHEN $2::uuid IS NULL THEN NULL ELSE now() END,\n               archived_by = $2\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e8b807ad6b50d0d5ea0a0df98a23d7a7843fd434b570681ed51a2e1bb745d56e"
+}

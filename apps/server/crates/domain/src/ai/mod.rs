@@ -151,23 +151,28 @@ impl AiService {
     // UX-311: each write route's access gate on its own - the handlers
     // check it before they read the body, and the entry points still do.
 
-    /// A course the caller can see (Q&A, study companion).
+    /// A course the caller can see and that is not archived (new Q&A /
+    /// study-companion work; `create_run` is the gate proper).
     pub async fn require_visible_course(
         &self,
         actor: &Actor,
         course_id: ab_core::id::CourseId,
     ) -> Result<()> {
-        self.visible_course(actor, course_id).await.map(drop)
+        self.visible_course(actor, course_id)
+            .await?
+            .ensure_not_archived()
     }
 
-    /// A course the caller may update (course analysis, lecture authoring).
+    /// A course the caller may update and that is not archived (course
+    /// analysis, lecture authoring).
     pub async fn require_course_updater(
         &self,
         actor: &Actor,
         course_id: ab_core::id::CourseId,
     ) -> Result<()> {
         let course = self.visible_course(actor, course_id).await?;
-        policy::require_course_update(actor, &course)
+        policy::require_course_update(actor, &course)?;
+        course.ensure_not_archived()
     }
 
     /// A submission or file attempt the caller may analyse or remediate.

@@ -132,10 +132,12 @@ impl CurriculumService {
     }
 
     /// Load the course and require write access (shared authoring gate):
-    /// 404 for invisible courses, 403 for visible-but-not-writable.
+    /// 404 for invisible courses, 403 for visible-but-not-writable, 409
+    /// for archived ones (every caller mutates the curriculum).
     async fn writable_course(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
         let course = self.courses.get(actor, course_id).await?;
-        CoursesService::require_write(actor, &course)
+        CoursesService::require_write(actor, &course)?;
+        course.ensure_not_archived()
     }
 
     pub async fn curriculum(

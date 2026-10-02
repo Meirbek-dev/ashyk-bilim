@@ -102,6 +102,8 @@ pub async fn search_courses(
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
+                  archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -111,6 +113,7 @@ pub async fn search_courses(
            FROM courses
            WHERE search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $5, $6, $7)
              AND course_visible(courses, $3, $2)
+             AND archived_at IS NULL
            ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
            LIMIT $4"#,
         prefix_tsquery(query),

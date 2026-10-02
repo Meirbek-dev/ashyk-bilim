@@ -165,6 +165,9 @@ pub enum DisabledReason {
     NotPublished,
     ScheduledNotOpen,
     Archived,
+    /// The whole course is archived: nothing can be handed in (previews
+    /// included); past attempts stay readable.
+    CourseArchived,
     PastDue,
     MaxAttemptsReached,
     TimeLimitExpired,
@@ -183,6 +186,7 @@ impl DisabledReason {
             Self::NotPublished => "NOT_PUBLISHED",
             Self::ScheduledNotOpen => "SCHEDULED_NOT_OPEN",
             Self::Archived => "ARCHIVED",
+            Self::CourseArchived => "COURSE_ARCHIVED",
             Self::PastDue => "PAST_DUE",
             Self::MaxAttemptsReached => "MAX_ATTEMPTS_REACHED",
             Self::TimeLimitExpired => "TIME_LIMIT_EXPIRED",
@@ -386,7 +390,7 @@ impl AssessmentsService {
         usergroup_ids: &[UsergroupId],
         expected_version: Option<i32>,
     ) -> Result<AccessView> {
-        let assessment = self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_edit(actor, id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
         let mut tx = self.pool.begin().await?;
         let current = ab_db::assessments::lock_assessment(&mut tx, id)
@@ -472,7 +476,7 @@ impl AssessmentsService {
         user_id: UserId,
         input: OverrideInput,
     ) -> Result<Override> {
-        let assessment = self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_edit(actor, id).await?;
         Self::not_own(actor, user_id)?;
         input.validate()?;
         if let Some(e) = Self::unknown_user(&self.pool, user_id, "user_id").await? {
@@ -514,7 +518,7 @@ impl AssessmentsService {
         user_id: UserId,
         input: OverrideInput,
     ) -> Result<Override> {
-        let assessment = self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_edit(actor, id).await?;
         Self::not_own(actor, user_id)?;
         input.validate()?;
         let mut tx = self.lock_member(assessment.course_id, user_id).await?;
@@ -551,7 +555,7 @@ impl AssessmentsService {
         id: AssessmentId,
         user_id: UserId,
     ) -> Result<()> {
-        self.load_for_author(actor, id).await?;
+        self.load_for_edit(actor, id).await?;
         Self::not_own(actor, user_id)?;
         let mut tx = self.pool.begin().await?;
         if !ab_db::assessments::delete_override(&mut *tx, id, user_id).await? {
@@ -754,6 +758,10 @@ impl AssessmentsService {
             now_unix(),
         )
         .await?;
+        // An archived course freezes everyone, previews included.
+        if course.archived_at.is_some() {
+            reasons.insert(0, DisabledReason::CourseArchived);
+        }
         // A preview's policy has no cap (`effective_policy_for`).
         if draft.is_none()
             && cap_bars_new_attempt(attempts_used, revision_requested, effective.max_attempts)

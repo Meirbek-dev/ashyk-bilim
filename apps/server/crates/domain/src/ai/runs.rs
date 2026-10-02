@@ -200,6 +200,11 @@ impl AiService {
     /// Open (or re-scope) the thread, insert the run, journal the first
     /// event (legacy `_create_run`).
     pub(crate) async fn create_run(&self, user_id: UserId, spec: RunSpec<'_>) -> Result<RunRow> {
+        // No new AI work on an archived course - every agent opens its run
+        // here, so this is the one gate (threads and reports stay readable).
+        if let Some(course_id) = spec.course_id {
+            self.require_course_open(course_id).await?;
+        }
         let thread_id = if let Some(id) = spec.thread {
             ab_db::ai::rescope_thread(&self.pool, id, spec.role, spec.course_id, spec.activity_id)
                 .await?;
@@ -484,6 +489,15 @@ impl AiService {
         }
     }
 
+    /// 409 `course-archived` for a run's course (by id - the run paths hold
+    /// no course row).
+    pub(crate) async fn require_course_open(&self, course_id: CourseId) -> Result<()> {
+        ab_db::catalog::get_course(&self.pool, course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?
+            .ensure_not_archived()
+    }
+
     /// Run `fut`; on a non-cancellation error mark the run failed with
     /// `error_code` (legacy `except Exception: _fail_run(...)`).
     pub(crate) async fn settle<T>(
@@ -555,7 +569,15 @@ impl AiService {
             // UX-136: the performer's standing as of now, not as of the enqueue.
             self.settle(run.id, "AI_ACCESS_REVOKED", async {
                 let actor = Actor::current(&self.pool, super::agents::run_user(&run)?).await?;
-                self.require_run_scope(&actor, &run).await
+                self.require_run_scope(&actor, &run).await?;
+                // The course may have been archived since the enqueue.
+                let course_id = ab_db::ai::get_thread(&self.pool, run.thread_id)
+                    .await?
+                    .and_then(|thread| thread.course_id);
+                match course_id {
+                    Some(course_id) => self.require_course_open(course_id).await,
+                    None => Ok(()),
+                }
             })
             .await?;
             match run.kind {

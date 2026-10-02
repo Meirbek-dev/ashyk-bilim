@@ -301,6 +301,7 @@ fn catalog_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::courses::get_course))
         .routes(routes!(routes::courses::update_course))
         .routes(routes!(routes::courses::course_lifecycle))
+        .routes(routes!(routes::courses::course_archive_preview))
         .routes(routes!(routes::courses::delete_course))
         .routes(routes!(routes::courses::course_readiness))
         .routes(routes!(routes::courses::list_contributors))

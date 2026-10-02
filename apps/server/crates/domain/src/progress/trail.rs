@@ -277,11 +277,21 @@ impl TrailService {
         lock_trail_run(&self.pool, user_id, course_id, LOCK_WAIT).await
     }
 
+    /// An archived course keeps its history: no joining, leaving or marking
+    /// (409 `course-archived`); the caller's own rows need no visibility.
+    async fn course_open(&self, course_id: CourseId) -> Result<()> {
+        ab_db::catalog::get_course(&self.pool, course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?
+            .ensure_not_archived()
+    }
+
     /// Visible course (404) the learner may access (403) and join: the
     /// course's staff - the `is_teacher_preview` set - never get a run, their
-    /// attempts are previews (BUG-287) → 409.
+    /// attempts are previews (BUG-287) → 409. Archived → 409.
     async fn accessible_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
+        course.ensure_not_archived()?;
         if !self
             .assessments
             .user_has_course_access(&course, actor.user_id)
@@ -327,6 +337,10 @@ impl TrailService {
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("trail"))?;
+        // Leaving deletes the run and its steps - frozen with the course.
+        if ab_db::progress::has_trail_run(&self.pool, course_id, actor.user_id).await? {
+            self.course_open(course_id).await?;
+        }
         // BUG-210: leave and mark for this (user, course) run one at a time;
         // BUG-221: the run and the un-projection commit together.
         let mut tx = self.lock(actor.user_id, course_id).await?;
@@ -426,6 +440,9 @@ impl TrailService {
         let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
+        if ab_db::progress::has_trail_run(&self.pool, activity.course_id, actor.user_id).await? {
+            self.course_open(activity.course_id).await?;
+        }
         let mut tx = self.lock(actor.user_id, activity.course_id).await?;
         if ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await? {
             let hooks = self

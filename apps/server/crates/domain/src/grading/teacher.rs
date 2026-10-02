@@ -704,14 +704,18 @@ impl GradingService {
     }
 
     /// UX-311: the grading gate of an assessment-level write on its own,
-    /// before the handler reads the body.
+    /// before the handler reads the body (+ not archived, 409 - grading is
+    /// frozen with the course, [P2]).
     pub async fn require_grader(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<()> {
-        self.grader_context(actor, assessment_id).await.map(drop)
+        let (_, course) = self.grader_context(actor, assessment_id).await?;
+        course.ensure_not_archived()
     }
 
-    /// UX-311: [`Self::save_grade`]'s gate on its own, before the body.
+    /// UX-311: [`Self::save_grade`]'s gate on its own, before the body
+    /// (+ not archived, 409 - grading is frozen with the course, [P2]).
     pub async fn require_gradable(&self, actor: &Actor, id: SubmissionId) -> Result<()> {
-        self.gradable_submission(actor, id).await.map(drop)
+        let (_, _, course) = self.gradable_submission(actor, id).await?;
+        course.ensure_not_archived()
     }
 
     async fn load_submission(&self, id: SubmissionId) -> Result<SubmissionRow> {
@@ -730,9 +734,9 @@ impl GradingService {
         &self,
         actor: &Actor,
         id: SubmissionId,
-    ) -> Result<(SubmissionRow, Assessment)> {
+    ) -> Result<(SubmissionRow, Assessment, Course)> {
         let row = self.load_submission(id).await?;
-        let (assessment, _) = self
+        let (assessment, course) = self
             .grader_context(actor, row.assessment_id)
             .await
             .map_err(|err| match err {
@@ -748,7 +752,7 @@ impl GradingService {
         if row.status == SubmissionStatus::Draft {
             return Err(Error::conflict(OPEN_DRAFT));
         }
-        Ok((row, assessment))
+        Ok((row, assessment, course))
     }
 
     // ── Reads ───────────────────────────────────────────────────────────
@@ -1084,7 +1088,7 @@ impl GradingService {
 
     /// One submission with answers, breakdown, versions and feedback.
     pub async fn submission(&self, actor: &Actor, id: SubmissionId) -> Result<TeacherSubmission> {
-        let (row, assessment) = self.gradable_submission(actor, id).await?;
+        let (row, assessment, _) = self.gradable_submission(actor, id).await?;
         self.view(row, &assessment).await
     }
 
@@ -1166,7 +1170,8 @@ impl GradingService {
         id: SubmissionId,
         input: GradeInput,
     ) -> Result<TeacherSubmission> {
-        let (row, assessment) = self.gradable_submission(actor, id).await?;
+        let (row, assessment, course) = self.gradable_submission(actor, id).await?;
+        course.ensure_not_archived()?;
         let expected_version = input.expected_version.ok_or_else(|| {
             Error::validation(vec![FieldError {
                 field: "If-Match".into(),
@@ -1458,7 +1463,8 @@ impl GradingService {
         actor: &Actor,
         assessment_id: AssessmentId,
     ) -> Result<PublishSummary> {
-        let (assessment, _) = self.grader_context(actor, assessment_id).await?;
+        let (assessment, course) = self.grader_context(actor, assessment_id).await?;
+        course.ensure_not_archived()?;
         let rows = ab_db::submissions::list_releasable(&self.pool, assessment_id).await?;
         let mut published = 0;
         let mut already = 0;

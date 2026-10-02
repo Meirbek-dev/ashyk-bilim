@@ -172,7 +172,8 @@ pub struct LearnerCourseState {
     pub permissions: CoursePermissions,
     pub progress: ProgressState,
     pub certificate: CertificateState,
-    pub next_action: NextAction,
+    /// `null` on an archived course: nothing is left to do there.
+    pub next_action: Option<NextAction>,
     pub outline: Vec<ChapterState>,
 }
 
@@ -273,7 +274,9 @@ impl LearnerStateService {
             .copied()
             .filter(|a| a.blocked_reason.is_none())
             .collect();
-        let next_action = next_action(enrolled, course.id, &open, &certificate, &progress);
+        let archived = course.archived_at.is_some();
+        let next_action =
+            (!archived).then(|| next_action(enrolled, course.id, &open, &certificate, &progress));
         // UX-187: a leaver is not enrolled, whatever their old progress says.
         let enrollment_state = if !enrolled {
             EnrollmentState::NotEnrolled
@@ -291,8 +294,12 @@ impl LearnerStateService {
             permissions: CoursePermissions {
                 can_discover: course.public,
                 can_access: true,
-                can_enroll: !enrolled && !staff,
-                denial_reason: staff.then(|| "staff_preview".to_owned()),
+                can_enroll: !enrolled && !staff && !archived,
+                denial_reason: if archived {
+                    Some("course_archived".to_owned())
+                } else {
+                    staff.then(|| "staff_preview".to_owned())
+                },
             },
             progress,
             certificate,

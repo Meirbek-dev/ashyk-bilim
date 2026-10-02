@@ -184,6 +184,11 @@ impl CertificationsService {
                 action.as_str()
             )));
         }
+        // The certificate setup is frozen with the course; issued
+        // certificates and their reads are untouched.
+        if !matches!(action, Action::Read) {
+            course.ensure_not_archived()?;
+        }
         Ok(course)
     }
 

@@ -96,10 +96,19 @@ impl CollectionsService {
     }
 
     /// Every attached course must be readable by the actor (404 otherwise -
-    /// same no-leak rule as direct course reads).
-    async fn check_courses_readable(&self, actor: &Actor, ids: &[CourseId]) -> Result<()> {
+    /// same no-leak rule as direct course reads). An archived course is not
+    /// attached anew (409); one already in the collection (`kept`) stays.
+    async fn check_courses_readable(
+        &self,
+        actor: &Actor,
+        ids: &[CourseId],
+        kept: &[CourseId],
+    ) -> Result<()> {
         for id in ids {
-            self.courses.get(actor, *id).await?;
+            let course = self.courses.get(actor, *id).await?;
+            if !kept.contains(id) {
+                course.ensure_not_archived()?;
+            }
         }
         Ok(())
     }
@@ -130,7 +139,7 @@ impl CollectionsService {
         actor.require(perm(Action::Create, Scope::Platform))?;
         // BUG-168: names are trimmed and never blank (shared rule, UX-106).
         let name = ab_core::required_str("name", name)?;
-        self.check_courses_readable(actor, &course_ids).await?;
+        self.check_courses_readable(actor, &course_ids, &[]).await?;
         let id = ab_db::collections::insert_collection(
             &self.pool,
             name,
@@ -228,7 +237,14 @@ impl CollectionsService {
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
         if let Some(course_ids) = &changes.course_ids {
-            self.check_courses_readable(actor, course_ids).await?;
+            let kept: Vec<CourseId> = self
+                .visible_courses(actor, id)
+                .await?
+                .into_iter()
+                .map(|c| c.id)
+                .collect();
+            self.check_courses_readable(actor, course_ids, &kept)
+                .await?;
         }
         let updated = ab_db::collections::update_collection(
             &self.pool,

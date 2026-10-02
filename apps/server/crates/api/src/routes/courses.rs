@@ -7,9 +7,10 @@ use axum::http::StatusCode;
 
 use crate::detach::detached;
 use crate::dto::courses::{
-    AddContributorRequest, Contributor, Course, CourseLifecycleRequest, CourseListQuery,
-    CoursePage, CourseReadiness, CourseUpdate, CreateCourseRequest, CreateCourseUpdateRequest,
-    EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
+    AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseLifecycleRequest,
+    CourseListQuery, CoursePage, CourseReadiness, CourseUpdate, CreateCourseRequest,
+    CreateCourseUpdateRequest, EditCourseUpdateRequest, UpdateContributorRequest,
+    UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
@@ -64,9 +65,13 @@ pub async fn create_course(
         ("mine" = Option<bool>, Query, description = "Only courses the caller may edit (adds `summary`)"),
         ("q" = Option<String>, Query, description = "Substring filter over name/description"),
         ("sort" = Option<String>, Query, description = "`updated` (default), `name`, or `progress` (caller's in-progress courses first)"),
-        ("preset" = Option<String>, Query, description = "`all` | `drafts` | `published` | `recent` | `attention`"),
+        ("preset" = Option<String>, Query, description = "`all` | `drafts` | `published` | `recent` | `attention` | `archived` (with `mine=true`)"),
     ),
-    responses((status = 200, description = "Page of courses", body = CoursePage)),
+    responses(
+        (status = 200, description = "Page of courses", body = CoursePage),
+        (status = 422, description = "`preset=archived` without `mine=true`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn list_courses(
     State(state): State<AppState>,
@@ -368,7 +373,12 @@ pub async fn update_course(
     Ok(Json(course.into()))
 }
 
-/// Publish/unpublish (legacy lifecycle semantics).
+/// Lifecycle: `publish` / `unpublish` (course write access, readiness
+/// gated), `archive` / `restore` (creator, active maintainer or
+/// `course:manage:platform`; see docs/COURSE_ARCHIVING.md).
+///
+/// 409 `conflict`: `archive` on an archived course, `restore` on an active
+/// one. 409 `course-archived`: `publish` / `unpublish` on an archived one.
 #[utoipa::path(
     post,
     path = "/courses/{id}/lifecycle",
@@ -376,10 +386,12 @@ pub async fn update_course(
     params(("id" = CourseId, Path, description = "Course id")),
     request_body = CourseLifecycleRequest,
     responses(
-        (status = 200, description = "Visibility changed", body = Course),
-        (status = 403, description = "No write access", body = Problem,
+        (status = 200, description = "Lifecycle changed", body = Course),
+        (status = 403, description = "No write / roster access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Already in that state (`conflict`) or archived (`course-archived`)", body = Problem,
          content_type = "application/problem+json"),
         (status = 422, description = "Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)", body = Problem,
          content_type = "application/problem+json"),
@@ -391,17 +403,49 @@ pub async fn course_lifecycle(
     Path(id): Path<CourseId>,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<Course>> {
-    // UX-311: permission before the body.
-    state.courses.require_writable(&actor, id).await?;
+    // UX-311: visibility before the body; the action picks its gate.
+    state.courses.get(&actor, id).await?;
     let request = ValidJson::<CourseLifecycleRequest>::parse(&body)?;
-    let course = ab_domain::catalog::readiness::set_course_public(
-        &state.assessments,
-        &actor,
-        id,
-        request.action == "publish",
-    )
-    .await?;
+    let course = match request.action.as_str() {
+        "archive" => state.courses.archive(&actor, id).await?,
+        "restore" => state.courses.restore(&actor, id).await?,
+        action => {
+            ab_domain::catalog::readiness::set_course_public(
+                &state.assessments,
+                &actor,
+                id,
+                action == "publish",
+            )
+            .await?
+        }
+    };
     Ok(Json(course.into()))
+}
+
+/// What archiving the course would freeze - the numbers for the
+/// confirmation dialog (creator, active maintainer or
+/// `course:manage:platform`; warnings, never blockers).
+#[utoipa::path(
+    get,
+    path = "/courses/{id}/archive-preview",
+    tag = "courses",
+    params(("id" = CourseId, Path, description = "Course id")),
+    responses(
+        (status = 200, description = "Archive preview", body = CourseArchivePreview),
+        (status = 403, description = "No roster access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn course_archive_preview(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+) -> ApiResult<Json<CourseArchivePreview>> {
+    Ok(Json(
+        state.courses.archive_preview(&actor, id).await?.into(),
+    ))
 }
 
 /// Delete a course and everything under it (cascades).

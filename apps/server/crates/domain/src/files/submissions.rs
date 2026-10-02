@@ -345,14 +345,16 @@ impl FileSubmissionsService {
     pub async fn require_authorable(&self, actor: &Actor, id: FileSubmissionId) -> Result<()> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Author, "authoring")
-            .await
-            .map(drop)
+            .await?
+            .ensure_not_archived()
     }
 
-    /// [`Self::save_draft`] / [`Self::submit`]'s gate: submit access.
+    /// [`Self::save_draft`] / [`Self::submit`]'s gate: submit access on a
+    /// course that is not archived.
     pub async fn require_submittable(&self, actor: &Actor, id: FileSubmissionId) -> Result<()> {
         let row = self.load(id).await?;
-        self.require_submit_access(actor, &row).await.map(drop)
+        let (course, _) = self.require_submit_access(actor, &row).await?;
+        course.ensure_not_archived()
     }
 
     /// [`Self::grade`]'s gate: grading on the attempt's course (a stranger
@@ -378,7 +380,8 @@ impl FileSubmissionsService {
                     ..
                 } if attempt.user_id != actor.user_id => Error::not_found("attempt"),
                 other => other,
-            })?;
+            })?
+            .ensure_not_archived()?;
         Ok((attempt, row))
     }
 
@@ -642,7 +645,12 @@ impl FileSubmissionsService {
             .await?
             .filter(|a| staff || !a.preview);
         let reasons = self
-            .disabled_reasons(actor.user_id, &row, Self::preview_of(open.as_ref(), staff))
+            .disabled_reasons(
+                actor.user_id,
+                course,
+                &row,
+                Self::preview_of(open.as_ref(), staff),
+            )
             .await?;
         self.view(Some((actor, staff)), row, reasons).await
     }
@@ -660,7 +668,8 @@ impl FileSubmissionsService {
     ) -> Result<FileSubmission> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Author, "authoring")
-            .await?;
+            .await?
+            .ensure_not_archived()?;
         let title = patch
             .title
             .as_deref()
@@ -728,7 +737,8 @@ impl FileSubmissionsService {
     pub async fn publish(&self, actor: &Actor, id: FileSubmissionId) -> Result<FileSubmission> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Author, "publishing")
-            .await?;
+            .await?
+            .ensure_not_archived()?;
         let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -828,13 +838,18 @@ impl FileSubmissionsService {
     async fn disabled_reasons(
         &self,
         user_id: UserId,
+        course: &Course,
         row: &FileSubmissionRow,
         preview: bool,
     ) -> Result<Vec<DisabledReason>> {
-        if preview {
-            return Ok(Vec::new());
-        }
         let mut reasons = Vec::new();
+        // An archived course freezes everyone, previews included.
+        if course.archived_at.is_some() {
+            reasons.push(DisabledReason::CourseArchived);
+        }
+        if preview {
+            return Ok(reasons);
+        }
         if !row.allow_late && row.due_at.is_some_and(|due| now_unix() > due) {
             reasons.push(DisabledReason::PastDue);
         }
@@ -853,11 +868,14 @@ impl FileSubmissionsService {
     async fn require_can_act(
         &self,
         user_id: UserId,
+        course: &Course,
         row: &FileSubmissionRow,
         preview: bool,
         action: &str,
     ) -> Result<()> {
-        let reasons = self.disabled_reasons(user_id, row, preview).await?;
+        // The archive answers 409 before any 403 (the staff preview too).
+        course.ensure_not_archived()?;
+        let reasons = self.disabled_reasons(user_id, course, row, preview).await?;
         if reasons.is_empty() {
             return Ok(());
         }
@@ -895,13 +913,14 @@ impl FileSubmissionsService {
     /// Open a draft (idempotent). Returns (attempt, created).
     pub async fn start(&self, actor: &Actor, id: FileSubmissionId) -> Result<(Attempt, bool)> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
         let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // Blocked learners neither open nor resume a draft (the web shows
         // the blocked card / remediation gate on this 403).
         self.require_can_act(
             actor.user_id,
+            &course,
             &row,
             Self::preview_of(open.as_ref(), is_author),
             "start",
@@ -971,13 +990,14 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
         let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // UX-115: an open draft is frozen too once the deadline closed or a
         // gate is active - 403, the stored files untouched.
         self.require_can_act(
             actor.user_id,
+            &course,
             &row,
             Self::preview_of(open.as_ref(), is_author),
             "save",
@@ -1148,7 +1168,7 @@ impl FileSubmissionsService {
         expected_version: Option<i64>,
     ) -> Result<Attempt> {
         let row = self.load(id).await?;
-        let (_, is_author) = self.require_submit_access(actor, &row).await?;
+        let (course, is_author) = self.require_submit_access(actor, &row).await?;
         self.require_open(&row, is_author).await?;
         let open = self.open_for_write(&row, actor.user_id, is_author).await?;
         // BUG-166: a closed deadline (or a gate) refuses the submit with the
@@ -1156,6 +1176,7 @@ impl FileSubmissionsService {
         // the attempt's own preview flag, not the caller's current role.
         self.require_can_act(
             actor.user_id,
+            &course,
             &row,
             Self::preview_of(open.as_ref(), is_author),
             "submit",

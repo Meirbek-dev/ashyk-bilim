@@ -473,6 +473,26 @@ pub async fn set_lifecycle<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
+/// Course archive: every `scheduled` assessment of the course goes back to `draft`.
+///
+/// Its activity stays as it is (a schedule never flipped it live). Returns
+/// the ids, for the audit trail. The caller holds the course row lock
+/// (course → assessments, BUG-242).
+pub async fn draft_scheduled_in_course(
+    conn: &mut sqlx::PgConnection,
+    course_id: CourseId,
+) -> Result<Vec<AssessmentId>> {
+    let ids = sqlx::query_scalar!(
+        r#"UPDATE assessments SET lifecycle = 'draft', scheduled_at = NULL
+           WHERE course_id = $1 AND lifecycle = 'scheduled'
+           RETURNING id AS "id: AssessmentId""#,
+        course_id.0
+    )
+    .fetch_all(conn)
+    .await?;
+    Ok(ids)
+}
+
 /// Auto-publish sweep: every scheduled assessment whose time has come.
 pub async fn list_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
     let ids = sqlx::query_scalar!(

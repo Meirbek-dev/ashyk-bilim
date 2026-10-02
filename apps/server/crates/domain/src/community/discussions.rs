@@ -153,6 +153,7 @@ impl DiscussionsService {
     /// UX-311: [`Self::create`]'s gate on its own, before the body is read.
     pub async fn postable_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.readable_course(actor, course_id).await?;
+        course.ensure_not_archived()?;
         if actor.has(perm(Action::Create, Scope::Platform))
             || actor.has(perm(Action::Create, Scope::Own))
         {
@@ -165,6 +166,7 @@ impl DiscussionsService {
     /// status change still needs the body).
     pub async fn require_editable(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
         let (row, course) = self.load(actor, id).await?;
+        course.ensure_not_archived()?;
         let abilities = Abilities::of(actor, &course);
         if abilities.update_any || (row.user_id == Some(actor.user_id) && abilities.update_own) {
             return Ok(());
@@ -312,6 +314,7 @@ impl DiscussionsService {
         status: Option<DiscussionStatus>,
     ) -> Result<Discussion> {
         let (row, course) = self.load(actor, id).await?;
+        course.ensure_not_archived()?;
         let abilities = Abilities::of(actor, &course);
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.update_any || (is_owner && abilities.update_own)) {
@@ -338,6 +341,7 @@ impl DiscussionsService {
     /// Owner or moderator removes the post (replies and reactions go too).
     pub async fn delete(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
         let (row, course) = self.load(actor, id).await?;
+        course.ensure_not_archived()?;
         let abilities = Abilities::of(actor, &course);
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.delete_any || (is_owner && abilities.delete_own)) {
@@ -354,7 +358,8 @@ impl DiscussionsService {
         id: DiscussionId,
         kind: ReactionKind,
     ) -> Result<ReactionState> {
-        let (row, _) = self.load(actor, id).await?;
+        let (row, course) = self.load(actor, id).await?;
+        course.ensure_not_archived()?;
         if row.status != DiscussionStatus::Active {
             return Err(Error::not_found("discussion"));
         }

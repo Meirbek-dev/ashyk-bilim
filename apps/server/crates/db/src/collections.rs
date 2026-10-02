@@ -203,7 +203,8 @@ async fn set_collection_courses(
     Ok(())
 }
 
-/// Member courses visible to `viewer`, in collection order.
+/// Member courses visible to `viewer`, in collection order. Archived
+/// members are listed for the collection's creator and `see_all` only.
 pub async fn list_collection_courses(
     pool: &PgPool,
     id: CollectionId,
@@ -216,6 +217,8 @@ pub async fn list_collection_courses(
                   c.public, c.open_to_contributors,
                   c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,
                   c.creator_id AS "creator_id: UserId",
+                  (extract(epoch FROM c.archived_at))::bigint AS "archived_at?",
+                  c.archived_by AS "archived_by: UserId",
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = c.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -226,6 +229,9 @@ pub async fn list_collection_courses(
            JOIN courses c ON c.id = cc.course_id
            WHERE cc.collection_id = $1
              AND course_visible(c, $3, $2)
+             AND (c.archived_at IS NULL OR $2
+                  OR EXISTS (SELECT 1 FROM collections col
+                             WHERE col.id = cc.collection_id AND col.creator_id = $3))
            ORDER BY cc.position, c.id"#,
         id.0,
         see_all,

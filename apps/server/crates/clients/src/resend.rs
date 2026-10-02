@@ -19,8 +19,8 @@ impl ResendClient {
         Ok(Self { http, config })
     }
 
-    /// Send one HTML email. Non-2xx answers surface as `service-unavailable`
-    /// - callers decide whether mail failure blocks the flow (it never does
+    /// Send one HTML email. Non-2xx answers surface as `service-unavailable`;
+    /// callers decide whether mail failure blocks the flow (it never does
     /// for registration).
     pub async fn send(&self, to: &str, subject: &str, html: &str) -> Result<()> {
         let response = self

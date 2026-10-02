@@ -33,26 +33,39 @@ fn uuids<T: Copy + Into<uuid::Uuid>>(ids: &[T]) -> Vec<uuid::Uuid> {
 // ── Scope ───────────────────────────────────────────────────────────────────
 
 /// Courses the user created or actively co-authors (`resource_authors`).
-pub async fn teacher_course_ids(pool: &PgPool, user_id: UserId) -> Result<Vec<CourseId>> {
+///
+/// `include_archived = false` drops archived courses (the rollup and the
+/// default dashboard scope); a direct course dashboard still reads them.
+pub async fn teacher_course_ids(
+    pool: &PgPool,
+    user_id: UserId,
+    include_archived: bool,
+) -> Result<Vec<CourseId>> {
     let rows = sqlx::query_scalar!(
         r#"SELECT c.id AS "id: CourseId"
            FROM courses c
-           WHERE c.creator_id = $1 OR EXISTS (
+           WHERE (c.creator_id = $1 OR EXISTS (
                  SELECT 1 FROM resource_authors ra
                  WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
-                   AND ra.authorship <> 'reporter')
+                   AND ra.authorship <> 'reporter'))
+             AND ($2 OR c.archived_at IS NULL)
            ORDER BY c.id"#,
-        user_id.0
+        user_id.0,
+        include_archived
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
 }
 
-pub async fn all_course_ids(pool: &PgPool) -> Result<Vec<CourseId>> {
-    let rows = sqlx::query_scalar!(r#"SELECT id AS "id: CourseId" FROM courses ORDER BY id"#)
-        .fetch_all(pool)
-        .await?;
+pub async fn all_course_ids(pool: &PgPool, include_archived: bool) -> Result<Vec<CourseId>> {
+    let rows = sqlx::query_scalar!(
+        r#"SELECT id AS "id: CourseId" FROM courses
+           WHERE $1 OR archived_at IS NULL ORDER BY id"#,
+        include_archived
+    )
+    .fetch_all(pool)
+    .await?;
     Ok(rows)
 }
 

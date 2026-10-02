@@ -443,6 +443,10 @@ impl AnalyticsService {
     ) -> Result<Intervention> {
         let scope = self.read_scope(actor, filters).await?;
         scope.ensure_course(input.course_id)?;
+        ab_db::catalog::get_course(&self.pool, input.course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?
+            .ensure_not_archived()?;
         let mut errors = Vec::new();
         if !INTERVENTION_TYPES.contains(&input.intervention_type.as_str()) {
             errors.push(FieldError {

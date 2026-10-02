@@ -503,10 +503,10 @@ impl AssessmentsService {
         Err(Error::forbidden("no authoring access to any course"))
     }
 
-    /// An assessment's author gate on its own.
+    /// An assessment's author-write gate on its own (+ not archived, 409).
     /// UX-311: the write handlers check it before reading the body.
     pub async fn require_authorable(&self, actor: &Actor, id: AssessmentId) -> Result<()> {
-        self.load_for_author(actor, id).await.map(drop)
+        self.load_for_edit(actor, id).await.map(drop)
     }
 
     /// [`Self::require_authorable`] for an item's assessment.
@@ -519,7 +519,18 @@ impl AssessmentsService {
     pub async fn require_publishable(&self, actor: &Actor, id: AssessmentId) -> Result<()> {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
-        Self::require_scoped(actor, &course, Action::Publish, "publish")
+        Self::require_scoped(actor, &course, Action::Publish, "publish")?;
+        course.ensure_not_archived()
+    }
+
+    /// The archive gate by course id, for the attempt paths that hold an
+    /// assessment rather than the course row (learner writes answer 409
+    /// `course-archived`, staff previews included).
+    pub(crate) async fn require_course_open(&self, course_id: CourseId) -> Result<()> {
+        ab_db::catalog::get_course(&self.pool, course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?
+            .ensure_not_archived()
     }
 
     pub(crate) fn require_scoped(
@@ -542,9 +553,10 @@ impl AssessmentsService {
         Ok(course)
     }
 
-    /// The chapter, when its course is visible and authorable. BUG-209 /
-    /// UX-145: an invisible course's chapter reads exactly like an unknown
-    /// one - the detail must not leak that the chapter exists.
+    /// The chapter, when its course is visible, authorable and not archived
+    /// (every caller creates something under it). BUG-209 / UX-145: an
+    /// invisible course's chapter reads exactly like an unknown one - the
+    /// detail must not leak that the chapter exists.
     pub(crate) async fn authorable_chapter(
         &self,
         actor: &Actor,
@@ -558,7 +570,8 @@ impl AssessmentsService {
             .map_err(|err| match err.code() {
                 ab_core::ErrorCode::NotFound => Error::not_found("chapter"),
                 _ => err,
-            })?;
+            })?
+            .ensure_not_archived()?;
         Ok(chapter)
     }
 
@@ -568,7 +581,7 @@ impl AssessmentsService {
             .ok_or_else(|| Error::not_found("assessment"))
     }
 
-    /// Load + author gate.
+    /// Load + author gate (reads: readiness, audit, access / override lists).
     pub(crate) async fn load_for_author(
         &self,
         actor: &Actor,
@@ -576,6 +589,19 @@ impl AssessmentsService {
     ) -> Result<Assessment> {
         let assessment = self.load(id).await?;
         self.authorable_course(actor, assessment.course_id).await?;
+        Ok(assessment)
+    }
+
+    /// [`Self::load_for_author`] for a write: 409 on an archived course.
+    pub(crate) async fn load_for_edit(
+        &self,
+        actor: &Actor,
+        id: AssessmentId,
+    ) -> Result<Assessment> {
+        let assessment = self.load(id).await?;
+        self.authorable_course(actor, assessment.course_id)
+            .await?
+            .ensure_not_archived()?;
         Ok(assessment)
     }
 
@@ -832,7 +858,7 @@ impl AssessmentsService {
         id: AssessmentId,
         changes: AssessmentChanges<'_>,
     ) -> Result<AssessmentDetail> {
-        self.load_for_author(actor, id).await?;
+        self.load_for_edit(actor, id).await?;
         let title = changes
             .title
             .map(|t| ab_core::required_str("title", t))
@@ -877,7 +903,7 @@ impl AssessmentsService {
         id: AssessmentId,
         policy: PolicyInput,
     ) -> Result<AssessmentDetail> {
-        self.load_for_author(actor, id).await?;
+        self.load_for_edit(actor, id).await?;
         policy.validate()?;
         let mut tx = self.pool.begin().await?;
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
@@ -1043,6 +1069,7 @@ impl AssessmentsService {
         let assessment = self.load(id).await?;
         let course = self.courses.get(actor, assessment.course_id).await?;
         Self::require_scoped(actor, &course, Action::Publish, "publish")?;
+        course.ensure_not_archived()?;
 
         let mut tx = self.pool.begin().await?;
         let AssessmentDetail { assessment, items } = Self::lock_detail(&mut tx, id).await?;
@@ -1213,7 +1240,7 @@ impl AssessmentsService {
         title: Option<&str>,
         chapter_id: Option<ChapterId>,
     ) -> Result<AssessmentDetail> {
-        let source = self.load_for_author(actor, id).await?;
+        let source = self.load_for_edit(actor, id).await?;
         let source_activity = ab_db::catalog::get_activity(&self.pool, source.activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
@@ -1314,7 +1341,7 @@ impl AssessmentsService {
         max_score: f64,
         metadata: ItemMetadataInput,
     ) -> Result<Item> {
-        let assessment = self.load_for_author(actor, id).await?;
+        let assessment = self.load_for_edit(actor, id).await?;
         ensure_editable(&self.pool, &assessment).await?;
         // BUG-217: a new item reweights every graded attempt, like a max
         // score change does.
@@ -1399,7 +1426,7 @@ impl AssessmentsService {
         let row = ab_db::assessments::get_item(&self.pool, item_id)
             .await?
             .ok_or_else(|| Error::not_found("assessment item"))?;
-        let assessment = self.load_for_author(actor, row.assessment_id).await?;
+        let assessment = self.load_for_edit(actor, row.assessment_id).await?;
         Ok((assessment, row))
     }
 
@@ -1522,7 +1549,7 @@ impl AssessmentsService {
         id: AssessmentId,
         ordered: &[AssessmentItemId],
     ) -> Result<Vec<Item>> {
-        self.load_for_author(actor, id).await?;
+        self.load_for_edit(actor, id).await?;
         let mut tx = self.pool.begin().await?;
         // BUG-231: the lifecycle gate re-runs on the locked row. BUG-375: so
         // does the list check - a delete or add racing this reorder commits

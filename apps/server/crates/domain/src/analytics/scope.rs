@@ -20,7 +20,12 @@ pub struct TeacherScope {
     /// The teacher the dashboard is about (the caller, or the inspected
     /// teacher under platform scope).
     pub teacher_user_id: UserId,
+    /// The courses the dashboards aggregate: the explicit `course_ids`
+    /// filter, else every reachable course that is not archived.
     pub course_ids: Vec<CourseId>,
+    /// Every course the teacher may address by id, archived ones included
+    /// (their own dashboard and exports keep working after the archive).
+    pub reachable: Vec<CourseId>,
     pub cohort_ids: Vec<UsergroupId>,
     pub has_platform_scope: bool,
 }
@@ -28,7 +33,7 @@ pub struct TeacherScope {
 impl TeacherScope {
     #[must_use]
     pub fn contains(&self, course_id: CourseId) -> bool {
-        self.course_ids.contains(&course_id)
+        self.reachable.contains(&course_id)
     }
 
     /// 404 when the course is not in scope (path ids never leak existence).
@@ -133,10 +138,21 @@ pub async fn resolve(
             return Err(Error::validation(errors));
         }
     }
-    let mut course_ids = if platform && filters.teacher_user_id.is_none() {
-        ab_db::analytics::all_course_ids(pool).await?
+    // Archived courses leave the default scope (lists, counts, at-risk)
+    // but stay reachable by id - their dashboard and exports keep working
+    // (docs/COURSE_ARCHIVING.md sections 7 and 8).
+    let platform_wide = platform && filters.teacher_user_id.is_none();
+    let mut reachable = if platform_wide {
+        ab_db::analytics::all_course_ids(pool, true).await?
     } else {
-        ab_db::analytics::teacher_course_ids(pool, target).await?
+        ab_db::analytics::teacher_course_ids(pool, target, true).await?
+    };
+    reachable.sort_unstable();
+    reachable.dedup();
+    let mut course_ids = if platform_wide {
+        ab_db::analytics::all_course_ids(pool, false).await?
+    } else {
+        ab_db::analytics::teacher_course_ids(pool, target, false).await?
     };
     course_ids.sort_unstable();
     course_ids.dedup();
@@ -145,7 +161,7 @@ pub async fn resolve(
         let unauthorized: Vec<String> = filters
             .course_ids
             .iter()
-            .filter(|id| !course_ids.contains(id))
+            .filter(|id| !reachable.contains(id))
             .map(ToString::to_string)
             .collect();
         if !unauthorized.is_empty() {
@@ -163,6 +179,7 @@ pub async fn resolve(
     Ok(TeacherScope {
         teacher_user_id: target,
         course_ids,
+        reachable,
         cohort_ids: filters.cohort_ids.clone(),
         has_platform_scope: platform,
     })

@@ -24,6 +24,11 @@ pub struct Course {
     /// creator without any role grant - authorship is the `:own` scope.
     /// Reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
+    /// Set while the course is archived: undiscoverable and read-only for
+    /// every role (writes answer 409 `course-archived`); enrolled learners
+    /// keep reading it. Orthogonal to `public`.
+    pub archived_at_unix: Option<i64>,
+    pub archived_by: Option<UserId>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -46,8 +51,41 @@ impl From<ab_domain::catalog::courses::Course> for Course {
             thumbnail_video_key: c.thumbnail_video_key,
             creator_id: c.creator_id,
             contributor_ids: c.contributor_ids,
+            archived_at_unix: c.archived_at,
+            archived_by: c.archived_by,
             created_at_unix: c.created_at,
             updated_at_unix: c.updated_at,
+        }
+    }
+}
+
+/// What archiving the course would freeze (`GET /courses/{id}/archive-preview`,
+/// roster managers). Warnings for the confirmation dialog, never blockers.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseArchivePreview {
+    /// Learners with a run on the course (staff never count).
+    pub learners_enrolled: i64,
+    /// Of those, the ones below 100% progress.
+    pub learners_in_progress: i64,
+    /// Handed-in quiz / code / file attempts without a released grade.
+    pub ungraded_submissions: i64,
+    /// Unfinished drafts (quiz, code, file); timed ones auto-submit when
+    /// they expire, the rest stay drafts.
+    pub open_attempts: i64,
+    /// `scheduled` assessments - the archive returns them to `draft`.
+    pub scheduled_assessments: i64,
+    pub public: bool,
+}
+
+impl From<ab_domain::catalog::courses::ArchivePreview> for CourseArchivePreview {
+    fn from(p: ab_domain::catalog::courses::ArchivePreview) -> Self {
+        Self {
+            learners_enrolled: p.learners_enrolled,
+            learners_in_progress: p.learners_in_progress,
+            ungraded_submissions: p.ungraded_submissions,
+            open_attempts: p.open_attempts,
+            scheduled_assessments: p.scheduled_assessments,
+            public: p.public,
         }
     }
 }
@@ -104,7 +142,8 @@ fn valid_learning_text(value: &str, _ctx: &()) -> garde::Result {
 }
 
 /// Counts over the caller's editable courses (only with `mine=true`;
-/// unaffected by `q`, `preset` or paging).
+/// unaffected by `q`, `preset` or paging). Archived courses count under
+/// `archived` only.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CourseSummary {
     pub total: i64,
@@ -114,6 +153,8 @@ pub struct CourseSummary {
     pub private: i64,
     /// Courses matching the `attention` preset.
     pub attention: i64,
+    /// Archived courses (the `archived` preset).
+    pub archived: i64,
 }
 
 impl From<ab_domain::catalog::courses::CourseSummary> for CourseSummary {
@@ -123,6 +164,7 @@ impl From<ab_domain::catalog::courses::CourseSummary> for CourseSummary {
             ready: s.ready,
             private: s.private,
             attention: s.attention,
+            archived: s.archived,
         }
     }
 }
@@ -177,7 +219,9 @@ pub struct UpdateCourseRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CourseLifecycleRequest {
-    /// `publish` or `unpublish`.
+    /// `publish` | `unpublish` (course write access, readiness-gated) |
+    /// `archive` | `restore` (creator, active maintainer or
+    /// `course:manage:platform`).
     #[garde(custom(valid_action))]
     pub action: String,
 }
@@ -185,10 +229,12 @@ pub struct CourseLifecycleRequest {
 // garde's custom-validator contract fixes this signature (&field, &context).
 #[allow(clippy::trivially_copy_pass_by_ref)]
 fn valid_action(value: &str, _ctx: &()) -> garde::Result {
-    if matches!(value, "publish" | "unpublish") {
+    if matches!(value, "publish" | "unpublish" | "archive" | "restore") {
         Ok(())
     } else {
-        Err(garde::Error::new("action must be publish or unpublish"))
+        Err(garde::Error::new(
+            "action must be publish, unpublish, archive or restore",
+        ))
     }
 }
 
@@ -213,7 +259,9 @@ pub struct CourseListQuery {
     pub sort: Option<String>,
     /// `all` (default) | `drafts` (unpublished) | `published` | `recent`
     /// (updated in the last 7 days) | `attention` - published with no live
-    /// activity, or a draft created more than 30 days ago.
+    /// activity, or a draft created more than 30 days ago | `archived`
+    /// (only with `mine=true`, else 422). Archived courses are excluded
+    /// from every other preset.
     pub preset: Option<String>,
 }
 

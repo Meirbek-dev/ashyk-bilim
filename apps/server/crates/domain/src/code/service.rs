@@ -140,6 +140,8 @@ impl CodeRunsService {
             .assessments
             .require_submit_access(actor, &assessment, &course)
             .await?;
+        // Judge0 time is never spent on an archived course (previews too).
+        course.ensure_not_archived()?;
         Ok((item_row, assessment, teacher))
     }
 
@@ -248,10 +250,7 @@ impl CodeRunsService {
         actor: &Actor,
         assessment_id: AssessmentId,
     ) -> Result<Vec<ReferenceCheck>> {
-        let assessment = self
-            .assessments
-            .load_for_author(actor, assessment_id)
-            .await?;
+        let assessment = self.assessments.load_for_edit(actor, assessment_id).await?;
         let item = ab_db::assessments::list_items(self.runner.pool(), assessment.id)
             .await?
             .into_iter()

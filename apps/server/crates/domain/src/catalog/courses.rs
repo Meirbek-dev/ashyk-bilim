@@ -8,6 +8,12 @@
 //! files, grading, AI, certificates) goes through. Authorship IS the `:own`
 //! scope: no role grant is needed on top (DECISIONS 2026-09-12, "active
 //! maintainers/contributors author on the course like the creator").
+//!
+//! Archive (docs/COURSE_ARCHIVING.md): `archived_at` freezes the course for
+//! every role - each mutating method here and in the other course-scoped
+//! services calls `Course::ensure_not_archived` after its access gate (never
+//! inside the shared gates, which author reads go through too). Archive and
+//! restore take the roster-manager gate (`contributors.rs`).
 
 use ab_core::id::{CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -111,6 +117,17 @@ pub struct ListParams<'a> {
     pub preset: &'a str,
 }
 
+/// What archiving a course would freeze (`GET /courses/{id}/archive-preview`).
+#[derive(Debug, Clone)]
+pub struct ArchivePreview {
+    pub learners_enrolled: i64,
+    pub learners_in_progress: i64,
+    pub ungraded_submissions: i64,
+    pub open_attempts: i64,
+    pub scheduled_assessments: i64,
+    pub public: bool,
+}
+
 #[derive(Clone)]
 pub struct CoursesService {
     pub(crate) pool: PgPool,
@@ -128,11 +145,13 @@ impl CoursesService {
         actor.require(perm(Action::Create, Scope::Platform))
     }
 
-    /// The course's write gate on its own: visible (404) + `require_write`
-    /// UX-311: the write handlers check it before reading the body.
+    /// The course's write gate on its own: visible (404), `require_write`
+    /// (403), not archived (409). UX-311: the write handlers check it
+    /// before reading the body.
     pub async fn require_writable(&self, actor: &Actor, id: CourseId) -> Result<()> {
         let course = self.get(actor, id).await?;
-        Self::require_write(actor, &course)
+        Self::require_write(actor, &course)?;
+        course.ensure_not_archived()
     }
 
     /// [`Self::require_writable`] for an announcement's course.
@@ -214,6 +233,14 @@ impl CoursesService {
     ) -> Result<(Vec<Course>, Option<CourseId>)> {
         // UX-154: out-of-range `limit` is a 422 like the other lists (UX-146).
         let limit = ab_core::page_limit(limit, 100)?;
+        // The archive is a workspace view: only over the caller's own set.
+        if params.preset == "archived" && !params.mine {
+            return Err(Error::validation(vec![ab_core::FieldError {
+                field: "preset".into(),
+                code: "invalid".into(),
+                message: "preset=archived requires mine=true".into(),
+            }]));
+        }
         let filter = ab_db::catalog::CourseFilter {
             viewer: Some(actor.user_id),
             see_all: sees_private(actor, ResourceType::Course),
@@ -279,6 +306,7 @@ impl CoursesService {
         // Invisible courses do not exist (404), even to would-be writers.
         let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
+        course.ensure_not_archived()?;
         let name = changes
             .name
             .as_deref()
@@ -353,10 +381,84 @@ impl CoursesService {
         // Invisible courses do not exist (404), even to would-be writers.
         let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
+        course.ensure_not_archived()?;
         ab_db::catalog::set_course_public(&self.pool, id, public).await?;
         ab_db::catalog::get_course(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("course"))
+    }
+
+    /// Archive (roster managers: creator / active maintainer /
+    /// `course:manage:platform`). One transaction: lock the course row,
+    /// 409 `conflict` if already archived, stamp `archived_at/by`, and pull
+    /// every `scheduled` assessment back to `draft` (audited) - otherwise
+    /// `assessments:publish-due` would publish into a frozen course, or a
+    /// stale schedule would fire on restore. `public` is untouched.
+    pub async fn archive(&self, actor: &Actor, id: CourseId) -> Result<Course> {
+        self.manageable(actor, id).await?;
+        let mut tx = self.pool.begin().await?;
+        match ab_db::catalog::lock_course_archive(&mut tx, id).await? {
+            None => return Err(Error::not_found("course")),
+            Some(Some(_)) => return Err(Error::conflict("course is already archived")),
+            Some(None) => {}
+        }
+        ab_db::catalog::set_course_archived(&mut tx, id, Some(actor.user_id)).await?;
+        let unscheduled = ab_db::assessments::draft_scheduled_in_course(&mut tx, id).await?;
+        for assessment_id in &unscheduled {
+            ab_db::assessments::insert_audit_event(
+                &mut *tx,
+                *assessment_id,
+                Some(actor.user_id),
+                "lifecycle-transition",
+                serde_json::json!({
+                    "from": "scheduled", "to": "draft", "scheduled_at": null,
+                    "note": "course archived",
+                }),
+            )
+            .await?;
+        }
+        tx.commit().await?;
+        tracing::info!(course_id = %id, actor = %actor.user_id, action = "archive",
+            unscheduled = unscheduled.len(), "course archived");
+        ab_db::catalog::get_course(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))
+    }
+
+    /// Restore (same gate as [`Self::archive`]): 409 `conflict` when not
+    /// archived. No readiness check - the content did not change and
+    /// `public` comes back as it was; assessments drafted by the archive
+    /// stay drafts.
+    pub async fn restore(&self, actor: &Actor, id: CourseId) -> Result<Course> {
+        self.manageable(actor, id).await?;
+        let mut tx = self.pool.begin().await?;
+        match ab_db::catalog::lock_course_archive(&mut tx, id).await? {
+            None => return Err(Error::not_found("course")),
+            Some(None) => return Err(Error::conflict("course is not archived")),
+            Some(Some(_)) => {}
+        }
+        ab_db::catalog::set_course_archived(&mut tx, id, None).await?;
+        tx.commit().await?;
+        tracing::info!(course_id = %id, actor = %actor.user_id, action = "restore",
+            "course restored");
+        ab_db::catalog::get_course(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))
+    }
+
+    /// The archive dialog's numbers (roster-manager gate). Warnings only:
+    /// an archive goes through whatever they are.
+    pub async fn archive_preview(&self, actor: &Actor, id: CourseId) -> Result<ArchivePreview> {
+        let course = self.manageable(actor, id).await?;
+        let row = ab_db::catalog::course_archive_preview(&self.pool, id).await?;
+        Ok(ArchivePreview {
+            learners_enrolled: row.learners_enrolled,
+            learners_in_progress: row.learners_in_progress,
+            ungraded_submissions: row.ungraded_submissions,
+            open_attempts: row.open_attempts,
+            scheduled_assessments: row.scheduled_assessments,
+            public: course.public,
+        })
     }
 
     /// Announcements feed, newest first (read = course visibility).
@@ -374,6 +476,7 @@ impl CoursesService {
     ) -> Result<CourseUpdate> {
         let course = self.get(actor, id).await?;
         Self::require_write(actor, &course)?;
+        course.ensure_not_archived()?;
         let update_id =
             ab_db::catalog::insert_course_update(&self.pool, id, title, content).await?;
         ab_db::catalog::get_course_update(&self.pool, update_id)
@@ -388,6 +491,7 @@ impl CoursesService {
             .ok_or_else(|| Error::not_found("course update"))?;
         let course = self.get(actor, update.course_id).await?;
         Self::require_write(actor, &course)?;
+        course.ensure_not_archived()?;
         Ok(update)
     }
 

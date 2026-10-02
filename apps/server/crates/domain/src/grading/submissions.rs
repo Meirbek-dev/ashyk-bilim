@@ -530,6 +530,10 @@ impl SubmissionsService {
     /// Open (or return the existing) draft. Legacy `start_submission_v2`.
     pub async fn start(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<Started> {
         let state = self.assessments.attempt_state(actor, assessment_id).await?;
+        // An archived course is a 409 for everyone - the staff preview
+        // bypasses the attempt gates, so it is checked here explicitly.
+        let course_id = self.assessments.load(assessment_id).await?.course_id;
+        self.assessments.require_course_open(course_id).await?;
         if !state.can_start && !state.can_continue {
             // Same vocabulary as `attempt-state.disabled_reasons`.
             return Err(Error::forbidden(format!(
@@ -648,6 +652,9 @@ impl SubmissionsService {
             .get(actor, submission.assessment_id)
             .await?
             .assessment;
+        self.assessments
+            .require_course_open(assessment.course_id)
+            .await?;
         // BUG-240: one atomic increment - parallel reports all count, and
         // none lands once the draft is submitted.
         let event = serde_json::json!({ "kind": kind, "detail": detail, "at": now_unix() });
@@ -684,6 +691,9 @@ impl SubmissionsService {
             ));
         }
         let ctx = self.context(actor, submission).await?;
+        self.assessments
+            .require_course_open(ctx.assessment.course_id)
+            .await?;
         // BUG-290: the submit gates freeze the draft too - past a hard due
         // date (or the time limit, or under a gate remediation) nothing more
         // is saved, so the timer sweep scores only what landed in time. A
@@ -781,6 +791,9 @@ impl SubmissionsService {
             }
             let violation_count = submission.violation_count.max(reported_violations);
             let ctx = self.context(actor, submission).await?;
+            self.assessments
+                .require_course_open(ctx.assessment.course_id)
+                .await?;
             // BUG-224: a draft opened against older content never scores items
             // the learner did not see - `start` again re-syncs it to the current
             // version once the items are reloaded.

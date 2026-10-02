@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id AS \"id: CourseId\"\n           FROM courses c\n           WHERE (c.creator_id = $1 OR EXISTS (\n                 SELECT 1 FROM resource_authors ra\n                 WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'\n                   AND ra.authorship <> 'reporter'))\n             AND ($2 OR c.archived_at IS NULL)\n           ORDER BY c.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f70234162805bba70231d3f46fb0014bc26316e51081b700166c4527b6db1e5b"
+}
