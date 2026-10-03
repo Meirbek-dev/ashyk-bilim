@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useHydrated, useNavigate, useSearch } from '@tanstack/react-router'
 import { Sparkles } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
@@ -18,6 +18,8 @@ export function AiSheet({ courseId }: { courseId: CourseId }) {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const { ai } = useSearch({ strict: false })
   const navigate = useNavigate()
+  // The page is server-rendered: a click before hydration would be lost, so the button waits for it.
+  const hydrated = useHydrated()
   if (!session) return null
   return (
     <SheetPanel
@@ -32,7 +34,7 @@ export function AiSheet({ courseId }: { courseId: CourseId }) {
         })
       }
       trigger={
-        <Button variant="outline">
+        <Button variant="outline" disabled={!hydrated}>
           <Sparkles data-icon="inline-start" aria-hidden />
           {m.ai_open_panel()}
         </Button>

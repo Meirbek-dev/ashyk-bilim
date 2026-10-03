@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 
 import { CourseAnalysis } from '#/features/ai'
 import { OverviewPage, readinessOptions } from '#/features/course-studio'
@@ -12,7 +13,9 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/overview'
     return (
       <div className="flex flex-col gap-gutter">
         <OverviewPage />
-        <CourseAnalysis courseId={Route.useParams().courseId} />
+        <Suspense>
+          <CourseAnalysis courseId={Route.useParams().courseId} />
+        </Suspense>
       </div>
     )
   },

@@ -12,7 +12,6 @@ export const aiSearchSchema = v.object({
   aiThread: v.optional(vAiThreadId),
 })
 
-
 const featureOn = (caps: ScopeCapabilities, key: string) =>
   caps.features.some(feature => feature.key === key && feature.enabled)
 

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 
 import { AiPanel, aiSearchSchema, prefetchPanel } from '#/features/ai'
 import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
@@ -26,7 +27,11 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
   component: function Studio() {
     const params = Route.useParams()
-    const panel = <AiPanel {...params} surface="teacher-studio" />
+    const panel = (
+      <Suspense>
+        <AiPanel {...params} surface="teacher-studio" />
+      </Suspense>
+    )
     return <CourseStudioLayout aside={{ label: m.ai_panel_title(), content: panel }} />
   },
   notFoundComponent: ActivityNotFound,

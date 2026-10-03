@@ -1,12 +1,6 @@
 import type { Page, Route } from '@playwright/test'
 
-import type {
-  AiRunKind,
-  CourseAnalysis,
-  RunArtifact,
-  RunStatus,
-  ScopeCapabilities,
-} from '#/shared/api/gen/types.gen'
+import type { AiRunKind, CourseAnalysis, RunArtifact, RunStatus, ScopeCapabilities } from '#/shared/api/gen/types.gen'
 
 // AI responses for the ai*.spec.ts files: the live provider is not on the stand (spec 9), so every model answer is
 // a `page.route` fixture that writes AG-UI events the way the server does (`ai.rs`, `ai_agents.rs`). Only requests
@@ -47,7 +41,7 @@ export const runStatus = (kind: AiRunKind): RunStatus => ({
 
 type SseEvent = { id?: string; data: Record<string, unknown> }
 /** An SSE body: `id:` (the resume point), `event: run`, `data:` one AG-UI event. */
-export const sse = (events: SseEvent[]) =>
+const sse = (events: SseEvent[]) =>
   events.map(({ id, data }) => `${id ? `id: ${id}\n` : ''}event: run\ndata: ${JSON.stringify(data)}\n\n`).join('')
 
 export const fulfillSse = (route: Route, events: SseEvent[]) =>
@@ -63,7 +57,7 @@ export const json = (route: Route, body: unknown, status = 200) =>
 export const problem = (status: number, code: string) => ({ type: 'about:blank', title: code, status, code })
 
 /** A finished run's stream: started, two server steps (one resumable id), finished. */
-export const finishedRun = [
+const finishedRun = [
   { id: 'run-started', data: { type: 'RUN_STARTED', threadId: THREAD, runId: RUN } },
   { id: '1760000000000-0', data: { type: 'CUSTOM', name: 'collecting', value: { state: 'collecting_context' } } },
   { id: 'run-end', data: { type: 'RUN_FINISHED', threadId: THREAD, runId: RUN } },
@@ -91,6 +85,12 @@ export async function mockRun(page: Page, queue: string, kind: AiRunKind, artifa
   await page.route(`${API}/runs/${RUN}/artifacts`, route => json(route, artifacts))
   return { queued: queued.promise, release: () => released.resolve(null) }
 }
+
+/**
+ * A same-document navigation before a run ends: the run's refresh of a `latest` read is a new read, while the shared
+ * fixture counts repeated GETs per navigation (e2e/fixtures/test.ts). A string, evaluated in the page.
+ */
+export const markNavigation = (page: Page) => page.evaluate('history.replaceState(history.state, "", location.href)')
 
 export const analysis = (patch: Partial<CourseAnalysis> = {}): CourseAnalysis => ({
   content_hash: null,

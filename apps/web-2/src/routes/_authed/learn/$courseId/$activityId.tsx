@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 
 import { AiPanel, aiSearchSchema, prefetchPanel } from '#/features/ai'
 import { ensurePlayer, PlayerError, PlayerNotFound, PlayerPage } from '#/features/player'
@@ -18,7 +19,16 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId')({
   component: function Player() {
     const params = Route.useParams()
     return (
-      <PlayerPage aside={{ label: m.ai_panel_title(), content: <AiPanel {...params} surface="student-activity" /> }} />
+      <PlayerPage
+        aside={{
+          label: m.ai_panel_title(),
+          content: (
+            <Suspense>
+              <AiPanel {...params} surface="student-activity" />
+            </Suspense>
+          ),
+        }}
+      />
     )
   },
   errorComponent: PlayerError,

@@ -8,7 +8,7 @@ import { json } from '#/shared/api/testing'
 import type { RemediationSession, RunStatus, SubmissionAnalysis } from '#/shared/api/gen/types.gen'
 import { renderInRouter } from '#/shared/components/testing'
 
-import { SubmissionAiPanel } from '../index'
+import { SubmissionAiPanel } from './submission-ai-panel'
 
 const SUBMISSION = '0190a5d2-0000-7000-8000-0000000000e1'
 const RUN = '0190a5d2-0000-7000-8000-0000000000e2'

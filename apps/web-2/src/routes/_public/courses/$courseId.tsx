@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 
 import { AiSheet, aiSearchSchema } from '#/features/ai'
 import { CourseNotFound, CoursePage, ensureCoursePage } from '#/features/course'
@@ -12,7 +13,12 @@ export const Route = createFileRoute('/_public/courses/$courseId')({
   staticData: { title: m.platform_page_course },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
   component: function Course() {
-    return <CoursePage ai={<AiSheet courseId={Route.useParams().courseId} />} />
+    const ai = (
+      <Suspense>
+        <AiSheet courseId={Route.useParams().courseId} />
+      </Suspense>
+    )
+    return <CoursePage ai={ai} />
   },
   notFoundComponent: CourseNotFound,
 })
