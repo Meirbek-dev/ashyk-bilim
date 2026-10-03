@@ -1,6 +1,15 @@
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import type { Client } from '#/shared/api/gen/client'
-import { createCollection, getCollection, getCurriculum, listCourses, login, search } from '#/shared/api/gen/sdk.gen'
+import {
+  createCollection,
+  createUsergroup,
+  getCollection,
+  getCurriculum,
+  listCourses,
+  listUsergroups,
+  login,
+  search,
+} from '#/shared/api/gen/sdk.gen'
 import type { CollectionAction, CourseId, SessionInfo } from '#/shared/api/gen/types.gen'
 
 import { test as base } from './test'
@@ -28,7 +37,10 @@ export type Seed = {
   /** `allowed_actions` of the seed collection per role: routes guarded by an object's actions (spec 7.5). */
   collectionActions: Record<SignedIn, CollectionAction[]>
   /** Values for the route params of spec 5.3. */
-  params: Record<'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId', string>
+  params: Record<
+    'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId' | 'roleSlug' | 'groupId',
+    string
+  >
 }
 
 async function signIn(baseUrl: string, loginName: string): Promise<Account> {
@@ -55,6 +67,21 @@ async function seedCollection(client: Client, teacher: Account, courseId: Course
   const created = await createCollection({
     client,
     body: { name: SEED_COLLECTION, public: true, courses: [courseId] },
+    headers: cookieOf(teacher),
+    throwOnError: true,
+  })
+  return created.data.id
+}
+
+// A group the role matrix can open (/teach/groups/$groupId): the teacher's, found by name, created once per stand.
+const SEED_GROUP = 'E2E seed group'
+async function seedGroup(client: Client, teacher: Account): Promise<string> {
+  const groups = await listUsergroups({ client, query: { limit: 100 }, headers: cookieOf(teacher), throwOnError: true })
+  const existing = groups.data.items.find(group => group.name === SEED_GROUP)
+  if (existing) return existing.id
+  const created = await createUsergroup({
+    client,
+    body: { name: SEED_GROUP },
     headers: cookieOf(teacher),
     throwOnError: true,
   })
@@ -96,6 +123,9 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
       username: 'e2e-teacher',
       certificateId: placeholder,
       submissionId: placeholder,
+      // A seeded system role (migration 20260816000003) and the seed group.
+      roleSlug: 'instructor',
+      groupId: await seedGroup(client, teacher),
     },
   }
 }

@@ -15,7 +15,8 @@
       "./messages/{locale}/errors.json",
       "./messages/{locale}/validation.json",
       "./messages/{locale}/editor.json",
-      "./messages/{locale}/markdown.json"
+      "./messages/{locale}/markdown.json",
+      "./messages/{locale}/admin.json"
     ]
   }
 }

@@ -11,13 +11,21 @@ const sides = {
   right: 'right-0 border-l data-ending-style:translate-x-full data-starting-style:translate-x-full',
 }
 
-type SheetProps = { trigger: ReactElement; title: string; side: keyof typeof sides; children: ReactNode }
+type SheetProps = {
+  /** The button that opens it; none when the URL opens it (the selected item, R-07: pass `open` + `onOpenChange`). */
+  trigger?: ReactElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  title: string
+  side: keyof typeof sides
+  children: ReactNode
+}
 
-/** A side panel over the page: filters and focus-layout panels at phone width (DESIGN 6). */
-export function Sheet({ trigger, title, side, children }: SheetProps) {
+/** A side panel over the page: filters, focus-layout panels at phone width, a list's selected item (DESIGN 6). */
+export function Sheet({ trigger, open, onOpenChange, title, side, children }: SheetProps) {
   return (
-    <BaseDialog.Root>
-      <BaseDialog.Trigger render={trigger} />
+    <BaseDialog.Root open={open} onOpenChange={next => onOpenChange?.(next)}>
+      {trigger ? <BaseDialog.Trigger render={trigger} /> : null}
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className="fixed inset-0 z-50 bg-background/80 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <BaseDialog.Popup

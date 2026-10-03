@@ -30,7 +30,6 @@ import { Route as AuthedAdminAiRouteImport } from './routes/_authed/admin/ai'
 import { Route as AuthedAdminAnalyticsRouteImport } from './routes/_authed/admin/analytics'
 import { Route as AuthedAdminGamificationRouteImport } from './routes/_authed/admin/gamification'
 import { Route as AuthedAdminPlatformRouteImport } from './routes/_authed/admin/platform'
-import { Route as AuthedAdminRolesRouteImport } from './routes/_authed/admin/roles'
 import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
 import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
 import { Route as AuthedSettingsAppearanceRouteImport } from './routes/_authed/settings/appearance'
@@ -39,12 +38,13 @@ import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/sett
 import { Route as AuthedSettingsSecurityRouteImport } from './routes/_authed/settings/security'
 import { Route as AuthedTeachIndexRouteImport } from './routes/_authed/teach/index'
 import { Route as AuthedTeachAnalyticsRouteImport } from './routes/_authed/teach/analytics'
-import { Route as AuthedTeachGroupsRouteImport } from './routes/_authed/teach/groups'
 import { Route as PublicCollectionsIndexRouteImport } from './routes/_public/collections/index'
 import { Route as PublicCollectionsCollectionIdRouteImport } from './routes/_public/collections/$collectionId'
 import { Route as PublicCoursesIndexRouteImport } from './routes/_public/courses/index'
 import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public/courses/$courseId'
 import { Route as PublicUsersUsernameRouteImport } from './routes/_public/users/$username'
+import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
+import { Route as AuthedAdminRolesRoleSlugRouteImport } from './routes/_authed/admin/roles/$roleSlug'
 import { Route as AuthedCollectionsCollectionIdEditRouteImport } from './routes/_authed/collections/$collectionId/edit'
 import { Route as AuthedLearnCourseIdActivityIdRouteImport } from './routes/_authed/learn/$courseId/$activityId'
 import { Route as AuthedLearnCourseIdCompleteRouteImport } from './routes/_authed/learn/$courseId/complete'
@@ -55,6 +55,8 @@ import { Route as AuthedTeachAnalyticsOverviewRouteImport } from './routes/_auth
 import { Route as AuthedTeachAnalyticsPerformanceRouteImport } from './routes/_authed/teach/analytics/performance'
 import { Route as AuthedTeachCoursesIndexRouteImport } from './routes/_authed/teach/courses/index'
 import { Route as AuthedTeachCoursesCourseIdRouteImport } from './routes/_authed/teach/courses/$courseId'
+import { Route as AuthedTeachGroupsIndexRouteImport } from './routes/_authed/teach/groups/index'
+import { Route as AuthedTeachGroupsGroupIdRouteImport } from './routes/_authed/teach/groups/$groupId'
 import { Route as PublicCertificatesCertificateIdVerifyRouteImport } from './routes/_public/certificates/$certificateId/verify'
 import { Route as PublicCoursesCourseIdIndexRouteImport } from './routes/_public/courses/$courseId/index'
 import { Route as PublicCoursesCourseIdAboutRouteImport } from './routes/_public/courses/$courseId/about'
@@ -178,11 +180,6 @@ const AuthedAdminPlatformRoute = AuthedAdminPlatformRouteImport.update({
   path: '/platform',
   getParentRoute: () => AuthedAdminRoute,
 } as any)
-const AuthedAdminRolesRoute = AuthedAdminRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => AuthedAdminRoute,
-} as any)
 const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -225,11 +222,6 @@ const AuthedTeachAnalyticsRoute = AuthedTeachAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthedTeachRoute,
 } as any)
-const AuthedTeachGroupsRoute = AuthedTeachGroupsRouteImport.update({
-  id: '/groups',
-  path: '/groups',
-  getParentRoute: () => AuthedTeachRoute,
-} as any)
 const PublicCollectionsIndexRoute = PublicCollectionsIndexRouteImport.update({
   id: '/collections/',
   path: '/collections/',
@@ -256,6 +248,17 @@ const PublicUsersUsernameRoute = PublicUsersUsernameRouteImport.update({
   path: '/users/$username',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthedAdminRolesIndexRoute = AuthedAdminRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminRolesRoleSlugRoute =
+  AuthedAdminRolesRoleSlugRouteImport.update({
+    id: '/roles/$roleSlug',
+    path: '/roles/$roleSlug',
+    getParentRoute: () => AuthedAdminRoute,
+  } as any)
 const AuthedCollectionsCollectionIdEditRoute =
   AuthedCollectionsCollectionIdEditRouteImport.update({
     id: '/collections/$collectionId/edit',
@@ -313,6 +316,17 @@ const AuthedTeachCoursesCourseIdRoute =
   AuthedTeachCoursesCourseIdRouteImport.update({
     id: '/courses/$courseId',
     path: '/courses/$courseId',
+    getParentRoute: () => AuthedTeachRoute,
+  } as any)
+const AuthedTeachGroupsIndexRoute = AuthedTeachGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => AuthedTeachRoute,
+} as any)
+const AuthedTeachGroupsGroupIdRoute =
+  AuthedTeachGroupsGroupIdRouteImport.update({
+    id: '/groups/$groupId',
+    path: '/groups/$groupId',
     getParentRoute: () => AuthedTeachRoute,
   } as any)
 const PublicCertificatesCertificateIdVerifyRoute =
@@ -456,14 +470,12 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/admin/gamification': typeof AuthedAdminGamificationRoute
   '/admin/platform': typeof AuthedAdminPlatformRoute
-  '/admin/roles': typeof AuthedAdminRolesRoute
   '/admin/users': typeof AuthedAdminUsersRoute
   '/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
   '/settings/security': typeof AuthedSettingsSecurityRoute
   '/teach/analytics': typeof AuthedTeachAnalyticsRouteWithChildren
-  '/teach/groups': typeof AuthedTeachGroupsRoute
   '/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
   '/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
   '/users/$username': typeof PublicUsersUsernameRoute
@@ -472,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/teach/': typeof AuthedTeachIndexRoute
   '/collections/': typeof PublicCollectionsIndexRoute
   '/courses/': typeof PublicCoursesIndexRoute
+  '/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
@@ -480,12 +493,15 @@ export interface FileRoutesByFullPath {
   '/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
   '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
   '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  '/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
   '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
   '/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/teach/analytics/': typeof AuthedTeachAnalyticsIndexRoute
   '/teach/courses/': typeof AuthedTeachCoursesIndexRoute
+  '/teach/groups/': typeof AuthedTeachGroupsIndexRoute
   '/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
@@ -518,13 +534,11 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/admin/gamification': typeof AuthedAdminGamificationRoute
   '/admin/platform': typeof AuthedAdminPlatformRoute
-  '/admin/roles': typeof AuthedAdminRolesRoute
   '/admin/users': typeof AuthedAdminUsersRoute
   '/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
   '/settings/security': typeof AuthedSettingsSecurityRoute
-  '/teach/groups': typeof AuthedTeachGroupsRoute
   '/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
   '/users/$username': typeof PublicUsersUsernameRoute
   '/admin': typeof AuthedAdminIndexRoute
@@ -532,6 +546,7 @@ export interface FileRoutesByTo {
   '/teach': typeof AuthedTeachIndexRoute
   '/collections': typeof PublicCollectionsIndexRoute
   '/courses': typeof PublicCoursesIndexRoute
+  '/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
@@ -539,12 +554,15 @@ export interface FileRoutesByTo {
   '/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
   '/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
   '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
+  '/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
   '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
   '/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/teach/analytics': typeof AuthedTeachAnalyticsIndexRoute
   '/teach/courses': typeof AuthedTeachCoursesIndexRoute
+  '/teach/groups': typeof AuthedTeachGroupsIndexRoute
   '/courses/$courseId': typeof PublicCoursesCourseIdIndexRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
@@ -583,14 +601,12 @@ export interface FileRoutesById {
   '/_authed/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/_authed/admin/gamification': typeof AuthedAdminGamificationRoute
   '/_authed/admin/platform': typeof AuthedAdminPlatformRoute
-  '/_authed/admin/roles': typeof AuthedAdminRolesRoute
   '/_authed/admin/users': typeof AuthedAdminUsersRoute
   '/_authed/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/_authed/settings/profile': typeof AuthedSettingsProfileRoute
   '/_authed/settings/security': typeof AuthedSettingsSecurityRoute
   '/_authed/teach/analytics': typeof AuthedTeachAnalyticsRouteWithChildren
-  '/_authed/teach/groups': typeof AuthedTeachGroupsRoute
   '/_public/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
   '/_public/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
   '/_public/users/$username': typeof PublicUsersUsernameRoute
@@ -599,6 +615,7 @@ export interface FileRoutesById {
   '/_authed/teach/': typeof AuthedTeachIndexRoute
   '/_public/collections/': typeof PublicCollectionsIndexRoute
   '/_public/courses/': typeof PublicCoursesIndexRoute
+  '/_authed/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/_authed/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
   '/_authed/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/_authed/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
@@ -607,12 +624,15 @@ export interface FileRoutesById {
   '/_authed/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
   '/_authed/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
   '/_authed/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  '/_authed/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
   '/_public/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/_public/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/_public/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
   '/_public/courses/$courseId/updates': typeof PublicCoursesCourseIdUpdatesRoute
+  '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/teach/analytics/': typeof AuthedTeachAnalyticsIndexRoute
   '/_authed/teach/courses/': typeof AuthedTeachCoursesIndexRoute
+  '/_authed/teach/groups/': typeof AuthedTeachGroupsIndexRoute
   '/_public/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
   '/_authed/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/_authed/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
@@ -650,14 +670,12 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/gamification'
     | '/admin/platform'
-    | '/admin/roles'
     | '/admin/users'
     | '/settings/appearance'
     | '/settings/notifications'
     | '/settings/profile'
     | '/settings/security'
     | '/teach/analytics'
-    | '/teach/groups'
     | '/collections/$collectionId'
     | '/courses/$courseId'
     | '/users/$username'
@@ -666,6 +684,7 @@ export interface FileRouteTypes {
     | '/teach/'
     | '/collections/'
     | '/courses/'
+    | '/admin/roles/$roleSlug'
     | '/collections/$collectionId/edit'
     | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
@@ -674,12 +693,15 @@ export interface FileRouteTypes {
     | '/teach/analytics/overview'
     | '/teach/analytics/performance'
     | '/teach/courses/$courseId'
+    | '/teach/groups/$groupId'
     | '/certificates/$certificateId/verify'
     | '/courses/$courseId/about'
     | '/courses/$courseId/discussions'
     | '/courses/$courseId/updates'
+    | '/admin/roles/'
     | '/teach/analytics/'
     | '/teach/courses/'
+    | '/teach/groups/'
     | '/courses/$courseId/'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
@@ -712,13 +734,11 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/gamification'
     | '/admin/platform'
-    | '/admin/roles'
     | '/admin/users'
     | '/settings/appearance'
     | '/settings/notifications'
     | '/settings/profile'
     | '/settings/security'
-    | '/teach/groups'
     | '/collections/$collectionId'
     | '/users/$username'
     | '/admin'
@@ -726,6 +746,7 @@ export interface FileRouteTypes {
     | '/teach'
     | '/collections'
     | '/courses'
+    | '/admin/roles/$roleSlug'
     | '/collections/$collectionId/edit'
     | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
@@ -733,12 +754,15 @@ export interface FileRouteTypes {
     | '/teach/analytics/operations'
     | '/teach/analytics/overview'
     | '/teach/analytics/performance'
+    | '/teach/groups/$groupId'
     | '/certificates/$certificateId/verify'
     | '/courses/$courseId/about'
     | '/courses/$courseId/discussions'
     | '/courses/$courseId/updates'
+    | '/admin/roles'
     | '/teach/analytics'
     | '/teach/courses'
+    | '/teach/groups'
     | '/courses/$courseId'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
@@ -776,14 +800,12 @@ export interface FileRouteTypes {
     | '/_authed/admin/analytics'
     | '/_authed/admin/gamification'
     | '/_authed/admin/platform'
-    | '/_authed/admin/roles'
     | '/_authed/admin/users'
     | '/_authed/settings/appearance'
     | '/_authed/settings/notifications'
     | '/_authed/settings/profile'
     | '/_authed/settings/security'
     | '/_authed/teach/analytics'
-    | '/_authed/teach/groups'
     | '/_public/collections/$collectionId'
     | '/_public/courses/$courseId'
     | '/_public/users/$username'
@@ -792,6 +814,7 @@ export interface FileRouteTypes {
     | '/_authed/teach/'
     | '/_public/collections/'
     | '/_public/courses/'
+    | '/_authed/admin/roles/$roleSlug'
     | '/_authed/collections/$collectionId/edit'
     | '/_authed/learn/$courseId/$activityId'
     | '/_authed/learn/$courseId/complete'
@@ -800,12 +823,15 @@ export interface FileRouteTypes {
     | '/_authed/teach/analytics/overview'
     | '/_authed/teach/analytics/performance'
     | '/_authed/teach/courses/$courseId'
+    | '/_authed/teach/groups/$groupId'
     | '/_public/certificates/$certificateId/verify'
     | '/_public/courses/$courseId/about'
     | '/_public/courses/$courseId/discussions'
     | '/_public/courses/$courseId/updates'
+    | '/_authed/admin/roles/'
     | '/_authed/teach/analytics/'
     | '/_authed/teach/courses/'
+    | '/_authed/teach/groups/'
     | '/_public/courses/$courseId/'
     | '/_authed/teach/courses/$courseId/content'
     | '/_authed/teach/courses/$courseId/gradebook'
@@ -979,13 +1005,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminPlatformRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
-    '/_authed/admin/roles': {
-      id: '/_authed/admin/roles'
-      path: '/roles'
-      fullPath: '/admin/roles'
-      preLoaderRoute: typeof AuthedAdminRolesRouteImport
-      parentRoute: typeof AuthedAdminRoute
-    }
     '/_authed/admin/users': {
       id: '/_authed/admin/users'
       path: '/users'
@@ -1042,13 +1061,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTeachAnalyticsRouteImport
       parentRoute: typeof AuthedTeachRoute
     }
-    '/_authed/teach/groups': {
-      id: '/_authed/teach/groups'
-      path: '/groups'
-      fullPath: '/teach/groups'
-      preLoaderRoute: typeof AuthedTeachGroupsRouteImport
-      parentRoute: typeof AuthedTeachRoute
-    }
     '/_public/collections/': {
       id: '/_public/collections/'
       path: '/collections'
@@ -1083,6 +1095,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/$username'
       preLoaderRoute: typeof PublicUsersUsernameRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_authed/admin/roles/': {
+      id: '/_authed/admin/roles/'
+      path: '/roles'
+      fullPath: '/admin/roles/'
+      preLoaderRoute: typeof AuthedAdminRolesIndexRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/roles/$roleSlug': {
+      id: '/_authed/admin/roles/$roleSlug'
+      path: '/roles/$roleSlug'
+      fullPath: '/admin/roles/$roleSlug'
+      preLoaderRoute: typeof AuthedAdminRolesRoleSlugRouteImport
+      parentRoute: typeof AuthedAdminRoute
     }
     '/_authed/collections/$collectionId/edit': {
       id: '/_authed/collections/$collectionId/edit'
@@ -1152,6 +1178,20 @@ declare module '@tanstack/react-router' {
       path: '/courses/$courseId'
       fullPath: '/teach/courses/$courseId'
       preLoaderRoute: typeof AuthedTeachCoursesCourseIdRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/groups/': {
+      id: '/_authed/teach/groups/'
+      path: '/groups'
+      fullPath: '/teach/groups/'
+      preLoaderRoute: typeof AuthedTeachGroupsIndexRouteImport
+      parentRoute: typeof AuthedTeachRoute
+    }
+    '/_authed/teach/groups/$groupId': {
+      id: '/_authed/teach/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/teach/groups/$groupId'
+      preLoaderRoute: typeof AuthedTeachGroupsGroupIdRouteImport
       parentRoute: typeof AuthedTeachRoute
     }
     '/_public/certificates/$certificateId/verify': {
@@ -1302,9 +1342,10 @@ interface AuthedAdminRouteChildren {
   AuthedAdminAnalyticsRoute: typeof AuthedAdminAnalyticsRoute
   AuthedAdminGamificationRoute: typeof AuthedAdminGamificationRoute
   AuthedAdminPlatformRoute: typeof AuthedAdminPlatformRoute
-  AuthedAdminRolesRoute: typeof AuthedAdminRolesRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
+  AuthedAdminRolesRoleSlugRoute: typeof AuthedAdminRolesRoleSlugRoute
+  AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
 }
 
 const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
@@ -1312,9 +1353,10 @@ const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
   AuthedAdminAnalyticsRoute: AuthedAdminAnalyticsRoute,
   AuthedAdminGamificationRoute: AuthedAdminGamificationRoute,
   AuthedAdminPlatformRoute: AuthedAdminPlatformRoute,
-  AuthedAdminRolesRoute: AuthedAdminRolesRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
+  AuthedAdminRolesRoleSlugRoute: AuthedAdminRolesRoleSlugRoute,
+  AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
 }
 
 const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
@@ -1423,20 +1465,22 @@ const AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren =
 
 interface AuthedTeachRouteChildren {
   AuthedTeachAnalyticsRoute: typeof AuthedTeachAnalyticsRouteWithChildren
-  AuthedTeachGroupsRoute: typeof AuthedTeachGroupsRoute
   AuthedTeachIndexRoute: typeof AuthedTeachIndexRoute
   AuthedTeachCoursesCourseIdRoute: typeof AuthedTeachCoursesCourseIdRouteWithChildren
+  AuthedTeachGroupsGroupIdRoute: typeof AuthedTeachGroupsGroupIdRoute
   AuthedTeachCoursesIndexRoute: typeof AuthedTeachCoursesIndexRoute
+  AuthedTeachGroupsIndexRoute: typeof AuthedTeachGroupsIndexRoute
   AuthedTeachCoursesCourseIdActivitiesActivityIdRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
   AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 }
 
 const AuthedTeachRouteChildren: AuthedTeachRouteChildren = {
   AuthedTeachAnalyticsRoute: AuthedTeachAnalyticsRouteWithChildren,
-  AuthedTeachGroupsRoute: AuthedTeachGroupsRoute,
   AuthedTeachIndexRoute: AuthedTeachIndexRoute,
   AuthedTeachCoursesCourseIdRoute: AuthedTeachCoursesCourseIdRouteWithChildren,
+  AuthedTeachGroupsGroupIdRoute: AuthedTeachGroupsGroupIdRoute,
   AuthedTeachCoursesIndexRoute: AuthedTeachCoursesIndexRoute,
+  AuthedTeachGroupsIndexRoute: AuthedTeachGroupsIndexRoute,
   AuthedTeachCoursesCourseIdActivitiesActivityIdRoute:
     AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren,
   AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute:
