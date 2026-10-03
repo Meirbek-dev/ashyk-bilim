@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { StudioLayout } from '#/features/platform'
+import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
 // The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activities/$activityId')({
+  loader: ({ context, params }) => ensureStudio(context.queryClient, params.courseId, params.activityId),
   staticData: {
     title: m.platform_page_studio,
     layout: 'focus',
@@ -15,5 +16,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
       { to: '/teach/courses/$courseId/activities/$activityId/results', label: m.platform_tab_results },
     ],
   },
-  component: StudioLayout,
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
+  component: CourseStudioLayout,
+  notFoundComponent: ActivityNotFound,
 })

@@ -1,0 +1,66 @@
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useParams } from '@tanstack/react-router'
+import { useState } from 'react'
+import { toast } from 'sonner'
+
+import { m } from '#/paraglide/messages'
+import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { ConflictDialog } from '#/shared/ui/templates/conflict-dialog'
+import { SettingsSection } from '#/shared/ui/templates/settings-section'
+
+import { activityOptions, updateActivityOptions } from '../curriculum-queries'
+import { isStale } from '../model/course'
+import { nameSchema } from '../model/studio'
+
+/**
+ * `settings` of an activity: the fields of the activity record itself (its name). Deadlines and "required" live on
+ * the assessment policy and the file-submission config (slices 5.1, 5.4).
+ */
+export function ActivitySettingsPage() {
+  const { courseId, activityId } = useParams({
+    from: '/_authed/teach/courses/$courseId_/activities/$activityId/settings',
+  })
+  const query = useSuspenseQuery(activityOptions(activityId))
+  const update = useMutation(updateActivityOptions(useQueryClient(), courseId))
+  const [conflict, setConflict] = useState(false)
+  const [defaultValues] = useState(() => ({ name: query.data.name }))
+  const request = (name: string, version: number) => ({
+    path: { activity_id: activityId },
+    body: { name },
+    headers: { 'If-Match': version },
+  })
+  const callbacks = {
+    onSuccess: () => {
+      setConflict(false)
+      toast(m.studio_saved())
+    },
+    onError: (error: unknown) => setConflict(isStale(error)),
+  }
+  const form = useAppForm(nameSchema, {
+    defaultValues,
+    onSubmit: ({ name }) => update.mutateAsync(request(name, query.data.version), callbacks),
+  })
+  const reloadAndRetry = async () => {
+    const fresh = await query.refetch()
+    if (fresh.data) update.mutate(request(form.state.values.name, fresh.data.version), callbacks)
+  }
+  return (
+    <>
+      <SettingsSection
+        title={m.platform_tab_settings()}
+        description={m.studio_activity_settings_hint()}
+        onSubmit={() => form.handleSubmit()}
+        pending={update.isPending && !conflict}
+        error={isStale(update.error) ? null : update.error}
+      >
+        <form.AppField name="name">{field => <field.TextField label={m.studio_field_name()} required />}</form.AppField>
+      </SettingsSection>
+      <ConflictDialog
+        open={conflict}
+        onOpenChange={setConflict}
+        onRetry={() => void reloadAndRetry()}
+        pending={update.isPending || query.isFetching}
+      />
+    </>
+  )
+}

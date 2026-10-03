@@ -1,9 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { UnderConstruction } from '#/features/platform'
+import { PublishPage, readinessOptions, updatesOptions } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/courses/$courseId/publish')({
+  loader: ({ context, params }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(readinessOptions(params.courseId)),
+      context.queryClient.ensureQueryData(updatesOptions(params.courseId)),
+    ]),
   staticData: { title: m.platform_tab_publish },
-  component: UnderConstruction,
+  component: PublishPage,
 })
