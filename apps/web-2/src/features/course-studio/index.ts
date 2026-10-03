@@ -12,6 +12,7 @@ export {
 export { ActivityEditPage } from './ui/activity-edit-page'
 export { ActivityNotFound } from './ui/activity-not-found'
 export { ActivitySettingsPage } from './ui/activity-settings-page'
+export { SaveStatusContext } from './ui/save-status'
 export { ContentPage } from './ui/content-page'
 export { CourseSettingsPage } from './ui/settings-page'
 export { CourseStudioLayout } from './ui/studio-layout'

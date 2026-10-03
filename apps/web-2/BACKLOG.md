@@ -61,8 +61,8 @@ K-3 done (9069df9, dc7d159): the kit is stock shadcn `base-nova` in `shared/ui` 
 Local e2e: `sh <scratchpad>/clear-rate-limits.sh` clears API login throttles. Local API restart recipe: copy the debug
 binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see notes above).
 
-B-1 (wip, main tree): entry bundle diet - initial JS hit 200.9 KB (limit 200); find structural causes (routes pulling
-feature index files, generated code, messages, shell) and bring it to <= 175 KB with an enforcing rule.
+B-1 done (d4f5364): initial JS 171 KB, budget 180; features expose route-level code in `route.ts`; lint rules
+`ab/route-level-imports`, `ab/route-entry-imports` and a build check keep feature/SDK code out of the entry.
 
 Known red e2e for phase 7 (`reports/F-2.md`): analytics table container axe "scrollable-region-focusable"; `FileField`
 32px overflow at 390px; B-ADM-07 (empty password now rejected by the generated schema); B-ACH-01/02 cold-dev timeouts.
@@ -75,10 +75,8 @@ The CI e2e stand runs as production and cannot relax auth limits: e2e needs one 
 | L-1  | S-02 session + capabilities + allowed_actions; S-03 seed-e2e | done |
 | L-2  | S-01 contract hygiene (wire-compatible), gate at 0 | done  |
 | L-3  | S-04, S-05, slice gaps, configurable auth limits (copy-course and cohort_ids 422 not done) | done |
-| L-4  | S-08 password reset; S-06 user event stream; S-07 notifications; S-09 agenda; S-13 XP event | wip |
-| L-5  | S-10 renames (expand); S-11 link scheme + prefixless certificate URL; copy course | todo   |
-| L-8  | D-01..D-03 data migrations                        | todo   |
-| L-9  | S-11 link scheme switch                           | todo   |
+| L-4  | S-08 password reset; S-06 user event stream; S-07 notifications; S-09 agenda; S-13 XP event | done |
+| L-5  | gaps from 5.1/5.2; S-11 link scheme; S-10 renames (expand); D-01..D-03 admin commands; copy course | wip |
 
 ## Web phases
 
@@ -96,24 +94,24 @@ The CI e2e stand runs as production and cannot relax auth limits: e2e needs one 
 | 1.6 | reference slice: auth + collections (reset-password waits L-5)    | done   |
 | 1.7 | AGENTS.md final                                                   | todo   |
 | 2   | editor + markdown core, insert/paste/slash, video, PDF, discussions (in 3.3) | done |
-| 3.1 | home                                                              | todo   |
+| 3.1 | home (+ reset-password and resend-code pages in auth)             | wip    |
 | 3.2 | catalog, landing, search, command palette                         | done   |
 | 3.3 | course page + discussions                                         | done   |
 | 3.4 | learning, certificates (+ locale-prefixed verify alias)           | done   |
 | 3.5 | player (child route stubs for 5.2/5.3/5.4)                        | done   |
 | 3.6 | settings, public profile (profile builder e2e waits ProfileSection fix) | done |
 | 3.7 | achievements                                                      | done   |
-| 3.8 | notifications                                                     | todo   |
+| 3.8 | notifications + shared/api/events.ts + event invalidation table   | wip    |
 | 4.1 | course studio                                                     | done   |
 | 4.2 | admin: users, roles, groups, platform, gamification config        | done   |
 | 4.3 | analytics (e2e red until the server enum casing fix lands)        | done   |
-| 5.1 | assessment studio                                                 | wip    |
-| 5.2 | attempt                                                           | wip    |
-| 5.3 | code arena                                                        | todo   |
+| 5.1 | assessment studio                                                 | done (merge in progress, I-2) |
+| 5.2 | attempt                                                           | done (merge in progress, I-2) |
+| 5.3 | code arena                                                        | wip    |
 | 5.4 | file submissions                                                  | done   |
-| 6.1 | grading, gradebook                                                | todo   |
+| 6.1 | grading, gradebook                                                | wip    |
 | 6.2 | teach inbox                                                       | done   |
-| 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | wip    |
+| 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | done (merge in progress, I-2) |
 | 7   | hardening                                                         | todo   |
 | 8   | cutover (needs owner: prod access, exam-free window)              | todo   |
 | 9   | legacy removal (after the 7-day observation window)               | todo   |

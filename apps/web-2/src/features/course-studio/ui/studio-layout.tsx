@@ -1,9 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import type { ActivityDetail } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/ui/button'
@@ -19,8 +20,13 @@ const saveLabels: Record<SaveState, () => string> = {
   failed: m.studio_save_failed,
 }
 
+type CourseStudioLayoutProps = {
+  /** The header's published control of activities backed by another object (assessments, slice 5.1); null: the switch. */
+  publishControl?: (activity: ActivityDetail) => ReactNode
+}
+
 /** The activity studio (spec 5.4): focus layout, its 4 route tabs, autosave status and the published switch. */
-export function CourseStudioLayout() {
+export function CourseStudioLayout({ publishControl }: CourseStudioLayoutProps) {
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
@@ -41,7 +47,7 @@ export function CourseStudioLayout() {
       back={back}
       title={activity.name}
       saveStatus={state ? <output>{saveLabels[state]()}</output> : null}
-      actions={<PublishSwitch courseId={courseId} activity={activity} />}
+      actions={publishControl?.(activity) ?? <PublishSwitch courseId={courseId} activity={activity} />}
       wide
     >
       <div className="flex flex-col gap-gutter">
