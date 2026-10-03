@@ -240,7 +240,7 @@ jobs:
         run: bun run build
 
   images:
-    needs: [changes, server-gates, web-gates, infra-gates]
+    needs: [changes, server-gates, web-gates, web2-gates, infra-gates]
     # Gates may be skipped (path filter) but never failed.
     if: >-
       github.event_name == 'push' && !failure() && !cancelled()
@@ -251,8 +251,9 @@ jobs:
       packages: write
     strategy:
       matrix:
+        # stage-2: web-2 (no build args) only when apps/web-2 changed or on release branches.
+        image: ${{ fromJSON(needs.changes.outputs.web2 == 'true' && '["server","web","web-2"]' || '["server","web"]') }}
         include:
-          - image: server
           - image: web
             # stage-2: the only Next-specific spot; the web image is bound to
             # the prod domain until it gets runtime config.
@@ -341,6 +342,81 @@ jobs:
       - name: Compose logs
         if: failure()
         run: bash -c 'source infra/scripts/lib.sh && use_smoke && compose ps -a && compose logs --no-color --timestamps --tail 500'
+
+  # G-06 (spec section 9): Playwright against ashyq-web-2:ci-<sha> on the seeded stand
+  # (`just web2-*`, docs/INFRA.md "Stage 2 e2e stand"). Secret E2E_PASSWORD is optional:
+  # without it the stand seeds a random password per run.
+  web2-e2e:
+    needs: [changes, images]
+    if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: apps/web-2/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The stand's origin is https://ashyq.test (presigned URLs must be same-origin).
+      - name: Resolve the stand host
+        run: echo '127.0.0.1 ashyq.test' | sudo tee -a /etc/hosts
+
+      - name: Playwright dependencies
+        working-directory: apps/web-2
+        run: |
+          bun install --frozen-lockfile
+          bun run codegen
+          bunx playwright install --with-deps
+
+      - name: Stand up (from scratch, bootstrap included)
+        run: just web2-stand-up
+
+      - name: Seed
+        run: just web2-seed
+
+      - name: e2e
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: just web2-e2e --reporter=line,html
+
+      - name: Compose logs
+        if: failure()
+        run: bash -c 'source infra/scripts/lib.sh && use_web2 && compose ps -a && compose logs --no-color --timestamps --tail 500'
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: web2-e2e-${{ needs.changes.outputs.sha }}
+          path: |
+            apps/web-2/playwright-report/
+            apps/web-2/test-results/
+            tmp/web2/server.log
+          retention-days: 7
+
+      - name: Stand down
+        if: always()
+        run: just web2-stand-down
 
   publish:
     needs: [changes, stack-smoke]

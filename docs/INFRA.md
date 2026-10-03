@@ -159,7 +159,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
 | | `FORCE_HTTPS` (default `1`) | nginx :80 redirect |
 | | `TRUSTED_PROXY_CIDR` (empty = `127.0.0.1/32`) | nginx `set_real_ip_from` |
-| | `TLS_CERT_FILE`, `TLS_KEY_FILE` (default `./certs/{cert,key}.pem`) | nginx bind mounts; `renew-certificate.sh` |
+| | `TLS_DIR` (default `./certs`, holds `cert.pem` + `key.pem`) | nginx directory mount; `renew-certificate.sh` |
 | | `ACME_WEBROOT` (default `/var/www/certbot`), `HTTP_PORT`, `HTTPS_PORT` | nginx |
 | Release | `IMAGE_REPO` (default `ghcr.io/meirbek-dev`) | image names; deploy.sh |
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
@@ -211,7 +211,7 @@ keys; mode other than 600 (warning only on Windows); empty values in
 `AB__RESEND__API_KEY` without `AB__RESEND__FROM`; unset `COMPOSE_PROJECT_NAME`; masterkey length other than 32; missing or past
 `ZITADEL_PAT_EXPIRATION`; missing `<project>_postgres_data` on a host that has
 run the stack before. Warns on: PAT expiry under 30 days, certificate expiry
-under 14 days (`TLS_CERT_FILE`, else `/etc/letsencrypt/live/<domain>/fullchain.pem`), disk of the Docker root over 85%. Prints key names, never values.
+under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchain.pem`), disk of the Docker root over 85%. Prints key names, never values.
 
 ## Edge
 
@@ -249,10 +249,11 @@ under 14 days (`TLS_CERT_FILE`, else `/etc/letsencrypt/live/<domain>/fullchain.p
 - **Limits.** 10M request bodies except `/ab-*`; `limit_req_status 429`.
 - **Logs.** JSON access log to stdout with `request_id`, also sent upstream as
   `X-Request-ID`.
-- **TLS files.** `TLS_CERT_FILE`/`TLS_KEY_FILE` are single-file bind mounts.
-  `renew-certificate.sh` (certbot deploy hook) copies the renewed files over the
-  targets with `cp` (same inode, so the mount sees the new bytes) and reloads
-  nginx; if the cert path is a symlink it recreates nginx instead.
+- **TLS files.** `TLS_DIR` (default `./certs`) is a directory mount holding
+  `cert.pem` + `key.pem`. `renew-certificate.sh` (certbot deploy hook) installs
+  the renewed lineage there and reloads nginx. The legacy root-owned hook
+  (`/etc/letsencrypt/renewal-hooks/deploy/openu-prod.sh`) does the same and
+  keeps working as long as the project is `openu-prod`.
 
 ## Bootstrap
 
@@ -428,6 +429,46 @@ Next.js leftovers stage 2 must remove:
   `CONTENT_REWRITE_TARGET` rewrite.
 - `scripts/run-vitest.mjs` Vitest pin (FINDINGS #13); `test` script name is
   fine, `e2e` is today `test:e2e`.
+
+## Stage 2 e2e stand
+
+Gate G-06 (spec section 9): Playwright against the `ashyq-web-2` image on the
+smoke stack. `STACK=web2` (`lib.sh use_web2`) = the smoke files plus
+`compose.web2.yaml`, project `ashyq-web2`, server env `tmp/web2/server.env`,
+`PUBLIC_SCHEME=https`, `FORCE_HTTPS=1`, self-signed cert of the smoke stack.
+
+- `web`: `ashyq-web-2:${IMAGE_TAG}` (`WEB2_IMAGE` overrides), env `PUBLIC_ORIGIN`
+  and `INTERNAL_API_URL` only, 512m.
+- Origin `https://ashyq.test`. The server presigns S3 URLs for
+  `AB__STORAGE__ENDPOINT` (already the public origin), so uploads stay
+  same-origin; it reaches storage through nginx and trusts the self-signed cert
+  via `SSL_CERT_FILE` (server and worker).
+- The server runs with `AB__ENVIRONMENT=production` (Secure session cookie).
+  `seed-e2e` refuses production, so `web2-seed` runs it with
+  `-e AB__ENVIRONMENT=development` in the running server container.
+- Password: `E2E_PASSWORD` (CI secret `E2E_PASSWORD`, optional), else a random
+  one per stand in `tmp/web2/e2e-password`. Failure traces contain it in
+  clear (filled inputs), so leave the secret unset.
+
+| Recipe | Does |
+| --- | --- |
+| `web2-stand-up` | cert, `bootstrap.sh`, `up -d --wait` |
+| `web2-seed` | `ashyq admin seed-e2e` in the server container |
+| `web2-e2e [playwright args]` | follows the server log into `tmp/web2/server.log` (`E2E_API_LOG`), runs `bun run e2e` with `E2E_BASE_URL=https://ashyq.test`, `E2E_INSECURE=1` (browser `ignoreHTTPSErrors`), `NODE_EXTRA_CA_CERTS` (fixtures' fetch) |
+| `web2-stand-down` | `down -v`, removes `tmp/web2` |
+
+The host must resolve `ashyq.test` to 127.0.0.1 (CI appends it to
+`/etc/hosts`). Without that, or where published ports misbehave (podman on
+Windows), `WEB2_E2E_IN_NETWORK=1 just web2-e2e` runs the suite in
+`mcr.microsoft.com/playwright:v<version>-noble` on the stand's `edge-net`,
+where `ashyq.test` is the nginx alias. Local images: `podman build --format
+docker -f apps/web-2/Dockerfile -t localhost/ashyq-web-2:dev .` (same for the
+server; OCI format drops `HEALTHCHECK` and `up --wait` fails), then
+`IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
+
+CI job `web2-e2e` (after `images`, only when `apps/web-2` changed; `images`
+builds `ashyq-web-2:ci-<sha>` under the same condition): the four recipes; on
+failure the HTML report, traces and server log as an artifact. Not gating `publish`.
 
 ## Verified in CI (2026-10-03)
 
