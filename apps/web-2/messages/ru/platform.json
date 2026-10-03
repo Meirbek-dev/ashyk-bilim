@@ -4,8 +4,6 @@
   "platform_nav_home": "Сегодня",
   "platform_nav_collections": "Коллекции",
   "platform_nav_login": "Войти",
-  "platform_landing_title": "Учитесь в своём темпе",
-  "platform_landing_browse": "Смотреть коллекции",
   "platform_error_title": "Что-то пошло не так",
   "platform_error_request_id": "Код обращения для поддержки: {id}",
   "platform_error_retry": "Повторить",
