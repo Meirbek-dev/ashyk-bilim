@@ -26,7 +26,7 @@ export STACK=prod COMPOSE_PROJECT_NAME=ashyq-drill COMPOSE_PROFILES=
 export COMPOSE_ENV_FILES=$work/backup/secrets/.env STACK_ENV_FILE=$work/backup/secrets/.env
 export SERVER_ENV_FILE=$work/server.env
 export PUBLIC_SCHEME=http FORCE_HTTPS=0 HTTP_PORT=${DRILL_HTTP_PORT:-18080} HTTPS_PORT=${DRILL_HTTPS_PORT:-18443}
-export TLS_CERT_FILE=$work/certs/cert.pem TLS_KEY_FILE=$work/certs/key.pem ACME_WEBROOT=$work/acme
+export TLS_DIR=$work/certs ACME_WEBROOT=$work/acme
 domain=$(sed -n 's/^NGINX_SERVER_NAME=//p' "$COMPOSE_ENV_FILES" | tail -n 1)
 export SMOKE_ORIGIN=http://$domain:$HTTP_PORT
 

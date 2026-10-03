@@ -68,8 +68,8 @@ services:
       - ./infra/nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./infra/nginx/routes.conf:/etc/nginx/snippets/routes.conf:ro
       - ./infra/nginx/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
-      - ${TLS_CERT_FILE:-./certs/cert.pem}:/etc/nginx/certs/cert.pem:ro
-      - ${TLS_KEY_FILE:-./certs/key.pem}:/etc/nginx/certs/key.pem:ro
+      # Directory mount: the certbot hook replaces cert.pem/key.pem (new inodes).
+      - ${TLS_DIR:-./certs}:/etc/nginx/certs:ro
       - ${ACME_WEBROOT:-/var/www/certbot}:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx/app
     networks:
