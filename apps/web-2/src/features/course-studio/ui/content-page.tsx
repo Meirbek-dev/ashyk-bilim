@@ -33,7 +33,7 @@ export function ContentPage() {
     layout.current = next
     setDragged(next)
   }
-  const moveChapter = useMutation(moveChapterOptions())
+  const moveChapter = useMutation(moveChapterOptions(courseId))
   const moveActivity = useMutation(moveActivityOptions())
   const shown = dragged ? applyLayout(curriculum, dragged) : curriculum
   const failed = moveChapter.error ?? moveActivity.error

@@ -49,6 +49,7 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
     reason: 'not_enrolled',
     enabled: true,
     activity_id: null,
+    course_id: 'c1',
     href: null,
   },
   outline: [
@@ -105,7 +106,14 @@ describe('primary action', () => {
   })
 
   test("B-CRS-05 an enrolled learner continues at the server's next activity, or opens the summary", () => {
-    const next = { label: 'Continue course', reason: 'next_required', enabled: true, activity_id: 'a2', href: null }
+    const next = {
+      label: 'Continue course',
+      reason: 'next_required',
+      enabled: true,
+      activity_id: 'a2',
+      course_id: 'c1',
+      href: null,
+    }
     const enrolled = state({
       enrolled: true,
       enrollment_state: 'in_progress',
@@ -121,6 +129,7 @@ describe('primary action', () => {
         reason: 'complete',
         enabled: true,
         activity_id: null,
+        course_id: 'c1',
         href: null,
       },
     })

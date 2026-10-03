@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
@@ -11,7 +11,7 @@ import { enrollOptions } from '../queries'
 
 /** Enrol, then the header shows what the refreshed learner state offers ("Start"), without a reload (UX-119). */
 export function EnrollButton({ courseId }: { courseId: CourseId }) {
-  const enroll = useMutation(enrollOptions(courseId))
+  const enroll = useMutation(enrollOptions(useQueryClient(), courseId))
   const submit = () =>
     enroll.mutate({ path: { course_id: courseId } }, { onSuccess: () => toast.add({ title: m.course_enrolled() }) })
   return (

@@ -4,18 +4,22 @@ import { useState } from 'react'
 import { m } from '#/paraglide/messages'
 import type { Certification, Course } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
+import { isStale } from '../model/course'
 import {
   CERTIFICATE_TYPES,
   certificateConfig,
   certificateFields,
   certificateFieldsSchema,
+  type CertificateFields,
   type CertificateType,
 } from '../model/studio'
-import { updateCertificationOptions } from '../queries'
+import { certificationVersion, updateCertificationOptions } from '../queries'
 import { DisableCertificate } from './disable-certificate'
+import { useIfMatch } from './use-if-match'
 
 // The type keys the server prints on the PDF (certifications/pdf.rs `type_label`).
 const typeLabels: Record<CertificateType, () => string> = {
@@ -34,18 +38,24 @@ type CertificateFormProps = { course: Course; certification: Certification }
 
 /** The certificate's name, type and teacher name, written into `config` over the keys this page does not edit. */
 export function CertificateForm({ course, certification }: CertificateFormProps) {
-  const update = useMutation(updateCertificationOptions(useQueryClient(), course.id))
+  const queryClient = useQueryClient()
+  const update = useMutation(updateCertificationOptions(queryClient, course.id))
   const [defaultValues] = useState(() => certificateFields(certification.config))
-  const form = useAppForm(certificateFieldsSchema, {
-    defaultValues,
-    onSubmit: fields =>
+  const write = useIfMatch(
+    (fields: CertificateFields, version: number) =>
       update.mutateAsync(
         {
           path: { certification_id: certification.id },
           body: { config: certificateConfig(certification.config, fields) },
+          headers: { 'If-Match': version },
         },
         { onSuccess: () => toast.add({ title: m.studio_saved() }) },
       ),
+    () => certificationVersion(queryClient, course.id, certification),
+  )
+  const form = useAppForm(certificateFieldsSchema, {
+    defaultValues,
+    onSubmit: fields => write.save(fields, certification.version),
   })
   return (
     <div className="flex flex-col gap-4">
@@ -54,7 +64,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
         description={m.studio_certificate_hint()}
         onSubmit={() => form.handleSubmit()}
         pending={update.isPending}
-        error={update.error}
+        error={isStale(update.error) ? null : update.error}
       >
         <form.AppField name="certification_name">
           {field => (
@@ -73,6 +83,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
           )}
         </form.AppField>
       </SettingsSection>
+      <ConflictDialog {...write.dialog} />
       {certification.allowed_actions.includes('delete') ? (
         <DisableCertificate course={course} certification={certification} />
       ) : null}

@@ -49,6 +49,12 @@ export const updateChapterOptions = (queryClient: QueryClient, courseId: CourseI
   onSuccess: (chapter: Chapter) => patch(queryClient, courseId, curriculum => withChapter(curriculum, chapter)),
 })
 
+/** "Reload and retry" after a 412: the chapter's current `version` (a deleted one keeps its own: the write 404s). */
+export const chapterVersion = async (queryClient: QueryClient, courseId: CourseId, chapter: Chapter) =>
+  (await queryClient.fetchQuery({ ...curriculumOptions(courseId), staleTime: 0 })).chapters.find(
+    row => row.id === chapter.id,
+  )?.version ?? chapter.version
+
 export const deleteChapterOptions = (queryClient: QueryClient, courseId: CourseId) => ({
   ...deleteChapterMutation(),
   onSuccess: (_: unknown, { path }: { path: { chapter_id: string } }) =>
@@ -60,7 +66,11 @@ export const deleteChapterOptions = (queryClient: QueryClient, courseId: CourseI
 export const placeCurriculum = (queryClient: QueryClient, courseId: CourseId, curriculum: Curriculum) =>
   queryClient.setQueryData<Curriculum>(getCurriculumQueryKey(byId(courseId)), curriculum)
 
-export const moveChapterOptions = () => moveChapterMutation()
+// A chapter move renumbers its siblings and bumps their `version`: the curriculum is read again for the next rename.
+export const moveChapterOptions = (courseId: CourseId) => ({
+  ...moveChapterMutation(),
+  meta: { invalidates: [getCurriculumQueryKey(byId(courseId))] },
+})
 export const moveActivityOptions = () => moveActivityMutation()
 
 export const createActivityOptions = (queryClient: QueryClient, courseId: CourseId) => ({

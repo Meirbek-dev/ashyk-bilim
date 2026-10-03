@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -12,7 +12,7 @@ import { leaveOptions } from '../queries'
 /** Leave through the confirmation that names the course; the header then offers "Enrol" again (BUG-074). */
 export function LeaveCourse({ course }: { course: Course }) {
   const [open, setOpen] = useState(false)
-  const leave = useMutation(leaveOptions(course.id))
+  const leave = useMutation(leaveOptions(useQueryClient(), course.id))
   const confirm = () =>
     leave.mutate(
       { path: { course_id: course.id } },

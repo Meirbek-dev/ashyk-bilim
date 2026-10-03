@@ -3,29 +3,32 @@ import { Suspense, useState } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import type { CourseUpdate } from '#/shared/api/gen/types.gen'
+import type { CourseUpdate, CreateCourseUpdateRequest } from '#/shared/api/gen/types.gen'
 import { vCreateCourseUpdateRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { formatDate } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
 import { toast } from '#/shared/ui/toast'
 
-import { editUpdateOptions } from '../queries'
+import { isStale } from '../model/course'
+import { editUpdateOptions, updateVersion } from '../queries'
 import { DeleteUpdate } from './delete-update'
+import { useIfMatch } from './use-if-match'
 
 type UpdateItemProps = { courseId: string; update: CourseUpdate; editable: boolean }
 
-/** One announcement: read as the learner sees it, or edited in place (its own form and Save). */
+/** One announcement: read as the learner sees it, or edited in place (its own form, Save with `If-Match`). */
 export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
   const [editing, setEditing] = useState(false)
-  const edit = useMutation(editUpdateOptions(useQueryClient(), courseId))
-  const form = useAppForm(vCreateCourseUpdateRequest, {
-    defaultValues: { title: update.title, content: update.content },
-    onSubmit: body =>
+  const queryClient = useQueryClient()
+  const edit = useMutation(editUpdateOptions(queryClient, courseId))
+  const write = useIfMatch(
+    (body: CreateCourseUpdateRequest, version: number) =>
       edit.mutateAsync(
-        { path: { update_id: update.id }, body },
+        { path: { update_id: update.id }, body, headers: { 'If-Match': version } },
         {
           onSuccess: () => {
             setEditing(false)
@@ -33,6 +36,11 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
           },
         },
       ),
+    () => updateVersion(queryClient, courseId, update),
+  )
+  const form = useAppForm(vCreateCourseUpdateRequest, {
+    defaultValues: { title: update.title, content: update.content },
+    onSubmit: body => write.save(body, update.version),
   })
   if (editing)
     return (
@@ -42,7 +50,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
           description={formatDate(update.created_at_unix)}
           onSubmit={() => form.handleSubmit()}
           pending={edit.isPending}
-          error={edit.error}
+          error={isStale(edit.error) ? null : edit.error}
         >
           <form.AppField name="title">
             {field => <field.TextField label={m.studio_update_field_title()} required />}
@@ -51,6 +59,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
             {field => <field.TextareaField label={m.studio_update_field_content()} required />}
           </form.AppField>
         </SettingsSection>
+        <ConflictDialog {...write.dialog} />
         <div>
           <Button variant="ghost" onClick={() => setEditing(false)}>
             {m.ui_cancel()}

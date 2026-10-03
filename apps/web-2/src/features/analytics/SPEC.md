@@ -1,6 +1,6 @@
 # analytics
 
-Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, listSavedViews, saveView, deleteView, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
+Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, listSavedViews, saveView, deleteView, getUsergroup, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
 
 ## Поведение
 
@@ -25,6 +25,8 @@
 - B-ANL-19 Пустой список - одна фраза; пустой результат при фильтре - "ничего не найдено" и "Сбросить фильтры".
 - B-ANL-20 `/admin/analytics`: рейтинг курсов по здоровью, отдача контента, нагрузка преподавателей, удержание групп, программы; без `admin.analytics` - "нет доступа".
 - B-ANL-21 Вкладки и страница администратора работают на kk и en: тексты из каталога, `<html lang>` верный; на 390 px нет горизонтальной прокрутки.
+- B-ANL-22 Неизвестная группа в адресе (удалена, чужая ссылка) убирается из адреса до запросов: страница
+  открывается без фильтра группы, а не ошибкой 422.
 
 ## Изменено
 
