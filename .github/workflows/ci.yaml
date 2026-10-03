@@ -6,8 +6,10 @@ name: ci
 
 on:
   push:
-    # ci/**: run the image build and the stack smoke for a branch (never published).
-    branches: [main, 'ci/**']
+    # ci/**: image build + stack smoke for a branch, never published.
+    # release/**: every gate runs regardless of paths, then publishes (a release
+    # cut from a commit other than main's head, e.g. while main is red).
+    branches: [main, 'ci/**', 'release/**']
   pull_request:
 
 # PRs: a newer push cancels the running one. main: never cancelled while
@@ -27,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      server: ${{ steps.filter.outputs.server }}
-      web: ${{ steps.filter.outputs.web }}
-      infra: ${{ steps.filter.outputs.infra }}
+      server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
@@ -297,7 +299,7 @@ jobs:
 
   publish:
     needs: [changes, stack-smoke]
-    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
+    if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
