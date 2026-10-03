@@ -44,6 +44,16 @@ pub const COURSE_NAME: &str = "E2E seed course";
 pub struct SeedReport {
     pub accounts: Vec<SeededAccount>,
     pub course: SeededCourse,
+    /// `e2e-learner-001..N` (`learner-<n>@e2e.test`, "E2E Account").
+    pub learners: u16,
+}
+
+/// Pool account `n` (1-based): the e2e fixtures derive the same names.
+pub fn learner(n: u16) -> (String, String) {
+    (
+        format!("e2e-learner-{n:03}"),
+        format!("learner-{n:03}@e2e.test"),
+    )
 }
 
 #[derive(Debug, Serialize)]
@@ -79,7 +89,11 @@ fn system_actor() -> Result<Actor> {
     })
 }
 
-pub async fn seed_e2e(state: &AppState, password: &SecretString) -> Result<SeedReport> {
+pub async fn seed_e2e(
+    state: &AppState,
+    password: &SecretString,
+    learners: u16,
+) -> Result<SeedReport> {
     if state.config.environment.is_production() {
         return Err(Error::forbidden(
             "seed-e2e refuses to run with AB__ENVIRONMENT=production",
@@ -88,7 +102,10 @@ pub async fn seed_e2e(state: &AppState, password: &SecretString) -> Result<SeedR
     let system = system_actor()?;
     let mut accounts = Vec::new();
     for (key, username, email, roles) in ACCOUNTS {
-        let user_id = ensure_account(state, &system, username, email, roles, password).await?;
+        let (first, last) = username.split_once('-').unwrap_or((username, "user"));
+        let names = (first.to_uppercase(), last.to_owned());
+        let user_id =
+            ensure_account(state, &system, username, email, names, roles, password).await?;
         accounts.push(SeededAccount {
             key,
             username,
@@ -103,6 +120,11 @@ pub async fn seed_e2e(state: &AppState, password: &SecretString) -> Result<SeedR
             .map(|a| a.user_id)
             .ok_or_else(|| Error::app(ErrorCode::Internal, format!("seed account {key} missing")))
     };
+    for n in 1..=learners {
+        let (username, email) = learner(n);
+        let names = ("E2E".to_owned(), "Account".to_owned());
+        ensure_account(state, &system, &username, &email, names, &[], password).await?;
+    }
     let teacher = Actor::current(&state.pool, id_of("teacher")?).await?;
     let course_id = ensure_course(state, &teacher).await?;
     let student = Actor::current(&state.pool, id_of("student1")?).await?;
@@ -125,6 +147,7 @@ pub async fn seed_e2e(state: &AppState, password: &SecretString) -> Result<SeedR
             enrolled: vec!["student1"],
             activities,
         },
+        learners,
     })
 }
 
@@ -133,13 +156,13 @@ async fn ensure_account(
     system: &Actor,
     username: &str,
     email: &str,
+    (first_name, last_name): (String, String),
     roles: &[&str],
     password: &SecretString,
 ) -> Result<UserId> {
     let roles: Vec<String> = roles.iter().map(ToString::to_string).collect();
     let Some(user_id) = ab_db::identity::find_user_id_by_username(&state.pool, username).await?
     else {
-        let (first_name, last_name) = username.split_once('-').unwrap_or((username, "user"));
         let created = state
             .identity
             .admin_create_user(
@@ -148,8 +171,8 @@ async fn ensure_account(
                     username: username.to_owned(),
                     email: email.to_owned(),
                     password: Some(password.clone()),
-                    first_name: first_name.to_uppercase(),
-                    last_name: last_name.to_owned(),
+                    first_name,
+                    last_name,
                     organization: "E2E".to_owned(),
                     ip: None,
                     user_agent: Some("ashyq admin seed-e2e".to_owned()),

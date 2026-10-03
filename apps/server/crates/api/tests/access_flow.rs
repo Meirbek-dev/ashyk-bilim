@@ -362,7 +362,14 @@ async fn discussion_actions_match_enforcement(pool: PgPool) {
 /// Zitadel's user creation for the four seed accounts (verified email,
 /// password set), one id per username.
 async fn mount_zitadel_create(app: &TestApp) {
-    for username in ["e2e-admin", "e2e-teacher", "e2e-student1", "e2e-student2"] {
+    for username in [
+        "e2e-admin",
+        "e2e-teacher",
+        "e2e-student1",
+        "e2e-student2",
+        "e2e-learner-001",
+        "e2e-learner-002",
+    ] {
         Mock::given(method("POST"))
             .and(path("/v2/users/human"))
             .and(wiremock::matchers::body_partial_json(json!({
@@ -385,12 +392,19 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
     mount_zitadel_create(&app).await;
     let password = secrecy::SecretString::from("seed-pass-123");
 
-    let first = ab_api::seed::seed_e2e(&app.state, &password).await.unwrap();
+    let first = ab_api::seed::seed_e2e(&app.state, &password, 2)
+        .await
+        .unwrap();
     let report = serde_json::to_value(&first).unwrap();
     assert!(!report.to_string().contains("seed-pass-123"), "{report}");
     let accounts = report["accounts"].as_array().unwrap();
     assert_eq!(accounts.len(), 4);
     assert_eq!(accounts[0]["email"], "admin@e2e.test");
+    assert_eq!(report["learners"], 2);
+    let learner = ab_db::identity::find_user_id_by_username(&app.pool, "e2e-learner-002")
+        .await
+        .unwrap();
+    assert!(learner.is_some(), "the learner pool is seeded");
     let mut types: Vec<&str> = report["course"]["activities"]
         .as_array()
         .unwrap()
@@ -447,8 +461,12 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
     assert_eq!(enrolled, 1, "student 1 only");
 
     // Second run: same ids, no new accounts (Zitadel `expect(1)`) or course.
-    let second =
-        serde_json::to_value(ab_api::seed::seed_e2e(&app.state, &password).await.unwrap()).unwrap();
+    let second = serde_json::to_value(
+        ab_api::seed::seed_e2e(&app.state, &password, 2)
+            .await
+            .unwrap(),
+    )
+    .unwrap();
     assert_eq!(second["accounts"], report["accounts"]);
     assert_eq!(second["course"]["id"], report["course"]["id"]);
     let courses: i64 = sqlx::query_scalar("SELECT count(*) FROM courses")
@@ -464,7 +482,7 @@ async fn seed_e2e_refuses_production(pool: PgPool) {
         config.environment = ab_core::config::Environment::Production;
     })
     .await;
-    let err = ab_api::seed::seed_e2e(&app.state, &secrecy::SecretString::from("x"))
+    let err = ab_api::seed::seed_e2e(&app.state, &secrecy::SecretString::from("x"), 0)
         .await
         .unwrap_err();
     assert_eq!(err.code(), ab_core::ErrorCode::Forbidden);

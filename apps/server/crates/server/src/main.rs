@@ -74,7 +74,12 @@ enum AdminCommand {
     /// from `E2E_PASSWORD`) and a published course of the teacher with one
     /// activity of every type, student 1 enrolled. Idempotent; prints the
     /// logins as JSON.
-    SeedE2e,
+    SeedE2e {
+        /// Also `e2e-learner-001..N`: verified plain accounts the e2e suite
+        /// takes one per test instead of self-registering (capped per hour).
+        #[arg(long, default_value_t = 0)]
+        learners: u16,
+    },
     /// D-01: editor documents to one embed node (`blockEmbed` →
     /// `embedBlock`, as the new web normalizes them) and plain-paragraph
     /// HTML discussion posts to JSON documents. Idempotent; prints counts.
@@ -123,7 +128,7 @@ async fn main() -> anyhow::Result<()> {
     let quiet = matches!(
         cli.command,
         Command::Admin {
-            command: AdminCommand::SeedE2e
+            command: AdminCommand::SeedE2e { .. }
         }
     );
     let _telemetry = (!quiet).then(|| ab_core::telemetry::init(&config.telemetry));
@@ -188,8 +193,8 @@ async fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Command::Admin {
-            command: AdminCommand::SeedE2e,
-        } => seed_e2e(config).await,
+            command: AdminCommand::SeedE2e { learners },
+        } => seed_e2e(config, learners).await,
         Command::Admin {
             command:
                 AdminCommand::MigrateEditorDocs {
@@ -273,7 +278,7 @@ fn print_report(name: &str, report: &ab_domain::maintenance::Report) -> anyhow::
 }
 
 /// `ashyq admin seed-e2e` - see [`ab_api::seed`].
-async fn seed_e2e(config: Config) -> anyhow::Result<()> {
+async fn seed_e2e(config: Config, learners: u16) -> anyhow::Result<()> {
     if config.environment.is_production() {
         anyhow::bail!("seed-e2e refuses to run with AB__ENVIRONMENT=production");
     }
@@ -284,7 +289,8 @@ async fn seed_e2e(config: Config) -> anyhow::Result<()> {
             anyhow::anyhow!("E2E_PASSWORD must be set (the seeded accounts' password)")
         })?;
     let state = build_state(config).await?;
-    let report = ab_api::seed::seed_e2e(&state, &secrecy::SecretString::from(password)).await?;
+    let report =
+        ab_api::seed::seed_e2e(&state, &secrecy::SecretString::from(password), learners).await?;
     writeln!(
         std::io::stdout(),
         "{}",
