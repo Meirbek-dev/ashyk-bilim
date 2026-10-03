@@ -65,6 +65,42 @@ export function formatDayMonth(unixSeconds: number, locale: string = getLocale()
   )
 }
 
+/** A moment: date and time in the platform zone, e.g. "1 февраля 2026 г., 14:30". kk: the date table plus the time. */
+export function formatDateTime(unixSeconds: number, locale: string = getLocale()): string {
+  const epochMs = unixSeconds * 1000
+  const time = new Intl.DateTimeFormat('ru', { timeStyle: 'short', timeZone: PLATFORM_TIME_ZONE }).format(epochMs)
+  if (locale === 'kk') return `${kkDate(epochMs)}, ${time}`
+  const format = { dateStyle: 'long', timeStyle: 'short', timeZone: PLATFORM_TIME_ZONE } as const
+  return new Intl.DateTimeFormat(locale, format).format(epochMs)
+}
+
+/** Wall-clock parts of a moment in the platform zone. */
+function zoneParts(epochMs: number) {
+  const parts = new Intl.DateTimeFormat('en', {
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: PLATFORM_TIME_ZONE,
+  }).formatToParts(epochMs)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value ?? '00'
+  return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`
+}
+
+/** The value of an `<input type="datetime-local">` showing a moment in the platform zone ("2026-02-01T14:30"). */
+export const toDateTimeInput = (unixSeconds: number): string => zoneParts(unixSeconds * 1000)
+
+/** Unix seconds of a `datetime-local` value read as platform-zone wall time; null when blank or malformed. */
+export function fromDateTimeInput(value: string): number | null {
+  const asUtc = Date.parse(`${value}:00Z`)
+  if (!value || Number.isNaN(asUtc)) return null
+  // The zone's offset at that moment: the wall time it shows for the UTC reading, minus the reading.
+  const offset = Date.parse(`${zoneParts(asUtc)}:00Z`) - asUtc
+  return (asUtc - offset) / 1000
+}
+
 /** A share the API sends as 0..100, e.g. "42,5 %" / "42.5%"; kk formats as ru (see formatNumber). */
 export function formatPercent(value: number, locale: string = getLocale()): string {
   const format = new Intl.NumberFormat(locale === 'kk' ? 'ru' : locale, { style: 'percent', maximumFractionDigits: 1 })

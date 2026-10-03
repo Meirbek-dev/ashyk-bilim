@@ -1,11 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { assessmentPublishControl, ensureAssessment } from '#/features/assessments'
 import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
 // The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activities/$activityId')({
-  loader: ({ context, params }) => ensureStudio(context.queryClient, params.courseId, params.activityId),
+  loader: async ({ context, params }) => {
+    const activity = await ensureStudio(context.queryClient, params.courseId, params.activityId)
+    // The header's published control of an assessment reads its lifecycle (slice 5.1).
+    await ensureAssessment(context.queryClient, params.activityId)
+    return activity
+  },
   staticData: {
     title: m.platform_page_studio,
     layout: 'focus',
@@ -17,6 +23,10 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
     ],
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
-  component: CourseStudioLayout,
+  component: StudioLayout,
   notFoundComponent: ActivityNotFound,
 })
+
+function StudioLayout() {
+  return <CourseStudioLayout publishControl={assessmentPublishControl} />
+}
