@@ -55,9 +55,8 @@ counts, no typed activity content, no "next course"; API login rate limit 20/5mi
 
 Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Base UI `combobox.tsx` - pick one in phase 7; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
 
-K-3 (wip, main tree, sole web writer): owner request 2026-10-03 - the kit becomes real shadcn-ui (base-nova via
-CLI, `components.json`, `cn`), primitives in `shared/ui`, our composites in `shared/components`. Brief:
-`<scratchpad>/K-3-BRIEF.md`. No web slices start until it lands (they would all conflict).
+K-3 done (9069df9, dc7d159): the kit is stock shadcn `base-nova` in `shared/ui` (27 components via CLI), our composites in
+`shared/components`; initial JS budget 200 KB (stock `cn` in the shell). Stock edits and theme tweaks: `reports/K-3.md`.
 
 Local e2e: `sh <scratchpad>/clear-rate-limits.sh` clears API login throttles. Local API restart recipe: copy the debug
 binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see notes above).
@@ -103,13 +102,13 @@ binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see
 | 4.1 | course studio                                                     | done   |
 | 4.2 | admin: users, roles, groups, platform, gamification config        | done   |
 | 4.3 | analytics (e2e red until the server enum casing fix lands)        | done   |
-| 5.1 | assessment studio                                                 | todo   |
-| 5.2 | attempt                                                           | todo   |
+| 5.1 | assessment studio                                                 | wip    |
+| 5.2 | attempt                                                           | wip    |
 | 5.3 | code arena                                                        | todo   |
-| 5.4 | file submissions                                                  | todo   |
+| 5.4 | file submissions                                                  | wip    |
 | 6.1 | grading, gradebook                                                | todo   |
-| 6.2 | teach inbox                                                       | todo   |
-| 6.3 | AI                                                                | todo   |
+| 6.2 | teach inbox                                                       | wip    |
+| 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | wip    |
 | 7   | hardening                                                         | todo   |
 | 8   | cutover (needs owner: prod access, exam-free window)              | todo   |
 | 9   | legacy removal (after the 7-day observation window)               | todo   |
