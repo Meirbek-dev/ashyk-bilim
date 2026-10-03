@@ -23,10 +23,12 @@ const saveLabels: Record<SaveState, () => string> = {
 type CourseStudioLayoutProps = {
   /** The header's published control of activities backed by another object (assessments, slice 5.1); null: the switch. */
   publishControl?: (activity: ActivityDetail) => ReactNode
+  /** The AI panel the route mounts (slice 6.3). */
+  aside?: { label: string; content: ReactNode }
 }
 
 /** The activity studio (spec 5.4): focus layout, its 4 route tabs, autosave status and the published switch. */
-export function CourseStudioLayout({ publishControl }: CourseStudioLayoutProps) {
+export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayoutProps) {
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
@@ -39,7 +41,8 @@ export function CourseStudioLayout({ publishControl }: CourseStudioLayoutProps) 
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.platform_back()}
+      {/* Text only when wide: with the AI panel button the narrow header has no room for it. */}
+      <span className="sr-only @3xl:not-sr-only">{m.platform_back()}</span>
     </RouterLink>
   )
   return (
@@ -48,6 +51,7 @@ export function CourseStudioLayout({ publishControl }: CourseStudioLayoutProps) 
       title={activity.name}
       saveStatus={state ? <output>{saveLabels[state]()}</output> : null}
       actions={publishControl?.(activity) ?? <PublishSwitch courseId={courseId} activity={activity} />}
+      aside={aside}
       wide
     >
       <div className="flex flex-col gap-gutter">

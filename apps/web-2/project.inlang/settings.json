@@ -29,7 +29,8 @@
       "./messages/{locale}/inbox.json",
       "./messages/{locale}/submission.json",
       "./messages/{locale}/assessments.json",
-      "./messages/{locale}/attempt.json"
+      "./messages/{locale}/attempt.json",
+      "./messages/{locale}/ai.json"
     ]
   }
 }

@@ -1,7 +1,7 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { shortcuts } from '#/features/catalog'
 import { CommandPalette } from '#/features/catalog/route'
@@ -21,10 +21,10 @@ import { PlayerNotFound } from './player-not-found'
 
 /**
  * The activity player (spec 5.4): contents left (a sheet when narrow), the activity, its one action and the
- * neighbours. The right panel is the AI slot of slice 6.3 and stays empty until then. `?` (the palette's help)
+ * neighbours. The right panel (`aside`) is the AI panel the route mounts (slice 6.3). `?` (the palette's help)
  * lists the player's shortcuts with the rest.
  */
-export function PlayerPage() {
+export function PlayerPage({ aside }: { aside?: { label: string; content: ReactNode } }) {
   const { courseId, activityId } = useParams({ from: '/_authed/learn/$courseId/$activityId' })
   const { data: state } = useSuspenseQuery(learnerStateOptions(courseId))
   const [contentsOpen, setContentsOpen] = useState(false)
@@ -44,6 +44,7 @@ export function PlayerPage() {
       actions={<CommandPalette />}
       contents={<Contents state={state} onPick={() => setContentsOpen(false)} />}
       contentsSheet={{ open: contentsOpen, onOpenChange: setContentsOpen }}
+      aside={aside}
     >
       <article className="flex flex-col gap-gutter">
         <header className="flex flex-col gap-1">

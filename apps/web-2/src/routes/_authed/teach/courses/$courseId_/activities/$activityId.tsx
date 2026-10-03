@@ -1,15 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 
+import { AiPanel, prefetchPanel } from '#/features/ai'
+import { aiSearchSchema } from '#/features/ai/route'
 import { assessmentPublishControl, ensureAssessment } from '#/features/assessments'
 import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
-// The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab.
+// The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab. The AI
+// panel (slice 6.3: Q&A, lecture critique) is its right slot.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activities/$activityId')({
+  validateSearch: aiSearchSchema,
   loader: async ({ context, params }) => {
     const activity = await ensureStudio(context.queryClient, params.courseId, params.activityId)
-    // The header's published control of an assessment reads its lifecycle (slice 5.1).
-    await ensureAssessment(context.queryClient, params.activityId)
+    // The header's published control of an assessment reads its lifecycle (slice 5.1); the AI panel its scope (6.3).
+    await Promise.all([
+      ensureAssessment(context.queryClient, params.activityId),
+      prefetchPanel(context.queryClient, { ...params, surface: 'teacher-studio' }),
+    ])
     return activity
   },
   staticData: {
@@ -28,5 +36,16 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
 })
 
 function StudioLayout() {
-  return <CourseStudioLayout publishControl={assessmentPublishControl} />
+  const params = Route.useParams()
+  const panel = (
+    <Suspense>
+      <AiPanel {...params} surface="teacher-studio" />
+    </Suspense>
+  )
+  return (
+    <CourseStudioLayout
+      publishControl={assessmentPublishControl}
+      aside={{ label: m.ai_panel_title(), content: panel }}
+    />
+  )
 }
