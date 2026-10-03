@@ -199,8 +199,8 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
 
    ```bash
    legacy() { IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml --env-file .env.pre-split "$@"; }
-   (umask 077 && legacy exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > backups/pre-cutover-ashyq.dump)
-   test -s backups/pre-cutover-ashyq.dump && legacy down
+   (umask 077 && legacy exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > dumps/pre-cutover-ashyq.dump)
+   test -s dumps/pre-cutover-ashyq.dump && legacy down
    docker volume ls | grep openu-prod_      # all volumes still there
    ```
 
@@ -235,7 +235,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
     ```
 
     First deploy: no `.deploy-history`, so deploy.sh treats migrations as
-    changed, writes `backups/pre-deploy-$NEW_SHA.dump`, runs `server-migrate`
+    changed, writes `dumps/pre-deploy-$NEW_SHA.dump`, runs `server-migrate`
     (no-op), writes `IMAGE_TAG` into `.env`, starts everything with
     `--remove-orphans` (removes the stopped legacy containers, not their
     volumes), reloads nginx and runs smoke. It never rolls back automatically
@@ -277,7 +277,7 @@ what the legacy binary accepts), restore the step 8 dump:
 ```bash
 legacy up -d db
 legacy exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE ashyq WITH (FORCE)"'
-legacy exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d postgres --create --exit-on-error' < backups/pre-cutover-ashyq.dump
+legacy exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d postgres --create --exit-on-error' < dumps/pre-cutover-ashyq.dump
 ```
 
 Then `legacy up -d` and check the site. What carries over: `postgres_data`
@@ -332,7 +332,7 @@ dc exec -T db sh -c 'dropdb -U "$POSTGRES_USER" ashyq_rehearsal'
 Window (2-5 min, server and worker stopped):
 
 ```bash
-(umask 077 && dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > backups/pre-ownership-ashyq.dump) && test -s backups/pre-ownership-ashyq.dump
+(umask 077 && dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > dumps/pre-ownership-ashyq.dump) && test -s dumps/pre-ownership-ashyq.dump
 cp -p server.env server.env.pre-ownership
 dc stop server worker
 dc exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' < infra/postgres/transfer-ownership.sql   # "(0 rows)", COMMIT
@@ -353,7 +353,7 @@ dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d ashyq -tAc "SELECT DISTINCT a.u
 Rollback: `cp -p server.env.pre-ownership server.env && dc up -d --wait server worker`
 (the superuser works whatever the owners are). Only if the database itself is
 damaged: `dc stop server worker`, then `DROP DATABASE ashyq WITH (FORCE)` and
-`pg_restore --create` of `backups/pre-ownership-ashyq.dump` as in 1.4 (writes
+`pg_restore --create` of `dumps/pre-ownership-ashyq.dump` as in 1.4 (writes
 since the dump are lost). The first later deploy with a migration is the first
 migration run as `ashyq`; deploy.sh dumps before it.
 
@@ -410,7 +410,7 @@ these lines when it stops):
 
 ```bash
 dc stop server worker
-dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d ashyq --clean --if-exists' < backups/pre-deploy-<bad sha>.dump
+dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d ashyq --clean --if-exists' < dumps/pre-deploy-<bad sha>.dump
 just rollback --force <previous sha>
 ```
 
@@ -587,7 +587,7 @@ du -sh backups/* | sort -h | tail
 docker system df
 ```
 
-Free space with: old `backups/pre-deploy-*.dump`, `pre-cutover`/`pre-ownership`
+Free space with: old `dumps/pre-deploy-*.dump`, `pre-cutover`/`pre-ownership`
 dumps once obsolete (nothing prunes them); `docker image prune` (deploy.sh
 keeps 5 releases); `docker builder prune`. Not: `docker volume prune` (legacy
 `app_content` and stopped projects' data), `backups/legacy-final-*`. Archives

@@ -112,10 +112,11 @@ compose pull --quiet
 
 migrations=0
 same_migrations "$prev" "$sha" || migrations=1
-dump=backups/pre-deploy-$sha.dump
+# ./dumps (user-owned): ./backups belongs to the backup container (root).
+dump=dumps/pre-deploy-$sha.dump
 if ((migrations)); then
   log "migrations changed since ${prev:-the unknown previous release}; dumping database ashyq to $dump"
-  mkdir -p backups
+  mkdir -p dumps
   compose up -d --no-build --wait db
   # shellcheck disable=SC2016 # expanded by the container's shell
   (umask 077 && compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' >"$dump.tmp")
