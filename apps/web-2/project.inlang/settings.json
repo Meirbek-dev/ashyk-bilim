@@ -22,7 +22,8 @@
       "./messages/{locale}/course.json",
       "./messages/{locale}/discussions.json",
       "./messages/{locale}/achievements.json",
-      "./messages/{locale}/admin.json"
+      "./messages/{locale}/admin.json",
+      "./messages/{locale}/analytics.json"
     ]
   }
 }
