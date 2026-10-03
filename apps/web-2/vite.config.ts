@@ -49,10 +49,10 @@ const chromium = {
   headless: true,
   provider: playwright(),
   instances: [{ browser: 'chromium' as const }],
-  // Several worktrees run verify at once: a fixed port (vitest default 63315) collides.
-  api: { strictPort: false },
 }
-const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium }
+// 30 s: the first test of a file loads lazy chunks (Tiptap, shiki) through the dev server while other
+// worktrees run their own verify; 15 s timed out under that load.
+const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
 // G-15 is a phase gate (spec 9), not part of `vp test run`: `bun run g15` sets G15 and runs only this project.
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
 
@@ -241,6 +241,8 @@ export default defineConfig({
     rolldownOptions: { treeshake: { manualPureFunctions: ['v'] } },
   },
   test: {
+    // Several worktrees run verify at once: the fixed default port (63315) collides.
+    api: { strictPort: false },
     projects: [
       { extends: true, test: unit },
       { extends: true, test: browser },
