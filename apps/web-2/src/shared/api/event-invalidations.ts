@@ -85,6 +85,14 @@ export const eventInvalidations = {
         ]
       : []),
   ],
+  // The learner's own due date on one activity moved (an extension or a personal exception): wherever it is shown.
+  'deadline.extended': ({ course_id, activity_id }) => [
+    learnerCourseStateQueryKey({ path: { course_id } }),
+    agendaQueryKey(),
+    getActivityAssessmentQueryKey({ path: { activity_id } }),
+    getActivityFileSubmissionQueryKey({ path: { activity_id } }),
+    anyOf(attemptStateQueryKey({ path: { assessment_id: UNKNOWN } })),
+  ],
   'notification.created': () => [],
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey()],

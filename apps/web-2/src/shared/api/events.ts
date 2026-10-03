@@ -98,6 +98,8 @@ export function createEventStream(options: EventStreamOptions): EventStream {
         const event = readEvent(data)
         if (event?.event === 'connected') {
           if (droppedAt && !lastEventId) options.onResync(droppedAt)
+          // The stream position (L-6): a tab that saw no event yet still resumes without a gap.
+          lastEventId = event.event_id ?? lastEventId
           opened = Date.now()
         } else if (event?.event === 'closed') {
           return end()

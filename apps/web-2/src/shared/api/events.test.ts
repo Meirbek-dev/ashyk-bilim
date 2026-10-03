@@ -4,7 +4,7 @@ import type { UserEvent } from './event-invalidations'
 import { createEventStream, type EventStreamOptions } from './events'
 
 const USER = '0190a5d2-0000-7000-8000-000000000001'
-const connected = { event: 'connected', user_id: USER }
+const connected = { event: 'connected', user_id: USER, event_id: null }
 const read = (id: string, count: number) => ({
   event: 'notification.read',
   event_id: id,
@@ -97,6 +97,20 @@ test('B-NOT-11 a failed or short stream backs off and reconnects; without an eve
   third.send(message(connected))
   await vi.waitFor(() => expect(calls.resync).toBe(1))
   expect(calls.sessionLost).toBe(0)
+  stream.stop()
+})
+
+test('B-NOT-11 the `connected` position is the resume point of a tab that saw no event yet', async () => {
+  const first = sse()
+  const second = sse()
+  const { stream, requests, calls } = harness([first, second])
+  stream.resume()
+  first.send(message({ ...connected, event_id: '9-0' }))
+  first.end()
+  await vi.waitFor(() => expect(requests).toHaveLength(2))
+  expect(requests[1]?.get('Last-Event-ID')).toBe('9-0')
+  second.send(message(connected))
+  expect(calls.resync).toBe(0)
   stream.stop()
 })
 

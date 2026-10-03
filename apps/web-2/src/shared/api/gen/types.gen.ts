@@ -326,6 +326,8 @@ export type AffiliationSection = {
     title: string;
 };
 
+export type AgUiAssistantRole = 'assistant';
+
 /**
  * AG-UI `Context` entry (accepted and ignored).
  */
@@ -354,6 +356,8 @@ export type AgUiTool = {
      */
     parameters: JsonValue;
 };
+
+export type AgUiToolName = 'course_citations';
 
 /**
  * `GET /me/agenda`.
@@ -738,7 +742,7 @@ export type AssessmentOutlierRow = {
     grading_latency_hours_p50: number | null;
     grading_latency_hours_p90: number | null;
     median_score: number | null;
-    outlier_reason_codes: Array<string>;
+    outlier_reason_codes: Array<OutlierReasonCode>;
     pass_rate: number | null;
     reliability_score: number | null;
     score_variance: number | null;
@@ -800,7 +804,7 @@ export type AtRiskLearnerRow = {
     intervention_count: number;
     last_intervention_at_unix: UnixTime | null;
     last_intervention_outcome: string | null;
-    last_intervention_type: string | null;
+    last_intervention_type: InterventionType | null;
     missing_required_assessments: number;
     open_grading_blocks: number;
     previous_risk_score: number | null;
@@ -809,7 +813,7 @@ export type AtRiskLearnerRow = {
     /**
      * Stable code (`review_submissions_first`, …).
      */
-    recommended_action: string;
+    recommended_action: RecommendedAction;
     risk_components: {
         [key: string]: number;
     };
@@ -823,7 +827,7 @@ export type AtRiskLearnerRow = {
     /**
      * Stable code explaining the strongest signal.
      */
-    why_now: string;
+    why_now: WhyNow;
 };
 
 export type AtRiskLearnersResponse = {
@@ -1070,6 +1074,16 @@ export type BulkActionParams = {
 export type BulkActionStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export type BulkActionType = 'extend_deadline' | 'release_grades' | 'return_all' | 'override_score' | 'batch_grade';
+
+/**
+ * Outcome of a bulk grade operation, row by row: a row that changed under
+ * the caller (stale version), the caller's own attempt or one not in a
+ * state the operation accepts is skipped.
+ */
+export type BulkGradeSummary = {
+    done_count: number;
+    skipped_count: number;
+};
 
 /**
  * A UI-level right: may the caller enter a workspace / see an entry point.
@@ -1321,6 +1335,19 @@ export type CodeRunId = string;
 export type CodeRunPurpose = 'custom' | 'visible' | 'final' | 'reference_check';
 
 export type CodeRunStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'degraded';
+
+/**
+ * `GET /code/runner`: the runner state and, when configured, the
+ * platform's languages.
+ */
+export type CodeRunnerInfo = {
+    languages: Array<LanguageInfo>;
+    /**
+     * `false`: no Judge0 endpoint is configured; `languages` is empty and
+     * runs cannot start (authoring still works).
+     */
+    runner_configured: boolean;
+};
 
 export type CodeTestCase = {
     description: string | null;
@@ -1816,6 +1843,14 @@ export type CourseQaAnswer = {
 export type CourseQualityReport = {
     citations?: Array<Citation>;
     confidence?: Level;
+    /**
+     * The teacher's verdict per recommendation, keyed by finding id:
+     * `finding-{index}` into `recommendations` (what
+     * `POST .../findings/review` takes). Absent until the first verdict.
+     */
+    finding_reviews?: {
+        [key: string]: FindingReview;
+    };
     language?: string;
     public_score: number;
     recommendations?: Array<Recommendation>;
@@ -2174,6 +2209,19 @@ export type DataQualityIssue = {
     source: string | null;
 };
 
+/**
+ * The recipient's own due date on one activity moved (a deadline
+ * extension or a per-learner override). `assessment_id` for an
+ * assessment, `file_submission_id` for a file submission.
+ */
+export type DeadlineExtended = {
+    activity_id: ActivityId;
+    assessment_id: AssessmentId | null;
+    course_id: CourseId;
+    due_at_unix: UnixTime;
+    file_submission_id: FileSubmissionId | null;
+};
+
 export type DeadlineExtendedPayload = {
     /**
      * Unix seconds.
@@ -2278,6 +2326,8 @@ export type DisplaySettings = {
     animated_effects: boolean | null;
     compact_mode: boolean | null;
 };
+
+export type Disposition = 'attachment' | 'inline';
 
 /**
  * The draft's complete file list (replaces what was attached before).
@@ -2500,6 +2550,19 @@ export type FeatureSetting = {
 export type FeedbackCode = 'no-answer' | 'no-correct-answer' | 'correct' | 'partially-correct-no-credit' | 'partially-correct' | 'incorrect' | 'pairs-matched' | 'tests-passed';
 
 /**
+ * `GradedItem.feedback_params`: the counts every verdict code formats
+ * (`{correct}/{total}`). Schema only - the stored value is passed through.
+ */
+export type FeedbackParams = {
+    correct: number;
+    /**
+     * Per-test verdicts of a legacy code grade (imported data only).
+     */
+    tests?: Array<LegacyTestVerdict>;
+    total: number;
+};
+
+/**
  * A single field-level validation failure. `code` is a stable machine key the
  * frontend translates (e.g. `required`, `too-long`); `message` is English.
  */
@@ -2537,6 +2600,23 @@ export type FileGradeRequest = {
     rubric_scores?: RubricScores;
 };
 
+/**
+ * One grade save of a file attempt (append-only, newest first).
+ */
+export type FileGradingEntry = {
+    created_at_unix: UnixTime;
+    feedback: string;
+    final_score: number | null;
+    graded_by: UserId | null;
+    id: string;
+    penalty_pct: number;
+    /**
+     * The grader's score before the late penalty.
+     */
+    raw_score: number | null;
+    status: FileAttemptStatus;
+};
+
 export type FileRefRequest = {
     display_name?: string;
     upload_id: string;
@@ -2548,11 +2628,19 @@ export type FileReviewItem = {
      */
     allowed_actions: Array<FileGradeAction>;
     attempt_number: number;
+    /**
+     * The learner is a course member (not a leaver).
+     */
+    enrolled: boolean;
     file_count: number;
     final_score: number | null;
     graded_at_unix: UnixTime | null;
     id: FileAttemptId;
     is_late: boolean;
+    /**
+     * The learner is on the course staff.
+     */
+    staff: boolean;
     status: FileAttemptStatus;
     submitted_at_unix: UnixTime | null;
     user: UserSummary;
@@ -2562,6 +2650,18 @@ export type FileReviewItem = {
 export type FileReviewPage = {
     items: Array<FileReviewItem>;
     next_cursor: FileAttemptId | null;
+};
+
+/**
+ * Queue counts of a file submission (L-6).
+ */
+export type FileReviewStats = {
+    graded: number;
+    late: number;
+    published: number;
+    returned: number;
+    submitted: number;
+    total: number;
 };
 
 /**
@@ -2635,6 +2735,19 @@ export type FinalizedUpload = {
     id: string;
     key: string;
     size_bytes: number;
+};
+
+/**
+ * One stored verdict on a course-analysis finding.
+ */
+export type FindingReview = {
+    action: FindingReviewAction;
+    note: string | null;
+    /**
+     * Unix seconds.
+     */
+    reviewed_at: number;
+    reviewed_by_user_id: UserId;
 };
 
 /**
@@ -2846,6 +2959,13 @@ export type GradebookPage = {
     users: Array<UserSummary>;
 };
 
+/**
+ * Gradebook row filter: `needs_grading` keeps learners with work
+ * awaiting the grader (a `pending` / `graded` submission or a
+ * `submitted` / `graded` file attempt).
+ */
+export type GradebookStatus = 'needs_grading';
+
 export type GradedItem = {
     /**
      * `None` = not auto-gradeable.
@@ -2864,7 +2984,7 @@ export type GradedItem = {
     /**
      * Placeholders for `feedback_code` (`{correct, total}`, …).
      */
-    feedback_params?: MessageParams;
+    feedback_params?: FeedbackParams;
     item_id: AssessmentItemId;
     item_text?: string;
     max_score: number;
@@ -3287,6 +3407,17 @@ export type LectureSuggestion = {
 };
 
 /**
+ * One test of a legacy code grade inside [`FeedbackParams`].
+ */
+export type LegacyTestVerdict = {
+    correct: boolean;
+    feedback: string;
+    max_score: number;
+    score: number;
+    test_id: string;
+};
+
+/**
  * `low` / `medium` / `high`, tolerant of anything else (→ `medium`).
  */
 export type Level = 'low' | 'medium' | 'high';
@@ -3599,6 +3730,12 @@ export type OpenTextBody = {
     prompt?: string;
     rubric: string | null;
 };
+
+/**
+ * `AssessmentOutlierRow.outlier_reason_codes`
+ * (`assessments::outlier_reason_codes`; a test pins the set).
+ */
+export type OutlierReasonCode = 'low_completion_rate' | 'below_threshold' | 'low_accuracy' | 'low_submission_rate' | 'low_success_rate' | 'grading_latency';
 
 /**
  * Full override block (create and update share it).
@@ -4001,6 +4138,48 @@ export type PublishSummary = {
 };
 
 /**
+ * `POST /ai/qa/{course_id}/chat`: one AG-UI event.
+ */
+export type QaChatEvent = {
+    runId: string;
+    threadId: string;
+    type: 'RUN_STARTED';
+} | {
+    messageId: string;
+    role: AgUiAssistantRole;
+    type: 'TEXT_MESSAGE_START';
+} | {
+    delta: string;
+    messageId: string;
+    type: 'TEXT_MESSAGE_CONTENT';
+} | {
+    messageId: string;
+    type: 'TEXT_MESSAGE_END';
+} | {
+    parentMessageId: string;
+    toolCallId: string;
+    toolCallName: AgUiToolName;
+    type: 'TOOL_CALL_START';
+} | {
+    content: string;
+    messageId: string;
+    toolCallId: string;
+    type: 'TOOL_CALL_RESULT';
+} | {
+    toolCallId: string;
+    type: 'TOOL_CALL_END';
+} | {
+    result: QaRunResult;
+    runId: string;
+    threadId: string;
+    type: 'RUN_FINISHED';
+} | {
+    code: string;
+    message: string;
+    type: 'RUN_ERROR';
+};
+
+/**
  * AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.
  */
 export type QaChatRequest = {
@@ -4023,6 +4202,13 @@ export type QaChatRequest = {
      * AG-UI protocol fields the client always sends; accepted and ignored.
      */
     tools?: Array<AgUiTool>;
+};
+
+/**
+ * The parsed `content` of the `course_citations` tool result.
+ */
+export type QaCitationsContent = {
+    citations: Array<Citation>;
 };
 
 /**
@@ -4074,6 +4260,19 @@ export type QaMessageMetadata = {
  * Q&A message author.
  */
 export type QaMessageRole = 'user' | 'assistant';
+
+/**
+ * `RUN_FINISHED.result` of the Q&A chat. A replayed turn
+ * (`client_turn_id` seen before) carries `replayed: true` and no
+ * confidence or suggestions.
+ */
+export type QaRunResult = {
+    confidence?: Level;
+    follow_up_suggestions?: Array<string>;
+    message_id: AiMessageId;
+    replayed?: boolean;
+    thread_id: AiThreadId;
+};
 
 export type QaThreadSummary = {
     id: AiThreadId;
@@ -4201,6 +4400,12 @@ export type Recommendation = {
 };
 
 /**
+ * `AtRiskLearnerRow.recommended_action` (`risk::recommended_action`; a
+ * test pins the set).
+ */
+export type RecommendedAction = 'review_submissions_first' | 'contact_learner_this_week' | 'offer_targeted_help' | 'remind_missing_work' | 'schedule_pace_meeting' | 'send_personal_message';
+
+/**
  * One language's verdict from the author's reference check.
  */
 export type ReferenceCheck = {
@@ -4215,15 +4420,22 @@ export type ReferenceCheck = {
     passed: number;
     score: number | null;
     /**
-     * Run status, or `missing_solution` when no reference exists.
+     * Run status, or `missing_solution` / `language_not_allowed` when
+     * nothing ran.
      */
-    status: string;
+    status: ReferenceCheckStatus;
     total: number;
 };
 
 export type ReferenceCheckResponse = {
     results: Array<ReferenceCheck>;
 };
+
+/**
+ * A reference check's per-language outcome: the run status, or why
+ * nothing ran.
+ */
+export type ReferenceCheckStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'degraded' | 'missing_solution' | 'language_not_allowed';
 
 /**
  * Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.
@@ -4326,6 +4538,20 @@ export type ResendVerificationRequest = {
  * What a recent result is.
  */
 export type ResultKind = 'grade_published' | 'submission_returned';
+
+/**
+ * `POST /file-submissions/{id}/return-grades`.
+ */
+export type ReturnAttemptsRequest = {
+    attempt_ids: Array<FileAttemptId>;
+};
+
+/**
+ * `POST /assessments/{id}/return-grades`.
+ */
+export type ReturnGradesRequest = {
+    submission_ids: Array<SubmissionId>;
+};
 
 export type ReviewItem = {
     /**
@@ -4522,6 +4748,15 @@ export type RunContext = {
     time_to_first_text_ms?: number;
 };
 
+/**
+ * `CUSTOM.value` on the run stream.
+ */
+export type RunCustomValue = {
+    message: string | null;
+    payload: RunEventPayload;
+    state: RunEventState;
+};
+
 export type RunEvent = {
     created_at_unix: UnixTime;
     event_type: string;
@@ -4642,6 +4877,27 @@ export type RunStatus = {
     started_at_unix: UnixTime;
     status: AiRunStatus;
     thread_id: AiThreadId;
+};
+
+/**
+ * `POST /ai/runs/{run_id}/stream`: one AG-UI event (SSE `event: run`).
+ */
+export type RunStreamEvent = {
+    runId: string;
+    threadId: string;
+    type: 'RUN_STARTED';
+} | {
+    name: string;
+    type: 'CUSTOM';
+    value: RunCustomValue;
+} | {
+    runId: string;
+    threadId: string;
+    type: 'RUN_FINISHED';
+} | {
+    code: string;
+    message: string;
+    type: 'RUN_ERROR';
 };
 
 /**
@@ -4866,6 +5122,16 @@ export type SignedDownload = {
     expires_at_unix: UnixTime;
     file_id: FileAttemptFileId;
     filename: string;
+    /**
+     * The same URL origin-relative (`/ab-private/...?X-Amz-...`): load it
+     * from the web origin (nginx proxies `/ab-private` to storage with the
+     * signed `Host`), e.g. in a same-origin `<iframe>` preview.
+     */
+    path: string;
+    /**
+     * Absolute presigned URL against the storage endpoint
+     * (`AB__STORAGE__ENDPOINT`: the public origin in production).
+     */
     url: string;
 };
 
@@ -5682,6 +5948,7 @@ export type UserStatus = 'active' | 'disabled';
  */
 export type UserStreamEvent = {
     event: 'connected';
+    event_id: string | null;
     user_id: UserId;
 } | {
     event: 'grading.updated';
@@ -5719,6 +5986,14 @@ export type UserStreamEvent = {
     event: 'xp.awarded';
     event_id: string;
     payload: XpAwarded;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'deadline.extended';
+    event_id: string;
+    payload: DeadlineExtended;
     /**
      * Unix seconds.
      */
@@ -5862,6 +6137,11 @@ export type ViolationState = {
     threshold: number;
     violation_count: number;
 };
+
+/**
+ * `AtRiskLearnerRow.why_now` (`risk::why_now`; a test pins the set).
+ */
+export type WhyNow = 'grading_block_blocks_progress' | 'inactivity_past_7_days' | 'recent_assessment_failures' | 'missing_required_work' | 'progress_behind_course_baseline' | 'multiple_risk_signals';
 
 export type Window = '7d' | '28d' | '90d';
 
@@ -6602,9 +6882,9 @@ export type QaChatError = QaChatErrors[keyof QaChatErrors];
 
 export type QaChatResponses = {
     /**
-     * AG-UI event stream
+     * AG-UI event stream: each message's `data` is one event
      */
-    200: string;
+    200: QaChatEvent;
 };
 
 export type QaChatResponse = QaChatResponses[keyof QaChatResponses];
@@ -7004,9 +7284,9 @@ export type StreamRunError = StreamRunErrors[keyof StreamRunErrors];
 
 export type StreamRunResponses = {
     /**
-     * Event stream
+     * Event stream: each message's `data` is one AG-UI event
      */
-    200: string;
+    200: RunStreamEvent;
 };
 
 export type StreamRunResponse = StreamRunResponses[keyof StreamRunResponses];
@@ -8450,6 +8730,78 @@ export type UpdateItemResponses = {
 
 export type UpdateItemResponse = UpdateItemResponses[keyof UpdateItemResponses];
 
+export type ReferenceCheckItemData = {
+    body?: never;
+    headers?: {
+        /**
+         * Client retry token (optional)
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Code item id
+         */
+        item_id: AssessmentItemId;
+    };
+    query?: never;
+    url: '/api/v2/assessment-items/{item_id}/reference-check';
+};
+
+export type ReferenceCheckItemErrors = {
+    /**
+     * No authoring access
+     */
+    403: Problem;
+    /**
+     * Unknown or not a code item
+     */
+    404: Problem;
+};
+
+export type ReferenceCheckItemError = ReferenceCheckItemErrors[keyof ReferenceCheckItemErrors];
+
+export type ReferenceCheckItemResponses = {
+    /**
+     * Per-language verdicts
+     */
+    200: ReferenceCheckResponse;
+};
+
+export type ReferenceCheckItemResponse = ReferenceCheckItemResponses[keyof ReferenceCheckItemResponses];
+
+export type ListMyCodeRunsData = {
+    body?: never;
+    path: {
+        /**
+         * Code item id
+         */
+        item_id: AssessmentItemId;
+    };
+    query?: {
+        /**
+         * Runs of this submission only (with `purpose=final`: the run its
+         * grade came from).
+         */
+        submission_id?: SubmissionId | null;
+        purpose?: CodeRunPurpose | null;
+        /**
+         * 1..=50 (default 20).
+         */
+        limit?: number | null;
+    };
+    url: '/api/v2/assessment-items/{item_id}/runs';
+};
+
+export type ListMyCodeRunsResponses = {
+    /**
+     * Runs
+     */
+    200: Array<CodeRun>;
+};
+
+export type ListMyCodeRunsResponse = ListMyCodeRunsResponses[keyof ListMyCodeRunsResponses];
+
 export type RunItemData = {
     body: RunRequest;
     headers?: {
@@ -9158,6 +9510,36 @@ export type ReferenceCheckResponses = {
 
 export type ReferenceCheckResponse2 = ReferenceCheckResponses[keyof ReferenceCheckResponses];
 
+export type ReturnGradesData = {
+    body: ReturnGradesRequest;
+    path: {
+        /**
+         * Assessment id
+         */
+        assessment_id: AssessmentId;
+    };
+    query?: never;
+    url: '/api/v2/assessments/{assessment_id}/return-grades';
+};
+
+export type ReturnGradesErrors = {
+    /**
+     * No grading access
+     */
+    403: Problem;
+};
+
+export type ReturnGradesError = ReturnGradesErrors[keyof ReturnGradesErrors];
+
+export type ReturnGradesResponses = {
+    /**
+     * Per-row outcome counts
+     */
+    200: BulkGradeSummary;
+};
+
+export type ReturnGradesResponse = ReturnGradesResponses[keyof ReturnGradesResponses];
+
 export type AssessmentReviewQueueData = {
     body?: never;
     path: {
@@ -9190,6 +9572,10 @@ export type AssessmentReviewQueueData = {
          * 1..=100 (default 25).
          */
         limit?: number | null;
+        /**
+         * Members of this usergroup only.
+         */
+        group_id?: UsergroupId | null;
     };
     url: '/api/v2/assessments/{assessment_id}/submissions';
 };
@@ -10287,6 +10673,31 @@ export type LanguagesResponses = {
 
 export type LanguagesResponse = LanguagesResponses[keyof LanguagesResponses];
 
+export type RunnerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/code/runner';
+};
+
+export type RunnerErrors = {
+    /**
+     * Runner configured but unreachable
+     */
+    503: Problem;
+};
+
+export type RunnerError = RunnerErrors[keyof RunnerErrors];
+
+export type RunnerResponses = {
+    /**
+     * Runner state
+     */
+    200: CodeRunnerInfo;
+};
+
+export type RunnerResponse = RunnerResponses[keyof RunnerResponses];
+
 export type ListCollectionsData = {
     body?: never;
     path?: never;
@@ -11244,13 +11655,22 @@ export type GradebookData = {
     };
     query?: {
         /**
-         * `next_cursor` of the previous page.
+         * `next_cursor` of the previous page (valid only with the same filters).
          */
         cursor?: string | null;
         /**
          * 1..=500 learners per page, each with all their cells (default 100).
          */
         limit?: number | null;
+        /**
+         * Substring of the learner's username, display name or email.
+         */
+        q?: string | null;
+        /**
+         * Members of this usergroup only.
+         */
+        group_id?: UsergroupId | null;
+        status?: GradebookStatus | null;
     };
     url: '/api/v2/courses/{course_id}/gradebook';
 };
@@ -12034,6 +12454,36 @@ export type GradeAttemptResponses = {
 
 export type GradeAttemptResponse = GradeAttemptResponses[keyof GradeAttemptResponses];
 
+export type FileGradingHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * Attempt id
+         */
+        attempt_id: FileAttemptId;
+    };
+    query?: never;
+    url: '/api/v2/file-submission-attempts/{attempt_id}/grading-history';
+};
+
+export type FileGradingHistoryErrors = {
+    /**
+     * Unknown attempt or no grading access
+     */
+    404: Problem;
+};
+
+export type FileGradingHistoryError = FileGradingHistoryErrors[keyof FileGradingHistoryErrors];
+
+export type FileGradingHistoryResponses = {
+    /**
+     * Entries
+     */
+    200: Array<FileGradingEntry>;
+};
+
+export type FileGradingHistoryResponse = FileGradingHistoryResponses[keyof FileGradingHistoryResponses];
+
 export type FileUrlData = {
     body?: never;
     path: {
@@ -12042,7 +12492,13 @@ export type FileUrlData = {
          */
         file_id: FileAttemptFileId;
     };
-    query?: never;
+    query?: {
+        /**
+         * `inline` signs `Content-Disposition: inline` (preview in a frame);
+         * default `attachment` (download under the original name).
+         */
+        disposition?: Disposition | null;
+    };
     url: '/api/v2/file-submission-files/{file_id}/url';
 };
 
@@ -12121,6 +12577,36 @@ export type UpdateFileSubmissionResponses = {
 };
 
 export type UpdateFileSubmissionResponse = UpdateFileSubmissionResponses[keyof UpdateFileSubmissionResponses];
+
+export type ExtendFileDeadlineData = {
+    body: DeadlineExtensionRequest;
+    path: {
+        /**
+         * File submission id
+         */
+        file_submission_id: FileSubmissionId;
+    };
+    query?: never;
+    url: '/api/v2/file-submissions/{file_submission_id}/deadline-extensions';
+};
+
+export type ExtendFileDeadlineErrors = {
+    /**
+     * Not members, the caller, or a past date
+     */
+    422: Problem;
+};
+
+export type ExtendFileDeadlineError = ExtendFileDeadlineErrors[keyof ExtendFileDeadlineErrors];
+
+export type ExtendFileDeadlineResponses = {
+    /**
+     * Extended
+     */
+    200: BulkGradeSummary;
+};
+
+export type ExtendFileDeadlineResponse = ExtendFileDeadlineResponses[keyof ExtendFileDeadlineResponses];
 
 export type GetDraftData = {
     body?: never;
@@ -12281,6 +12767,66 @@ export type PublishFileSubmissionResponses = {
 
 export type PublishFileSubmissionResponse = PublishFileSubmissionResponses[keyof PublishFileSubmissionResponses];
 
+export type PublishFileGradesData = {
+    body?: never;
+    path: {
+        /**
+         * File submission id
+         */
+        file_submission_id: FileSubmissionId;
+    };
+    query?: never;
+    url: '/api/v2/file-submissions/{file_submission_id}/publish-grades';
+};
+
+export type PublishFileGradesErrors = {
+    /**
+     * No grading access
+     */
+    403: Problem;
+};
+
+export type PublishFileGradesError = PublishFileGradesErrors[keyof PublishFileGradesErrors];
+
+export type PublishFileGradesResponses = {
+    /**
+     * Per-row outcome counts
+     */
+    200: BulkGradeSummary;
+};
+
+export type PublishFileGradesResponse = PublishFileGradesResponses[keyof PublishFileGradesResponses];
+
+export type ReturnFileGradesData = {
+    body: ReturnAttemptsRequest;
+    path: {
+        /**
+         * File submission id
+         */
+        file_submission_id: FileSubmissionId;
+    };
+    query?: never;
+    url: '/api/v2/file-submissions/{file_submission_id}/return-grades';
+};
+
+export type ReturnFileGradesErrors = {
+    /**
+     * No grading access
+     */
+    403: Problem;
+};
+
+export type ReturnFileGradesError = ReturnFileGradesErrors[keyof ReturnFileGradesErrors];
+
+export type ReturnFileGradesResponses = {
+    /**
+     * Per-row outcome counts
+     */
+    200: BulkGradeSummary;
+};
+
+export type ReturnFileGradesResponse = ReturnFileGradesResponses[keyof ReturnFileGradesResponses];
+
 export type FileSubmissionReviewQueueData = {
     body?: never;
     path: {
@@ -12295,11 +12841,27 @@ export type FileSubmissionReviewQueueData = {
          * Substring of the learner's username, display name or email.
          */
         search?: string | null;
+        /**
+         * `next_cursor` of the previous page (same filters and order).
+         */
         cursor?: FileAttemptId | null;
         /**
          * 1..=100 (default 25).
          */
         limit?: number | null;
+        late_only?: boolean;
+        /**
+         * Members of this usergroup only.
+         */
+        group_id?: UsergroupId | null;
+        /**
+         * Queue order; absent = newest attempt first. Ties newest first.
+         */
+        sort?: ReviewSort | null;
+        /**
+         * Default `desc` (with `sort`).
+         */
+        order?: SortOrder | null;
     };
     url: '/api/v2/file-submissions/{file_submission_id}/submissions';
 };
@@ -12344,6 +12906,41 @@ export type ExportFileSubmissionCsvResponses = {
 };
 
 export type ExportFileSubmissionCsvResponse = ExportFileSubmissionCsvResponses[keyof ExportFileSubmissionCsvResponses];
+
+export type FileSubmissionReviewStatsData = {
+    body?: never;
+    path: {
+        /**
+         * File submission id
+         */
+        file_submission_id: FileSubmissionId;
+    };
+    query?: {
+        /**
+         * Members of this usergroup only.
+         */
+        group_id?: UsergroupId | null;
+    };
+    url: '/api/v2/file-submissions/{file_submission_id}/submissions/stats';
+};
+
+export type FileSubmissionReviewStatsErrors = {
+    /**
+     * No grading access
+     */
+    403: Problem;
+};
+
+export type FileSubmissionReviewStatsError = FileSubmissionReviewStatsErrors[keyof FileSubmissionReviewStatsErrors];
+
+export type FileSubmissionReviewStatsResponses = {
+    /**
+     * Counts
+     */
+    200: FileReviewStats;
+};
+
+export type FileSubmissionReviewStatsResponse = FileSubmissionReviewStatsResponses[keyof FileSubmissionReviewStatsResponses];
 
 export type SubmitData = {
     body: SubmitRequest;

@@ -30,8 +30,8 @@ function patchQueue(queryClient: QueryClient, work: Work, saved: TeacherSubmissi
       graded_at_unix: saved.graded_at_unix,
       version: saved.version,
     }
-    if ('enrolled' in row && 'assessment_id' in saved) return { ...row, ...change, status: saved.status }
-    if (!('enrolled' in row) && 'files' in saved) return { ...row, ...change, status: saved.status }
+    if ('auto_score' in row && 'assessment_id' in saved) return { ...row, ...change, status: saved.status }
+    if ('file_count' in row && 'files' in saved) return { ...row, ...change, status: saved.status }
     return row
   }
   queryClient.setQueriesData<InfiniteData<QueuePage>>({ queryKey: queueBaseKey(work) }, data =>

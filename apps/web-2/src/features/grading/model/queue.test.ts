@@ -38,11 +38,13 @@ const row = (id: string, extra: Partial<ReviewItem> = {}): ReviewItem => ({
 const fileRow = (id: string): FileReviewItem => ({
   allowed_actions: ['return'],
   attempt_number: 1,
+  enrolled: true,
   file_count: 1,
   final_score: null,
   graded_at_unix: null,
   id,
   is_late: false,
+  staff: false,
   status: 'submitted',
   submitted_at_unix: 1,
   user: user(id),

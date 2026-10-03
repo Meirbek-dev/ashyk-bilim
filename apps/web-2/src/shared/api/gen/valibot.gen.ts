@@ -93,6 +93,8 @@ export const vAdminUserAction = v.picklist([
     'enable'
 ]);
 
+export const vAgUiAssistantRole = v.picklist(['assistant']);
+
 /**
  * AG-UI `Context` entry (accepted and ignored).
  */
@@ -109,6 +111,8 @@ export const vAgUiMessagePart = v.object({
     content: v.optional(v.string()),
     type: v.string()
 });
+
+export const vAgUiToolName = v.picklist(['course_citations']);
 
 export const vAiArtifactId = v.pipe(v.string(), v.uuid());
 
@@ -434,6 +438,16 @@ export const vBulkActionType = v.picklist([
     'override_score',
     'batch_grade'
 ]);
+
+/**
+ * Outcome of a bulk grade operation, row by row: a row that changed under
+ * the caller (stale version), the caller's own attempt or one not in a
+ * state the operation accepts is skipped.
+ */
+export const vBulkGradeSummary = v.object({
+    done_count: v.pipe(v.number(), v.integer()),
+    skipped_count: v.pipe(v.number(), v.integer())
+});
 
 /**
  * A UI-level right: may the caller enter a workspace / see an entry point.
@@ -1070,6 +1084,8 @@ export const vDisplaySettings = v.object({
     compact_mode: v.nullable(v.boolean())
 });
 
+export const vDisposition = v.picklist(['attachment', 'inline']);
+
 export const vDrillMetric = v.picklist([
     'active_learners',
     'completion_rate',
@@ -1275,6 +1291,18 @@ export const vDraftRequest = v.strictObject({
     files: v.optional(v.array(vFileRefRequest))
 });
 
+/**
+ * Queue counts of a file submission (L-6).
+ */
+export const vFileReviewStats = v.object({
+    graded: v.pipe(v.number(), v.integer()),
+    late: v.pipe(v.number(), v.integer()),
+    published: v.pipe(v.number(), v.integer()),
+    returned: v.pipe(v.number(), v.integer()),
+    submitted: v.pipe(v.number(), v.integer()),
+    total: v.pipe(v.number(), v.integer())
+});
+
 export const vFileSubmissionId = v.pipe(v.string(), v.uuid());
 
 /**
@@ -1374,6 +1402,13 @@ export const vGradePublishedPayload = v.object({
 });
 
 export const vGradeReleaseMode = v.picklist(['immediate', 'batch']);
+
+/**
+ * Gradebook row filter: `needs_grading` keeps learners with work
+ * awaiting the grader (a `pending` / `graded` submission or a
+ * `submitted` / `graded` file attempt).
+ */
+export const vGradebookStatus = v.picklist(['needs_grading']);
 
 export const vGradingEntryId = v.pipe(v.string(), v.uuid());
 
@@ -1554,6 +1589,15 @@ export const vLanguageInfo = v.object({
 });
 
 /**
+ * `GET /code/runner`: the runner state and, when configured, the
+ * platform's languages.
+ */
+export const vCodeRunnerInfo = v.object({
+    languages: v.array(vLanguageInfo),
+    runner_configured: v.boolean()
+});
+
+/**
  * `{language}` for the analysis-style agents (default `auto`).
  */
 export const vLanguageRequest = v.strictObject({
@@ -1587,6 +1631,27 @@ export const vLectureReviewRequest = v.strictObject({
  * Lecture review lifecycle.
  */
 export const vLectureReviewStatus = v.picklist(['active', 'superseded']);
+
+/**
+ * One test of a legacy code grade inside [`FeedbackParams`].
+ */
+export const vLegacyTestVerdict = v.object({
+    correct: v.boolean(),
+    feedback: v.string(),
+    max_score: v.number(),
+    score: v.number(),
+    test_id: v.string()
+});
+
+/**
+ * `GradedItem.feedback_params`: the counts every verdict code formats
+ * (`{correct}/{total}`). Schema only - the stored value is passed through.
+ */
+export const vFeedbackParams = v.object({
+    correct: v.pipe(v.number(), v.integer()),
+    tests: v.optional(v.array(vLegacyTestVerdict)),
+    total: v.pipe(v.number(), v.integer())
+});
 
 /**
  * `low` / `medium` / `high`, tolerant of anything else (→ `medium`).
@@ -1755,6 +1820,28 @@ export const vMatchingPair = v.object({
  */
 export const vCorrectAnswer = v.union([v.array(v.string()), v.array(vMatchingPair)]);
 
+export const vGradedItem = v.object({
+    correct: v.nullable(v.boolean()),
+    correct_answer: v.nullable(vCorrectAnswer),
+    feedback: v.optional(v.string()),
+    feedback_code: v.optional(vFeedbackCode),
+    feedback_params: v.optional(vFeedbackParams),
+    item_id: vAssessmentItemId,
+    item_text: v.optional(v.string()),
+    max_score: v.number(),
+    needs_manual_review: v.optional(v.boolean()),
+    score: v.number(),
+    user_answer: v.nullable(vItemAnswer)
+});
+
+export const vGradingBreakdown = v.object({
+    auto_graded: v.optional(v.boolean()),
+    feedback: v.optional(v.string()),
+    items: v.optional(v.array(vGradedItem)),
+    needs_manual_review: v.optional(v.boolean()),
+    score_override: v.optional(v.number())
+});
+
 export const vMatchingBody = v.object({
     explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
     pairs: v.pipe(v.array(vMatchingPair), v.maxLength(200)),
@@ -1872,6 +1959,19 @@ export const vOpenTextBody = v.object({
     prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     rubric: v.nullable(v.pipe(v.string(), v.maxLength(20000)))
 });
+
+/**
+ * `AssessmentOutlierRow.outlier_reason_codes`
+ * (`assessments::outlier_reason_codes`; a test pins the set).
+ */
+export const vOutlierReasonCode = v.picklist([
+    'low_completion_rate',
+    'below_threshold',
+    'low_accuracy',
+    'low_submission_rate',
+    'low_success_rate',
+    'grading_latency'
+]);
 
 /**
  * Set a new password with the emailed reset code. No `Debug` - carries a
@@ -2012,6 +2112,13 @@ export const vPublishSummary = v.object({
 });
 
 /**
+ * The parsed `content` of the `course_citations` tool result.
+ */
+export const vQaCitationsContent = v.object({
+    citations: v.array(vCitation)
+});
+
+/**
  * What this API reads from AG-UI `forwardedProps`.
  */
 export const vQaForwardedProps = v.strictObject({
@@ -2037,6 +2144,71 @@ export const vQaMessageMetadata = v.object({
  * Q&A message author.
  */
 export const vQaMessageRole = v.picklist(['user', 'assistant']);
+
+/**
+ * `RUN_FINISHED.result` of the Q&A chat. A replayed turn
+ * (`client_turn_id` seen before) carries `replayed: true` and no
+ * confidence or suggestions.
+ */
+export const vQaRunResult = v.object({
+    confidence: v.optional(vLevel),
+    follow_up_suggestions: v.optional(v.array(v.string())),
+    message_id: vAiMessageId,
+    replayed: v.optional(v.boolean()),
+    thread_id: vAiThreadId
+});
+
+/**
+ * `POST /ai/qa/{course_id}/chat`: one AG-UI event.
+ */
+export const vQaChatEvent = v.union([
+    v.object({
+        runId: v.string(),
+        threadId: v.string(),
+        type: v.picklist(['RUN_STARTED'])
+    }),
+    v.object({
+        messageId: v.string(),
+        role: vAgUiAssistantRole,
+        type: v.picklist(['TEXT_MESSAGE_START'])
+    }),
+    v.object({
+        delta: v.string(),
+        messageId: v.string(),
+        type: v.picklist(['TEXT_MESSAGE_CONTENT'])
+    }),
+    v.object({
+        messageId: v.string(),
+        type: v.picklist(['TEXT_MESSAGE_END'])
+    }),
+    v.object({
+        parentMessageId: v.string(),
+        toolCallId: v.string(),
+        toolCallName: vAgUiToolName,
+        type: v.picklist(['TOOL_CALL_START'])
+    }),
+    v.object({
+        content: v.string(),
+        messageId: v.string(),
+        toolCallId: v.string(),
+        type: v.picklist(['TOOL_CALL_RESULT'])
+    }),
+    v.object({
+        toolCallId: v.string(),
+        type: v.picklist(['TOOL_CALL_END'])
+    }),
+    v.object({
+        result: vQaRunResult,
+        runId: v.string(),
+        threadId: v.string(),
+        type: v.picklist(['RUN_FINISHED'])
+    }),
+    v.object({
+        code: v.string(),
+        message: v.string(),
+        type: v.picklist(['RUN_ERROR'])
+    })
+]);
 
 /**
  * One message of the AG-UI conversation the client sends back.
@@ -2245,16 +2417,36 @@ export const vRecommendation = v.object({
     title: v.string()
 });
 
-export const vCourseQualityReport = v.object({
-    citations: v.optional(v.array(vCitation)),
-    confidence: v.optional(vLevel),
-    language: v.optional(v.string()),
-    public_score: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    recommendations: v.optional(v.array(vRecommendation)),
-    risks: v.optional(v.array(v.string())),
-    strengths: v.optional(v.array(v.string())),
-    summary: v.string()
-});
+/**
+ * `AtRiskLearnerRow.recommended_action` (`risk::recommended_action`; a
+ * test pins the set).
+ */
+export const vRecommendedAction = v.picklist([
+    'review_submissions_first',
+    'contact_learner_this_week',
+    'offer_targeted_help',
+    'remind_missing_work',
+    'schedule_pace_meeting',
+    'send_personal_message'
+]);
+
+/**
+ * A reference check's per-language outcome: the run status, or why
+ * nothing ran.
+ */
+export const vReferenceCheckStatus = v.picklist([
+    'queued',
+    'running',
+    'accepted',
+    'wrong_answer',
+    'compile_error',
+    'runtime_error',
+    'time_limit',
+    'internal_error',
+    'degraded',
+    'missing_solution',
+    'language_not_allowed'
+]);
 
 /**
  * One language's verdict from the author's reference check.
@@ -2267,7 +2459,7 @@ export const vReferenceCheck = v.object({
     ok: v.boolean(),
     passed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     score: v.nullable(v.number()),
-    status: v.string(),
+    status: vReferenceCheckStatus,
     total: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
@@ -2357,6 +2549,13 @@ export const vResendVerificationRequest = v.strictObject({
  * What a recent result is.
  */
 export const vResultKind = v.picklist(['grade_published', 'submission_returned']);
+
+/**
+ * `POST /file-submissions/{id}/return-grades`.
+ */
+export const vReturnAttemptsRequest = v.strictObject({
+    attempt_ids: v.pipe(v.array(vFileAttemptId), v.minLength(1), v.maxLength(500))
+});
 
 /**
  * Queue order (BUG-351): newest submission, score (ungraded lowest) or
@@ -2534,6 +2733,15 @@ export const vRunEventPayload = v.object({
 });
 
 /**
+ * `CUSTOM.value` on the run stream.
+ */
+export const vRunCustomValue = v.object({
+    message: v.nullable(v.string()),
+    payload: vRunEventPayload,
+    state: vRunEventState
+});
+
+/**
  * Run source against an item's visible tests, or against one custom input.
  */
 export const vRunRequest = v.strictObject({
@@ -2541,6 +2749,32 @@ export const vRunRequest = v.strictObject({
     language_id: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     source: v.string()
 });
+
+/**
+ * `POST /ai/runs/{run_id}/stream`: one AG-UI event (SSE `event: run`).
+ */
+export const vRunStreamEvent = v.union([
+    v.object({
+        runId: v.string(),
+        threadId: v.string(),
+        type: v.picklist(['RUN_STARTED'])
+    }),
+    v.object({
+        name: v.string(),
+        type: v.picklist(['CUSTOM']),
+        value: vRunCustomValue
+    }),
+    v.object({
+        runId: v.string(),
+        threadId: v.string(),
+        type: v.picklist(['RUN_FINISHED'])
+    }),
+    v.object({
+        code: v.string(),
+        message: v.string(),
+        type: v.picklist(['RUN_ERROR'])
+    })
+]);
 
 /**
  * AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.
@@ -2576,28 +2810,6 @@ export const vScalar = v.union([v.string(), v.number()]);
  * Placeholders for a stable message `code`, by name.
  */
 export const vMessageParams = v.object({});
-
-export const vGradedItem = v.object({
-    correct: v.nullable(v.boolean()),
-    correct_answer: v.nullable(vCorrectAnswer),
-    feedback: v.optional(v.string()),
-    feedback_code: v.optional(vFeedbackCode),
-    feedback_params: v.optional(vMessageParams),
-    item_id: vAssessmentItemId,
-    item_text: v.optional(v.string()),
-    max_score: v.number(),
-    needs_manual_review: v.optional(v.boolean()),
-    score: v.number(),
-    user_answer: v.nullable(vItemAnswer)
-});
-
-export const vGradingBreakdown = v.object({
-    auto_graded: v.optional(v.boolean()),
-    feedback: v.optional(v.string()),
-    items: v.optional(v.array(vGradedItem)),
-    needs_manual_review: v.optional(v.boolean()),
-    score_override: v.optional(v.number())
-});
 
 /**
  * A saved analytics filter state: query-string parameters by name.
@@ -3002,37 +3214,14 @@ export const vSubmissionAnalysisReport = v.object({
     summary: v.string()
 });
 
-/**
- * An AI artifact by kind: the agent's structured output.
- */
-export const vRunArtifactBody = v.union([
-    v.object({
-        content: vCourseQualityReport,
-        kind: v.picklist(['course_analysis'])
-    }),
-    v.object({
-        content: vSubmissionAnalysisReport,
-        kind: v.picklist(['submission_analysis'])
-    }),
-    v.object({
-        content: vRemediationBundle,
-        kind: v.picklist(['remediation'])
-    }),
-    v.object({
-        content: vStudyCompanionAnswer,
-        kind: v.picklist(['study_companion'])
-    }),
-    v.object({
-        content: vLectureReviewReport,
-        kind: v.picklist(['lecture_review'])
-    }),
-    v.object({
-        content: vCourseQaAnswer,
-        kind: v.picklist(['course_qa'])
-    })
-]);
-
 export const vSubmissionId = v.pipe(v.string(), v.uuid());
+
+/**
+ * `POST /assessments/{id}/return-grades`.
+ */
+export const vReturnGradesRequest = v.strictObject({
+    submission_ids: v.pipe(v.array(vSubmissionId), v.minLength(1), v.maxLength(500))
+});
 
 export const vSubmissionReturnedPayload = v.object({
     feedback: v.string(),
@@ -3166,7 +3355,7 @@ export const vAssessmentOutlierRow = v.object({
     grading_latency_hours_p50: v.nullable(v.number()),
     grading_latency_hours_p90: v.nullable(v.number()),
     median_score: v.nullable(v.number()),
-    outlier_reason_codes: v.array(v.string()),
+    outlier_reason_codes: v.array(vOutlierReasonCode),
     pass_rate: v.nullable(v.number()),
     reliability_score: v.nullable(v.number()),
     score_variance: v.nullable(v.number()),
@@ -3368,6 +3557,19 @@ export const vCodeRun = v.object({
 export const vCourseListProgress = v.object({
     completed_at_unix: v.nullable(vUnixTime),
     progress_pct: v.number()
+});
+
+/**
+ * The recipient's own due date on one activity moved (a deadline
+ * extension or a per-learner override). `assessment_id` for an
+ * assessment, `file_submission_id` for a file submission.
+ */
+export const vDeadlineExtended = v.object({
+    activity_id: vActivityId,
+    assessment_id: v.nullable(vAssessmentId),
+    course_id: vCourseId,
+    due_at_unix: vUnixTime,
+    file_submission_id: v.nullable(vFileSubmissionId)
 });
 
 export const vDrillBacklogRow = v.object({
@@ -3696,12 +3898,6 @@ export const vAgenda = v.object({
     recent_results: v.array(vRecentResult)
 });
 
-export const vRunArtifact = v.intersect([vRunArtifactBody, v.object({
-        created_at_unix: vUnixTime,
-        final: v.boolean(),
-        id: vAiArtifactId
-    })]);
-
 export const vRunEvent = v.object({
     created_at_unix: vUnixTime,
     event_type: v.string(),
@@ -3720,13 +3916,6 @@ export const vRunEvidence = v.object({
     score: v.nullable(v.number()),
     source_ref: v.nullable(v.string()),
     source_type: v.string()
-});
-
-export const vAdminRunDetail = v.object({
-    artifacts: v.array(vRunArtifact),
-    events: v.array(vRunEvent),
-    evidence: v.array(vRunEvidence),
-    run: vAdminRun
 });
 
 /**
@@ -3765,6 +3954,7 @@ export const vSignedDownload = v.object({
     expires_at_unix: vUnixTime,
     file_id: vFileAttemptFileId,
     filename: v.string(),
+    path: v.string(),
     url: v.string()
 });
 
@@ -4088,45 +4278,6 @@ export const vAssessmentLearnerRow = v.object({
     user_id: vUserId
 });
 
-export const vAtRiskLearnerRow = v.object({
-    allowed_actions: v.array(vAtRiskAction),
-    cohort_name: v.nullable(v.string()),
-    confidence_level: vConfidence,
-    course_id: vCourseId,
-    course_name: v.string(),
-    days_since_last_activity: v.nullable(v.pipe(v.number(), v.integer())),
-    failed_assessments: v.pipe(v.number(), v.integer()),
-    intervention_count: v.pipe(v.number(), v.integer()),
-    last_intervention_at_unix: v.nullable(vUnixTime),
-    last_intervention_outcome: v.nullable(v.string()),
-    last_intervention_type: v.nullable(v.string()),
-    missing_required_assessments: v.pipe(v.number(), v.integer()),
-    open_grading_blocks: v.pipe(v.number(), v.integer()),
-    previous_risk_score: v.nullable(v.number()),
-    progress_pct: v.number(),
-    reason_codes: v.array(vRiskReasonCode),
-    recommended_action: v.string(),
-    risk_components: v.record(v.string(), v.number()),
-    risk_level: vRiskLevel,
-    risk_score: v.number(),
-    risk_score_delta: v.nullable(v.number()),
-    risk_trend: vRiskTrend,
-    top_contributing_factor: v.nullable(v.string()),
-    user_display_name: v.string(),
-    user_id: vUserId,
-    why_now: v.string()
-});
-
-export const vAtRiskLearnersResponse = v.object({
-    cohort_options: v.array(vFilterOption),
-    course_options: v.array(vFilterOption),
-    generated_at_unix: vUnixTime,
-    items: v.array(vAtRiskLearnerRow),
-    page: v.pipe(v.number(), v.integer()),
-    page_size: v.pipe(v.number(), v.integer()),
-    total: v.pipe(v.number(), v.integer())
-});
-
 export const vAuditEvent = v.object({
     actor_id: v.nullable(vUserId),
     actor_name: v.nullable(v.string()),
@@ -4227,24 +4378,6 @@ export const vCollection = v.object({
 export const vCollectionPage = v.object({
     items: v.array(vCollection),
     next_cursor: v.nullable(vCollectionId)
-});
-
-export const vCourseAnalysis = v.object({
-    content_hash: v.nullable(v.string()),
-    course_id: vCourseId,
-    created_at_unix: vUnixTime,
-    evidence: vAiEvidence,
-    id: vAiCourseAnalysisId,
-    language: v.string(),
-    model_name: v.nullable(v.string()),
-    previous_public_score: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    public_score: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    published_at_unix: v.nullable(vUnixTime),
-    report: vCourseQualityReport,
-    run_id: v.nullable(vAiRunId),
-    stale: v.boolean(),
-    status: vCourseAnalysisStatus,
-    triggered_by: v.nullable(vUserId)
 });
 
 export const vCourseAuthor = v.object({
@@ -4427,6 +4560,60 @@ export const vDiscussion: v.GenericSchema = v.object({
 export const vDiscussionPage = v.object({
     items: v.array(vDiscussion),
     next_cursor: v.nullable(vDiscussionId)
+});
+
+/**
+ * One grade save of a file attempt (append-only, newest first).
+ */
+export const vFileGradingEntry = v.object({
+    created_at_unix: vUnixTime,
+    feedback: v.string(),
+    final_score: v.nullable(v.number()),
+    graded_by: v.nullable(vUserId),
+    id: v.pipe(v.string(), v.uuid()),
+    penalty_pct: v.number(),
+    raw_score: v.nullable(v.number()),
+    status: vFileAttemptStatus
+});
+
+/**
+ * One stored verdict on a course-analysis finding.
+ */
+export const vFindingReview = v.object({
+    action: vFindingReviewAction,
+    note: v.nullable(v.string()),
+    reviewed_at: v.pipe(v.number(), v.integer()),
+    reviewed_by_user_id: vUserId
+});
+
+export const vCourseQualityReport = v.object({
+    citations: v.optional(v.array(vCitation)),
+    confidence: v.optional(vLevel),
+    finding_reviews: v.optional(v.object({})),
+    language: v.optional(v.string()),
+    public_score: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    recommendations: v.optional(v.array(vRecommendation)),
+    risks: v.optional(v.array(v.string())),
+    strengths: v.optional(v.array(v.string())),
+    summary: v.string()
+});
+
+export const vCourseAnalysis = v.object({
+    content_hash: v.nullable(v.string()),
+    course_id: vCourseId,
+    created_at_unix: vUnixTime,
+    evidence: vAiEvidence,
+    id: vAiCourseAnalysisId,
+    language: v.string(),
+    model_name: v.nullable(v.string()),
+    previous_public_score: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    public_score: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    published_at_unix: v.nullable(vUnixTime),
+    report: vCourseQualityReport,
+    run_id: v.nullable(vAiRunId),
+    stale: v.boolean(),
+    status: vCourseAnalysisStatus,
+    triggered_by: v.nullable(vUserId)
 });
 
 /**
@@ -4687,6 +4874,49 @@ export const vRemediationSession = v.object({
     updated_at_unix: vUnixTime
 });
 
+/**
+ * An AI artifact by kind: the agent's structured output.
+ */
+export const vRunArtifactBody = v.union([
+    v.object({
+        content: vCourseQualityReport,
+        kind: v.picklist(['course_analysis'])
+    }),
+    v.object({
+        content: vSubmissionAnalysisReport,
+        kind: v.picklist(['submission_analysis'])
+    }),
+    v.object({
+        content: vRemediationBundle,
+        kind: v.picklist(['remediation'])
+    }),
+    v.object({
+        content: vStudyCompanionAnswer,
+        kind: v.picklist(['study_companion'])
+    }),
+    v.object({
+        content: vLectureReviewReport,
+        kind: v.picklist(['lecture_review'])
+    }),
+    v.object({
+        content: vCourseQaAnswer,
+        kind: v.picklist(['course_qa'])
+    })
+]);
+
+export const vRunArtifact = v.intersect([vRunArtifactBody, v.object({
+        created_at_unix: vUnixTime,
+        final: v.boolean(),
+        id: vAiArtifactId
+    })]);
+
+export const vAdminRunDetail = v.object({
+    artifacts: v.array(vRunArtifact),
+    events: v.array(vRunEvent),
+    evidence: v.array(vRunEvidence),
+    run: vAdminRun
+});
+
 export const vSavedView = v.object({
     created_at_unix: vUnixTime,
     id: vSavedViewId,
@@ -4758,19 +4988,6 @@ export const vSubmissionAnalysis = v.object({
     status: v.string(),
     submission_id: v.nullable(vSubmissionId),
     triggered_by: v.nullable(vUserId)
-});
-
-export const vTeacherCourseDetailResponse = v.object({
-    activity_dropoff: v.array(vActivityDropoffRow),
-    assessment_outliers: v.array(vAssessmentOutlierRow),
-    at_risk_learners: v.array(vAtRiskLearnerRow),
-    content_bottlenecks: v.array(vContentBottleneckRow),
-    content_health: v.array(vContentHealthRow),
-    course: vCourseRef,
-    engagement_trend: v.array(vTimeSeriesPoint),
-    funnels: vFunnels,
-    generated_at_unix: vUnixTime,
-    summary: vTeacherCourseDetailSummary
 });
 
 export const vTrailRun = v.object({
@@ -4888,11 +5105,13 @@ export const vAttempt = v.object({
 export const vFileReviewItem = v.object({
     allowed_actions: v.array(vFileGradeAction),
     attempt_number: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    enrolled: v.boolean(),
     file_count: v.pipe(v.number(), v.integer()),
     final_score: v.nullable(v.number()),
     graded_at_unix: v.nullable(vUnixTime),
     id: vFileAttemptId,
     is_late: v.boolean(),
+    staff: v.boolean(),
     status: vFileAttemptStatus,
     submitted_at_unix: v.nullable(vUnixTime),
     user: vUserSummary,
@@ -5192,6 +5411,70 @@ export const vViolationState = v.object({
     violation_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
+/**
+ * `AtRiskLearnerRow.why_now` (`risk::why_now`; a test pins the set).
+ */
+export const vWhyNow = v.picklist([
+    'grading_block_blocks_progress',
+    'inactivity_past_7_days',
+    'recent_assessment_failures',
+    'missing_required_work',
+    'progress_behind_course_baseline',
+    'multiple_risk_signals'
+]);
+
+export const vAtRiskLearnerRow = v.object({
+    allowed_actions: v.array(vAtRiskAction),
+    cohort_name: v.nullable(v.string()),
+    confidence_level: vConfidence,
+    course_id: vCourseId,
+    course_name: v.string(),
+    days_since_last_activity: v.nullable(v.pipe(v.number(), v.integer())),
+    failed_assessments: v.pipe(v.number(), v.integer()),
+    intervention_count: v.pipe(v.number(), v.integer()),
+    last_intervention_at_unix: v.nullable(vUnixTime),
+    last_intervention_outcome: v.nullable(v.string()),
+    last_intervention_type: v.nullable(vInterventionType),
+    missing_required_assessments: v.pipe(v.number(), v.integer()),
+    open_grading_blocks: v.pipe(v.number(), v.integer()),
+    previous_risk_score: v.nullable(v.number()),
+    progress_pct: v.number(),
+    reason_codes: v.array(vRiskReasonCode),
+    recommended_action: vRecommendedAction,
+    risk_components: v.record(v.string(), v.number()),
+    risk_level: vRiskLevel,
+    risk_score: v.number(),
+    risk_score_delta: v.nullable(v.number()),
+    risk_trend: vRiskTrend,
+    top_contributing_factor: v.nullable(v.string()),
+    user_display_name: v.string(),
+    user_id: vUserId,
+    why_now: vWhyNow
+});
+
+export const vAtRiskLearnersResponse = v.object({
+    cohort_options: v.array(vFilterOption),
+    course_options: v.array(vFilterOption),
+    generated_at_unix: vUnixTime,
+    items: v.array(vAtRiskLearnerRow),
+    page: v.pipe(v.number(), v.integer()),
+    page_size: v.pipe(v.number(), v.integer()),
+    total: v.pipe(v.number(), v.integer())
+});
+
+export const vTeacherCourseDetailResponse = v.object({
+    activity_dropoff: v.array(vActivityDropoffRow),
+    assessment_outliers: v.array(vAssessmentOutlierRow),
+    at_risk_learners: v.array(vAtRiskLearnerRow),
+    content_bottlenecks: v.array(vContentBottleneckRow),
+    content_health: v.array(vContentHealthRow),
+    course: vCourseRef,
+    engagement_trend: v.array(vTimeSeriesPoint),
+    funnels: vFunnels,
+    generated_at_unix: vUnixTime,
+    summary: vTeacherCourseDetailSummary
+});
+
 export const vWindow = v.picklist([
     '7d',
     '28d',
@@ -5455,6 +5738,7 @@ export const vXpAwarded = v.object({
 export const vUserStreamEvent = v.union([
     v.object({
         event: v.picklist(['connected']),
+        event_id: v.nullable(v.string()),
         user_id: vUserId
     }),
     v.object({
@@ -5485,6 +5769,12 @@ export const vUserStreamEvent = v.union([
         event: v.picklist(['xp.awarded']),
         event_id: v.string(),
         payload: vXpAwarded,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['deadline.extended']),
+        event_id: v.string(),
+        payload: vDeadlineExtended,
         sent_at: v.pipe(v.number(), v.integer())
     }),
     v.object({
@@ -5727,9 +6017,9 @@ export const vQaChatPath = v.object({
 });
 
 /**
- * AG-UI event stream
+ * AG-UI event stream: each message's `data` is one event
  */
-export const vQaChatResponse = v.string();
+export const vQaChatResponse = vQaChatEvent;
 
 export const vQaThreadsPath = v.object({
     course_id: vCourseId
@@ -5871,9 +6161,9 @@ export const vStreamRunPath = v.object({
 });
 
 /**
- * Event stream
+ * Event stream: each message's `data` is one AG-UI event
  */
-export const vStreamRunResponse = v.string();
+export const vStreamRunResponse = vRunStreamEvent;
 
 export const vStudyAskBody = vStudyRequest;
 
@@ -6345,6 +6635,34 @@ export const vUpdateItemPath = v.object({
  */
 export const vUpdateItemResponse = vAssessmentItem;
 
+export const vReferenceCheckItemHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
+export const vReferenceCheckItemPath = v.object({
+    item_id: vAssessmentItemId
+});
+
+/**
+ * Per-language verdicts
+ */
+export const vReferenceCheckItemResponse = vReferenceCheckResponse;
+
+export const vListMyCodeRunsPath = v.object({
+    item_id: vAssessmentItemId
+});
+
+export const vListMyCodeRunsQuery = v.object({
+    submission_id: v.nullish(vSubmissionId),
+    purpose: v.nullish(vCodeRunPurpose),
+    limit: v.nullish(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Runs
+ */
+export const vListMyCodeRunsResponse = v.array(vCodeRun);
+
 export const vRunItemBody = vRunRequest;
 
 export const vRunItemHeaders = v.object({
@@ -6602,6 +6920,17 @@ export const vReferenceCheckPath = v.object({
  */
 export const vReferenceCheckResponse2 = vReferenceCheckResponse;
 
+export const vReturnGradesBody = vReturnGradesRequest;
+
+export const vReturnGradesPath = v.object({
+    assessment_id: vAssessmentId
+});
+
+/**
+ * Per-row outcome counts
+ */
+export const vReturnGradesResponse = vBulkGradeSummary;
+
 export const vAssessmentReviewQueuePath = v.object({
     assessment_id: vAssessmentId
 });
@@ -6613,7 +6942,8 @@ export const vAssessmentReviewQueueQuery = v.object({
     cursor: v.nullish(v.string()),
     sort: v.nullish(vReviewSort),
     order: v.nullish(vSortOrder),
-    limit: v.nullish(v.pipe(v.number(), v.integer()))
+    limit: v.nullish(v.pipe(v.number(), v.integer())),
+    group_id: v.nullish(vUsergroupId)
 });
 
 /**
@@ -6955,6 +7285,11 @@ export const vGetCodeRunResponse = vCodeRun;
  */
 export const vLanguagesResponse = v.array(vLanguageInfo);
 
+/**
+ * Runner state
+ */
+export const vRunnerResponse = vCodeRunnerInfo;
+
 export const vListCollectionsQuery = v.object({
     cursor: v.optional(vCollectionId),
     limit: v.optional(v.pipe(v.number(), v.integer())),
@@ -7281,7 +7616,10 @@ export const vGradebookPath = v.object({
 
 export const vGradebookQuery = v.object({
     cursor: v.nullish(v.string()),
-    limit: v.nullish(v.pipe(v.number(), v.integer()))
+    limit: v.nullish(v.pipe(v.number(), v.integer())),
+    q: v.nullish(v.string()),
+    group_id: v.nullish(vUsergroupId),
+    status: v.nullish(vGradebookStatus)
 });
 
 /**
@@ -7554,8 +7892,21 @@ export const vGradeAttemptPath = v.object({
  */
 export const vGradeAttemptResponse = vAttempt;
 
+export const vFileGradingHistoryPath = v.object({
+    attempt_id: vFileAttemptId
+});
+
+/**
+ * Entries
+ */
+export const vFileGradingHistoryResponse = v.array(vFileGradingEntry);
+
 export const vFileUrlPath = v.object({
     file_id: vFileAttemptFileId
+});
+
+export const vFileUrlQuery = v.object({
+    disposition: v.nullish(vDisposition)
 });
 
 /**
@@ -7589,6 +7940,17 @@ export const vUpdateFileSubmissionPath = v.object({
  * Updated
  */
 export const vUpdateFileSubmissionResponse = vFileSubmission;
+
+export const vExtendFileDeadlineBody = vDeadlineExtensionRequest;
+
+export const vExtendFileDeadlinePath = v.object({
+    file_submission_id: vFileSubmissionId
+});
+
+/**
+ * Extended
+ */
+export const vExtendFileDeadlineResponse = vBulkGradeSummary;
 
 export const vGetDraftPath = v.object({
     file_submission_id: vFileSubmissionId
@@ -7641,6 +8003,26 @@ export const vPublishFileSubmissionPath = v.object({
  */
 export const vPublishFileSubmissionResponse = vFileSubmission;
 
+export const vPublishFileGradesPath = v.object({
+    file_submission_id: vFileSubmissionId
+});
+
+/**
+ * Per-row outcome counts
+ */
+export const vPublishFileGradesResponse = vBulkGradeSummary;
+
+export const vReturnFileGradesBody = vReturnAttemptsRequest;
+
+export const vReturnFileGradesPath = v.object({
+    file_submission_id: vFileSubmissionId
+});
+
+/**
+ * Per-row outcome counts
+ */
+export const vReturnFileGradesResponse = vBulkGradeSummary;
+
 export const vFileSubmissionReviewQueuePath = v.object({
     file_submission_id: vFileSubmissionId
 });
@@ -7649,7 +8031,11 @@ export const vFileSubmissionReviewQueueQuery = v.object({
     status: v.nullish(vFileAttemptStatus),
     search: v.nullish(v.string()),
     cursor: v.nullish(vFileAttemptId),
-    limit: v.nullish(v.pipe(v.number(), v.integer()))
+    limit: v.nullish(v.pipe(v.number(), v.integer())),
+    late_only: v.optional(v.boolean()),
+    group_id: v.nullish(vUsergroupId),
+    sort: v.nullish(vReviewSort),
+    order: v.nullish(vSortOrder)
 });
 
 /**
@@ -7673,6 +8059,19 @@ export const vExportFileSubmissionCsvQuery = v.object({
  * CSV
  */
 export const vExportFileSubmissionCsvResponse = v.string();
+
+export const vFileSubmissionReviewStatsPath = v.object({
+    file_submission_id: vFileSubmissionId
+});
+
+export const vFileSubmissionReviewStatsQuery = v.object({
+    group_id: v.nullish(vUsergroupId)
+});
+
+/**
+ * Counts
+ */
+export const vFileSubmissionReviewStatsResponse = vFileReviewStats;
 
 export const vSubmitBody = vSubmitRequest;
 

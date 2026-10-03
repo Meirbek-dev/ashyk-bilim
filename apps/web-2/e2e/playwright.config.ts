@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 // The gate run (G-06) targets the built image on the seeded stand: E2E_BASE_URL=https://<stand>.
 // Without it the suite drives `vp dev` against the local API (agent iteration, spec 9).
-const baseURL = process.env['E2E_BASE_URL'] ?? 'http://localhost:3000'
+const baseURL = process.env['E2E_BASE_URL'] ?? 'http://127.0.0.1:3000'
 // Fixtures read the stand through the generated SDK, which loads the web's env module: give it the stand's address.
 process.env['PUBLIC_ORIGIN'] ??= baseURL
 process.env['INTERNAL_API_URL'] ??= baseURL

@@ -1,5 +1,11 @@
 import { m } from '#/paraglide/messages'
-import type { FileAttemptStatus, ItemKind, MessageParams, SubmissionStatus } from '#/shared/api/gen/types.gen'
+import type {
+  FeedbackCode,
+  FeedbackParams,
+  FileAttemptStatus,
+  ItemKind,
+  SubmissionStatus,
+} from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
 
@@ -36,7 +42,7 @@ export const scoreText = (score: number | null): string =>
   score === null ? m.grading_no_score() : m.grading_percent({ value: formatNumber(roundScore(score)) })
 
 type Counts = { correct: string; total: string }
-const verdicts: Record<string, (counts: Counts) => string> = {
+const verdicts: Record<FeedbackCode, (counts: Counts) => string> = {
   'no-answer': () => m.grading_verdict_no_answer(),
   'no-correct-answer': () => m.grading_verdict_no_correct(),
   correct: () => m.grading_verdict_correct(),
@@ -48,12 +54,16 @@ const verdicts: Record<string, (counts: Counts) => string> = {
 }
 
 /**
- * The auto-grader's verdict from `feedback_code` + `feedback_params` in the interface language; an unknown code
- * falls back to the server's English `feedback`, teacher prose (no code) is not a verdict.
+ * The auto-grader's verdict from `feedback_code` + `feedback_params` (contract enums) in the interface language;
+ * teacher prose (no code) is not a verdict.
  */
-export function verdictText(item: { feedback_code?: string; feedback_params?: MessageParams; feedback?: string }) {
+export function verdictText(item: {
+  feedback_code?: FeedbackCode
+  feedback_params?: FeedbackParams
+  feedback?: string
+}) {
   if (!item.feedback_code) return null
-  const params = item.feedback_params ?? {}
-  const counts = { correct: String(params['correct'] ?? ''), total: String(params['total'] ?? '') }
-  return verdicts[item.feedback_code]?.(counts) ?? item.feedback ?? null
+  const params = item.feedback_params
+  const counts = { correct: String(params?.correct ?? ''), total: String(params?.total ?? '') }
+  return verdicts[item.feedback_code](counts)
 }

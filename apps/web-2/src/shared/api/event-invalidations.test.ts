@@ -7,6 +7,7 @@ import {
   assessmentReviewQueueInfiniteQueryKey,
   attemptStateQueryKey,
   dashboardQueryKey,
+  getActivityFileSubmissionQueryKey,
   getSubmissionQueryKey,
   listEnrollmentsInfiniteQueryKey,
   gradebookInfiniteQueryKey,
@@ -32,6 +33,7 @@ const hits = (keys: readonly (readonly unknown[])[], cached: readonly unknown[])
 test('B-NOT-12 every contract event has a row (a missing one does not compile)', () => {
   expectTypeOf<keyof typeof eventInvalidations>().toEqualTypeOf<EventType>()
   expect(Object.keys(eventInvalidations).toSorted()).toEqual([
+    'deadline.extended',
     'grading.updated',
     'notification.created',
     'notification.read',
@@ -78,4 +80,17 @@ test('B-NOT-12 XP refreshes the achievements; notification events refetch nothin
   expect(hits(xp, dashboardQueryKey())).toBe(true)
   const read = invalidationsFor('notification.read', { notification_id: null, unread_count: 0 })
   expect(hits(read, unreadCountQueryKey())).toBe(false)
+})
+
+test('B-NOT-12 an extended due date refreshes the course plan, "Today" and that activity', () => {
+  const keys = invalidationsFor('deadline.extended', {
+    course_id: COURSE,
+    activity_id: ACTIVITY,
+    due_at_unix: 1,
+    assessment_id: null,
+    file_submission_id: null,
+  })
+  expect(hits(keys, learnerCourseStateQueryKey({ path: { course_id: COURSE } }))).toBe(true)
+  expect(hits(keys, learnerCourseStateQueryKey({ path: { course_id: OTHER_COURSE } }))).toBe(false)
+  expect(hits(keys, getActivityFileSubmissionQueryKey({ path: { activity_id: ACTIVITY } }))).toBe(true)
 })

@@ -12,8 +12,7 @@ import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bu
 
 // Dev is same-origin like prod: the API stack (`just dev-up`) sits behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
-// Storage like nginx in prod (infra/nginx/routes.conf): the buckets and `/content/<key>` (the public bucket) on this
-// origin, so an upload works on any dev port. The target is the API's storage endpoint: presigned URLs sign its host.
+// Storage as nginx serves it in prod (buckets, `/content/<key>`) on this origin: uploads work on any port, no CORS.
 const storage = { target: process.env['STORAGE_PROXY_TARGET'] ?? 'http://localhost:9002', changeOrigin: true }
 const proxy = {
   '/api/v2': { target: apiTarget, changeOrigin: true },
@@ -252,7 +251,8 @@ const formatStaged = (files: readonly string[]) => {
 export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
-  server: { port: 3000, strictPort: true, proxy },
+  // 127.0.0.1, not `localhost`: Node took ::1, browsers 127.0.0.1 too (refused loads in e2e).
+  server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy },
   build: {
     manifest: true,
     // Spec 7.4: response schemas leave the production bundle. With the validators stripped, an unused

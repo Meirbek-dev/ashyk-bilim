@@ -8,7 +8,6 @@ describe('grading labels', () => {
     expect(verdictText({ feedback_code: 'tests-passed', feedback_params: { correct: 2, total: 3 } })).toBe(
       'Код: пройдено 2 из 3',
     )
-    expect(verdictText({ feedback_code: 'brand-new-code', feedback: 'Server text' })).toBe('Server text')
     expect(verdictText({ feedback: 'Хорошая мысль' })).toBeNull()
   })
 
