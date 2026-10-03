@@ -54,6 +54,10 @@ jobs:
               - 'apps/web-2/**'
               - 'apps/server/openapi.v2.json'
               - '.node-version'
+              # the e2e stand and this workflow
+              - 'compose.web2.yaml'
+              - 'justfile'
+              - '.github/workflows/ci.yaml'
             infra:
               - 'compose*.yaml'
               - 'infra/**'
