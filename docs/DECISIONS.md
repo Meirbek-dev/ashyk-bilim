@@ -1759,8 +1759,8 @@ Deviations decided during implementation:
   `extra_hosts: host-gateway`.** Inside the stack the domain resolves to nginx
   on edge-net: same effect (signed S3 URLs keep the public host, no NAT
   loopback) without depending on the host's routing.
-- **TLS files stay configurable (`TLS_CERT_FILE`/`TLS_KEY_FILE`, default
-  `./certs/{cert,key}.pem`) instead of mounting `/etc/letsencrypt`.** The host
+- **TLS files stay configurable (`TLS_DIR`, default `./certs` with
+  `cert.pem`/`key.pem`) instead of mounting `/etc/letsencrypt`.** The host
   layout is unverified (the inventory had not run), and the legacy `./certs`
   layout keeps working unchanged. `renew-certificate.sh` copies in place and
   reloads, or recreates nginx when the path is a symlink.

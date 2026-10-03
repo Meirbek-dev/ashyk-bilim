@@ -59,8 +59,8 @@ fi
 
 domain=$(env_get NGINX_SERVER_NAME)
 if command -v openssl >/dev/null; then
-  tls=$(env_get TLS_CERT_FILE)
-  for cert in "${tls:-certs/cert.pem}" "/etc/letsencrypt/live/$domain/fullchain.pem"; do
+  tls=$(env_get TLS_DIR)
+  for cert in "${tls:-certs}/cert.pem" "/etc/letsencrypt/live/$domain/fullchain.pem"; do
     [[ -n $domain && -r $cert ]] || continue
     openssl x509 -checkend $((14 * 86400)) -noout -in "$cert" >/dev/null ||
       warn "TLS certificate $cert expires within 14 days"

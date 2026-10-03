@@ -159,7 +159,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
 | | `FORCE_HTTPS` (default `1`) | nginx :80 redirect |
 | | `TRUSTED_PROXY_CIDR` (empty = `127.0.0.1/32`) | nginx `set_real_ip_from` |
-| | `TLS_CERT_FILE`, `TLS_KEY_FILE` (default `./certs/{cert,key}.pem`) | nginx bind mounts; `renew-certificate.sh` |
+| | `TLS_DIR` (default `./certs`, holds `cert.pem` + `key.pem`) | nginx directory mount; `renew-certificate.sh` |
 | | `ACME_WEBROOT` (default `/var/www/certbot`), `HTTP_PORT`, `HTTPS_PORT` | nginx |
 | Release | `IMAGE_REPO` (default `ghcr.io/meirbek-dev`) | image names; deploy.sh |
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
@@ -211,7 +211,7 @@ keys; mode other than 600 (warning only on Windows); empty values in
 `AB__RESEND__API_KEY` without `AB__RESEND__FROM`; unset `COMPOSE_PROJECT_NAME`; masterkey length other than 32; missing or past
 `ZITADEL_PAT_EXPIRATION`; missing `<project>_postgres_data` on a host that has
 run the stack before. Warns on: PAT expiry under 30 days, certificate expiry
-under 14 days (`TLS_CERT_FILE`, else `/etc/letsencrypt/live/<domain>/fullchain.pem`), disk of the Docker root over 85%. Prints key names, never values.
+under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchain.pem`), disk of the Docker root over 85%. Prints key names, never values.
 
 ## Edge
 
@@ -249,10 +249,11 @@ under 14 days (`TLS_CERT_FILE`, else `/etc/letsencrypt/live/<domain>/fullchain.p
 - **Limits.** 10M request bodies except `/ab-*`; `limit_req_status 429`.
 - **Logs.** JSON access log to stdout with `request_id`, also sent upstream as
   `X-Request-ID`.
-- **TLS files.** `TLS_CERT_FILE`/`TLS_KEY_FILE` are single-file bind mounts.
-  `renew-certificate.sh` (certbot deploy hook) copies the renewed files over the
-  targets with `cp` (same inode, so the mount sees the new bytes) and reloads
-  nginx; if the cert path is a symlink it recreates nginx instead.
+- **TLS files.** `TLS_DIR` (default `./certs`) is a directory mount holding
+  `cert.pem` + `key.pem`. `renew-certificate.sh` (certbot deploy hook) installs
+  the renewed lineage there and reloads nginx. The legacy root-owned hook
+  (`/etc/letsencrypt/renewal-hooks/deploy/openu-prod.sh`) does the same and
+  keeps working as long as the project is `openu-prod`.
 
 ## Bootstrap
 

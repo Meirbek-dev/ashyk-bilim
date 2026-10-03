@@ -136,7 +136,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
    ```
 
    `<` lines are missing from `.env`. Expected: `COMPOSE_PROFILES`,
-   `TRUSTED_PROXY_CIDR`, `TLS_CERT_FILE`, `TLS_KEY_FILE`, `ASHYQ_DB_PASSWORD`,
+   `TRUSTED_PROXY_CIDR`, `TLS_DIR`, `ASHYQ_DB_PASSWORD`,
    `REDIS_PASSWORD`, `JUDGE0_AUTHN_TOKEN`, `JUDGE0_DB_PASSWORD`,
    `JUDGE0_REDIS_PASSWORD`. If `POSTGRES_USER` is listed, add
    `POSTGRES_USER=openu` (the new default would be `postgres`). `>` lines are
@@ -150,8 +150,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
    cat >> .env <<EOF
    COMPOSE_PROFILES=judge0
    TRUSTED_PROXY_CIDR=$PROXY_CIDR
-   TLS_CERT_FILE=./certs/cert.pem
-   TLS_KEY_FILE=./certs/key.pem
+   TLS_DIR=./certs
    EOF
    ```
 
@@ -438,7 +437,7 @@ img=$(sed -n 's/.*image: &pg-image //p' compose.yaml)
 docker run --rm -i "$img" zstd -dc < "$archive" | tar -xf - --no-anchored backup/secrets
 cp -p backup/secrets/.env .env && cp -p backup/secrets/server.env server.env && chmod 600 .env server.env && rm -r backup
 git checkout "$(sed -n 's/^IMAGE_TAG=//p' .env)"
-mkdir -p certs        # place the TLS files at TLS_CERT_FILE / TLS_KEY_FILE (3.7)
+mkdir -p certs        # place cert.pem and key.pem in TLS_DIR (3.7)
 just restore "$archive"
 just bootstrap        # judge0-tune (restore.sh skips it); PAT and migrations are no-ops
 just deploy           # records .deploy-history so rollback works
@@ -508,11 +507,11 @@ sudo RENEWED_LINEAGE=/etc/letsencrypt/live/cs-mooc.tou.edu.kz /etc/letsencrypt/r
 sudo certbot renew --dry-run      # ACME reachability (hooks do not run)
 ```
 
-The hook copies `fullchain.pem`/`privkey.pem` over `TLS_CERT_FILE`/`TLS_KEY_FILE`
+The hook installs `fullchain.pem`/`privkey.pem` as `cert.pem`/`key.pem` in `TLS_DIR`
 (lineage must be named after `NGINX_SERVER_NAME`) and reloads nginx. First
 issue on a new host: `sudo certbot certonly --webroot -w /var/www/certbot -d
 cs-mooc.tou.edu.kz`, then run the hook line above. Expiry: preflight warns 14
-days ahead (it reads `TLS_CERT_FILE`); by hand `openssl x509 -enddate -noout -in certs/cert.pem`.
+days ahead (it reads `TLS_DIR`); by hand `openssl x509 -enddate -noout -in certs/cert.pem`.
 
 ### 3.8 Rotating secrets
 
