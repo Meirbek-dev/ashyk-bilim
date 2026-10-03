@@ -20,7 +20,8 @@
       "./messages/{locale}/certificates.json",
       "./messages/{locale}/activity.json",
       "./messages/{locale}/course.json",
-      "./messages/{locale}/discussions.json"
+      "./messages/{locale}/discussions.json",
+      "./messages/{locale}/achievements.json"
     ]
   }
 }

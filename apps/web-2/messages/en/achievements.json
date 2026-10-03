@@ -1,0 +1,40 @@
+{
+  "achievements_summary": "Level {level} · {xp} XP",
+  "achievements_level_title": "Level",
+  "achievements_progress_label": "Level progress",
+  "achievements_progress_left": "{left} XP to level {next}",
+  "achievements_max_level": "Maximum level",
+  "achievements_streaks_title": "Streaks",
+  "achievements_streak_login": "Sign-in streak",
+  "achievements_streak_learning": "Learning streak",
+  "achievements_days": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} day",
+        "countPlural=other": "{count} days"
+      }
+    }
+  ],
+  "achievements_streak_best": "Best: {days}",
+  "achievements_streak_badge": "Learning streak: {days}",
+  "achievements_leaderboard_title": "Leaderboard",
+  "achievements_your_place": "Your place: #{rank} of {total}",
+  "achievements_hidden": "You are not on the leaderboard.",
+  "achievements_visibility_link": "Change visibility",
+  "achievements_you": "You",
+  "achievements_leaderboard_empty": "Nobody is on the leaderboard yet.",
+  "achievements_feed_title": "Recent XP",
+  "achievements_feed_empty": "No XP yet: it comes for completed activities, quizzes and courses.",
+  "achievements_source_activity_completion": "Activity completed",
+  "achievements_source_course_completion": "Course completed",
+  "achievements_source_login_bonus": "Daily sign-in",
+  "achievements_source_quiz_completion": "Quiz completed",
+  "achievements_source_exam_completion": "Exam completed",
+  "achievements_source_streak_bonus": "Streak bonus",
+  "achievements_source_admin_award": "Admin award",
+  "achievements_source_code_challenge_completion": "Code challenge solved",
+  "achievements_source_code_challenge_perfect": "Flawless code",
+  "achievements_source_code_challenge_first_solve": "First solve of a challenge"
+}

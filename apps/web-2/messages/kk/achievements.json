@@ -1,0 +1,40 @@
+{
+  "achievements_summary": "{level}-деңгей · {xp} XP",
+  "achievements_level_title": "Деңгей",
+  "achievements_progress_label": "Деңгей барысы",
+  "achievements_progress_left": "{next}-деңгейге дейін тағы {left} XP",
+  "achievements_max_level": "Ең жоғары деңгей",
+  "achievements_streaks_title": "Сериялар",
+  "achievements_streak_login": "Кіру сериясы",
+  "achievements_streak_learning": "Оқу сериясы",
+  "achievements_days": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} күн",
+        "countPlural=other": "{count} күн"
+      }
+    }
+  ],
+  "achievements_streak_best": "Ең ұзағы: {days}",
+  "achievements_streak_badge": "Оқу сериясы: {days}",
+  "achievements_leaderboard_title": "Көшбасшылар тізімі",
+  "achievements_your_place": "Сіздің орныңыз: {total} қатысушының ішінде #{rank}",
+  "achievements_hidden": "Сіз көшбасшылар тізімінде жоқсыз.",
+  "achievements_visibility_link": "Көрінуді баптау",
+  "achievements_you": "Сіз",
+  "achievements_leaderboard_empty": "Көшбасшылар тізімі әзірге бос.",
+  "achievements_feed_title": "Соңғы алынған XP",
+  "achievements_feed_empty": "Әзірге XP жоқ: ол аяқталған белсенділіктер, тесттер мен курстар үшін беріледі.",
+  "achievements_source_activity_completion": "Белсенділік аяқталды",
+  "achievements_source_course_completion": "Курс аяқталды",
+  "achievements_source_login_bonus": "Күнделікті кіру",
+  "achievements_source_quiz_completion": "Тест тапсырылды",
+  "achievements_source_exam_completion": "Емтихан тапсырылды",
+  "achievements_source_streak_bonus": "Серия бонусы",
+  "achievements_source_admin_award": "Әкімші марапаты",
+  "achievements_source_code_challenge_completion": "Код есебі шешілді",
+  "achievements_source_code_challenge_perfect": "Қатесіз код",
+  "achievements_source_code_challenge_first_solve": "Есептің алғашқы шешімі"
+}

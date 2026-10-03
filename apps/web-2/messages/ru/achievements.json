@@ -1,0 +1,42 @@
+{
+  "achievements_summary": "Уровень {level} · {xp} XP",
+  "achievements_level_title": "Уровень",
+  "achievements_progress_label": "Прогресс уровня",
+  "achievements_progress_left": "Ещё {left} XP до уровня {next}",
+  "achievements_max_level": "Максимальный уровень",
+  "achievements_streaks_title": "Серии",
+  "achievements_streak_login": "Серия входов",
+  "achievements_streak_learning": "Серия учёбы",
+  "achievements_days": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} день",
+        "countPlural=few": "{count} дня",
+        "countPlural=many": "{count} дней",
+        "countPlural=other": "{count} дня"
+      }
+    }
+  ],
+  "achievements_streak_best": "Лучшая: {days}",
+  "achievements_streak_badge": "Серия учёбы: {days}",
+  "achievements_leaderboard_title": "Лидерборд",
+  "achievements_your_place": "Ваше место #{rank} из {total}",
+  "achievements_hidden": "Вас нет в лидерборде.",
+  "achievements_visibility_link": "Настроить видимость",
+  "achievements_you": "Вы",
+  "achievements_leaderboard_empty": "В лидерборде пока никого нет.",
+  "achievements_feed_title": "Последние начисления XP",
+  "achievements_feed_empty": "Пока нет начислений: XP приходит за завершённые активности, тесты и курсы.",
+  "achievements_source_activity_completion": "Активность завершена",
+  "achievements_source_course_completion": "Курс завершён",
+  "achievements_source_login_bonus": "Ежедневный вход",
+  "achievements_source_quiz_completion": "Тест пройден",
+  "achievements_source_exam_completion": "Экзамен сдан",
+  "achievements_source_streak_bonus": "Бонус за серию",
+  "achievements_source_admin_award": "Награда от администратора",
+  "achievements_source_code_challenge_completion": "Задача с кодом решена",
+  "achievements_source_code_challenge_perfect": "Код без ошибок",
+  "achievements_source_code_challenge_first_solve": "Первое решение задачи"
+}
