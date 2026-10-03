@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { AssessmentEditPage, builderSearchSchema, ensureAssessment } from '#/features/assessments'
+import { AssessmentEditPage, ensureAssessment } from '#/features/assessments'
+import { builderSearchSchema } from '#/features/assessments/route'
 import { ActivityEditPage } from '#/features/course-studio'
 import { ensureTaskStudio, TaskStudio } from '#/features/file-submissions'
 import { m } from '#/paraglide/messages'

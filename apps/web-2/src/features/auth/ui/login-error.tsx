@@ -15,12 +15,15 @@ const messages: Partial<Record<ErrorCode, () => string>> = {
   'account-disabled': m.auth_login_error_disabled,
 }
 
+/** Any guest request's error text; a rate limit names the minutes to wait (`Retry-After`). */
+export function limitedText(error: unknown): string {
+  if (!(error instanceof ApiError) || error.code !== 'rate-limited') return presentError(error)
+  const minutes = retryMinutes(error.retryAfter)
+  return minutes === null ? m.auth_login_error_rate_limited() : m.auth_login_error_retry_in({ minutes })
+}
+
 function attemptText(error: unknown): string {
-  if (!(error instanceof ApiError)) return presentError(error)
-  if (error.code === 'rate-limited') {
-    const minutes = retryMinutes(error.retryAfter)
-    return minutes === null ? m.auth_login_error_rate_limited() : m.auth_login_error_retry_in({ minutes })
-  }
+  if (!(error instanceof ApiError) || error.code === 'rate-limited') return limitedText(error)
   return (messages[error.code] ?? m.auth_login_error_generic)()
 }
 

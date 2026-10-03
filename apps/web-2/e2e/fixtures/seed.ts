@@ -98,7 +98,8 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   const [student, teacher, admin] = await Promise.all(Object.values(LOGINS).map(name => signIn(baseUrl, name)))
   if (!student || !teacher || !admin) throw new Error('seeded accounts missing')
   const client = createClient(createConfig({ baseUrl }))
-  const courses = await listCourses({ client, throwOnError: true })
+  // By name: made courses of parallel specs push the seed course off the first page.
+  const courses = await listCourses({ client, query: { q: 'E2E seed course' }, throwOnError: true })
   const course = courses.data.items.find(item => item.name === 'E2E seed course')
   if (!course) throw new Error('"E2E seed course" is missing: run `ashyq admin seed-e2e`')
   const curriculum = await getCurriculum({

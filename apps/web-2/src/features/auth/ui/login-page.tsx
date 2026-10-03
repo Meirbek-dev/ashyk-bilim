@@ -74,6 +74,7 @@ export function LoginPage() {
                 />
               )}
             </form.AppField>
+            <Link to="/reset-password">{m.auth_login_forgot()}</Link>
           </>
         )}
         <LoginError error={login.error} googleError={totpStep ? undefined : search.error} />

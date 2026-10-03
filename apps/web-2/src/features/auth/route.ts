@@ -18,5 +18,8 @@ export const loginSearchSchema = v.object({
   error: v.optional(v.string()),
 })
 
-/** /verify-email?email=&code=: the link in the verification email fills both fields. */
+/**
+ * /verify-email?email=&code= and /reset-password?email=&code=: the link in the email fills both fields (on
+ * /reset-password it opens the code step).
+ */
 export const verifyEmailSearchSchema = v.object({ email: v.optional(v.string()), code: v.optional(v.string()) })

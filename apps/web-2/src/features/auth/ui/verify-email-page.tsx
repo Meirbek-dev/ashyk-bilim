@@ -15,6 +15,7 @@ import { isWrongCode } from '../model/account-search'
 import { verifyEmailOptions } from '../queries'
 import { AuthForm } from './auth-form'
 import { AuthPage } from './auth-page'
+import { ResendCode } from './resend-code'
 
 /** Email confirmation by the emailed code; the link in the email fills both fields. Values survive a wrong code. */
 export function VerifyEmailPage() {
@@ -61,6 +62,7 @@ export function VerifyEmailPage() {
           {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.auth_verify_submit()}
         </Button>
+        <ResendCode email={() => form.getFieldValue('email')} />
       </AuthForm>
       <Link to="/login">{m.auth_verify_to_login()}</Link>
     </AuthPage>
