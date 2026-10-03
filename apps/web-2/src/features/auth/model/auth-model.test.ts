@@ -5,7 +5,7 @@ import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
 import { loginSearchSchema, verifyEmailSearchSchema } from '../route'
-import { isWrongCode, signupFieldOf } from './account-search'
+import { isResetCodeInvalid, isWrongCode, resetFormError, signupFieldOf } from './account-search'
 import { googleStartHref, retryMinutes } from './login-search'
 
 const redirectOf = (value: unknown) => v.parse(loginSearchSchema, { redirect: value }).redirect
@@ -52,5 +52,16 @@ describe('auth model', () => {
     expect(isWrongCode(apiError('validation-failed', [{ field: 'code', code: 'invalid', message: '' }]))).toBe(true)
     expect(isWrongCode(apiError('validation-failed', [{ field: 'email', code: 'invalid', message: '' }]))).toBe(false)
     expect(isWrongCode(apiError('rate-limited'))).toBe(false)
+  })
+
+  test('B-AUTH-13 reset-code-invalid goes under the code, a policy error under its field, the rest to the form', () => {
+    const invalid = apiError('reset-code-invalid')
+    const policy = apiError('validation-failed', [{ field: 'new_password', code: 'invalid', message: '' }])
+    const limited = apiError('rate-limited')
+    expect(isResetCodeInvalid(invalid)).toBe(true)
+    expect(isResetCodeInvalid(limited)).toBe(false)
+    expect(resetFormError(invalid)).toBeNull()
+    expect(resetFormError(policy)).toBeNull()
+    expect(resetFormError(limited)).toBe(limited)
   })
 })

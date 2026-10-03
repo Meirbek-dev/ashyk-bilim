@@ -1,4 +1,5 @@
 export { LoginPage } from './ui/login-page'
+export { ResetPasswordPage } from './ui/reset-password-page'
 export { SignupPage } from './ui/signup-page'
 export { useLogout } from './ui/use-logout'
 export { VerifyEmailPage } from './ui/verify-email-page'
