@@ -120,7 +120,7 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up and lands on the email check', async 
 })
 
 test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the input', async ({ page, baseURL }) => {
-  const account = await registerAccount(String(baseURL))
+  const account = await registerAccount(String(baseURL), newAccount()) // unverified: never a pool one
   const code = await verificationCode(account.email)
   await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
   await page.goto(`/verify-email?email=${encodeURIComponent(account.email)}`)
@@ -205,7 +205,7 @@ test('B-AUTH-12 B-AUTH-13 an unknown login gets the same answer; the email link 
 })
 
 test('B-AUTH-14 the verification code is sent again; a throttled resend names the wait', async ({ page, baseURL }) => {
-  const account = await registerAccount(String(baseURL))
+  const account = await registerAccount(String(baseURL), newAccount()) // unverified: never a pool one
   await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
   await page.goto(`/verify-email?email=${encodeURIComponent(account.email)}`)
   const resend = page.getByRole('button', { name: m.auth_verify_resend({}, ru) })

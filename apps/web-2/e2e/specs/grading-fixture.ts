@@ -25,7 +25,7 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import type { GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
 
-import { newAccount, randomIp, registerAccount } from '../fixtures/accounts'
+import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect as baseExpect, test as base } from '../fixtures/seed'
 
 // Data of the grading spec through the generated SDK: a course of e2e-teacher with a quiz (a choice item, an open
@@ -49,11 +49,8 @@ export type Graded = {
 
 export type FileTask = { courseId: string; activityId: string; attemptId: string; name: string }
 
-async function learnerSession(api: Client, baseUrl: string, display: string) {
-  const account = await registerAccount(baseUrl, {
-    ...newAccount(),
-    username: `e2e-${display}-${randomUUID().slice(0, 6)}`,
-  })
+async function learnerSession(api: Client, baseUrl: string) {
+  const account = await registerAccount(baseUrl)
   // A sign-in right after the registration is now and then refused (401) on the local stand: asked again briefly.
   let cookie = ''
   await baseExpect
@@ -119,7 +116,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       await lifecycle({ ...call, path, body: { to: 'published' } })
       await courseLifecycle({ ...call, path: { course_id: courseId }, body: { action: 'publish' } })
       const handIn = async (display: string, option: string): Promise<Learner> => {
-        const learner = await learnerSession(api, String(baseURL), display)
+        const learner = await learnerSession(api, String(baseURL))
         const asLearner = { client: api, headers: learner.headers, throwOnError: true } as const
         await enroll({ ...asLearner, path: { course_id: courseId } })
         const draft = await startSubmission({ ...asLearner, path })
@@ -163,7 +160,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       const task = { file_submission_id: created.data.id }
       await publishFileSubmission({ ...call, path: task })
       await courseLifecycle({ ...call, path: { course_id: courseId }, body: { action: 'publish' } })
-      const learner = await learnerSession(api, String(baseURL), 'dana')
+      const learner = await learnerSession(api, String(baseURL))
       const asLearner = { client: api, headers: learner.headers, throwOnError: true } as const
       await enroll({ ...asLearner, path: { course_id: courseId } })
       const pdf = Buffer.from('%PDF-1.4\n%e2e\n')

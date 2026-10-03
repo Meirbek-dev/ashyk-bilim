@@ -1,5 +1,6 @@
 import { createHmac, randomInt, randomUUID } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { closeSync, openSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { login, register, totpEnroll, totpVerify } from '#/shared/api/gen/sdk.gen'
@@ -19,7 +20,36 @@ export function newAccount(): NewAccount {
   return { username, email: `${username}@e2e.test`, password: `E2e-${randomUUID().slice(0, 8)}-Pw1!` }
 }
 
-export async function registerAccount(baseUrl: string, account: NewAccount = newAccount()): Promise<NewAccount> {
+/**
+ * The stand (`just web2-e2e`) caps self-registration at 10 per hour for everyone (nginx sets the address): with
+ * E2E_LEARNERS=<n> and E2E_LEARNERS_DIR a test takes the next untaken `seed-e2e --learners <n>` account (verified,
+ * E2E_PASSWORD). A taken one is a file in that directory, so parallel workers and reruns never share an account.
+ */
+function poolAccount(): NewAccount | undefined {
+  const size = Number(process.env['E2E_LEARNERS'] ?? 0)
+  const dir = process.env['E2E_LEARNERS_DIR']
+  const password = process.env['E2E_PASSWORD']
+  if (!size || !dir || !password) return undefined
+  for (let n = 1; n <= size; n++) {
+    const id = String(n).padStart(3, '0')
+    try {
+      closeSync(openSync(join(dir, id), 'wx'))
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'EEXIST') continue
+      throw error
+    }
+    return { username: `e2e-learner-${id}`, email: `learner-${id}@e2e.test`, password }
+  }
+  return undefined
+}
+
+/** A fresh account: a pool one when configured, unless `account` asks for a real (unverified) registration. */
+export async function registerAccount(baseUrl: string, account?: NewAccount): Promise<NewAccount> {
+  if (!account) {
+    const pooled = poolAccount()
+    if (pooled) return pooled
+    account = newAccount()
+  }
   const client = createClient(createConfig({ baseUrl }))
   await register({
     client,
