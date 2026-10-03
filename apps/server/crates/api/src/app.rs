@@ -194,8 +194,10 @@ fn certification_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::certifications::list_course_certifications))
         .routes(routes!(routes::certifications::my_course_certificates))
         .routes(routes!(routes::certifications::my_certificates))
+        .routes(routes!(routes::certifications::my_certificates_page))
         .routes(routes!(routes::certifications::verify_certificate))
         .routes(routes!(routes::certifications::certificate_pdf))
+        .routes(routes!(routes::certifications::certification_preview_pdf))
 }
 
 fn discussion_routes() -> OpenApiRouter<AppState> {
@@ -205,6 +207,7 @@ fn discussion_routes() -> OpenApiRouter<AppState> {
             routes::discussions::create_discussion
         ))
         .routes(routes!(
+            routes::discussions::get_discussion,
             routes::discussions::update_discussion,
             routes::discussions::delete_discussion
         ))
@@ -225,6 +228,8 @@ fn progress_routes() -> OpenApiRouter<AppState> {
             routes::progress::remove_activity
         ))
         .routes(routes!(routes::progress::learner_course_state))
+        .routes(routes!(routes::progress::list_course_learners))
+        .routes(routes!(routes::progress::remove_course_learner))
 }
 
 fn file_submission_routes() -> OpenApiRouter<AppState> {
@@ -274,8 +279,10 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::users::set_user_status))
         .routes(routes!(routes::users::public_profile))
         .routes(routes!(routes::users::public_profile_by_id))
+        .routes(routes!(routes::users::get_admin_user))
         .routes(routes!(routes::users::user_courses))
         .routes(routes!(routes::rbac::list_roles))
+        .routes(routes!(routes::rbac::get_role))
         .routes(routes!(routes::rbac::assign_role))
         .routes(routes!(routes::rbac::unassign_role))
         .routes(routes!(routes::rbac::create_role))
@@ -291,6 +298,7 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::usergroups::update_usergroup))
         .routes(routes!(routes::usergroups::delete_usergroup))
         .routes(routes!(routes::usergroups::list_usergroup_members))
+        .routes(routes!(routes::usergroups::list_usergroup_members_page))
         .routes(routes!(routes::usergroups::add_usergroup_members))
         .routes(routes!(routes::usergroups::remove_usergroup_members))
         .routes(routes!(routes::usergroups::list_usergroup_courses))
@@ -310,6 +318,7 @@ fn catalog_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::courses::delete_course))
         .routes(routes!(routes::courses::course_readiness))
         .routes(routes!(routes::courses::list_contributors))
+        .routes(routes!(routes::courses::list_contributors_page))
         .routes(routes!(routes::courses::add_contributor))
         .routes(routes!(routes::courses::update_contributor))
         .routes(routes!(routes::courses::remove_contributor))
@@ -329,6 +338,7 @@ fn catalog_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::curriculum::get_block))
         .routes(routes!(routes::curriculum::delete_block))
         .routes(routes!(routes::courses::list_course_updates))
+        .routes(routes!(routes::courses::list_course_updates_page))
         .routes(routes!(routes::courses::create_course_update))
         .routes(routes!(routes::courses::edit_course_update))
         .routes(routes!(routes::courses::delete_course_update))
@@ -447,6 +457,7 @@ pub fn build_router(state: AppState) -> Result<Router> {
             ))
         })
         .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
+        .layer(axum::middleware::from_fn(crate::middleware::lang_query))
         // Inside `SetRequestIdLayer`: makes the id reachable from
         // `ApiError::into_response` (problem+json `request_id`).
         .layer(axum::middleware::from_fn(

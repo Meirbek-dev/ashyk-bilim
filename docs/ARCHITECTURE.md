@@ -258,12 +258,28 @@ pub enum Error {
   Serialization of DB row types in `ab-api` is prevented by convention + review
   gate: response DTOs live in `ab-api::dto` and derive `ToSchema`; `ab-db` row
   structs do not derive `Serialize`.
-- **Pagination**: keyset only, opaque `cursor` (URL-safe base64 of the key tuple),
-  `limit` capped server-side; response shape `{ "items": [...], "next_cursor": "…" }`.
-  No offset pagination anywhere (the legacy gradebook cursor pattern generalizes).
-- **Idempotency**: mutating POSTs that clients may retry (submission submit, upload
-  finalize, enrollment) accept `Idempotency-Key`; keys + response digests are stored
-  in Postgres with 24h TTL sweep.
+- **Pagination** (S-05): two envelopes. Keyset `{ "items": [...], "next_cursor": "…" }`
+  with an opaque string cursor (older lists use the last row's id, which stays a
+  valid cursor; composite keys are encoded, e.g. the leaderboard's
+  `"<xp>.<profile id>"`), `limit` capped server-side; numbered pages
+  (`page`/`page_size`/`total`) for analytics tables only. Lists that answered a
+  bare array keep it and gain a `/page` sibling (`ab_core::page_after`, paged
+  in memory); the leaderboard keeps `limit`/`offset` beside `cursor` until phase 9.
+- **Idempotency**: every creating/submitting POST the web calls accepts
+  `Idempotency-Key` (`extract::idempotent`); keys + response digests are stored
+  in Postgres with 24h TTL sweep; a 204 replays without a body.
+- **Optimistic concurrency** (S-04): every resource the web edits answers
+  `version` and, on its single read, `ETag: "<version>"`; mutations take an
+  optional `If-Match` and answer 412 `precondition-failed` (`details {expected,
+  actual}`) when it is stale (`extract::require_if_match`, after the permission
+  gate). Courses, chapters, announcements, certifications, roster rows,
+  usergroups, roles, the platform and assessments bump `version` through the
+  `bump_version` trigger; collections, activities, drafts and grades keep their
+  explicit counters.
+- **`Prefer: return=representation`**: writes that answer 204 (admin role /
+  status / membership writes) or a different resource (trail writes → the
+  course's `learner_state`) return the updated resource on request; the
+  default stays as it was.
 - **SSE**: `axum::response::Sse` + `async-stream`. Event log per stream in
   **Redis Streams** (`XADD` with `MAXLEN ~ 1024`), `Last-Event-ID` resumes via
   `XRANGE` — replay is native, no custom event-log code like the legacy version.
@@ -385,10 +401,10 @@ not the template. Redesign rules:
    is a domain status where the domain needs it (courses, assessments).
 6. Full-text search: `tsvector` **generated stored columns** + GIN (legacy built
    vectors in queries); `document_chunks` keeps pgvector `vector` + HNSW.
-7. Optimistic concurrency where the legacy had it (submission version counters):
-   single `version bigint` bumped via `UPDATE … WHERE version = $n` (409 on miss),
-   replacing the legacy's six parallel counters with per-column-family versions
-   only where genuinely concurrent (grading vs. draft).
+7. Optimistic concurrency: one integer `version` per edited resource (see
+   section 6, S-04; 412 on a stale `If-Match`), plus the per-column-family
+   counters where genuinely concurrent (grading vs. draft; the draft save keeps
+   its 409 until phase 9).
 
 ### SQLx usage
 

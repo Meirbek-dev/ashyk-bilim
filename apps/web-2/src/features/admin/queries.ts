@@ -34,26 +34,15 @@ import {
   updateRoleMutation,
   updateUsergroupMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import {
-  addUsergroupMembers,
-  listUsergroups,
-  listUsers,
-  type Options,
-  removeUsergroupMembers,
-} from '#/shared/api/gen/sdk.gen'
+import { addUsergroupMembers, listUsergroups, listUsers, removeUsergroupMembers } from '#/shared/api/gen/sdk.gen'
 import type {
   AdminUser,
   AdminUserPage,
-  AssignRoleData,
   GamificationConfig,
   Platform,
   Role,
   SearchResults,
   SessionInfo,
-  SetRolePermissionsData,
-  SetUserStatusData,
-  UnassignRoleData,
-  UpdateRoleData,
   UserId,
   Usergroup,
   UsergroupId,
@@ -113,12 +102,13 @@ export function loadUsersPage(queryClient: QueryClient, session: SessionInfo | n
 
 type UsersData = InfiniteData<AdminUserPage> | AdminUserPage
 
-/** These writes answer 204: the change goes into every cached copy of the user (list pages and the panel). */
-function patchUser(queryClient: QueryClient, id: UserId, change: (user: AdminUser) => AdminUser) {
-  const page = (one: AdminUserPage) => ({
-    ...one,
-    items: one.items.map(user => (user.id === id ? change(user) : user)),
-  })
+/** `Prefer: return=representation`: these writes answer the changed object instead of 204. */
+const representation = { headers: { Prefer: 'return=representation' } }
+
+/** The answered user replaces every cached copy (list pages and the panel), `allowed_actions` included. */
+function putUser(queryClient: QueryClient, next: AdminUser | void) {
+  if (!next) return
+  const page = (one: AdminUserPage) => ({ ...one, items: one.items.map(user => (user.id === next.id ? next : user)) })
   queryClient.setQueriesData<UsersData>({ queryKey: listUsersQueryKey() }, data =>
     !data || !('pages' in data) ? data && page(data) : { ...data, pages: data.pages.map(page) },
   )
@@ -128,21 +118,18 @@ function patchUser(queryClient: QueryClient, id: UserId, change: (user: AdminUse
 export const createUserOptions = () => ({ ...createUserMutation(), meta: { invalidates: [listUsersQueryKey()] } })
 
 export const assignRoleOptions = (queryClient: QueryClient) => ({
-  ...assignRoleMutation(),
-  onSuccess: (_: unknown, { path, body }: Options<AssignRoleData>) =>
-    patchUser(queryClient, path.user_id, user => ({ ...user, roles: [...user.roles, body.role] })),
+  ...assignRoleMutation(representation),
+  onSuccess: (user: AdminUser | void) => putUser(queryClient, user),
 })
 
 export const unassignRoleOptions = (queryClient: QueryClient) => ({
-  ...unassignRoleMutation(),
-  onSuccess: (_: unknown, { path }: Options<UnassignRoleData>) =>
-    patchUser(queryClient, path.user_id, user => ({ ...user, roles: user.roles.filter(slug => slug !== path.slug) })),
+  ...unassignRoleMutation(representation),
+  onSuccess: (user: AdminUser | void) => putUser(queryClient, user),
 })
 
 export const setUserStatusOptions = (queryClient: QueryClient) => ({
-  ...setUserStatusMutation(),
-  onSuccess: (_: unknown, { path, body }: Options<SetUserStatusData>) =>
-    patchUser(queryClient, path.user_id, user => ({ ...user, status: body.disabled ? 'disabled' : 'active' })),
+  ...setUserStatusMutation(representation),
+  onSuccess: (user: AdminUser | void) => putUser(queryClient, user),
 })
 
 export const awardOptions = () => adminAwardMutation()
@@ -157,28 +144,24 @@ export async function ensureRole(queryClient: QueryClient, slug: string) {
   return role
 }
 
-const patchRole = (queryClient: QueryClient, slug: string, change: (role: Role) => Role) =>
-  queryClient.setQueryData(listRolesQueryKey(), (roles: Role[] | undefined) =>
-    roles?.map(role => (role.slug === slug ? change(role) : role)),
-  )
+/** The answered role replaces its row of the cached list. */
+const putRole = (queryClient: QueryClient) => (next: Role | void) => {
+  if (next)
+    queryClient.setQueryData(listRolesQueryKey(), (roles: Role[] | undefined) =>
+      roles?.map(role => (role.slug === next.slug ? next : role)),
+    )
+}
 
 export const createRoleOptions = () => ({ ...createRoleMutation(), meta: { invalidates: [listRolesQueryKey()] } })
 
 export const updateRoleOptions = (queryClient: QueryClient) => ({
-  ...updateRoleMutation(),
-  onSuccess: (_: unknown, { path, body }: Options<UpdateRoleData>) =>
-    patchRole(queryClient, path.slug, role => ({
-      ...role,
-      display_name: body.display_name ?? role.display_name,
-      description: body.description ?? role.description,
-      priority: body.priority ?? role.priority,
-    })),
+  ...updateRoleMutation(representation),
+  onSuccess: putRole(queryClient),
 })
 
 export const setPermissionsOptions = (queryClient: QueryClient) => ({
-  ...setRolePermissionsMutation(),
-  onSuccess: (_: unknown, { path, body }: Options<SetRolePermissionsData>) =>
-    patchRole(queryClient, path.slug, role => ({ ...role, permissions: body.permissions })),
+  ...setRolePermissionsMutation(representation),
+  onSuccess: putRole(queryClient),
 })
 
 // The deleted role leaves the cached list: the list page it returns to needs no refetch.
@@ -269,29 +252,49 @@ export const deleteGroupOptions = () => ({ ...deleteUsergroupMutation(), meta: {
 type Membership = { group: UsergroupId; members: UsergroupMember[] }
 const ids = (members: UsergroupMember[]) => ({ user_ids: members.map(member => member.id) })
 
-/** Both answer 204: the members list (when cached) takes the change; the lists re-read their counts when shown. */
-const patchMembers = (
+/**
+ * Both answer the group (`Prefer: return=representation`): it replaces the cached group and its list rows (member
+ * count); the members list (when cached) takes the change itself.
+ */
+function putMembership(
   queryClient: QueryClient,
   id: UsergroupId,
+  next: Usergroup | void,
   change: (list: UsergroupMember[]) => UsergroupMember[],
-) =>
+) {
   queryClient.setQueryData(
     listUsergroupMembersQueryKey({ path: { usergroup_id: id } }),
     (list: UsergroupMember[] | undefined) => list && change(list),
   )
+  if (!next) return
+  const page = (one: UsergroupPage) => ({ ...one, items: one.items.map(row => (row.id === next.id ? next : row)) })
+  queryClient.setQueryData(getUsergroupQueryKey({ path: { usergroup_id: id } }), next)
+  queryClient.setQueriesData<InfiniteData<UsergroupPage>>(
+    { queryKey: groupLists() },
+    data => data && { ...data, pages: data.pages.map(page) },
+  )
+}
+
+const membership = ({ group, members }: Membership) => ({
+  path: { usergroup_id: group },
+  body: ids(members),
+  throwOnError: true,
+  ...representation,
+})
 
 export const addMembersOptions = (queryClient: QueryClient) => ({
-  mutationFn: ({ group, members }: Membership) =>
-    addUsergroupMembers({ path: { usergroup_id: group }, body: ids(members), throwOnError: true }),
-  onSuccess: (_: unknown, { group, members }: Membership) =>
-    patchMembers(queryClient, group, list => [...list, ...members.filter(added => !list.some(m => m.id === added.id))]),
-  meta: { invalidates: [groupLists()] },
+  mutationFn: async (change: Membership) => (await addUsergroupMembers(membership(change))).data,
+  onSuccess: (next: Usergroup | void, { group, members }: Membership) =>
+    putMembership(queryClient, group, next, list => [
+      ...list,
+      ...members.filter(added => !list.some(m => m.id === added.id)),
+    ]),
 })
 
 export const removeMembersOptions = (queryClient: QueryClient) => ({
-  mutationFn: ({ group, members }: Membership) =>
-    removeUsergroupMembers({ path: { usergroup_id: group }, body: ids(members), throwOnError: true }),
-  onSuccess: (_: unknown, { group, members }: Membership) =>
-    patchMembers(queryClient, group, list => list.filter(member => !members.some(gone => gone.id === member.id))),
-  meta: { invalidates: [groupLists()] },
+  mutationFn: async (change: Membership) => (await removeUsergroupMembers(membership(change))).data,
+  onSuccess: (next: Usergroup | void, { group, members }: Membership) =>
+    putMembership(queryClient, group, next, list =>
+      list.filter(member => !members.some(gone => gone.id === member.id)),
+    ),
 })

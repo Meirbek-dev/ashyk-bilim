@@ -1,0 +1,97 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.id AS \"id: UsergroupId\", g.name, g.description,\n                  g.creator_id AS \"creator_id: UserId\",\n                  (SELECT count(*) FROM usergroup_members m\n                   WHERE m.usergroup_id = g.id) AS \"member_count!\",\n                  g.version,\n                  (extract(epoch FROM g.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM g.updated_at))::bigint AS \"updated_at!\"\n           FROM usergroup_courses gc\n           JOIN usergroups g ON g.id = gc.usergroup_id\n           WHERE gc.course_id = $1\n           ORDER BY g.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: UsergroupId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "creator_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "creator_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "member_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "usergroups",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "312b4ab28aacb0d180a55a3ebe998121c22bdc041fda679f177d05c181ddf431"
+}

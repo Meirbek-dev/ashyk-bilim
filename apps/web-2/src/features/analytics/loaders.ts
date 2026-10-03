@@ -1,6 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
 import * as v from 'valibot'
 
+import { ApiError } from '#/shared/api/errors'
+import { getUsergroupOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+
 import {
   type Filters,
   learnersSearchSchema,
@@ -25,6 +28,21 @@ import {
 // Route loaders: each tab ensures what its screen reads with useSuspenseQuery (spec 7.3), from the full search.
 
 type Search<T extends v.GenericSchema> = Filters & v.InferOutput<T>
+
+/**
+ * A group in the URL the caller cannot read (deleted, or a link from someone else) would fail every read with 422 or
+ * 403 (BUG-121): the layout reads the group once (`getUsergroup`) and drops it on 403, 404 or 422.
+ */
+export async function hasUnknownCohort(queryClient: QueryClient, filters: Filters): Promise<boolean> {
+  if (!filters.cohort) return false
+  try {
+    await queryClient.ensureQueryData(getUsergroupOptions({ path: { usergroup_id: filters.cohort } }))
+    return false
+  } catch (error) {
+    if (error instanceof ApiError && [403, 404, 422].includes(error.status)) return true
+    throw error
+  }
+}
 
 /** The layout: the overview answer carries the filter choices (courses, groups); the saved views. */
 export const loadAnalytics = (queryClient: QueryClient, filters: Filters) =>

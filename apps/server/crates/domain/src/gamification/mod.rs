@@ -356,6 +356,51 @@ impl GamificationService {
         })
     }
 
+    /// S-05 keyset page: `cursor` is the previous page's `next_cursor`
+    /// (`"<total_xp>.<profile id>"`, opaque to clients).
+    pub async fn leaderboard_page(
+        &self,
+        limit: i64,
+        cursor: Option<&str>,
+    ) -> Result<(Leaderboard, Option<String>)> {
+        let limit = ab_core::page_limit(limit, MAX_LEADERBOARD_PAGE)?;
+        let after = cursor
+            .map(|c| {
+                c.split_once('.')
+                    .and_then(|(xp, id)| Some((xp.parse().ok()?, id.parse().ok()?)))
+                    .ok_or_else(|| {
+                        Error::validation(vec![FieldError {
+                            field: "cursor".into(),
+                            code: "invalid".into(),
+                            message: "not a leaderboard cursor".into(),
+                        }])
+                    })
+            })
+            .transpose()?;
+        let mut rows = ab_db::gamification::leaderboard_after(&self.pool, limit + 1, after).await?;
+        let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
+            rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            rows.last()
+                .map(|r| format!("{}.{}", r.total_xp, r.profile_id))
+        } else {
+            None
+        };
+        let total_participants = ab_db::gamification::count_profiles(&self.pool).await?;
+        Ok((
+            Leaderboard {
+                entries: rows
+                    .into_iter()
+                    .map(|row| LeaderboardEntry {
+                        rank: row.rank,
+                        row,
+                    })
+                    .collect(),
+                total_participants,
+            },
+            next,
+        ))
+    }
+
     pub async fn dashboard(&self, actor: &Actor) -> Result<Dashboard> {
         let profile = ab_db::gamification::ensure_profile(&self.pool, actor.user_id).await?;
         let recent_transactions = ab_db::gamification::recent_transactions(

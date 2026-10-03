@@ -9,13 +9,12 @@ import {
   getCurriculumOptions,
   getTrailQueryKey,
   learnerCourseStateOptions,
-  learnerCourseStateQueryKey,
   listContributorsOptions,
   listCourseUpdatesOptions,
   removeContributorMutation,
   removeCourseMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import type { Contributor, CourseId, SessionInfo, UserId } from '#/shared/api/gen/types.gen'
+import type { Contributor, CourseId, SessionInfo, Trail, UserId } from '#/shared/api/gen/types.gen'
 
 const byId = (id: CourseId) => ({ path: { course_id: id } })
 
@@ -25,10 +24,23 @@ export const learnerStateOptions = (id: CourseId) => learnerCourseStateOptions(b
 export const contributorsOptions = (id: CourseId) => listContributorsOptions(byId(id))
 export const updatesOptions = (id: CourseId) => listCourseUpdatesOptions(byId(id))
 
-// Enrolment answers a Trail, not the learner state: the state (and "my courses") are read again.
-const enrolment = (id: CourseId) => ({ invalidates: [learnerCourseStateQueryKey(byId(id)), getTrailQueryKey()] })
-export const enrollOptions = (id: CourseId) => ({ ...addCourseMutation(), meta: enrolment(id) })
-export const leaveOptions = (id: CourseId) => ({ ...removeCourseMutation(), meta: enrolment(id) })
+// Enrolment with `Prefer: return=representation` answers the Trail with the course's `learner_state`: the cache
+// takes it; "my courses" is read again.
+const withState = { headers: { Prefer: 'return=representation' } }
+const enrolment = (queryClient: QueryClient, id: CourseId) => ({
+  onSuccess: ({ learner_state: state }: Trail) => {
+    if (state) queryClient.setQueryData(learnerStateOptions(id).queryKey, state)
+  },
+  meta: { invalidates: [getTrailQueryKey()] },
+})
+export const enrollOptions = (queryClient: QueryClient, id: CourseId) => ({
+  ...addCourseMutation(withState),
+  ...enrolment(queryClient, id),
+})
+export const leaveOptions = (queryClient: QueryClient, id: CourseId) => ({
+  ...removeCourseMutation(withState),
+  ...enrolment(queryClient, id),
+})
 
 // The roster in the cache takes the answer: the caller's own row is added on apply and dropped on withdraw.
 const setRoster = (queryClient: QueryClient, id: CourseId, change: (rows: Contributor[]) => Contributor[]) =>

@@ -11,12 +11,13 @@ pub struct PlatformRow {
     pub label: Option<String>,
     pub logo_key: Option<String>,
     pub thumbnail_key: Option<String>,
+    pub version: i32,
 }
 
 pub async fn get_platform(pool: &PgPool) -> Result<Option<PlatformRow>> {
     let row = sqlx::query_as!(
         PlatformRow,
-        "SELECT name, description, about, email, label, logo_key, thumbnail_key
+        "SELECT name, description, about, email, label, logo_key, thumbnail_key, version
          FROM platforms WHERE singleton"
     )
     .fetch_optional(pool)

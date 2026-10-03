@@ -128,6 +128,7 @@ pub async fn item_analytics(
     params(
         ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
@@ -351,6 +352,7 @@ pub async fn get_bulk_action(
     params(
         ("course_id" = CourseId, Path, description = "Course id"),
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses(
         (status = 200, description = "CSV", content_type = "text/csv", body = String),

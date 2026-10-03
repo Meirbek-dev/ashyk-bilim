@@ -210,13 +210,14 @@ pub struct RoleRow {
     pub description: Option<String>,
     pub priority: i32,
     pub is_system: bool,
+    pub version: i32,
 }
 
 pub async fn list_roles(pool: &PgPool) -> Result<Vec<RoleRow>> {
     let rows = sqlx::query_as!(
         RoleRow,
         r#"SELECT id, slug, display_name_key, description_key, display_name, description,
-                  priority, is_system
+                  priority, is_system, version
            FROM roles ORDER BY priority DESC"#
     )
     .fetch_all(pool)
@@ -238,7 +239,7 @@ pub async fn find_role_by_slug(pool: &PgPool, slug: &str) -> Result<Option<RoleR
     let row = sqlx::query_as!(
         RoleRow,
         r#"SELECT id, slug, display_name_key, description_key, display_name, description,
-                  priority, is_system
+                  priority, is_system, version
            FROM roles WHERE slug = $1"#,
         slug
     )
@@ -535,6 +536,13 @@ pub async fn replace_role_permissions(
         .execute(&mut *tx)
         .await?;
     }
+    // The grant set is part of the role: its `If-Match` version moves too.
+    sqlx::query!(
+        "UPDATE roles SET version = version + 1 WHERE id = $1",
+        role_id
+    )
+    .execute(&mut *tx)
+    .await?;
     let holders = bump_role_holders(&mut tx, role_id).await?;
     tx.commit().await?;
     Ok(Some(holders))
@@ -580,15 +588,30 @@ pub struct AdminUserRow {
     pub created_at: i64,
 }
 
-/// Keyset page of all users, newest first, with aggregated role slugs.
-/// `q` narrows by username/display name/email substring.
+/// Admin listing filters (`GET /users`).
+#[derive(Debug, Default, Clone, Copy)]
+pub struct UserFilter<'a> {
+    /// Substring over username / display name / email / organization.
+    pub q: Option<&'a str>,
+    /// `active` | `disabled`.
+    pub status: Option<&'a str>,
+    /// Holders of this role slug only.
+    pub role: Option<&'a str>,
+    /// `name` (display name A-Z) or anything else = newest first.
+    pub sort: &'a str,
+}
+
+/// Keyset page of all users with aggregated role slugs. The cursor is the
+/// last id seen; the keyset is `id` (newest) or `(lower(display_name), id)`
+/// resolved from that id (`name`).
 pub async fn list_users(
     pool: &PgPool,
-    q: Option<&str>,
+    filter: UserFilter<'_>,
     cursor: Option<UserId>,
     limit: i64,
 ) -> Result<Vec<AdminUserRow>> {
-    let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
+    let pattern = filter.q.map(|q| format!("%{}%", crate::like_escape(q)));
+    let by_name = filter.sort == "name";
     let rows = sqlx::query_as!(
         AdminUserRow,
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
@@ -601,13 +624,27 @@ pub async fn list_users(
            WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE '\'
                   OR u.display_name ILIKE $1 ESCAPE '\' OR u.email ILIKE $1 ESCAPE '\'
                   OR u.organization ILIKE $1 ESCAPE '\')
-             AND ($2::uuid IS NULL OR u.id < $2)
+             AND ($4::text IS NULL OR u.status = $4)
+             AND ($5::text IS NULL OR EXISTS (
+                   SELECT 1 FROM user_roles fr JOIN roles f ON f.id = fr.role_id
+                   WHERE fr.user_id = u.id AND f.slug = $5))
+             AND ($2::uuid IS NULL OR CASE
+                   WHEN $6::bool
+                   THEN (lower(u.display_name), u.id)
+                        > (SELECT lower(c.display_name), c.id FROM users c WHERE c.id = $2)
+                   ELSE u.id < $2
+                 END)
            GROUP BY u.id
-           ORDER BY u.id DESC
+           ORDER BY CASE WHEN $6 THEN lower(u.display_name) END ASC,
+                    CASE WHEN $6 THEN u.id END ASC,
+                    u.id DESC
            LIMIT $3"#,
         pattern.as_deref(),
         cursor.map(|c| c.0),
-        limit
+        limit,
+        filter.status,
+        filter.role,
+        by_name
     )
     .fetch_all(pool)
     .await?;

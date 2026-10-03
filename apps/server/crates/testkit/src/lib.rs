@@ -72,6 +72,7 @@ pub fn test_config() -> Config {
             otlp_endpoint: None,
         },
         ai: AiConfig::default(),
+        auth: ab_core::config::AuthConfig::default(),
     }
 }
 
@@ -138,7 +139,8 @@ impl TestApp {
         );
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
-            .expect("test redis reachable (see AGENTS.md local dev stack)");
+            .expect("test redis reachable (see AGENTS.md local dev stack)")
+            .with_max_sessions(config.auth.limits.sessions_per_user as usize);
         let zitadel_client = Arc::new(
             ZitadelClient::new(ZitadelConfig {
                 base_url: zitadel.uri(),
@@ -161,7 +163,8 @@ impl TestApp {
             Arc::new(ab_clients::resend::ResendClient::new(c).expect("test resend client"))
         });
         let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone())
-            .with_mailer(mailer, config.server.web_url.clone());
+            .with_mailer(mailer, config.server.web_url.clone())
+            .with_limits(config.auth.limits);
         let google_auth = ab_domain::identity::GoogleAuthService::new(
             pool.clone(),
             sessions.clone(),

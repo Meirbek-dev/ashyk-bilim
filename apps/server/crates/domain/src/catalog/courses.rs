@@ -61,6 +61,20 @@ pub enum CourseAction {
     Delete,
     /// Roster writes (`/courses/{id}/contributors`).
     ManageContributors,
+    /// `POST /courses/{id}/contributors/apply` (open course, signed in,
+    /// not an author yet; an existing pending row still answers 409).
+    ApplyContributor,
+}
+
+/// `CourseUpdate.allowed_actions`: an announcement's writes follow the
+/// course's `update`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CourseUpdateAction {
+    /// `PATCH /course-updates/{id}`.
+    Update,
+    /// `DELETE /course-updates/{id}`.
+    Delete,
 }
 
 #[derive(Debug, Default)]
@@ -224,10 +238,26 @@ impl CoursesService {
             (CourseAction::Restore, roster && !open),
             (CourseAction::Delete, Self::may_delete(actor, course)),
             (CourseAction::ManageContributors, roster && open),
+            (
+                CourseAction::ApplyContributor,
+                open && course.open_to_contributors
+                    && !actor.is_anonymous()
+                    && !course.is_author(actor.user_id),
+            ),
         ]
         .into_iter()
         .filter_map(|(action, ok)| ok.then_some(action))
         .collect()
+    }
+
+    /// The caller's actions on the course's announcements.
+    #[must_use]
+    pub fn update_actions(actor: &Actor, course: &Course) -> Vec<CourseUpdateAction> {
+        if Self::require_write(actor, course).is_ok() && course.archived_at.is_none() {
+            vec![CourseUpdateAction::Update, CourseUpdateAction::Delete]
+        } else {
+            Vec::new()
+        }
     }
 
     /// Visibility: public, author (creator / active contributor), active
@@ -539,7 +569,8 @@ impl CoursesService {
         Self::require_write(actor, &course)?;
         course.ensure_not_archived()?;
         let update_id =
-            ab_db::catalog::insert_course_update(&self.pool, id, title, content).await?;
+            ab_db::catalog::insert_course_update(&self.pool, id, title, content, actor.user_id)
+                .await?;
         ab_db::catalog::get_course_update(&self.pool, update_id)
             .await?
             .ok_or_else(|| Error::not_found("course update"))

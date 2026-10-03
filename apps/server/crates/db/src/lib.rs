@@ -23,6 +23,7 @@ pub mod search;
 pub mod submissions;
 pub mod uploads;
 pub mod usergroups;
+pub mod versions;
 pub mod work_queue;
 
 use std::time::Duration;

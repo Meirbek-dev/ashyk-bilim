@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { Leaderboard, LeaderboardEntry, Profile } from '#/shared/api/gen/types.gen'
+import type { Profile } from '#/shared/api/gen/types.gen'
 
-import { activeStreak, homeStreak, leaderboardRows, levelProgress, nextLeaderboardOffset } from './achievements'
+import { activeStreak, homeStreak, levelProgress } from './achievements'
 
 const DAY = 86_400
 const NOW = 20_729 * DAY + 3600 // 01:00 UTC
@@ -30,20 +30,6 @@ const profile = (patch: Partial<Profile>): Profile => ({
   ...patch,
 })
 
-const entry = (user_id: string, rank: number): LeaderboardEntry => ({
-  user_id,
-  rank,
-  display_name: user_id,
-  username: user_id,
-  avatar_key: null,
-  level: 1,
-  total_xp: 100 - rank,
-})
-const page = (ids: string[], total: number): Leaderboard => ({
-  entries: ids.map((id, index) => entry(id, index + 1)),
-  total_participants: total,
-})
-
 describe('achievements model', () => {
   test('B-ACH-02 level progress comes from the server fields; the last level has no next one', () => {
     expect(levelProgress(profile({}))).toEqual({ percent: 38, next: 4, left: 125 })
@@ -59,18 +45,6 @@ describe('achievements model', () => {
     expect(activeStreak(5, NOW - 2 * 3600, NOW)).toBe(5) // 23:00 yesterday UTC
     expect(activeStreak(5, NOW - DAY - 3 * 3600, NOW)).toBe(0) // two UTC days ago
     expect(activeStreak(5, null, NOW)).toBe(0)
-  })
-
-  test('B-ACH-06 the next offset is the rows loaded so far until every participant is loaded', () => {
-    const first = page(['a', 'b'], 3)
-    expect(nextLeaderboardOffset(first, [first])).toBe(2)
-    const last = page(['c'], 3)
-    expect(nextLeaderboardOffset(last, [first, last])).toBeUndefined()
-    expect(nextLeaderboardOffset(page([], 9), [page([], 9)])).toBeUndefined()
-  })
-
-  test('B-ACH-06 a row that slid into the next page is shown once', () => {
-    expect(leaderboardRows([page(['a', 'b'], 4), page(['b', 'c'], 4)]).map(row => row.user_id)).toEqual(['a', 'b', 'c'])
   })
 
   test('B-ACH-08 the /home line shows a live learning streak and nothing otherwise', () => {

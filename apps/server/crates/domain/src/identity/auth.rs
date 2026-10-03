@@ -32,24 +32,25 @@ use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
 use crate::identity::sessions::{NewSession, SessionStore};
 
+/// Default counts: `ab_core::config::AuthLimits` (`AB__AUTH__LIMITS__*`).
 /// Failed logins per IP. Every attempt is counted up front (before the
 /// Zitadel round-trip) and released once Zitadel accepts the password, so
 /// a classroom NAT behind one `X-Forwarded-For` is throttled by its
 /// failures only (DECISIONS 2026-09-13).
-const IP_LIMIT: (u32, Duration) = (20, Duration::from_mins(5));
+const IP_WINDOW: Duration = Duration::from_mins(5);
 /// Login attempts per account (the user id when the login name resolves -
 /// email and username share one lock - the normalised name otherwise).
-const LOGIN_NAME_LIMIT: (u32, Duration) = (10, Duration::from_mins(15));
+const LOGIN_NAME_WINDOW: Duration = Duration::from_mins(15);
 /// Wrong `current_password` guesses per user on the password change - a
 /// stolen session must not brute-force the password it never knew.
-const PASSWORD_CHECK_LIMIT: (u32, Duration) = (5, Duration::from_mins(15));
+const PASSWORD_CHECK_WINDOW: Duration = Duration::from_mins(15);
 /// Accounts actually created per IP (the expensive path - two Zitadel calls
 /// plus an email). Failed attempts do not count: a classroom behind one NAT
 /// must survive ten typos.
-const REGISTER_IP_LIMIT: (u32, Duration) = (10, Duration::from_hours(1));
+const REGISTER_IP_WINDOW: Duration = Duration::from_hours(1);
 /// Registration + verification *attempts* per IP, wide enough for humans,
 /// tight enough to throttle username/email enumeration.
-const REGISTER_ATTEMPT_IP_LIMIT: (u32, Duration) = (60, Duration::from_hours(1));
+const REGISTER_ATTEMPT_IP_WINDOW: Duration = Duration::from_hours(1);
 
 /// Authenticator-app issuer when the platform singleton has no name yet.
 const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
@@ -217,6 +218,7 @@ pub struct IdentityService {
     sessions: SessionStore,
     zitadel: Arc<ZitadelClient>,
     limiter: RateLimiter,
+    limits: ab_core::config::AuthLimits,
     /// `None` = email delivery unconfigured (codes are logged, accounts work).
     mailer: Option<Arc<ResendClient>>,
     /// Public web origin for links in emails (`AB__SERVER__WEB_URL`).
@@ -232,9 +234,17 @@ impl IdentityService {
             sessions,
             zitadel,
             limiter,
+            limits: ab_core::config::AuthLimits::default(),
             mailer: None,
             web_url: None,
         }
+    }
+
+    /// Throttle counts from config (`AB__AUTH__LIMITS__*`).
+    #[must_use]
+    pub const fn with_limits(mut self, limits: ab_core::config::AuthLimits) -> Self {
+        self.limits = limits;
+        self
     }
 
     /// Wire email delivery for verification codes.
@@ -302,7 +312,8 @@ impl IdentityService {
     async fn enforce_login_ip_limit(&self, input: &LoginInput) -> Result<Option<String>> {
         let Some(ip) = &input.ip else { return Ok(None) };
         let key = format!("rl:login:ip:{ip}");
-        self.enforce(&key, IP_LIMIT, "login").await?;
+        self.enforce(&key, (self.limits.login_ip, IP_WINDOW), "login")
+            .await?;
         Ok(Some(key))
     }
 
@@ -372,7 +383,8 @@ impl IdentityService {
             |user| user.id.to_string(),
         );
         let key = format!("rl:login:name:{subject}");
-        self.enforce(&key, LOGIN_NAME_LIMIT, "login").await?;
+        self.enforce(&key, (self.limits.login_name, LOGIN_NAME_WINDOW), "login")
+            .await?;
         Ok(key)
     }
 
@@ -724,8 +736,12 @@ impl IdentityService {
     /// account still works - the legacy never gated login on verification.
     pub async fn register(&self, account: NewAccount) -> Result<Profile> {
         let ip = account.ip.as_deref();
-        self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
-            .await?;
+        self.enforce_register_limit(
+            ip,
+            "attempt",
+            (self.limits.register_attempt_ip, REGISTER_ATTEMPT_IP_WINDOW),
+        )
+        .await?;
         required_name("organization", &account.organization)?;
         // Only registrations that get past the uniqueness check count toward
         // the tight cap (`create_account` re-checks; two index lookups).
@@ -735,7 +751,7 @@ impl IdentityService {
         // exists: a policy-rejected password (422) or a Zitadel outage must
         // not eat the classroom's budget.
         let created_key = ip.map(|ip| format!("rl:register:created:ip:{ip}"));
-        let (limit, window) = REGISTER_IP_LIMIT;
+        let (limit, window) = (self.limits.register_ip, REGISTER_IP_WINDOW);
         if let Some(key) = &created_key
             && self.limiter.count(key).await? >= limit
         {
@@ -803,8 +819,12 @@ impl IdentityService {
     /// mailbox access, not a session. Uniform 422 on unknown email or wrong
     /// code (no account enumeration).
     pub async fn verify_email(&self, email: &str, code: &str, ip: Option<&str>) -> Result<()> {
-        self.enforce_register_limit(ip, "attempt", REGISTER_ATTEMPT_IP_LIMIT)
-            .await?;
+        self.enforce_register_limit(
+            ip,
+            "attempt",
+            (self.limits.register_attempt_ip, REGISTER_ATTEMPT_IP_WINDOW),
+        )
+        .await?;
         let invalid = || {
             Error::validation(vec![FieldError {
                 field: "code".into(),
@@ -900,7 +920,12 @@ impl IdentityService {
         // Wrong current passwords are counted per user; a policy or outage
         // failure is not a guess and hands the attempt back.
         let key = format!("rl:password:user:{}", actor.user_id);
-        self.enforce(&key, PASSWORD_CHECK_LIMIT, "password").await?;
+        self.enforce(
+            &key,
+            (self.limits.password_check, PASSWORD_CHECK_WINDOW),
+            "password",
+        )
+        .await?;
         // One change per user at a time (BUG-222 nit): two concurrent
         // changes with the same current password both passed Zitadel and
         // revoked each other. The runner is `detached()` (BUG-214), so the

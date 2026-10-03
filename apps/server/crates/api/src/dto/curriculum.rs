@@ -11,6 +11,9 @@ pub struct Chapter {
     pub description: String,
     /// 1-based, contiguous within the course.
     pub position: i32,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale → 412). Moves (this
+    /// chapter's or a sibling's) renumber positions and bump it too.
+    pub version: i32,
     /// What the caller may do to this chapter now.
     pub allowed_actions: Vec<ChapterAction>,
 }
@@ -26,6 +29,7 @@ impl Chapter {
             name: c.name,
             description: c.description,
             position: c.position,
+            version: c.version,
         }
     }
 }

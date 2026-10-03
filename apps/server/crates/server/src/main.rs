@@ -264,7 +264,8 @@ async fn build_state(config: Config) -> anyhow::Result<AppState> {
     let sessions = ab_domain::identity::SessionStore::connect(
         secrecy::ExposeSecret::expose_secret(&redis_url),
     )
-    .await?;
+    .await?
+    .with_max_sessions(usize::try_from(config.auth.limits.sessions_per_user)?);
     let zitadel_config = config
         .zitadel
         .clone()
@@ -291,7 +292,8 @@ async fn build_state(config: Config) -> anyhow::Result<AppState> {
         .map(std::sync::Arc::new);
     let identity =
         ab_domain::identity::IdentityService::new(pool.clone(), sessions.clone(), zitadel.clone())
-            .with_mailer(mailer, config.server.web_url.clone());
+            .with_mailer(mailer, config.server.web_url.clone())
+            .with_limits(config.auth.limits);
     let google = if let Some(g) = config.google.clone() {
         Some(ab_domain::identity::GoogleAuthService::new(
             pool.clone(),
