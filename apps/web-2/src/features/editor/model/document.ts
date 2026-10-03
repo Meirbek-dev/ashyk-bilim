@@ -1,5 +1,7 @@
 import type { JSONContent } from '@tiptap/core'
 
+import { isFileBlock } from './file-blocks'
+
 /** A Tiptap JSON node as stored in `activities.content` (contract schema `EditorDocument`). */
 export type EditorNode = JSONContent
 
@@ -35,14 +37,12 @@ export function blockFileUrl(blockObject: unknown): string | null {
   return `/content/${key.replace(/^\/+/, '')}`
 }
 
-const FILE_BLOCKS = new Set(['blockImage', 'blockPDF', 'blockVideo'])
-
 const stripNode = (node: JSONContent): JSONContent =>
   Array.isArray(node.content)
     ? {
         ...node,
         content: node.content
-          .filter(child => !(FILE_BLOCKS.has(child.type ?? '') && !child.attrs?.['blockObject']))
+          .filter(child => !(isFileBlock(child.type ?? '') && !child.attrs?.['blockObject']))
           .map(stripNode),
       }
     : node

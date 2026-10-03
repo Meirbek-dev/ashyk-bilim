@@ -1,6 +1,6 @@
 {
   "editor_label": "Бет мазмұны",
-  "editor_placeholder": "Жаза бастаңыз немесе «Кірістіру» батырмасымен блок қосыңыз",
+  "editor_placeholder": "Жаза бастаңыз немесе блок қосу үшін «/» теріңіз",
   "editor_callout_info": "Ескертпе",
   "editor_callout_warning": "Назар аударыңыз",
   "editor_flipcard_show_answer": "Жауапты көрсету",
@@ -51,5 +51,16 @@
   "editor_field_answer": "Жауап",
   "editor_field_latex": "LaTeX формуласы",
   "editor_field_user_id": "Пайдаланушы ID-і",
-  "editor_apply": "Қолдану"
+  "editor_apply": "Қолдану",
+  "editor_block_image": "Сурет",
+  "editor_block_video": "Бейне",
+  "editor_block_pdf": "PDF құжаты",
+  "editor_image_hint": "10 МБ-қа дейінгі JPEG, PNG, GIF, WebP немесе AVIF",
+  "editor_pdf_hint": "50 МБ-қа дейінгі PDF",
+  "editor_video_hint": "500 МБ-қа дейінгі MP4, WebM, MKV, MOV, AVI немесе FLV",
+  "editor_video_play": "Ойнату",
+  "editor_video_pause": "Кідірту",
+  "editor_video_position": "Ойнату орны",
+  "editor_video_mute": "Дыбысты өшіру",
+  "editor_video_fullscreen": "Толық экран"
 }

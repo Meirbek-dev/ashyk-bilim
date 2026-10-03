@@ -1,5 +1,5 @@
 import { Progress } from '@base-ui/react/progress'
-import { useId, useState, type DragEvent } from 'react'
+import { useEffect, useId, useRef, useState, type DragEvent } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
@@ -15,17 +15,29 @@ type FileInputProps = {
   /** Accepted types and the size cap come from the purpose's upload policy (`shared/api/upload.ts`). */
   purpose: UploadPurpose
   /** The finalized upload: its `id` is what the resource claims (`thumbnail_upload_id`...). */
-  onUploaded: (upload: FinalizedUpload) => void
+  onUploaded: (upload: FinalizedUpload, file: File) => void
+  /** A file handed over from outside (pasted or dropped onto an editor): uploaded once, on mount. */
+  file?: File | undefined
   /** An error from outside (the form field's), shown when the upload itself has none. */
   error?: string | undefined
   disabled?: boolean
+}
+
+/** Uploads a file handed over at mount once (a ref: effects may run twice under StrictMode). */
+function useHandedFile(file: File | undefined, take: (file: File) => Promise<void>) {
+  const queued = useRef(file)
+  useEffect(() => {
+    const next = queued.current
+    queued.current = undefined
+    if (next) void take(next)
+  })
 }
 
 /**
  * Pick or drop one file; it uploads at once (create -> PUT -> finalize) with progress, and limit or API errors
  * show under the zone. The native input stays the one focusable control; the visible button is its label.
  */
-export function FileInput({ label, description, purpose, onUploaded, error, disabled = false }: FileInputProps) {
+export function FileInput({ label, description, purpose, onUploaded, file, error, disabled = false }: FileInputProps) {
   const id = useId()
   const { start, progress, error: uploadError, pending } = useUpload(purpose)
   const [dragging, setDragging] = useState(false)
@@ -33,12 +45,13 @@ export function FileInput({ label, description, purpose, onUploaded, error, disa
   const shownError = uploadError ?? error
   const inactive = disabled || pending
 
-  async function take(file: File | undefined) {
-    if (!file || inactive) return
-    const done = await start(file)
-    setUploaded(done ? file.name : null)
-    if (done) onUploaded(done)
+  async function take(picked: File | undefined) {
+    if (!picked || inactive) return
+    const done = await start(picked)
+    setUploaded(done ? picked.name : null)
+    if (done) onUploaded(done, picked)
   }
+  useHandedFile(file, take)
   function drop(event: DragEvent) {
     event.preventDefault()
     setDragging(false)

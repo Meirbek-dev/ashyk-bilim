@@ -1,6 +1,6 @@
 {
   "editor_label": "Page content",
-  "editor_placeholder": "Start writing, or add a block with Insert",
+  "editor_placeholder": "Start writing, or type / to add a block",
   "editor_callout_info": "Note",
   "editor_callout_warning": "Warning",
   "editor_flipcard_show_answer": "Show answer",
@@ -51,5 +51,16 @@
   "editor_field_answer": "Answer",
   "editor_field_latex": "LaTeX formula",
   "editor_field_user_id": "User ID",
-  "editor_apply": "Apply"
+  "editor_apply": "Apply",
+  "editor_block_image": "Image",
+  "editor_block_video": "Video",
+  "editor_block_pdf": "PDF document",
+  "editor_image_hint": "JPEG, PNG, GIF, WebP or AVIF up to 10 MB",
+  "editor_pdf_hint": "PDF up to 50 MB",
+  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI or FLV up to 500 MB",
+  "editor_video_play": "Play",
+  "editor_video_pause": "Pause",
+  "editor_video_position": "Playback position",
+  "editor_video_mute": "Mute",
+  "editor_video_fullscreen": "Full screen"
 }

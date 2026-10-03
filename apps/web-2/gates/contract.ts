@@ -23,6 +23,26 @@ const isBareObject = (schema: Json): boolean => {
   return objectType && !isObject(schema['properties']) && !isObject(schema['additionalProperties'])
 }
 
+// The one allowed optional+nullable property: a request field whose explicit `null` means "clear" (absent = keep),
+// marked `x-null-clears: true` by the server, in a schema reachable only from request bodies. Responses never.
+let requestOnly = new Set<string>()
+const clearsOnRequest = (property: Json, pointer: string) =>
+  property['x-null-clears'] === true && requestOnly.has(/^\/components\/schemas\/([^/]+)/.exec(pointer)?.[1] ?? '')
+
+function refsOf(node: unknown, schemas: Json, seen: Set<string>): Set<string> {
+  if (Array.isArray(node)) node.forEach(item => refsOf(item, schemas, seen))
+  else if (isObject(node)) {
+    const ref = node['$ref']
+    const name = typeof ref === 'string' ? ref.replace('#/components/schemas/', '') : undefined
+    if (name !== undefined && !seen.has(name)) {
+      seen.add(name)
+      refsOf(schemas[name], schemas, seen)
+    }
+    Object.values(node).forEach(value => refsOf(value, schemas, seen))
+  }
+  return seen
+}
+
 function checkProperties(schema: Json, pointer: string, findings: Finding[]): void {
   const properties = schema['properties']
   if (!isObject(properties)) return
@@ -32,7 +52,7 @@ function checkProperties(schema: Json, pointer: string, findings: Finding[]): vo
     const at = `${FILE}#${pointer}/properties/${name}`
     if (!hasType(property))
       findings.push({ file: at, rule: 'contract-untyped', fix: 'give the property a type or a named schema' })
-    if (!required.includes(name) && isNullable(property)) {
+    if (!required.includes(name) && isNullable(property) && !clearsOnRequest(property, pointer)) {
       findings.push({
         file: at,
         rule: 'contract-optional-nullable',
@@ -72,6 +92,20 @@ export function contract(): Finding[] {
   const findings: Finding[] = []
   const operationIds = new Map<string, number>()
   const paths = isObject(document) && isObject(document['paths']) ? document['paths'] : {}
+  const components = isObject(document) && isObject(document['components']) ? document['components'] : {}
+  const schemas = isObject(components['schemas']) ? components['schemas'] : {}
+  const operations = Object.values(paths).flatMap(item => (isObject(item) ? Object.values(item) : []))
+  const fromResponses = refsOf(
+    operations.map(op => (isObject(op) ? op['responses'] : undefined)),
+    schemas,
+    new Set(),
+  )
+  const fromRequests = refsOf(
+    operations.map(op => (isObject(op) ? op['requestBody'] : undefined)),
+    schemas,
+    new Set(),
+  )
+  requestOnly = new Set([...fromRequests].filter(name => !fromResponses.has(name)))
   for (const item of Object.values(paths)) {
     if (!isObject(item)) continue
     for (const operation of Object.values(item)) {

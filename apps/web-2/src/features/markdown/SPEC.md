@@ -5,8 +5,9 @@
 Один рендер markdown для контента (описания курсов, условия задач и вопросов, отзывы, объявления) и для
 ответов AI, и markdown-редактор на ядре Tiptap 3.31 (@tiptap/markdown: markdown на входе и на выходе).
 Публичный API (`index.ts`): ленивые `MarkdownView`, `MarkdownEditor`; `sanitize`, `safeUrl`, `safeImageUrl`,
-`hasRawHtml`, `markdownPlainText`, `markdownSummary`; `loadHighlighter` (shiki для блоков кода редактора) и
-`proseCss` (типографика контента).
+`hasRawHtml`, `markdownPlainText`, `markdownSummary`; `loadHighlighter` (shiki для блоков кода редактора).
+Типографика - общий класс `ab-prose` (`src/styles/prose.css`), тот же, что у редактора блоков; своих стилей текста
+у фичи нет.
 
 ## Поведение
 

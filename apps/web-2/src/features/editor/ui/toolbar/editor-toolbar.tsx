@@ -3,16 +3,20 @@ import { useEditorState } from '@tiptap/react'
 import { Plus, Redo2, Undo2 } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { ActionMenu } from '#/shared/ui/action-menu'
 import { IconButton } from '#/shared/ui/icon-button'
 
 import { FORMAT_ITEMS } from './format-items'
-import { INSERT_ITEMS } from './insert-items'
 import { LinkButton } from './link-button'
 import { TextStyleMenu } from './text-style-menu'
 
+type EditorToolbarProps = {
+  editor: Editor
+  /** Opens the insert menu under the button (the "/" menu); absent = no blocks (discussions). */
+  onInsert?: ((anchor: Element) => void) | undefined
+}
+
 /** The editor's toolbar: text style, formatting toggles (pressed = applied), link, Insert block, undo/redo. */
-export function EditorToolbar({ editor, blocks }: { editor: Editor; blocks: boolean }) {
+export function EditorToolbar({ editor, onInsert }: EditorToolbarProps) {
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => ({
@@ -40,10 +44,11 @@ export function EditorToolbar({ editor, blocks }: { editor: Editor; blocks: bool
         />
       ))}
       <LinkButton editor={editor} active={state.link} />
-      {blocks ? (
-        <ActionMenu
-          trigger={<IconButton label={m.editor_insert()} icon={<Plus aria-hidden />} />}
-          actions={INSERT_ITEMS.map(item => ({ label: item.label(), onSelect: () => void item.insert(editor) }))}
+      {onInsert ? (
+        <IconButton
+          label={m.editor_insert()}
+          icon={<Plus aria-hidden />}
+          onClick={event => onInsert(event.currentTarget)}
         />
       ) : null}
       <IconButton
