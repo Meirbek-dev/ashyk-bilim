@@ -87,6 +87,10 @@ error_codes! {
     LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
     // Assessments
     AssessmentReadOnly => ("assessment-read-only", 409, "Assessment can no longer be edited"),
+    // Attempt refusals (403 like `forbidden`; `details.reasons` lists every gate)
+    AttemptTimeExpired => ("attempt-time-expired", 403, "The attempt's time limit has expired"),
+    AttemptPastDue => ("attempt-past-due", 403, "The due date or late cutoff has passed"),
+    RemediationRequired => ("remediation-required", 403, "A remediation session must be passed first"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
     GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),

@@ -279,6 +279,13 @@ async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
         ))
         .await;
     assert_eq!(throttled.status, StatusCode::TOO_MANY_REQUESTS);
+    // `Retry-After` is the live 5 s window, not the generic minute.
+    let retry: u64 = throttled.headers[header::RETRY_AFTER]
+        .to_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!((1..=5).contains(&retry), "{retry}");
     // Unknown items and wrong answer kinds are validation errors.
     let bogus = app
         .send(patch_draft(

@@ -22,7 +22,9 @@ use sqlx::PgPool;
 
 pub use ab_db::submissions::SubmissionRow as Submission;
 
-use crate::assessments::access::{EffectivePolicy, attempt_gates, cap_bars_new_attempt};
+use crate::assessments::access::{
+    DisabledReason, EffectivePolicy, attempt_gates, cap_bars_new_attempt,
+};
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::{Assessment, AssessmentsService, Item};
 use crate::code::{CodeRunner, FinalRun, FinalTarget};
@@ -536,15 +538,18 @@ impl SubmissionsService {
         self.assessments.require_course_open(course_id).await?;
         if !state.can_start && !state.can_continue {
             // Same vocabulary as `attempt-state.disabled_reasons`.
-            return Err(Error::forbidden(format!(
-                "cannot start: {}",
-                state
-                    .disabled_reasons
-                    .iter()
-                    .map(|r| r.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )));
+            return Err(DisabledReason::refusal(
+                &state.disabled_reasons,
+                format!(
+                    "cannot start: {}",
+                    state
+                        .disabled_reasons
+                        .iter()
+                        .map(|r| r.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            ));
         }
         // Visibility gate only; the versions come from the locked row below.
         self.assessments.get(actor, assessment_id).await?;
@@ -710,19 +715,27 @@ impl SubmissionsService {
         )
         .await?;
         if let Some(gate) = gates.first() {
-            return Err(Error::forbidden(gate.as_str()));
+            return Err(DisabledReason::refusal(&gates, gate.as_str()));
         }
         let merged = Self::merge(&ctx, patch)?;
         // Only a save that would otherwise succeed spends the throttle
         // budget; a rejected one must not lock the client out for 5s.
+        let throttle_key = format!("draft_throttle:{id}");
         if !self
             .limiter
-            .check(&format!("draft_throttle:{id}"), 1, DRAFT_SAVE_WINDOW)
+            .check(&throttle_key, 1, DRAFT_SAVE_WINDOW)
             .await?
         {
-            return Err(Error::app(
+            // `Retry-After` from the live window (at most 5 s), not the
+            // generic 60 s default.
+            let retry_after = self
+                .limiter
+                .retry_after(&throttle_key, DRAFT_SAVE_WINDOW)
+                .await?;
+            return Err(Error::app_with_details(
                 ErrorCode::RateLimited,
                 "draft saves are limited to one per 5 seconds",
+                serde_json::json!({ "retry_after_seconds": retry_after }),
             ));
         }
         if !ab_db::submissions::save_draft_answers(
@@ -897,7 +910,7 @@ impl SubmissionsService {
             )
             .await?;
             if let Some(gate) = gates.first() {
-                return Err(Error::forbidden(gate.as_str()));
+                return Err(DisabledReason::refusal(&gates, gate.as_str()));
             }
         }
         let violation_exceeded = violation_exceeded(&assessment, opts.violation_count);
@@ -1016,7 +1029,7 @@ impl SubmissionsService {
             pool,
             assessment.id,
             Some(submission.user_id),
-            "submission-submitted",
+            ab_core::assessments::AuditEventKind::SubmissionSubmitted,
             serde_json::json!({
                 "submission_id": submission.id, "attempt": submission.attempt_number,
                 "status": verdict.status, "auto_submit_reason": verdict.auto_submit_reason,

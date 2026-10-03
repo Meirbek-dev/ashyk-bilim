@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT cu.id AS \"id: CourseUpdateId\", cu.course_id AS \"course_id: CourseId\",\n                  cu.title, cu.content, cu.version,\n                  cu.author_id AS \"author_id?: UserId\",\n                  u.display_name AS \"author_name?\",\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.id = $1",
+  "query": "SELECT cu.id AS \"id!: CourseUpdateId\", cu.course_id AS \"course_id!: CourseId\",\n                  cu.title AS \"title!\", cu.content AS \"content!\", cu.version AS \"version!\",\n                  cu.author_id AS \"author_id?: UserId\",\n                  u.display_name AS \"author_name?\",\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.course_id = $1\n           ORDER BY cu.id DESC",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id: CourseUpdateId",
+        "name": "id!: CourseUpdateId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "course_id: CourseId",
+        "name": "course_id!: CourseId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
@@ -27,7 +27,7 @@
       },
       {
         "ordinal": 2,
-        "name": "title",
+        "name": "title!",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -38,7 +38,7 @@
       },
       {
         "ordinal": 3,
-        "name": "content",
+        "name": "content!",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -49,7 +49,7 @@
       },
       {
         "ordinal": 4,
-        "name": "version",
+        "name": "version!",
         "type_info": "Int4",
         "origin": {
           "Table": {
@@ -105,10 +105,10 @@
       false,
       false,
       true,
-      true,
+      false,
       null,
       null
     ]
   },
-  "hash": "f0564cbdfce002536f6bdc5f52c84ef769c76a579145cecc79dc9214b31df901"
+  "hash": "4eb039da9b1f00b47239c0030ac1a0e4bd9c5cdd6c1c4e6f7dc36c005ee4eda9"
 }

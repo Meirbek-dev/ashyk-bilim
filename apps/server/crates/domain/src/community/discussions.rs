@@ -375,6 +375,7 @@ impl DiscussionsService {
         course_id: CourseId,
         parent_id: Option<DiscussionId>,
         content: &str,
+        upload_ids: &[uuid::Uuid],
     ) -> Result<Discussion> {
         let course = self.postable_course(actor, course_id).await?;
         validate_content(content)?;
@@ -391,14 +392,17 @@ impl DiscussionsService {
                 }]));
             }
         }
+        let mut tx = self.pool.begin().await?;
+        claim_images(&mut tx, actor, upload_ids).await?;
         let id = ab_db::discussions::insert_discussion(
-            &self.pool,
+            &mut *tx,
             course_id,
             actor.user_id,
             parent_id,
             content,
         )
         .await?;
+        tx.commit().await?;
         crate::analytics::events::hooks::discussion_posted(
             &self.pool,
             course_id,
@@ -474,6 +478,7 @@ impl DiscussionsService {
         id: DiscussionId,
         content: Option<&str>,
         status: Option<DiscussionStatus>,
+        upload_ids: &[uuid::Uuid],
     ) -> Result<Discussion> {
         let (row, course) = self.load(actor, id).await?;
         course.ensure_not_archived()?;
@@ -493,7 +498,10 @@ impl DiscussionsService {
         if let Some(content) = content {
             validate_content(content)?;
         }
-        ab_db::discussions::update_discussion(&self.pool, id, content, status).await?;
+        let mut tx = self.pool.begin().await?;
+        claim_images(&mut tx, actor, upload_ids).await?;
+        ab_db::discussions::update_discussion(&mut *tx, id, content, status).await?;
+        tx.commit().await?;
         let fresh = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;
@@ -536,6 +544,26 @@ impl DiscussionsService {
             dislikes_count: i64::from(fresh.dislikes_count),
         })
     }
+}
+
+/// Claim the post's `discussion-image` uploads with the write (one reference
+/// each; the object stays while the upload row does).
+async fn claim_images(
+    tx: &mut sqlx::PgConnection,
+    actor: &Actor,
+    upload_ids: &[uuid::Uuid],
+) -> Result<()> {
+    for (i, id) in upload_ids.iter().enumerate() {
+        crate::files::uploads::claim_upload(
+            tx,
+            actor,
+            *id,
+            "discussion-image",
+            &format!("upload_ids[{i}]"),
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

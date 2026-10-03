@@ -12,6 +12,9 @@ pub struct Role {
     pub description: Option<String>,
     pub priority: i32,
     pub is_system: bool,
+    /// Grants `resource:action[:scope]`. Assessment rights are the
+    /// `assessment` resource; `quiz` / `exam` are legacy names kept as
+    /// stored on migrated roles and grant nothing (S-10).
     pub permissions: Vec<String>,
     /// Optimistic lock: `If-Match` on `PATCH` and the permissions `PUT`.
     pub version: i32,
@@ -105,7 +108,9 @@ pub struct UpdateRoleRequest {
 #[serde(deny_unknown_fields)]
 pub struct SetRolePermissionsRequest {
     /// Full replacement grant set; every entry must parse against the
-    /// permission registry (`resource:action[:scope]`).
+    /// permission registry (`resource:action[:scope]`). Assessment rights
+    /// are the `assessment` resource (`quiz` / `exam` still parse but grant
+    /// nothing).
     #[garde(length(max = 200), inner(length(min = 1, max = 128)))]
     #[schema(max_items = 200)]
     pub permissions: Vec<String>,

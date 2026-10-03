@@ -440,6 +440,10 @@ pub struct ServerConfig {
     /// they are host-relative.
     #[serde(default)]
     pub web_url: Option<String>,
+    /// S-11 `AB__SERVER__WEB_LINKS`: which web app's URL map links use
+    /// (`legacy` default, `v2` from the cutover).
+    #[serde(default)]
+    pub web_links: crate::links::LinkScheme,
 }
 
 impl ServerConfig {
@@ -578,6 +582,7 @@ impl Config {
                 "port": self.server.port,
                 "cors_origins": self.server.cors_origins,
                 "web_url": self.server.web_url,
+                "web_links": self.server.web_links,
             },
             "resend": self.resend.as_ref().map(|r| serde_json::json!({
                 "api_key": "[redacted]",
@@ -629,6 +634,7 @@ mod tests {
                 port: 8000,
                 cors_origins: vec![],
                 web_url: None,
+                web_links: crate::links::LinkScheme::Legacy,
             },
             database: DatabaseConfig {
                 url: SecretString::from("postgres://x"),

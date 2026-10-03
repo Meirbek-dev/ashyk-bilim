@@ -219,6 +219,16 @@ pub struct CoursePage {
     pub summary: Option<CourseSummary>,
 }
 
+/// `POST /courses/{id}/duplicate`.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DuplicateCourseRequest {
+    /// Defaults to `"<name> (copy)"`.
+    #[garde(inner(length(chars, min = 1, max = 500)))]
+    #[schema(min_length = 1, max_length = 500)]
+    pub name: Option<String>,
+}
+
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseRequest {

@@ -246,6 +246,16 @@ fn progress_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::progress::learner_course_state))
         .routes(routes!(routes::progress::list_course_learners))
         .routes(routes!(routes::progress::remove_course_learner))
+        // S-10 names (expand; the `/trail` paths above go in phase 9).
+        .routes(routes!(routes::progress::list_enrollments))
+        .routes(routes!(
+            routes::progress::enroll,
+            routes::progress::leave_course
+        ))
+        .routes(routes!(
+            routes::progress::complete_activity,
+            routes::progress::uncomplete_activity
+        ))
 }
 
 fn file_submission_routes() -> OpenApiRouter<AppState> {
@@ -324,11 +334,26 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::usergroups::add_usergroup_courses))
         .routes(routes!(routes::usergroups::remove_usergroup_courses))
         .routes(routes!(routes::usergroups::usergroups_for_course))
+        // S-10 names (expand; the `/usergroups` paths above go in phase 9).
+        .routes(routes!(routes::usergroups::create_group))
+        .routes(routes!(routes::usergroups::list_groups))
+        .routes(routes!(routes::usergroups::get_group))
+        .routes(routes!(routes::usergroups::update_group))
+        .routes(routes!(routes::usergroups::delete_group))
+        .routes(routes!(routes::usergroups::list_group_members))
+        .routes(routes!(routes::usergroups::list_group_members_page))
+        .routes(routes!(routes::usergroups::add_group_members))
+        .routes(routes!(routes::usergroups::remove_group_members))
+        .routes(routes!(routes::usergroups::list_group_courses))
+        .routes(routes!(routes::usergroups::add_group_courses))
+        .routes(routes!(routes::usergroups::remove_group_courses))
+        .routes(routes!(routes::usergroups::groups_for_course))
 }
 
 fn catalog_routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::courses::create_course))
+        .routes(routes!(routes::courses::duplicate_course))
         .routes(routes!(routes::courses::list_courses))
         .routes(routes!(routes::courses::get_course))
         .routes(routes!(routes::courses::update_course))

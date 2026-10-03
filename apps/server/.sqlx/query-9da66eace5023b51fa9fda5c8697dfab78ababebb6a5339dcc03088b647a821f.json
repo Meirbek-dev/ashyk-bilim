@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET locale = CASE locale\n                WHEN 'ru-RU' THEN 'ru' WHEN 'kk-KZ' THEN 'kk' ELSE 'en' END\n           WHERE locale IN ('ru-RU', 'kk-KZ', 'en-US')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "9da66eace5023b51fa9fda5c8697dfab78ababebb6a5339dcc03088b647a821f"
+}

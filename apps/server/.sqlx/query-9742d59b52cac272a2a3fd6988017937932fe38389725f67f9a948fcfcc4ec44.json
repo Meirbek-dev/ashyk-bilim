@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: DiscussionId\", content\n           FROM course_discussions\n           WHERE ltrim(content) NOT LIKE '{%'\n           ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: DiscussionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "content",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "9742d59b52cac272a2a3fd6988017937932fe38389725f67f9a948fcfcc4ec44"
+}

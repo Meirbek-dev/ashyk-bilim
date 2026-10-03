@@ -55,6 +55,7 @@ pub fn test_config() -> Config {
             port: 0,
             cors_origins: vec![],
             web_url: None,
+            web_links: ab_core::links::LinkScheme::Legacy,
         },
         database: DatabaseConfig {
             url: SecretString::from("postgres://injected-pool-unused"),
@@ -126,6 +127,7 @@ impl TestApp {
             base_url: resend.uri(),
         });
         adjust(&mut config);
+        ab_core::links::init(config.server.web_links);
         let judge0_client = Arc::new(
             Judge0Client::new(ab_clients::judge0::Judge0Config {
                 base_url: judge0.uri(),

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET theme = NULL WHERE theme IS NOT NULL AND NOT (theme = ANY($1))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3906a4c9ae8c3ceaf972d16e55aba78440c5989f707e9ce7eca1dcbe52c30275"
+}

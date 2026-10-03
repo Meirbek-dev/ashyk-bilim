@@ -111,8 +111,9 @@ pub async fn record_streak(
 pub async fn update_preferences(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    ValidJson(patch): ValidJson<PreferencesPatch>,
+    ValidJson(mut patch): ValidJson<PreferencesPatch>,
 ) -> ApiResult<Json<Profile>> {
+    patch.normalize();
     let patch = serde_json::to_value(&patch)
         .map_err(|err| ab_core::Error::internal("serialize preferences patch", err))?;
     Ok(Json(

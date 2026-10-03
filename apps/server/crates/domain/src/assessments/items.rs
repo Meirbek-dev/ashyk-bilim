@@ -31,6 +31,7 @@ pub const MAX_BODY_ENTRIES: usize = 200;
 pub struct ChoiceOption {
     pub id: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub text: String,
     #[serde(default)]
     pub is_correct: bool,
@@ -47,24 +48,29 @@ pub enum ChoiceVariant {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChoiceBody {
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub prompt: String,
     #[serde(default)]
+    #[schema(max_items = 200)]
     pub options: Vec<ChoiceOption>,
     #[serde(default)]
     pub multiple: bool,
     #[serde(default)]
     pub variant: Option<ChoiceVariant>,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub explanation: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct OpenTextBody {
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub prompt: String,
     #[serde(default)]
     pub min_words: Option<i32>,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub rubric: Option<String>,
 }
 
@@ -81,6 +87,7 @@ pub enum FormFieldType {
 pub struct FormField {
     pub id: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub label: String,
     #[serde(default = "FormField::default_type")]
     pub field_type: FormFieldType,
@@ -97,8 +104,10 @@ impl FormField {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct FormBody {
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub prompt: String,
     #[serde(default)]
+    #[schema(max_items = 200)]
     pub fields: Vec<FormField>,
 }
 
@@ -125,14 +134,17 @@ pub enum ScoringStrategy {
 pub struct CodeTestCase {
     pub id: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub input: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub expected_output: String,
     #[serde(default = "CodeTestCase::default_visible")]
     pub is_visible: bool,
     #[serde(default = "CodeTestCase::default_weight")]
     pub weight: i32,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub description: Option<String>,
     #[serde(default = "CodeTestCase::default_match_mode")]
     pub match_mode: MatchMode,
@@ -153,10 +165,13 @@ impl CodeTestCase {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CodeBody {
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub prompt: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub input_spec: String,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub output_spec: String,
     #[serde(default)]
     pub constraints: Vec<String>,
@@ -169,6 +184,7 @@ pub struct CodeBody {
     #[serde(default)]
     pub reference_solutions: BTreeMap<String, String>,
     #[serde(default)]
+    #[schema(max_items = 200)]
     pub tests: Vec<CodeTestCase>,
     #[serde(default)]
     pub time_limit_seconds: Option<i32>,
@@ -188,20 +204,25 @@ impl CodeBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MatchingPair {
+    #[schema(max_length = 20_000)]
     pub left: String,
+    #[schema(max_length = 20_000)]
     pub right: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MatchingBody {
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub prompt: String,
     /// Required on the wire so a client's untagged union can tell this
     /// author shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).
     #[serde(default)]
     #[schema(required)]
+    #[schema(max_items = 200)]
     pub pairs: Vec<MatchingPair>,
     #[serde(default)]
+    #[schema(max_length = 20_000)]
     pub explanation: Option<String>,
 }
 
@@ -370,10 +391,81 @@ pub enum ReadinessArea {
     Publish,
 }
 
+/// [`ReadinessIssue::code`] values (schema only; `readiness_codes_pinned`
+/// keeps the list in step with the rules).
+#[derive(Serialize, ToSchema)]
+pub enum ReadinessIssueCode {
+    #[serde(rename = "assessment.title_missing")]
+    AssessmentTitleMissing,
+    #[serde(rename = "assessment.empty")]
+    AssessmentEmpty,
+    #[serde(rename = "schedule.after_due_at")]
+    ScheduleAfterDueAt,
+    #[serde(rename = "policy.due_at_past")]
+    PolicyDueAtPast,
+    #[serde(rename = "policy.cutoff_before_due")]
+    PolicyCutoffBeforeDue,
+    #[serde(rename = "policy.penalty_without_late")]
+    PolicyPenaltyWithoutLate,
+    #[serde(rename = "item.kind_forbidden")]
+    ItemKindForbidden,
+    #[serde(rename = "item.title_missing")]
+    ItemTitleMissing,
+    #[serde(rename = "item.max_score_invalid")]
+    ItemMaxScoreInvalid,
+    #[serde(rename = "choice.correct_missing")]
+    ChoiceCorrectMissing,
+    #[serde(rename = "choice.option_duplicate")]
+    ChoiceOptionDuplicate,
+    #[serde(rename = "choice.option_id_duplicate")]
+    ChoiceOptionIdDuplicate,
+    #[serde(rename = "choice.option_text_missing")]
+    ChoiceOptionTextMissing,
+    #[serde(rename = "choice.options_missing")]
+    ChoiceOptionsMissing,
+    #[serde(rename = "choice.prompt_missing")]
+    ChoicePromptMissing,
+    #[serde(rename = "choice.too_many_correct")]
+    ChoiceTooManyCorrect,
+    #[serde(rename = "code.languages_missing")]
+    CodeLanguagesMissing,
+    #[serde(rename = "code.prompt_missing")]
+    CodePromptMissing,
+    #[serde(rename = "code.test_io_missing")]
+    CodeTestIoMissing,
+    #[serde(rename = "code.test_weight_invalid")]
+    CodeTestWeightInvalid,
+    #[serde(rename = "code.tests_missing")]
+    CodeTestsMissing,
+    #[serde(rename = "form.field_id_duplicate")]
+    FormFieldIdDuplicate,
+    #[serde(rename = "form.field_label_missing")]
+    FormFieldLabelMissing,
+    #[serde(rename = "form.fields_missing")]
+    FormFieldsMissing,
+    #[serde(rename = "form.prompt_missing")]
+    FormPromptMissing,
+    #[serde(rename = "matching.left_duplicate")]
+    MatchingLeftDuplicate,
+    #[serde(rename = "matching.pair_value_missing")]
+    MatchingPairValueMissing,
+    #[serde(rename = "matching.pairs_missing")]
+    MatchingPairsMissing,
+    #[serde(rename = "matching.prompt_missing")]
+    MatchingPromptMissing,
+    #[serde(rename = "matching.right_duplicate")]
+    MatchingRightDuplicate,
+    #[serde(rename = "open_text.min_words_invalid")]
+    OpenTextMinWordsInvalid,
+    #[serde(rename = "open_text.prompt_missing")]
+    OpenTextPromptMissing,
+}
+
 /// One thing blocking (or advising against) publication.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct ReadinessIssue {
     /// Stable machine key, e.g. `choice.options_missing`.
+    #[schema(value_type = ReadinessIssueCode)]
     pub code: String,
     pub message: String,
     /// Every current rule is a blocker.
@@ -740,6 +832,39 @@ pub fn normalize_tags(raw: &[String]) -> Vec<String> {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
+
+    /// Every readiness code a rule emits (`"area.rule"` literals in the
+    /// rule sources) is in the schema enum, and nothing else.
+    #[test]
+    fn readiness_codes_pinned() {
+        let pattern = regex::Regex::new(
+            r#""((?:assessment|schedule|policy|item|choice|open_text|form|code|matching)\.[a-z_]+)""#,
+        )
+        .unwrap();
+        let sources = [include_str!("items.rs"), include_str!("service.rs")];
+        let mut emitted: Vec<String> = sources
+            .iter()
+            .flat_map(|src| {
+                let rules = src.split("#[cfg(test)]").next().unwrap_or_default();
+                pattern
+                    .captures_iter(rules)
+                    .map(|c| c[1].to_owned())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        emitted.sort();
+        emitted.dedup();
+        let schema =
+            serde_json::to_value(<ReadinessIssueCode as utoipa::PartialSchema>::schema()).unwrap();
+        let mut declared: Vec<String> = schema["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_owned())
+            .collect();
+        declared.sort();
+        assert_eq!(emitted, declared);
+    }
     use super::*;
 
     #[test]

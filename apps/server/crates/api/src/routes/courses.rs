@@ -12,7 +12,7 @@ use crate::dto::courses::{
     AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseAuthor,
     CourseLifecycleRequest, CourseListItem, CourseListProgress, CourseListQuery, CoursePage,
     CourseReadiness, CourseUpdate, CreateCourseRequest, CreateCourseUpdateRequest,
-    EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
+    DuplicateCourseRequest, EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
@@ -59,6 +59,59 @@ pub async fn create_course(
                     request.about.as_deref().unwrap_or(""),
                     request.tags.unwrap_or_default(),
                 )
+                .await?;
+            Ok((StatusCode::CREATED, Course::for_actor(course, &actor)))
+        },
+    )
+    .await
+}
+
+/// Copy a course as a private draft for the caller.
+///
+/// Chapters, unpublished
+/// activities with their blocks, file-submission configs and assessments
+/// (draft copies with policy and items). Uploaded media is shared by key,
+/// not duplicated (one more reference per use). Learners, grades,
+/// submissions, discussions, announcements, contributors and group links
+/// stay behind. Needs `course:create:platform` and write access to the
+/// source. Honours `Idempotency-Key`.
+#[utoipa::path(
+    post,
+    path = "/courses/{course_id}/duplicate",
+    tag = "courses",
+    params(
+        ("course_id" = CourseId, Path, description = "Source course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
+    request_body = DuplicateCourseRequest,
+    responses(
+        (status = 201, description = "The copy", body = Course),
+        (status = 403, description = "No create right or no write access to the source", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or invisible course", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn duplicate_course(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::CoursesService::require_create(&actor)?;
+    let request = ValidJson::<DuplicateCourseRequest>::parse(&body)?;
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("course-copy:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let course = state
+                .assessments
+                .duplicate_course(&actor, id, request.name.as_deref())
                 .await?;
             Ok((StatusCode::CREATED, Course::for_actor(course, &actor)))
         },

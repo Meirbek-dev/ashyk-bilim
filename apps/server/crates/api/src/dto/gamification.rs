@@ -29,8 +29,11 @@ pub struct Profile {
     pub last_xp_award_at_unix: Option<i64>,
     pub last_login_at_unix: Option<i64>,
     pub last_learning_at_unix: Option<i64>,
+    /// Stored camelCase document (old web); removed in phase 9.
     #[schema(value_type = GamificationPreferences)]
     pub preferences: serde_json::Value,
+    /// S-10: the same preferences with snake_case keys.
+    pub settings: GamificationSettings,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -65,6 +68,7 @@ impl From<ab_db::gamification::ProfileRow> for Profile {
             last_xp_award_at_unix: p.last_xp_award_at,
             last_login_at_unix: p.last_login_at,
             last_learning_at_unix: p.last_learning_at,
+            settings: GamificationSettings::from_stored(&p.preferences),
             preferences: p.preferences,
             created_at_unix: p.created_at,
             updated_at_unix: p.updated_at,
@@ -284,6 +288,69 @@ where
     bool::deserialize(deserializer).map(Some)
 }
 
+impl PreferencesPatch {
+    /// Fold the snake_case twins into the stored camelCase keys (a key sent
+    /// both ways keeps the camelCase value).
+    pub fn normalize(&mut self) {
+        if let Some(Some(p)) = &mut self.privacy {
+            p.show_on_leaderboard = p
+                .show_on_leaderboard
+                .or_else(|| p.show_on_leaderboard_v2.take());
+        }
+        if let Some(Some(n)) = &mut self.notifications {
+            n.xp_gain = n.xp_gain.or_else(|| n.xp_gain_v2.take());
+        }
+        if let Some(Some(d)) = &mut self.display {
+            d.animated_effects = d.animated_effects.or_else(|| d.animated_effects_v2.take());
+            d.compact_mode = d.compact_mode.or_else(|| d.compact_mode_v2.take());
+        }
+    }
+}
+
+/// S-10 `Profile.settings`: the preferences with snake_case keys; a value
+/// never set is `null`.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GamificationSettings {
+    pub privacy: PrivacySettings,
+    pub notifications: XpNotificationSettings,
+    pub display: DisplaySettings,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PrivacySettings {
+    /// `false` hides the profile from the leaderboard.
+    pub show_on_leaderboard: Option<bool>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct XpNotificationSettings {
+    pub xp_gain: Option<bool>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DisplaySettings {
+    pub animated_effects: Option<bool>,
+    pub compact_mode: Option<bool>,
+}
+
+impl GamificationSettings {
+    fn from_stored(stored: &serde_json::Value) -> Self {
+        let flag = |pointer: &str| stored.pointer(pointer).and_then(serde_json::Value::as_bool);
+        Self {
+            privacy: PrivacySettings {
+                show_on_leaderboard: flag("/privacy/showOnLeaderboard"),
+            },
+            notifications: XpNotificationSettings {
+                xp_gain: flag("/notifications/xpGain"),
+            },
+            display: DisplaySettings {
+                animated_effects: flag("/display/animatedEffects"),
+                compact_mode: flag("/display/compactMode"),
+            },
+        }
+    }
+}
+
 /// Stored gamification preferences: the sections the user has set (a
 /// section never set is absent).
 #[derive(ToSchema)]
@@ -297,8 +364,10 @@ pub struct GamificationPreferences {
 }
 
 /// `PATCH /gamification/preferences`: the sections the settings form owns.
+///
 /// A section absent from the patch is kept, `null` removes it, an object
-/// replaces it. Keys are camelCase; anything else is 422.
+/// replaces it. Keys are camelCase or (S-10) snake_case; anything else is
+/// 422.
 #[derive(Debug, Default, Deserialize, Serialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PreferencesPatch {
@@ -339,6 +408,15 @@ pub struct PrivacyPreferences {
     )]
     #[schema(nullable = false)]
     pub show_on_leaderboard: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "show_on_leaderboard",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub show_on_leaderboard_v2: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, ToSchema)]
@@ -351,6 +429,15 @@ pub struct NotificationPreferences {
     )]
     #[schema(nullable = false)]
     pub xp_gain: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "xp_gain",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub xp_gain_v2: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, ToSchema)]
@@ -363,6 +450,15 @@ pub struct DisplayPreferences {
     )]
     #[schema(nullable = false)]
     pub animated_effects: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "animated_effects",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub animated_effects_v2: Option<bool>,
     #[serde(
         default,
         deserialize_with = "bool_not_null",
@@ -370,4 +466,13 @@ pub struct DisplayPreferences {
     )]
     #[schema(nullable = false)]
     pub compact_mode: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "compact_mode",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub compact_mode_v2: Option<bool>,
 }

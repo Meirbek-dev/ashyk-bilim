@@ -5,6 +5,36 @@ use ab_core::id::AssessmentItemId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+/// The auto-grader's verdict codes (`GradedItem.feedback_code`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum FeedbackCode {
+    NoAnswer,
+    NoCorrectAnswer,
+    Correct,
+    PartiallyCorrectNoCredit,
+    PartiallyCorrect,
+    Incorrect,
+    PairsMatched,
+    TestsPassed,
+}
+
+impl FeedbackCode {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NoAnswer => "no-answer",
+            Self::NoCorrectAnswer => "no-correct-answer",
+            Self::Correct => "correct",
+            Self::PartiallyCorrectNoCredit => "partially-correct-no-credit",
+            Self::PartiallyCorrect => "partially-correct",
+            Self::Incorrect => "incorrect",
+            Self::PairsMatched => "pairs-matched",
+            Self::TestsPassed => "tests-passed",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct GradedItem {
     pub item_id: AssessmentItemId,
@@ -21,7 +51,7 @@ pub struct GradedItem {
     /// Auto-grader verdict for the client to localize (`no-answer`,
     /// `correct`, `partially-correct`, …); `None` for teacher prose.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(nullable = false)]
+    #[schema(value_type = Option<FeedbackCode>, nullable = false)]
     pub feedback_code: Option<String>,
     /// Placeholders for `feedback_code` (`{correct, total}`, …).
     #[serde(default, skip_serializing_if = "Option::is_none")]

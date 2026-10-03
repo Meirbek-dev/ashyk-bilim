@@ -170,8 +170,8 @@ pub async fn list_replies_for(
     Ok(rows)
 }
 
-pub async fn insert_discussion(
-    pool: &PgPool,
+pub async fn insert_discussion<'e>(
+    pool: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
     parent_id: Option<DiscussionId>,
@@ -192,8 +192,8 @@ pub async fn insert_discussion(
 }
 
 /// Partial update; `None` keeps the column.
-pub async fn update_discussion(
-    pool: &PgPool,
+pub async fn update_discussion<'e>(
+    pool: impl sqlx::PgExecutor<'e>,
     id: DiscussionId,
     content: Option<&str>,
     status: Option<DiscussionStatus>,

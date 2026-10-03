@@ -1159,8 +1159,9 @@ pub async fn get_course_update(
 ) -> Result<Option<CourseUpdateRow>> {
     let row = sqlx::query_as!(
         CourseUpdateRow,
-        r#"SELECT cu.id AS "id: CourseUpdateId", cu.course_id AS "course_id: CourseId",
-                  cu.title, cu.content, cu.version,
+        // `!`: the outer join's plan can make sqlx infer these nullable.
+        r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
+                  cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
                   cu.author_id AS "author_id?: UserId",
                   u.display_name AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
@@ -1180,8 +1181,8 @@ pub async fn list_course_updates(
 ) -> Result<Vec<CourseUpdateRow>> {
     let rows = sqlx::query_as!(
         CourseUpdateRow,
-        r#"SELECT cu.id AS "id: CourseUpdateId", cu.course_id AS "course_id: CourseId",
-                  cu.title, cu.content, cu.version,
+        r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
+                  cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
                   cu.author_id AS "author_id?: UserId",
                   u.display_name AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",

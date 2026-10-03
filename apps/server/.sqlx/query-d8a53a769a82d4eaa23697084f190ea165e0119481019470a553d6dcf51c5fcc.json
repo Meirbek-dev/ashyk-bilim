@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH keys AS (\n               SELECT thumbnail_image_key AS key FROM courses WHERE id = $1\n               UNION ALL\n               SELECT b.content->>'file_key' FROM blocks b\n               JOIN activities a ON a.id = b.activity_id\n               WHERE a.course_id = $1 AND b.claimed\n           ), counted AS (\n               SELECT key, count(*)::int AS n FROM keys WHERE key IS NOT NULL GROUP BY key\n           )\n           UPDATE uploads u\n           SET referenced_count = u.referenced_count + c.n, expires_at = NULL\n           FROM counted c\n           WHERE u.key = c.key AND u.status = 'finalized'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d8a53a769a82d4eaa23697084f190ea165e0119481019470a553d6dcf51c5fcc"
+}

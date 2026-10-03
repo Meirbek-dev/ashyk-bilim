@@ -370,3 +370,269 @@ pub async fn usergroups_for_course(
             .collect(),
     ))
 }
+
+// ── S-10 new names (expand) ─────────────────────────────────────────────────
+// The same handlers under the stage-2 paths; the old paths are marked
+// `deprecated` in the export (`openapi::RENAMED`) and go in phase 9.
+
+/// Create a usergroup (requires `usergroup:create:platform`).
+///
+/// S-10 name of [`create_usergroup`] (that path is deprecated).
+#[utoipa::path(
+    post, path = "/groups", tag = "usergroups",
+    params(("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key")),
+    request_body = CreateUsergroupRequest,
+    responses(
+        (status = 201, description = "Created", body = Usergroup),
+        (status = 403, description = "Missing permission", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn create_group(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    create_usergroup(State(state), CurrentActor(actor), headers, body).await
+}
+
+/// Newest-first listing (requires `usergroup:read:platform`).
+///
+/// S-10 name of [`list_usergroups`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/groups", tag = "usergroups",
+    params(
+        ("cursor" = Option<UsergroupId>, Query, description = "next_cursor from the previous page"),
+        ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
+    ),
+    responses((status = 200, description = "Page of usergroups", body = UsergroupPage)),
+)]
+pub async fn list_groups(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Query(query): Query<UsergroupListQuery>,
+) -> ApiResult<Json<UsergroupPage>> {
+    list_usergroups(State(state), CurrentActor(actor), Query(query)).await
+}
+
+/// One usergroup.
+///
+/// S-10 name of [`get_usergroup`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/groups/{group_id}", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    responses(
+        (status = 200, description = "Usergroup", body = Usergroup,
+         headers(("ETag" = String, description = "Quoted `version`"))),
+        (status = 404, description = "Unknown", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn get_group(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+) -> ApiResult<Response> {
+    get_usergroup(State(state), CurrentActor(actor), Path(id)).await
+}
+
+/// Rename/redescribe (creator or `usergroup:manage:platform`).
+///
+/// S-10 name of [`update_usergroup`] (that path is deprecated).
+#[utoipa::path(
+    patch, path = "/groups/{group_id}", tag = "usergroups",
+    params(
+        ("group_id" = UsergroupId, Path, description = "Group id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
+    ),
+    request_body = UpdateUsergroupRequest,
+    responses(
+        (status = 200, description = "Updated", body = Usergroup,
+         headers(("ETag" = String, description = "Quoted new version"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn update_group(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    update_usergroup(State(state), CurrentActor(actor), Path(id), headers, body).await
+}
+
+/// Delete a usergroup (membership/course links cascade).
+///
+/// S-10 name of [`delete_usergroup`] (that path is deprecated).
+#[utoipa::path(
+    delete, path = "/groups/{group_id}", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "No write access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_group(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+) -> ApiResult<StatusCode> {
+    delete_usergroup(State(state), CurrentActor(actor), Path(id)).await
+}
+
+/// Member profiles.
+///
+/// S-10 name of [`list_usergroup_members`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/groups/{group_id}/members", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    responses((status = 200, description = "Members", body = [UsergroupMember])),
+)]
+pub async fn list_group_members(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+) -> ApiResult<Json<Vec<UsergroupMember>>> {
+    list_usergroup_members(State(state), CurrentActor(actor), Path(id)).await
+}
+
+/// Members as keyset pages (S-05; `GET .../members` stays the full list).
+///
+/// S-10 name of [`list_usergroup_members_page`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/groups/{group_id}/members/page", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id"), crate::dto::KeysetQuery),
+    responses((status = 200, description = "Page of members", body = crate::dto::usergroups::UsergroupMemberPage)),
+)]
+pub async fn list_group_members_page(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    Query(query): Query<crate::dto::KeysetQuery>,
+) -> ApiResult<Json<crate::dto::usergroups::UsergroupMemberPage>> {
+    list_usergroup_members_page(State(state), CurrentActor(actor), Path(id), Query(query)).await
+}
+
+/// Batch-add members (duplicates ignored; unknown users 404 via FK).
+///
+/// S-10 name of [`add_usergroup_members`] (that path is deprecated).
+#[utoipa::path(
+    post, path = "/groups/{group_id}/members", tag = "usergroups",
+    params(
+        ("group_id" = UsergroupId, Path, description = "Group id"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: answer 200 with the updated resource instead of 204"),
+    ),
+    request_body = UsergroupMembersRequest,
+    responses(
+        (status = 200, description = "Added (`Prefer: return=representation`): the group", body = Usergroup),
+        (status = 204, description = "Added"),
+    ),
+)]
+pub async fn add_group_members(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    add_usergroup_members(State(state), CurrentActor(actor), Path(id), headers, body).await
+}
+
+/// Batch-remove members.
+///
+/// S-10 name of [`remove_usergroup_members`] (that path is deprecated).
+#[utoipa::path(
+    delete, path = "/groups/{group_id}/members", tag = "usergroups",
+    params(
+        ("group_id" = UsergroupId, Path, description = "Group id"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: answer 200 with the updated resource instead of 204"),
+    ),
+    request_body = UsergroupMembersRequest,
+    responses(
+        (status = 200, description = "Removed (`Prefer: return=representation`): the group", body = Usergroup),
+        (status = 204, description = "Removed"),
+    ),
+)]
+pub async fn remove_group_members(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    remove_usergroup_members(State(state), CurrentActor(actor), Path(id), headers, body).await
+}
+
+/// Linked course ids.
+///
+/// S-10 name of [`list_usergroup_courses`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/groups/{group_id}/courses", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    responses((status = 200, description = "Linked course ids", body = [CourseId])),
+)]
+pub async fn list_group_courses(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+) -> ApiResult<Json<Vec<CourseId>>> {
+    list_usergroup_courses(State(state), CurrentActor(actor), Path(id)).await
+}
+
+/// Link courses to the group.
+///
+/// S-10 name of [`add_usergroup_courses`] (that path is deprecated).
+#[utoipa::path(
+    post, path = "/groups/{group_id}/courses", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    request_body = UsergroupCoursesRequest,
+    responses((status = 204, description = "Linked")),
+)]
+pub async fn add_group_courses(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    add_usergroup_courses(State(state), CurrentActor(actor), Path(id), body).await
+}
+
+/// Unlink courses from the group.
+///
+/// S-10 name of [`remove_usergroup_courses`] (that path is deprecated).
+#[utoipa::path(
+    delete, path = "/groups/{group_id}/courses", tag = "usergroups",
+    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    request_body = UsergroupCoursesRequest,
+    responses((status = 204, description = "Unlinked")),
+)]
+pub async fn remove_group_courses(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<UsergroupId>,
+    body: axum::body::Bytes,
+) -> ApiResult<StatusCode> {
+    remove_usergroup_courses(State(state), CurrentActor(actor), Path(id), body).await
+}
+
+/// Groups linked to a course (course-settings view).
+///
+/// S-10 name of [`usergroups_for_course`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/courses/{course_id}/groups", tag = "usergroups",
+    params(("course_id" = CourseId, Path, description = "Course id")),
+    responses((status = 200, description = "Groups", body = [Usergroup])),
+)]
+pub async fn groups_for_course(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+) -> ApiResult<Json<Vec<Usergroup>>> {
+    usergroups_for_course(State(state), CurrentActor(actor), Path(id)).await
+}

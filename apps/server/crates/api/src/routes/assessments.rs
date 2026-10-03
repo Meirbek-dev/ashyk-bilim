@@ -15,7 +15,8 @@ use crate::dto::assessments::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
-    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, with_etag,
+    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, wants_representation,
+    with_etag,
 };
 use crate::routes::curriculum::if_match;
 use crate::state::AppState;
@@ -148,11 +149,12 @@ pub async fn list_course_assessments(
 ) -> ApiResult<Json<Vec<Assessment>>> {
     let rows = state.assessments.list_for_course(&actor, id).await?;
     let actions = state.assessments.allowed_actions_for(&actor, id).await?;
-    Ok(Json(
-        rows.into_iter()
-            .map(|a| Assessment::new(a, actions.clone()))
-            .collect(),
-    ))
+    let mut out = Vec::with_capacity(rows.len());
+    for a in rows {
+        let lock = ab_domain::assessments::service::edit_lock(&state.pool, &a).await?;
+        out.push(Assessment::new(a, actions.clone(), lock));
+    }
+    Ok(Json(out))
 }
 
 /// Title/description/weight/grading type. Archived assessments are
@@ -360,10 +362,16 @@ pub async fn audit_trail(
 /// Append an item (kind must suit the assessment; at most 200 items).
 #[utoipa::path(
     post, path = "/assessments/{assessment_id}/items", tag = "assessments",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = CreateItemRequest,
     responses(
-        (status = 201, description = "Created (appended last)", body = AssessmentItem),
+        (status = 201, description = "Created (appended last)", body = AssessmentItem,
+         headers(("ETag" = String, description = "Quoted assessment `version` after the write"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 422, description = "Kind unsupported / limit / bad body", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -372,11 +380,13 @@ pub async fn create_item(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<AssessmentItem>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.assessments.require_authorable(&actor, id).await?;
     let request = ValidJson::<CreateItemRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(id), &headers).await?;
     let item = state
         .assessments
         .add_item(
@@ -388,17 +398,23 @@ pub async fn create_item(
             request.metadata.map(Into::into).unwrap_or_default(),
         )
         .await?;
-    Ok((StatusCode::CREATED, Json(item.into())))
+    Ok(item_reply(&state, StatusCode::CREATED, id, item).await?)
 }
 
 /// Partial item update. Body/max-score changes are refused (409) once a
 /// published assessment has graded submissions.
 #[utoipa::path(
     patch, path = "/assessment-items/{item_id}", tag = "assessments",
-    params(("item_id" = AssessmentItemId, Path, description = "Item id")),
+    params(
+        ("item_id" = AssessmentItemId, Path, description = "Item id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = UpdateItemRequest,
     responses(
-        (status = 200, description = "Updated", body = AssessmentItem),
+        (status = 200, description = "Updated", body = AssessmentItem,
+         headers(("ETag" = String, description = "Quoted assessment `version` after the write"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 409, description = "Content locked", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -407,14 +423,16 @@ pub async fn update_item(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentItemId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<AssessmentItem>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
-    state
+    let assessment_id = state
         .assessments
         .require_authorable_item(&actor, id)
         .await?;
     let request = ValidJson::<UpdateItemRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(assessment_id), &headers).await?;
     let item = state
         .assessments
         .update_item(
@@ -428,15 +446,23 @@ pub async fn update_item(
             },
         )
         .await?;
-    Ok(Json(item.into()))
+    Ok(item_reply(&state, StatusCode::OK, assessment_id, item).await?)
 }
 
 /// Delete an item; siblings renumber.
 #[utoipa::path(
     delete, path = "/assessment-items/{item_id}", tag = "assessments",
-    params(("item_id" = AssessmentItemId, Path, description = "Item id")),
+    params(
+        ("item_id" = AssessmentItemId, Path, description = "Item id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: answer 200 with the assessment after the delete instead of 204"),
+    ),
     responses(
-        (status = 204, description = "Deleted"),
+        (status = 204, description = "Deleted", headers(("ETag" = String, description = "Quoted assessment `version` after the write"))),
+        (status = 200, description = "Deleted; the assessment (with `Prefer: return=representation`)", body = AssessmentDetail,
+         headers(("ETag" = String, description = "Quoted assessment `version` after the write"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 409, description = "Content locked, or the last item of a live assessment", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -445,18 +471,38 @@ pub async fn delete_item(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentItemId>,
-) -> ApiResult<StatusCode> {
+    headers: HeaderMap,
+) -> ApiResult<Response> {
+    let assessment_id = state
+        .assessments
+        .require_authorable_item(&actor, id)
+        .await?;
+    require_if_match(&state.pool, Versioned::Assessment(assessment_id), &headers).await?;
     state.assessments.delete_item(&actor, id).await?;
-    Ok(StatusCode::NO_CONTENT)
+    if wants_representation(&headers) {
+        let detail = state.assessments.get(&actor, assessment_id).await?;
+        return Ok(detail_with_etag(detail_view(&state, &actor, detail).await?));
+    }
+    let version = current_assessment_version(&state, assessment_id).await?;
+    let mut response = StatusCode::NO_CONTENT.into_response();
+    if let Ok(etag) = HeaderValue::from_str(&format!("\"{version}\"")) {
+        response.headers_mut().insert(header::ETAG, etag);
+    }
+    Ok(response)
 }
 
 /// Reorder items; returns the full list in the new order.
 #[utoipa::path(
     post, path = "/assessments/{assessment_id}/items/reorder", tag = "assessments",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = ReorderItemsRequest,
     responses(
-        (status = 200, description = "Reordered", body = [AssessmentItem]),
+        (status = 200, description = "Reordered (order is presentation: the version stays)", body = [AssessmentItem]),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 422, description = "Unknown item ids", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -465,16 +511,24 @@ pub async fn reorder_items(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<Vec<AssessmentItem>>> {
     // UX-311: permission before the body.
     state.assessments.require_authorable(&actor, id).await?;
     let request = ValidJson::<ReorderItemsRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(id), &headers).await?;
     let items = state
         .assessments
         .reorder_items(&actor, id, &request.items)
         .await?;
-    Ok(Json(items.into_iter().map(Into::into).collect()))
+    let version = current_assessment_version(&state, id).await?;
+    Ok(Json(
+        items
+            .into_iter()
+            .map(|i| AssessmentItem::new(i, version))
+            .collect(),
+    ))
 }
 
 // ── Access lists ────────────────────────────────────────────────────────────
@@ -693,5 +747,28 @@ async fn detail_view(
         .assessments
         .allowed_actions_for(actor, detail.assessment.course_id)
         .await?;
-    Ok(AssessmentDetail::new(detail, actions))
+    let lock = ab_domain::assessments::service::edit_lock(&state.pool, &detail.assessment).await?;
+    Ok(AssessmentDetail::new(detail, actions, lock))
+}
+
+/// An item write's reply: the item with the assessment's version after the
+/// write, also as `ETag`.
+async fn item_reply(
+    state: &AppState,
+    status: StatusCode,
+    assessment_id: AssessmentId,
+    item: ab_domain::assessments::service::Item,
+) -> ab_core::Result<Response> {
+    let version = current_assessment_version(state, assessment_id).await?;
+    Ok(with_etag(
+        status,
+        version,
+        AssessmentItem::new(item, version),
+    ))
+}
+
+async fn current_assessment_version(state: &AppState, id: AssessmentId) -> ab_core::Result<i32> {
+    ab_db::versions::current_version(&state.pool, Versioned::Assessment(id))
+        .await?
+        .ok_or_else(|| ab_core::Error::not_found("assessment"))
 }

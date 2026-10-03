@@ -35,6 +35,18 @@ pub mod work_queue;
 /// Postgres raises 22008 «timestamp out of range» → 500 instead of a 422.
 pub(crate) use ab_core::time::EPOCH_MAX;
 
+/// D-03: a stored locale (short or legacy tag) as the legacy `locale` field.
+pub(crate) fn legacy_locale(stored: &str) -> String {
+    ab_core::language::Language::from_locale(stored)
+        .map_or_else(|| stored.to_owned(), |l| l.locale().to_owned())
+}
+
+/// D-03: a stored locale as the short `language` field.
+pub(crate) fn short_locale(stored: &str) -> String {
+    ab_core::language::Language::from_locale(stored)
+        .map_or_else(|| stored.to_owned(), |l| l.code().to_owned())
+}
+
 /// Distinguish an absent field (keep) from an explicit `null` (clear).
 #[allow(clippy::option_option, reason = "three-state patch field")]
 pub(crate) fn double_option<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>

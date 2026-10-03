@@ -50,6 +50,9 @@ pub enum UploadPurpose {
     PlatformThumbnail,
     FileSubmission,
     CollectionCover,
+    /// An image in a discussion post (any course participant; the post's
+    /// `upload_ids` claims it).
+    DiscussionImage,
 }
 
 /// `GET /users` order.
@@ -70,6 +73,23 @@ pub enum UiLanguage {
     Ru,
     Kk,
     En,
+}
+
+/// A locale on input: the short tag (stored) or the legacy region tag.
+#[derive(Serialize, ToSchema)]
+pub enum LocaleInput {
+    #[serde(rename = "ru")]
+    Ru,
+    #[serde(rename = "kk")]
+    Kk,
+    #[serde(rename = "en")]
+    En,
+    #[serde(rename = "ru-RU")]
+    RuRu,
+    #[serde(rename = "kk-KZ")]
+    KkKz,
+    #[serde(rename = "en-US")]
+    EnUs,
 }
 
 /// A stored UI locale.

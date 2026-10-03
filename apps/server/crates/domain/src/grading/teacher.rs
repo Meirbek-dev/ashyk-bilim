@@ -1504,7 +1504,7 @@ impl GradingService {
             &mut **tx,
             row.assessment_id,
             Some(actor.user_id),
-            "grade-saved",
+            ab_core::assessments::AuditEventKind::GradeSaved,
             serde_json::json!({
                 "submission_id": row.id, "status": ledger.target, "raw_score": ledger.raw,
                 "final_score": ledger.final_score, "learner_id": row.user_id,
@@ -1633,7 +1633,7 @@ impl GradingService {
                 &self.pool,
                 assessment_id,
                 Some(actor.user_id),
-                "grades-published",
+                ab_core::assessments::AuditEventKind::GradesPublished,
                 serde_json::json!({ "published": published, "already_published": already }),
             )
             .await?;

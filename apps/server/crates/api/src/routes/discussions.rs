@@ -82,7 +82,13 @@ pub async fn create_discussion(
         move || async move {
             let created = state
                 .discussions
-                .create(&actor, id, request.parent_id, &request.content)
+                .create(
+                    &actor,
+                    id,
+                    request.parent_id,
+                    &request.content,
+                    &request.upload_ids,
+                )
                 .await?;
             Ok((StatusCode::CREATED, Discussion::from(created)))
         },
@@ -131,7 +137,13 @@ pub async fn update_discussion(
     let request = ValidJson::<UpdateDiscussionRequest>::parse(&body)?;
     let updated = state
         .discussions
-        .update(&actor, id, request.content.as_deref(), request.status)
+        .update(
+            &actor,
+            id,
+            request.content.as_deref(),
+            request.status,
+            &request.upload_ids,
+        )
         .await?;
     Ok(Json(updated.into()))
 }

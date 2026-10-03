@@ -14,7 +14,7 @@ use serde::Serialize;
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::Item;
 use crate::grading::answers::{Answers, ItemAnswer};
-use crate::grading::breakdown::{GradedItem, GradingBreakdown, round2};
+use crate::grading::breakdown::{FeedbackCode, GradedItem, GradingBreakdown, round2};
 
 /// Knobs the grader reads from the policy.
 #[derive(Debug, Clone, Copy)]
@@ -42,13 +42,13 @@ const fn count(n: usize) -> f64 {
 struct Verdict {
     score: f64,
     correct: Option<bool>,
-    code: &'static str,
+    code: FeedbackCode,
     params: Option<serde_json::Value>,
     feedback: String,
 }
 
 impl Verdict {
-    fn new(score: f64, correct: bool, code: &'static str, feedback: &str) -> Self {
+    fn new(score: f64, correct: bool, code: FeedbackCode, feedback: &str) -> Self {
         Self {
             score,
             correct: Some(correct),
@@ -62,7 +62,7 @@ impl Verdict {
     fn ratio(
         score: f64,
         correct: bool,
-        code: &'static str,
+        code: FeedbackCode,
         (hits, total): (usize, usize),
         feedback: String,
     ) -> Self {
@@ -103,27 +103,27 @@ fn grade_choice(
     // Set semantics (legacy `set(selected)`): a repeated pick is one pick.
     let chosen: BTreeSet<&str> = selected.iter().map(String::as_str).collect();
     if chosen.is_empty() {
-        return Verdict::new(0.0, false, "no-answer", "No answer provided");
+        return Verdict::new(0.0, false, FeedbackCode::NoAnswer, "No answer provided");
     }
     if correct_ids.is_empty() {
         return Verdict::new(
             points,
             true,
-            "no-correct-answer",
+            FeedbackCode::NoCorrectAnswer,
             "No correct answer defined",
         );
     }
     let hits = chosen.iter().filter(|c| correct_ids.contains(c)).count();
     let misses = chosen.len() - hits;
     if misses == 0 && hits == correct_ids.len() {
-        return Verdict::new(round2(points), true, "correct", "Correct");
+        return Verdict::new(round2(points), true, FeedbackCode::Correct, "Correct");
     }
     if hits > 0 {
         if !policy.partial_credit {
             return Verdict::new(
                 0.0,
                 false,
-                "partially-correct-no-credit",
+                FeedbackCode::PartiallyCorrectNoCredit,
                 "Partially correct (no partial credit)",
             );
         }
@@ -132,7 +132,7 @@ fn grade_choice(
         return Verdict::ratio(
             round2((partial - penalty).max(0.0)),
             false,
-            "partially-correct",
+            FeedbackCode::PartiallyCorrect,
             (hits, correct_ids.len()),
             format!("Partially correct ({hits}/{})", correct_ids.len()),
         );
@@ -141,7 +141,7 @@ fn grade_choice(
     Verdict::new(
         round2(-deduction.min(points)),
         false,
-        "incorrect",
+        FeedbackCode::Incorrect,
         "Incorrect",
     )
 }
@@ -154,7 +154,7 @@ fn grade_matching(
     points: f64,
 ) -> Verdict {
     if matches.is_empty() {
-        return Verdict::new(0.0, false, "no-answer", "No answer provided");
+        return Verdict::new(0.0, false, FeedbackCode::NoAnswer, "No answer provided");
     }
     let expected = body.pairs.len().max(1);
     // One right per left, last wins (legacy `{pair.left: pair.right}`).
@@ -170,12 +170,12 @@ fn grade_matching(
     let all = correct == body.pairs.len();
     let score = round2(count(correct) / count(expected) * points);
     if all {
-        Verdict::new(score, true, "correct", "Correct")
+        Verdict::new(score, true, FeedbackCode::Correct, "Correct")
     } else {
         Verdict::ratio(
             score,
             false,
-            "pairs-matched",
+            FeedbackCode::PairsMatched,
             (correct, body.pairs.len()),
             format!("{correct}/{} pairs matched", body.pairs.len()),
         )
@@ -240,7 +240,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
                 .as_ref()
                 .map(|v| v.feedback.clone())
                 .unwrap_or_default(),
-            feedback_code: verdict.as_ref().map(|v| v.code.to_owned()),
+            feedback_code: verdict.as_ref().map(|v| v.code.as_str().to_owned()),
             feedback_params: verdict.and_then(|v| v.params),
             needs_manual_review,
             user_answer,
@@ -310,7 +310,7 @@ pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer
                 max_score: 100.0,
                 correct: Some(!cases.is_empty() && passed == cases.len()),
                 feedback: format!("{passed}/{} tests passed", cases.len()),
-                feedback_code: Some("tests-passed".into()),
+                feedback_code: Some(FeedbackCode::TestsPassed.as_str().into()),
                 feedback_params: Some(
                     serde_json::json!({ "correct": passed, "total": cases.len() }),
                 ),

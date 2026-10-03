@@ -3,6 +3,7 @@
 
 pub mod collections;
 pub mod contributors;
+pub mod course_copy;
 pub mod courses;
 pub mod curriculum;
 pub mod platform;

@@ -293,11 +293,12 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(prefs.json()["preferences"]["display"]["compactMode"], true);
     assert!(prefs.json()["preferences"].get("notifications").is_none());
     // BUG-117 / BUG-153: unknown sections, non-object sections and unknown keys
-    // inside a section (snake_case included) are 422 - nothing is stored silently.
+    // inside a section are 422 - nothing is stored silently. (S-10: the
+    // snake_case twins of the known keys are accepted, see stage2_l5_flow.)
     for body in [
         serde_json::json!({ "theme": "dark" }),
         serde_json::json!({ "display": true }),
-        serde_json::json!({ "privacy": { "show_on_leaderboard": false } }),
+        serde_json::json!({ "privacy": { "showonleaderboard": false } }),
         serde_json::json!({ "display": { "note": "x" } }),
     ] {
         let refused = app

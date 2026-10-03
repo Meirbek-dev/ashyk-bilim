@@ -173,7 +173,7 @@ impl GradingService {
             &self.pool,
             assessment_id,
             Some(actor.user_id),
-            "deadline-extension-requested",
+            ab_core::assessments::AuditEventKind::DeadlineExtensionRequested,
             serde_json::json!({
                 "action_id": id, "learners": targets.len(), "new_due_at": input.new_due_at,
             }),
@@ -536,7 +536,7 @@ async fn run_deadline_extension(
         pool,
         row.assessment_id,
         row.performed_by,
-        "deadline-extended",
+        ab_core::assessments::AuditEventKind::DeadlineExtended,
         serde_json::json!({
             "action_id": row.id, "learners": affected, "new_due_at": new_due_at,
         }),

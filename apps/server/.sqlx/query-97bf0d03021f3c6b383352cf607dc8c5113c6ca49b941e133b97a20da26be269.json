@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, actor_id AS \"actor_id: UserId\", event, payload,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM assessment_audit_events\n           WHERE assessment_id = $1\n           ORDER BY id DESC\n           LIMIT $2",
+  "query": "SELECT e.id, e.actor_id AS \"actor_id: UserId\",\n                  (SELECT u.display_name FROM users u WHERE u.id = e.actor_id) AS \"actor_name?\",\n                  e.event, e.payload,\n                  (extract(epoch FROM e.created_at))::bigint AS \"created_at!\"\n           FROM assessment_audit_events e\n           WHERE assessment_id = $1\n           ORDER BY id DESC\n           LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,12 @@
       },
       {
         "ordinal": 2,
+        "name": "actor_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
         "name": "event",
         "type_info": "Text",
         "origin": {
@@ -37,7 +43,7 @@
         }
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "payload",
         "type_info": "Jsonb",
         "origin": {
@@ -48,7 +54,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -63,10 +69,11 @@
     "nullable": [
       false,
       true,
+      null,
       false,
       false,
       null
     ]
   },
-  "hash": "b7ed84ffbe0d50026aab9d9b97c2023ec6d083324c32ce05a5815184b4de80f2"
+  "hash": "97bf0d03021f3c6b383352cf607dc8c5113c6ca49b941e133b97a20da26be269"
 }

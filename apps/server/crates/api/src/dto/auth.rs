@@ -152,8 +152,12 @@ pub struct SessionUser {
     pub email: String,
     pub display_name: String,
     pub avatar_key: Option<String>,
+    /// Legacy region tag (`ru-RU`, …); removed in phase 9.
     #[schema(value_type = crate::dto::enums::Locale)]
     pub locale: String,
+    /// D-03: the UI language (`ru`, `kk`, `en`).
+    #[schema(value_type = crate::dto::enums::UiLanguage)]
+    pub language: String,
     /// UI theme slug; `null` = the web default.
     pub theme: Option<String>,
 }
@@ -166,7 +170,8 @@ impl From<ab_domain::identity::users::Profile> for SessionUser {
             email: p.email,
             display_name: p.display_name,
             avatar_key: p.avatar_key,
-            locale: p.locale,
+            locale: super::legacy_locale(&p.locale),
+            language: super::short_locale(&p.locale),
             theme: p.theme,
         }
     }

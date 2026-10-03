@@ -387,7 +387,7 @@ async fn certificate_state(
         issued: issued.is_some(),
         href: issued
             .as_ref()
-            .map(|c| format!("/certificates/{}/verify", c.verify_code)),
+            .map(|c| ab_core::links::WebLink::CertificateVerify(&c.verify_code).path(None)),
         verify_code: issued.map(|c| c.verify_code),
     })
 }
@@ -496,7 +496,7 @@ fn activity_action(
         enabled: true,
         course_id,
         activity_id: Some(activity.id),
-        href: Some(format!("/course/{course_id}/activity/{}", activity.id)),
+        href: Some(ab_core::links::WebLink::Activity(course_id, activity.id).path(None)),
     }
 }
 
@@ -516,7 +516,7 @@ fn next_action(
             enabled: true,
             course_id,
             activity_id: None,
-            href: Some(format!("/course/{course_id}")),
+            href: Some(ab_core::links::WebLink::Course(course_id).path(None)),
         };
     }
     if let Some(a) = activities.iter().find(|a| a.state == WorkState::Returned) {
@@ -602,7 +602,7 @@ fn fallback_action(
             enabled: true,
             course_id,
             activity_id: None,
-            href: Some(format!("/course/{course_id}")),
+            href: Some(ab_core::links::WebLink::Course(course_id).path(None)),
         };
     }
     if activities.iter().any(|a| a.state.awaiting_grade()) {

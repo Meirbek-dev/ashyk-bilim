@@ -75,6 +75,30 @@ enum AdminCommand {
     /// activity of every type, student 1 enrolled. Idempotent; prints the
     /// logins as JSON.
     SeedE2e,
+    /// D-01: editor documents to one embed node (`blockEmbed` →
+    /// `embedBlock`, as the new web normalizes them) and plain-paragraph
+    /// HTML discussion posts to JSON documents. Idempotent; prints counts.
+    /// Refuses when an embed would become type `url` (the old web cannot
+    /// render it) unless `--after-cutover`.
+    MigrateEditorDocs {
+        /// Report what would change; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+        /// The new web is live: write `url` embeds too.
+        #[arg(long)]
+        after_cutover: bool,
+    },
+    /// D-02: `users.theme` outside the 63 registry slugs → `NULL`.
+    MigrateThemes {
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
+    /// migration 20261003000020; responses keep the legacy `locale`).
+    MigrateLocales {
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -94,6 +118,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let config = Config::load()?;
+    ab_core::links::init(config.server.web_links);
     // seed-e2e's stdout is its JSON report: no log lines in it.
     let quiet = matches!(
         cli.command,
@@ -166,6 +191,32 @@ async fn main() -> anyhow::Result<()> {
             command: AdminCommand::SeedE2e,
         } => seed_e2e(config).await,
         Command::Admin {
+            command:
+                AdminCommand::MigrateEditorDocs {
+                    dry_run,
+                    after_cutover,
+                },
+        } => {
+            let pool = ab_db::connect(&config.database).await?;
+            let report =
+                ab_domain::maintenance::migrate_editor_docs(&pool, dry_run, after_cutover).await?;
+            print_report("migrate-editor-docs", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::MigrateThemes { dry_run },
+        } => {
+            let pool = ab_db::connect(&config.database).await?;
+            let report = ab_domain::maintenance::migrate_themes(&pool, dry_run).await?;
+            print_report("migrate-themes", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::MigrateLocales { dry_run },
+        } => {
+            let pool = ab_db::connect(&config.database).await?;
+            let report = ab_domain::maintenance::migrate_locales(&pool, dry_run).await?;
+            print_report("migrate-locales", &report)
+        }
+        Command::Admin {
             command: AdminCommand::ZitadelCheck,
         } => {
             let zitadel_config = config
@@ -206,6 +257,17 @@ async fn ai_eval(config: Config, dataset: &str) -> anyhow::Result<()> {
         report.model_name,
         report.total,
         report.passed
+    )?;
+    Ok(())
+}
+
+/// One line per data migration run: `<name> [dry-run] {counts}`.
+fn print_report(name: &str, report: &ab_domain::maintenance::Report) -> anyhow::Result<()> {
+    writeln!(
+        std::io::stdout(),
+        "{name}{} {}",
+        if report.dry_run { " [dry-run]" } else { "" },
+        serde_json::to_string(&report.counts)?
     )?;
     Ok(())
 }

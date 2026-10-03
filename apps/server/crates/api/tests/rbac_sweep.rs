@@ -50,6 +50,8 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/users/{user_id}/roles/{slug}"),
     ("POST", "/api/v2/uploads"),
     ("POST", "/api/v2/courses"),
+    // course:create:platform + write access to the source.
+    ("POST", "/api/v2/courses/{course_id}/duplicate"),
     ("PATCH", "/api/v2/courses/{course_id}"),
     ("POST", "/api/v2/courses/{course_id}/lifecycle"),
     ("DELETE", "/api/v2/courses/{course_id}"),
@@ -94,6 +96,14 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/usergroups/{usergroup_id}/members"),
     ("POST", "/api/v2/usergroups/{usergroup_id}/courses"),
     ("DELETE", "/api/v2/usergroups/{usergroup_id}/courses"),
+    // S-10 names of the usergroup writes.
+    ("POST", "/api/v2/groups"),
+    ("PATCH", "/api/v2/groups/{group_id}"),
+    ("DELETE", "/api/v2/groups/{group_id}"),
+    ("POST", "/api/v2/groups/{group_id}/members"),
+    ("DELETE", "/api/v2/groups/{group_id}/members"),
+    ("POST", "/api/v2/groups/{group_id}/courses"),
+    ("DELETE", "/api/v2/groups/{group_id}/courses"),
     // Assessment authoring (assessment:author / publish; platform or creator-own).
     ("POST", "/api/v2/assessments"),
     ("PATCH", "/api/v2/assessments/{assessment_id}"),
@@ -168,6 +178,11 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/trail/courses/{course_id}"),
     ("POST", "/api/v2/trail/activities/{activity_id}"),
     ("DELETE", "/api/v2/trail/activities/{activity_id}"),
+    // S-10 names of the trail writes.
+    ("POST", "/api/v2/enrollments/{course_id}"),
+    ("DELETE", "/api/v2/enrollments/{course_id}"),
+    ("POST", "/api/v2/progress/activities/{activity_id}"),
+    ("DELETE", "/api/v2/progress/activities/{activity_id}"),
     // Discussions: discussion:create / update|delete (own or moderate) / read for toggles.
     ("POST", "/api/v2/courses/{course_id}/discussions"),
     ("PATCH", "/api/v2/discussions/{discussion_id}"),

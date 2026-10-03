@@ -71,10 +71,10 @@ impl CodeMail {
         }
     }
 
-    const fn path(self) -> &'static str {
+    const fn link(self) -> ab_core::links::WebLink<'static> {
         match self {
-            Self::Verification => "/auth/verify-email",
-            Self::PasswordReset => "/auth/reset-password",
+            Self::Verification => ab_core::links::WebLink::VerifyEmail,
+            Self::PasswordReset => ab_core::links::WebLink::ResetPassword,
         }
     }
 
@@ -737,7 +737,7 @@ impl IdentityService {
             &account.username,
             &account.email,
             &format!("{first_name} {last_name}"),
-            account.language.map(Language::locale),
+            account.language.map(Language::code),
             &profile_name(&account.organization).unwrap_or_default(),
         )
         .await;
@@ -866,10 +866,9 @@ impl IdentityService {
             .map(|b| b.trim_end_matches('/'))
             .unwrap_or_default();
         let link = format!(
-            "{base}{prefix}{path}?email={}&code={code}",
+            "{base}{path}?email={}&code={code}",
             query_encode(to.email),
-            prefix = language.map_or("", Language::web_prefix),
-            path = mail.path(),
+            path = mail.link().path(language),
         );
         let (subject, code_line, action, ignore) = mail.copy();
         let html = format!(

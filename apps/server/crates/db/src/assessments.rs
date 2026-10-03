@@ -737,7 +737,7 @@ pub async fn insert_audit_event<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,
     assessment_id: AssessmentId,
     actor_id: Option<UserId>,
-    event: &str,
+    event: ab_core::assessments::AuditEventKind,
     payload: serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
@@ -745,7 +745,7 @@ pub async fn insert_audit_event<'e, E: sqlx::PgExecutor<'e>>(
            VALUES ($1, $2, $3, $4)"#,
         assessment_id.0,
         actor_id.map(|u| u.0),
-        event,
+        event.as_str(),
         payload
     )
     .execute(executor)
@@ -757,6 +757,7 @@ pub async fn insert_audit_event<'e, E: sqlx::PgExecutor<'e>>(
 pub struct AuditEventRow {
     pub id: uuid::Uuid,
     pub actor_id: Option<UserId>,
+    pub actor_name: Option<String>,
     pub event: String,
     pub payload: serde_json::Value,
     pub created_at: i64,
@@ -769,9 +770,11 @@ pub async fn list_audit_events(
 ) -> Result<Vec<AuditEventRow>> {
     let rows = sqlx::query_as!(
         AuditEventRow,
-        r#"SELECT id, actor_id AS "actor_id: UserId", event, payload,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM assessment_audit_events
+        r#"SELECT e.id, e.actor_id AS "actor_id: UserId",
+                  (SELECT u.display_name FROM users u WHERE u.id = e.actor_id) AS "actor_name?",
+                  e.event, e.payload,
+                  (extract(epoch FROM e.created_at))::bigint AS "created_at!"
+           FROM assessment_audit_events e
            WHERE assessment_id = $1
            ORDER BY id DESC
            LIMIT $2"#,
@@ -1014,6 +1017,9 @@ pub struct OverrideRow {
     /// `expires_at` (which then bounds only the attempts and the waiver).
     pub due_extended: bool,
     pub granted_by: Option<UserId>,
+    /// The learner's and the granter's display names (the exceptions tab).
+    pub user_display_name: Option<String>,
+    pub granted_by_name: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -1156,9 +1162,11 @@ pub async fn get_override(
                   waive_late_penalty, note,
                   (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
                   granted_by AS "granted_by: UserId",
+                  (SELECT u.display_name FROM users u WHERE u.id = o.user_id) AS "user_display_name?",
+                  (SELECT u.display_name FROM users u WHERE u.id = o.granted_by) AS "granted_by_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2"#,
+           FROM assessment_overrides o WHERE assessment_id = $1 AND user_id = $2"#,
         id.0,
         user_id.0
     )
@@ -1176,9 +1184,11 @@ pub async fn list_overrides(pool: &PgPool, id: AssessmentId) -> Result<Vec<Overr
                   waive_late_penalty, note,
                   (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
                   granted_by AS "granted_by: UserId",
+                  (SELECT u.display_name FROM users u WHERE u.id = o.user_id) AS "user_display_name?",
+                  (SELECT u.display_name FROM users u WHERE u.id = o.granted_by) AS "granted_by_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessment_overrides WHERE assessment_id = $1 ORDER BY id"#,
+           FROM assessment_overrides o WHERE assessment_id = $1 ORDER BY id"#,
         id.0
     )
     .fetch_all(pool)

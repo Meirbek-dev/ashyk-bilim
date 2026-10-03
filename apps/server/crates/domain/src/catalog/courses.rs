@@ -500,7 +500,7 @@ impl CoursesService {
                 &mut *tx,
                 *assessment_id,
                 Some(actor.user_id),
-                "lifecycle-transition",
+                ab_core::assessments::AuditEventKind::LifecycleTransition,
                 serde_json::json!({
                     "from": "scheduled", "to": "draft", "scheduled_at": null,
                     "note": "course archived",

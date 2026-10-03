@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO file_submissions (activity_id, course_id, instructions, rubric,\n               allowed_mime_types, max_files, max_file_size_mb, due_at, allow_late,\n               late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,\n               late_cutoff_at, max_attempts, grade_release_mode, settings, creator_id)\n           SELECT m.new_id, $1, f.instructions, f.rubric, f.allowed_mime_types, f.max_files,\n                  f.max_file_size_mb, f.due_at, f.allow_late, f.late_policy_kind,\n                  f.late_penalty_percent_per_day, f.late_penalty_max_days, f.late_cutoff_at,\n                  f.max_attempts, f.grade_release_mode, f.settings, $2\n           FROM unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id)\n           JOIN file_submissions f ON f.activity_id = m.old_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "009675f6f98b5ccca5d675605a47d4766f0eb4e03dfb6f4316d26895c127c41c"
+}

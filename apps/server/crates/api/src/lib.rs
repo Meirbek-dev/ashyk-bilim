@@ -18,4 +18,5 @@ pub mod state;
 
 pub use app::{build_router, openapi_doc};
 pub use error::{ApiError, ApiResult};
+pub use openapi::RENAMED;
 pub use state::AppState;

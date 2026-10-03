@@ -131,8 +131,9 @@ async fn google_signup_creates_user_and_session(pool: PgPool) {
             .unwrap();
     assert_eq!(username, "newbie");
     assert_eq!(email, "newbie@gmail.com");
-    // UX-132: Google sign-up carries no Accept-Language → default locale.
-    assert_eq!(locale, "ru-RU");
+    // UX-132: Google sign-up carries no Accept-Language → default locale
+    // (D-03: stored short).
+    assert_eq!(locale, "ru");
     let linked: i64 =
         sqlx::query_scalar("SELECT count(*) FROM google_accounts WHERE google_sub = 'g-sub-1'")
             .fetch_one(&app.pool)

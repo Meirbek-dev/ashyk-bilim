@@ -78,13 +78,19 @@ expression: json
               "$ref": "#/components/schemas/AccessUser"
             },
             "type": "array"
+          },
+          "version": {
+            "description": "The `If-Match` of `PUT .../access` (also the `ETag`).",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
           "mode",
           "users",
           "usergroups",
-          "effective_user_count"
+          "effective_user_count",
+          "version"
         ],
         "type": "object"
       },
@@ -1675,6 +1681,13 @@ expression: json
             },
             "type": "array"
           },
+          "allowed_transitions": {
+            "description": "The lifecycle targets `POST .../lifecycle` accepts from here (empty\nwithout `transition`).",
+            "items": {
+              "$ref": "#/components/schemas/Lifecycle"
+            },
+            "type": "array"
+          },
           "archived_at_unix": {
             "oneOf": [
               {
@@ -1707,6 +1720,17 @@ expression: json
           },
           "description": {
             "type": "string"
+          },
+          "edit_lock": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EditLock",
+                "description": "Why details, policy and items are read-only now (`null`: editable)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "grading_type": {
             "$ref": "#/components/schemas/GradingType"
@@ -1779,10 +1803,12 @@ expression: json
           "policy",
           "access_mode",
           "allowed_actions",
+          "allowed_transitions",
           "created_at_unix",
           "updated_at_unix",
           "archived_at_unix",
           "creator_id",
+          "edit_lock",
           "published_at_unix",
           "scheduled_at_unix"
         ],
@@ -1794,7 +1820,8 @@ expression: json
           "update",
           "transition",
           "duplicate",
-          "grade"
+          "grade",
+          "edit"
         ],
         "type": "string"
       },
@@ -2047,6 +2074,11 @@ expression: json
       },
       "AssessmentItem": {
         "properties": {
+          "assessment_version": {
+            "description": "The assessment's `version` after this read or write - the next\n`If-Match` of an item or assessment write.",
+            "format": "int32",
+            "type": "integer"
+          },
           "body": {
             "$ref": "#/components/schemas/ItemBody"
           },
@@ -2074,6 +2106,7 @@ expression: json
         },
         "required": [
           "id",
+          "assessment_version",
           "position",
           "kind",
           "title",
@@ -2968,11 +3001,18 @@ expression: json
               }
             ]
           },
+          "actor_name": {
+            "description": "The actor's display name (`null`: the scheduler, or a deleted user).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
           },
           "event": {
-            "type": "string"
+            "$ref": "#/components/schemas/AuditEventKind"
           },
           "id": {
             "format": "uuid",
@@ -2987,9 +3027,28 @@ expression: json
           "event",
           "payload",
           "created_at_unix",
-          "actor_id"
+          "actor_id",
+          "actor_name"
         ],
         "type": "object"
+      },
+      "AuditEventKind": {
+        "description": "`assessment_audit_events.event`: what an audit row records (the writers\ntake this type, so the wire set is closed).",
+        "enum": [
+          "lifecycle-transition",
+          "auto-publish-skipped",
+          "duplicated-from",
+          "access-changed",
+          "override-created",
+          "override-updated",
+          "override-deleted",
+          "deadline-extended",
+          "deadline-extension-requested",
+          "grade-saved",
+          "grades-published",
+          "submission-submitted"
+        ],
+        "type": "string"
       },
       "AuditPayload": {
         "description": "`assessment_audit_events.payload`.\n\nThe keys depend on `event`: `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),\n`auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,\n`users`, `usergroups`), `override-created|updated|deleted` (`user_id`),\n`duplicated-from` (`source`), `deadline-extension-requested` /\n`deadline-extended` (`action_id`, `learners`, `new_due_at`),\n`submission-submitted` (`submission_id`, `attempt`, `status`,\n`auto_submit_reason`), `grade-saved` (`submission_id`, `learner_id`,\n`status`, `raw_score`, `final_score`, `audit_note`), `grades-published`\n(`published`, `already_published`).",
@@ -3766,6 +3825,7 @@ expression: json
       "ChoiceBody": {
         "properties": {
           "explanation": {
+            "maxLength": 20000,
             "type": [
               "string",
               "null"
@@ -3778,9 +3838,11 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/ChoiceOption"
             },
+            "maxItems": 200,
             "type": "array"
           },
           "prompt": {
+            "maxLength": 20000,
             "type": "string"
           },
           "variant": {
@@ -3809,6 +3871,7 @@ expression: json
             "type": "boolean"
           },
           "text": {
+            "maxLength": 20000,
             "type": "string"
           }
         },
@@ -3893,6 +3956,7 @@ expression: json
             "type": "array"
           },
           "input_spec": {
+            "maxLength": 20000,
             "type": "string"
           },
           "languages": {
@@ -3918,9 +3982,11 @@ expression: json
             ]
           },
           "output_spec": {
+            "maxLength": 20000,
             "type": "string"
           },
           "prompt": {
+            "maxLength": 20000,
             "type": "string"
           },
           "reference_solutions": {
@@ -3949,6 +4015,7 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/CodeTestCase"
             },
+            "maxItems": 200,
             "type": "array"
           },
           "time_limit_seconds": {
@@ -4100,18 +4167,21 @@ expression: json
       "CodeTestCase": {
         "properties": {
           "description": {
+            "maxLength": 20000,
             "type": [
               "string",
               "null"
             ]
           },
           "expected_output": {
+            "maxLength": 20000,
             "type": "string"
           },
           "id": {
             "type": "string"
           },
           "input": {
+            "maxLength": 20000,
             "type": "string"
           },
           "is_visible": {
@@ -5984,6 +6054,15 @@ expression: json
           "parent_id": {
             "$ref": "#/components/schemas/DiscussionId",
             "description": "Reply to this post (one level)."
+          },
+          "upload_ids": {
+            "description": "Finalized `discussion-image` uploads the content shows: claimed by\nthe post (unclaimed uploads are reaped after a day).",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
           }
         },
         "required": [
@@ -6687,6 +6766,27 @@ expression: json
         },
         "type": "object"
       },
+      "DisplaySettings": {
+        "properties": {
+          "animated_effects": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "compact_mode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "animated_effects",
+          "compact_mode"
+        ],
+        "type": "object"
+      },
       "DraftRequest": {
         "additionalProperties": false,
         "description": "The draft's complete file list (replaces what was attached before).",
@@ -6945,6 +7045,19 @@ expression: json
           }
         ]
       },
+      "DuplicateCourseRequest": {
+        "additionalProperties": false,
+        "description": "`POST /courses/{id}/duplicate`.",
+        "properties": {
+          "name": {
+            "description": "Defaults to `\"<name> (copy)\"`.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "DuplicateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -6976,6 +7089,15 @@ expression: json
           }
         },
         "type": "object"
+      },
+      "EditLock": {
+        "description": "Why details, policy and items are read-only right now (the\n[`ensure_editable`] rules; `Assessment.edit_lock`).",
+        "enum": [
+          "archived",
+          "scheduled",
+          "has_submissions"
+        ],
+        "type": "string"
       },
       "EditorDocument": {
         "description": "The rich-text editor document (Tiptap / ProseMirror JSON). The node tree\nis the editor's business: nodes stay open objects. The one free-form\nschema in the contract.",
@@ -7124,6 +7246,9 @@ expression: json
           "compile-error",
           "language-not-allowed",
           "assessment-read-only",
+          "attempt-time-expired",
+          "attempt-past-due",
+          "remediation-required",
           "grade-not-released",
           "grade-own-attempt",
           "ai-disabled",
@@ -7350,6 +7475,20 @@ expression: json
           "source"
         ],
         "type": "object"
+      },
+      "FeedbackCode": {
+        "description": "The auto-grader's verdict codes (`GradedItem.feedback_code`).",
+        "enum": [
+          "no-answer",
+          "no-correct-answer",
+          "correct",
+          "partially-correct-no-credit",
+          "partially-correct",
+          "incorrect",
+          "pairs-matched",
+          "tests-passed"
+        ],
+        "type": "string"
       },
       "FieldError": {
         "description": "A single field-level validation failure. `code` is a stable machine key the\nfrontend translates (e.g. `required`, `too-long`); `message` is English.",
@@ -7910,9 +8049,11 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/FormField"
             },
+            "maxItems": 200,
             "type": "array"
           },
           "prompt": {
+            "maxLength": 20000,
             "type": "string"
           }
         },
@@ -7927,6 +8068,7 @@ expression: json
             "type": "string"
           },
           "label": {
+            "maxLength": 20000,
             "type": "string"
           },
           "required": {
@@ -8074,6 +8216,26 @@ expression: json
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "GamificationSettings": {
+        "description": "S-10 `Profile.settings`: the preferences with snake_case keys; a value\nnever set is `null`.",
+        "properties": {
+          "display": {
+            "$ref": "#/components/schemas/DisplaySettings"
+          },
+          "notifications": {
+            "$ref": "#/components/schemas/XpNotificationSettings"
+          },
+          "privacy": {
+            "$ref": "#/components/schemas/PrivacySettings"
+          }
+        },
+        "required": [
+          "privacy",
+          "notifications",
+          "display"
+        ],
         "type": "object"
       },
       "GradeAction": {
@@ -8433,8 +8595,8 @@ expression: json
             "type": "string"
           },
           "feedback_code": {
-            "description": "Auto-grader verdict for the client to localize (`no-answer`,\n`correct`, `partially-correct`, …); `None` for teacher prose.",
-            "type": "string"
+            "$ref": "#/components/schemas/FeedbackCode",
+            "description": "Auto-grader verdict for the client to localize (`no-answer`,\n`correct`, `partially-correct`, …); `None` for teacher prose."
           },
           "feedback_params": {
             "$ref": "#/components/schemas/MessageParams",
@@ -9596,10 +9758,13 @@ expression: json
               },
               "max_days": {
                 "format": "int32",
+                "minimum": 1,
                 "type": "integer"
               },
               "percent_per_day": {
                 "format": "double",
+                "maximum": 100,
+                "minimum": 0,
                 "type": "number"
               }
             },
@@ -10054,6 +10219,18 @@ expression: json
         ],
         "type": "string"
       },
+      "LocaleInput": {
+        "description": "A locale on input: the short tag (stored) or the legacy region tag.",
+        "enum": [
+          "ru",
+          "kk",
+          "en",
+          "ru-RU",
+          "kk-KZ",
+          "en-US"
+        ],
+        "type": "string"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "description": "Password login. No `Debug` derive - the password must never format.",
@@ -10110,6 +10287,7 @@ expression: json
       "MatchingBody": {
         "properties": {
           "explanation": {
+            "maxLength": 20000,
             "type": [
               "string",
               "null"
@@ -10120,9 +10298,11 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/MatchingPair"
             },
+            "maxItems": 200,
             "type": "array"
           },
           "prompt": {
+            "maxLength": 20000,
             "type": "string"
           }
         },
@@ -10176,9 +10356,11 @@ expression: json
       "MatchingPair": {
         "properties": {
           "left": {
+            "maxLength": 20000,
             "type": "string"
           },
           "right": {
+            "maxLength": 20000,
             "type": "string"
           }
         },
@@ -10816,9 +10998,11 @@ expression: json
             ]
           },
           "prompt": {
+            "maxLength": 20000,
             "type": "string"
           },
           "rubric": {
+            "maxLength": 20000,
             "type": [
               "string",
               "null"
@@ -10849,6 +11033,8 @@ expression: json
           "max_attempts_override": {
             "description": "1..=10; `null` keeps the assessment's limit.",
             "format": "int32",
+            "maximum": 10,
+            "minimum": 1,
             "type": "integer"
           },
           "note": {
@@ -10981,6 +11167,8 @@ expression: json
           "attempt_penalty_percent": {
             "description": "Max-score cap per extra attempt (0 = off).",
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           },
           "completion_rule": {
@@ -10993,6 +11181,8 @@ expression: json
             "type": "boolean"
           },
           "due_at_unix": {
+            "maximum": 253402300799,
+            "minimum": 0,
             "oneOf": [
               {
                 "$ref": "#/components/schemas/UnixTime"
@@ -11007,6 +11197,7 @@ expression: json
           },
           "grace_period_minutes": {
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           },
           "grade_release_mode": {
@@ -11021,6 +11212,8 @@ expression: json
           "max_attempts": {
             "description": "`null` = unlimited.",
             "format": "int32",
+            "maximum": 10,
+            "minimum": 1,
             "type": [
               "integer",
               "null"
@@ -11028,6 +11221,8 @@ expression: json
           },
           "negative_marking_percent": {
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           },
           "partial_credit": {
@@ -11035,6 +11230,8 @@ expression: json
           },
           "passing_score": {
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           },
           "randomize_options": {
@@ -11058,6 +11255,7 @@ expression: json
           "time_limit_seconds": {
             "description": "`null` = no limit.",
             "format": "int32",
+            "minimum": 1,
             "type": [
               "integer",
               "null"
@@ -11065,6 +11263,7 @@ expression: json
           },
           "violation_threshold": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -11097,7 +11296,7 @@ expression: json
       },
       "PreferencesPatch": {
         "additionalProperties": false,
-        "description": "`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.",
+        "description": "`PATCH /gamification/preferences`: the sections the settings form owns.\n\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase or (S-10) snake_case; anything else is\n422.",
         "properties": {
           "display": {
             "oneOf": [
@@ -11143,6 +11342,21 @@ expression: json
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "PrivacySettings": {
+        "properties": {
+          "show_on_leaderboard": {
+            "description": "`false` hides the profile from the leaderboard.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "show_on_leaderboard"
+        ],
         "type": "object"
       },
       "Problem": {
@@ -11327,7 +11541,12 @@ expression: json
             "type": "integer"
           },
           "preferences": {
-            "$ref": "#/components/schemas/GamificationPreferences"
+            "$ref": "#/components/schemas/GamificationPreferences",
+            "description": "Stored camelCase document (old web); removed in phase 9."
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GamificationSettings",
+            "description": "S-10: the same preferences with snake_case keys."
           },
           "total_activities_completed": {
             "format": "int32",
@@ -11371,6 +11590,7 @@ expression: json
           "total_activities_completed",
           "total_courses_completed",
           "preferences",
+          "settings",
           "created_at_unix",
           "updated_at_unix",
           "last_learning_at_unix",
@@ -12324,8 +12544,8 @@ expression: json
             "$ref": "#/components/schemas/ReadinessArea"
           },
           "code": {
-            "description": "Stable machine key, e.g. `choice.options_missing`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ReadinessIssueCode",
+            "description": "Stable machine key, e.g. `choice.options_missing`."
           },
           "item_id": {
             "oneOf": [
@@ -12353,6 +12573,44 @@ expression: json
           "item_id"
         ],
         "type": "object"
+      },
+      "ReadinessIssueCode": {
+        "description": "[`ReadinessIssue::code`] values (schema only; `readiness_codes_pinned`\nkeeps the list in step with the rules).",
+        "enum": [
+          "assessment.title_missing",
+          "assessment.empty",
+          "schedule.after_due_at",
+          "policy.due_at_past",
+          "policy.cutoff_before_due",
+          "policy.penalty_without_late",
+          "item.kind_forbidden",
+          "item.title_missing",
+          "item.max_score_invalid",
+          "choice.correct_missing",
+          "choice.option_duplicate",
+          "choice.option_id_duplicate",
+          "choice.option_text_missing",
+          "choice.options_missing",
+          "choice.prompt_missing",
+          "choice.too_many_correct",
+          "code.languages_missing",
+          "code.prompt_missing",
+          "code.test_io_missing",
+          "code.test_weight_invalid",
+          "code.tests_missing",
+          "form.field_id_duplicate",
+          "form.field_label_missing",
+          "form.fields_missing",
+          "form.prompt_missing",
+          "matching.left_duplicate",
+          "matching.pair_value_missing",
+          "matching.pairs_missing",
+          "matching.prompt_missing",
+          "matching.right_duplicate",
+          "open_text.min_words_invalid",
+          "open_text.prompt_missing"
+        ],
+        "type": "string"
       },
       "ReadinessItem": {
         "description": "One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.",
@@ -13082,6 +13340,7 @@ expression: json
             "type": "boolean"
           },
           "permissions": {
+            "description": "Grants `resource:action[:scope]`. Assessment rights are the\n`assessment` resource; `quiz` / `exam` are legacy names kept as\nstored on migrated roles and grant nothing (S-10).",
             "items": {
               "type": "string"
             },
@@ -14196,8 +14455,13 @@ expression: json
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguage",
+            "description": "D-03: the UI language (`ru`, `kk`, `en`)."
+          },
           "locale": {
-            "$ref": "#/components/schemas/Locale"
+            "$ref": "#/components/schemas/Locale",
+            "description": "Legacy region tag (`ru-RU`, …); removed in phase 9."
           },
           "theme": {
             "description": "UI theme slug; `null` = the web default.",
@@ -14216,6 +14480,7 @@ expression: json
           "email",
           "display_name",
           "locale",
+          "language",
           "avatar_key",
           "theme"
         ],
@@ -14253,7 +14518,7 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "permissions": {
-            "description": "Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`).",
+            "description": "Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`). Assessment rights\nare the `assessment` resource (`quiz` / `exam` still parse but grant\nnothing).",
             "items": {
               "type": "string"
             },
@@ -14485,6 +14750,12 @@ expression: json
               }
             ]
           },
+          "granted_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -14501,6 +14772,13 @@ expression: json
           },
           "updated_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "user_display_name": {
+            "description": "Display names of the learner and the granter.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
@@ -14519,7 +14797,9 @@ expression: json
           "due_at_override_unix",
           "expires_at_unix",
           "granted_by",
-          "max_attempts_override"
+          "granted_by_name",
+          "max_attempts_override",
+          "user_display_name"
         ],
         "type": "object"
       },
@@ -16374,6 +16654,15 @@ expression: json
         ],
         "type": "object"
       },
+      "UiLanguage": {
+        "description": "`?lang=` on CSV exports and certificate PDFs (a link cannot set\n`Accept-Language`); `middleware::lang_query` turns it into that header.",
+        "enum": [
+          "ru",
+          "kk",
+          "en"
+        ],
+        "type": "string"
+      },
       "UnixTime": {
         "description": "Unix time: whole seconds since 1970-01-01T00:00:00Z.",
         "type": "integer"
@@ -16573,6 +16862,15 @@ expression: json
           },
           "status": {
             "$ref": "#/components/schemas/DiscussionStatus"
+          },
+          "upload_ids": {
+            "description": "Images added by this edit (see `CreateDiscussionRequest.upload_ids`).",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
           }
         },
         "type": "object"
@@ -16687,8 +16985,8 @@ expression: json
             "type": "string"
           },
           "locale": {
-            "$ref": "#/components/schemas/Locale",
-            "description": "One of the platform locales."
+            "$ref": "#/components/schemas/LocaleInput",
+            "description": "A platform locale, short (`ru`, `kk`, `en`) or the legacy region tag;\nstored short (D-03)."
           },
           "organization": {
             "description": "School / university / company; a blank value is 422 `required`.",
@@ -16755,7 +17053,8 @@ expression: json
           "platform-logo",
           "platform-thumbnail",
           "file-submission",
-          "collection-cover"
+          "collection-cover",
+          "discussion-image"
         ],
         "type": "string"
       },
@@ -16853,8 +17152,13 @@ expression: json
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguage",
+            "description": "D-03: the UI language (`ru`, `kk`, `en`)."
+          },
           "locale": {
-            "$ref": "#/components/schemas/Locale"
+            "$ref": "#/components/schemas/Locale",
+            "description": "Legacy region tag (`ru-RU`, …) whatever is stored; removed in phase 9."
           },
           "mfa_enabled": {
             "description": "TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).",
@@ -16891,6 +17195,7 @@ expression: json
           "display_name",
           "bio",
           "locale",
+          "language",
           "organization",
           "profile",
           "mfa_enabled",
@@ -17676,6 +17981,20 @@ expression: json
           "total_xp",
           "level",
           "reason"
+        ],
+        "type": "object"
+      },
+      "XpNotificationSettings": {
+        "properties": {
+          "xp_gain": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "xp_gain"
         ],
         "type": "object"
       },
@@ -22282,11 +22601,62 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/AssessmentItemId"
             }
+          },
+          {
+            "description": "Assessment `version`; stale → 412 (without it nothing changes)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "`return=representation`: answer 200 with the assessment after the delete instead of 204",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentDetail"
+                }
+              }
+            },
+            "description": "Deleted; the assessment (with `Prefer: return=representation`)",
+            "headers": {
+              "ETag": {
+                "description": "Quoted assessment `version` after the write",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "204": {
-            "description": "Deleted"
+            "description": "Deleted",
+            "headers": {
+              "ETag": {
+                "description": "Quoted assessment `version` after the write",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "content": {
@@ -22297,6 +22667,16 @@ expression: json
               }
             },
             "description": "Content locked, or the last item of a live assessment"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete an item; siblings renumber.",
@@ -22314,6 +22694,19 @@ expression: json
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssessmentItemId"
+            }
+          },
+          {
+            "description": "Assessment `version`; stale → 412 (without it nothing changes)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
             }
           }
         ],
@@ -22336,7 +22729,15 @@ expression: json
                 }
               }
             },
-            "description": "Updated"
+            "description": "Updated",
+            "headers": {
+              "ETag": {
+                "description": "Quoted assessment `version` after the write",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "content": {
@@ -22347,6 +22748,16 @@ expression: json
               }
             },
             "description": "Content locked"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Partial item update. Body/max-score changes are refused (409) once a\npublished assessment has graded submissions.",
@@ -23020,6 +23431,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
             }
+          },
+          {
+            "description": "Assessment `version`; stale → 412 (without it nothing changes)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -23041,7 +23465,25 @@ expression: json
                 }
               }
             },
-            "description": "Created (appended last)"
+            "description": "Created (appended last)",
+            "headers": {
+              "ETag": {
+                "description": "Quoted assessment `version` after the write",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           },
           "422": {
             "content": {
@@ -23072,6 +23514,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
             }
+          },
+          {
+            "description": "Assessment `version`; stale → 412 (without it nothing changes)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -23096,7 +23551,17 @@ expression: json
                 }
               }
             },
-            "description": "Reordered"
+            "description": "Reordered (order is presentation: the version stays)"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           },
           "422": {
             "content": {
@@ -26947,6 +27412,81 @@ expression: json
         ]
       }
     },
+    "/api/v2/courses/{course_id}/duplicate": {
+      "post": {
+        "description": "Chapters, unpublished\nactivities with their blocks, file-submission configs and assessments\n(draft copies with policy and items). Uploaded media is shared by key,\nnot duplicated (one more reference per use). Learners, grades,\nsubmissions, discussions, announcements, contributors and group links\nstay behind. Needs `course:create:platform` and write access to the\nsource. Honours `Idempotency-Key`.",
+        "operationId": "duplicate_course",
+        "parameters": [
+          {
+            "description": "Source course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCourseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            },
+            "description": "The copy"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No create right or no write access to the source"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or invisible course"
+          }
+        },
+        "summary": "Copy a course as a private draft for the caller.",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v2/courses/{course_id}/gradebook": {
       "get": {
         "description": "The attempt learner progress scores (best-scored submission, latest\nscored file attempt) - assessment submissions and file-submission\nattempts alike.",
@@ -27141,6 +27681,42 @@ expression: json
         "summary": "Every grade change and hand-in on a course as `text/event-stream`\n(graders).",
         "tags": [
           "grading"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/groups": {
+      "get": {
+        "description": "S-10 name of [`usergroups_for_course`] (that path is deprecated).",
+        "operationId": "groups_for_course",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Usergroup"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Groups"
+          }
+        },
+        "summary": "Groups linked to a course (course-settings view).",
+        "tags": [
+          "usergroups"
         ]
       }
     },
@@ -27642,6 +28218,7 @@ expression: json
     },
     "/api/v2/courses/{course_id}/usergroups": {
       "get": {
+        "deprecated": true,
         "operationId": "usergroups_for_course",
         "parameters": [
           {
@@ -27672,7 +28249,8 @@ expression: json
         "summary": "Groups linked to a course (course-settings view).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "groups_for_course"
       }
     },
     "/api/v2/discussions/{discussion_id}": {
@@ -27920,6 +28498,248 @@ expression: json
         "summary": "Replies under a post, oldest first (keyset).",
         "tags": [
           "discussions"
+        ]
+      }
+    },
+    "/api/v2/enrollments": {
+      "get": {
+        "description": "S-10 name of [`get_trail`] (that path is deprecated).",
+        "operationId": "list_enrollments",
+        "parameters": [
+          {
+            "description": "`next_cursor` of the previous page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Runs per page, 1..=100 (default: all; 20 with `cursor`)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            },
+            "description": "Trail"
+          }
+        },
+        "summary": "The caller's trail: one run per course, one step per activity marked\ndone. Anonymous callers get an empty trail. With `limit` / `cursor` the\nruns come in keyset pages (`next_cursor`).",
+        "tags": [
+          "progress"
+        ]
+      }
+    },
+    "/api/v2/enrollments/{course_id}": {
+      "delete": {
+        "description": "Trail mutations run `detached()` (BUG-221): a client that hangs up\nmid-request must not leave the step without its projection.\n\nS-10 name of [`remove_course`] (that path is deprecated).",
+        "operationId": "leave_course",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "`return=representation`: also answer the course's `learner_state`",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            },
+            "description": "Trail"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No trail access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown course or no run in it"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The trail lock is busy"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Malformed id"
+          }
+        },
+        "summary": "Drop the run for a course and every step in it.",
+        "tags": [
+          "progress"
+        ]
+      },
+      "post": {
+        "description": "S-10 name of [`add_course`] (that path is deprecated).",
+        "operationId": "enroll",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "`return=representation`: also answer the course's `learner_state`",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            },
+            "description": "Trail"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No course access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or invisible course"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Course staff never enrol, or the trail lock is busy"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Malformed id"
+          }
+        },
+        "summary": "Start (or keep) a run for a course the caller can access.",
+        "tags": [
+          "progress"
         ]
       }
     },
@@ -28922,6 +29742,570 @@ expression: json
         ]
       }
     },
+    "/api/v2/groups": {
+      "get": {
+        "description": "S-10 name of [`list_usergroups`] (that path is deprecated).",
+        "operationId": "list_groups",
+        "parameters": [
+          {
+            "description": "next_cursor from the previous page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "description": "Page size, 1..=100 (default 20)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsergroupPage"
+                }
+              }
+            },
+            "description": "Page of usergroups"
+          }
+        },
+        "summary": "Newest-first listing (requires `usergroup:read:platform`).",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "post": {
+        "description": "S-10 name of [`create_usergroup`] (that path is deprecated).",
+        "operationId": "create_group",
+        "parameters": [
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUsergroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission"
+          }
+        },
+        "summary": "Create a usergroup (requires `usergroup:create:platform`).",
+        "tags": [
+          "usergroups"
+        ]
+      }
+    },
+    "/api/v2/groups/{group_id}": {
+      "delete": {
+        "description": "S-10 name of [`delete_usergroup`] (that path is deprecated).",
+        "operationId": "delete_group",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No write access"
+          }
+        },
+        "summary": "Delete a usergroup (membership/course links cascade).",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "get": {
+        "description": "S-10 name of [`get_usergroup`] (that path is deprecated).",
+        "operationId": "get_group",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            },
+            "description": "Usergroup",
+            "headers": {
+              "ETag": {
+                "description": "Quoted `version`",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown"
+          }
+        },
+        "summary": "One usergroup.",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "patch": {
+        "description": "S-10 name of [`update_usergroup`] (that path is deprecated).",
+        "operationId": "update_group",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "description": "Current `version`; stale → 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUsergroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            },
+            "description": "Updated",
+            "headers": {
+              "ETag": {
+                "description": "Quoted new version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
+          }
+        },
+        "summary": "Rename/redescribe (creator or `usergroup:manage:platform`).",
+        "tags": [
+          "usergroups"
+        ]
+      }
+    },
+    "/api/v2/groups/{group_id}/courses": {
+      "delete": {
+        "description": "S-10 name of [`remove_usergroup_courses`] (that path is deprecated).",
+        "operationId": "remove_group_courses",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupCoursesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Unlinked"
+          }
+        },
+        "summary": "Unlink courses from the group.",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "get": {
+        "description": "S-10 name of [`list_usergroup_courses`] (that path is deprecated).",
+        "operationId": "list_group_courses",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourseId"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Linked course ids"
+          }
+        },
+        "summary": "Linked course ids.",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "post": {
+        "description": "S-10 name of [`add_usergroup_courses`] (that path is deprecated).",
+        "operationId": "add_group_courses",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupCoursesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Linked"
+          }
+        },
+        "summary": "Link courses to the group.",
+        "tags": [
+          "usergroups"
+        ]
+      }
+    },
+    "/api/v2/groups/{group_id}/members": {
+      "delete": {
+        "description": "S-10 name of [`remove_usergroup_members`] (that path is deprecated).",
+        "operationId": "remove_group_members",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "description": "`return=representation`: answer 200 with the updated resource instead of 204",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            },
+            "description": "Removed (`Prefer: return=representation`): the group"
+          },
+          "204": {
+            "description": "Removed"
+          }
+        },
+        "summary": "Batch-remove members.",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "get": {
+        "description": "S-10 name of [`list_usergroup_members`] (that path is deprecated).",
+        "operationId": "list_group_members",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UsergroupMember"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Members"
+          }
+        },
+        "summary": "Member profiles.",
+        "tags": [
+          "usergroups"
+        ]
+      },
+      "post": {
+        "description": "S-10 name of [`add_usergroup_members`] (that path is deprecated).",
+        "operationId": "add_group_members",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "description": "`return=representation`: answer 200 with the updated resource instead of 204",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsergroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usergroup"
+                }
+              }
+            },
+            "description": "Added (`Prefer: return=representation`): the group"
+          },
+          "204": {
+            "description": "Added"
+          }
+        },
+        "summary": "Batch-add members (duplicates ignored; unknown users 404 via FK).",
+        "tags": [
+          "usergroups"
+        ]
+      }
+    },
+    "/api/v2/groups/{group_id}/members/page": {
+      "get": {
+        "description": "S-10 name of [`list_usergroup_members_page`] (that path is deprecated).",
+        "operationId": "list_group_members_page",
+        "parameters": [
+          {
+            "description": "Group id",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UsergroupId"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsergroupMemberPage"
+                }
+              }
+            },
+            "description": "Page of members"
+          }
+        },
+        "summary": "Members as keyset pages (S-05; `GET .../members` stays the full list).",
+        "tags": [
+          "usergroups"
+        ]
+      }
+    },
     "/api/v2/health": {
       "get": {
         "operationId": "live",
@@ -29508,6 +30892,94 @@ expression: json
         "summary": "Update platform settings (requires `platform:update:platform` - admins).\nBranding changes claim finalized `platform-logo` / `platform-thumbnail`\nuploads; the replaced object is released for reaping.",
         "tags": [
           "platform"
+        ]
+      }
+    },
+    "/api/v2/progress/activities/{activity_id}": {
+      "delete": {
+        "description": "S-10 name of [`remove_activity`] (that path is deprecated).",
+        "operationId": "uncomplete_activity",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          },
+          {
+            "description": "`return=representation`: also answer the course's `learner_state`",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            },
+            "description": "Trail"
+          }
+        },
+        "summary": "Un-mark an activity.",
+        "tags": [
+          "progress"
+        ]
+      },
+      "post": {
+        "description": "S-10 name of [`add_activity`] (that path is deprecated).",
+        "operationId": "complete_activity",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          },
+          {
+            "description": "`return=representation`: also answer the course's `learner_state`",
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trail"
+                }
+              }
+            },
+            "description": "Trail"
+          }
+        },
+        "summary": "Mark an activity done (lesson-type activities also complete in the\ncanonical progress; assessments are projected by their own pipeline).",
+        "tags": [
+          "progress"
         ]
       }
     },
@@ -30547,6 +32019,7 @@ expression: json
     },
     "/api/v2/trail": {
       "get": {
+        "deprecated": true,
         "operationId": "get_trail",
         "parameters": [
           {
@@ -30583,11 +32056,13 @@ expression: json
         "summary": "The caller's trail: one run per course, one step per activity marked\ndone. Anonymous callers get an empty trail. With `limit` / `cursor` the\nruns come in keyset pages (`next_cursor`).",
         "tags": [
           "progress"
-        ]
+        ],
+        "x-replaced-by": "list_enrollments"
       }
     },
     "/api/v2/trail/activities/{activity_id}": {
       "delete": {
+        "deprecated": true,
         "operationId": "remove_activity",
         "parameters": [
           {
@@ -30627,9 +32102,11 @@ expression: json
         "summary": "Un-mark an activity.",
         "tags": [
           "progress"
-        ]
+        ],
+        "x-replaced-by": "uncomplete_activity"
       },
       "post": {
+        "deprecated": true,
         "operationId": "add_activity",
         "parameters": [
           {
@@ -30669,11 +32146,13 @@ expression: json
         "summary": "Mark an activity done (lesson-type activities also complete in the\ncanonical progress; assessments are projected by their own pipeline).",
         "tags": [
           "progress"
-        ]
+        ],
+        "x-replaced-by": "complete_activity"
       }
     },
     "/api/v2/trail/courses/{course_id}": {
       "delete": {
+        "deprecated": true,
         "description": "Trail mutations run `detached()` (BUG-221): a client that hangs up\nmid-request must not leave the step without its projection.",
         "operationId": "remove_course",
         "parameters": [
@@ -30764,9 +32243,11 @@ expression: json
         "summary": "Drop the run for a course and every step in it.",
         "tags": [
           "progress"
-        ]
+        ],
+        "x-replaced-by": "leave_course"
       },
       "post": {
+        "deprecated": true,
         "operationId": "add_course",
         "parameters": [
           {
@@ -30868,7 +32349,8 @@ expression: json
         "summary": "Start (or keep) a run for a course the caller can access.",
         "tags": [
           "progress"
-        ]
+        ],
+        "x-replaced-by": "enroll"
       }
     },
     "/api/v2/uploads": {
@@ -31016,6 +32498,7 @@ expression: json
     },
     "/api/v2/usergroups": {
       "get": {
+        "deprecated": true,
         "operationId": "list_usergroups",
         "parameters": [
           {
@@ -31052,9 +32535,11 @@ expression: json
         "summary": "Newest-first listing (requires `usergroup:read:platform`).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "list_groups"
       },
       "post": {
+        "deprecated": true,
         "operationId": "create_usergroup",
         "parameters": [
           {
@@ -31105,11 +32590,13 @@ expression: json
         "summary": "Create a usergroup (requires `usergroup:create:platform`).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "create_group"
       }
     },
     "/api/v2/usergroups/{usergroup_id}": {
       "delete": {
+        "deprecated": true,
         "operationId": "delete_usergroup",
         "parameters": [
           {
@@ -31140,9 +32627,11 @@ expression: json
         "summary": "Delete a usergroup (membership/course links cascade).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "delete_group"
       },
       "get": {
+        "deprecated": true,
         "operationId": "get_usergroup",
         "parameters": [
           {
@@ -31188,9 +32677,11 @@ expression: json
         "summary": "One usergroup.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "get_group"
       },
       "patch": {
+        "deprecated": true,
         "operationId": "update_usergroup",
         "parameters": [
           {
@@ -31269,11 +32760,13 @@ expression: json
         "summary": "Rename/redescribe (creator or `usergroup:manage:platform`).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "update_group"
       }
     },
     "/api/v2/usergroups/{usergroup_id}/courses": {
       "delete": {
+        "deprecated": true,
         "operationId": "remove_usergroup_courses",
         "parameters": [
           {
@@ -31304,9 +32797,11 @@ expression: json
         "summary": "Unlink courses from the group.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "remove_group_courses"
       },
       "get": {
+        "deprecated": true,
         "operationId": "list_usergroup_courses",
         "parameters": [
           {
@@ -31337,9 +32832,11 @@ expression: json
         "summary": "Linked course ids.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "list_group_courses"
       },
       "post": {
+        "deprecated": true,
         "operationId": "add_usergroup_courses",
         "parameters": [
           {
@@ -31370,11 +32867,13 @@ expression: json
         "summary": "Link courses to the group.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "add_group_courses"
       }
     },
     "/api/v2/usergroups/{usergroup_id}/members": {
       "delete": {
+        "deprecated": true,
         "operationId": "remove_usergroup_members",
         "parameters": [
           {
@@ -31427,9 +32926,11 @@ expression: json
         "summary": "Batch-remove members.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "remove_group_members"
       },
       "get": {
+        "deprecated": true,
         "operationId": "list_usergroup_members",
         "parameters": [
           {
@@ -31460,9 +32961,11 @@ expression: json
         "summary": "Member profiles.",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "list_group_members"
       },
       "post": {
+        "deprecated": true,
         "operationId": "add_usergroup_members",
         "parameters": [
           {
@@ -31515,11 +33018,13 @@ expression: json
         "summary": "Batch-add members (duplicates ignored; unknown users 404 via FK).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "add_group_members"
       }
     },
     "/api/v2/usergroups/{usergroup_id}/members/page": {
       "get": {
+        "deprecated": true,
         "operationId": "list_usergroup_members_page",
         "parameters": [
           {
@@ -31563,7 +33068,8 @@ expression: json
         "summary": "Members as keyset pages (S-05; `GET .../members` stays the full list).",
         "tags": [
           "usergroups"
-        ]
+        ],
+        "x-replaced-by": "list_group_members_page"
       }
     },
     "/api/v2/users": {

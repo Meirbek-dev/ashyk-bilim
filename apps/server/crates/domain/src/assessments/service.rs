@@ -42,26 +42,48 @@ pub(crate) async fn ensure_editable<'e>(
     db: impl sqlx::PgExecutor<'e>,
     assessment: &Assessment,
 ) -> Result<()> {
-    match assessment.lifecycle {
-        Lifecycle::Archived => Err(read_only("archived", "archived assessments are read-only")),
-        Lifecycle::Published => {
-            let activity = ab_db::assessments::submission_activity(db, assessment.id).await?;
-            if activity.any {
-                return Err(read_only(
-                    "has_submissions",
-                    "published assessment already has submissions; unpublish first",
-                ));
-            }
-            Ok(())
+    match edit_lock(db, assessment).await? {
+        Some(EditLock::Archived) => {
+            Err(read_only("archived", "archived assessments are read-only"))
         }
-        // BUG-162: a schedule was readiness-checked at schedule time;
-        // edits would bypass that gate, so it is read-only until unscheduled.
-        Lifecycle::Scheduled => Err(read_only(
+        Some(EditLock::HasSubmissions) => Err(read_only(
+            "has_submissions",
+            "published assessment already has submissions; unpublish first",
+        )),
+        Some(EditLock::Scheduled) => Err(read_only(
             "scheduled",
             "scheduled assessments are read-only; unschedule first",
         )),
-        Lifecycle::Draft => Ok(()),
+        None => Ok(()),
     }
+}
+
+/// Why details, policy and items are read-only right now (the
+/// [`ensure_editable`] rules; `Assessment.edit_lock`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum EditLock {
+    Archived,
+    /// BUG-162: a schedule was readiness-checked at schedule time; edits
+    /// would bypass that gate, so it is read-only until unscheduled.
+    Scheduled,
+    /// Published with any submission: unpublish first.
+    HasSubmissions,
+}
+
+pub async fn edit_lock<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment: &Assessment,
+) -> Result<Option<EditLock>> {
+    Ok(match assessment.lifecycle {
+        Lifecycle::Archived => Some(EditLock::Archived),
+        Lifecycle::Scheduled => Some(EditLock::Scheduled),
+        Lifecycle::Published => ab_db::assessments::submission_activity(db, assessment.id)
+            .await?
+            .any
+            .then_some(EditLock::HasSubmissions),
+        Lifecycle::Draft => None,
+    })
 }
 
 /// UX-284: a code the client can localize, `details.reason` saying why
@@ -494,6 +516,9 @@ pub enum AssessmentAction {
     Duplicate,
     /// Review and grade its submissions (the grading gate).
     Grade,
+    /// `update` with no edit lock: details, policy and items take writes
+    /// now (`edit_lock` says why not otherwise).
+    Edit,
 }
 
 impl AssessmentsService {
@@ -562,9 +587,13 @@ impl AssessmentsService {
         self.load_for_edit(actor, id).await.map(drop)
     }
 
-    /// [`Self::require_authorable`] for an item's assessment.
-    pub async fn require_authorable_item(&self, actor: &Actor, id: AssessmentItemId) -> Result<()> {
-        self.item_for_author(actor, id).await.map(drop)
+    /// [`Self::require_authorable`] for an item's assessment (its id).
+    pub async fn require_authorable_item(
+        &self,
+        actor: &Actor,
+        id: AssessmentItemId,
+    ) -> Result<AssessmentId> {
+        self.item_for_author(actor, id).await.map(|(a, _)| a.id)
     }
 
     /// The lifecycle gate of [`Self::transition`] on its own.
@@ -1207,7 +1236,7 @@ impl AssessmentsService {
             &self.pool,
             id,
             Some(actor.user_id),
-            "lifecycle-transition",
+            ab_core::assessments::AuditEventKind::LifecycleTransition,
             serde_json::json!({
                 "from": from, "to": to, "scheduled_at": scheduled, "note": note,
             }),
@@ -1245,7 +1274,7 @@ impl AssessmentsService {
                     pool,
                     id,
                     None,
-                    "auto-publish-skipped",
+                    ab_core::assessments::AuditEventKind::AutoPublishSkipped,
                     serde_json::json!({ "by": "scheduler", "readiness": codes }),
                 )
                 .await?;
@@ -1272,7 +1301,7 @@ impl AssessmentsService {
                 pool,
                 id,
                 None,
-                "lifecycle-transition",
+                ab_core::assessments::AuditEventKind::LifecycleTransition,
                 serde_json::json!({ "from": "scheduled", "to": "published", "by": "scheduler" }),
             )
             .await?;
@@ -1313,31 +1342,55 @@ impl AssessmentsService {
             None => format!("{} (copy)", source.title),
         };
 
-        let (activity_type, sub_type) = source.kind.activity_type();
         // BUG-246 (BUG-233 sibling): activity, assessment, items and the
         // audit row land together - a dropped socket leaves no orphan.
         let mut tx = self.pool.begin().await?;
+        let (new_id, _) = Self::copy_assessment(
+            &mut tx,
+            &source,
+            (source.course_id, target_chapter),
+            &copy_title,
+            actor.user_id,
+        )
+        .await?;
+        tx.commit().await?;
+        self.detail(new_id).await
+    }
+
+    /// The copy itself on the caller's transaction: a draft activity
+    /// appended to `chapter_id` of `course_id`, the assessment with the
+    /// whole policy, every item, a `duplicated-from` audit row. Also the
+    /// course copy's path for its assessments.
+    pub(crate) async fn copy_assessment(
+        tx: &mut sqlx::PgConnection,
+        source: &Assessment,
+        (course_id, chapter_id): (CourseId, ChapterId),
+        title: &str,
+        creator: ab_core::id::UserId,
+    ) -> Result<(AssessmentId, ab_core::id::ActivityId)> {
+        let id = source.id;
+        let (activity_type, sub_type) = source.kind.activity_type();
         let activity_id = ab_db::catalog::insert_activity(
             &mut *tx,
-            target_chapter,
-            source.course_id,
-            &copy_title,
+            chapter_id,
+            course_id,
+            title,
             activity_type,
             sub_type,
-            actor.user_id,
+            creator,
         )
         .await?;
         let new_id = ab_db::assessments::insert_assessment(
             &mut *tx,
             NewAssessment {
                 activity_id,
-                course_id: source.course_id,
+                course_id,
                 kind: source.kind,
-                title: &copy_title,
+                title,
                 description: &source.description,
                 weight: source.weight,
                 grading_type: source.grading_type,
-                creator_id: actor.user_id,
+                creator_id: creator,
                 policy: &source.policy(),
             },
         )
@@ -1363,13 +1416,12 @@ impl AssessmentsService {
         ab_db::assessments::insert_audit_event(
             &mut *tx,
             new_id,
-            Some(actor.user_id),
-            "duplicated-from",
+            Some(creator),
+            ab_core::assessments::AuditEventKind::DuplicatedFrom,
             serde_json::json!({ "source": id }),
         )
         .await?;
-        tx.commit().await?;
-        self.detail(new_id).await
+        Ok((new_id, activity_id))
     }
 
     pub async fn audit_trail(

@@ -12,8 +12,12 @@ pub struct UserProfile {
     pub display_name: String,
     pub bio: String,
     pub avatar_key: Option<String>,
+    /// Legacy region tag (`ru-RU`, …) whatever is stored; removed in phase 9.
     #[schema(value_type = crate::dto::enums::Locale)]
     pub locale: String,
+    /// D-03: the UI language (`ru`, `kk`, `en`).
+    #[schema(value_type = crate::dto::enums::UiLanguage)]
+    pub language: String,
     /// School / university / company; `""` = not given yet (the dashboard
     /// asks for it).
     pub organization: String,
@@ -60,7 +64,8 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             display_name: p.display_name,
             bio: p.bio,
             avatar_key: p.avatar_key,
-            locale: p.locale,
+            locale: super::legacy_locale(&p.locale),
+            language: super::short_locale(&p.locale),
             organization: p.organization,
             profile: p.profile,
             theme: p.theme,
@@ -136,9 +141,10 @@ pub struct UpdateProfileRequest {
     #[garde(length(chars, max = 2000))]
     #[schema(max_length = 2000)]
     pub bio: Option<String>,
-    /// One of the platform locales.
+    /// A platform locale, short (`ru`, `kk`, `en`) or the legacy region tag;
+    /// stored short (D-03).
     #[garde(custom(valid_locale))]
-    #[schema(value_type = Option<crate::dto::enums::Locale>)]
+    #[schema(value_type = Option<crate::dto::enums::LocaleInput>)]
     pub locale: Option<String>,
     /// School / university / company; a blank value is 422 `required`.
     #[garde(length(chars, max = 200))]
@@ -243,9 +249,9 @@ pub struct SetUserStatusRequest {
 #[allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
 fn valid_locale(value: &Option<String>, _ctx: &()) -> garde::Result {
     match value.as_deref() {
-        None | Some("ru-RU" | "kk-KZ" | "en-US") => Ok(()),
+        None | Some("ru" | "kk" | "en" | "ru-RU" | "kk-KZ" | "en-US") => Ok(()),
         Some(other) => Err(garde::Error::new(format!(
-            "unsupported locale '{other}' (ru-RU, kk-KZ, en-US)"
+            "unsupported locale '{other}' (ru, kk, en; or ru-RU, kk-KZ, en-US)"
         ))),
     }
 }

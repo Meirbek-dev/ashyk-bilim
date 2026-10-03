@@ -359,6 +359,45 @@ text_enum!(
     }
 );
 
+/// `assessment_audit_events.event`: what an audit row records (the writers
+/// take this type, so the wire set is closed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum AuditEventKind {
+    LifecycleTransition,
+    AutoPublishSkipped,
+    DuplicatedFrom,
+    AccessChanged,
+    OverrideCreated,
+    OverrideUpdated,
+    OverrideDeleted,
+    DeadlineExtended,
+    DeadlineExtensionRequested,
+    GradeSaved,
+    GradesPublished,
+    SubmissionSubmitted,
+}
+
+impl AuditEventKind {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::LifecycleTransition => "lifecycle-transition",
+            Self::AutoPublishSkipped => "auto-publish-skipped",
+            Self::DuplicatedFrom => "duplicated-from",
+            Self::AccessChanged => "access-changed",
+            Self::OverrideCreated => "override-created",
+            Self::OverrideUpdated => "override-updated",
+            Self::OverrideDeleted => "override-deleted",
+            Self::DeadlineExtended => "deadline-extended",
+            Self::DeadlineExtensionRequested => "deadline-extension-requested",
+            Self::GradeSaved => "grade-saved",
+            Self::GradesPublished => "grades-published",
+            Self::SubmissionSubmitted => "submission-submitted",
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -372,6 +411,15 @@ mod tests {
             assert_eq!(json, format!("\"{}\"", kind.as_str()));
         }
         assert_eq!(Lifecycle::parse("bogus"), None);
+        for kind in [
+            AuditEventKind::OverrideCreated,
+            AuditEventKind::DeadlineExtensionRequested,
+        ] {
+            assert_eq!(
+                serde_json::to_string(&kind).unwrap(),
+                format!("\"{}\"", kind.as_str())
+            );
+        }
     }
 
     #[test]

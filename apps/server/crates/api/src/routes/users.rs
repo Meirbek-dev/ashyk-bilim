@@ -101,7 +101,12 @@ pub async fn update_my_profile(
                 ProfileChanges {
                     display_name: request.display_name,
                     bio: request.bio,
-                    locale: request.locale,
+                    // D-03: stored short whatever form came in.
+                    locale: request
+                        .locale
+                        .as_deref()
+                        .and_then(ab_core::language::Language::from_locale)
+                        .map(|l| l.code().to_owned()),
                     organization: request.organization,
                     avatar_upload_id: request.avatar_upload_id,
                     profile: request.profile,

@@ -150,7 +150,7 @@ fn now_unix() -> i64 {
 // ── Item assembly (legacy `_learner_item`, `_teacher_work`) ─────────────────
 
 fn learner_href(course_id: CourseId, activity_id: ActivityId) -> String {
-    format!("/course/{course_id}/activity/{activity_id}")
+    ab_core::links::WebLink::Activity(course_id, activity_id).path(None)
 }
 
 /// What differs between the learner kinds (legacy `_learner_item` branches).
@@ -267,14 +267,7 @@ fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
 }
 
 fn review_href(row: &TeacherWorkRow, review_ref: Option<uuid::Uuid>) -> String {
-    let base = format!(
-        "/dash/courses/{}/activity/{}/review",
-        row.course_id, row.activity_id
-    );
-    match review_ref {
-        Some(id) => format!("{base}?submission={id}"),
-        None => base,
-    }
+    ab_core::links::WebLink::Review(row.course_id, row.activity_id, review_ref).path(None)
 }
 
 /// Display name, else username (legacy: first + last name, else username).

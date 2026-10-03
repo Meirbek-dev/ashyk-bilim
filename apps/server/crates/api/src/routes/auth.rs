@@ -530,7 +530,7 @@ fn login_error_redirect(state: &AppState, code: &str) -> Redirect {
         &state
             .config
             .server
-            .web_href(&format!("/auth/login?error={code}")),
+            .web_href(&ab_core::links::WebLink::LoginError(code).path(None)),
     )
 }
 

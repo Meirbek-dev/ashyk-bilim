@@ -17,8 +17,10 @@ pub enum LatePolicy {
     None,
     Penalty {
         #[garde(skip)]
+        #[schema(minimum = 0.0, maximum = 100.0)]
         percent_per_day: f64,
         #[garde(skip)]
+        #[schema(minimum = 1)]
         max_days: i32,
     },
     Cutoff {
@@ -77,14 +79,18 @@ pub struct Policy {
     #[garde(skip)]
     pub completion_rule: CompletionRule,
     #[garde(skip)]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub passing_score: f64,
     /// `null` = unlimited.
     #[garde(skip)]
+    #[schema(minimum = 1, maximum = 10)]
     pub max_attempts: Option<i32>,
     /// `null` = no limit.
     #[garde(skip)]
+    #[schema(minimum = 1)]
     pub time_limit_seconds: Option<i32>,
     #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub due_at_unix: Option<i64>,
     #[garde(skip)]
     pub allow_late: bool,
@@ -101,8 +107,10 @@ pub struct Policy {
     #[garde(skip)]
     pub partial_credit: bool,
     #[garde(skip)]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub negative_marking_percent: f64,
     #[garde(skip)]
+    #[schema(minimum = 0)]
     pub grace_period_minutes: i32,
     #[garde(skip)]
     pub copy_paste_protection: bool,
@@ -115,9 +123,11 @@ pub struct Policy {
     #[garde(skip)]
     pub fullscreen_required: bool,
     #[garde(skip)]
+    #[schema(minimum = 1)]
     pub violation_threshold: i32,
     /// Max-score cap per extra attempt (0 = off).
     #[garde(skip)]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub attempt_penalty_percent: f64,
 }
 
@@ -205,15 +215,39 @@ pub struct Assessment {
     pub creator_id: Option<UserId>,
     /// What the caller may do to this assessment now.
     pub allowed_actions: Vec<service::AssessmentAction>,
+    /// Why details, policy and items are read-only now (`null`: editable).
+    pub edit_lock: Option<service::EditLock>,
+    /// The lifecycle targets `POST .../lifecycle` accepts from here (empty
+    /// without `transition`).
+    pub allowed_transitions: Vec<Lifecycle>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
 impl Assessment {
-    pub fn new(a: service::Assessment, allowed_actions: Vec<service::AssessmentAction>) -> Self {
+    pub fn new(
+        a: service::Assessment,
+        mut allowed_actions: Vec<service::AssessmentAction>,
+        edit_lock: Option<service::EditLock>,
+    ) -> Self {
         let policy = PolicyInput::from_row(&a).into();
+        if edit_lock.is_none() && allowed_actions.contains(&service::AssessmentAction::Update) {
+            allowed_actions.push(service::AssessmentAction::Edit);
+        }
+        let allowed_transitions =
+            if allowed_actions.contains(&service::AssessmentAction::Transition) {
+                Lifecycle::ALL
+                    .iter()
+                    .copied()
+                    .filter(|to| a.lifecycle.can_transition_to(*to))
+                    .collect()
+            } else {
+                Vec::new()
+            };
         Self {
             allowed_actions,
+            edit_lock,
+            allowed_transitions,
             id: a.id,
             activity_id: a.activity_id,
             course_id: a.course_id,
@@ -270,6 +304,9 @@ impl From<ItemMetadata> for service::ItemMetadataInput {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AssessmentItem {
     pub id: AssessmentItemId,
+    /// The assessment's `version` after this read or write - the next
+    /// `If-Match` of an item or assessment write.
+    pub assessment_version: i32,
     /// 1-based, contiguous.
     pub position: i32,
     pub kind: ItemKind,
@@ -279,10 +316,11 @@ pub struct AssessmentItem {
     pub metadata: ItemMetadata,
 }
 
-impl From<service::Item> for AssessmentItem {
-    fn from(i: service::Item) -> Self {
+impl AssessmentItem {
+    pub fn new(i: service::Item, assessment_version: i32) -> Self {
         Self {
             id: i.id,
+            assessment_version,
             position: i.position,
             kind: i.kind,
             title: i.title,
@@ -310,10 +348,16 @@ impl AssessmentDetail {
     pub fn new(
         d: service::AssessmentDetail,
         allowed_actions: Vec<service::AssessmentAction>,
+        edit_lock: Option<service::EditLock>,
     ) -> Self {
+        let version = d.assessment.version;
         Self {
-            assessment: Assessment::new(d.assessment, allowed_actions),
-            items: d.items.into_iter().map(Into::into).collect(),
+            assessment: Assessment::new(d.assessment, allowed_actions, edit_lock),
+            items: d
+                .items
+                .into_iter()
+                .map(|i| AssessmentItem::new(i, version))
+                .collect(),
         }
     }
 }
@@ -422,6 +466,9 @@ pub struct ReorderItemsRequest {
 pub struct AuditEvent {
     pub id: uuid::Uuid,
     pub actor_id: Option<UserId>,
+    /// The actor's display name (`null`: the scheduler, or a deleted user).
+    pub actor_name: Option<String>,
+    #[schema(value_type = ab_core::assessments::AuditEventKind)]
     pub event: String,
     #[schema(value_type = ab_domain::wire::AuditPayload)]
     pub payload: serde_json::Value,
@@ -433,6 +480,7 @@ impl From<service::AuditEvent> for AuditEvent {
         Self {
             id: e.id,
             actor_id: e.actor_id,
+            actor_name: e.actor_name,
             event: e.event,
             payload: e.payload,
             created_at_unix: e.created_at,
@@ -483,6 +531,8 @@ pub struct AccessView {
     pub usergroups: Vec<AccessGroup>,
     /// Distinct people reachable through both lists.
     pub effective_user_count: i64,
+    /// The `If-Match` of `PUT .../access` (also the `ETag`).
+    pub version: i32,
 }
 
 impl From<ab_domain::assessments::access::AccessView> for AccessView {
@@ -509,6 +559,7 @@ impl From<ab_domain::assessments::access::AccessView> for AccessView {
                 })
                 .collect(),
             effective_user_count: v.effective_user_count,
+            version: v.version,
         }
     }
 }
@@ -542,6 +593,9 @@ pub struct StudentOverride {
     pub note: String,
     pub expires_at_unix: Option<i64>,
     pub granted_by: Option<UserId>,
+    /// Display names of the learner and the granter.
+    pub user_display_name: Option<String>,
+    pub granted_by_name: Option<String>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -557,6 +611,8 @@ impl From<ab_domain::assessments::access::Override> for StudentOverride {
             note: o.note,
             expires_at_unix: o.expires_at,
             granted_by: o.granted_by,
+            user_display_name: o.user_display_name,
+            granted_by_name: o.granted_by_name,
             created_at_unix: o.created_at,
             updated_at_unix: o.updated_at,
         }
@@ -569,6 +625,7 @@ impl From<ab_domain::assessments::access::Override> for StudentOverride {
 pub struct OverrideRequest {
     /// 1..=10; `null` keeps the assessment's limit.
     #[garde(skip)]
+    #[schema(minimum = 1, maximum = 10)]
     pub max_attempts_override: Option<i32>,
     #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
     #[schema(minimum = 0, maximum = 253_402_300_799_i64)]

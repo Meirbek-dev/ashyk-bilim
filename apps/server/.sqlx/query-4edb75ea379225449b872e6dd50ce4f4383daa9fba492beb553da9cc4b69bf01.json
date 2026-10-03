@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO courses (name, description, about, learnings, tags, thumbnail_type,\n                                thumbnail_image_key, thumbnail_video_key, creator_id)\n           SELECT $2, description, about, learnings, tags, thumbnail_type,\n                  thumbnail_image_key, thumbnail_video_key, $3\n           FROM courses WHERE id = $1\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4edb75ea379225449b872e6dd50ce4f4383daa9fba492beb553da9cc4b69bf01"
+}

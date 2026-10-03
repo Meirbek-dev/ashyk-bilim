@@ -125,6 +125,12 @@ pub struct CreateDiscussionRequest {
     /// Reply to this post (one level).
     #[garde(skip)]
     pub parent_id: Option<DiscussionId>,
+    /// Finalized `discussion-image` uploads the content shows: claimed by
+    /// the post (unclaimed uploads are reaped after a day).
+    #[garde(length(max = 10))]
+    #[serde(default)]
+    #[schema(max_items = 10)]
+    pub upload_ids: Vec<uuid::Uuid>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
@@ -135,6 +141,11 @@ pub struct UpdateDiscussionRequest {
     pub content: Option<String>,
     #[garde(skip)]
     pub status: Option<DiscussionStatus>,
+    /// Images added by this edit (see `CreateDiscussionRequest.upload_ids`).
+    #[garde(length(max = 10))]
+    #[serde(default)]
+    #[schema(max_items = 10)]
+    pub upload_ids: Vec<uuid::Uuid>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

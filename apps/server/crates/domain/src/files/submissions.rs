@@ -938,14 +938,17 @@ impl FileSubmissionsService {
         if reasons.is_empty() {
             return Ok(());
         }
-        Err(Error::forbidden(format!(
-            "cannot {action}: {}",
-            reasons
-                .iter()
-                .map(|r| r.as_str())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )))
+        Err(DisabledReason::refusal(
+            &reasons,
+            format!(
+                "cannot {action}: {}",
+                reasons
+                    .iter()
+                    .map(|r| r.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        ))
     }
 
     async fn activity_published(&self, row: &FileSubmissionRow) -> Result<bool> {

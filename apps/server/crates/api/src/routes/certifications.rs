@@ -151,10 +151,10 @@ pub async fn certification_preview_pdf(
     let bytes = state
         .certifications
         .preview_pdf(&actor, id, language, |language, code| {
-            state.config.server.web_href(&format!(
-                "{}/certificates/{code}/verify",
-                language.web_prefix()
-            ))
+            state
+                .config
+                .server
+                .web_href(&ab_core::links::WebLink::CertificateVerify(code).path(Some(language)))
         })
         .await?;
     let mut response = (StatusCode::OK, bytes).into_response();
@@ -316,10 +316,10 @@ pub async fn certificate_pdf(
     let (code, bytes) = state
         .certifications
         .pdf(&code, language, |language, code| {
-            state.config.server.web_href(&format!(
-                "{}/certificates/{code}/verify",
-                language.web_prefix()
-            ))
+            state
+                .config
+                .server
+                .web_href(&ab_core::links::WebLink::CertificateVerify(code).path(Some(language)))
         })
         .await?;
     let mut response = (StatusCode::OK, bytes).into_response();

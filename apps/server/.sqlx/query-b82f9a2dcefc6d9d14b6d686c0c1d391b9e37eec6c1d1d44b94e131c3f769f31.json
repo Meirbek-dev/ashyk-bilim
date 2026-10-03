@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO blocks (id, activity_id, block_type, content, claimed)\n               SELECT $2, $3, block_type, content, claimed FROM blocks WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b82f9a2dcefc6d9d14b6d686c0c1d391b9e37eec6c1d1d44b94e131c3f769f31"
+}

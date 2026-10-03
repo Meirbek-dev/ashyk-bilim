@@ -327,3 +327,137 @@ pub async fn remove_course_learner(
     })
     .await
 }
+
+// ── S-10 new names (expand) ─────────────────────────────────────────────────
+// The same handlers under the stage-2 paths; the old paths are marked
+// `deprecated` in the export (`openapi::RENAMED`) and go in phase 9.
+
+/// The caller's trail: one run per course, one step per activity marked
+/// done. Anonymous callers get an empty trail. With `limit` / `cursor` the
+/// runs come in keyset pages (`next_cursor`).
+///
+/// S-10 name of [`get_trail`] (that path is deprecated).
+#[utoipa::path(
+    get, path = "/enrollments", tag = "progress",
+    params(
+        ("cursor" = Option<String>, Query, description = "`next_cursor` of the previous page"),
+        ("limit" = Option<i64>, Query, description = "Runs per page, 1..=100 (default: all; 20 with `cursor`)"),
+    ),
+    responses((status = 200, description = "Trail", body = Trail)),
+)]
+pub async fn list_enrollments(
+    State(state): State<AppState>,
+    MaybeActor(actor): MaybeActor,
+    Query(query): Query<TrailQuery>,
+) -> ApiResult<Json<Trail>> {
+    get_trail(State(state), MaybeActor(actor), Query(query)).await
+}
+
+/// Start (or keep) a run for a course the caller can access.
+///
+/// S-10 name of [`add_course`] (that path is deprecated).
+#[utoipa::path(
+    post, path = "/enrollments/{course_id}", tag = "progress",
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: also answer the course's `learner_state`"),
+    ),
+    responses(
+        (status = 200, description = "Trail", body = Trail),
+        (status = 401, description = "Not signed in", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 403, description = "No course access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or invisible course", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Course staff never enrol, or the trail lock is busy",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "Malformed id", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn enroll(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    headers: HeaderMap,
+) -> ApiResult<Response> {
+    add_course(State(state), CurrentActor(actor), Path(id), headers).await
+}
+
+/// Drop the run for a course and every step in it.
+///
+/// Trail mutations run `detached()` (BUG-221): a client that hangs up
+/// mid-request must not leave the step without its projection.
+///
+/// S-10 name of [`remove_course`] (that path is deprecated).
+#[utoipa::path(
+    delete, path = "/enrollments/{course_id}", tag = "progress",
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: also answer the course's `learner_state`"),
+    ),
+    responses(
+        (status = 200, description = "Trail", body = Trail),
+        (status = 401, description = "Not signed in", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 403, description = "No trail access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown course or no run in it", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "The trail lock is busy", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Malformed id", body = Problem,
+         content_type = "application/problem+json"),
+    ),
+)]
+pub async fn leave_course(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    headers: HeaderMap,
+) -> ApiResult<Json<Trail>> {
+    remove_course(State(state), CurrentActor(actor), Path(id), headers).await
+}
+
+/// Mark an activity done (lesson-type activities also complete in the
+/// canonical progress; assessments are projected by their own pipeline).
+///
+/// S-10 name of [`add_activity`] (that path is deprecated).
+#[utoipa::path(
+    post, path = "/progress/activities/{activity_id}", tag = "progress",
+    params(
+        ("activity_id" = ActivityId, Path, description = "Activity id"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: also answer the course's `learner_state`"),
+    ),
+    responses((status = 200, description = "Trail", body = Trail)),
+)]
+pub async fn complete_activity(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ActivityId>,
+    headers: HeaderMap,
+) -> ApiResult<Json<Trail>> {
+    add_activity(State(state), CurrentActor(actor), Path(id), headers).await
+}
+
+/// Un-mark an activity.
+///
+/// S-10 name of [`remove_activity`] (that path is deprecated).
+#[utoipa::path(
+    delete, path = "/progress/activities/{activity_id}", tag = "progress",
+    params(
+        ("activity_id" = ActivityId, Path, description = "Activity id"),
+        ("Prefer" = Option<String>, Header, description = "`return=representation`: also answer the course's `learner_state`"),
+    ),
+    responses((status = 200, description = "Trail", body = Trail)),
+)]
+pub async fn uncomplete_activity(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ActivityId>,
+    headers: HeaderMap,
+) -> ApiResult<Json<Trail>> {
+    remove_activity(State(state), CurrentActor(actor), Path(id), headers).await
+}

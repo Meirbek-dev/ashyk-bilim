@@ -2085,3 +2085,75 @@ response stay as they are (removed in phase 9).
   (effective due date with the override applied as `EffectivePolicy` does,
   assessment reach as `effective_access_count`). File submissions have no
   per-learner override, so their due date is the activity's.
+
+## Web links switch, S-10 names, data migrations and the L-5 gaps (2026-10-03, stage 2 S-10/S-11, D-01..D-03, L-5)
+
+- **S-11 link scheme is one setting**: `AB__SERVER__WEB_LINKS` = `legacy`
+  (default: the old web's URLs, locale prefix where it had one, `/auth/...`,
+  `/course/...`, `/dash/...`) or `v2` (spec 5.3: `/login`, `/verify-email`,
+  `/reset-password`, `/courses/{id}`, `/learn/{course}/{activity}`,
+  `/teach/courses/{c}/activities/{a}/submissions[/{id}]`,
+  `/certificates/{code}/verify` with no locale). Every built web URL goes
+  through `ab_core::links::WebLink` (emails, the Google sign-in error page,
+  the certificate PDF's QR, `next_action.href`, the work queue). The value is
+  process-wide (`links::init` at boot, a `OnceLock`) instead of threaded
+  through the services that build hrefs from a pool; tests set it through
+  `TestApp::spawn_with` (nextest runs one test per process). The analytics
+  insight hrefs (`/dash/analytics...`) are not mapped: the new web builds its
+  drill-downs from search params. The Google callback redirect is the path
+  the web passed in, so it needs no mapping. Phase 9 deletes `legacy`.
+- **S-10 expand without moving handlers**: the new paths (`/enrollments`,
+  `/enrollments/{course_id}`, `/progress/activities/{activity_id}`,
+  `/groups...`, `/courses/{id}/groups`) are thin twins of the old handlers
+  with their own `operationId`; the export marks the old operations
+  `deprecated: true` + `x-replaced-by: <new operationId>` from
+  `openapi::RENAMED` (no Rust `#[deprecated]`, which would need `allow`s at
+  every call). Gamification preferences keep their stored camelCase document
+  (the leaderboard SQL and the old web read it): the PATCH takes snake_case
+  twins (folded into the camelCase keys) and `Profile.settings` answers the
+  snake_case view; the stored document flips in phase 9. Permission resources
+  `quiz` / `exam` stay as stored; they were never checked, so the contract
+  now says so and documents `assessment`.
+- **D-03 locales**: migration `20261003000020` lets `users.locale` hold
+  `ru|kk|en` beside the legacy tags (default `ru`); writes normalize to the
+  short tag whatever form comes in. Responses keep `locale` in the legacy
+  form whatever is stored and add `language` (`ru|kk|en`), so no field
+  changes meaning before cutover; phase 9 drops `locale` and the legacy tags.
+- **Data migrations are `ashyq admin` subcommands**, idempotent, `--dry-run`
+  prints counts, safe while the old web runs: `migrate-editor-docs` (D-01:
+  `blockEmbed` → `embedBlock` with the new web's `normalizeDocument` rules -
+  provider list included - and plain-`<p>` HTML discussion posts → JSON
+  documents, which the old web also parses; refuses without
+  `--after-cutover` when an embed would become type `url`, which the old web
+  cannot render), `migrate-themes` (D-02), `migrate-locales` (D-03). The
+  content rewrite does not bump `activities.version`: the shape changes, not
+  the teacher's text, and an open old-web editor saving the old shape over it
+  is converted again by the next run.
+- **Assessment edit locks are data**: `Assessment.edit_lock`
+  (`archived|scheduled|has_submissions`, the `ensure_editable` rules, now one
+  function) plus the `edit` action and `allowed_transitions`. Item writes take
+  an optional `If-Match` on the assessment `version` and answer
+  `assessment_version` (+ `ETag`); reorder is presentation and keeps the
+  version.
+- **Typed attempt refusals** keep 403: `attempt-time-expired`,
+  `attempt-past-due`, `remediation-required` (the first typed gate wins,
+  `details.reasons` lists all, `detail` keeps the legacy text the old web
+  matches). `AuditEventKind` is a closed Rust enum the audit writers take;
+  `ReadinessIssue.code` is a schema enum pinned by a source scan; the
+  grader's `FeedbackCode` is an enum.
+- **Discussion images**: upload purpose `discussion-image` (public, 5 MB,
+  images, any `file:create:own`); a post claims them through `upload_ids` on
+  create/update, so unclaimed ones are reaped like any upload.
+- **Course copy** (`POST /courses/{id}/duplicate`, `Idempotency-Key`):
+  `course:create:platform` + write access to the source; one transaction
+  copies the course (private draft, the caller owns it), chapters, plain
+  activities (unpublished; blocks get new ids and the content's
+  `block_uuid` references are rewritten), file-submission configs (draft)
+  and assessments through the assessment copy (`copy_assessment`, now
+  callable for another course; position restored). Media is shared by key:
+  the copy adds one reference per use on counted uploads (course thumbnail,
+  claimed blocks), so the object lives while either course uses it. Not
+  copied: learners, progress, submissions, grades, discussions,
+  announcements, contributors, group links, certification, access lists,
+  overrides. It lives on `AssessmentsService` (it needs both services;
+  `CoursesService` does not hold the assessments one).

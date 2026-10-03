@@ -30,7 +30,18 @@ impl Language {
         }
     }
 
-    /// The stored `users.locale` tag for this language.
+    /// D-03: the short tag `users.locale` stores (`ru`, `kk`, `en`).
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Ru => "ru",
+            Self::Kk => "kk",
+            Self::En => "en",
+        }
+    }
+
+    /// The legacy region tag (`ru-RU`, `kk-KZ`, `en-US`) - the `locale`
+    /// field of user responses until phase 9.
     #[must_use]
     pub const fn locale(self) -> &'static str {
         match self {

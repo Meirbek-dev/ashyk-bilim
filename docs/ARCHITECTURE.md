@@ -280,6 +280,13 @@ pub enum Error {
   status / membership writes) or a different resource (trail writes → the
   course's `learner_state`) return the updated resource on request; the
   default stays as it was.
+- **Renames (S-10, expand)**: a renamed path is a twin handler with its own
+  `operationId`; the export marks the old operation `deprecated: true` +
+  `x-replaced-by` (`openapi::RENAMED`) until phase 9 removes it.
+- **Web links (S-11)**: every URL into the web app is built by
+  `ab_core::links::WebLink` in the scheme `AB__SERVER__WEB_LINKS` selects
+  (`legacy` | `v2`), anchored at `AB__SERVER__WEB_URL` where a full URL is
+  needed (emails, redirects, the certificate QR).
 - **SSE**: `axum::response::Sse` + `async-stream`. Event log per stream in
   **Redis Streams** (`XADD` with `MAXLEN ~ 1024`), `Last-Event-ID` resumes via
   `XRANGE` — replay is native, no custom event-log code like the legacy version.
@@ -623,6 +630,9 @@ commit directly to `main` and treat a red pipeline as a stop-the-line event:
   allowlist non-wildcard, Zitadel/RustFS reachable, migrations current). A
   misconfigured server refuses to start with a precise error, never limps.
 - `ashyq admin config-check` prints the effective config with secrets redacted.
+- Data migrations that rewrite stored shapes (stage 2 D-01..D-03) are
+  idempotent `ashyq admin migrate-*` commands with `--dry-run`, not SQL
+  migrations: they run against live data on the operator's schedule.
 
 ## 17. Known gotchas & risk register
 

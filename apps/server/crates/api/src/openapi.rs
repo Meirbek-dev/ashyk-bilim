@@ -41,6 +41,50 @@ const NULL_CLEARS: &[(&str, &str)] = &[
 /// optional+nullable only there and in [`NULL_CLEARS`].
 const STORED_JSON: &[&str] = &["RunMetadata", "RunContext", "AuditPayload"];
 
+/// S-10 expand: `(old operationId, new operationId)`.
+///
+/// The old operation is
+/// exported `deprecated: true` with `x-replaced-by: <new operationId>` (the
+/// marker the web's api-coverage gate skips) and removed in phase 9.
+pub const RENAMED: &[(&str, &str)] = &[
+    ("get_trail", "list_enrollments"),
+    ("add_course", "enroll"),
+    ("remove_course", "leave_course"),
+    ("add_activity", "complete_activity"),
+    ("remove_activity", "uncomplete_activity"),
+    ("create_usergroup", "create_group"),
+    ("list_usergroups", "list_groups"),
+    ("get_usergroup", "get_group"),
+    ("update_usergroup", "update_group"),
+    ("delete_usergroup", "delete_group"),
+    ("list_usergroup_members", "list_group_members"),
+    ("list_usergroup_members_page", "list_group_members_page"),
+    ("add_usergroup_members", "add_group_members"),
+    ("remove_usergroup_members", "remove_group_members"),
+    ("list_usergroup_courses", "list_group_courses"),
+    ("add_usergroup_courses", "add_group_courses"),
+    ("remove_usergroup_courses", "remove_group_courses"),
+    ("usergroups_for_course", "groups_for_course"),
+];
+
+fn deprecate_renamed(doc: &mut Value) {
+    let Some(paths) = doc.get_mut("paths").and_then(Value::as_object_mut) else {
+        return;
+    };
+    for operation in paths
+        .values_mut()
+        .filter_map(Value::as_object_mut)
+        .flat_map(|item| item.values_mut())
+        .filter_map(Value::as_object_mut)
+    {
+        let id = operation.get("operationId").and_then(Value::as_str);
+        if let Some((_, new)) = RENAMED.iter().find(|(old, _)| Some(*old) == id) {
+            operation.insert("deprecated".into(), Value::Bool(true));
+            operation.insert("x-replaced-by".into(), Value::String((*new).into()));
+        }
+    }
+}
+
 /// The finished document: what `ashyq openapi` exports and the API serves.
 pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
     // An `OpenApi` has string keys only: serializing it cannot fail.
@@ -49,6 +93,7 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
     binary_downloads(&mut doc);
     nullability(&mut doc);
     close_all_of(&mut doc);
+    deprecate_renamed(&mut doc);
     if let Some(schemas) = doc
         .pointer_mut("/components/schemas")
         .and_then(Value::as_object_mut)

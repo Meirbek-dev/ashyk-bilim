@@ -194,6 +194,26 @@ impl DisabledReason {
             Self::AccessRestricted => "ACCESS_RESTRICTED",
         }
     }
+
+    /// The 403 refusing an attempt write: the first gate with a typed code
+    /// names it (`attempt-time-expired`, `attempt-past-due`,
+    /// `remediation-required`), else `forbidden`; `detail` keeps the legacy
+    /// text (the old web matches the reason in it) and `details.reasons`
+    /// lists every gate.
+    #[must_use]
+    pub fn refusal(reasons: &[Self], detail: impl Into<String>) -> Error {
+        let code = reasons
+            .iter()
+            .find_map(|r| match r {
+                Self::TimeLimitExpired => Some(ab_core::ErrorCode::AttemptTimeExpired),
+                Self::PastDue => Some(ab_core::ErrorCode::AttemptPastDue),
+                Self::RemediationRequired => Some(ab_core::ErrorCode::RemediationRequired),
+                _ => None,
+            })
+            .unwrap_or(ab_core::ErrorCode::Forbidden);
+        let reasons: Vec<&str> = reasons.iter().map(|r| r.as_str()).collect();
+        Error::app_with_details(code, detail, serde_json::json!({ "reasons": reasons }))
+    }
 }
 
 /// A flat state mirror for the client; the flags are independent facts.
@@ -450,7 +470,7 @@ impl AssessmentsService {
             &mut *tx,
             id,
             Some(actor.user_id),
-            "access-changed",
+            ab_core::assessments::AuditEventKind::AccessChanged,
             serde_json::json!({ "mode": mode, "users": users.len(), "usergroups": groups.len() }),
         )
         .await?;
@@ -501,13 +521,23 @@ impl AssessmentsService {
         if created.is_none() {
             return Err(Error::conflict("this student already has an override"));
         }
-        Self::audit_override(&mut tx, actor, id, user_id, "override-created").await?;
+        Self::audit_override(
+            &mut tx,
+            actor,
+            id,
+            user_id,
+            ab_core::assessments::AuditEventKind::OverrideCreated,
+        )
+        .await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
         ProgressProjector::new(self.pool.clone())
             .after_lateness_change(id, Some(user_id), Some(actor.user_id))
             .await;
+        if let Some(due) = input.due_at_override {
+            self.notify_extension(&assessment, user_id, due).await;
+        }
         self.override_row(assessment.course_id, id, user_id).await
     }
 
@@ -522,6 +552,9 @@ impl AssessmentsService {
         Self::not_own(actor, user_id)?;
         input.validate()?;
         let mut tx = self.lock_member(assessment.course_id, user_id).await?;
+        let previous_due = ab_db::assessments::get_override(&self.pool, id, user_id)
+            .await?
+            .and_then(|o| o.due_at_override);
         let updated = ab_db::assessments::update_override(
             &mut *tx,
             id,
@@ -539,13 +572,25 @@ impl AssessmentsService {
         if !updated {
             return Err(Error::not_found("override"));
         }
-        Self::audit_override(&mut tx, actor, id, user_id, "override-updated").await?;
+        Self::audit_override(
+            &mut tx,
+            actor,
+            id,
+            user_id,
+            ab_core::assessments::AuditEventKind::OverrideUpdated,
+        )
+        .await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
         ProgressProjector::new(self.pool.clone())
             .after_lateness_change(id, Some(user_id), Some(actor.user_id))
             .await;
+        if let Some(due) = input.due_at_override
+            && previous_due != Some(due)
+        {
+            self.notify_extension(&assessment, user_id, due).await;
+        }
         self.override_row(assessment.course_id, id, user_id).await
     }
 
@@ -561,7 +606,14 @@ impl AssessmentsService {
         if !ab_db::assessments::delete_override(&mut *tx, id, user_id).await? {
             return Err(Error::not_found("override"));
         }
-        Self::audit_override(&mut tx, actor, id, user_id, "override-deleted").await?;
+        Self::audit_override(
+            &mut tx,
+            actor,
+            id,
+            user_id,
+            ab_core::assessments::AuditEventKind::OverrideDeleted,
+        )
+        .await?;
         tx.commit().await?;
         // BUG-297: the waiver/extension is gone - the penalty comes back.
         // BUG-313: settled after commit on the durable path (a retried
@@ -570,6 +622,29 @@ impl AssessmentsService {
             .after_lateness_change(id, Some(user_id), Some(actor.user_id))
             .await;
         Ok(())
+    }
+
+    /// A per-learner due date tells the learner, like the bulk extension
+    /// (`deadline_extended` notification; best effort, after the commit).
+    async fn notify_extension(&self, assessment: &Assessment, user_id: UserId, due_at: i64) {
+        if let Some((course_id, course_name, activity_name)) =
+            crate::notifications::activity_names(&self.pool, assessment.activity_id).await
+        {
+            crate::notifications::notify(
+                &self.pool,
+                &[user_id],
+                &crate::notifications::NotificationPayload::DeadlineExtended {
+                    course_id,
+                    course_name,
+                    activity_id: assessment.activity_id,
+                    activity_name,
+                    assessment_id: assessment.id,
+                    due_at_unix: due_at,
+                },
+                None,
+            )
+            .await;
+        }
     }
 
     /// BUG-288: an override never targets the caller's own attempts.
@@ -604,7 +679,7 @@ impl AssessmentsService {
         actor: &Actor,
         id: AssessmentId,
         user_id: UserId,
-        event: &str,
+        event: ab_core::assessments::AuditEventKind,
     ) -> Result<()> {
         ab_db::assessments::insert_audit_event(
             conn,

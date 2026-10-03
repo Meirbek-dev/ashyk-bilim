@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO activities (id, chapter_id, course_id, name, activity_type, activity_sub_type,\n                                   content, details, settings, published, position, creator_id)\n           SELECT m.new_id, m.chapter_id, $1, a.name, a.activity_type, a.activity_sub_type,\n                  a.content, a.details, a.settings, false, a.position, $2\n           FROM unnest($3::uuid[], $4::uuid[], $5::uuid[]) AS m(old_id, new_id, chapter_id)\n           JOIN activities a ON a.id = m.old_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "23b313b68be3ececd2857dbc2cba05aa2c0798d2bf36fdd4429562ef116fcbe5"
+}

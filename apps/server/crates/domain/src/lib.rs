@@ -25,6 +25,7 @@ pub mod gamification;
 pub mod grading;
 pub mod identity;
 pub mod link_preview;
+pub mod maintenance;
 pub mod notifications;
 pub mod progress;
 pub mod wire;

@@ -51,7 +51,7 @@ pub fn is_purpose(purpose: &str) -> bool {
 /// (bucket, max bytes, allowed content types - exact match; empty = any).
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {
-        "avatar" => Some((Bucket::Public, 5 * MB, IMAGES)),
+        "avatar" | "discussion-image" => Some((Bucket::Public, 5 * MB, IMAGES)),
         "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail"
         | "collection-cover" => Some((Bucket::Public, 10 * MB, IMAGES)),
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
@@ -96,6 +96,8 @@ fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
                 scope: Some(scope),
             })
         }),
+        // Learner-facing: `avatar`, `file-submission`, `discussion-image`
+        // (claimed by the post that shows it).
         _ => true,
     };
     if granted {

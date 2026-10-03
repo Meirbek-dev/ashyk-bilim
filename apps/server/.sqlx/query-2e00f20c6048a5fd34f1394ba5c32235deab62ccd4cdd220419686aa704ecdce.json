@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization)\n           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru-RU'), $6)\n           ON CONFLICT DO NOTHING\n           RETURNING id",
+  "query": "INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization)\n           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru'), $6)\n           ON CONFLICT DO NOTHING\n           RETURNING id",
   "describe": {
     "columns": [
       {
@@ -29,5 +29,5 @@
       false
     ]
   },
-  "hash": "2e861a274555d4be82671a232a16e912dd3e645b2d72082472bcd35b151e9284"
+  "hash": "2e00f20c6048a5fd34f1394ba5c32235deab62ccd4cdd220419686aa704ecdce"
 }
