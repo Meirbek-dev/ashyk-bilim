@@ -9,4 +9,6 @@ mod service;
 pub mod tune;
 
 pub use runner::{CaseResult, CodeRun, CodeRunner, FinalRun, FinalTarget, RunSpec};
-pub use service::{CodeRunsService, LanguageInfo, ReferenceCheck, RunInput};
+pub use service::{
+    CodeRunsService, LanguageInfo, ReferenceCheck, ReferenceCheckStatus, RunInput, RunListFilter,
+};

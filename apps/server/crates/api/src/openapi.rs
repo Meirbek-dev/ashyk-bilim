@@ -65,6 +65,9 @@ pub const RENAMED: &[(&str, &str)] = &[
     ("add_usergroup_courses", "add_group_courses"),
     ("remove_usergroup_courses", "remove_group_courses"),
     ("usergroups_for_course", "groups_for_course"),
+    // L-6: replaced, not renamed (new shape beside the old one).
+    ("languages", "runner"),
+    ("reference_check", "reference_check_item"),
 ];
 
 fn deprecate_renamed(doc: &mut Value) {

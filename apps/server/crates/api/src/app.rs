@@ -40,6 +40,9 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         crate::dto::grading::ReviewStatus,
         crate::dto::grading::ReviewSort,
         crate::dto::grading::SortOrder,
+        crate::dto::grading::GradebookStatus,
+        crate::dto::file_submissions::Disposition,
+        crate::dto::ai::QaCitationsContent,
         ab_core::id::AiSubjectId,
         ab_domain::analytics::filters::Window,
         ab_domain::analytics::filters::Compare,
@@ -277,6 +280,11 @@ fn file_submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::file_submissions::get_attempt))
         .routes(routes!(routes::file_submissions::grade_attempt))
         .routes(routes!(routes::file_submissions::file_url))
+        .routes(routes!(routes::file_submissions::review_stats))
+        .routes(routes!(routes::file_submissions::grading_history))
+        .routes(routes!(routes::file_submissions::publish_grades))
+        .routes(routes!(routes::file_submissions::return_grades))
+        .routes(routes!(routes::file_submissions::extend_deadline))
 }
 
 fn identity_routes() -> OpenApiRouter<AppState> {
@@ -430,7 +438,9 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::submissions::save_draft))
         .routes(routes!(routes::submissions::report_violation))
         .routes(routes!(routes::submissions::submit_submission))
-        .routes(routes!(routes::code::run_item))
+        .routes(routes!(routes::code::run_item, routes::code::my_runs))
+        .routes(routes!(routes::code::reference_check_item))
+        .routes(routes!(routes::code::runner))
         .routes(routes!(routes::code::get_run))
         .routes(routes!(routes::code::reference_check))
         .routes(routes!(routes::code::languages))
@@ -443,6 +453,7 @@ fn submission_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::grading::grading_history))
         .routes(routes!(routes::grading::my_feedback))
         .routes(routes!(routes::grading::publish_grades))
+        .routes(routes!(routes::grading::return_grades))
         .routes(routes!(routes::grading::extend_deadline))
         .routes(routes!(routes::grading::get_bulk_action))
         .routes(routes!(routes::grading::gradebook))

@@ -68,6 +68,8 @@ pub struct ReviewQuery {
     pub order: Option<SortOrder>,
     /// 1..=100 (default 25).
     pub limit: Option<i64>,
+    /// Members of this usergroup only.
+    pub group_id: Option<ab_core::id::UsergroupId>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -379,10 +381,33 @@ impl From<ab_domain::grading::bulk::BulkAction> for BulkAction {
 #[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
 #[serde(deny_unknown_fields)]
 pub struct GradebookQuery {
-    /// `next_cursor` of the previous page.
+    /// `next_cursor` of the previous page (valid only with the same filters).
     pub cursor: Option<String>,
     /// 1..=500 learners per page, each with all their cells (default 100).
     pub limit: Option<i64>,
+    /// Substring of the learner's username, display name or email.
+    pub q: Option<String>,
+    /// Members of this usergroup only.
+    pub group_id: Option<ab_core::id::UsergroupId>,
+    pub status: Option<GradebookStatus>,
+}
+
+/// Gradebook row filter: `needs_grading` keeps learners with work
+/// awaiting the grader (a `pending` / `graded` submission or a
+/// `submitted` / `graded` file attempt).
+#[derive(Debug, Clone, Copy, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GradebookStatus {
+    NeedsGrading,
+}
+
+/// `POST /assessments/{id}/return-grades`.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReturnGradesRequest {
+    #[garde(length(min = 1, max = 500))]
+    #[schema(min_items = 1, max_items = 500)]
+    pub submission_ids: Vec<SubmissionId>,
 }
 
 /// One learner's grade-of-record attempt on one graded activity (the

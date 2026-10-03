@@ -627,6 +627,17 @@ impl AssessmentsService {
     /// A per-learner due date tells the learner, like the bulk extension
     /// (`deadline_extended` notification; best effort, after the commit).
     async fn notify_extension(&self, assessment: &Assessment, user_id: UserId, due_at: i64) {
+        crate::events::user::deadline_extended(
+            user_id,
+            crate::events::user::DeadlineExtended {
+                course_id: assessment.course_id,
+                activity_id: assessment.activity_id,
+                assessment_id: Some(assessment.id),
+                file_submission_id: None,
+                due_at_unix: due_at,
+            },
+        )
+        .await;
         if let Some((course_id, course_name, activity_name)) =
             crate::notifications::activity_names(&self.pool, assessment.activity_id).await
         {

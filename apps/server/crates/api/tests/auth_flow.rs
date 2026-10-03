@@ -2734,3 +2734,42 @@ async fn verification_code_can_be_resent(pool: PgPool) {
         .await;
     assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+/// L-6: a login right after registration meets Zitadel's projection lag
+/// (NotFound for a user it just created); the BFF retries briefly instead
+/// of answering 401.
+#[sqlx::test(migrations = "../../migrations")]
+async fn login_rides_out_zitadel_projection_lag(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("fresh", "fresh@example.com", &["user"])
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+            "code": 5,
+            "message": "User could not be found (QUERY-Dfbg2)"
+        })))
+        .up_to_n_times(2)
+        .expect(2)
+        .with_priority(1)
+        .mount(&app.zitadel)
+        .await;
+    mock_password_ok(&app.zitadel).await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-fresh/authentication_methods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": { "totalResult": "1" },
+            "authMethodTypes": ["AUTHENTICATION_METHOD_TYPE_PASSWORD"]
+        })))
+        .mount(&app.zitadel)
+        .await;
+
+    let res = app
+        .post_json(
+            "/api/v2/auth/login",
+            &serde_json::json!({ "login": "fresh", "password": "correct horse" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    assert!(res.session_cookie().is_some());
+}

@@ -986,3 +986,139 @@ impl From<domain::UsageSummary> for UsageSummary {
         }
     }
 }
+
+// ── AG-UI stream schemas (L-6) ──────────────────────────────────────────────
+// What one SSE message's `data:` holds on the AI streams; schema only (the
+// handlers build the JSON). Field names follow AG-UI (camelCase).
+
+/// `POST /ai/qa/{course_id}/chat`: one AG-UI event.
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum QaChatEvent {
+    #[serde(rename = "RUN_STARTED")]
+    RunStarted {
+        #[serde(rename = "threadId")]
+        thread_id: String,
+        #[serde(rename = "runId")]
+        run_id: String,
+    },
+    #[serde(rename = "TEXT_MESSAGE_START")]
+    TextMessageStart {
+        #[serde(rename = "messageId")]
+        message_id: String,
+        role: AgUiAssistantRole,
+    },
+    #[serde(rename = "TEXT_MESSAGE_CONTENT")]
+    TextMessageContent {
+        #[serde(rename = "messageId")]
+        message_id: String,
+        delta: String,
+    },
+    #[serde(rename = "TEXT_MESSAGE_END")]
+    TextMessageEnd {
+        #[serde(rename = "messageId")]
+        message_id: String,
+    },
+    /// The answer's citations arrive as one `course_citations` tool call.
+    #[serde(rename = "TOOL_CALL_START")]
+    ToolCallStart {
+        #[serde(rename = "toolCallId")]
+        tool_call_id: String,
+        #[serde(rename = "toolCallName")]
+        tool_call_name: AgUiToolName,
+        #[serde(rename = "parentMessageId")]
+        parent_message_id: String,
+    },
+    /// `content` is a JSON string: [`QaCitationsContent`].
+    #[serde(rename = "TOOL_CALL_RESULT")]
+    ToolCallResult {
+        #[serde(rename = "messageId")]
+        message_id: String,
+        #[serde(rename = "toolCallId")]
+        tool_call_id: String,
+        content: String,
+    },
+    #[serde(rename = "TOOL_CALL_END")]
+    ToolCallEnd {
+        #[serde(rename = "toolCallId")]
+        tool_call_id: String,
+    },
+    #[serde(rename = "RUN_FINISHED")]
+    RunFinished {
+        #[serde(rename = "threadId")]
+        thread_id: String,
+        #[serde(rename = "runId")]
+        run_id: String,
+        result: QaRunResult,
+    },
+    #[serde(rename = "RUN_ERROR")]
+    RunError { message: String, code: String },
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum AgUiAssistantRole {
+    Assistant,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AgUiToolName {
+    CourseCitations,
+}
+
+/// The parsed `content` of the `course_citations` tool result.
+#[derive(Serialize, ToSchema)]
+pub struct QaCitationsContent {
+    pub citations: Vec<domain::schemas::Citation>,
+}
+
+/// `RUN_FINISHED.result` of the Q&A chat. A replayed turn
+/// (`client_turn_id` seen before) carries `replayed: true` and no
+/// confidence or suggestions.
+#[derive(Serialize, ToSchema)]
+pub struct QaRunResult {
+    pub thread_id: AiThreadId,
+    pub message_id: AiMessageId,
+    #[schema(nullable = false)]
+    pub confidence: Option<domain::schemas::Level>,
+    #[schema(nullable = false)]
+    pub follow_up_suggestions: Option<Vec<String>>,
+    #[schema(nullable = false)]
+    pub replayed: Option<bool>,
+}
+
+/// `POST /ai/runs/{run_id}/stream`: one AG-UI event (SSE `event: run`).
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum RunStreamEvent {
+    #[serde(rename = "RUN_STARTED")]
+    RunStarted {
+        #[serde(rename = "threadId")]
+        thread_id: String,
+        #[serde(rename = "runId")]
+        run_id: String,
+    },
+    /// One journaled run event; `name` is its event type (`queued`,
+    /// `collecting_context`, `budget_checked`, `finished`, ...).
+    #[serde(rename = "CUSTOM")]
+    Custom { name: String, value: RunCustomValue },
+    #[serde(rename = "RUN_FINISHED")]
+    RunFinished {
+        #[serde(rename = "threadId")]
+        thread_id: String,
+        #[serde(rename = "runId")]
+        run_id: String,
+    },
+    /// `code`: the run's error code, `CANCELLED`, or `AI_RUN_FAILED`.
+    #[serde(rename = "RUN_ERROR")]
+    RunError { message: String, code: String },
+}
+
+/// `CUSTOM.value` on the run stream.
+#[derive(Serialize, ToSchema)]
+pub struct RunCustomValue {
+    pub state: ab_domain::wire::RunEventState,
+    pub message: Option<String>,
+    pub payload: ab_domain::wire::RunEventPayload,
+}

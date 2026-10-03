@@ -8,7 +8,7 @@ use ab_core::assessments::{
 };
 use ab_core::id::{
     ActivityId, AssessmentId, AssessmentItemId, BulkActionId, CodeRunId, CourseId, FileAttemptId,
-    FileSubmissionId, GradingEntryId, ItemFeedbackId, SubmissionId, UserId,
+    FileSubmissionId, GradingEntryId, ItemFeedbackId, SubmissionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -631,21 +631,51 @@ impl GradebookCellRow {
 /// whole learner rows (BUG-265): the page count follows the learners, not
 /// learners × activities, and a course without graded activities still
 /// lists its members (UX-182). Staff are never members (BUG-287).
+/// Gradebook row filter (L-6).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct GradebookFilter<'a> {
+    /// Substring of the learner's username, display name or email.
+    pub search: Option<&'a str>,
+    pub group_id: Option<UsergroupId>,
+    /// Only learners with work awaiting the grader (a `pending` / `graded`
+    /// submission or a `submitted` / `graded` file attempt).
+    pub needs_grading: bool,
+}
+
 pub async fn gradebook_members(
     pool: &PgPool,
     course_id: CourseId,
     after: Option<UserId>,
     limit: i64,
+    filter: GradebookFilter<'_>,
 ) -> Result<Vec<UserId>> {
+    let pattern = filter
+        .search
+        .map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_scalar!(
-        r#"SELECT DISTINCT user_id AS "user_id!: UserId" FROM trail_runs
-           WHERE course_id = $1 AND ($2::uuid IS NULL OR user_id > $2)
-             AND NOT is_course_staff(course_id, user_id)
+        r#"SELECT DISTINCT t.user_id AS "user_id!: UserId"
+           FROM trail_runs t JOIN users u ON u.id = t.user_id
+           WHERE t.course_id = $1 AND ($2::uuid IS NULL OR t.user_id > $2)
+             AND NOT is_course_staff(t.course_id, t.user_id)
+             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\'
+                  OR u.email ILIKE $4 ESCAPE '\')
+             AND ($5::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $5 AND m.user_id = t.user_id))
+             AND (NOT $6
+                  OR EXISTS (SELECT 1 FROM submissions s
+                             WHERE s.course_id = $1 AND s.user_id = t.user_id AND NOT s.preview
+                               AND s.status IN ('pending', 'graded'))
+                  OR EXISTS (SELECT 1 FROM file_submission_attempts fa
+                             WHERE fa.course_id = $1 AND fa.user_id = t.user_id AND NOT fa.preview
+                               AND fa.status IN ('submitted', 'graded')))
            ORDER BY 1
            LIMIT $3"#,
         course_id.0,
         after.map(|u| u.0),
-        limit
+        limit,
+        pattern.as_deref(),
+        filter.group_id.map(|g| g.0),
+        filter.needs_grading
     )
     .fetch_all(pool)
     .await?;
@@ -783,6 +813,7 @@ pub async fn list_for_review(
     sort: &str,
     ascending: bool,
     limit: i64,
+    group_id: Option<UsergroupId>,
 ) -> Result<Vec<ReviewRow>> {
     let pattern = search.map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_as!(
@@ -808,6 +839,8 @@ pub async fn list_for_review(
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
              AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))
+             AND ($10::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $10 AND m.user_id = s.user_id))
            ORDER BY k.key DESC, s.id DESC
            LIMIT $6"#,
         assessment_id.0,
@@ -818,7 +851,8 @@ pub async fn list_for_review(
         limit,
         sort,
         if ascending { -1.0_f64 } else { 1.0_f64 },
-        cursor.map(|(key, _)| key)
+        cursor.map(|(key, _)| key),
+        group_id.map(|g| g.0)
     )
     .fetch_all(pool)
     .await?;
@@ -1741,4 +1775,31 @@ pub async fn sweep_idempotency(pool: &PgPool, older_than_secs: f64) -> Result<u6
     .execute(pool)
     .await?;
     Ok(deleted.rows_affected())
+}
+
+/// One user's runs of an item, newest first (L-6 run history).
+pub async fn list_user_code_runs(
+    pool: &PgPool,
+    item_id: AssessmentItemId,
+    user_id: UserId,
+    submission_id: Option<SubmissionId>,
+    purpose: Option<CodeRunPurpose>,
+    limit: i64,
+) -> Result<Vec<CodeRunId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT id AS "id: CodeRunId" FROM code_runs
+           WHERE item_id = $1 AND user_id = $2
+             AND ($3::uuid IS NULL OR submission_id = $3)
+             AND ($4::text IS NULL OR purpose = $4)
+           ORDER BY created_at DESC, id DESC
+           LIMIT $5"#,
+        item_id.0,
+        user_id.0,
+        submission_id.map(|s| s.0),
+        purpose.map(CodeRunPurpose::as_str),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids)
 }

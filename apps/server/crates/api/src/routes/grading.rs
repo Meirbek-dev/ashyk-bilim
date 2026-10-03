@@ -17,10 +17,11 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
 use crate::detach::detached;
+use crate::dto::file_submissions::BulkGradeSummary;
 use crate::dto::grading::{
     BulkAction, DeadlineExtensionRequest, GradeRequest, GradebookPage, GradebookQuery,
-    GradingEntry, ItemAnalytics, PublishSummary, ReviewPage, ReviewQuery, SortOrder, Stats,
-    TeacherSubmission,
+    GradebookStatus, GradingEntry, ItemAnalytics, PublishSummary, ReturnGradesRequest, ReviewPage,
+    ReviewQuery, SortOrder, Stats, TeacherSubmission,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
@@ -79,6 +80,7 @@ pub async fn review_queue(
             ReviewFilter {
                 status: query.status.map(Into::into),
                 late_only: query.late_only,
+                group_id: query.group_id,
                 search: query.search.as_deref().filter(|s| !s.trim().is_empty()),
                 cursor: query.cursor.as_deref(),
                 sort: query.sort.unwrap_or_default(),
@@ -404,9 +406,50 @@ pub async fn gradebook(
             id,
             query.cursor.as_deref(),
             query.limit.unwrap_or(DEFAULT_GRADEBOOK_PAGE),
+            ab_db::submissions::GradebookFilter {
+                search: query.q.as_deref().map(str::trim).filter(|q| !q.is_empty()),
+                group_id: query.group_id,
+                needs_grading: matches!(query.status, Some(GradebookStatus::NeedsGrading)),
+            },
         )
         .await?;
     Ok(Json(page.into()))
+}
+
+/// Return the selected submissions for revision in one call.
+///
+/// One `return` grade save per row at its current version (events,
+/// notifications, history as for `PATCH .../grade`); a row that is
+/// refused - released, changed meanwhile, the caller's own, of another
+/// assessment - counts as skipped.
+#[utoipa::path(
+    post, path = "/assessments/{assessment_id}/return-grades", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    request_body = ReturnGradesRequest,
+    responses(
+        (status = 200, description = "Per-row outcome counts", body = BulkGradeSummary),
+        (status = 403, description = "No grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn return_grades(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentId>,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<BulkGradeSummary>> {
+    // UX-311: permission before the body.
+    state.grading.require_grader(&actor, id).await?;
+    let request = ValidJson::<ReturnGradesRequest>::parse(&body)?;
+    detached(async move {
+        Ok(Json(
+            state
+                .grading
+                .return_many(&actor, id, &request.submission_ids)
+                .await?,
+        ))
+    })
+    .await
 }
 
 pub(crate) fn csv_language(headers: &HeaderMap) -> CsvLanguage {

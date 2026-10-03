@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: CodeRunId\" FROM code_runs\n           WHERE item_id = $1 AND user_id = $2\n             AND ($3::uuid IS NULL OR submission_id = $3)\n             AND ($4::text IS NULL OR purpose = $4)\n           ORDER BY created_at DESC, id DESC\n           LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CodeRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "code_runs",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "455477edf8dde5b0d267ad6e6474f95ff697801f67525cd273df8897f3b34ebf"
+}

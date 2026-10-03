@@ -880,3 +880,104 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
         assert_eq!((got.as_str(), final_score), (status, score), "{sub}");
     }
 }
+
+/// L-6: the learner lists their own runs of an item (the submission's
+/// final run by `submission_id` + `purpose=final`), the per-item reference
+/// check replays under its `Idempotency-Key` with a typed status, and
+/// `GET /code/runner` answers the runner state with the languages.
+#[sqlx::test(migrations = "../../migrations")]
+async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (id, item_id) = code_challenge(&app, &teacher, None).await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+    let visible = app
+        .send(run(
+            &alice,
+            &item_id,
+            None,
+            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+        ))
+        .await;
+    assert_eq!(visible.status, StatusCode::CREATED, "{}", visible.text());
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{sub_id}/submit"),
+            &serde_json::json!({ "answers": {
+                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+            } }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+
+    let runs = format!("/api/v2/assessment-items/{item_id}/runs");
+    let all = app.get_as(&alice, &runs).await;
+    assert_eq!(all.status, StatusCode::OK, "{}", all.text());
+    let all = all.json();
+    assert_eq!(all.as_array().unwrap().len(), 2, "{all}");
+    assert_eq!(all[0]["purpose"], "final");
+    assert_eq!(all[1]["purpose"], "visible");
+    // Hidden data stays masked in the list too.
+    assert!(all[0]["cases"][1]["stdin"].is_null());
+    let final_run = app
+        .get_as(
+            &alice,
+            &format!("{runs}?submission_id={sub_id}&purpose=final"),
+        )
+        .await
+        .json();
+    assert_eq!(final_run.as_array().unwrap().len(), 1);
+    assert_eq!(final_run[0]["submission_id"], sub_id.as_str());
+    // Own runs only.
+    assert!(
+        app.get_as(&teacher, &runs)
+            .await
+            .json()
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+
+    let check = |who: &MintedSession| {
+        Request::builder()
+            .method("POST")
+            .uri(format!(
+                "/api/v2/assessment-items/{item_id}/reference-check"
+            ))
+            .header(header::COOKIE, &who.cookie)
+            .header("idempotency-key", "check-1")
+            .body(Body::empty())
+            .unwrap()
+    };
+    assert_eq!(app.send(check(&alice)).await.status, StatusCode::FORBIDDEN);
+    let first = app.send(check(&teacher)).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["results"][0]["status"], "accepted");
+    assert_eq!(first.json()["results"][1]["status"], "missing_solution");
+    let spent = judge.submissions();
+    let replay = app.send(check(&teacher)).await;
+    assert_eq!(replay.status, StatusCode::OK);
+    assert_eq!(replay.json(), first.json());
+    assert_eq!(judge.submissions(), spent, "a replay spends no runner time");
+
+    let runner = app.get_as(&alice, "/api/v2/code/runner").await;
+    assert_eq!(runner.status, StatusCode::OK, "{}", runner.text());
+    assert_eq!(runner.json()["runner_configured"], true);
+    let ids: Vec<i64> = runner.json()["languages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["id"].as_i64().unwrap())
+        .collect();
+    assert_eq!(ids, [71, 62]);
+}

@@ -7,7 +7,29 @@ use ab_domain::code::{CaseResult, CodeRun as DomainRun};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub use ab_domain::code::{LanguageInfo, ReferenceCheck};
+pub use ab_domain::code::{LanguageInfo, ReferenceCheck, ReferenceCheckStatus};
+
+/// `GET /assessment-items/{item_id}/runs`.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+pub struct RunListQuery {
+    /// Runs of this submission only (with `purpose=final`: the run its
+    /// grade came from).
+    pub submission_id: Option<SubmissionId>,
+    pub purpose: Option<CodeRunPurpose>,
+    /// 1..=50 (default 20).
+    pub limit: Option<i64>,
+}
+
+/// `GET /code/runner`: the runner state and, when configured, the
+/// platform's languages.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CodeRunnerInfo {
+    /// `false`: no Judge0 endpoint is configured; `languages` is empty and
+    /// runs cannot start (authoring still works).
+    pub runner_configured: bool,
+    pub languages: Vec<LanguageInfo>,
+}
 
 /// Run source against an item's visible tests, or against one custom input.
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]

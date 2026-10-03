@@ -61,6 +61,7 @@ pub fn draft_course_report(language: &str) -> CourseQualityReport {
         )],
         confidence: Level::Low,
         language: language.into(),
+        finding_reviews: std::collections::BTreeMap::new(),
     }
 }
 

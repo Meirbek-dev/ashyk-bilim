@@ -3,7 +3,9 @@
 
 use ab_core::assessments::NotificationType;
 use ab_core::id::UserId;
-use ab_domain::events::user::{GradingUpdated, NotificationRead, SubmissionUpdated, XpAwarded};
+use ab_domain::events::user::{
+    DeadlineExtended, GradingUpdated, NotificationRead, SubmissionUpdated, XpAwarded,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -16,9 +18,15 @@ pub use ab_domain::progress::agenda::Agenda;
 #[derive(Serialize, ToSchema)]
 #[serde(tag = "event")]
 pub enum UserStreamEvent {
-    /// Sent once, after any replay.
+    /// Sent once, after any replay. `event_id` is the stream position at
+    /// that moment (also the SSE `id:`; `0-0` = empty stream): send it back
+    /// as `Last-Event-ID` so a tab that saw no event resumes without a gap.
+    /// Null only when the position could not be read.
     #[serde(rename = "connected")]
-    Connected { user_id: UserId },
+    Connected {
+        user_id: UserId,
+        event_id: Option<String>,
+    },
     #[serde(rename = "grading.updated")]
     GradingUpdated {
         event_id: String,
@@ -51,6 +59,13 @@ pub enum UserStreamEvent {
     XpAwarded {
         event_id: String,
         payload: XpAwarded,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "deadline.extended")]
+    DeadlineExtended {
+        event_id: String,
+        payload: DeadlineExtended,
         /// Unix seconds.
         sent_at: i64,
     },

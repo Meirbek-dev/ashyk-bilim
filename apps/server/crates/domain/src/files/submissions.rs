@@ -17,7 +17,7 @@ use ab_core::assessments::{
     FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, SubmissionStatus,
 };
 use ab_core::id::{
-    ActivityId, ChapterId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId,
+    ActivityId, ChapterId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId, UsergroupId,
 };
 use ab_core::permission::{Action, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
@@ -36,7 +36,9 @@ use crate::events::GradingEvents;
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::grading::breakdown::round2;
 use crate::grading::penalties::{apply_late, late_penalty_pct};
-use crate::grading::teacher::{CsvLanguage, UserSummary, course_event_name, csv_row, iso8601};
+use crate::grading::teacher::{
+    CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_row, iso8601,
+};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
@@ -162,7 +164,12 @@ pub struct FileGradeInput {
 
 pub struct ReviewFilter<'a> {
     pub status: Option<FileAttemptStatus>,
+    pub late_only: bool,
     pub search: Option<&'a str>,
+    pub group_id: Option<UsergroupId>,
+    /// `None` = attempt-id order (newest first), the pre-L-6 queue.
+    pub sort: Option<ReviewSort>,
+    pub ascending: bool,
     pub cursor: Option<FileAttemptId>,
     pub limit: i64,
 }
@@ -179,6 +186,8 @@ pub struct ReviewItem {
     pub final_score: Option<f64>,
     pub version: i64,
     pub file_count: i64,
+    pub enrolled: bool,
+    pub staff: bool,
     pub allowed_actions: Vec<FileGradeAction>,
 }
 
@@ -257,13 +266,12 @@ pub(crate) async fn settle_lateness(pool: &PgPool, id: FileSubmissionId) -> Resu
         let Some(config) = ab_db::file_submissions::lock_file_submission(&mut tx, id).await? else {
             return Ok(());
         };
-        let late = config.due_at.is_some_and(|due| at > due);
-        let pct = late_penalty_pct(
-            late_policy_of(&config),
-            config.due_at,
-            at,
-            config.allow_late,
-        );
+        // L-6: a learner's own due date (deadline extension) wins.
+        let due = ab_db::file_submissions::override_due(&mut *tx, id, attempt.user_id)
+            .await?
+            .or(config.due_at);
+        let late = due.is_some_and(|due| at > due);
+        let pct = late_penalty_pct(late_policy_of(&config), due, at, config.allow_late);
         let Some((was_late, was_pct, raw)) =
             ab_db::file_submissions::lock_attempt_lateness(&mut tx, attempt.id).await?
         else {
@@ -454,6 +462,16 @@ impl FileSubmissionsService {
         let course = self.assessments.courses.get(actor, row.course_id).await?;
         AssessmentsService::require_scoped(actor, &course, action, what)?;
         Ok(course)
+    }
+
+    /// L-6: the learner's own due date (a deadline extension) replaces the
+    /// activity's.
+    async fn own_due(&self, row: &FileSubmissionRow, user_id: UserId) -> Result<Option<i64>> {
+        Ok(
+            ab_db::file_submissions::override_due(&self.pool, row.id, user_id)
+                .await?
+                .or(row.due_at),
+        )
     }
 
     fn is_author(actor: &Actor, course: &Course) -> bool {
@@ -697,9 +715,12 @@ impl FileSubmissionsService {
         &self,
         actor: &Actor,
         course: &Course,
-        row: FileSubmissionRow,
+        mut row: FileSubmissionRow,
     ) -> Result<FileSubmission> {
         let staff = Self::is_author(actor, course);
+        if !staff {
+            row.due_at = self.own_due(&row, actor.user_id).await?;
+        }
         let open = ab_db::file_submissions::open_attempt(&self.pool, row.id, actor.user_id)
             .await?
             .filter(|a| staff || !a.preview);
@@ -909,7 +930,12 @@ impl FileSubmissionsService {
         if preview {
             return Ok(reasons);
         }
-        if !row.allow_late && row.due_at.is_some_and(|due| now_unix() > due) {
+        if !row.allow_late
+            && self
+                .own_due(row, user_id)
+                .await?
+                .is_some_and(|due| now_unix() > due)
+        {
             reasons.push(DisabledReason::PastDue);
         }
         if ab_db::ai::active_remediation_gate(&self.pool, user_id, row.activity_id)
@@ -1274,11 +1300,12 @@ impl FileSubmissionsService {
         let now = now_unix();
         // A preview's verdict is its files - never late (BUG-278/284 rule);
         // the attempt's own flag decides (BUG-285).
-        let is_late = !attempt.preview && row.due_at.is_some_and(|due| now > due);
+        let due = self.own_due(&row, attempt.user_id).await?;
+        let is_late = !attempt.preview && due.is_some_and(|due| now > due);
         let penalty = if attempt.preview {
             0.0
         } else {
-            late_penalty_pct(late_policy_of(&row), row.due_at, now, row.allow_late)
+            late_penalty_pct(late_policy_of(&row), due, now, row.allow_late)
         };
         if !ab_db::file_submissions::submit_attempt(
             &self.pool, attempt.id, version, is_late, penalty,
@@ -1326,10 +1353,16 @@ impl FileSubmissionsService {
         let mut rows = ab_db::file_submissions::list_for_review(
             &self.pool,
             id,
-            filter.status,
-            filter.search,
-            filter.cursor,
-            limit + 1,
+            ab_db::file_submissions::ReviewQuery {
+                status: filter.status,
+                late_only: filter.late_only,
+                search: filter.search,
+                group_id: filter.group_id,
+                sort: filter.sort.map(ReviewSort::as_str),
+                ascending: filter.ascending,
+                cursor: filter.cursor,
+                limit: limit + 1,
+            },
         )
         .await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
@@ -1360,6 +1393,8 @@ impl FileSubmissionsService {
                     final_score: r.final_score,
                     version: r.version,
                     file_count: r.file_count,
+                    enrolled: r.enrolled,
+                    staff: r.staff,
                 })
                 .collect(),
             next_cursor,
@@ -1547,7 +1582,12 @@ impl FileSubmissionsService {
     }
 
     /// Short-lived download URL for an attached file: its owner or a grader.
-    pub async fn download(&self, actor: &Actor, id: FileAttemptFileId) -> Result<SignedDownload> {
+    pub async fn download(
+        &self,
+        actor: &Actor,
+        id: FileAttemptFileId,
+        inline: bool,
+    ) -> Result<SignedDownload> {
         let file = ab_db::file_submissions::get_file(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("file"))?;
@@ -1562,10 +1602,11 @@ impl FileSubmissionsService {
                 .await
                 .map_err(|_| Error::not_found("file"))?;
         }
-        let url = self.storage.presign_get(
+        let url = self.storage.presign_get_as(
             Bucket::Private,
             &file.storage_key,
             Some(&file.display_name),
+            inline,
             DOWNLOAD_TTL,
         )?;
         Ok(SignedDownload {
@@ -1575,6 +1616,270 @@ impl FileSubmissionsService {
             content_type: file.content_type,
         })
     }
+}
+
+/// Queue counts of a file submission (L-6).
+#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+pub struct FileReviewStats {
+    pub total: i64,
+    pub submitted: i64,
+    pub graded: i64,
+    pub published: i64,
+    pub returned: i64,
+    pub late: i64,
+}
+
+/// One grade save of a file attempt (append-only, newest first).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct FileGradingEntry {
+    pub id: uuid::Uuid,
+    pub graded_by: Option<UserId>,
+    pub status: FileAttemptStatus,
+    /// The grader's score before the late penalty.
+    pub raw_score: Option<f64>,
+    pub penalty_pct: f64,
+    pub final_score: Option<f64>,
+    pub feedback: String,
+    pub created_at_unix: i64,
+}
+
+/// Outcome of a bulk grade operation, row by row: a row that changed under
+/// the caller (stale version), the caller's own attempt or one not in a
+/// state the operation accepts is skipped.
+#[derive(Debug, Clone, Copy, Default, Serialize, ToSchema)]
+pub struct BulkGradeSummary {
+    pub done_count: i64,
+    pub skipped_count: i64,
+}
+
+/// Bulk targets per request.
+pub const MAX_BULK_TARGETS: usize = 500;
+
+impl FileSubmissionsService {
+    /// Queue counts, optionally for one group's members (graders).
+    pub async fn review_stats(
+        &self,
+        actor: &Actor,
+        id: FileSubmissionId,
+        group_id: Option<UsergroupId>,
+    ) -> Result<FileReviewStats> {
+        let row = self.load(id).await?;
+        self.scoped(actor, &row, Action::Grade, "grading").await?;
+        let c = ab_db::file_submissions::review_counts(&self.pool, id, group_id).await?;
+        Ok(FileReviewStats {
+            total: c.total,
+            submitted: c.submitted,
+            graded: c.graded,
+            published: c.published,
+            returned: c.returned,
+            late: c.late,
+        })
+    }
+
+    /// The attempt's grading ledger, newest first (graders).
+    pub async fn grading_history(
+        &self,
+        actor: &Actor,
+        id: FileAttemptId,
+    ) -> Result<Vec<FileGradingEntry>> {
+        self.gradable(actor, id).await?;
+        Ok(
+            ab_db::file_submissions::list_grading_entries(&self.pool, id)
+                .await?
+                .into_iter()
+                .map(|e| FileGradingEntry {
+                    id: e.id,
+                    graded_by: e.graded_by,
+                    status: e.status,
+                    raw_score: e.raw_score,
+                    penalty_pct: e.penalty_pct,
+                    final_score: e.final_score,
+                    feedback: e.feedback,
+                    created_at_unix: e.created_at,
+                })
+                .collect(),
+        )
+    }
+
+    /// Release every held (`graded`) grade: each row is one publish save
+    /// with its current version and score, so events, notifications,
+    /// projection and the ledger follow the single-row path.
+    pub async fn publish_all(
+        &self,
+        actor: &Actor,
+        id: FileSubmissionId,
+    ) -> Result<BulkGradeSummary> {
+        let row = self.load(id).await?;
+        self.scoped(actor, &row, Action::Grade, "grading")
+            .await?
+            .ensure_not_archived()?;
+        let mut summary = BulkGradeSummary::default();
+        let held =
+            ab_db::file_submissions::list_ids_in_status(&self.pool, id, FileAttemptStatus::Graded)
+                .await?;
+        for (attempt_id, version) in held {
+            let raw = ab_db::file_submissions::get_attempt(&self.pool, attempt_id)
+                .await?
+                .and_then(|a| a.raw_score);
+            let input = FileGradeInput {
+                action: FileGradeAction::Publish,
+                final_score: raw,
+                feedback: None,
+                rubric_scores: None,
+                expected_version: Some(version),
+            };
+            tally(&mut summary, self.grade(actor, attempt_id, input).await)?;
+        }
+        Ok(summary)
+    }
+
+    /// Return the selected attempts for revision, one save per row (a
+    /// published grade cannot be returned: skipped).
+    pub async fn return_many(
+        &self,
+        actor: &Actor,
+        id: FileSubmissionId,
+        attempt_ids: &[FileAttemptId],
+    ) -> Result<BulkGradeSummary> {
+        let row = self.load(id).await?;
+        self.scoped(actor, &row, Action::Grade, "grading")
+            .await?
+            .ensure_not_archived()?;
+        bulk_targets("attempt_ids", attempt_ids.len())?;
+        let mut ids = attempt_ids.to_vec();
+        ids.sort_unstable();
+        ids.dedup();
+        let mut summary = BulkGradeSummary::default();
+        for attempt_id in ids {
+            let attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt_id).await?;
+            let Some(attempt) = attempt.filter(|a| a.file_submission_id == id) else {
+                summary.skipped_count += 1;
+                continue;
+            };
+            let input = FileGradeInput {
+                action: FileGradeAction::Return,
+                final_score: None,
+                feedback: None,
+                rubric_scores: None,
+                expected_version: Some(attempt.version),
+            };
+            tally(&mut summary, self.grade(actor, attempt_id, input).await)?;
+        }
+        Ok(summary)
+    }
+
+    /// Move the due date of selected learners (members, never the caller):
+    /// their own due date replaces the activity's for the closed gate,
+    /// lateness and the learner's view; submitted work is re-judged. Each
+    /// learner gets `deadline.extended` on their stream.
+    pub async fn extend_deadline(
+        &self,
+        actor: &Actor,
+        id: FileSubmissionId,
+        user_ids: &[UserId],
+        new_due_at: i64,
+        reason: &str,
+    ) -> Result<BulkGradeSummary> {
+        let row = self.load(id).await?;
+        let course = self.scoped(actor, &row, Action::Grade, "grading").await?;
+        course.ensure_not_archived()?;
+        let mut errors = Vec::new();
+        if user_ids.is_empty() || user_ids.len() > MAX_BULK_TARGETS {
+            errors.push(field(
+                "user_ids",
+                "length",
+                format!("between 1 and {MAX_BULK_TARGETS} learners"),
+            ));
+        }
+        if new_due_at <= now_unix() {
+            errors.push(field(
+                "new_due_at_unix",
+                "past",
+                "the new due date must be in the future",
+            ));
+        }
+        if !errors.is_empty() {
+            return Err(Error::validation(errors));
+        }
+        let mut targets = user_ids.to_vec();
+        targets.sort_unstable();
+        targets.dedup();
+        let mut tx = self.pool.begin().await?;
+        let mut refused = Vec::new();
+        for &user_id in &targets {
+            if user_id == actor.user_id {
+                refused.push(field(
+                    &format!("user_ids.{user_id}"),
+                    "own-attempt",
+                    crate::grading::teacher::GRADE_OWN_ATTEMPT,
+                ));
+            } else if let Some(e) = AssessmentsService::not_member(
+                &mut tx,
+                course.id,
+                user_id,
+                format!("user_ids.{user_id}"),
+            )
+            .await?
+            {
+                refused.push(e);
+            }
+        }
+        if !refused.is_empty() {
+            return Err(Error::validation(refused));
+        }
+        for &user_id in &targets {
+            ab_db::file_submissions::upsert_override_due(
+                &mut tx,
+                id,
+                user_id,
+                new_due_at,
+                reason,
+                actor.user_id,
+            )
+            .await?;
+        }
+        tx.commit().await?;
+        self.projector.after_file_lateness_change(id).await;
+        for &user_id in &targets {
+            crate::events::user::deadline_extended(
+                user_id,
+                crate::events::user::DeadlineExtended {
+                    course_id: row.course_id,
+                    activity_id: row.activity_id,
+                    assessment_id: None,
+                    file_submission_id: Some(id),
+                    due_at_unix: new_due_at,
+                },
+            )
+            .await;
+        }
+        Ok(BulkGradeSummary {
+            done_count: i64::try_from(targets.len()).unwrap_or(i64::MAX),
+            skipped_count: 0,
+        })
+    }
+}
+
+/// A refused row is a skip; anything else (database, storage) fails the
+/// whole call.
+fn tally<T>(summary: &mut BulkGradeSummary, outcome: Result<T>) -> Result<()> {
+    match outcome {
+        Ok(_) => summary.done_count += 1,
+        Err(Error::App { .. } | Error::Validation { .. }) => summary.skipped_count += 1,
+        Err(other) => return Err(other),
+    }
+    Ok(())
+}
+
+fn bulk_targets(name: &str, len: usize) -> Result<()> {
+    if len == 0 || len > MAX_BULK_TARGETS {
+        return Err(Error::validation(vec![field(
+            name,
+            "length",
+            format!("between 1 and {MAX_BULK_TARGETS} rows"),
+        )]));
+    }
+    Ok(())
 }
 
 fn attached(f: &FileRow) -> AttachedFile {

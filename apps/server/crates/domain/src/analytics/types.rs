@@ -62,6 +62,45 @@ pub enum RiskReasonCode {
     GradingBlock,
 }
 
+/// `AtRiskLearnerRow.recommended_action` (`risk::recommended_action`; a
+/// test pins the set).
+#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RecommendedAction {
+    ReviewSubmissionsFirst,
+    ContactLearnerThisWeek,
+    OfferTargetedHelp,
+    RemindMissingWork,
+    SchedulePaceMeeting,
+    SendPersonalMessage,
+}
+
+/// `AtRiskLearnerRow.why_now` (`risk::why_now`; a test pins the set).
+#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WhyNow {
+    GradingBlockBlocksProgress,
+    #[serde(rename = "inactivity_past_7_days")]
+    InactivityPast7Days,
+    RecentAssessmentFailures,
+    MissingRequiredWork,
+    ProgressBehindCourseBaseline,
+    MultipleRiskSignals,
+}
+
+/// `AssessmentOutlierRow.outlier_reason_codes`
+/// (`assessments::outlier_reason_codes`; a test pins the set).
+#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum OutlierReasonCode {
+    LowCompletionRate,
+    BelowThreshold,
+    LowAccuracy,
+    LowSubmissionRate,
+    LowSuccessRate,
+    GradingLatency,
+}
+
 code_enum!(AlertKind {
     RiskSpike => "risk_spike",
     EngagementDrop => "engagement_drop",
@@ -628,12 +667,15 @@ pub struct AtRiskLearnerRow {
     pub top_contributing_factor: Option<&'static str>,
     pub confidence_level: Confidence,
     /// Stable code explaining the strongest signal.
+    #[schema(value_type = WhyNow)]
     pub why_now: &'static str,
     pub intervention_count: i64,
+    #[schema(value_type = Option<crate::analytics::InterventionType>)]
     pub last_intervention_type: Option<String>,
     pub last_intervention_at_unix: Option<i64>,
     pub last_intervention_outcome: Option<String>,
     /// Stable code (`review_submissions_first`, …).
+    #[schema(value_type = RecommendedAction)]
     pub recommended_action: &'static str,
     /// What the caller may do for this learner now (the gates of
     /// `POST /analytics/teacher/interventions`).
@@ -785,6 +827,7 @@ pub struct AssessmentOutlierRow {
     pub reliability_score: Option<f64>,
     pub discrimination_index: Option<f64>,
     pub suspicious_flag: Option<SuspiciousFlag>,
+    #[schema(value_type = Vec<OutlierReasonCode>)]
     pub outlier_reason_codes: Vec<&'static str>,
 }
 

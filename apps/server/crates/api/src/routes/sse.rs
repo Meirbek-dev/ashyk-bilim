@@ -101,7 +101,16 @@ async fn open_stream(
     let out = async_stream::stream! {
         // Moved in so the slot is released when the client goes away.
         let _slot: ConnectionSlot = slot;
-        let mut cursor = last_event_id.clone().unwrap_or_else(|| "$".into());
+        // L-6: a fresh connect starts at the stream's current position (not
+        // `$`), so `connected` can carry it as its id and a quiet tab
+        // resumes from there.
+        let mut cursor = match &last_event_id {
+            Some(after) => after.clone(),
+            None => events.position(stream).await.unwrap_or_else(|err| {
+                tracing::warn!(?stream, %err, "sse stream position unknown");
+                "$".into()
+            }),
+        };
         if let Some(after) = &last_event_id {
             match events.replay(stream, after, REPLAY_LIMIT).await {
                 Ok(missed) => {
@@ -113,7 +122,20 @@ async fn open_stream(
                 Err(err) => tracing::warn!(?stream, %err, "sse replay failed"),
             }
         }
-        yield Ok(Event::default().event("connected").data(connected.to_string()));
+        let known = cursor != "$";
+        let mut hello = Event::default().event("connected");
+        if known {
+            hello = hello.id(cursor.clone());
+        }
+        // Documented on the user stream only (the course and submission
+        // streams are removed in phase 9).
+        if let (Stream::User(_), Some(base)) = (stream, connected.as_object_mut()) {
+            base.insert(
+                "event_id".into(),
+                if known { serde_json::Value::String(cursor.clone()) } else { serde_json::Value::Null },
+            );
+        }
+        yield Ok(hello.data(connected.to_string()));
         loop {
             match subscriber.read(stream, &cursor, READ_TIMEOUT, BATCH_LIMIT).await {
                 Ok(batch) => {

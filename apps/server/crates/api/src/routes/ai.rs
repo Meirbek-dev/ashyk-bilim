@@ -193,7 +193,8 @@ fn stored_sse(stored: &AiStoredEvent) -> Event {
     ),
     request_body = RunStreamRequest,
     responses(
-        (status = 200, description = "Event stream", content_type = "text/event-stream", body = String),
+        (status = 200, description = "Event stream: each message's `data` is one AG-UI event",
+         content_type = "text/event-stream", body = crate::dto::ai::RunStreamEvent),
         (status = 404, description = "Unknown or inaccessible run", body = Problem,
          content_type = "application/problem+json"),
         (status = 429, description = "Too many open streams for this user", body = Problem,

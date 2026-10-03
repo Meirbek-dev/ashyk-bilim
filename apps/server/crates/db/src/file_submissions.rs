@@ -5,7 +5,7 @@ use ab_core::assessments::{
     FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, ScanStatus,
 };
 use ab_core::id::{
-    ActivityId, CourseId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId,
+    ActivityId, CourseId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -537,12 +537,20 @@ pub async fn grade_attempt(
     expected_version: i64,
     grade: GradeWrite<'_>,
 ) -> Result<bool> {
+    // L-6: every save appends to the attempt's grading ledger in the same
+    // statement - no ledger row without the grade and no grade without one.
     let updated = sqlx::query!(
-        r#"UPDATE file_submission_attempts SET
-               status = $3, final_score = $4, feedback = COALESCE($5, feedback),
-               rubric_scores = COALESCE($6, rubric_scores),
-               graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8
-           WHERE id = $1 AND version = $2"#,
+        r#"WITH u AS (
+               UPDATE file_submission_attempts SET
+                   status = $3, final_score = $4, feedback = COALESCE($5, feedback),
+                   rubric_scores = COALESCE($6, rubric_scores),
+                   graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8
+               WHERE id = $1 AND version = $2
+               RETURNING id, graded_by, status, raw_score, late_penalty_pct, final_score, feedback)
+           INSERT INTO file_grading_entries
+               (attempt_id, graded_by, status, raw_score, penalty_pct, final_score, feedback)
+           SELECT id, graded_by, status, raw_score, late_penalty_pct, final_score, feedback
+           FROM u"#,
         id.0,
         expected_version,
         grade.status.as_str(),
@@ -613,19 +621,35 @@ pub struct ReviewAttemptRow {
     pub final_score: Option<f64>,
     pub version: i64,
     pub file_count: i64,
+    pub enrolled: bool,
+    pub staff: bool,
 }
 
-/// Non-draft attempts, newest first (keyset on id), filtered by status and
-/// a learner-name/email substring.
+/// Review-queue filter and order (L-6: parity with the assessment queue).
+pub struct ReviewQuery<'a> {
+    pub status: Option<FileAttemptStatus>,
+    pub late_only: bool,
+    pub search: Option<&'a str>,
+    /// Members of this usergroup only.
+    pub group_id: Option<UsergroupId>,
+    /// `submitted_at` | `final_score` | `attempt_number`; `None` = id order
+    /// (the pre-L-6 queue, newest attempt first).
+    pub sort: Option<&'a str>,
+    pub ascending: bool,
+    /// The last row of the previous page; its sort key is re-read, so the
+    /// cursor stays a plain attempt id under every order.
+    pub cursor: Option<FileAttemptId>,
+    pub limit: i64,
+}
+
+/// Non-draft attempts in `q.sort` order (keyset on (key, id)), filtered by
+/// status, lateness, group and a learner-name/email substring.
 pub async fn list_for_review(
     pool: &PgPool,
     file_submission_id: FileSubmissionId,
-    status: Option<FileAttemptStatus>,
-    search: Option<&str>,
-    cursor: Option<FileAttemptId>,
-    limit: i64,
+    q: ReviewQuery<'_>,
 ) -> Result<Vec<ReviewAttemptRow>> {
-    let pattern = search.map(|s| format!("%{}%", crate::like_escape(s)));
+    let pattern = q.search.map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_as!(
         ReviewAttemptRow,
         r#"SELECT a.id AS "id: FileAttemptId", a.user_id AS "user_id: UserId",
@@ -635,20 +659,133 @@ pub async fn list_for_review(
                   (extract(epoch FROM a.graded_at))::bigint AS "graded_at?",
                   a.is_late, a.final_score, a.version,
                   (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
-                      AS "file_count!"
+                      AS "file_count!",
+                  EXISTS (SELECT 1 FROM trail_runs r
+                          WHERE r.course_id = a.course_id AND r.user_id = a.user_id
+                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
+                  is_course_staff(a.course_id, a.user_id) AS "staff!"
            FROM file_submission_attempts a JOIN users u ON u.id = a.user_id
+           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text
+                  WHEN 'final_score' THEN coalesce(a.final_score, -1)
+                  WHEN 'attempt_number' THEN a.attempt_number::float8
+                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM a.submitted_at)::float8, 0)
+                  ELSE 0 END AS key) k
+           LEFT JOIN LATERAL (SELECT $8::float8 * CASE $7::text
+                  WHEN 'final_score' THEN coalesce(c.final_score, -1)
+                  WHEN 'attempt_number' THEN c.attempt_number::float8
+                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM c.submitted_at)::float8, 0)
+                  ELSE 0 END AS key
+                  FROM file_submission_attempts c WHERE c.id = $4) ck ON true
            WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
              AND ($2::text IS NULL OR a.status = $2)
              AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\' OR u.display_name ILIKE $3 ESCAPE '\'
                   OR u.email ILIKE $3 ESCAPE '\')
-             AND ($4::uuid IS NULL OR a.id < $4)
-           ORDER BY a.id DESC
+             AND ($4::uuid IS NULL OR (k.key, a.id) < (ck.key, $4))
+             AND (NOT $6 OR a.is_late)
+             AND ($9::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $9 AND m.user_id = a.user_id))
+           ORDER BY k.key DESC, a.id DESC
            LIMIT $5"#,
         file_submission_id.0,
-        status.map(FileAttemptStatus::as_str),
+        q.status.map(FileAttemptStatus::as_str),
         pattern.as_deref(),
-        cursor.map(|c| c.0),
-        limit
+        q.cursor.map(|c| c.0),
+        q.limit,
+        q.late_only,
+        q.sort,
+        if q.ascending { -1.0_f64 } else { 1.0_f64 },
+        q.group_id.map(|g| g.0)
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ReviewCounts {
+    pub total: i64,
+    pub submitted: i64,
+    pub graded: i64,
+    pub published: i64,
+    pub returned: i64,
+    pub late: i64,
+}
+
+/// Queue counts of a file submission (non-draft, non-preview attempts).
+pub async fn review_counts(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    group_id: Option<UsergroupId>,
+) -> Result<ReviewCounts> {
+    let r = sqlx::query!(
+        r#"SELECT count(*) AS "total!",
+                  count(*) FILTER (WHERE status = 'submitted') AS "submitted!",
+                  count(*) FILTER (WHERE status = 'graded') AS "graded!",
+                  count(*) FILTER (WHERE status = 'published') AS "published!",
+                  count(*) FILTER (WHERE status = 'returned') AS "returned!",
+                  count(*) FILTER (WHERE is_late) AS "late!"
+           FROM file_submission_attempts a
+           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
+             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,
+        file_submission_id.0,
+        group_id.map(|g| g.0)
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(ReviewCounts {
+        total: r.total,
+        submitted: r.submitted,
+        graded: r.graded,
+        published: r.published,
+        returned: r.returned,
+        late: r.late,
+    })
+}
+
+/// `(id, version)` of the non-preview attempts in `status` (bulk input).
+pub async fn list_ids_in_status(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    status: FileAttemptStatus,
+) -> Result<Vec<(FileAttemptId, i64)>> {
+    let rows = sqlx::query!(
+        r#"SELECT id AS "id: FileAttemptId", version FROM file_submission_attempts
+           WHERE file_submission_id = $1 AND status = $2 AND NOT preview
+           ORDER BY id"#,
+        file_submission_id.0,
+        status.as_str()
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.version)).collect())
+}
+
+#[derive(Debug, Clone)]
+pub struct FileGradingEntryRow {
+    pub id: uuid::Uuid,
+    pub graded_by: Option<UserId>,
+    pub status: FileAttemptStatus,
+    pub raw_score: Option<f64>,
+    pub penalty_pct: f64,
+    pub final_score: Option<f64>,
+    pub feedback: String,
+    pub created_at: i64,
+}
+
+/// The grading ledger of one attempt, newest first (L-6).
+pub async fn list_grading_entries(
+    pool: &PgPool,
+    attempt_id: FileAttemptId,
+) -> Result<Vec<FileGradingEntryRow>> {
+    let rows = sqlx::query_as!(
+        FileGradingEntryRow,
+        r#"SELECT id, graded_by AS "graded_by: UserId",
+                  status AS "status: FileAttemptStatus", raw_score, penalty_pct, final_score,
+                  feedback, (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM file_grading_entries WHERE attempt_id = $1
+           ORDER BY id DESC"#,
+        attempt_id.0
     )
     .fetch_all(pool)
     .await?;
@@ -858,4 +995,50 @@ async fn delete_attempt_files_releasing(
     .fetch_one(conn)
     .await?;
     Ok(u64::try_from(deleted).unwrap_or(0))
+}
+
+// ── Per-learner due dates (L-6) ─────────────────────────────────────────────
+
+/// Set (or move) a learner's own due date on a file submission.
+pub async fn upsert_override_due(
+    conn: &mut sqlx::PgConnection,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+    due_at: i64,
+    reason: &str,
+    granted_by: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO file_submission_overrides
+             (file_submission_id, user_id, due_at, reason, granted_by)
+         VALUES ($1, $2, to_timestamp($3::bigint), $4, $5)
+         ON CONFLICT (file_submission_id, user_id) DO UPDATE
+             SET due_at = EXCLUDED.due_at, reason = EXCLUDED.reason,
+                 granted_by = EXCLUDED.granted_by",
+        file_submission_id.0,
+        user_id.0,
+        due_at,
+        reason,
+        granted_by.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// The learner's own due date (unix seconds), when one was granted.
+pub async fn override_due<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    file_submission_id: FileSubmissionId,
+    user_id: UserId,
+) -> Result<Option<i64>> {
+    let due = sqlx::query_scalar!(
+        r#"SELECT (extract(epoch FROM due_at))::bigint AS "due!"
+           FROM file_submission_overrides WHERE file_submission_id = $1 AND user_id = $2"#,
+        file_submission_id.0,
+        user_id.0
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(due)
 }

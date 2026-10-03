@@ -529,6 +529,46 @@ mod tests {
         );
     }
 
+    fn declared<T: utoipa::PartialSchema>() -> Vec<String> {
+        let schema = serde_json::to_value(T::schema()).unwrap();
+        let mut names: Vec<String> = schema["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_owned))
+            .collect();
+        names.sort_unstable();
+        names
+    }
+
+    /// L-6: `RecommendedAction` / `WhyNow` name every rung of their ladders.
+    #[test]
+    fn ladder_schemas_match() {
+        use super::super::types::{RecommendedAction, WhyNow};
+        let ladders: [&[&str]; 6] = [
+            &["grading_block"],
+            &["inactive_7d"],
+            &["repeated_failures"],
+            &["missing_required_assessments"],
+            &["low_progress"],
+            &[],
+        ];
+        let mut actions: Vec<String> = ladders
+            .iter()
+            .map(|c| recommended_action(c).to_owned())
+            .collect();
+        let mut reasons: Vec<String> = ladders
+            .iter()
+            .map(|c| why_now(c, None).to_owned())
+            .chain([why_now(&[], Some("progress")).to_owned()])
+            .collect();
+        actions.sort_unstable();
+        reasons.sort_unstable();
+        reasons.dedup();
+        assert_eq!(declared::<RecommendedAction>(), actions);
+        assert_eq!(declared::<WhyNow>(), reasons);
+    }
+
     /// The contract's `RiskReasonCode` names every code the ladder emits.
     #[test]
     fn reason_code_schema_matches() {

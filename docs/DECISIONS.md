@@ -2157,3 +2157,87 @@ response stay as they are (removed in phase 9).
   announcements, contributors, group links, certification, access lists,
   overrides. It lives on `AssessmentsService` (it needs both services;
   `CoursesService` does not hold the assessments one).
+
+## Grading parity, same-origin downloads, stream position, code/AI/analytics typing (2026-10-04, stage 2 L-6)
+
+All additive to the old web's contract; removals are listed in
+`apps/server/docs/phase9-removals.md` (new, machine-readable, every later
+lane appends to it).
+
+- **Grader feedback**: no new route. `TeacherSubmission.feedback` already
+  carries every item feedback row (released or not); the learner-only
+  `GET /submissions/{id}/feedback` stays the learner's.
+- **Group filter** (`group_id`, usergroup membership) on both review queues,
+  the file queue stats and the gradebook; gradebook `q` (username, display
+  name, email) and `status=needs_grading` (a `pending`/`graded` submission
+  or a `submitted`/`graded` file attempt). An unknown group filters to empty.
+- **File queue parity**: `late_only`, `sort`/`order` (the assessment
+  `ReviewSort`), `enrolled`/`staff` per row, `GET .../submissions/stats`.
+  The cursor stays a plain attempt id under every order (the row's sort key
+  is re-read), so the old client's cursor type is unchanged; without `sort`
+  the order is the old id order.
+- **Bulk grade operations loop the single-row save** at each row's current
+  version (`publish-grades` for files, `return-grades` for both kinds):
+  events, notifications, the ledger and the projection follow the one path;
+  a refused row (released, stale, own, foreign) is a skip in
+  `BulkGradeSummary {done_count, skipped_count}`, an infrastructure error
+  fails the call. Synchronous - a page of rows, not a background job.
+- **File grading history**: `file_grading_entries`, written by the grade
+  UPDATE's own CTE (no grade without its entry). Grades before 2026-10-04
+  have none.
+- **File deadline extensions**: `file_submission_overrides` (one due date per
+  learner); it replaces the activity due date for the closed gate, lateness,
+  the lateness settle and the learner's `due_at_unix`. Synchronous, members
+  only (the assessment rule), `Idempotency-Key`. No notification: the
+  `DeadlineExtended` payload requires `assessment_id`, and making it optional
+  changes a required field - the learner gets the `deadline.extended` stream
+  event; the notification follows when the payload can change (phase 9).
+  The deadline-reminder job still reads only the activity due date.
+- **Same-origin downloads**: presigned GETs are signed against
+  `AB__STORAGE__ENDPOINT`, which is the public origin in production (nginx
+  passes `/ab-private` with `Host` through, `X-Frame-Options: SAMEORIGIN`).
+  `SignedDownload.path` is the same URL origin-relative; the web loads
+  `path` from its own origin (dev: proxy `/ab-private` to
+  `http://localhost:9002` with `changeOrigin`, so the signed `Host`
+  matches). `?disposition=inline` signs `Content-Disposition: inline` for
+  a preview frame.
+- **User stream position**: a fresh `/me/events` connect starts at the
+  stream's newest id (was `$`), and `connected` carries it as SSE `id:` and
+  `event_id` (`0-0` = empty; null only if Redis could not answer), so a
+  quiet tab resumes without a gap. New event `deadline.extended`
+  `{course_id, activity_id, assessment_id|file_submission_id, due_at_unix}`
+  from the per-learner override, the bulk extension and file extensions.
+  Platform admins still get no `grading.updated` fan-out (they have the
+  course stream until phase 9; a per-course "opened by" registry was not
+  worth it).
+- **Code arena**: no hints (the stored items have none, checked on
+  `ashyq_restore`). `GET /assessment-items/{id}/runs` lists the caller's own
+  runs (masked as `GET /code-runs/{id}`; `submission_id` + `purpose=final`
+  = the run a submission was graded on). `POST
+  /assessment-items/{id}/reference-check` per item with `Idempotency-Key`
+  (the request has no body; the key scope is the item). `status` is the
+  `ReferenceCheckStatus` enum (wire unchanged). `GET /code/runner` answers
+  `{runner_configured, languages}` - no 503 when Judge0 is unset;
+  `/code/languages` and the assessment-level check are `deprecated`
+  (`RENAMED`). `feedback_params` is `FeedbackParams {correct, total,
+  tests?}` (`tests` = legacy imported code grades).
+- **AI**: the Q&A chat and the run stream are described by `QaChatEvent` /
+  `RunStreamEvent` (AG-UI, tagged by `type`; `RUN_FINISHED.result`,
+  `CUSTOM.value` and the citations tool content typed). The quality
+  report's per-recommendation verdicts were already stored under
+  `report.finding_reviews["finding-{i}"]`; the schema now declares them
+  (`FindingReview`).
+- **Analytics**: `recommended_action`, `why_now`, `outlier_reason_codes`
+  and `last_intervention_type` are enums (schema; pinned by tests). Already
+  typed before L-6: intervention type/status, reason codes, drill-through
+  rows, saved query, alert params. `outcome` and `view_type` stay free text
+  (teacher prose / an opaque client key).
+- **Login right after registration**: Zitadel's session API answers
+  NotFound for a user it created < ~1.2 s earlier (projection lag; 15 such
+  401s in the dev audit log, all within 0.2-1.2 s of the user row). The BFF
+  retries the password check on NotFound with 250/500/1000 ms backoff
+  before calling it identity drift.
+- **Not done**: AI feature switches stay environment-only - a runtime switch
+  needs the 16 synchronous `require_feature`/`feature_available` checks to
+  read shared state (DB + short cache, env as the ceiling) in the API and
+  the worker; left for a separate step.

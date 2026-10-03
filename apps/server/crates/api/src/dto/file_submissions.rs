@@ -304,10 +304,54 @@ pub struct FileReviewQuery {
     pub status: Option<FileAttemptStatus>,
     /// Substring of the learner's username, display name or email.
     pub search: Option<String>,
+    /// `next_cursor` of the previous page (same filters and order).
     pub cursor: Option<FileAttemptId>,
     /// 1..=100 (default 25).
     pub limit: Option<i64>,
+    #[serde(default)]
+    pub late_only: bool,
+    /// Members of this usergroup only.
+    pub group_id: Option<ab_core::id::UsergroupId>,
+    /// Queue order; absent = newest attempt first. Ties newest first.
+    pub sort: Option<crate::dto::grading::ReviewSort>,
+    /// Default `desc` (with `sort`).
+    pub order: Option<crate::dto::grading::SortOrder>,
 }
+
+/// `GET /file-submissions/{id}/submissions/stats`.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+pub struct FileReviewStatsQuery {
+    /// Members of this usergroup only.
+    pub group_id: Option<ab_core::id::UsergroupId>,
+}
+
+/// `POST /file-submissions/{id}/return-grades`.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReturnAttemptsRequest {
+    #[garde(length(min = 1, max = 500))]
+    #[schema(min_items = 1, max_items = 500)]
+    pub attempt_ids: Vec<FileAttemptId>,
+}
+
+/// `GET /file-submission-files/{id}/url`.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+pub struct FileUrlQuery {
+    /// `inline` signs `Content-Disposition: inline` (preview in a frame);
+    /// default `attachment` (download under the original name).
+    pub disposition: Option<Disposition>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Disposition {
+    Attachment,
+    Inline,
+}
+
+pub use ab_domain::files::submissions::{BulkGradeSummary, FileGradingEntry, FileReviewStats};
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FileReviewItem {
@@ -321,6 +365,10 @@ pub struct FileReviewItem {
     pub final_score: Option<f64>,
     pub version: i64,
     pub file_count: i64,
+    /// The learner is a course member (not a leaver).
+    pub enrolled: bool,
+    /// The learner is on the course staff.
+    pub staff: bool,
     /// The grade saves the caller may make now.
     pub allowed_actions: Vec<FileGradeAction>,
 }
@@ -348,6 +396,8 @@ impl From<domain::ReviewPage> for FileReviewPage {
                     final_score: i.final_score,
                     version: i.version,
                     file_count: i.file_count,
+                    enrolled: i.enrolled,
+                    staff: i.staff,
                     allowed_actions: i.allowed_actions.into_iter().map(Into::into).collect(),
                 })
                 .collect(),
@@ -359,7 +409,13 @@ impl From<domain::ReviewPage> for FileReviewPage {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SignedDownload {
     pub file_id: FileAttemptFileId,
+    /// Absolute presigned URL against the storage endpoint
+    /// (`AB__STORAGE__ENDPOINT`: the public origin in production).
     pub url: String,
+    /// The same URL origin-relative (`/ab-private/...?X-Amz-...`): load it
+    /// from the web origin (nginx proxies `/ab-private` to storage with the
+    /// signed `Host`), e.g. in a same-origin `<iframe>` preview.
+    pub path: String,
     pub expires_at_unix: i64,
     pub filename: String,
     pub content_type: String,

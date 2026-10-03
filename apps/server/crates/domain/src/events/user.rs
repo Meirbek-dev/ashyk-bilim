@@ -18,7 +18,8 @@ use std::sync::OnceLock;
 
 use ab_core::assessments::{SubmissionStatus, XpSource};
 use ab_core::id::{
-    ActivityId, CourseId, FileAttemptId, NotificationId, SubmissionId, UserId, XpTransactionId,
+    ActivityId, AssessmentId, CourseId, FileAttemptId, FileSubmissionId, NotificationId,
+    SubmissionId, UserId, XpTransactionId,
 };
 use redis::streams::StreamMaxlen;
 use serde::Serialize;
@@ -87,6 +88,18 @@ pub struct XpAwarded {
     pub level: i32,
 }
 
+/// The recipient's own due date on one activity moved (a deadline
+/// extension or a per-learner override). `assessment_id` for an
+/// assessment, `file_submission_id` for a file submission.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct DeadlineExtended {
+    pub course_id: CourseId,
+    pub activity_id: ActivityId,
+    pub assessment_id: Option<AssessmentId>,
+    pub file_submission_id: Option<FileSubmissionId>,
+    pub due_at_unix: i64,
+}
+
 /// The closed set of user-stream events: the SSE `event:` name and the
 /// typed `payload`.
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -102,6 +115,8 @@ pub enum UserEvent {
     NotificationRead(NotificationRead),
     #[serde(rename = "xp.awarded")]
     XpAwarded(XpAwarded),
+    #[serde(rename = "deadline.extended")]
+    DeadlineExtended(DeadlineExtended),
 }
 
 impl UserEvent {
@@ -112,6 +127,7 @@ impl UserEvent {
         "notification.created",
         "notification.read",
         "xp.awarded",
+        "deadline.extended",
     ];
 }
 
@@ -192,4 +208,9 @@ pub async fn submission(owner: UserId, mut payload: SubmissionUpdated) {
         payload.final_score = None;
     }
     publish(vec![(owner, UserEvent::SubmissionUpdated(payload))]).await;
+}
+
+/// `deadline.extended` to the learner whose due date moved.
+pub async fn deadline_extended(learner: UserId, payload: DeadlineExtended) {
+    publish(vec![(learner, UserEvent::DeadlineExtended(payload))]).await;
 }

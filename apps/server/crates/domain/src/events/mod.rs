@@ -263,6 +263,20 @@ impl GradingEvents {
             .collect())
     }
 
+    /// The id of the newest event the stream holds (`0-0` when empty): the
+    /// position a client resumes from with `Last-Event-ID` (L-6).
+    pub async fn position(&self, stream: impl Into<Stream>) -> Result<String> {
+        let mut redis = self.redis.clone();
+        let reply: StreamRangeReply = redis
+            .xrevrange_count(stream.into().key(), "+", "-", 1)
+            .await
+            .map_err(|e| Error::internal("xrevrange stream position", e))?;
+        Ok(reply
+            .ids
+            .first()
+            .map_or_else(|| "0-0".to_owned(), |id| id.id.clone()))
+    }
+
     /// A dedicated connection for one subscriber's blocking reads.
     pub async fn subscriber(&self) -> Result<Subscriber> {
         let conn = subscriber_connection(&self.client).await?;

@@ -173,6 +173,22 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
         "PATCH",
         "/api/v2/file-submission-attempts/{attempt_id}/grade",
     ),
+    // L-6: per-item reference check (assessment authoring).
+    ("POST", "/api/v2/assessment-items/{item_id}/reference-check"),
+    // L-6 bulk grading (assessment:grade on the course).
+    ("POST", "/api/v2/assessments/{assessment_id}/return-grades"),
+    (
+        "POST",
+        "/api/v2/file-submissions/{file_submission_id}/publish-grades",
+    ),
+    (
+        "POST",
+        "/api/v2/file-submissions/{file_submission_id}/return-grades",
+    ),
+    (
+        "POST",
+        "/api/v2/file-submissions/{file_submission_id}/deadline-extensions",
+    ),
     // Trail writes need trail:submit:assigned / trail:update:own / trail:create:own.
     ("POST", "/api/v2/trail/courses/{course_id}"),
     ("DELETE", "/api/v2/trail/courses/{course_id}"),

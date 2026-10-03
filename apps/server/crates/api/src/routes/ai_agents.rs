@@ -54,7 +54,8 @@ fn new_message_id() -> String {
     params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = QaChatRequest,
     responses(
-        (status = 200, description = "AG-UI event stream", content_type = "text/event-stream", body = String),
+        (status = 200, description = "AG-UI event stream: each message's `data` is one event",
+         content_type = "text/event-stream", body = crate::dto::ai::QaChatEvent),
         (status = 404, description = "Unknown or inaccessible course", body = Problem,
          content_type = "application/problem+json"),
         (status = 409, description = "Turn id reused or still in progress", body = Problem,

@@ -9,9 +9,11 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 
 use crate::detach::detached;
-use crate::dto::code::{CodeRun, LanguageInfo, ReferenceCheckResponse, RunRequest};
+use crate::dto::code::{
+    CodeRun, CodeRunnerInfo, LanguageInfo, ReferenceCheckResponse, RunListQuery, RunRequest,
+};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson, idempotency_key};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotency_key, idempotent};
 use crate::state::AppState;
 
 /// Run code against an item's visible tests (or one custom input).
@@ -151,4 +153,103 @@ pub async fn languages(
     CurrentActor(_actor): CurrentActor,
 ) -> ApiResult<Json<Vec<LanguageInfo>>> {
     Ok(Json(state.code_runs.languages().await?))
+}
+
+/// The caller's own runs of an item, newest first.
+///
+/// Masked like `GET /code-runs/{id}` (authors see hidden-test data). With
+/// `submission_id` + `purpose=final`: the run a submission was graded on.
+#[utoipa::path(
+    operation_id = "list_my_code_runs",
+    get, path = "/assessment-items/{item_id}/runs", tag = "code",
+    params(("item_id" = AssessmentItemId, Path, description = "Code item id"), RunListQuery),
+    responses((status = 200, description = "Runs", body = [CodeRun])),
+)]
+pub async fn my_runs(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentItemId>,
+    Query(query): Query<RunListQuery>,
+) -> ApiResult<Json<Vec<CodeRun>>> {
+    let runs = state
+        .code_runs
+        .my_runs(
+            &actor,
+            id,
+            ab_domain::code::RunListFilter {
+                submission_id: query.submission_id,
+                purpose: query.purpose,
+                limit: query.limit.unwrap_or(20),
+            },
+        )
+        .await?;
+    Ok(Json(runs.into_iter().map(Into::into).collect()))
+}
+
+/// Run one code item's stored reference solutions against all its tests
+/// (authors only).
+///
+/// One entry per language the item allows. Retry-safe with
+/// `Idempotency-Key` (a replay answers the stored verdicts without
+/// spending runner time again).
+#[utoipa::path(
+    post, path = "/assessment-items/{item_id}/reference-check", tag = "code",
+    params(
+        ("item_id" = AssessmentItemId, Path, description = "Code item id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
+    ),
+    responses(
+        (status = 200, description = "Per-language verdicts", body = ReferenceCheckResponse),
+        (status = 403, description = "No authoring access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or not a code item", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn reference_check_item(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<AssessmentItemId>,
+    headers: HeaderMap,
+) -> ApiResult<axum::response::Response> {
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("reference-check:{id}"),
+        &headers,
+        &[],
+        move || async move {
+            let results = state.code_runs.reference_check_item(&actor, id).await?;
+            Ok((StatusCode::OK, ReferenceCheckResponse { results }))
+        },
+    )
+    .await
+}
+
+/// The code runner's state and the platform's languages.
+///
+/// Answers `runner_configured: false` with no languages (never 503) when
+/// no Judge0 endpoint is configured; replaces `GET /code/languages`.
+#[utoipa::path(
+    get, path = "/code/runner", tag = "code",
+    responses(
+        (status = 200, description = "Runner state", body = CodeRunnerInfo),
+        (status = 503, description = "Runner configured but unreachable", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn runner(
+    State(state): State<AppState>,
+    CurrentActor(_actor): CurrentActor,
+) -> ApiResult<Json<CodeRunnerInfo>> {
+    if !state.code_runs.runner_configured() {
+        return Ok(Json(CodeRunnerInfo {
+            runner_configured: false,
+            languages: Vec::new(),
+        }));
+    }
+    Ok(Json(CodeRunnerInfo {
+        runner_configured: true,
+        languages: state.code_runs.languages().await?,
+    }))
 }

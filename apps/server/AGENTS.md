@@ -81,6 +81,9 @@ env as the API (`.env`): `E2E_PASSWORD=... just seed-e2e`.
   `/progress/activities/...`, `/usergroups...` → `/groups...`. The old
   operations are `deprecated: true` + `x-replaced-by` in `openapi.v2.json`
   (`ab_api::RENAMED`); phase 9 deletes them.
+- **Phase 9 list**: `docs/phase9-removals.md` (this crate) names every
+  operation, field, behaviour and setting kept only for the old web, with
+  its replacement. Adding a replacement or a dual path = appending a row.
 
 ### Auth throttles (`AB__AUTH__LIMITS__*`)
 

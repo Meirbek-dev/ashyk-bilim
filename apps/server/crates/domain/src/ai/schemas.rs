@@ -106,6 +106,22 @@ pub struct CourseQualityReport {
     pub confidence: Level,
     #[serde(default = "default_language")]
     pub language: String,
+    /// The teacher's verdict per recommendation, keyed by finding id:
+    /// `finding-{index}` into `recommendations` (what
+    /// `POST .../findings/review` takes). Absent until the first verdict.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    #[schema(nullable = false)]
+    pub finding_reviews: std::collections::BTreeMap<String, FindingReview>,
+}
+
+/// One stored verdict on a course-analysis finding.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct FindingReview {
+    pub action: ab_core::ai::FindingReviewAction,
+    pub note: Option<String>,
+    /// Unix seconds.
+    pub reviewed_at: i64,
+    pub reviewed_by_user_id: ab_core::id::UserId,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]

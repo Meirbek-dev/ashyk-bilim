@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, ItemKind};
-use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId};
+use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId};
 use ab_core::{Error, ErrorCode, Result};
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -30,6 +30,17 @@ pub struct RunInput<'a> {
     pub idempotency_key: Option<&'a str>,
 }
 
+/// Filter of [`CodeRunsService::my_runs`].
+#[derive(Debug, Clone, Copy)]
+pub struct RunListFilter {
+    pub submission_id: Option<SubmissionId>,
+    pub purpose: Option<CodeRunPurpose>,
+    pub limit: i64,
+}
+
+/// Runs per list call.
+pub const MAX_RUN_LIST: i64 = 50;
+
 /// A Judge0 language the platform allows.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct LanguageInfo {
@@ -39,13 +50,33 @@ pub struct LanguageInfo {
     pub monaco_language: &'static str,
 }
 
+/// A reference check's per-language outcome: the run status, or why
+/// nothing ran.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ReferenceCheckStatus {
+    Queued,
+    Running,
+    Accepted,
+    WrongAnswer,
+    CompileError,
+    RuntimeError,
+    TimeLimit,
+    InternalError,
+    Degraded,
+    MissingSolution,
+    LanguageNotAllowed,
+}
+
 /// One language's verdict from the author's reference check.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ReferenceCheck {
     pub language_id: i32,
     /// Every test passed.
     pub ok: bool,
-    /// Run status, or `missing_solution` when no reference exists.
+    /// Run status, or `missing_solution` / `language_not_allowed` when
+    /// nothing ran.
+    #[schema(value_type = ReferenceCheckStatus)]
     pub status: String,
     pub passed: i32,
     pub total: i32,
@@ -259,7 +290,82 @@ impl CodeRunsService {
             .into_iter()
             .find(|i| i.kind == ItemKind::Code)
             .ok_or_else(|| Error::not_found("code item"))?;
-        let body = Self::code_body(&item)?;
+        self.check_references(actor, assessment.id, &item).await
+    }
+
+    /// [`Self::reference_check`] for one code item (L-6: an assessment may
+    /// hold several). Authors only; unknown, foreign or non-code is 404.
+    pub async fn reference_check_item(
+        &self,
+        actor: &Actor,
+        item_id: AssessmentItemId,
+    ) -> Result<Vec<ReferenceCheck>> {
+        let row = ab_db::assessments::get_item(self.runner.pool(), item_id)
+            .await?
+            .ok_or_else(|| Error::not_found("code item"))?;
+        let assessment = self
+            .assessments
+            .load_for_edit(actor, row.assessment_id)
+            .await?;
+        let item = Item::try_from(row)?;
+        if item.kind != ItemKind::Code {
+            return Err(Error::not_found("code item"));
+        }
+        self.check_references(actor, assessment.id, &item).await
+    }
+
+    /// The learner's own runs of an item, newest first (at most `limit`),
+    /// optionally of one submission and purpose - `purpose=final` with the
+    /// submission is the run its grade came from. Masked like
+    /// [`Self::get_run`] unless the caller authors the assessment.
+    pub async fn my_runs(
+        &self,
+        actor: &Actor,
+        item_id: AssessmentItemId,
+        filter: RunListFilter,
+    ) -> Result<Vec<CodeRun>> {
+        let Some(row) = ab_db::assessments::get_item(self.runner.pool(), item_id).await? else {
+            return Ok(Vec::new());
+        };
+        let assessment = self.assessments.load(row.assessment_id).await?;
+        let course = self
+            .assessments
+            .courses
+            .get(actor, assessment.course_id)
+            .await?;
+        let teacher = AssessmentsService::require_scoped(
+            actor,
+            &course,
+            ab_core::permission::Action::Author,
+            "preview",
+        )
+        .is_ok();
+        let limit = ab_core::page_limit(filter.limit, MAX_RUN_LIST)?;
+        let ids = ab_db::submissions::list_user_code_runs(
+            self.runner.pool(),
+            item_id,
+            actor.user_id,
+            filter.submission_id,
+            filter.purpose,
+            limit,
+        )
+        .await?;
+        let mut out = Vec::with_capacity(ids.len());
+        for id in ids {
+            if let Some(run) = self.runner.load(id).await? {
+                out.push(if teacher { run } else { run.masked() });
+            }
+        }
+        Ok(out)
+    }
+
+    async fn check_references(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+        item: &Item,
+    ) -> Result<Vec<ReferenceCheck>> {
+        let body = Self::code_body(item)?;
         let mut out = Vec::with_capacity(body.languages.len());
         for &language_id in &body.languages {
             let Some(solution) = body
@@ -297,7 +403,7 @@ impl CodeRunsService {
             let run = self
                 .runner
                 .execute(RunSpec {
-                    assessment_id: assessment.id,
+                    assessment_id,
                     item_id: item.id,
                     submission_id: None,
                     user_id: actor.user_id,
@@ -323,6 +429,12 @@ impl CodeRunsService {
             });
         }
         Ok(out)
+    }
+
+    /// Whether a Judge0 endpoint is configured at all.
+    #[must_use]
+    pub const fn runner_configured(&self) -> bool {
+        self.runner.judge0().is_some()
     }
 
     /// Allowed, non-archived Judge0 languages (cached 10 minutes).

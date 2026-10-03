@@ -16,7 +16,7 @@ use ab_core::assessments::{
 };
 use ab_core::id::{
     ActivityId, AssessmentId, AssessmentItemId, CourseId, FileAttemptId, FileSubmissionId,
-    GradingEntryId, SubmissionId, UserId,
+    GradingEntryId, SubmissionId, UserId, UsergroupId,
 };
 use ab_core::permission::Action;
 use ab_core::{Error, ErrorCode, FieldError, Result};
@@ -100,7 +100,7 @@ pub enum ReviewSort {
 }
 
 impl ReviewSort {
-    const fn as_str(self) -> &'static str {
+    pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::SubmittedAt => "submitted_at",
             Self::FinalScore => "final_score",
@@ -112,6 +112,8 @@ impl ReviewSort {
 pub struct ReviewFilter<'a> {
     pub status: Option<ReviewStatus>,
     pub late_only: bool,
+    /// Members of this usergroup only (L-6).
+    pub group_id: Option<UsergroupId>,
     pub search: Option<&'a str>,
     /// `next_cursor` of the previous page of this queue, sort and order.
     pub cursor: Option<&'a str>,
@@ -839,6 +841,7 @@ impl GradingService {
             filter.sort.as_str(),
             filter.ascending,
             limit + 1,
+            filter.group_id,
         )
         .await?;
         let next_cursor = if rows.len() > usize::try_from(limit).unwrap_or(usize::MAX) {
@@ -1515,6 +1518,56 @@ impl GradingService {
         Ok(())
     }
 
+    /// Return the selected submissions for revision (L-6): one `return`
+    /// grade save per row at its current version, so events,
+    /// notifications, the ledger and the projection follow the single-row
+    /// path. A row that is refused (released, stale, the caller's own, of
+    /// another assessment) is skipped.
+    pub async fn return_many(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+        ids: &[SubmissionId],
+    ) -> Result<crate::files::submissions::BulkGradeSummary> {
+        let (_, course) = self.grader_context(actor, assessment_id).await?;
+        course.ensure_not_archived()?;
+        if ids.is_empty() || ids.len() > crate::files::submissions::MAX_BULK_TARGETS {
+            return Err(Error::validation(vec![FieldError {
+                field: "submission_ids".into(),
+                code: "length".into(),
+                message: format!(
+                    "between 1 and {} rows",
+                    crate::files::submissions::MAX_BULK_TARGETS
+                ),
+            }]));
+        }
+        let mut ids = ids.to_vec();
+        ids.sort_unstable();
+        ids.dedup();
+        let mut summary = crate::files::submissions::BulkGradeSummary::default();
+        for id in ids {
+            let row = ab_db::submissions::get_submission(&self.pool, id).await?;
+            let Some(row) = row.filter(|r| r.assessment_id == assessment_id) else {
+                summary.skipped_count += 1;
+                continue;
+            };
+            let input = GradeInput {
+                action: GradeAction::Return,
+                final_score: None,
+                feedback: None,
+                item_grades: Vec::new(),
+                audit_note: None,
+                expected_version: Some(row.version),
+            };
+            match self.save_grade(actor, id, input).await {
+                Ok(_) => summary.done_count += 1,
+                Err(Error::App { .. } | Error::Validation { .. }) => summary.skipped_count += 1,
+                Err(other) => return Err(other),
+            }
+        }
+        Ok(summary)
+    }
+
     /// Release every graded submission of a batch-mode assessment: each one
     /// without a published entry gets one (copied from its latest entry or
     /// from the stored breakdown) and flips to `published`.
@@ -1659,13 +1712,15 @@ impl GradingService {
         course_id: CourseId,
         cursor: Option<&str>,
         limit: i64,
+        filter: ab_db::submissions::GradebookFilter<'_>,
     ) -> Result<GradebookPage> {
         let course = self.assessments.courses.get(actor, course_id).await?;
         AssessmentsService::require_scoped(actor, &course, Action::Grade, "gradebook")?;
         let after = cursor.map(parse_gradebook_cursor).transpose()?;
         let limit = ab_core::page_limit(limit, MAX_GRADEBOOK_PAGE)?;
         let mut ids =
-            ab_db::submissions::gradebook_members(&self.pool, course_id, after, limit + 1).await?;
+            ab_db::submissions::gradebook_members(&self.pool, course_id, after, limit + 1, filter)
+                .await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
         let next_cursor = if ids.len() > page {
             ids.truncate(page);
@@ -1742,7 +1797,13 @@ impl GradingService {
         let mut cells = Vec::new();
         let mut cursor: Option<String> = None;
         let first = self
-            .gradebook(actor, course_id, None, MAX_GRADEBOOK_PAGE)
+            .gradebook(
+                actor,
+                course_id,
+                None,
+                MAX_GRADEBOOK_PAGE,
+                ab_db::submissions::GradebookFilter::default(),
+            )
             .await?;
         let (mut users, assessments, file_submissions) =
             (first.users, first.assessments, first.file_submissions);
@@ -1750,7 +1811,13 @@ impl GradingService {
         cursor.clone_from(&first.next_cursor);
         while let Some(next) = cursor.take() {
             let page = self
-                .gradebook(actor, course_id, Some(&next), MAX_GRADEBOOK_PAGE)
+                .gradebook(
+                    actor,
+                    course_id,
+                    Some(&next),
+                    MAX_GRADEBOOK_PAGE,
+                    ab_db::submissions::GradebookFilter::default(),
+                )
                 .await?;
             cells.extend(page.cells);
             users.extend(page.users);

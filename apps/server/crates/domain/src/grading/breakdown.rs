@@ -35,6 +35,27 @@ impl FeedbackCode {
     }
 }
 
+/// `GradedItem.feedback_params`: the counts every verdict code formats
+/// (`{correct}/{total}`). Schema only - the stored value is passed through.
+#[derive(Serialize, ToSchema)]
+pub struct FeedbackParams {
+    pub correct: i64,
+    pub total: i64,
+    /// Per-test verdicts of a legacy code grade (imported data only).
+    #[schema(nullable = false)]
+    pub tests: Option<Vec<LegacyTestVerdict>>,
+}
+
+/// One test of a legacy code grade inside [`FeedbackParams`].
+#[derive(Serialize, ToSchema)]
+pub struct LegacyTestVerdict {
+    pub test_id: String,
+    pub score: f64,
+    pub max_score: f64,
+    pub correct: bool,
+    pub feedback: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct GradedItem {
     pub item_id: AssessmentItemId,
@@ -55,7 +76,7 @@ pub struct GradedItem {
     pub feedback_code: Option<String>,
     /// Placeholders for `feedback_code` (`{correct, total}`, …).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<crate::wire::MessageParams>, nullable = false)]
+    #[schema(value_type = Option<FeedbackParams>, nullable = false)]
     pub feedback_params: Option<serde_json::Value>,
     #[serde(default)]
     pub needs_manual_review: bool,

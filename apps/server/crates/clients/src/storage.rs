@@ -121,8 +121,23 @@ impl StorageClient {
         filename: Option<&str>,
         expires_in: Duration,
     ) -> Result<String> {
-        let disposition = filename
-            .map(|name| format!("attachment; filename*=UTF-8''{}", aws_encode(name.trim())));
+        self.presign_get_as(bucket, key, filename, false, expires_in)
+    }
+
+    /// [`Self::presign_get`] with the disposition chosen: `inline` lets the
+    /// browser render the object (a same-origin preview frame) instead of
+    /// saving it.
+    pub fn presign_get_as(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        filename: Option<&str>,
+        inline: bool,
+        expires_in: Duration,
+    ) -> Result<String> {
+        let kind = if inline { "inline" } else { "attachment" };
+        let disposition =
+            filename.map(|name| format!("{kind}; filename*=UTF-8''{}", aws_encode(name.trim())));
         let query: Vec<(&str, &str)> = disposition
             .as_deref()
             .map(|d| ("response-content-disposition", d))

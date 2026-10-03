@@ -1212,6 +1212,33 @@ pub fn build_detail(
 mod tests {
     use super::*;
 
+    /// L-6: `OutlierReasonCode` names every code `outlier_reason_codes`
+    /// pushes (source scan).
+    #[test]
+    fn outlier_code_schema_matches() {
+        use utoipa::PartialSchema;
+        let source = include_str!("assessments.rs");
+        let start = source.find("pub fn outlier_reason_codes").unwrap();
+        let body = &source[start..start + source[start..].find("\n}\n").unwrap()];
+        let mut pushed: Vec<&str> = body
+            .split("codes.push(\"")
+            .skip(1)
+            .filter_map(|rest| rest.split('"').next())
+            .collect();
+        pushed.sort_unstable();
+        pushed.dedup();
+        let schema =
+            serde_json::to_value(crate::analytics::types::OutlierReasonCode::schema()).unwrap();
+        let mut declared: Vec<&str> = schema["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+        declared.sort_unstable();
+        assert_eq!(declared, pushed);
+    }
+
     #[test]
     fn buckets_and_distributions() {
         assert_eq!(score_bucket(None), "unknown");

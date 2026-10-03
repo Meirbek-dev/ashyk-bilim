@@ -14,10 +14,12 @@ use axum::response::{IntoResponse, Response};
 
 use crate::detach::detached;
 use crate::dto::file_submissions::{
-    Attempt, ConfigPatch, CreateFileSubmissionRequest, DraftRequest, FileGradeAction,
-    FileGradeRequest, FileRefRequest, FileReviewPage, FileReviewQuery, FileSubmission,
-    SignedDownload, SubmitRequest,
+    Attempt, BulkGradeSummary, ConfigPatch, CreateFileSubmissionRequest, Disposition, DraftRequest,
+    FileGradeAction, FileGradeRequest, FileGradingEntry, FileRefRequest, FileReviewPage,
+    FileReviewQuery, FileReviewStats, FileReviewStatsQuery, FileSubmission, FileUrlQuery,
+    ReturnAttemptsRequest, SignedDownload, SubmitRequest,
 };
+use crate::dto::grading::{DeadlineExtensionRequest, SortOrder};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
 use crate::routes::grading::{csv_language, if_match};
@@ -329,7 +331,8 @@ pub async fn my_attempts(
     Ok(Json(attempts.into_iter().map(Into::into).collect()))
 }
 
-/// Submitted attempts for grading, newest first (keyset).
+/// Submitted attempts for grading, newest first unless `sort` / `order`
+/// say otherwise (keyset: `next_cursor` back as `cursor`, same filters).
 #[utoipa::path(
     operation_id = "file_submission_review_queue",
     get, path = "/file-submissions/{file_submission_id}/submissions", tag = "file-submissions",
@@ -349,7 +352,11 @@ pub async fn review_queue(
             id,
             ReviewFilter {
                 status: query.status,
+                late_only: query.late_only,
                 search: query.search.as_deref().filter(|s| !s.trim().is_empty()),
+                group_id: query.group_id,
+                sort: query.sort,
+                ascending: matches!(query.order, Some(SortOrder::Asc)),
                 cursor: query.cursor,
                 limit: query.limit.unwrap_or(DEFAULT_REVIEW_PAGE),
             },
@@ -473,20 +480,207 @@ pub async fn grade_attempt(
 /// A short-lived download URL for an attached file (owner or grader).
 #[utoipa::path(
     get, path = "/file-submission-files/{file_id}/url", tag = "file-submissions",
-    params(("file_id" = FileAttemptFileId, Path, description = "Attached file id")),
+    params(("file_id" = FileAttemptFileId, Path, description = "Attached file id"), FileUrlQuery),
     responses((status = 200, description = "Signed URL (1h)", body = SignedDownload)),
 )]
 pub async fn file_url(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileAttemptFileId>,
+    Query(query): Query<FileUrlQuery>,
 ) -> ApiResult<Json<SignedDownload>> {
-    let signed = state.file_submissions.download(&actor, id).await?;
+    let inline = query.disposition == Some(Disposition::Inline);
+    let signed = state.file_submissions.download(&actor, id, inline).await?;
     Ok(Json(SignedDownload {
         file_id: id,
+        path: origin_relative(&signed.url),
         url: signed.url,
         expires_at_unix: signed.expires_at,
         filename: signed.filename,
         content_type: signed.content_type,
     }))
+}
+
+/// `scheme://host` stripped: the path and query of a presigned URL.
+fn origin_relative(url: &str) -> String {
+    url.split_once("://")
+        .and_then(|(_, rest)| rest.find('/').map(|i| rest[i..].to_owned()))
+        .unwrap_or_else(|| url.to_owned())
+}
+
+/// Queue counts (graders), optionally for one group's members.
+#[utoipa::path(
+    operation_id = "file_submission_review_stats",
+    get, path = "/file-submissions/{file_submission_id}/submissions/stats", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id"), FileReviewStatsQuery),
+    responses(
+        (status = 200, description = "Counts", body = FileReviewStats),
+        (status = 403, description = "No grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn review_stats(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileSubmissionId>,
+    Query(query): Query<FileReviewStatsQuery>,
+) -> ApiResult<Json<FileReviewStats>> {
+    Ok(Json(
+        state
+            .file_submissions
+            .review_stats(&actor, id, query.group_id)
+            .await?,
+    ))
+}
+
+/// The attempt's grading ledger, newest first (graders). Grades saved
+/// before the ledger existed (2026-10-04) have no entry.
+#[utoipa::path(
+    operation_id = "file_grading_history",
+    get, path = "/file-submission-attempts/{attempt_id}/grading-history", tag = "file-submissions",
+    params(("attempt_id" = FileAttemptId, Path, description = "Attempt id")),
+    responses(
+        (status = 200, description = "Entries", body = [FileGradingEntry]),
+        (status = 404, description = "Unknown attempt or no grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn grading_history(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileAttemptId>,
+) -> ApiResult<Json<Vec<FileGradingEntry>>> {
+    Ok(Json(
+        state.file_submissions.grading_history(&actor, id).await?,
+    ))
+}
+
+/// Release every held (`graded`) grade (batch release mode).
+///
+/// One publish save per row at its current version; a row changed
+/// meanwhile or the caller's own is skipped. Runs detached.
+#[utoipa::path(
+    operation_id = "publish_file_grades",
+    post, path = "/file-submissions/{file_submission_id}/publish-grades", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
+    responses(
+        (status = 200, description = "Per-row outcome counts", body = BulkGradeSummary),
+        (status = 403, description = "No grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn publish_grades(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileSubmissionId>,
+) -> ApiResult<Json<BulkGradeSummary>> {
+    detached(async move { Ok(Json(state.file_submissions.publish_all(&actor, id).await?)) }).await
+}
+
+/// Return the selected attempts for revision in one call (graders).
+///
+/// One `return` save per row at its current version; a published, stale,
+/// own or foreign row counts as skipped. Runs detached.
+#[utoipa::path(
+    operation_id = "return_file_grades",
+    post, path = "/file-submissions/{file_submission_id}/return-grades", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
+    request_body = ReturnAttemptsRequest,
+    responses(
+        (status = 200, description = "Per-row outcome counts", body = BulkGradeSummary),
+        (status = 403, description = "No grading access", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn return_grades(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileSubmissionId>,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<BulkGradeSummary>> {
+    // UX-311: permission before the body.
+    state
+        .file_submissions
+        .review_stats(&actor, id, None)
+        .await?;
+    let request = ValidJson::<ReturnAttemptsRequest>::parse(&body)?;
+    detached(async move {
+        Ok(Json(
+            state
+                .file_submissions
+                .return_many(&actor, id, &request.attempt_ids)
+                .await?,
+        ))
+    })
+    .await
+}
+
+/// Move the due date of selected learners (graders).
+///
+/// Synchronous: the learners' own due date replaces the activity's (the
+/// closed gate, lateness, their view of `due_at_unix`); work they already
+/// handed in is re-judged. Each learner gets a `deadline.extended` event.
+/// `done_count` = learners extended. Retry-safe with `Idempotency-Key`.
+#[utoipa::path(
+    operation_id = "extend_file_deadline",
+    post, path = "/file-submissions/{file_submission_id}/deadline-extensions", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
+    request_body = DeadlineExtensionRequest,
+    responses(
+        (status = 200, description = "Extended", body = BulkGradeSummary),
+        (status = 422, description = "Not members, the caller, or a past date", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn extend_deadline(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileSubmissionId>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Response> {
+    // UX-311: permission before the body.
+    state
+        .file_submissions
+        .review_stats(&actor, id, None)
+        .await?;
+    let request = ValidJson::<DeadlineExtensionRequest>::parse(&body)?;
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("file-deadline-extension:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let summary = state
+                .file_submissions
+                .extend_deadline(
+                    &actor,
+                    id,
+                    &request.user_ids,
+                    request.new_due_at_unix,
+                    request.reason.trim(),
+                )
+                .await?;
+            Ok((StatusCode::OK, summary))
+        },
+    )
+    .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::origin_relative;
+
+    #[test]
+    fn presigned_url_becomes_origin_relative() {
+        assert_eq!(
+            origin_relative("https://ashyq.kz/ab-private/a/b.pdf?X-Amz-Signature=1"),
+            "/ab-private/a/b.pdf?X-Amz-Signature=1"
+        );
+        assert_eq!(
+            origin_relative("http://localhost:9002/ab-private/k?x=1"),
+            "/ab-private/k?x=1"
+        );
+    }
 }

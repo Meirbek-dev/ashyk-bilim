@@ -104,6 +104,9 @@ struct Recipient<'a> {
 }
 
 /// Authenticator-app issuer when the platform singleton has no name yet.
+/// Backoff (ms) for a password check Zitadel answers NotFound while its
+/// user projection catches up with a just-created account (L-6).
+const ZITADEL_PROJECTION_RETRY_MS: [u64; 3] = [250, 500, 1000];
 const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
 
 /// How long a started TOTP enrolment is handed back unchanged to a repeat
@@ -516,14 +519,7 @@ impl IdentityService {
         // TOTP activation / role change landing during the ~1 s Zitadel call
         // can never be outlived by the session it did not see.
         let epoch = self.sessions.epoch(user.id).await?;
-        let outcome = self
-            .zitadel
-            .create_password_session(
-                &SessionUser::Id(&user.zitadel_user_id),
-                &input.password,
-                code,
-            )
-            .await?;
+        let outcome = self.password_session(user, &input.password, code).await?;
         let zsession = self.resolve_session_outcome(outcome, input).await?;
         for key in first.unwrap_or_default() {
             self.limiter.release(key).await?;
@@ -609,6 +605,32 @@ impl IdentityService {
             permissions,
             mfa_enabled,
         }))
+    }
+
+    /// Zitadel's password (+ TOTP) check for one of our users.
+    ///
+    /// L-6: Zitadel's session API reads users from an eventually consistent
+    /// projection - a login within ~1 s of `POST /users/human` answers
+    /// NotFound (measured locally: 0.2-1.2 s after register, 15 e2e
+    /// logins). Our row exists, so it is retried briefly before being
+    /// treated as identity drift.
+    async fn password_session(
+        &self,
+        user: &ab_db::identity::AuthUserRow,
+        password: &secrecy::SecretString,
+        code: Option<&str>,
+    ) -> Result<PasswordSessionOutcome> {
+        let who = SessionUser::Id(&user.zitadel_user_id);
+        let check = || self.zitadel.create_password_session(&who, password, code);
+        let mut outcome = check().await?;
+        for delay_ms in ZITADEL_PROJECTION_RETRY_MS {
+            if !matches!(outcome, PasswordSessionOutcome::UserNotFound) {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+            outcome = check().await?;
+        }
+        Ok(outcome)
     }
 
     /// Fenced twice in a row: answer as a fresh login would - 403 if the
