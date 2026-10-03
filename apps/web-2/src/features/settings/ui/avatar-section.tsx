@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
+import type { UserProfile } from '#/shared/api/gen/types.gen'
 import { presentError } from '#/shared/i18n/errors'
 import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
@@ -10,11 +11,11 @@ import { FileButton } from '#/shared/ui/file-button'
 import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
 
 import { AVATAR_MAX_MB, avatarProblem, contentUrl } from '../model/settings'
-import { avatarOptions, type VersionedProfile } from '../queries'
+import { avatarOptions } from '../queries'
 import { PlainSection } from './plain-section'
 
 /** The photo is checked, uploaded and set as soon as it is picked; removing it asks first. */
-export function AvatarSection({ profile }: { profile: VersionedProfile }) {
+export function AvatarSection({ profile }: { profile: UserProfile }) {
   const queryClient = useQueryClient()
   const replace = useMutation(avatarOptions(queryClient))
   const remove = useMutation(avatarOptions(queryClient))

@@ -6,10 +6,12 @@ import type {
   ActivityType,
   AssessmentKind,
   Contributor,
+  ContributorRole,
   FinalizedUpload,
   MediaContent,
   ReadinessItem,
 } from '#/shared/api/gen/types.gen'
+import { vContributorRole } from '#/shared/api/gen/valibot.gen'
 
 /** A chapter's or an activity's new name: the contract types `name` as optional on update, a rename needs one. */
 export const nameSchema = v.object({ name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(500)) })
@@ -93,17 +95,14 @@ export function createPlan(type: CreatableType, source: VideoSource): CreatePlan
 
 // ---- Team ----
 
-export type ContributorRole = 'creator' | 'maintainer' | 'contributor' | 'reporter'
-export const ASSIGNABLE_ROLES = ['maintainer', 'contributor', 'reporter'] as const
+export const ASSIGNABLE_ROLES = vContributorRole.options
 
 /** The add form's role (the people come from the picker, outside the form). */
-export const roleSchema = v.object({ role: v.picklist(ASSIGNABLE_ROLES) })
+export const roleSchema = v.object({ role: vContributorRole })
+export type RoleForm = v.InferOutput<typeof roleSchema>
 
-const ROLES: readonly string[] = ['creator', ...ASSIGNABLE_ROLES]
-const isRole = (role: string): role is ContributorRole => ROLES.includes(role)
-
-/** `Contributor.role` is a string in the contract; an unknown one reads as a plain contributor. */
-export const contributorRole = (role: string): ContributorRole => (isRole(role) ? role : 'contributor')
+/** A menu value that is a role the team can be given. */
+export const isAssignableRole = (value: string): value is ContributorRole => v.is(vContributorRole, value)
 
 /** The team (creator first, as the server orders it) and the open applications. Inactive rows are not shown. */
 export function splitRoster(rows: readonly Contributor[]): { team: Contributor[]; pending: Contributor[] } {

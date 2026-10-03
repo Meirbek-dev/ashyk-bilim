@@ -30,6 +30,7 @@ import { addContributor, addUsergroupCourses, listCourses, removeUsergroupCourse
 import type {
   Certification,
   Contributor,
+  ContributorRole,
   Course,
   CourseId,
   CoursePage,
@@ -164,7 +165,7 @@ const putRow = (row: Contributor) => (rows: Contributor[]) =>
 
 /** Several people at once, one request each; every answered row joins the roster. */
 export const addContributorsOptions = (queryClient: QueryClient, id: CourseId) => ({
-  mutationFn: ({ userIds, role }: { userIds: string[]; role: string }) =>
+  mutationFn: ({ userIds, role }: { userIds: string[]; role: ContributorRole }) =>
     Promise.all(
       userIds.map(async userId => {
         const { data } = await addContributor({

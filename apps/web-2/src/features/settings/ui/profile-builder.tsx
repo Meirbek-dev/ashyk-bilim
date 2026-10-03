@@ -27,7 +27,7 @@ export function ProfileBuilder() {
   const [conflict, setConflict] = useState(false)
   // Captured once: a reload after a conflict must not reset what the user typed.
   const [defaultValues] = useState(() => query.data.profile)
-  const save = (document: ProfileSections, version: number | null) =>
+  const save = (document: ProfileSections, version: number) =>
     update.mutateAsync(
       { body: { profile: normalizeSections(document) }, version },
       {

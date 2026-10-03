@@ -1,8 +1,8 @@
 import { m } from '#/paraglide/messages'
 
-import type { ContributorRole } from '../model/studio'
+import type { RosterRole } from '#/shared/api/gen/types.gen'
 
-export const roleLabels: Record<ContributorRole, () => string> = {
+export const roleLabels: Record<RosterRole, () => string> = {
   creator: m.studio_role_creator,
   maintainer: m.studio_role_maintainer,
   contributor: m.studio_role_contributor,

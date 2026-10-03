@@ -3,16 +3,16 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
-import type { UpdateProfileRequest } from '#/shared/api/gen/types.gen'
+import type { UpdateProfileRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Link } from '#/shared/ui/link'
 import { SettingsSection } from '#/shared/ui/templates/settings-section'
 
-import { updateProfileOptions, type VersionedProfile } from '../queries'
+import { updateProfileOptions } from '../queries'
 
 /** Name, organization and bio; login and email are shown, not edited. */
-export function ProfileDetails({ profile }: { profile: VersionedProfile }) {
+export function ProfileDetails({ profile }: { profile: UserProfile }) {
   const update = useMutation(updateProfileOptions(useQueryClient()))
   // Captured once: a refetch must not reset what the user typed.
   const [defaultValues] = useState<UpdateProfileRequest>(() => ({

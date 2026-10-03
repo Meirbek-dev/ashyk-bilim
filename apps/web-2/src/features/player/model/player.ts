@@ -17,11 +17,7 @@ const KINDS: Record<ActivityType, ActivityKind> = {
   file_submission: 'submission',
 }
 
-// The loader reads this module: no runtime import of the labels table (its icons stay out of the entry chunk).
-const isKnown = (type: string): type is ActivityType => Object.hasOwn(KINDS, type)
-
-/** A type the table does not know reads as `custom`, a lesson (as `activityType()` does). */
-export const activityKind = (type: string): ActivityKind => (isKnown(type) ? KINDS[type] : 'lesson')
+export const activityKind = (type: ActivityType): ActivityKind => KINDS[type]
 
 /** The activity in the learner's outline with its neighbours in outline order; null = not in this course. */
 export function locate(state: LearnerCourseState, id: ActivityId) {

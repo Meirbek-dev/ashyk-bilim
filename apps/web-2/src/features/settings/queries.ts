@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions, type InfiniteData, type QueryClient } from '@tanstack/react-query'
+import { infiniteQueryOptions, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
@@ -9,6 +9,7 @@ import {
   dashboardQueryKey,
   listSessionsOptions,
   listSessionsQueryKey,
+  myProfileOptions,
   myProfileQueryKey,
   publicProfileOptions as generatedPublicProfileOptions,
   revokeSessionMutation,
@@ -18,7 +19,7 @@ import {
   updatePreferencesMutation,
   userCoursesInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { myProfile, updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
+import { updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
 import type {
   CourseId,
   CoursePage,
@@ -31,22 +32,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 import { upload } from '#/shared/api/upload'
 
-/** The profile with the version of its builder document, which the API sends only as the `ETag` (SPEC). */
-export type VersionedProfile = UserProfile & { version: number | null }
-
-const etagVersion = (response: Response): number | null => {
-  const tag = response.headers.get('etag')?.replaceAll('"', '')
-  return tag && /^\d+$/.test(tag) ? Number(tag) : null
-}
-
-export const profileOptions = () =>
-  queryOptions({
-    queryKey: myProfileQueryKey(),
-    queryFn: async ({ signal }): Promise<VersionedProfile> => {
-      const { data, response } = await myProfile({ signal, throwOnError: true })
-      return { ...data, version: etagVersion(response) }
-    },
-  })
+export const profileOptions = () => myProfileOptions()
 
 /** The shell reads the session: a change the answer already carries goes straight into it, without a refetch. */
 const updateSession = (queryClient: QueryClient, change: (session: SessionInfo) => SessionInfo) =>
@@ -54,16 +40,16 @@ const updateSession = (queryClient: QueryClient, change: (session: SessionInfo) 
     session ? change(session) : session,
   )
 
-type ProfileWrite = { body: UpdateProfileRequest; version?: number | null }
+type ProfileWrite = { body: UpdateProfileRequest; version?: number }
 
 /** Every profile write: the answer (with its new ETag) replaces the cache; the shell's session shows the change. */
 export const updateProfileOptions = (queryClient: QueryClient) => ({
-  mutationFn: async ({ body, version }: ProfileWrite): Promise<VersionedProfile> => {
-    const headers = version === undefined || version === null ? {} : { 'If-Match': version }
-    const { data, response } = await updateMyProfile({ body, headers, throwOnError: true })
-    return { ...data, version: etagVersion(response) }
+  mutationFn: async ({ body, version }: ProfileWrite): Promise<UserProfile> => {
+    const headers = version === undefined ? {} : { 'If-Match': version }
+    const { data } = await updateMyProfile({ body, headers, throwOnError: true })
+    return data
   },
-  onSuccess: (profile: VersionedProfile) => {
+  onSuccess: (profile: UserProfile) => {
     queryClient.setQueryData(myProfileQueryKey(), profile)
     const { display_name, avatar_key, locale, theme } = profile
     updateSession(queryClient, session => ({
@@ -112,7 +98,7 @@ export const revokeSessionOptions = (queryClient: QueryClient) => {
 }
 
 const setMfa = (queryClient: QueryClient, enabled: boolean) => {
-  queryClient.setQueryData(myProfileQueryKey(), (profile: VersionedProfile | undefined) =>
+  queryClient.setQueryData(myProfileQueryKey(), (profile: UserProfile | undefined) =>
     profile ? { ...profile, mfa_enabled: enabled } : profile,
   )
   updateSession(queryClient, session => ({ ...session, mfa_enabled: enabled }))

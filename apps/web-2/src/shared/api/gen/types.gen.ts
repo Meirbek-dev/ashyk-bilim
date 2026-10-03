@@ -110,8 +110,10 @@ export type ActivityDropoffRow = {
 export type ActivityId = string;
 
 /**
- * `activities.settings`. The server reads `required` (progress: `false`
- * makes the activity optional). Migrated legacy rows keep the legacy
+ * `activities.settings`.
+ *
+ * The server reads `required` (progress: `false` makes the activity
+ * optional). Migrated legacy rows keep the legacy
  * assessment settings they had (exam / code-challenge keys such as
  * `time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.
  */
@@ -124,7 +126,7 @@ export type ActivitySettings = {
 };
 
 export type ActivityState = {
-    activity_type: string;
+    activity_type: ActivityType;
     allowed_actions: Array<string>;
     available: boolean;
     blocked_reason: string | null;
@@ -156,7 +158,7 @@ export type AddContributorRequest = {
     /**
      * `maintainer | contributor | reporter` (default `contributor`).
      */
-    role?: string;
+    role?: ContributorRole;
     user_id?: UserId;
     username?: string;
 };
@@ -716,7 +718,7 @@ export type AtRiskLearnerRow = {
     open_grading_blocks: number;
     previous_risk_score: number | null;
     progress_pct: number;
-    reason_codes: Array<string>;
+    reason_codes: Array<RiskReasonCode>;
     /**
      * Stable code (`review_submissions_first`, …).
      */
@@ -833,8 +835,9 @@ export type AuditEvent = {
 };
 
 /**
- * `assessment_audit_events.payload`; the keys depend on `event`:
- * `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),
+ * `assessment_audit_events.payload`.
+ *
+ * The keys depend on `event`: `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),
  * `auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,
  * `users`, `usergroups`), `override-created|updated|deleted` (`user_id`),
  * `duplicated-from` (`source`), `deadline-extension-requested` /
@@ -1236,6 +1239,10 @@ export type Collection = {
      * Member courses visible to the caller, in collection order.
      */
     courses: Array<Course>;
+    /**
+     * Storage key of the cover image, served at `/content/<key>`.
+     */
+    cover_key: string | null;
     created_at_unix: UnixTime;
     creator_id: UserId | null;
     description: string;
@@ -1364,11 +1371,18 @@ export type Contributor = {
     avatar_key: string | null;
     created_at_unix: UnixTime;
     display_name: string;
-    role: string;
-    status: string;
+    role: RosterRole;
+    status: ContributorStatus;
     user_id: UserId;
     username: string;
 };
+
+/**
+ * A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).
+ */
+export type ContributorRole = 'maintainer' | 'contributor' | 'reporter';
+
+export type ContributorStatus = 'pending' | 'active' | 'inactive';
 
 /**
  * The answer key shown after grading: correct option ids (choice) or the
@@ -1481,11 +1495,58 @@ export type CourseArchivePreview = {
     ungraded_submissions: number;
 };
 
+export type CourseAuthor = {
+    display_name: string;
+    user_id: UserId;
+    username: string;
+};
+
 export type CourseDataGap = {
     course_id: CourseId;
     course_name: string;
     learner_count: number;
     reason: string;
+};
+
+/**
+ * A grade change or hand-in: `submission_id` (assessments) or
+ * `attempt_id` (file submissions).
+ */
+export type CourseGradingPayload = {
+    activity_id: ActivityId;
+    attempt_id?: FileAttemptId;
+    final_score: number | null;
+    status: SubmissionStatus;
+    submission_id?: SubmissionId;
+    user_id: UserId;
+};
+
+export type CourseGradingStored = {
+    event_id: string;
+    payload: CourseGradingPayload;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+};
+
+/**
+ * `GET /courses/{course_id}/grading/events`: one message's `data`.
+ */
+export type CourseGradingStreamEvent = {
+    course_id: CourseId;
+    event: 'connected';
+} | (CourseGradingStored & {
+    event: 'submission.submitted';
+}) | (CourseGradingStored & {
+    event: 'grade.saved';
+}) | (CourseGradingStored & {
+    event: 'grade.published';
+}) | (CourseGradingStored & {
+    event: 'submission.returned';
+}) | {
+    code: ErrorCode;
+    event: 'closed';
 };
 
 export type CourseId = string;
@@ -1511,9 +1572,30 @@ export type CourseLifecycleRequest = {
 };
 
 /**
+ * A `GET /courses` item: the course plus who wrote it and how far the
+ * caller got.
+ */
+export type CourseListItem = Course & {
+    /**
+     * The creator first, then the active contributors (`contributor_ids`
+     * order); deleted accounts are left out.
+     */
+    authors: Array<CourseAuthor>;
+    progress: CourseListProgress | null;
+};
+
+/**
  * `GET /courses?preset=`; `archived` needs `mine=true`.
  */
 export type CourseListPreset = 'all' | 'drafts' | 'published' | 'recent' | 'attention' | 'archived';
+
+export type CourseListProgress = {
+    completed_at_unix: UnixTime | null;
+    /**
+     * 0..=100.
+     */
+    progress_pct: number;
+};
 
 /**
  * `GET /courses?sort=`: `updated` (default), `name`, `progress`.
@@ -1524,7 +1606,7 @@ export type CourseListSort = 'updated' | 'name' | 'progress';
  * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
  */
 export type CoursePage = {
-    items: Array<Course>;
+    items: Array<CourseListItem>;
     next_cursor: CourseId | null;
     /**
      * Present only when the request had `mine=true`.
@@ -1684,6 +1766,10 @@ export type CreateCollectionRequest = {
      * Course membership; every course must be readable by the caller.
      */
     courses?: Array<CourseId>;
+    /**
+     * A finalized `collection-cover` upload of the caller.
+     */
+    cover_upload_id?: string;
     description?: string;
     name: string;
     public?: boolean;
@@ -1712,8 +1798,26 @@ export type CreateDiscussionRequest = {
     parent_id?: DiscussionId;
 };
 
-export type CreateFileSubmissionRequest = ConfigPatch & {
+export type CreateFileSubmissionRequest = {
+    allow_late?: boolean;
+    allowed_mime_types?: Array<string>;
     chapter_id: ChapterId;
+    due_at_unix?: UnixTime | null;
+    grade_release_mode?: GradeReleaseMode;
+    instructions?: string;
+    late_policy?: LatePolicy;
+    max_attempts?: number | null;
+    /**
+     * `null` clears the limit.
+     */
+    max_file_size_mb?: number | null;
+    max_files?: number;
+    /**
+     * A JSON object of at most 4 KiB serialized (UX-154; same rule as the
+     * grade route's `rubric_scores`).
+     */
+    rubric?: FileRubric;
+    settings?: FileSubmissionSettings;
     title: string;
 };
 
@@ -1848,6 +1952,14 @@ export type DataQualityIssue = {
     params: MessageParams;
     severity: Severity;
     source: string | null;
+};
+
+export type DeadlineExtendedPayload = {
+    /**
+     * Unix seconds.
+     */
+    new_due_at: number;
+    reason: string;
 };
 
 export type DeadlineExtensionRequest = {
@@ -1998,8 +2110,9 @@ export type DrillThroughResponse = {
 };
 
 /**
- * One drill-through row; which shape depends on the response's `metric`:
- * learner progress (`active_learners`, `completion_rate`), a submission
+ * One drill-through row.
+ *
+ * The shape depends on the response's `metric`: learner progress (`active_learners`, `completion_rate`), a submission
  * awaiting review (`backlog`), a learner's assessment result (`pass_rate`).
  */
 export type DrillThroughRow = DrillProgressRow | DrillBacklogRow | DrillPassRateRow;
@@ -2369,6 +2482,14 @@ export type GamificationSectionSettings = {
 };
 
 export type GradeAction = 'save' | 'publish' | 'return';
+
+export type GradePublishedPayload = {
+    final_score: number;
+    /**
+     * Unix seconds.
+     */
+    published_at: number;
+};
 
 export type GradeReleaseMode = 'immediate' | 'batch';
 
@@ -3282,25 +3403,51 @@ export type ProfileLink = {
 /**
  * One builder section, tagged by `type` (legacy kebab-case kinds).
  */
-export type ProfileSection = (ImageGallerySection & {
+export type ProfileSection = {
+    id: string;
+    images: Array<ProfileImage>;
+    title: string;
     type: 'image-gallery';
-}) | (TextSection & {
+} | {
+    content: string;
+    id: string;
+    title: string;
     type: 'text';
-}) | (LinksSection & {
+} | {
+    id: string;
+    links: Array<ProfileLink>;
+    title: string;
     type: 'links';
-}) | (SkillsSection & {
+} | {
+    id: string;
+    skills: Array<ProfileSkill>;
+    title: string;
     type: 'skills';
-}) | (ExperienceSection & {
+} | {
+    experiences: Array<ProfileExperience>;
+    id: string;
+    title: string;
     type: 'experience';
-}) | (EducationSection & {
+} | {
+    education: Array<ProfileEducation>;
+    id: string;
+    title: string;
     type: 'education';
-}) | (AffiliationSection & {
+} | {
+    affiliations: Array<ProfileAffiliation>;
+    id: string;
+    title: string;
     type: 'affiliation';
-}) | (CoursesSection & {
+} | {
+    id: string;
+    title: string;
     type: 'courses';
-}) | (GamificationSection & {
+} | {
+    id: string;
+    settings?: GamificationSectionSettings;
+    title: string;
     type: 'gamification';
-});
+};
 
 /**
  * `{ "sections": [...] }`, the stored column's default.
@@ -3508,6 +3655,11 @@ export type Readiness = {
 export type ReadinessArea = 'details' | 'questions' | 'policy' | 'audience' | 'publish';
 
 /**
+ * Stable readiness code the web localizes.
+ */
+export type ReadinessCode = 'no-live-activity' | 'assessment-not-ready' | 'code-challenge-unconfigured' | 'file-submission-unpublished' | 'file-submission-not-ready' | 'activity-unpublished' | 'thumbnail-missing' | 'certificate-not-configured';
+
+/**
  * One thing blocking (or advising against) publication.
  */
 export type ReadinessIssue = {
@@ -3533,7 +3685,7 @@ export type ReadinessIssue = {
  */
 export type ReadinessItem = {
     activity_id: ActivityId | null;
-    code: string;
+    code: ReadinessCode;
     title: string | null;
 };
 
@@ -3725,6 +3877,11 @@ export type RiskDistributionCounts = {
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
+/**
+ * Why a learner is at risk (`risk::reason_codes`; a test pins the set).
+ */
+export type RiskReasonCode = 'inactive_7d' | 'low_progress' | 'repeated_failures' | 'missing_required_assessments' | 'grading_block';
+
 export type RiskTrend = 'newly_at_risk' | 'worsening' | 'improving' | 'recovered' | 'stable';
 
 export type Role = {
@@ -3752,6 +3909,11 @@ export type Role = {
  * What the caller may do to a role (`Role.allowed_actions`).
  */
 export type RoleAction = 'assign' | 'update' | 'delete' | 'set_permissions';
+
+/**
+ * A roster entry's role: the granted roles plus the course `creator`.
+ */
+export type RosterRole = 'creator' | 'maintainer' | 'contributor' | 'reporter';
 
 export type RubricCriterion = {
     criterion_id: string;
@@ -3849,7 +4011,9 @@ export type RunEvent = {
 };
 
 /**
- * `ai_events.payload`. `state` is always set; the rest by event type:
+ * `ai_events.payload`.
+ *
+ * `state` is always set; the rest by event type:
  * `collecting_context` -> `source_count`; `budget_checked` ->
  * `input_tokens`; `finished` -> model, tokens and citation counts;
  * `failed` / `cancelled` -> `error_code`.
@@ -4070,6 +4234,11 @@ export type ScoringStrategy = 'partial_credit' | 'all_or_nothing' | 'best_submis
 export type SearchResults = {
     collections: Array<CollectionHit>;
     courses: Array<Course>;
+    /**
+     * Set while any section has more hits: pass it back as `cursor` for
+     * the next page of every section.
+     */
+    next_cursor: string | null;
     /**
      * Empty for anonymous callers.
      */
@@ -4308,7 +4477,53 @@ export type SubmissionAnalysisReport = {
 
 export type SubmissionId = string;
 
+export type SubmissionReturnedPayload = {
+    feedback: string;
+    /**
+     * Unix seconds.
+     */
+    returned_at: number;
+};
+
 export type SubmissionStatus = 'draft' | 'pending' | 'graded' | 'published' | 'returned';
+
+/**
+ * `GET /submissions/{submission_id}/events`: one message's `data`.
+ */
+export type SubmissionStreamEvent = {
+    event: 'connected';
+    submission_id: SubmissionId;
+} | {
+    event: 'grade.published';
+    event_id: string;
+    payload: GradePublishedPayload;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+    submission_id: SubmissionId;
+} | {
+    event: 'submission.returned';
+    event_id: string;
+    payload: SubmissionReturnedPayload;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+    submission_id: SubmissionId;
+} | {
+    event: 'deadline.extended';
+    event_id: string;
+    payload: DeadlineExtendedPayload;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+    submission_id: SubmissionId;
+} | {
+    code: ErrorCode;
+    event: 'closed';
+};
 
 export type SubmitRequest = {
     /**
@@ -4668,6 +4883,11 @@ export type UpdateCollectionRequest = {
      * Replaces the whole membership when present (legacy semantics).
      */
     courses?: Array<CourseId>;
+    /**
+     * A finalized `collection-cover` upload of the caller; `null` removes
+     * the cover.
+     */
+    cover_upload_id?: string | null;
     description?: string;
     name?: string;
     public?: boolean;
@@ -4677,11 +4897,11 @@ export type UpdateContributorRequest = {
     /**
      * `maintainer | contributor | reporter`.
      */
-    role?: string;
+    role?: ContributorRole;
     /**
      * `pending | active | inactive` (`active` approves an application).
      */
-    status?: string;
+    status?: ContributorStatus;
 };
 
 export type UpdateCourseRequest = {
@@ -4794,7 +5014,7 @@ export type UpdateUsergroupRequest = {
 /**
  * What an upload is for: decides bucket, size cap and allowed MIME types.
  */
-export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission';
+export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover';
 
 /**
  * Platform usage against the monthly budget (legacy `AIUsageSummary`)
@@ -4857,6 +5077,11 @@ export type UserProfile = {
      */
     theme: string | null;
     username: string;
+    /**
+     * Optimistic-lock version of the profile (the `ETag` of
+     * `GET /users/me`): echo it as `If-Match` on `PATCH /users/me`.
+     */
+    version: number;
 };
 
 export type UserRank = {
@@ -9118,6 +9343,14 @@ export type ListCollectionsData = {
          * Page size, 1..=100 (default 20)
          */
         limit?: number;
+        /**
+         * Words matched like `/search` over name and description
+         */
+        q?: string;
+        /**
+         * `newest` (default), `name` (A-Z) or `updated`
+         */
+        sort?: unknown;
     };
     url: '/api/v2/collections';
 };
@@ -10027,9 +10260,9 @@ export type CourseGradingEventsError = CourseGradingEventsErrors[keyof CourseGra
 
 export type CourseGradingEventsResponses = {
     /**
-     * Event stream
+     * Event stream: each message's `data` is one event
      */
-    200: string;
+    200: CourseGradingStreamEvent;
 };
 
 export type CourseGradingEventsResponse = CourseGradingEventsResponses[keyof CourseGradingEventsResponses];
@@ -11181,9 +11414,22 @@ export type SearchData = {
          * Per-section cap, 1..=50 (default 10)
          */
         limit?: number;
+        /**
+         * next_cursor from the previous page
+         */
+        cursor?: string;
     };
     url: '/api/v2/search';
 };
+
+export type SearchErrors = {
+    /**
+     * Malformed `cursor`
+     */
+    422: Problem;
+};
+
+export type SearchError = SearchErrors[keyof SearchErrors];
 
 export type SearchResponses = {
     /**
@@ -11309,9 +11555,9 @@ export type SubmissionEventsError = SubmissionEventsErrors[keyof SubmissionEvent
 
 export type SubmissionEventsResponses = {
     /**
-     * Event stream
+     * Event stream: each message's `data` is one event
      */
-    200: string;
+    200: SubmissionStreamEvent;
 };
 
 export type SubmissionEventsResponse = SubmissionEventsResponses[keyof SubmissionEventsResponses];

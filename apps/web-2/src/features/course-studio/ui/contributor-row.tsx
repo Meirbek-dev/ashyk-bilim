@@ -3,13 +3,13 @@ import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
-import type { Contributor } from '#/shared/api/gen/types.gen'
+import type { Contributor, UpdateContributorRequest } from '#/shared/api/gen/types.gen'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { ChoiceMenu } from '#/shared/ui/choice-menu'
 import { Link } from '#/shared/ui/link'
 
-import { ASSIGNABLE_ROLES, contributorRole } from '../model/studio'
+import { ASSIGNABLE_ROLES, isAssignableRole } from '../model/studio'
 import { updateContributorOptions } from '../queries'
 import { RemoveContributor } from './remove-contributor'
 import { roleLabels } from './role-labels'
@@ -19,16 +19,18 @@ type ContributorRowProps = { courseId: string; row: Contributor; manage: boolean
 /** One roster row: name, role (a menu for managers), and remove; an application row offers accept and reject. */
 export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   const update = useMutation(updateContributorOptions(useQueryClient(), courseId))
-  const role = contributorRole(row.role)
+  const role = row.role
   const applying = row.status === 'pending'
   const name = row.display_name || row.username
-  const patch = (body: { role?: string; status?: string }, done: string) =>
+  const patch = (body: UpdateContributorRequest, done: string) =>
     update.mutate({ path: { course_id: courseId, user_id: row.user_id }, body }, { onSuccess: () => toast(done) })
   const roleChoice = {
     label: m.studio_role_of({ name }),
     value: role,
     options: ASSIGNABLE_ROLES.map(value => ({ value, label: roleLabels[value]() })),
-    onValueChange: (value: string) => patch({ role: value }, m.studio_role_saved()),
+    onValueChange: (value: string) => {
+      if (isAssignableRole(value)) patch({ role: value }, m.studio_role_saved())
+    },
   }
   const changeable = manage && role !== 'creator' && !applying
   return (

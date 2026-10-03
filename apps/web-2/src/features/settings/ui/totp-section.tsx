@@ -3,7 +3,7 @@ import { lazy, Suspense, type FormEvent } from 'react'
 import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
-import type { TotpVerifyRequest } from '#/shared/api/gen/types.gen'
+import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { vTotpVerifyRequest } from '#/shared/api/gen/valibot.gen'
 import { presentError } from '#/shared/i18n/errors'
 import { Alert } from '#/shared/ui/alert'
@@ -13,7 +13,7 @@ import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Anchor } from '#/shared/ui/link'
 
 import { hasCode } from '../model/settings'
-import { totpEnrollOptions, totpVerifyOptions, type VersionedProfile } from '../queries'
+import { totpEnrollOptions, totpVerifyOptions } from '../queries'
 import { DisableTotp } from './disable-totp'
 import { PlainSection } from './plain-section'
 
@@ -23,7 +23,7 @@ const TotpQr = lazy(() => import('./totp-qr').then(module => ({ default: module.
 const defaultValues: TotpVerifyRequest = { code: '' }
 
 /** Off -> "Turn on" shows the QR, the key and a code field -> on; on -> "Turn off" through a confirmation. */
-export function TotpSection({ profile }: { profile: VersionedProfile }) {
+export function TotpSection({ profile }: { profile: UserProfile }) {
   const queryClient = useQueryClient()
   const enroll = useMutation(totpEnrollOptions(queryClient))
   const verify = useMutation(totpVerifyOptions(queryClient))

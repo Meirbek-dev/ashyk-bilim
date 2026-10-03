@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { ActivityState, LearnerCourseState, NextAction } from '#/shared/api/gen/types.gen'
+import type { ActivityState, ActivityType, LearnerCourseState, NextAction } from '#/shared/api/gen/types.gen'
 
 import { activityKind, locate, playerAction } from './player'
 
@@ -59,7 +59,8 @@ describe('player model', () => {
   })
 
   test('B-PLY-06 a lesson that is not done offers to mark it, whatever comes next', () => {
-    for (const type of ['dynamic', 'video', 'document', 'custom', 'unknown-type']) {
+    const lessons: ActivityType[] = ['dynamic', 'video', 'document', 'custom']
+    for (const type of lessons) {
       const entry = activity('a', { activity_type: type })
       expect(activityKind(type)).toBe('lesson')
       expect(playerAction(course([[entry]], { activity_id: 'b' }), entry)).toEqual({ kind: 'mark' })
@@ -95,7 +96,8 @@ describe('player model', () => {
   })
 
   test('B-PLY-12 a restricted activity has no action at all', () => {
-    for (const type of ['dynamic', 'quiz']) {
+    const types: ActivityType[] = ['dynamic', 'quiz']
+    for (const type of types) {
       const entry = activity('a', { activity_type: type, blocked_reason: 'restricted' })
       expect(playerAction(course([[entry]]), entry)).toBeNull()
     }

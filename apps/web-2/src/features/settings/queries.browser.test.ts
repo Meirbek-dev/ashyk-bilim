@@ -20,6 +20,7 @@ const PROFILE = {
   mfa_enabled: false,
   has_password: true,
   google_linked: false,
+  version: 3,
 }
 
 /** Storage's side of the presigned PUT: accepts the bytes. */
@@ -42,7 +43,7 @@ test('B-SET-04 a picked photo is uploaded as an avatar and claimed by the profil
   const api = vi.fn<(request: Request) => Promise<Response>>(async request => {
     if (request.url.endsWith('/finalize')) return json({ id: SLOT.id, key: SLOT.key, size_bytes: 4 })
     if (request.url.endsWith('/uploads')) return json(SLOT)
-    return json(PROFILE, { etag: '"3"' })
+    return json(PROFILE)
   })
   vi.stubGlobal('fetch', api)
   vi.stubGlobal('XMLHttpRequest', FakeStorage)

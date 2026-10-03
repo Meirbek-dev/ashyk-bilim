@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { CommandPalette, shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
-import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
+import { activityTypeMeta } from '#/shared/i18n/labels'
 import { FocusPage } from '#/shared/ui/templates/focus-page'
 
 import { activityKind, locate } from '../model/player'
@@ -32,7 +32,7 @@ export function PlayerPage() {
   // Unpublished while open: the re-read state no longer lists it.
   if (!found) return <PlayerNotFound />
   const { entry, prev, next } = found
-  const meta = activityTypeMeta[activityType(entry.activity_type)]
+  const meta = activityTypeMeta[entry.activity_type]
   const Icon = meta.icon
   const lesson = activityKind(entry.activity_type) === 'lesson'
   const action = <PlayerAction key={entry.id} state={state} entry={entry} />

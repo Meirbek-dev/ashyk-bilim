@@ -297,8 +297,9 @@ export const vAssignRoleRequest = v.strictObject({
 });
 
 /**
- * `assessment_audit_events.payload`; the keys depend on `event`:
- * `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),
+ * `assessment_audit_events.payload`.
+ *
+ * The keys depend on `event`: `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),
  * `auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,
  * `users`, `usergroups`), `override-created|updated|deleted` (`user_id`),
  * `duplicated-from` (`source`), `deadline-extension-requested` /
@@ -667,6 +668,21 @@ export const vContextSummary = v.object({
 export const vContextVisibility = v.picklist(['student', 'teacher']);
 
 /**
+ * A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).
+ */
+export const vContributorRole = v.picklist([
+    'maintainer',
+    'contributor',
+    'reporter'
+]);
+
+export const vContributorStatus = v.picklist([
+    'pending',
+    'active',
+    'inactive'
+]);
+
+/**
  * What the caller may do to a course right now (`Course.allowed_actions`).
  * Each variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].
  */
@@ -843,6 +859,7 @@ export const vCreateChapterRequest = v.strictObject({
 
 export const vCreateCollectionRequest = v.strictObject({
     courses: v.optional(v.pipe(v.array(vCourseId), v.maxLength(100))),
+    cover_upload_id: v.optional(v.pipe(v.string(), v.uuid())),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     name: v.pipe(v.string(), v.maxLength(500)),
     public: v.optional(v.boolean())
@@ -906,6 +923,11 @@ export const vCurriculum = v.object({
  * Where the analytics read came from.
  */
 export const vDataMode = v.picklist(['Live', 'Rollup']);
+
+export const vDeadlineExtendedPayload = v.object({
+    new_due_at: v.pipe(v.number(), v.integer()),
+    reason: v.string()
+});
 
 export const vDifficulty = v.picklist([
     'easy',
@@ -1236,6 +1258,11 @@ export const vGradeAction = v.picklist([
     'return'
 ]);
 
+export const vGradePublishedPayload = v.object({
+    final_score: v.number(),
+    published_at: v.pipe(v.number(), v.integer())
+});
+
 export const vGradeReleaseMode = v.picklist(['immediate', 'batch']);
 
 export const vGradingEntryId = v.pipe(v.string(), v.uuid());
@@ -1381,8 +1408,10 @@ export const vAssessmentItemAnalyticsRow = v.object({
 export const vJsonValue = v.unknown();
 
 /**
- * `activities.settings`. The server reads `required` (progress: `false`
- * makes the activity optional). Migrated legacy rows keep the legacy
+ * `activities.settings`.
+ *
+ * The server reads `required` (progress: `false` makes the activity
+ * optional). Migrated legacy rows keep the legacy
  * assessment settings they had (exam / code-challenge keys such as
  * `time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.
  */
@@ -1870,6 +1899,20 @@ export const vReadinessArea = v.picklist([
 ]);
 
 /**
+ * Stable readiness code the web localizes.
+ */
+export const vReadinessCode = v.picklist([
+    'no-live-activity',
+    'assessment-not-ready',
+    'code-challenge-unconfigured',
+    'file-submission-unpublished',
+    'file-submission-not-ready',
+    'activity-unpublished',
+    'thumbnail-missing',
+    'certificate-not-configured'
+]);
+
+/**
  * One readiness blocker.
  *
  * `code` ∈ `no-live-activity | assessment-not-ready |
@@ -1878,7 +1921,7 @@ export const vReadinessArea = v.picklist([
  */
 export const vReadinessItem = v.object({
     activity_id: v.nullable(vActivityId),
-    code: v.string(),
+    code: vReadinessCode,
     title: v.nullable(v.string())
 });
 
@@ -2106,6 +2149,17 @@ export const vRiskLevel = v.picklist([
     'high'
 ]);
 
+/**
+ * Why a learner is at risk (`risk::reason_codes`; a test pins the set).
+ */
+export const vRiskReasonCode = v.picklist([
+    'inactive_7d',
+    'low_progress',
+    'repeated_failures',
+    'missing_required_assessments',
+    'grading_block'
+]);
+
 export const vRiskTrend = v.picklist([
     'newly_at_risk',
     'worsening',
@@ -2135,6 +2189,16 @@ export const vRole = v.object({
     priority: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     slug: v.string()
 });
+
+/**
+ * A roster entry's role: the granted roles plus the course `creator`.
+ */
+export const vRosterRole = v.picklist([
+    'creator',
+    'maintainer',
+    'contributor',
+    'reporter'
+]);
 
 export const vRubricLevel = v.object({
     description: v.optional(v.string()),
@@ -2200,7 +2264,9 @@ export const vRunEventState = v.picklist([
 ]);
 
 /**
- * `ai_events.payload`. `state` is always set; the rest by event type:
+ * `ai_events.payload`.
+ *
+ * `state` is always set; the rest by event type:
  * `collecting_context` -> `source_count`; `budget_checked` ->
  * `input_tokens`; `finished` -> model, tokens and citation counts;
  * `failed` / `cancelled` -> `error_code`.
@@ -2484,6 +2550,75 @@ export const vProfileSkill = v.strictObject({
     name: v.string()
 });
 
+/**
+ * One builder section, tagged by `type` (legacy kebab-case kinds).
+ */
+export const vProfileSection = v.union([
+    v.strictObject({
+        id: v.string(),
+        images: v.array(vProfileImage),
+        title: v.string(),
+        type: v.picklist(['image-gallery'])
+    }),
+    v.strictObject({
+        content: v.string(),
+        id: v.string(),
+        title: v.string(),
+        type: v.picklist(['text'])
+    }),
+    v.strictObject({
+        id: v.string(),
+        links: v.array(vProfileLink),
+        title: v.string(),
+        type: v.picklist(['links'])
+    }),
+    v.strictObject({
+        id: v.string(),
+        skills: v.array(vProfileSkill),
+        title: v.string(),
+        type: v.picklist(['skills'])
+    }),
+    v.strictObject({
+        experiences: v.array(vProfileExperience),
+        id: v.string(),
+        title: v.string(),
+        type: v.picklist(['experience'])
+    }),
+    v.strictObject({
+        education: v.array(vProfileEducation),
+        id: v.string(),
+        title: v.string(),
+        type: v.picklist(['education'])
+    }),
+    v.strictObject({
+        affiliations: v.array(vProfileAffiliation),
+        id: v.string(),
+        title: v.string(),
+        type: v.picklist(['affiliation'])
+    }),
+    v.strictObject({
+        id: v.string(),
+        title: v.string(),
+        type: v.picklist(['courses'])
+    }),
+    v.strictObject({
+        id: v.string(),
+        settings: v.optional(vGamificationSectionSettings),
+        title: v.string(),
+        type: v.picklist(['gamification'])
+    })
+]);
+
+/**
+ * `{ "sections": [...] }`, the stored column's default.
+ *
+ * Every array and plain-text field is required so the contract's TypeScript
+ * shape needs no fallbacks; only the legacy-optional ones are `Option`.
+ */
+export const vProfileSections = v.strictObject({
+    sections: v.array(vProfileSection)
+});
+
 export const vSkillsSection = v.strictObject({
     id: v.string(),
     skills: v.array(vProfileSkill),
@@ -2647,12 +2782,52 @@ export const vRunArtifactBody = v.union([
 
 export const vSubmissionId = v.pipe(v.string(), v.uuid());
 
+export const vSubmissionReturnedPayload = v.object({
+    feedback: v.string(),
+    returned_at: v.pipe(v.number(), v.integer())
+});
+
 export const vSubmissionStatus = v.picklist([
     'draft',
     'pending',
     'graded',
     'published',
     'returned'
+]);
+
+/**
+ * `GET /submissions/{submission_id}/events`: one message's `data`.
+ */
+export const vSubmissionStreamEvent = v.union([
+    v.object({
+        event: v.picklist(['connected']),
+        submission_id: vSubmissionId
+    }),
+    v.object({
+        event: v.picklist(['grade.published']),
+        event_id: v.string(),
+        payload: vGradePublishedPayload,
+        sent_at: v.pipe(v.number(), v.integer()),
+        submission_id: vSubmissionId
+    }),
+    v.object({
+        event: v.picklist(['submission.returned']),
+        event_id: v.string(),
+        payload: vSubmissionReturnedPayload,
+        sent_at: v.pipe(v.number(), v.integer()),
+        submission_id: vSubmissionId
+    }),
+    v.object({
+        event: v.picklist(['deadline.extended']),
+        event_id: v.string(),
+        payload: vDeadlineExtendedPayload,
+        sent_at: v.pipe(v.number(), v.integer()),
+        submission_id: vSubmissionId
+    }),
+    v.object({
+        code: vErrorCode,
+        event: v.picklist(['closed'])
+    })
 ]);
 
 export const vSubmitRequest = v.strictObject({
@@ -2769,49 +2944,6 @@ export const vTextSection = v.strictObject({
     content: v.string(),
     id: v.string(),
     title: v.string()
-});
-
-/**
- * One builder section, tagged by `type` (legacy kebab-case kinds).
- */
-export const vProfileSection = v.union([
-    v.intersect([vImageGallerySection, v.object({
-            type: v.picklist(['image-gallery'])
-        })]),
-    v.intersect([vTextSection, v.object({
-            type: v.picklist(['text'])
-        })]),
-    v.intersect([vLinksSection, v.object({
-            type: v.picklist(['links'])
-        })]),
-    v.intersect([vSkillsSection, v.object({
-            type: v.picklist(['skills'])
-        })]),
-    v.intersect([vExperienceSection, v.object({
-            type: v.picklist(['experience'])
-        })]),
-    v.intersect([vEducationSection, v.object({
-            type: v.picklist(['education'])
-        })]),
-    v.intersect([vAffiliationSection, v.object({
-            type: v.picklist(['affiliation'])
-        })]),
-    v.intersect([vCoursesSection, v.object({
-            type: v.picklist(['courses'])
-        })]),
-    v.intersect([vGamificationSection, v.object({
-            type: v.picklist(['gamification'])
-        })])
-]);
-
-/**
- * `{ "sections": [...] }`, the stored column's default.
- *
- * Every array and plain-text field is required so the contract's TypeScript
- * shape needs no fallbacks; only the legacy-optional ones are `Option`.
- */
-export const vProfileSections = v.strictObject({
-    sections: v.array(vProfileSection)
 });
 
 /**
@@ -2936,6 +3068,11 @@ export const vCodeRun = v.object({
     total: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
+export const vCourseListProgress = v.object({
+    completed_at_unix: v.nullable(vUnixTime),
+    progress_pct: v.number()
+});
+
 /**
  * One announcement in the course changelog feed.
  */
@@ -2990,8 +3127,9 @@ export const vDrillProgressRow = v.object({
 });
 
 /**
- * One drill-through row; which shape depends on the response's `metric`:
- * learner progress (`active_learners`, `completion_rate`), a submission
+ * One drill-through row.
+ *
+ * The shape depends on the response's `metric`: learner progress (`active_learners`, `completion_rate`), a submission
  * awaiting review (`backlog`), a learner's assessment result (`pass_rate`).
  */
 export const vDrillThroughRow = v.union([
@@ -3122,10 +3260,21 @@ export const vConfigPatch = v.strictObject({
     title: v.optional(v.pipe(v.string(), v.maxLength(500)))
 });
 
-export const vCreateFileSubmissionRequest = v.intersect([vConfigPatch, v.object({
-        chapter_id: vChapterId,
-        title: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
-    })]);
+export const vCreateFileSubmissionRequest = v.strictObject({
+    allow_late: v.optional(v.boolean()),
+    allowed_mime_types: v.optional(v.array(v.string())),
+    chapter_id: vChapterId,
+    due_at_unix: v.nullish(vUnixTime),
+    grade_release_mode: v.optional(vGradeReleaseMode),
+    instructions: v.optional(v.pipe(v.string(), v.maxLength(50000))),
+    late_policy: v.optional(vLatePolicy),
+    max_attempts: v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    max_file_size_mb: v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    max_files: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    rubric: v.optional(vFileRubric),
+    settings: v.optional(vFileSubmissionSettings),
+    title: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
+});
 
 export const vEffectivePolicy = v.object({
     allow_late: v.boolean(),
@@ -3430,14 +3579,15 @@ export const vUpdateChapterRequest = v.strictObject({
 
 export const vUpdateCollectionRequest = v.strictObject({
     courses: v.optional(v.pipe(v.array(vCourseId), v.maxLength(100))),
+    cover_upload_id: v.nullish(v.pipe(v.string(), v.uuid())),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     name: v.optional(v.pipe(v.string(), v.maxLength(500))),
     public: v.optional(v.boolean())
 });
 
 export const vUpdateContributorRequest = v.strictObject({
-    role: v.optional(v.string()),
-    status: v.optional(v.string())
+    role: v.optional(vContributorRole),
+    status: v.optional(vContributorStatus)
 });
 
 export const vUpdateCourseRequest = v.strictObject({
@@ -3512,7 +3662,8 @@ export const vUploadPurpose = v.picklist([
     'block-video',
     'platform-logo',
     'platform-thumbnail',
-    'file-submission'
+    'file-submission',
+    'collection-cover'
 ]);
 
 export const vCreateUploadRequest = v.strictObject({
@@ -3534,7 +3685,7 @@ export const vAccessUser = v.object({
  * Add someone to the roster by id or username (exactly one).
  */
 export const vAddContributorRequest = v.strictObject({
-    role: v.optional(v.string()),
+    role: v.optional(vContributorRole),
     user_id: v.optional(vUserId),
     username: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(100)))
 });
@@ -3637,7 +3788,7 @@ export const vAtRiskLearnerRow = v.object({
     open_grading_blocks: v.pipe(v.number(), v.integer()),
     previous_risk_score: v.nullable(v.number()),
     progress_pct: v.number(),
-    reason_codes: v.array(v.string()),
+    reason_codes: v.array(vRiskReasonCode),
     recommended_action: v.string(),
     risk_components: v.record(v.string(), v.number()),
     risk_level: vRiskLevel,
@@ -3701,8 +3852,8 @@ export const vContributor = v.object({
     avatar_key: v.nullable(v.string()),
     created_at_unix: vUnixTime,
     display_name: v.string(),
-    role: v.string(),
-    status: v.string(),
+    role: vRosterRole,
+    status: vContributorStatus,
     user_id: vUserId,
     username: v.string()
 });
@@ -3731,6 +3882,7 @@ export const vCollection = v.object({
     allowed_actions: v.array(vCollectionAction),
     can_delete: v.boolean(),
     courses: v.array(vCourse),
+    cover_key: v.nullable(v.string()),
     created_at_unix: vUnixTime,
     creator_id: v.nullable(vUserId),
     description: v.string(),
@@ -3767,11 +3919,71 @@ export const vCourseAnalysis = v.object({
     triggered_by: v.nullable(vUserId)
 });
 
+export const vCourseAuthor = v.object({
+    display_name: v.string(),
+    user_id: vUserId,
+    username: v.string()
+});
+
+/**
+ * A grade change or hand-in: `submission_id` (assessments) or
+ * `attempt_id` (file submissions).
+ */
+export const vCourseGradingPayload = v.object({
+    activity_id: vActivityId,
+    attempt_id: v.optional(vFileAttemptId),
+    final_score: v.nullable(v.number()),
+    status: vSubmissionStatus,
+    submission_id: v.optional(vSubmissionId),
+    user_id: vUserId
+});
+
+export const vCourseGradingStored = v.object({
+    event_id: v.string(),
+    payload: vCourseGradingPayload,
+    sent_at: v.pipe(v.number(), v.integer())
+});
+
+/**
+ * `GET /courses/{course_id}/grading/events`: one message's `data`.
+ */
+export const vCourseGradingStreamEvent = v.union([
+    v.object({
+        course_id: vCourseId,
+        event: v.picklist(['connected'])
+    }),
+    v.intersect([vCourseGradingStored, v.object({
+            event: v.picklist(['submission.submitted'])
+        })]),
+    v.intersect([vCourseGradingStored, v.object({
+            event: v.picklist(['grade.saved'])
+        })]),
+    v.intersect([vCourseGradingStored, v.object({
+            event: v.picklist(['grade.published'])
+        })]),
+    v.intersect([vCourseGradingStored, v.object({
+            event: v.picklist(['submission.returned'])
+        })]),
+    v.object({
+        code: vErrorCode,
+        event: v.picklist(['closed'])
+    })
+]);
+
+/**
+ * A `GET /courses` item: the course plus who wrote it and how far the
+ * caller got.
+ */
+export const vCourseListItem = v.intersect([vCourse, v.object({
+        authors: v.array(vCourseAuthor),
+        progress: v.nullable(vCourseListProgress)
+    })]);
+
 /**
  * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
  */
 export const vCoursePage = v.object({
-    items: v.array(vCourse),
+    items: v.array(vCourseListItem),
     next_cursor: v.nullable(vCourseId),
     summary: v.optional(vCourseSummary)
 });
@@ -4124,6 +4336,7 @@ export const vUserHit = v.object({
 export const vSearchResults = v.object({
     collections: v.array(vCollectionHit),
     courses: v.array(vCourse),
+    next_cursor: v.nullable(v.string()),
     users: v.array(vUserHit)
 });
 
@@ -4140,7 +4353,8 @@ export const vUserProfile = v.object({
     organization: v.string(),
     profile: vProfileSections,
     theme: v.nullable(v.string()),
-    username: v.string()
+    username: v.string(),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vUserRank = v.object({
@@ -4573,7 +4787,7 @@ export const vWorkState = v.picklist([
 ]);
 
 export const vActivityState = v.object({
-    activity_type: v.string(),
+    activity_type: vActivityType,
     allowed_actions: v.array(v.string()),
     available: v.boolean(),
     blocked_reason: v.nullable(v.string()),
@@ -6066,7 +6280,9 @@ export const vLanguagesResponse = v.array(vLanguageInfo);
 
 export const vListCollectionsQuery = v.object({
     cursor: v.optional(vCollectionId),
-    limit: v.optional(v.pipe(v.number(), v.integer()))
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    q: v.optional(v.string()),
+    sort: v.optional(v.unknown())
 });
 
 /**
@@ -6365,9 +6581,9 @@ export const vCourseGradingEventsPath = v.object({
 });
 
 /**
- * Event stream
+ * Event stream: each message's `data` is one event
  */
-export const vCourseGradingEventsResponse = v.string();
+export const vCourseGradingEventsResponse = vCourseGradingStreamEvent;
 
 export const vLearnerCourseStatePath = v.object({
     course_id: vCourseId
@@ -6762,7 +6978,8 @@ export const vSetRolePermissionsResponse = v.void();
 
 export const vSearchQuery = v.object({
     q: v.string(),
-    limit: v.optional(v.pipe(v.number(), v.integer()))
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    cursor: v.optional(v.string())
 });
 
 /**
@@ -6803,9 +7020,9 @@ export const vSubmissionEventsPath = v.object({
 });
 
 /**
- * Event stream
+ * Event stream: each message's `data` is one event
  */
-export const vSubmissionEventsResponse = v.string();
+export const vSubmissionEventsResponse = vSubmissionStreamEvent;
 
 export const vMyFeedbackPath = v.object({
     submission_id: vSubmissionId

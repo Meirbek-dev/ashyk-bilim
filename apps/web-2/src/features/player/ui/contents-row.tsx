@@ -2,14 +2,14 @@ import { Check, Lock } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
-import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
+import { activityTypeMeta } from '#/shared/i18n/labels'
 import { Link } from '#/shared/ui/link'
 
 type RowProps = { courseId: CourseId; activity: ActivityState; onPick: () => void }
 
 /** One activity of the contents: type icon, title, the server's mark; a restricted one is not a link. */
 export function ContentsRow({ courseId, activity, onPick }: RowProps) {
-  const meta = activityTypeMeta[activityType(activity.activity_type)]
+  const meta = activityTypeMeta[activity.activity_type]
   const Icon = meta.icon
   const label = (
     <>
