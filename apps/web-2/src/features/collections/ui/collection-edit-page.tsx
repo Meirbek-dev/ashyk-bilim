@@ -1,16 +1,16 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { UpdateCollectionRequest } from '#/shared/api/gen/types.gen'
 import { vUpdateCollectionRequest } from '#/shared/api/gen/valibot.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Link } from '#/shared/ui/link'
-import { ConflictDialog } from '#/shared/ui/templates/conflict-dialog'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { Link } from '#/shared/components/link'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
+import { DetailPage } from '#/shared/components/templates/detail-page'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { isStale } from '../model/collections'
 import { collectionOptions, updateCollectionOptions } from '../queries'
@@ -36,7 +36,7 @@ export function CollectionEditPage() {
   const callbacks = {
     onSuccess: async () => {
       setConflict(false)
-      toast(m.collections_saved())
+      toast.add({ title: m.collections_saved() })
       await navigate({ to: '/collections/$collectionId', params: { collectionId } })
     },
     onError: (error: unknown) => setConflict(isStale(error)),

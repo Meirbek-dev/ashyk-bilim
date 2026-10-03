@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { ReadinessItem } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 import { readinessCode, readinessTarget, type ReadinessCode } from '../model/studio'
 import { readinessOptions } from '../queries'

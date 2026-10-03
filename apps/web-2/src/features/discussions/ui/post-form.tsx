@@ -3,12 +3,13 @@ import * as v from 'valibot'
 
 import { DiscussionEditor } from '#/features/editor'
 import { m } from '#/paraglide/messages'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { errorText } from '#/shared/components/form/field-errors'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { errorText } from '#/shared/ui/form/field-errors'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Skeleton } from '#/shared/ui/skeleton'
+import { Spinner } from '#/shared/ui/spinner'
 
 import { hasText } from '../model/discussions'
 
@@ -49,7 +50,7 @@ export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, 
       <form.Field name="content">
         {field => (
           <>
-            <Suspense fallback={<Skeleton shape="row" />}>
+            <Suspense fallback={<Skeleton className="h-row w-full" />}>
               <DiscussionEditor content={field.state.value} onChange={doc => field.handleChange(JSON.stringify(doc))} />
             </Suspense>
             {errorText(field.state.meta.errors) ? (
@@ -58,9 +59,10 @@ export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, 
           </>
         )}
       </form.Field>
-      {error ? <Alert>{presentError(error)}</Alert> : null}
+      {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       <div className="flex gap-2">
-        <Button type="submit" variant="secondary" pending={pending}>
+        <Button type="submit" variant="secondary" disabled={pending}>
+          {pending ? <Spinner data-icon="inline-start" /> : null}
           {submitLabel}
         </Button>
         {onCancel ? (

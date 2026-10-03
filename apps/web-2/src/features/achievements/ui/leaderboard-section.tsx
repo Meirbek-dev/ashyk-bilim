@@ -2,10 +2,10 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useRouteContext } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 import { formatNumber } from '#/shared/i18n/format'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
 
 import { leaderboardRows } from '../model/achievements'
 import { leaderboardListOptions } from '../queries'

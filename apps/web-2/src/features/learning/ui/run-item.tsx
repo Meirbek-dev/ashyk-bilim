@@ -1,7 +1,11 @@
+import { Link as RouterLink } from '@tanstack/react-router'
+
 import { m } from '#/paraglide/messages'
+import { Progress } from '#/shared/ui/progress'
 import type { TrailRun } from '#/shared/api/gen/types.gen'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { runState, type RunState } from '../model/learning'
 
@@ -23,28 +27,27 @@ export function RunItem({ run }: { run: TrailRun }) {
             {run.course.name}
           </Link>
         </h2>
-        <Badge tone={state.tone}>{state.label()}</Badge>
-        {run.course.archived_at_unix ? <Badge tone="neutral">{m.learning_archived()}</Badge> : null}
+        <StatusBadge tone={state.tone}>{state.label()}</StatusBadge>
+        {run.course.archived_at_unix ? <StatusBadge tone="neutral">{m.learning_archived()}</StatusBadge> : null}
       </div>
       {run.course_total_steps === 0 ? (
         <p className="text-sm text-muted-foreground">{m.learning_no_activities()}</p>
       ) : (
         <div className="flex max-w-md items-center gap-3">
-          <progress
-            aria-hidden
-            value={percent}
-            max={100}
-            className="h-2 w-full appearance-none overflow-hidden rounded-full bg-muted [&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-primary"
-          />
+          <Progress aria-hidden value={percent} />
           <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
             {m.learning_progress({ percent })}
           </span>
         </div>
       )}
       <div className="mt-2">
-        <Link to="/courses/$courseId" params={{ courseId: run.course_id }} variant="outline">
+        <RouterLink
+          to="/courses/$courseId"
+          params={{ courseId: run.course_id }}
+          className={buttonVariants({ variant: 'outline' })}
+        >
           {state.action()}
-        </Link>
+        </RouterLink>
       </div>
     </>
   )

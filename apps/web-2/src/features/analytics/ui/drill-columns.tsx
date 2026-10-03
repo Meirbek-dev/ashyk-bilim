@@ -1,8 +1,8 @@
 import { m } from '#/paraglide/messages'
 import type { DrillMetric } from '#/shared/api/gen/types.gen'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import type { DataColumn } from '#/shared/ui/data-columns'
 
 import type { DrillRow } from '../model/analytics'
 import { hours, percent } from './kpi'
@@ -50,9 +50,9 @@ export function drillColumns(metric: DrillMetric): DataColumn<DrillRow>[] {
         priority: 2,
         cell: row =>
           row.passed ? (
-            <Badge tone="success">{m.analytics_passed()}</Badge>
+            <StatusBadge tone="success">{m.analytics_passed()}</StatusBadge>
           ) : (
-            <Badge tone="neutral">{m.analytics_failed()}</Badge>
+            <StatusBadge tone="neutral">{m.analytics_failed()}</StatusBadge>
           ),
       },
     ]

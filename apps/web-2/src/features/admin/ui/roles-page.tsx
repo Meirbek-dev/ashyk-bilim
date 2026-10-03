@@ -2,12 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { Role } from '#/shared/api/gen/types.gen'
-import { Badge } from '#/shared/ui/badge'
-import type { DataColumn } from '#/shared/ui/data-columns'
-import { DataTable } from '#/shared/ui/data-table'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { ListPage } from '#/shared/ui/templates/list-page'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { ListPage } from '#/shared/components/templates/list-page'
 
 import { roleName } from '../model/roles'
 import { rolesOptions } from '../queries'
@@ -32,7 +32,7 @@ const columns: DataColumn<Role>[] = [
     id: 'kind',
     header: m.admin_role_kind(),
     priority: 2,
-    cell: role => <Badge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</Badge>,
+    cell: role => <StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>,
   },
   {
     id: 'permissions',

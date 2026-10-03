@@ -1,8 +1,9 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
+import { DataList } from '#/shared/components/data-list'
+import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 
 import { collectionsListOptions } from '../queries'
 import { CollectionItem } from './collection-item'

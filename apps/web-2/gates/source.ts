@@ -96,8 +96,13 @@ const TOKEN_RULES: [RegExp, string, string][] = [
   [/#[0-9a-fA-F]{3,8}\b/, 'tokens-hex', 'colors live in src/styles/ tokens and public/themes/'],
 ]
 
+// Stock shadcn output (`bunx shadcn add`) is exempt: its classes are the generator's; our code builds on it.
+const STOCK_KIT = 'src/shared/ui/'
+
 export function tokens(): Finding[] {
-  const files = [...walk('src', CODE), ...walk('src', /\.css$/).filter(file => !file.startsWith('src/styles/'))]
+  const files = [...walk('src', CODE), ...walk('src', /\.css$/).filter(file => !file.startsWith('src/styles/'))].filter(
+    file => !file.startsWith(STOCK_KIT),
+  )
   return files.flatMap(file =>
     TOKEN_RULES.flatMap(([pattern, rule, fix]) =>
       matches(read(file), pattern).map(({ line }) => ({ file, line, rule, fix })),

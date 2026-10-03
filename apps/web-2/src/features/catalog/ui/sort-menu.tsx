@@ -1,8 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { ChoiceItems } from '#/shared/components/choice-items'
 import { Button } from '#/shared/ui/button'
-import { ChoiceMenu } from '#/shared/ui/choice-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 
 import { type CourseSort, isCourseSort, sortOptions } from '../model/catalog'
 
@@ -17,16 +18,20 @@ export function SortMenu({ sort, signedIn }: { sort: CourseSort; signedIn: boole
   const navigate = useNavigate({ from: '/courses/' })
   const label = m.catalog_sort_label({ sort: sortLabels[sort]() })
   return (
-    <ChoiceMenu
-      trigger={<Button variant="outline">{label}</Button>}
-      choice={{
-        label,
-        value: sort,
-        options: sortOptions(signedIn).map(value => ({ value, label: sortLabels[value]() })),
-        onValueChange: value => {
-          if (isCourseSort(value)) void navigate({ search: prev => ({ ...prev, sort: value }) })
-        },
-      }}
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline">{label}</Button>} />
+      <DropdownMenuContent align="end">
+        <ChoiceItems
+          choice={{
+            label,
+            value: sort,
+            options: sortOptions(signedIn).map(value => ({ value, label: sortLabels[value]() })),
+            onValueChange: value => {
+              if (isCourseSort(value)) void navigate({ search: prev => ({ ...prev, sort: value }) })
+            },
+          }}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

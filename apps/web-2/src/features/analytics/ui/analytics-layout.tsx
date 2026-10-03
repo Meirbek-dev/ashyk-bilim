@@ -1,8 +1,8 @@
 import { Outlet, useLocation, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { Link } from '#/shared/components/link'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 
 import { pickFilters, tabOf, tabPaths, TABS } from '../model/filters'
 import { FilterBar } from './filter-bar'

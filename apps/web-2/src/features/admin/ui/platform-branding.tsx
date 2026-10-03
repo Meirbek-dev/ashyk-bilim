@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen'
 import { vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
-import { FileField } from '#/shared/ui/form/file-field'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { FileField } from '#/shared/components/form/file-field'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { updatePlatformOptions } from '../queries'
 
@@ -28,7 +28,7 @@ export function PlatformBranding({ platform }: { platform: Platform }) {
         { body },
         {
           onSuccess: () => {
-            toast(m.admin_saved())
+            toast.add({ title: m.admin_saved() })
             form.reset()
           },
         },

@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { primaryAction, type ActivityActionId } from '../model/course'
 import { learnerStateOptions } from '../queries'
@@ -29,21 +30,25 @@ export function LearnerAction({ course }: { course: Course }) {
   if (action?.kind === 'enroll') return <EnrollButton courseId={course.id} />
   if (action?.kind === 'activity')
     return (
-      <Link to="/learn/$courseId/$activityId" params={{ ...params, activityId: action.activityId }} variant="primary">
+      <RouterLink
+        to="/learn/$courseId/$activityId"
+        params={{ ...params, activityId: action.activityId }}
+        className={buttonVariants()}
+      >
         {activityActionLabels[action.action]()}
-      </Link>
+      </RouterLink>
     )
   if (action?.kind === 'complete')
     return (
-      <Link to="/learn/$courseId/complete" params={params} variant="primary">
+      <RouterLink to="/learn/$courseId/complete" params={params} className={buttonVariants()}>
         {completeLabels[action.action]()}
-      </Link>
+      </RouterLink>
     )
   if (action?.kind === 'workspace')
     return (
-      <Link to="/teach/courses/$courseId/overview" params={params} variant="primary">
+      <RouterLink to="/teach/courses/$courseId/overview" params={params} className={buttonVariants()}>
         {m.platform_page_course_workspace()}
-      </Link>
+      </RouterLink>
     )
   return null
 }

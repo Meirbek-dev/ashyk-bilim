@@ -2,13 +2,13 @@ import { useSortable } from '@dnd-kit/react/sortable'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Pencil } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Activity, ActivityAction } from '#/shared/api/gen/types.gen'
+import { IconButton } from '#/shared/components/icon-button'
+import { Link } from '#/shared/components/link'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { IconButton } from '#/shared/ui/icon-button'
-import { Link } from '#/shared/ui/link'
+import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
 import { ActivityStatusBadge } from './activity-status'
@@ -43,7 +43,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
       { path: { activity_id: activity.id }, body: { name }, headers: { 'If-Match': activity.version } },
       {
         onSuccess: () => {
-          toast(m.studio_saved())
+          toast.add({ title: m.studio_saved() })
           done()
         },
       },

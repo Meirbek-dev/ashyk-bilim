@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
 
 import { grammarOf, highlighter, THEMES } from './shiki'
 

@@ -2,8 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { formatNumber } from '#/shared/i18n/format'
-import { KpiTile } from '#/shared/ui/charts/kpi-tile'
 
 import { exportHrefs } from '../model/analytics'
 import { pickFilters } from '../model/filters'

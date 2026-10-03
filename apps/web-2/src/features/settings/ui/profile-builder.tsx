@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { ProfileSections } from '#/shared/api/gen/types.gen'
-import { ActionMenu } from '#/shared/ui/action-menu'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { ConflictDialog } from '#/shared/ui/templates/conflict-dialog'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
+import { toast } from '#/shared/ui/toast'
 
 import { ADDABLE_SECTIONS, newSection, normalizeSections, vBuilderDocument } from '../model/profile-sections'
 import { isStale } from '../model/settings'
@@ -33,7 +33,7 @@ export function ProfileBuilder() {
       {
         onSuccess: () => {
           setConflict(false)
-          toast(m.settings_saved())
+          toast.add({ title: m.settings_saved() })
         },
         onError: error => setConflict(isStale(error)),
       },
@@ -69,13 +69,19 @@ export function ProfileBuilder() {
               />
             ))}
             <div>
-              <ActionMenu
-                trigger={<Button variant="outline">{m.settings_builder_add()}</Button>}
-                actions={ADDABLE_SECTIONS.map(type => ({
-                  label: sectionTypeLabels[type](),
-                  onSelect: () => field.pushValue(newSection(type, crypto.randomUUID(), sectionTypeLabels[type]())),
-                }))}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="outline">{m.settings_builder_add()}</Button>} />
+                <DropdownMenuContent align="end">
+                  {ADDABLE_SECTIONS.map(type => ({
+                    label: sectionTypeLabels[type](),
+                    onSelect: () => field.pushValue(newSection(type, crypto.randomUUID(), sectionTypeLabels[type]())),
+                  })).map(action => (
+                    <DropdownMenuItem key={action.label} onClick={action.onSelect}>
+                      {action.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </>
         )}

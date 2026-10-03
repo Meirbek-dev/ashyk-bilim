@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Link } from '#/shared/ui/link'
-import { SettingsPage } from '#/shared/ui/templates/settings-page'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { Link } from '#/shared/components/link'
+import { SettingsPage } from '#/shared/components/templates/settings-page'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { REWARD_SOURCES, rulesBody, rulesForm, rulesFormSchema } from '../model/admin'
 import { configOptions, updateConfigOptions } from '../queries'
@@ -24,7 +24,10 @@ export function GamificationPage() {
   const form = useAppForm(rulesFormSchema, {
     defaultValues,
     onSubmit: values =>
-      update.mutateAsync({ body: rulesBody(values, config) }, { onSuccess: () => toast(m.admin_saved()) }),
+      update.mutateAsync(
+        { body: rulesBody(values, config) },
+        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+      ),
   })
   return (
     <SettingsPage

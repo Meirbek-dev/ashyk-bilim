@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Role } from '#/shared/api/gen/types.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { permissionLines, permissionsFormSchema } from '../model/admin'
 import { setPermissionsOptions } from '../queries'
@@ -22,7 +22,7 @@ export function RolePermissionsSection({ role }: { role: Role }) {
     onSubmit: ({ permissions }) =>
       save.mutateAsync(
         { path: { slug: role.slug }, body: { permissions: permissionLines(permissions) } },
-        { onSuccess: () => toast(m.admin_saved()) },
+        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
       ),
   })
   return (

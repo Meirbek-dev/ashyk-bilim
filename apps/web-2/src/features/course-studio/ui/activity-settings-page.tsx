@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { ConflictDialog } from '#/shared/ui/templates/conflict-dialog'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { activityOptions, updateActivityOptions } from '../curriculum-queries'
 import { isStale } from '../model/course'
@@ -32,7 +32,7 @@ export function ActivitySettingsPage() {
   const callbacks = {
     onSuccess: () => {
       setConflict(false)
-      toast(m.studio_saved())
+      toast.add({ title: m.studio_saved() })
     },
     onError: (error: unknown) => setConflict(isStale(error)),
   }

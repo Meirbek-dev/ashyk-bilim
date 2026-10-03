@@ -5,7 +5,7 @@ import { useParams } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Alert } from '#/shared/ui/alert'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
 
 import { curriculumOptions, moveActivityOptions, moveChapterOptions, placeCurriculum } from '../curriculum-queries'
@@ -68,7 +68,7 @@ export function ContentPage() {
   return (
     <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
       <div className="flex justify-end">{create}</div>
-      {failed ? <Alert>{presentError(failed)}</Alert> : null}
+      {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
       {shown.chapters.length === 0 ? (
         <p className="py-8 text-muted-foreground">{m.studio_content_empty()}</p>
       ) : (

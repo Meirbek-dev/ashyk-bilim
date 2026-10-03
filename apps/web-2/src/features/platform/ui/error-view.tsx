@@ -2,8 +2,8 @@ import { useRouter, type ErrorComponentProps } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
 
 import { ForbiddenView } from './forbidden-view'
@@ -17,7 +17,7 @@ export function ErrorView({ error }: ErrorComponentProps) {
   return (
     <section className="flex max-w-prose flex-col items-start gap-4">
       <h1 className="text-2xl font-semibold">{m.platform_error_title()}</h1>
-      {apiError ? <Alert>{presentError(apiError)}</Alert> : null}
+      {apiError ? <ErrorAlert>{presentError(apiError)}</ErrorAlert> : null}
       {apiError?.requestId ? (
         <p className="text-sm text-muted-foreground select-all">
           {m.platform_error_request_id({ id: apiError.requestId })}

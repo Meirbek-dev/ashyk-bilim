@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
-import { renderInRouter } from '#/shared/ui/testing'
+import { renderInRouter } from '#/shared/components/testing'
 
 import type { EditorDocument, EditorNode } from '../model/document'
 import { LEGACY_EMBED } from '../model/fixtures'

@@ -1,9 +1,11 @@
 import { HeadContent, Scripts } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 
 import { getLocale } from '#/paraglide/runtime'
 import { modeAttribute, readAppearance, themeHref } from '#/shared/lib/appearance'
-import { Toaster } from '#/shared/ui/toaster'
+
+// Toasts follow an action of the user, never the first paint: the stock Toaster loads after the entry (budget G-05).
+const Toaster = lazy(() => import('#/shared/ui/toast').then(module => ({ default: module.Toaster })))
 
 /**
  * The HTML shell. Rendered even when the root route fails, so errors keep the document intact.
@@ -19,7 +21,9 @@ export function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
-        <Toaster />
+        <Suspense fallback={null}>
+          <Toaster />
+        </Suspense>
         <Scripts />
       </body>
     </html>

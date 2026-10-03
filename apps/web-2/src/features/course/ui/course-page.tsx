@@ -1,12 +1,13 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useParams } from '@tanstack/react-router'
+import { Outlet, useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { authorNames } from '../model/course'
 import { contributorsOptions, courseOptions } from '../queries'
@@ -33,15 +34,15 @@ export function CoursePage() {
     <DetailPage
       title={course.name}
       meta={meta.filter(Boolean).join(' · ')}
-      status={course.archived_at_unix ? <Badge tone="warning">{m.course_archived()}</Badge> : null}
+      status={course.archived_at_unix ? <StatusBadge tone="warning">{m.course_archived()}</StatusBadge> : null}
       primaryAction={
         session ? (
           <LearnerAction course={course} />
         ) : (
           // A guest's "Enrol" signs in first and comes back here (UX-021).
-          <Link to="/login" search={{ redirect: `/courses/${courseId}/about` }} variant="primary">
+          <RouterLink to="/login" search={{ redirect: `/courses/${courseId}/about` }} className={buttonVariants()}>
             {m.course_enroll()}
-          </Link>
+          </RouterLink>
         )
       }
       tabs={TABS.map(tab => (

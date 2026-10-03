@@ -5,8 +5,8 @@ import { useState } from 'react'
 
 import { CommandPalette, shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
+import { FocusPage } from '#/shared/components/templates/focus-page'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
 
 import { activityKind, locate } from '../model/player'
 import { learnerStateOptions } from '../queries'

@@ -17,6 +17,7 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
     steps: [],
     course: {
       id,
+      version: 1,
       name: id,
       about: '',
       description: '',

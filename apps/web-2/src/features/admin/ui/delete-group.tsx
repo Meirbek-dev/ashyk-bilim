@@ -1,12 +1,12 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { deleteGroupOptions } from '../queries'
 
@@ -21,7 +21,7 @@ export function DeleteGroup({ group }: { group: Usergroup }) {
       {
         onSuccess: async () => {
           setOpen(false)
-          toast(m.admin_group_deleted())
+          toast.add({ title: m.admin_group_deleted() })
           await navigate({ to: '/teach/groups' })
         },
       },

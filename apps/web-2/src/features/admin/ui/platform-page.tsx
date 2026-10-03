@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { SettingsPage } from '#/shared/ui/templates/settings-page'
+import { Link } from '#/shared/components/link'
+import { SettingsPage } from '#/shared/components/templates/settings-page'
 
 import { platformOptions } from '../queries'
 import { PlatformBranding } from './platform-branding'

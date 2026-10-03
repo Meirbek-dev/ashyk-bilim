@@ -3,7 +3,7 @@ import { Search } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
 
 import { shortcuts } from '../model/shortcuts'
 import type { PaletteMode } from './palette-dialog'

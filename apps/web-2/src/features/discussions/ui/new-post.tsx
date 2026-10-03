@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId, DiscussionId } from '#/shared/api/gen/types.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
+import { toast } from '#/shared/ui/toast'
 
 import { createPostOptions, createReplyOptions } from '../queries'
 import { PostForm } from './post-form'
@@ -28,7 +28,7 @@ export function NewPost({ courseId, parentId }: { courseId: CourseId; parentId?:
       {
         onSuccess: () => {
           idempotency.settle()
-          toast(parentId ? m.discussions_replied() : m.discussions_published())
+          toast.add({ title: parentId ? m.discussions_replied() : m.discussions_published() })
         },
         onError: error => idempotency.settle(error),
       },

@@ -15,7 +15,7 @@ export function LessonContent({ activityId }: { activityId: ActivityId }) {
   const content = lessonDocument(activity.activity_type, activity.activity_sub_type, activity.content)
   if (!content) return <p className="text-muted-foreground">{m.player_empty()}</p>
   return (
-    <Suspense fallback={<Skeleton shape="row" />}>
+    <Suspense fallback={<Skeleton className="h-row w-full" />}>
       <BlockViewer content={content} />
     </Suspense>
   )

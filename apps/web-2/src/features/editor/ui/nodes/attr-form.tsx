@@ -2,8 +2,8 @@ import type { FormEvent } from 'react'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
 
 export type AttrField = {
   name: string

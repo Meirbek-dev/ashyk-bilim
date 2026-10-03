@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Contributor } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { removeContributorOptions } from '../queries'
 
@@ -35,7 +35,7 @@ export function RemoveContributor({ courseId, row, applying }: RemoveContributor
       {
         onSuccess: () => {
           setOpen(false)
-          toast(texts.done)
+          toast.add({ title: texts.done })
         },
       },
     )

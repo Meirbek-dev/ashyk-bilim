@@ -4,9 +4,9 @@ import { useId } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentKind, DrillMetric } from '#/shared/api/gen/types.gen'
-import { DataTable } from '#/shared/ui/data-table'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
+import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
 
 import { drillRows } from '../model/analytics'
 import { activeFilters, type Filters } from '../model/filters'

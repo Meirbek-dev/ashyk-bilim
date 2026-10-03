@@ -1,4 +1,4 @@
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 
 import { searchBoxSchema } from '../model/catalog'
 

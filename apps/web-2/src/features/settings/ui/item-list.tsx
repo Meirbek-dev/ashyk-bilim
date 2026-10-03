@@ -2,8 +2,8 @@ import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
-import { IconButton } from '#/shared/ui/icon-button'
 
 type ItemListProps = {
   count: number

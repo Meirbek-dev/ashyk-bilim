@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { setUserStatusOptions } from '../queries'
 
@@ -24,7 +25,7 @@ export function UserStatus({ user }: { user: AdminUser }) {
       {
         onSuccess: () => {
           setConfirming(false)
-          toast(disabled ? m.admin_user_disabled() : m.admin_user_enabled())
+          toast.add({ title: disabled ? m.admin_user_disabled() : m.admin_user_enabled() })
         },
       },
     )
@@ -51,10 +52,11 @@ export function UserStatus({ user }: { user: AdminUser }) {
         />
       ) : (
         <>
-          <Button variant="outline" pending={status.isPending} onClick={() => change(false)}>
+          <Button variant="outline" onClick={() => change(false)} disabled={status.isPending}>
+            {status.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.admin_user_enable()}
           </Button>
-          {status.error ? <Alert>{presentError(status.error)}</Alert> : null}
+          {status.error ? <ErrorAlert>{presentError(status.error)}</ErrorAlert> : null}
         </>
       )}
     </section>

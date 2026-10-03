@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { Progress } from '#/shared/ui/progress'
 import type { Course } from '#/shared/api/gen/types.gen'
 
 import { outlineSyllabus } from '../model/course'
@@ -22,12 +23,7 @@ export function LearnerOutline({ course }: { course: Course }) {
           <h2 id="course-progress" className="text-xl font-semibold">
             {m.course_progress_title()}
           </h2>
-          <progress
-            value={percent}
-            max={100}
-            aria-labelledby="course-progress"
-            className="h-2 w-full max-w-prose overflow-hidden rounded-full bg-muted [&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-primary"
-          />
+          <Progress value={percent} aria-labelledby="course-progress" className="max-w-prose" />
           <div className="flex flex-wrap items-center gap-4">
             <p className="text-sm text-muted-foreground tabular-nums">{m.course_progress_count({ done, total })}</p>
             <LeaveCourse course={course} />

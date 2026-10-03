@@ -451,7 +451,7 @@ export type AlertItem = {
     severity: Severity;
 };
 
-export type AlertKind = 'RiskSpike' | 'EngagementDrop' | 'GradingBacklog' | 'GradingSlo' | 'AssessmentOutlier' | 'ContentStale';
+export type AlertKind = 'risk_spike' | 'engagement_drop' | 'grading_backlog' | 'grading_slo' | 'assessment_outlier' | 'content_stale';
 
 /**
  * Every server-composed analytics message. The client localises the code
@@ -505,7 +505,7 @@ export type AnomalyItem = {
     severity: Severity;
 };
 
-export type AnomalyKind = 'EngagementDrop' | 'SubmissionSpike' | 'FastQuizCompletion' | 'ScoreDistributionShift';
+export type AnomalyKind = 'engagement_drop' | 'submission_spike' | 'fast_quiz_completion' | 'score_distribution_shift';
 
 export type Assessment = {
     access_mode: AccessMode;
@@ -889,7 +889,7 @@ export type AuditPayload = {
     users?: number;
 };
 
-export type AuditSource = 'GradingEntry' | 'BulkAction';
+export type AuditSource = 'grading_entry' | 'bulk_action';
 
 export type AutoSubmitReason = 'time_expired' | 'integrity_violation';
 
@@ -1052,6 +1052,10 @@ export type Certification = {
     created_at_unix: UnixTime;
     id: CertificationId;
     updated_at_unix: UnixTime;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.
+     */
+    version: number;
 };
 
 /**
@@ -1100,6 +1104,11 @@ export type Chapter = {
      * 1-based, contiguous within the course.
      */
     position: number;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale → 412). Moves (this
+     * chapter's or a sibling's) renumber positions and bump it too.
+     */
+    version: number;
 };
 
 /**
@@ -1336,7 +1345,7 @@ export type ContentBottleneckRow = {
     started_learners: number;
 };
 
-export type ContentBottleneckSignal = 'HighTimeLowCompletion' | 'ExitAfterOpen' | 'RepeatedAssessmentFailures' | 'StaleLowPerformance';
+export type ContentBottleneckSignal = 'high_time_low_completion' | 'exit_after_open' | 'repeated_assessment_failures' | 'stale_low_performance';
 
 export type ContentHealthRow = {
     course_id: CourseId;
@@ -1346,7 +1355,7 @@ export type ContentHealthRow = {
     value: number | null;
 };
 
-export type ContentHealthSignal = 'ContentFreshness' | 'AverageProgress' | 'GradingBacklog';
+export type ContentHealthSignal = 'content_freshness' | 'average_progress' | 'grading_backlog';
 
 export type ContextSummary = {
     activity_id: ActivityId | null;
@@ -1368,6 +1377,10 @@ export type ContextVisibility = 'student' | 'teacher';
  * inactive`. Any active entry authors on the course like the creator.
  */
 export type Contributor = {
+    /**
+     * What the caller may do to this row now.
+     */
+    allowed_actions: Array<ContributorAction>;
     avatar_key: string | null;
     created_at_unix: UnixTime;
     display_name: string;
@@ -1375,7 +1388,17 @@ export type Contributor = {
     status: ContributorStatus;
     user_id: UserId;
     username: string;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412). Always 1 on
+     * the synthesized creator row.
+     */
+    version: number;
 };
+
+/**
+ * `Contributor.allowed_actions`: what the caller may do to one roster row.
+ */
+export type ContributorAction = 'update' | 'remove';
 
 /**
  * A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).
@@ -1432,13 +1455,18 @@ export type Course = {
      */
     thumbnail_video_key: string | null;
     updated_at_unix: UnixTime;
+    /**
+     * Optimistic lock: send it back as `If-Match` on `PATCH` and
+     * lifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.
+     */
+    version: number;
 };
 
 /**
  * What the caller may do to a course right now (`Course.allowed_actions`).
  * Each variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].
  */
-export type CourseAction = 'update' | 'publish' | 'unpublish' | 'archive' | 'restore' | 'delete' | 'manage_contributors';
+export type CourseAction = 'update' | 'publish' | 'unpublish' | 'archive' | 'restore' | 'delete' | 'manage_contributors' | 'apply_contributor';
 
 export type CourseAnalysis = {
     content_hash: string | null;
@@ -1684,12 +1712,35 @@ export type CourseSummary = {
  * One announcement in the course changelog feed.
  */
 export type CourseUpdate = {
+    /**
+     * What the caller may do to this announcement now.
+     */
+    allowed_actions: Array<CourseUpdateAction>;
+    author: CourseUpdateAuthor | null;
     content: string;
     course_id: CourseId;
     created_at_unix: UnixTime;
     id: CourseUpdateId;
     title: string;
     updated_at_unix: UnixTime;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412).
+     */
+    version: number;
+};
+
+/**
+ * `CourseUpdate.allowed_actions`: an announcement's writes follow the
+ * course's `update`.
+ */
+export type CourseUpdateAction = 'update' | 'delete';
+
+/**
+ * The author of an announcement.
+ */
+export type CourseUpdateAuthor = {
+    display_name: string;
+    id: UserId;
 };
 
 export type CourseUpdateId = string;
@@ -1943,7 +1994,7 @@ export type Dashboard = {
 /**
  * Where the analytics read came from.
  */
-export type DataMode = 'Live' | 'Rollup';
+export type DataMode = 'live' | 'rollup';
 
 export type DataQualityIssue = {
     code: AnalyticsCode;
@@ -2414,7 +2465,7 @@ export type ForecastItem = {
     target_value: number | null;
 };
 
-export type ForecastKind = 'CompletionTargetMiss' | 'GradingBacklog7d' | 'CourseCompletionDeadline' | 'AssessmentFailureRisk';
+export type ForecastKind = 'completion_target_miss' | 'grading_backlog_7d' | 'course_completion_deadline' | 'assessment_failure_risk';
 
 export type FormBody = {
     fields?: Array<FormField>;
@@ -2681,7 +2732,7 @@ export type ImageGallerySection = {
     title: string;
 };
 
-export type InsightCategory = 'Risk' | 'Assessment' | 'Content' | 'Workload' | 'Completion' | 'Intervention';
+export type InsightCategory = 'risk' | 'assessment' | 'content' | 'workload' | 'completion' | 'intervention';
 
 export type InsightFeedItem = {
     activity_id: ActivityId | null;
@@ -2860,7 +2911,7 @@ export type ItemMetadata = {
 
 export type ItemSignal = 'healthy' | 'watch' | 'critical';
 
-export type ItemType = 'Workflow' | 'Question' | 'Test';
+export type ItemType = 'workflow' | 'question' | 'test';
 
 /**
  * Any JSON value. Only where the value is opaque by protocol (AG-UI
@@ -3192,6 +3243,10 @@ export type OverrideRequest = {
 
 export type Platform = {
     about: string;
+    /**
+     * What the caller may do to the settings (empty for anonymous readers).
+     */
+    allowed_actions: Array<PlatformAction>;
     description: string;
     email: string;
     label: string | null;
@@ -3201,7 +3256,16 @@ export type Platform = {
     logo_key: string | null;
     name: string;
     thumbnail_key: string | null;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.
+     */
+    version: number;
 };
+
+/**
+ * What the caller may do to the platform settings (`Platform.allowed_actions`).
+ */
+export type PlatformAction = 'update';
 
 /**
  * The complete policy block. Replaced wholesale via `PUT`; the same shape
@@ -3903,6 +3967,10 @@ export type Role = {
     permissions: Array<string>;
     priority: number;
     slug: string;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` and the permissions `PUT`.
+     */
+    version: number;
 };
 
 /**
@@ -4538,14 +4606,14 @@ export type SubmitRequest = {
     violation_count?: number;
 };
 
-export type SupportAlertCode = 'GradingSloBreached' | 'GradingSloWarning' | 'SuspiciousAttempts' | 'MissingScores';
+export type SupportAlertCode = 'grading_slo_breached' | 'grading_slo_warning' | 'suspicious_attempts' | 'missing_scores';
 
 /**
  * Which client screen is asking (legacy `AISurface`).
  */
 export type Surface = 'student-activity' | 'teacher-studio' | 'teacher-review' | 'course-page' | 'admin';
 
-export type SuspiciousFlag = 'TooEasy' | 'TooHard' | 'LowDiscrimination' | 'LowVariance';
+export type SuspiciousFlag = 'too_easy' | 'too_hard' | 'low_discrimination' | 'low_variance';
 
 export type TeacherAssessmentDetailResponse = {
     activity_id: ActivityId;
@@ -5130,6 +5198,11 @@ export type Usergroup = {
     member_count: number;
     name: string;
     updated_at_unix: UnixTime;
+    /**
+     * Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of
+     * `GET`. Membership and course links do not move it.
+     */
+    version: number;
 };
 
 /**
@@ -6979,6 +7052,10 @@ export type ExportAssessmentOutcomesData = {
          * `asc` or `desc` (default).
          */
         sort_order?: SortOrder;
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
     };
     url: '/api/v2/analytics/teacher/exports/assessment-outcomes.csv';
 };
@@ -7047,6 +7124,10 @@ export type ExportAtRiskData = {
          * `asc` or `desc` (default).
          */
         sort_order?: SortOrder;
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
     };
     url: '/api/v2/analytics/teacher/exports/at-risk.csv';
 };
@@ -7115,6 +7196,10 @@ export type ExportCourseProgressData = {
          * `asc` or `desc` (default).
          */
         sort_order?: SortOrder;
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
     };
     url: '/api/v2/analytics/teacher/exports/course-progress.csv';
 };
@@ -7183,6 +7268,10 @@ export type ExportGradingBacklogData = {
          * `asc` or `desc` (default).
          */
         sort_order?: SortOrder;
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
     };
     url: '/api/v2/analytics/teacher/exports/grading-backlog.csv';
 };
@@ -8521,7 +8610,12 @@ export type ExportAssessmentSubmissionsCsvData = {
          */
         assessment_id: AssessmentId;
     };
-    query?: never;
+    query?: {
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
+    };
     url: '/api/v2/assessments/{assessment_id}/submissions/export';
 };
 
@@ -9042,7 +9136,12 @@ export type CertificatePdfData = {
          */
         code: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
+    };
     url: '/api/v2/certificates/{code}/pdf';
 };
 
@@ -9066,6 +9165,12 @@ export type CertificatePdfResponse = CertificatePdfResponses[keyof CertificatePd
 
 export type CreateCertificationData = {
     body: CreateCertificationRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/certifications';
@@ -9133,6 +9238,12 @@ export type GetCertificationResponse = GetCertificationResponses[keyof GetCertif
 
 export type UpdateCertificationData = {
     body: UpdateCertificationRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Certification id
@@ -9142,6 +9253,15 @@ export type UpdateCertificationData = {
     query?: never;
     url: '/api/v2/certifications/{certification_id}';
 };
+
+export type UpdateCertificationErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateCertificationError = UpdateCertificationErrors[keyof UpdateCertificationErrors];
 
 export type UpdateCertificationResponses = {
     /**
@@ -9184,6 +9304,12 @@ export type DeleteChapterResponse = DeleteChapterResponses[keyof DeleteChapterRe
 
 export type UpdateChapterData = {
     body: UpdateChapterRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Chapter id
@@ -9199,6 +9325,10 @@ export type UpdateChapterErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateChapterError = UpdateChapterErrors[keyof UpdateChapterErrors];
@@ -9214,6 +9344,12 @@ export type UpdateChapterResponse = UpdateChapterResponses[keyof UpdateChapterRe
 
 export type CreateActivityData = {
     body: CreateActivityRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path: {
         /**
          * Chapter id
@@ -9545,6 +9681,12 @@ export type DeleteCourseUpdateResponse = DeleteCourseUpdateResponses[keyof Delet
 
 export type EditCourseUpdateData = {
     body: EditCourseUpdateRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course update id
@@ -9560,6 +9702,10 @@ export type EditCourseUpdateErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type EditCourseUpdateError = EditCourseUpdateErrors[keyof EditCourseUpdateErrors];
@@ -9625,6 +9771,12 @@ export type ListCoursesResponse = ListCoursesResponses[keyof ListCoursesResponse
 
 export type CreateCourseData = {
     body: CreateCourseRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/courses';
@@ -9714,6 +9866,12 @@ export type GetCourseResponse = GetCourseResponses[keyof GetCourseResponses];
 
 export type UpdateCourseData = {
     body: UpdateCourseRequest;
+    headers?: {
+        /**
+         * Current `version`; stale â†’ 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course id
@@ -9733,6 +9891,10 @@ export type UpdateCourseErrors = {
      * Unknown or inaccessible
      */
     404: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateCourseError = UpdateCourseErrors[keyof UpdateCourseErrors];
@@ -9845,6 +10007,12 @@ export type ListCourseCertificationsResponse = ListCourseCertificationsResponses
 
 export type CreateChapterData = {
     body: CreateChapterRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path: {
         /**
          * Course id
@@ -9905,6 +10073,12 @@ export type ListContributorsResponse = ListContributorsResponses[keyof ListContr
 
 export type AddContributorData = {
     body: AddContributorRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path: {
         /**
          * Course id
@@ -10015,6 +10189,12 @@ export type RemoveContributorResponse = RemoveContributorResponses[keyof RemoveC
 
 export type UpdateContributorData = {
     body: UpdateContributorRequest;
+    headers?: {
+        /**
+         * Row `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course id
@@ -10038,6 +10218,10 @@ export type UpdateContributorErrors = {
      * Not on the roster
      */
     404: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateContributorError = UpdateContributorErrors[keyof UpdateContributorErrors];
@@ -10201,7 +10385,12 @@ export type ExportGradebookCsvData = {
          */
         course_id: CourseId;
     };
-    query?: never;
+    query?: {
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
+    };
     url: '/api/v2/courses/{course_id}/gradebook/export';
 };
 
@@ -10299,6 +10488,12 @@ export type LearnerCourseStateResponse = LearnerCourseStateResponses[keyof Learn
 
 export type CourseLifecycleData = {
     body: CourseLifecycleRequest;
+    headers?: {
+        /**
+         * Current `version`; stale â†’ 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course id
@@ -10322,6 +10517,10 @@ export type CourseLifecycleErrors = {
      * Already in that state (`conflict`) or archived (`course-archived`)
      */
     409: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
     /**
      * Publish blocked by readiness (`course-not-ready`,                                       `details.blockers`)
      */
@@ -10401,6 +10600,12 @@ export type ListCourseUpdatesResponse = ListCourseUpdatesResponses[keyof ListCou
 
 export type CreateCourseUpdateData = {
     body: CreateCourseUpdateRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path: {
         /**
          * Course id
@@ -10933,7 +11138,12 @@ export type ExportFileSubmissionCsvData = {
          */
         file_submission_id: FileSubmissionId;
     };
-    query?: never;
+    query?: {
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: unknown;
+    };
     url: '/api/v2/file-submissions/{file_submission_id}/submissions/export';
 };
 
@@ -11231,6 +11441,12 @@ export type GetPlatformResponse = GetPlatformResponses[keyof GetPlatformResponse
 
 export type UpdatePlatformData = {
     body: UpdatePlatformRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/platform';
@@ -11241,6 +11457,10 @@ export type UpdatePlatformErrors = {
      * Missing permission
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdatePlatformError = UpdatePlatformErrors[keyof UpdatePlatformErrors];
@@ -11281,6 +11501,16 @@ export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
 
 export type CreateRoleData = {
     body: CreateRoleRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+        /**
+         * `return=representation`: answer 201 with the role instead of 204
+         */
+        Prefer?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/rbac/roles';
@@ -11300,6 +11530,10 @@ export type CreateRoleErrors = {
 export type CreateRoleError = CreateRoleErrors[keyof CreateRoleErrors];
 
 export type CreateRoleResponses = {
+    /**
+     * Created (`Prefer: return=representation`)
+     */
+    201: Role;
     /**
      * Created
      */
@@ -11338,8 +11572,52 @@ export type DeleteRoleResponses = {
 
 export type DeleteRoleResponse = DeleteRoleResponses[keyof DeleteRoleResponses];
 
+export type GetRoleData = {
+    body?: never;
+    path: {
+        /**
+         * Role slug
+         */
+        slug: string;
+    };
+    query?: never;
+    url: '/api/v2/rbac/roles/{slug}';
+};
+
+export type GetRoleErrors = {
+    /**
+     * Missing permission
+     */
+    403: Problem;
+    /**
+     * Unknown role
+     */
+    404: Problem;
+};
+
+export type GetRoleError = GetRoleErrors[keyof GetRoleErrors];
+
+export type GetRoleResponses = {
+    /**
+     * Role
+     */
+    200: Role;
+};
+
+export type GetRoleResponse = GetRoleResponses[keyof GetRoleResponses];
+
 export type UpdateRoleData = {
     body: UpdateRoleRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Role slug
@@ -11355,11 +11633,19 @@ export type UpdateRoleErrors = {
      * Unknown or system role
      */
     404: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateRoleError = UpdateRoleErrors[keyof UpdateRoleErrors];
 
 export type UpdateRoleResponses = {
+    /**
+     * Updated (`Prefer: return=representation`)
+     */
+    200: Role;
     /**
      * Updated
      */
@@ -11370,6 +11656,16 @@ export type UpdateRoleResponse = UpdateRoleResponses[keyof UpdateRoleResponses];
 
 export type SetRolePermissionsData = {
     body: SetRolePermissionsRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Role slug
@@ -11386,6 +11682,10 @@ export type SetRolePermissionsErrors = {
      */
     403: Problem;
     /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+    /**
      * Unparseable grant
      */
     422: Problem;
@@ -11394,6 +11694,10 @@ export type SetRolePermissionsErrors = {
 export type SetRolePermissionsError = SetRolePermissionsErrors[keyof SetRolePermissionsErrors];
 
 export type SetRolePermissionsResponses = {
+    /**
+     * Replaced (`Prefer: return=representation`)
+     */
+    200: Role;
     /**
      * Replaced
      */
@@ -12027,6 +12331,12 @@ export type ListUsergroupsResponse = ListUsergroupsResponses[keyof ListUsergroup
 
 export type CreateUsergroupData = {
     body: CreateUsergroupRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/usergroups';
@@ -12112,6 +12422,12 @@ export type GetUsergroupResponse = GetUsergroupResponses[keyof GetUsergroupRespo
 
 export type UpdateUsergroupData = {
     body: UpdateUsergroupRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Usergroup id
@@ -12127,6 +12443,10 @@ export type UpdateUsergroupErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateUsergroupError = UpdateUsergroupErrors[keyof UpdateUsergroupErrors];
@@ -12205,6 +12525,12 @@ export type AddUsergroupCoursesResponse = AddUsergroupCoursesResponses[keyof Add
 
 export type RemoveUsergroupMembersData = {
     body: UsergroupMembersRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Usergroup id
@@ -12216,6 +12542,10 @@ export type RemoveUsergroupMembersData = {
 };
 
 export type RemoveUsergroupMembersResponses = {
+    /**
+     * Removed (`Prefer: return=representation`): the group
+     */
+    200: Usergroup;
     /**
      * Removed
      */
@@ -12247,6 +12577,12 @@ export type ListUsergroupMembersResponse = ListUsergroupMembersResponses[keyof L
 
 export type AddUsergroupMembersData = {
     body: UsergroupMembersRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Usergroup id
@@ -12258,6 +12594,10 @@ export type AddUsergroupMembersData = {
 };
 
 export type AddUsergroupMembersResponses = {
+    /**
+     * Added (`Prefer: return=representation`): the group
+     */
+    200: Usergroup;
     /**
      * Added
      */
@@ -12274,6 +12614,18 @@ export type ListUsersData = {
          * Substring filter (username/name/email)
          */
         q?: string;
+        /**
+         * `newest` (default) or `name`
+         */
+        sort?: unknown;
+        /**
+         * Only accounts in this status
+         */
+        status?: UserStatus;
+        /**
+         * Only holders of this role slug
+         */
+        role?: string;
         /**
          * next_cursor from the previous page
          */
@@ -12306,6 +12658,12 @@ export type ListUsersResponse = ListUsersResponses[keyof ListUsersResponses];
 
 export type CreateUserData = {
     body: CreateUserRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/users';
@@ -12366,6 +12724,40 @@ export type PublicProfileByIdResponses = {
 };
 
 export type PublicProfileByIdResponse = PublicProfileByIdResponses[keyof PublicProfileByIdResponses];
+
+export type GetAdminUserData = {
+    body?: never;
+    path: {
+        /**
+         * User id
+         */
+        user_id: UserId;
+    };
+    query?: never;
+    url: '/api/v2/users/by-id/{user_id}/admin';
+};
+
+export type GetAdminUserErrors = {
+    /**
+     * Missing permission
+     */
+    403: Problem;
+    /**
+     * Unknown user
+     */
+    404: Problem;
+};
+
+export type GetAdminUserError = GetAdminUserErrors[keyof GetAdminUserErrors];
+
+export type GetAdminUserResponses = {
+    /**
+     * Account
+     */
+    200: AdminUser;
+};
+
+export type GetAdminUserResponse = GetAdminUserResponses[keyof GetAdminUserResponses];
 
 export type MyProfileData = {
     body?: never;
@@ -12433,6 +12825,12 @@ export type UpdateMyProfileResponse = UpdateMyProfileResponses[keyof UpdateMyPro
 
 export type AssignRoleData = {
     body: AssignRoleRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Target user
@@ -12458,6 +12856,10 @@ export type AssignRoleError = AssignRoleErrors[keyof AssignRoleErrors];
 
 export type AssignRoleResponses = {
     /**
+     * Assigned (`Prefer: return=representation`)
+     */
+    200: AdminUser;
+    /**
      * Assigned
      */
     204: void;
@@ -12467,6 +12869,12 @@ export type AssignRoleResponse = AssignRoleResponses[keyof AssignRoleResponses];
 
 export type UnassignRoleData = {
     body?: never;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Target user
@@ -12500,6 +12908,10 @@ export type UnassignRoleError = UnassignRoleErrors[keyof UnassignRoleErrors];
 
 export type UnassignRoleResponses = {
     /**
+     * Removed (`Prefer: return=representation`)
+     */
+    200: AdminUser;
+    /**
      * Removed
      */
     204: void;
@@ -12509,6 +12921,12 @@ export type UnassignRoleResponse = UnassignRoleResponses[keyof UnassignRoleRespo
 
 export type SetUserStatusData = {
     body: SetUserStatusRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Target user
@@ -12533,6 +12951,10 @@ export type SetUserStatusErrors = {
 export type SetUserStatusError = SetUserStatusErrors[keyof SetUserStatusErrors];
 
 export type SetUserStatusResponses = {
+    /**
+     * Status changed (`Prefer: return=representation`)
+     */
+    200: AdminUser;
     /**
      * Status changed
      */

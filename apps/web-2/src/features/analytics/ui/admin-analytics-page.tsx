@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow } from '#/shared/api/gen/types.gen'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { ListPage } from '#/shared/components/templates/list-page'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
-import type { DataColumn } from '#/shared/ui/data-columns'
-import { ListPage } from '#/shared/ui/templates/list-page'
 
 import { adminAnalyticsOptions } from '../queries'
 import { AdminTable } from './admin-table'

@@ -1,15 +1,16 @@
-import { Slider } from '@base-ui/react/slider'
 import { Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
+import { Slider } from '#/shared/ui/slider'
 
 import { clock } from '../../model/file-blocks'
 
 /** A hosted video file: the native `<video>` with kit controls (play, position, time, sound, full screen). */
 export function VideoPlayer({ src }: { src: string }) {
   const frame = useRef<HTMLDivElement>(null)
+  const positionLabel = useId()
   const video = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -44,27 +45,21 @@ export function VideoPlayer({ src }: { src: string }) {
           icon={playing ? <Pause aria-hidden /> : <Play aria-hidden />}
           onClick={toggle}
         />
-        <Slider.Root
-          value={time}
+        <span id={positionLabel} className="sr-only">
+          {m.editor_video_position()}
+        </span>
+        <Slider
+          aria-labelledby={positionLabel}
+          value={[time]}
           max={duration || 1}
           step={1}
           onValueChange={value => {
-            if (video.current) video.current.currentTime = value
-            setTime(value)
+            const next = Array.isArray(value) ? (value[0] ?? 0) : value
+            if (video.current) video.current.currentTime = next
+            setTime(next)
           }}
           className="min-w-0 flex-1"
-        >
-          <Slider.Control className="flex h-6 items-center">
-            <Slider.Track className="h-1 w-full rounded-full bg-border">
-              <Slider.Indicator className="rounded-full bg-primary" />
-              <Slider.Thumb
-                getAriaLabel={() => m.editor_video_position()}
-                getAriaValueText={() => clock(time)}
-                className="size-3 rounded-full bg-primary"
-              />
-            </Slider.Track>
-          </Slider.Control>
-        </Slider.Root>
+        />
         <span className="text-xs text-muted-foreground tabular-nums">{`${clock(time)} / ${clock(duration)}`}</span>
         <IconButton
           label={m.editor_video_mute()}

@@ -1,10 +1,12 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { DataList } from '#/shared/components/data-list'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { DetailPage } from '#/shared/components/templates/detail-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { landingCoursesOptions, platformOptions } from '../queries'
 import { CourseItem } from './course-item'
@@ -18,9 +20,9 @@ export function LandingPage() {
       title={platform.name}
       meta={platform.description || m.catalog_landing_lead()}
       primaryAction={
-        <Link to="/signup" variant="primary">
+        <RouterLink to="/signup" className={buttonVariants()}>
           {m.catalog_landing_signup()}
-        </Link>
+        </RouterLink>
       }
     >
       {platform.about ? <p className="max-w-prose wrap-anywhere whitespace-pre-line">{platform.about}</p> : null}
@@ -45,9 +47,9 @@ export function LandingPage() {
           {course => <CourseItem course={course} level={3} />}
         </DataList>
         <div>
-          <Link to="/courses" variant="outline">
+          <RouterLink to="/courses" className={buttonVariants({ variant: 'outline' })}>
             {m.catalog_landing_all_courses()}
-          </Link>
+          </RouterLink>
         </div>
       </ListState>
     </DetailPage>

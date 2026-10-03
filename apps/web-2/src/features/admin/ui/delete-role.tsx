@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Role } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { roleName } from '../model/roles'
 import { deleteRoleOptions } from '../queries'
@@ -22,7 +22,7 @@ export function DeleteRole({ role }: { role: Role }) {
       {
         onSuccess: async () => {
           setOpen(false)
-          toast(m.admin_role_deleted())
+          toast.add({ title: m.admin_role_deleted() })
           await navigate({ to: '/admin/roles' })
         },
       },

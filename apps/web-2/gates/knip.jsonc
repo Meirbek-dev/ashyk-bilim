@@ -4,6 +4,9 @@
   "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs"],
   "project": ["src/**/*.{ts,tsx}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
   "ignore": ["src/shared/api/gen/**"],
+  // Stock shadcn files (`bunx shadcn add`) keep their full export list so `shadcn add --overwrite` stays a no-op diff;
+  // an unused stock FILE is still reported (remove it).
+  "ignoreIssues": { "src/shared/ui/**": ["exports", "types"] },
   "ignoreDependencies": [
     // Loaded by path from project.inlang/settings.json "modules".
     "@inlang/plugin-message-format",
@@ -11,6 +14,9 @@
     "tailwindcss",
     "@fontsource-variable/inter",
     "@fontsource-variable/geist-mono",
+    "tw-animate-css",
+    // The shadcn CLI (`bunx shadcn add`) and its CSS (shadcn/tailwind.css, imported by globals.css).
+    "shadcn",
     // Resolved by the codegen module hook (gates/ts6-hooks.mjs), not by an import statement.
     "typescript-6",
   ],

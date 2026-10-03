@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import type * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import { themeManifestOptions } from '#/shared/api/themes'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { MODES, readAppearance, saveMode, saveTheme, type Mode } from '#/shared/lib/appearance'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { profileLocale, startTheme, vAppearance } from '../model/settings'
 import { profileOptions, updateProfileOptions } from '../queries'
@@ -36,7 +36,7 @@ export function AppearancePage() {
       saveTheme(theme)
       saveMode(mode)
       // Paraglide stores the new language and reloads the page in it.
-      if (locale === getLocale()) toast(m.settings_saved())
+      if (locale === getLocale()) toast.add({ title: m.settings_saved() })
       else await setLocale(locale)
     },
   })

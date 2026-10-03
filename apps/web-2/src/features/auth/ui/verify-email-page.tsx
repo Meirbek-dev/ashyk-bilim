@@ -1,14 +1,15 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import { vVerifyEmailRequest } from '#/shared/api/gen/valibot.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { Link } from '#/shared/components/link'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Link } from '#/shared/ui/link'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { isWrongCode } from '../model/account-search'
 import { verifyEmailOptions } from '../queries'
@@ -28,7 +29,7 @@ export function VerifyEmailPage() {
           { body },
           {
             onSuccess: async () => {
-              toast(m.auth_verify_done())
+              toast.add({ title: m.auth_verify_done() })
               await navigate({ to: '/login' })
             },
           },
@@ -55,8 +56,9 @@ export function VerifyEmailPage() {
             />
           )}
         </form.AppField>
-        {verify.error && !isWrongCode(verify.error) ? <Alert>{presentError(verify.error)}</Alert> : null}
-        <Button type="submit" size="block" pending={verify.isPending}>
+        {verify.error && !isWrongCode(verify.error) ? <ErrorAlert>{presentError(verify.error)}</ErrorAlert> : null}
+        <Button type="submit" className="w-full" disabled={verify.isPending}>
+          {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.auth_verify_submit()}
         </Button>
       </AuthForm>

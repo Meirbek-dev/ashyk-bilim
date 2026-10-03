@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { TrailRun } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 import { countByState, RUN_STATES, type RunState } from '../model/learning'
 import { runStateMeta } from './run-item'

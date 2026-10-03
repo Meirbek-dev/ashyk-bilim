@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { UpdateProfileRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Link } from '#/shared/ui/link'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { Link } from '#/shared/components/link'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { updateProfileOptions } from '../queries'
 
@@ -22,7 +22,7 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
   }))
   const form = useAppForm(vUpdateProfileRequest, {
     defaultValues,
-    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast(m.settings_saved()) }),
+    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.settings_saved() }) }),
   })
   return (
     <SettingsSection

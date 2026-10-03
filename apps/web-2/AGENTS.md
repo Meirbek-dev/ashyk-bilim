@@ -58,8 +58,8 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`        |
 | Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                          |
 | Dates, numbers  | `#/shared/i18n/format`                                                                                 |
-| Screens         | a template from `#/shared/ui/templates`; lists through `ListState`                                     |
-| UI elements     | `#/shared/ui`; colors and spacing only via tokens and the Tailwind scale                               |
+| Screens         | a template from `#/shared/kit/templates`; lists through `ListState`                                    |
+| UI elements     | `#/shared/kit`; colors and spacing only via tokens and the Tailwind scale                              |
 | API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                            |
 | Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                           |
 | Memoization     | none: React Compiler                                                                                   |

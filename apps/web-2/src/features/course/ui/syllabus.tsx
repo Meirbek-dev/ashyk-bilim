@@ -2,9 +2,9 @@ import { Check } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
 
 import type { SyllabusChapter } from '../model/course'
 
@@ -37,10 +37,10 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
                   </span>
                   <span className="text-sm text-muted-foreground">{meta.label()}</span>
                   {activity.complete ? (
-                    <Badge tone="success">
+                    <StatusBadge tone="success">
                       <Check aria-hidden className="size-3" />
                       {m.course_activity_done()}
-                    </Badge>
+                    </StatusBadge>
                   ) : null}
                 </li>
               )

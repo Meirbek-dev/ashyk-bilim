@@ -1,14 +1,15 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, LearnerCourseState } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
-import { Button } from '#/shared/ui/button'
-import { Link } from '#/shared/ui/link'
+import { Button, buttonVariants } from '#/shared/ui/button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { activityKind, playerAction, type EntryAction } from '../model/player'
 import { markOptions, unmarkOptions } from '../queries'
@@ -39,7 +40,8 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   const path = { path: { activity_id: entry.id } }
   const pending = mark.isPending || unmark.isPending
   const submit = () => {
-    if (action?.kind === 'mark' && !pending) mark.mutate(path, { onSuccess: () => toast(m.player_marked()) })
+    if (action?.kind === 'mark' && !pending)
+      mark.mutate(path, { onSuccess: () => toast.add({ title: m.player_marked() }) })
   }
   useHotkey(shortcuts.mark.hotkey, submit)
   const error = mark.error ?? unmark.error
@@ -48,41 +50,47 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
     <div className="flex flex-col items-center gap-2">
       <div className="flex flex-wrap items-center justify-center gap-2">
         {action?.kind === 'mark' ? (
-          <Button pending={mark.isPending} onClick={submit}>
+          <Button onClick={submit} disabled={mark.isPending}>
+            {mark.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.player_mark()}
           </Button>
         ) : null}
         {action?.kind === 'continue' ? (
-          <Link
+          <RouterLink
             to="/learn/$courseId/$activityId"
             params={{ courseId, activityId: action.activityId }}
-            variant="primary"
+            className={buttonVariants()}
           >
             {m.player_continue()}
-          </Link>
+          </RouterLink>
         ) : null}
         {action?.kind === 'finish' ? (
-          <Link to="/learn/$courseId/complete" params={{ courseId }} variant="primary">
+          <RouterLink to="/learn/$courseId/complete" params={{ courseId }} className={buttonVariants()}>
             {m.player_finish()}
-          </Link>
+          </RouterLink>
         ) : null}
         {action?.kind === 'open' ? (
-          <Link to={childRoutes[action.route]} params={{ courseId, activityId: entry.id }} variant="primary">
+          <RouterLink
+            to={childRoutes[action.route]}
+            params={{ courseId, activityId: entry.id }}
+            className={buttonVariants()}
+          >
             {entryLabels[action.action]()}
-          </Link>
+          </RouterLink>
         ) : null}
         {unmarkable ? (
           <Button
             variant="ghost"
-            pending={unmark.isPending}
-            disabled={pending}
-            onClick={() => unmark.mutate(path, { onSuccess: () => toast(m.player_unmarked()) })}
+
+            disabled={pending || unmark.isPending}
+            onClick={() => unmark.mutate(path, { onSuccess: () => toast.add({ title: m.player_unmarked() }) })}
           >
+            {unmark.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.player_unmark()}
           </Button>
         ) : null}
       </div>
-      {error ? <Alert>{presentError(error)}</Alert> : null}
+      {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
     </div>
   )
 }

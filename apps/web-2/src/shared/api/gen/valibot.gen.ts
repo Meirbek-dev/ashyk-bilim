@@ -189,12 +189,12 @@ export const vAiThreadRole = v.picklist([
 ]);
 
 export const vAlertKind = v.picklist([
-    'RiskSpike',
-    'EngagementDrop',
-    'GradingBacklog',
-    'GradingSlo',
-    'AssessmentOutlier',
-    'ContentStale'
+    'risk_spike',
+    'engagement_drop',
+    'grading_backlog',
+    'grading_slo',
+    'assessment_outlier',
+    'content_stale'
 ]);
 
 /**
@@ -247,10 +247,10 @@ export const vAnalyticsCode = v.picklist([
 ]);
 
 export const vAnomalyKind = v.picklist([
-    'EngagementDrop',
-    'SubmissionSpike',
-    'FastQuizCompletion',
-    'ScoreDistributionShift'
+    'engagement_drop',
+    'submission_spike',
+    'fast_quiz_completion',
+    'score_distribution_shift'
 ]);
 
 /**
@@ -336,7 +336,7 @@ export const vAuditPayload = v.object({
     users: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
-export const vAuditSource = v.picklist(['GradingEntry', 'BulkAction']);
+export const vAuditSource = v.picklist(['grading_entry', 'bulk_action']);
 
 export const vAutoSubmitReason = v.picklist(['time_expired', 'integrity_violation']);
 
@@ -643,16 +643,16 @@ export const vConfidence = v.picklist([
 ]);
 
 export const vContentBottleneckSignal = v.picklist([
-    'HighTimeLowCompletion',
-    'ExitAfterOpen',
-    'RepeatedAssessmentFailures',
-    'StaleLowPerformance'
+    'high_time_low_completion',
+    'exit_after_open',
+    'repeated_assessment_failures',
+    'stale_low_performance'
 ]);
 
 export const vContentHealthSignal = v.picklist([
-    'ContentFreshness',
-    'AverageProgress',
-    'GradingBacklog'
+    'content_freshness',
+    'average_progress',
+    'grading_backlog'
 ]);
 
 export const vContextSummary = v.object({
@@ -666,6 +666,11 @@ export const vContextSummary = v.object({
  * Whose context an AI scope exposes.
  */
 export const vContextVisibility = v.picklist(['student', 'teacher']);
+
+/**
+ * `Contributor.allowed_actions`: what the caller may do to one roster row.
+ */
+export const vContributorAction = v.picklist(['update', 'remove']);
 
 /**
  * A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).
@@ -693,7 +698,8 @@ export const vCourseAction = v.picklist([
     'archive',
     'restore',
     'delete',
-    'manage_contributors'
+    'manage_contributors',
+    'apply_contributor'
 ]);
 
 /**
@@ -749,7 +755,8 @@ export const vChapter = v.object({
     description: v.string(),
     id: vChapterId,
     name: v.string(),
-    position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+    position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vCourseDataGap = v.object({
@@ -824,6 +831,12 @@ export const vCourseSummary = v.object({
     ready: v.pipe(v.number(), v.integer()),
     total: v.pipe(v.number(), v.integer())
 });
+
+/**
+ * `CourseUpdate.allowed_actions`: an announcement's writes follow the
+ * course's `update`.
+ */
+export const vCourseUpdateAction = v.picklist(['update', 'delete']);
 
 export const vCourseUpdateId = v.pipe(v.string(), v.uuid());
 
@@ -922,7 +935,7 @@ export const vCurriculum = v.object({
 /**
  * Where the analytics read came from.
  */
-export const vDataMode = v.picklist(['Live', 'Rollup']);
+export const vDataMode = v.picklist(['live', 'rollup']);
 
 export const vDeadlineExtendedPayload = v.object({
     new_due_at: v.pipe(v.number(), v.integer()),
@@ -1203,10 +1216,10 @@ export const vFindingReviewRequest = v.strictObject({
 });
 
 export const vForecastKind = v.picklist([
-    'CompletionTargetMiss',
-    'GradingBacklog7d',
-    'CourseCompletionDeadline',
-    'AssessmentFailureRisk'
+    'completion_target_miss',
+    'grading_backlog_7d',
+    'course_completion_deadline',
+    'assessment_failure_risk'
 ]);
 
 export const vFormFieldType = v.picklist([
@@ -1286,12 +1299,12 @@ export const vHistogramBucket = v.object({
 });
 
 export const vInsightCategory = v.picklist([
-    'Risk',
-    'Assessment',
-    'Content',
-    'Workload',
-    'Completion',
-    'Intervention'
+    'risk',
+    'assessment',
+    'content',
+    'workload',
+    'completion',
+    'intervention'
 ]);
 
 export const vInterventionId = v.pipe(v.string(), v.uuid());
@@ -1383,9 +1396,9 @@ export const vItemSignal = v.picklist([
 ]);
 
 export const vItemType = v.picklist([
-    'Workflow',
-    'Question',
-    'Test'
+    'workflow',
+    'question',
+    'test'
 ]);
 
 export const vAssessmentItemAnalyticsRow = v.object({
@@ -1704,14 +1717,21 @@ export const vOpenTextBody = v.object({
     rubric: v.nullable(v.string())
 });
 
+/**
+ * What the caller may do to the platform settings (`Platform.allowed_actions`).
+ */
+export const vPlatformAction = v.picklist(['update']);
+
 export const vPlatform = v.object({
     about: v.string(),
+    allowed_actions: v.array(vPlatformAction),
     description: v.string(),
     email: v.string(),
     label: v.nullable(v.string()),
     logo_key: v.nullable(v.string()),
     name: v.string(),
-    thumbnail_key: v.nullable(v.string())
+    thumbnail_key: v.nullable(v.string()),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vPrivacyPreferences = v.strictObject({
@@ -2187,7 +2207,8 @@ export const vRole = v.object({
     is_system: v.boolean(),
     permissions: v.array(v.string()),
     priority: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    slug: v.string()
+    slug: v.string(),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 /**
@@ -2836,10 +2857,10 @@ export const vSubmitRequest = v.strictObject({
 });
 
 export const vSupportAlertCode = v.picklist([
-    'GradingSloBreached',
-    'GradingSloWarning',
-    'SuspiciousAttempts',
-    'MissingScores'
+    'grading_slo_breached',
+    'grading_slo_warning',
+    'suspicious_attempts',
+    'missing_scores'
 ]);
 
 export const vAssessmentSupportAlertRow = v.object({
@@ -2882,10 +2903,10 @@ export const vScopeCapabilities = v.object({
 });
 
 export const vSuspiciousFlag = v.picklist([
-    'TooEasy',
-    'TooHard',
-    'LowDiscrimination',
-    'LowVariance'
+    'too_easy',
+    'too_hard',
+    'low_discrimination',
+    'low_variance'
 ]);
 
 export const vAssessmentOutlierRow = v.object({
@@ -3042,7 +3063,8 @@ export const vCertification = v.object({
     course_id: vCourseId,
     created_at_unix: vUnixTime,
     id: vCertificationId,
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 /**
@@ -3071,18 +3093,6 @@ export const vCodeRun = v.object({
 export const vCourseListProgress = v.object({
     completed_at_unix: v.nullable(vUnixTime),
     progress_pct: v.number()
-});
-
-/**
- * One announcement in the course changelog feed.
- */
-export const vCourseUpdate = v.object({
-    content: v.string(),
-    course_id: vCourseId,
-    created_at_unix: vUnixTime,
-    id: vCourseUpdateId,
-    title: v.string(),
-    updated_at_unix: vUnixTime
 });
 
 export const vDrillBacklogRow = v.object({
@@ -3849,13 +3859,15 @@ export const vCertificate = v.object({
  * inactive`. Any active entry authors on the course like the creator.
  */
 export const vContributor = v.object({
+    allowed_actions: v.array(vContributorAction),
     avatar_key: v.nullable(v.string()),
     created_at_unix: vUnixTime,
     display_name: v.string(),
     role: vRosterRole,
     status: vContributorStatus,
     user_id: vUserId,
-    username: v.string()
+    username: v.string(),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vCourse = v.object({
@@ -3875,7 +3887,8 @@ export const vCourse = v.object({
     tags: v.array(v.string()),
     thumbnail_key: v.nullable(v.string()),
     thumbnail_video_key: v.nullable(v.string()),
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vCollection = v.object({
@@ -3986,6 +3999,29 @@ export const vCoursePage = v.object({
     items: v.array(vCourseListItem),
     next_cursor: v.nullable(vCourseId),
     summary: v.optional(vCourseSummary)
+});
+
+/**
+ * The author of an announcement.
+ */
+export const vCourseUpdateAuthor = v.object({
+    display_name: v.string(),
+    id: vUserId
+});
+
+/**
+ * One announcement in the course changelog feed.
+ */
+export const vCourseUpdate = v.object({
+    allowed_actions: v.array(vCourseUpdateAction),
+    author: v.nullable(vCourseUpdateAuthor),
+    content: v.string(),
+    course_id: vCourseId,
+    created_at_unix: vUnixTime,
+    id: vCourseUpdateId,
+    title: v.string(),
+    updated_at_unix: vUnixTime,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 /**
@@ -4625,7 +4661,8 @@ export const vUsergroup = v.object({
     id: vUsergroupId,
     member_count: v.pipe(v.number(), v.integer()),
     name: v.string(),
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vUsergroupMember = v.object({
@@ -5502,7 +5539,8 @@ export const vExportAssessmentOutcomesQuery = v.object({
     page: v.optional(v.pipe(v.number(), v.integer())),
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
-    sort_order: v.optional(vSortOrder)
+    sort_order: v.optional(vSortOrder),
+    lang: v.optional(v.unknown())
 });
 
 /**
@@ -5526,7 +5564,8 @@ export const vExportAtRiskQuery = v.object({
     page: v.optional(v.pipe(v.number(), v.integer())),
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
-    sort_order: v.optional(vSortOrder)
+    sort_order: v.optional(vSortOrder),
+    lang: v.optional(v.unknown())
 });
 
 /**
@@ -5550,7 +5589,8 @@ export const vExportCourseProgressQuery = v.object({
     page: v.optional(v.pipe(v.number(), v.integer())),
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
-    sort_order: v.optional(vSortOrder)
+    sort_order: v.optional(vSortOrder),
+    lang: v.optional(v.unknown())
 });
 
 /**
@@ -5574,7 +5614,8 @@ export const vExportGradingBacklogQuery = v.object({
     page: v.optional(v.pipe(v.number(), v.integer())),
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
-    sort_order: v.optional(vSortOrder)
+    sort_order: v.optional(vSortOrder),
+    lang: v.optional(v.unknown())
 });
 
 /**
@@ -6030,6 +6071,10 @@ export const vExportAssessmentSubmissionsCsvPath = v.object({
     assessment_id: vAssessmentId
 });
 
+export const vExportAssessmentSubmissionsCsvQuery = v.object({
+    lang: v.optional(v.unknown())
+});
+
 /**
  * CSV
  */
@@ -6181,12 +6226,20 @@ export const vCertificatePdfPath = v.object({
     code: v.string()
 });
 
+export const vCertificatePdfQuery = v.object({
+    lang: v.optional(v.unknown())
+});
+
 /**
  * PDF
  */
 export const vCertificatePdfResponse = v.string();
 
 export const vCreateCertificationBody = vCreateCertificationRequest;
+
+export const vCreateCertificationHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
 
 /**
  * Created
@@ -6213,6 +6266,10 @@ export const vGetCertificationResponse = vCertification;
 
 export const vUpdateCertificationBody = vUpdateCertificationRequest;
 
+export const vUpdateCertificationHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vUpdateCertificationPath = v.object({
     certification_id: vCertificationId
 });
@@ -6233,6 +6290,10 @@ export const vDeleteChapterResponse = v.void();
 
 export const vUpdateChapterBody = vUpdateChapterRequest;
 
+export const vUpdateChapterHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vUpdateChapterPath = v.object({
     chapter_id: vChapterId
 });
@@ -6243,6 +6304,10 @@ export const vUpdateChapterPath = v.object({
 export const vUpdateChapterResponse = vChapter;
 
 export const vCreateActivityBody = vCreateActivityRequest;
+
+export const vCreateActivityHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
 
 export const vCreateActivityPath = v.object({
     chapter_id: vChapterId
@@ -6349,6 +6414,10 @@ export const vDeleteCourseUpdateResponse = v.void();
 
 export const vEditCourseUpdateBody = vEditCourseUpdateRequest;
 
+export const vEditCourseUpdateHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vEditCourseUpdatePath = v.object({
     update_id: vCourseUpdateId
 });
@@ -6374,6 +6443,10 @@ export const vListCoursesResponse = vCoursePage;
 
 export const vCreateCourseBody = vCreateCourseRequest;
 
+export const vCreateCourseHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
 /**
  * Created
  */
@@ -6398,6 +6471,10 @@ export const vGetCoursePath = v.object({
 export const vGetCourseResponse = vCourse;
 
 export const vUpdateCourseBody = vUpdateCourseRequest;
+
+export const vUpdateCourseHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vUpdateCoursePath = v.object({
     course_id: vCourseId
@@ -6446,6 +6523,10 @@ export const vListCourseCertificationsResponse = v.array(vCertification);
 
 export const vCreateChapterBody = vCreateChapterRequest;
 
+export const vCreateChapterHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
 export const vCreateChapterPath = v.object({
     course_id: vCourseId
 });
@@ -6465,6 +6546,10 @@ export const vListContributorsPath = v.object({
 export const vListContributorsResponse = v.array(vContributor);
 
 export const vAddContributorBody = vAddContributorRequest;
+
+export const vAddContributorHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
 
 export const vAddContributorPath = v.object({
     course_id: vCourseId
@@ -6495,6 +6580,10 @@ export const vRemoveContributorPath = v.object({
 export const vRemoveContributorResponse = v.void();
 
 export const vUpdateContributorBody = vUpdateContributorRequest;
+
+export const vUpdateContributorHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vUpdateContributorPath = v.object({
     course_id: vCourseId,
@@ -6567,6 +6656,10 @@ export const vExportGradebookCsvPath = v.object({
     course_id: vCourseId
 });
 
+export const vExportGradebookCsvQuery = v.object({
+    lang: v.optional(v.unknown())
+});
+
 /**
  * CSV
  */
@@ -6596,6 +6689,10 @@ export const vLearnerCourseStateResponse = vLearnerCourseState;
 
 export const vCourseLifecycleBody = vCourseLifecycleRequest;
 
+export const vCourseLifecycleHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vCourseLifecyclePath = v.object({
     course_id: vCourseId
 });
@@ -6624,6 +6721,10 @@ export const vListCourseUpdatesPath = v.object({
 export const vListCourseUpdatesResponse = v.array(vCourseUpdate);
 
 export const vCreateCourseUpdateBody = vCreateCourseUpdateRequest;
+
+export const vCreateCourseUpdateHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
 
 export const vCreateCourseUpdatePath = v.object({
     course_id: vCourseId
@@ -6830,6 +6931,10 @@ export const vExportFileSubmissionCsvPath = v.object({
     file_submission_id: vFileSubmissionId
 });
 
+export const vExportFileSubmissionCsvQuery = v.object({
+    lang: v.optional(v.unknown())
+});
+
 /**
  * CSV
  */
@@ -6928,6 +7033,10 @@ export const vGetPlatformResponse = vPlatform;
 
 export const vUpdatePlatformBody = vUpdatePlatformRequest;
 
+export const vUpdatePlatformHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 /**
  * Updated
  */
@@ -6940,10 +7049,12 @@ export const vListRolesResponse = v.array(vRole);
 
 export const vCreateRoleBody = vCreateRoleRequest;
 
-/**
- * Created
- */
-export const vCreateRoleResponse = v.void();
+export const vCreateRoleHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string()),
+    Prefer: v.nullish(v.string())
+});
+
+export const vCreateRoleResponse = v.union([vRole, v.void()]);
 
 export const vDeleteRolePath = v.object({
     slug: v.string()
@@ -6954,27 +7065,40 @@ export const vDeleteRolePath = v.object({
  */
 export const vDeleteRoleResponse = v.void();
 
+export const vGetRolePath = v.object({
+    slug: v.string()
+});
+
+/**
+ * Role
+ */
+export const vGetRoleResponse = vRole;
+
 export const vUpdateRoleBody = vUpdateRoleRequest;
+
+export const vUpdateRoleHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    Prefer: v.nullish(v.string())
+});
 
 export const vUpdateRolePath = v.object({
     slug: v.string()
 });
 
-/**
- * Updated
- */
-export const vUpdateRoleResponse = v.void();
+export const vUpdateRoleResponse = v.union([vRole, v.void()]);
 
 export const vSetRolePermissionsBody = vSetRolePermissionsRequest;
+
+export const vSetRolePermissionsHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    Prefer: v.nullish(v.string())
+});
 
 export const vSetRolePermissionsPath = v.object({
     slug: v.string()
 });
 
-/**
- * Replaced
- */
-export const vSetRolePermissionsResponse = v.void();
+export const vSetRolePermissionsResponse = v.union([vRole, v.void()]);
 
 export const vSearchQuery = v.object({
     q: v.string(),
@@ -7170,6 +7294,10 @@ export const vListUsergroupsResponse = vUsergroupPage;
 
 export const vCreateUsergroupBody = vCreateUsergroupRequest;
 
+export const vCreateUsergroupHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
 /**
  * Created
  */
@@ -7194,6 +7322,10 @@ export const vGetUsergroupPath = v.object({
 export const vGetUsergroupResponse = vUsergroup;
 
 export const vUpdateUsergroupBody = vUpdateUsergroupRequest;
+
+export const vUpdateUsergroupHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vUpdateUsergroupPath = v.object({
     usergroup_id: vUsergroupId
@@ -7237,14 +7369,15 @@ export const vAddUsergroupCoursesResponse = v.void();
 
 export const vRemoveUsergroupMembersBody = vUsergroupMembersRequest;
 
+export const vRemoveUsergroupMembersHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
 export const vRemoveUsergroupMembersPath = v.object({
     usergroup_id: vUsergroupId
 });
 
-/**
- * Removed
- */
-export const vRemoveUsergroupMembersResponse = v.void();
+export const vRemoveUsergroupMembersResponse = v.union([vUsergroup, v.void()]);
 
 export const vListUsergroupMembersPath = v.object({
     usergroup_id: vUsergroupId
@@ -7257,17 +7390,21 @@ export const vListUsergroupMembersResponse = v.array(vUsergroupMember);
 
 export const vAddUsergroupMembersBody = vUsergroupMembersRequest;
 
+export const vAddUsergroupMembersHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
 export const vAddUsergroupMembersPath = v.object({
     usergroup_id: vUsergroupId
 });
 
-/**
- * Added
- */
-export const vAddUsergroupMembersResponse = v.void();
+export const vAddUsergroupMembersResponse = v.union([vUsergroup, v.void()]);
 
 export const vListUsersQuery = v.object({
     q: v.optional(v.string()),
+    sort: v.optional(v.unknown()),
+    status: v.optional(vUserStatus),
+    role: v.optional(v.string()),
     cursor: v.optional(vUserId),
     limit: v.optional(v.pipe(v.number(), v.integer()))
 });
@@ -7278,6 +7415,10 @@ export const vListUsersQuery = v.object({
 export const vListUsersResponse = vAdminUserPage;
 
 export const vCreateUserBody = vCreateUserRequest;
+
+export const vCreateUserHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
 
 /**
  * Created
@@ -7292,6 +7433,15 @@ export const vPublicProfileByIdPath = v.object({
  * Public profile
  */
 export const vPublicProfileByIdResponse = vPublicProfile;
+
+export const vGetAdminUserPath = v.object({
+    user_id: vUserId
+});
+
+/**
+ * Account
+ */
+export const vGetAdminUserResponse = vAdminUser;
 
 /**
  * Own profile
@@ -7311,35 +7461,38 @@ export const vUpdateMyProfileResponse = vUserProfile;
 
 export const vAssignRoleBody = vAssignRoleRequest;
 
+export const vAssignRoleHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
 export const vAssignRolePath = v.object({
     user_id: vUserId
 });
 
-/**
- * Assigned
- */
-export const vAssignRoleResponse = v.void();
+export const vAssignRoleResponse = v.union([vAdminUser, v.void()]);
+
+export const vUnassignRoleHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
 
 export const vUnassignRolePath = v.object({
     user_id: vUserId,
     slug: v.string()
 });
 
-/**
- * Removed
- */
-export const vUnassignRoleResponse = v.void();
+export const vUnassignRoleResponse = v.union([vAdminUser, v.void()]);
 
 export const vSetUserStatusBody = vSetUserStatusRequest;
+
+export const vSetUserStatusHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
 
 export const vSetUserStatusPath = v.object({
     user_id: vUserId
 });
 
-/**
- * Status changed
- */
-export const vSetUserStatusResponse = v.void();
+export const vSetUserStatusResponse = v.union([vAdminUser, v.void()]);
 
 export const vPublicProfilePath = v.object({
     username: v.string()

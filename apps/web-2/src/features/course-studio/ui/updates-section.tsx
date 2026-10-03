@@ -2,8 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
-import { DataList } from '#/shared/ui/data-list'
-import { ListState } from '#/shared/ui/list-state'
+import { DataList } from '#/shared/components/data-list'
+import { ListState } from '#/shared/components/list-state'
 
 import { can } from '../model/course'
 import { updatesOptions } from '../queries'

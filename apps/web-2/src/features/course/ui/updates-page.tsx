@@ -4,9 +4,9 @@ import { Suspense } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
+import { DataList } from '#/shared/components/data-list'
+import { ListState } from '#/shared/components/list-state'
 import { formatDate } from '#/shared/i18n/format'
-import { DataList } from '#/shared/ui/data-list'
-import { ListState } from '#/shared/ui/list-state'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import { updatesOptions } from '../queries'
@@ -29,7 +29,7 @@ export function UpdatesPage() {
           <article className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold wrap-anywhere">{update.title}</h2>
             <p className="text-sm text-muted-foreground">{formatDate(update.created_at_unix)}</p>
-            <Suspense fallback={<Skeleton shape="line" />}>
+            <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
               <MarkdownView content={update.content} />
             </Suspense>
           </article>

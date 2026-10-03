@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { unlinkGroupOptions } from '../queries'
 
@@ -17,7 +17,7 @@ export function UnlinkGroup({ courseId, group }: { courseId: string; group: User
     unlink.mutate(group, {
       onSuccess: () => {
         setOpen(false)
-        toast(m.studio_group_unlinked())
+        toast.add({ title: m.studio_group_unlinked() })
       },
     })
   return (

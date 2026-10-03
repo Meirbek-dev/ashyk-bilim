@@ -1,13 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Collection } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { collectionActionLabels } from '#/shared/i18n/labels'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { deleteCollectionOptions } from '../queries'
 
@@ -22,7 +22,7 @@ export function DeleteCollection({ collection }: { collection: Collection }) {
       {
         onSuccess: async () => {
           setOpen(false)
-          toast(m.collections_deleted())
+          toast.add({ title: m.collections_deleted() })
           await navigate({ to: '/collections' })
         },
       },

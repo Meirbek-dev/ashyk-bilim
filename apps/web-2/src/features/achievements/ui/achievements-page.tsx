@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatNumber } from '#/shared/i18n/format'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
 
 import { achievementsOptions } from '../queries'
 import { ActivityFeed } from './activity-feed'

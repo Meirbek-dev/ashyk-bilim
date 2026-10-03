@@ -80,6 +80,8 @@ describe('creating an activity', () => {
 
 const row = (patch: Partial<Contributor>): Contributor => ({
   avatar_key: null,
+  version: 1,
+  allowed_actions: [],
   user_id: 'u',
   username: 'u',
   display_name: 'U',

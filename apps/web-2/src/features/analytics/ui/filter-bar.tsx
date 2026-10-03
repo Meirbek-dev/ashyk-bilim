@@ -3,8 +3,8 @@ import { ListFilter } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { SheetPanel } from '#/shared/components/sheet-panel'
 import { Button } from '#/shared/ui/button'
-import { Sheet } from '#/shared/ui/sheet'
 
 import { activeFilters, type Filters } from '../model/filters'
 import { overviewOptions } from '../queries'
@@ -29,7 +29,7 @@ export function FilterBar({ filters }: { filters: Filters }) {
     <>
       <div className="hidden @2xl:block">{form}</div>
       <div className="@2xl:hidden">
-        <Sheet
+        <SheetPanel
           side="right"
           title={m.ui_filters()}
           open={open}
@@ -42,7 +42,7 @@ export function FilterBar({ filters }: { filters: Filters }) {
           }
         >
           {form}
-        </Sheet>
+        </SheetPanel>
       </div>
     </>
   )

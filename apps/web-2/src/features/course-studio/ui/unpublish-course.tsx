@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { lifecycleOptions } from '../queries'
 
@@ -19,7 +19,7 @@ export function UnpublishCourse({ course }: { course: Course }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast(m.studio_unpublished())
+          toast.add({ title: m.studio_unpublished() })
         },
       },
     )

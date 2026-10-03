@@ -1,13 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Contributor, UpdateContributorRequest } from '#/shared/api/gen/types.gen'
+import { ChoiceItems } from '#/shared/components/choice-items'
+import { Link } from '#/shared/components/link'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { ChoiceMenu } from '#/shared/ui/choice-menu'
-import { Link } from '#/shared/ui/link'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, isAssignableRole } from '../model/studio'
 import { updateContributorOptions } from '../queries'
@@ -23,7 +25,10 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   const applying = row.status === 'pending'
   const name = row.display_name || row.username
   const patch = (body: UpdateContributorRequest, done: string) =>
-    update.mutate({ path: { course_id: courseId, user_id: row.user_id }, body }, { onSuccess: () => toast(done) })
+    update.mutate(
+      { path: { course_id: courseId, user_id: row.user_id }, body },
+      { onSuccess: () => toast.add({ title: done }) },
+    )
   const roleChoice = {
     label: m.studio_role_of({ name }),
     value: role,
@@ -43,24 +48,30 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
           <span className="text-sm text-muted-foreground">@{row.username}</span>
         </p>
         {changeable ? (
-          <ChoiceMenu
-            choice={roleChoice}
-            trigger={
-              <Button variant="outline" aria-label={roleChoice.label}>
-                {roleLabels[role]()}
-                <ChevronDown aria-hidden />
-              </Button>
-            }
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="outline" aria-label={roleChoice.label}>
+                  {roleLabels[role]()}
+                  <ChevronDown aria-hidden />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <ChoiceItems choice={roleChoice} />
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <span className="text-sm text-muted-foreground">{roleLabels[role]()}</span>
         )}
         {manage && applying ? (
           <Button
             variant="secondary"
-            pending={update.isPending}
+
             onClick={() => patch({ status: 'active' }, m.studio_application_accepted())}
+            disabled={update.isPending}
           >
+            {update.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.studio_application_accept()}
           </Button>
         ) : null}

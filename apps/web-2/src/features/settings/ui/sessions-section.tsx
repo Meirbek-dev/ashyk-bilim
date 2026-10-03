@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { DataList } from '#/shared/components/data-list'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import { DataList } from '#/shared/ui/data-list'
 
 import { deviceLabel, orderSessions } from '../model/settings'
 import { sessionsOptions } from '../queries'
@@ -23,7 +23,7 @@ export function SessionsSection() {
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-medium">{device}</h3>
-                  {session.current ? <Badge tone="info">{m.settings_session_current()}</Badge> : null}
+                  {session.current ? <StatusBadge tone="info">{m.settings_session_current()}</StatusBadge> : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {m.settings_session_seen({ date: formatDate(session.last_seen_unix) })}

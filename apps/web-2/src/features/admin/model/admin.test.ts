@@ -9,6 +9,7 @@ import { roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
   slug,
+  version: 1,
   display_name_key: `roles.${slug}.name`,
   description_key: `roles.${slug}.description`,
   display_name: null,

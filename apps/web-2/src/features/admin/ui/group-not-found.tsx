@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 /** An unknown or malformed group id. */
 export function GroupNotFound() {

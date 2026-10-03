@@ -1,32 +1,14 @@
 /*
  * Ashyq Bilim design tokens - the contract between themes, the kit and features. Rules: docs/web/DESIGN.md.
  *
- * Import order in the entry stylesheet:
- *   @import "tailwindcss";
- *   @import "@fontsource-variable/inter/wght.css";
- *   @import "@fontsource-variable/inter/wght-italic.css";
- *   @import "@fontsource-variable/geist-mono/wght.css";
- *   @import "./tokens.css";
+ * Imported by globals.css after tailwindcss, tw-animate-css, shadcn/tailwind.css and the fonts. Tailwind's own
+ * namespaces stay intact (the stock shadcn kit in shared/ui uses them); our code is held to the tokens by G-11.
  *
  * Values below are the DEFAULT theme (slug `modern-minimal`). A theme is public/themes/<slug>.css and
  * overrides ONLY the "theme" section (colors, --radius, --shadow-*) on html[data-theme="<slug>"].
  * Mode: html[data-mode="light"|"dark"]; no attribute = follow the system. Every color is light-dark().
  * Hex values may appear only here and in public/themes (G-11); everything else uses the tokens.
  */
-
-/* Namespaces we own outright: palette classes (bg-red-500, bg-white), stray sizes, weights and tracking
-   do not exist, so they cannot be used. */
-@theme {
-  --color-*: initial;
-  --text-*: initial;
-  --font-*: initial;
-  --font-weight-*: initial;
-  --tracking-*: initial;
-  --radius-*: initial;
-  --shadow-*: initial;
-  --ease-*: initial;
-  --animate-*: initial;
-}
 
 @theme inline {
   /* shadcn base-nova color set */
@@ -134,19 +116,6 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
-    }
-  }
-}
-
-/* Tailwind's default dark variant is media-only and ignores data-mode. Features never use dark:
-   (G-11); this keeps any kit leftover consistent with the mode attribute. */
-@custom-variant dark {
-  &:where([data-mode='dark'], [data-mode='dark'] *) {
-    @slot;
-  }
-  @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-mode]), :root:not([data-mode]) *) {
-      @slot;
     }
   }
 }

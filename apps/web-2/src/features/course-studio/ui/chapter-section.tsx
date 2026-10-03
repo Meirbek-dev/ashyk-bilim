@@ -2,11 +2,11 @@ import { useSortable } from '@dnd-kit/react/sortable'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Pencil } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CurriculumChapter } from '#/shared/api/gen/types.gen'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
+import { toast } from '#/shared/ui/toast'
 
 import { updateChapterOptions } from '../curriculum-queries'
 import { ActivityRow } from './activity-row'
@@ -41,7 +41,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
       { path: { chapter_id: chapter.id }, body: { name } },
       {
         onSuccess: () => {
-          toast(m.studio_saved())
+          toast.add({ title: m.studio_saved() })
           done()
         },
       },

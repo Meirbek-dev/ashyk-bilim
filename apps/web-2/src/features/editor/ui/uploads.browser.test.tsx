@@ -5,7 +5,7 @@ import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { FakeStorage, json, SLOT } from '#/shared/api/testing'
-import { renderInRouter } from '#/shared/ui/testing'
+import { renderInRouter } from '#/shared/components/testing'
 
 import type { EditorDocument, EditorNode } from '../model/document'
 import { BlockEditor } from '../index'

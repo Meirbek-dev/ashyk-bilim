@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId, UserId } from '#/shared/api/gen/types.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { FormDialog } from '#/shared/ui/templates/form-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import {
   INTERVENTION_STATUSES,
@@ -42,7 +42,7 @@ export function InterventionDialog({ learnerId, courseId }: { learnerId: UserId;
             idempotency.settle()
             setOpen(false)
             form.reset()
-            toast(m.analytics_intervention_created())
+            toast.add({ title: m.analytics_intervention_created() })
           },
           onError: error => idempotency.settle(error),
         },

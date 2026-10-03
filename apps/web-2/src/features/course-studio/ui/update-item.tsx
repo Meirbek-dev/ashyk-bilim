@@ -1,16 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useState } from 'react'
-import { toast } from 'sonner'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { CourseUpdate } from '#/shared/api/gen/types.gen'
 import { vCreateCourseUpdateRequest } from '#/shared/api/gen/valibot.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { formatDate } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { editUpdateOptions } from '../queries'
 import { DeleteUpdate } from './delete-update'
@@ -29,7 +29,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
         {
           onSuccess: () => {
             setEditing(false)
-            toast(m.studio_saved())
+            toast.add({ title: m.studio_saved() })
           },
         },
       ),
@@ -62,7 +62,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
     <article className="flex flex-col gap-2">
       <h3 className="text-lg font-semibold wrap-anywhere">{update.title}</h3>
       <p className="text-sm text-muted-foreground">{formatDate(update.created_at_unix)}</p>
-      <Suspense fallback={<Skeleton shape="line" />}>
+      <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
         <MarkdownView content={update.content} />
       </Suspense>
       {editable ? (

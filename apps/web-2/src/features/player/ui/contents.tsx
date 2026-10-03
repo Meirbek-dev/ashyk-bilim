@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { LearnerCourseState } from '#/shared/api/gen/types.gen'
-import { ProgressBar } from '#/shared/ui/progress-bar'
+import { Progress } from '#/shared/ui/progress'
 
 import { ContentsRow } from './contents-row'
 
@@ -11,7 +11,7 @@ export function Contents({ state, onPick }: { state: LearnerCourseState; onPick:
     <div className="flex flex-col gap-gutter">
       <div className="flex flex-col gap-2">
         <p className="font-semibold wrap-anywhere">{state.title}</p>
-        <ProgressBar value={percent} label={m.player_progress_label()} />
+        <Progress value={percent} aria-label={m.player_progress_label()} />
         <p className="text-sm text-muted-foreground tabular-nums">{m.player_progress({ done, total })}</p>
       </div>
       {state.outline.map(chapter => (

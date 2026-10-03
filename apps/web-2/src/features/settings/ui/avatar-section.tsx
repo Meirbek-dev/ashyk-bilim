@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { UserProfile } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { FileButton } from '#/shared/components/file-button'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { FileButton } from '#/shared/ui/file-button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { AVATAR_MAX_MB, avatarProblem, contentUrl } from '../model/settings'
 import { avatarOptions } from '../queries'
@@ -24,13 +24,13 @@ export function AvatarSection({ profile }: { profile: UserProfile }) {
   const pick = (file: File) => {
     const refused = avatarProblem(file)
     setProblem(refused)
-    if (!refused) replace.mutate(file, { onSuccess: () => toast(m.settings_avatar_saved()) })
+    if (!refused) replace.mutate(file, { onSuccess: () => toast.add({ title: m.settings_avatar_saved() }) })
   }
   const confirmRemove = () =>
     remove.mutate(null, {
       onSuccess: () => {
         setConfirming(false)
-        toast(m.settings_avatar_removed())
+        toast.add({ title: m.settings_avatar_removed() })
       },
     })
   return (
@@ -59,8 +59,8 @@ export function AvatarSection({ profile }: { profile: UserProfile }) {
           />
         ) : null}
       </div>
-      {problem ? <Alert>{problem}</Alert> : null}
-      {replace.error ? <Alert>{presentError(replace.error)}</Alert> : null}
+      {problem ? <ErrorAlert>{problem}</ErrorAlert> : null}
+      {replace.error ? <ErrorAlert>{presentError(replace.error)}</ErrorAlert> : null}
     </PlainSection>
   )
 }

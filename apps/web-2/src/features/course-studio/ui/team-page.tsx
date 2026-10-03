@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
+import { DataList } from '#/shared/components/data-list'
 
 import { can } from '../model/course'
 import { splitRoster } from '../model/studio'

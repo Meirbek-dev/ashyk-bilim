@@ -3,8 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId, UserId } from '#/shared/api/gen/types.gen'
+import { SheetPanel } from '#/shared/components/sheet-panel'
 import { formatDate } from '#/shared/i18n/format'
-import { Sheet } from '#/shared/ui/sheet'
 
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
@@ -25,7 +25,7 @@ export function LearnerSheet({ learnerId, courseId, name, course }: LearnerSheet
   const close = () =>
     void navigate({ to: '.', search: prev => ({ ...prev, learnerId: undefined, courseId: undefined }) })
   return (
-    <Sheet
+    <SheetPanel
       open
       onOpenChange={open => {
         if (!open) close()
@@ -53,6 +53,6 @@ export function LearnerSheet({ learnerId, courseId, name, course }: LearnerSheet
           ))}
         </ul>
       )}
-    </Sheet>
+    </SheetPanel>
   )
 }

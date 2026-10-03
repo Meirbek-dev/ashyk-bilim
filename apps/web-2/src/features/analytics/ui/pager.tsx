@@ -1,6 +1,8 @@
+import { Link as RouterLink } from '@tanstack/react-router'
+
 import { m } from '#/paraglide/messages'
 import { formatNumber } from '#/shared/i18n/format'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { pageCount } from '../model/analytics'
 import { PAGE_SIZE } from '../model/filters'
@@ -19,17 +21,25 @@ export function Pager({ page, total, param = 'page' }: PagerProps) {
   return (
     <nav aria-label={m.analytics_pager()} className="flex flex-wrap items-center gap-2 text-sm">
       {page > 1 ? (
-        <Link variant="outline" to="." search={prev => ({ ...prev, [param]: page - 1 })}>
+        <RouterLink
+          className={buttonVariants({ variant: 'outline' })}
+          to="."
+          search={prev => ({ ...prev, [param]: page - 1 })}
+        >
           {m.analytics_prev()}
-        </Link>
+        </RouterLink>
       ) : null}
       <span className="text-muted-foreground tabular-nums">
         {m.analytics_page_of({ page: formatNumber(page), count: formatNumber(count) })}
       </span>
       {page < count ? (
-        <Link variant="outline" to="." search={prev => ({ ...prev, [param]: page + 1 })}>
+        <RouterLink
+          className={buttonVariants({ variant: 'outline' })}
+          to="."
+          search={prev => ({ ...prev, [param]: page + 1 })}
+        >
           {m.analytics_next()}
-        </Link>
+        </RouterLink>
       ) : null}
     </nav>
   )

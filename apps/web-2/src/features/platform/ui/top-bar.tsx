@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import type { WorkspaceId } from '#/shared/auth/access'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { shellSlots } from './shell-slots'
 
@@ -19,9 +20,9 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
   const Notifications = shellSlots.notifications
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-2 md:px-4">
-      <Link to="/" variant="ghost">
+      <RouterLink to="/" className={buttonVariants({ variant: 'ghost' })}>
         {m.platform_brand()}
-      </Link>
+      </RouterLink>
       {session ? (
         <div className="hidden lg:block">
           <Suspense fallback={null}>
@@ -41,13 +42,13 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
             <Suspense fallback={null}>
               <GuestSwitches />
             </Suspense>
-            <Link to="/login" variant="ghost">
+            <RouterLink to="/login" className={buttonVariants({ variant: 'ghost' })}>
               {m.platform_nav_login()}
-            </Link>
+            </RouterLink>
             <span className="hidden sm:flex">
-              <Link to="/signup" variant="outline">
+              <RouterLink to="/signup" className={buttonVariants({ variant: 'outline' })}>
                 {m.platform_nav_signup()}
-              </Link>
+              </RouterLink>
             </span>
           </>
         )}

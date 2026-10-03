@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityDetail, FinalizedUpload } from '#/shared/api/gen/types.gen'
+import { Anchor } from '#/shared/components/anchor'
+import { FileInput } from '#/shared/components/file-input'
 import { presentError } from '#/shared/i18n/errors'
-import { FileInput } from '#/shared/ui/file-input'
-import { Anchor } from '#/shared/ui/link'
+import { toast } from '#/shared/ui/toast'
 
 import { claimOptions, updateActivityOptions } from '../curriculum-queries'
 import { fileContent, mediaBlock, mediaSource } from '../model/studio'
@@ -27,7 +27,7 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
         body: { content: fileContent(upload, file.name) },
         headers: { 'If-Match': activity.version },
       },
-      { onSuccess: () => toast(m.studio_media_replaced()) },
+      { onSuccess: () => toast.add({ title: m.studio_media_replaced() }) },
     )
   const replace = (upload: FinalizedUpload, file: File) =>
     claim.mutate(

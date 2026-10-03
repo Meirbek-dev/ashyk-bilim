@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { formatNumber } from '#/shared/i18n/format'
-import { ProgressBar } from '#/shared/ui/progress-bar'
+import { Progress } from '#/shared/ui/progress'
 
 import { activeStreak, levelProgress } from '../model/achievements'
 import { achievementsOptions } from '../queries'
@@ -30,7 +30,7 @@ export function ProgressSection() {
     <>
       <section aria-label={m.achievements_level_title()} className="flex max-w-prose flex-col gap-3">
         <h2 className="text-xl font-semibold">{m.achievements_level_title()}</h2>
-        <ProgressBar value={progress.percent} label={m.achievements_progress_label()} />
+        <Progress value={progress.percent} aria-label={m.achievements_progress_label()} />
         <p className="text-sm text-muted-foreground tabular-nums">
           {progress.next === null
             ? m.achievements_max_level()

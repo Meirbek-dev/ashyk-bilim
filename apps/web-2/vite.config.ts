@@ -141,8 +141,11 @@ const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricte
 
 const forbiddenElements = ['button', 'input', 'select', 'textarea', 'dialog', 'table', 'a'].map(element => ({
   element,
-  message: `Use the kit component from #/shared/ui (or Link from @tanstack/react-router for <a>), not raw <${element}>.`,
+  message: `Use the stock component from #/shared/ui or a composite from #/shared/components (Link / Anchor for <a>), not raw <${element}>.`,
 }))
+
+const LINK_COMPOSITES = ['src/shared/components/link.tsx', 'src/shared/components/anchor.tsx']
+const forbiddenExceptA = forbiddenElements.filter(entry => entry.element !== 'a')
 
 const lint: OxlintConfig = {
   plugins: ['eslint', 'typescript', 'oxc', 'react', 'jsx-a11y', 'import', 'promise', 'unicorn', 'vitest'],
@@ -206,9 +209,25 @@ const lint: OxlintConfig = {
       files: ['src/shared/api/query-client.ts'],
       rules: { 'no-restricted-properties': restrictProperties('invalidateQueries') },
     },
-    { files: ['src/shared/ui/**'], rules: { 'react/forbid-elements': 'off' } },
+    // The two link composites are the one place that renders <a> (routes through createLink, other URLs plainly).
+    { files: LINK_COMPOSITES, rules: { 'react/forbid-elements': ['error', { forbid: forbiddenExceptA }] } },
+    {
+      // Stock shadcn output (`bunx shadcn add`), owned by the generator: named relaxations for this folder only.
+      files: ['src/shared/ui/**'],
+      rules: {
+        'react/forbid-elements': 'off',
+        'react/no-multi-comp': 'off',
+        'no-restricted-imports': ['error', { patterns: [...layerPatterns.any, ...layerPatterns.shared] }],
+        'jsx-a11y/prefer-tag-over-role': 'off',
+        'jsx-a11y/no-noninteractive-element-interactions': 'off',
+        'jsx-a11y/click-events-have-key-events': 'off',
+        'jsx-a11y/label-has-associated-control': 'off',
+        'typescript/no-unsafe-type-assertion': 'off',
+        'no-underscore-dangle': 'off',
+      },
+    },
     // Chromium shows no PDF in a sandboxed frame; the component frames same-origin paths only.
-    { files: ['src/shared/ui/pdf-frame.tsx'], rules: { 'react/iframe-missing-sandbox': 'off' } },
+    { files: ['src/shared/components/pdf-frame.tsx'], rules: { 'react/iframe-missing-sandbox': 'off' } },
     {
       // Tools that require a default export.
       files: [
@@ -224,7 +243,7 @@ const lint: OxlintConfig = {
 }
 
 // `vp staged` (pre-commit) formats staged files; generated output is never reformatted.
-const GENERATED = /\/(shared\/api\/gen|paraglide|themes)\/|routeTree\.gen\.ts$|BACKLOG\.md$/
+const GENERATED = /\/(shared\/api\/gen|shared\/ui|paraglide|themes)\/|routeTree\.gen\.ts$|BACKLOG\.md$/
 const formatStaged = (files: readonly string[]) => {
   const targets = files.filter(file => !GENERATED.test(file.replaceAll('\\', '/')))
   return targets.length === 0 ? [] : `vp fmt --write ${targets.map(file => JSON.stringify(file)).join(' ')}`
@@ -273,6 +292,9 @@ export default defineConfig({
       'BACKLOG.md',
       // Generated from the legacy theme store (phase 1.1); byte-stable generator output.
       'public/themes/',
+      // Stock shadcn output: kept as the CLI writes it, so `shadcn add --diff` shows only real changes.
+      'src/shared/ui/',
+      'components.json',
     ],
   },
 })

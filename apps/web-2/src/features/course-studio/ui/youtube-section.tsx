@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityDetail } from '#/shared/api/gen/types.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
 import { mediaSource, youtubeContent, youtubeSchema } from '../model/studio'
@@ -22,7 +22,7 @@ export function YoutubeSection({ courseId, activity }: { courseId: string; activ
           body: { content: youtubeContent(uri) },
           headers: { 'If-Match': activity.version },
         },
-        { onSuccess: () => toast(m.studio_saved()) },
+        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
       ),
   })
   return (

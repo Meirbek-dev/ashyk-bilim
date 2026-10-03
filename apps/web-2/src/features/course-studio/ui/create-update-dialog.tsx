@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CreateCourseUpdateRequest } from '#/shared/api/gen/types.gen'
 import { vCreateCourseUpdateRequest } from '#/shared/api/gen/valibot.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { FormDialog } from '#/shared/ui/templates/form-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { createUpdateOptions } from '../queries'
 
@@ -25,7 +25,7 @@ export function CreateUpdateDialog({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             changeOpen(false)
-            toast(m.studio_update_created())
+            toast.add({ title: m.studio_update_created() })
           },
         },
       ),

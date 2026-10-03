@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { ListState } from '#/shared/components/list-state'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { ListState } from '#/shared/ui/list-state'
 
 import { achievementsOptions } from '../queries'
 import { sourceLabel } from './source-labels'

@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams, useSearch } from '@tanstack/react-router'
+import { useParams, useSearch, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { NewPost } from './new-post'
 import { PostList } from './post-list'
@@ -17,9 +17,13 @@ export function DiscussionsPage() {
     return (
       <div className="flex flex-col items-start gap-4 py-8">
         <p className="text-muted-foreground">{m.discussions_guest()}</p>
-        <Link to="/login" search={{ redirect: `/courses/${courseId}/discussions` }} variant="outline">
+        <RouterLink
+          to="/login"
+          search={{ redirect: `/courses/${courseId}/discussions` }}
+          className={buttonVariants({ variant: 'outline' })}
+        >
           {m.platform_nav_login()}
-        </Link>
+        </RouterLink>
       </div>
     )
   return (

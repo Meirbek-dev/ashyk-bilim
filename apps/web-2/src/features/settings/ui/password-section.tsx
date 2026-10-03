@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { ChangePasswordRequest } from '#/shared/api/gen/types.gen'
 import { vChangePasswordRequest } from '#/shared/api/gen/valibot.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { presentError } from '#/shared/i18n/errors'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
 import { changePasswordOptions } from '../queries'
@@ -23,7 +23,7 @@ export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
       try {
         await change.mutateAsync({ body })
         form.reset()
-        toast(m.settings_password_changed())
+        toast.add({ title: m.settings_password_changed() })
       } catch (error) {
         // A wrong current password is that field's error, not the form's (BUG-094).
         if (!hasCode(error, 'invalid-credentials')) throw error

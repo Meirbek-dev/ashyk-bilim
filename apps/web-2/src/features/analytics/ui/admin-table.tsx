@@ -2,9 +2,9 @@ import type { RowData } from '@tanstack/react-table'
 import { useId } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { DataColumn } from '#/shared/ui/data-columns'
-import { DataTable } from '#/shared/ui/data-table'
-import { ListState } from '#/shared/ui/list-state'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { DataTable } from '#/shared/components/data-table'
+import { ListState } from '#/shared/components/list-state'
 
 type AdminTableProps<T> = {
   title: string

@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 /** An unknown id, a malformed one, or a course hidden from the caller: the API does not tell them apart (UX-078). */
 export function CourseNotFound() {

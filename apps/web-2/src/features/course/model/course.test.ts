@@ -6,6 +6,7 @@ import { application, authorNames, curriculumSyllabus, outlineSyllabus, primaryA
 
 const course = (patch: Partial<Course> = {}): Course => ({
   id: 'c1',
+  version: 1,
   name: 'Course',
   about: '',
   description: '',
@@ -79,6 +80,8 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
 
 const row = (patch: Partial<Contributor>): Contributor => ({
   user_id: 'u1',
+  version: 1,
+  allowed_actions: [],
   username: 'u1',
   display_name: 'User',
   avatar_key: null,
@@ -142,13 +145,23 @@ describe('syllabus and progress', () => {
           name: 'One',
           description: '',
           position: 1,
+          version: 1,
           allowed_actions: [],
           activities: [
             { ...activity('a1'), published: true },
             { ...activity('a2'), published: false },
           ],
         },
-        { id: 'ch2', course_id: 'c1', name: 'Two', description: '', position: 2, allowed_actions: [], activities: [] },
+        {
+          id: 'ch2',
+          course_id: 'c1',
+          name: 'Two',
+          description: '',
+          position: 2,
+          version: 1,
+          allowed_actions: [],
+          activities: [],
+        },
       ],
     })
     expect(syllabus).toEqual([

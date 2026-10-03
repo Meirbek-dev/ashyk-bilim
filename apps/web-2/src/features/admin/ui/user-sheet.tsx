@@ -4,10 +4,10 @@ import { useNavigate } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
+import { Link } from '#/shared/components/link'
+import { SheetPanel } from '#/shared/components/sheet-panel'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
-import { Sheet } from '#/shared/ui/sheet'
 
 import { canUser } from '../model/admin'
 import { userOptions } from '../queries'
@@ -30,7 +30,7 @@ export function UserSheet({ username }: { username: string }) {
   const namedRoles = hasCapability(session, 'admin.roles')
   const badge = user ? userStatusBadges[user.status] : null
   return (
-    <Sheet
+    <SheetPanel
       open
       onOpenChange={open => {
         if (!open) close()
@@ -62,7 +62,7 @@ export function UserSheet({ username }: { username: string }) {
             <div>
               <dt className="text-muted-foreground">{m.admin_users_col_status()}</dt>
               <dd>
-                <Badge tone={badge.tone}>{badge.label()}</Badge>
+                <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
               </dd>
             </div>
             {namedRoles && canUser(user, 'manage_roles') ? null : (
@@ -81,6 +81,6 @@ export function UserSheet({ username }: { username: string }) {
           {hasCapability(session, 'admin.gamification') ? <AwardXp user={user} /> : null}
         </>
       ) : null}
-    </Sheet>
+    </SheetPanel>
   )
 }

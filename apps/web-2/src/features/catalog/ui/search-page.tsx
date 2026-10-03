@@ -1,7 +1,7 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { ListPage } from '#/shared/ui/templates/list-page'
+import { ListPage } from '#/shared/components/templates/list-page'
 
 import { SearchBox } from './search-box'
 import { SearchResults } from './search-results'

@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useState } from 'react'
-import { toast } from 'sonner'
 
 import { MarkdownEditor } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { Course, UpdateCourseRequest } from '#/shared/api/gen/types.gen'
 import { vUpdateCourseRequest } from '#/shared/api/gen/valibot.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { updateCourseOptions } from '../queries'
 
@@ -25,7 +25,10 @@ export function DetailsSection({ course }: { course: Course }) {
   const form = useAppForm(vUpdateCourseRequest, {
     defaultValues,
     onSubmit: body =>
-      update.mutateAsync({ path: { course_id: course.id }, body }, { onSuccess: () => toast(m.studio_saved()) }),
+      update.mutateAsync(
+        { path: { course_id: course.id }, body },
+        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
+      ),
   })
   return (
     <SettingsSection
@@ -39,7 +42,7 @@ export function DetailsSection({ course }: { course: Course }) {
       <form.AppField name="about">{field => <field.TextareaField label={m.studio_field_about()} />}</form.AppField>
       <form.AppField name="description">
         {field => (
-          <Suspense fallback={<Skeleton shape="row" />}>
+          <Suspense fallback={<Skeleton className="h-row w-full" />}>
             <MarkdownEditor
               label={m.studio_field_description()}
               value={field.state.value ?? ''}

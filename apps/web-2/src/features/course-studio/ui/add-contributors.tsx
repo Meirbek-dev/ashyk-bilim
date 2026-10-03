@@ -1,15 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useState } from 'react'
-import { toast } from 'sonner'
 
 import { PeoplePicker } from '#/features/admin'
 import { m } from '#/paraglide/messages'
 import type { UserHit } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
 import { Skeleton } from '#/shared/ui/skeleton'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, type RoleForm, roleSchema } from '../model/studio'
 import { addContributorsOptions } from '../queries'
@@ -30,7 +31,7 @@ export function AddContributors({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             setPeople([])
-            toast(m.studio_team_added())
+            toast.add({ title: m.studio_team_added() })
           },
         },
       ),
@@ -46,17 +47,18 @@ export function AddContributors({ courseId }: { courseId: string }) {
       }}
     >
       <div className="w-full">
-        <Suspense fallback={<Skeleton shape="row" />}>
+        <Suspense fallback={<Skeleton className="h-row w-full" />}>
           <PeoplePicker label={m.studio_team_people()} value={people} onValueChange={setPeople} />
         </Suspense>
       </div>
       <form.AppField name="role">
         {field => <field.SelectField label={m.studio_role_label()} options={roleOptions} />}
       </form.AppField>
-      <Button type="submit" variant="outline" pending={add.isPending} disabled={people.length === 0}>
+      <Button type="submit" variant="outline" disabled={people.length === 0 || add.isPending}>
+        {add.isPending ? <Spinner data-icon="inline-start" /> : null}
         {m.studio_team_add_submit()}
       </Button>
-      {add.error ? <Alert>{presentError(add.error)}</Alert> : null}
+      {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
     </form>
   )
 }

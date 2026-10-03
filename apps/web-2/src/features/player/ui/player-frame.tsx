@@ -1,9 +1,9 @@
-import { useParams } from '@tanstack/react-router'
+import { useParams, Link as RouterLink } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
+import { FocusPage } from '#/shared/components/templates/focus-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { BackToCourse } from './back-to-course'
 
@@ -14,9 +14,13 @@ export function PlayerFrame({ title, children }: { title: string; children: Reac
     <FocusPage back={<BackToCourse courseId={courseId} />} title={title}>
       <section className="flex flex-col items-start gap-4">
         {children}
-        <Link to="/courses/$courseId/about" params={{ courseId }} variant="outline">
+        <RouterLink
+          to="/courses/$courseId/about"
+          params={{ courseId }}
+          className={buttonVariants({ variant: 'outline' })}
+        >
           {m.player_course_page()}
-        </Link>
+        </RouterLink>
       </section>
     </FocusPage>
   )

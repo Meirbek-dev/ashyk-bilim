@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { SavedView } from '#/shared/api/gen/types.gen'
-import { IconButton } from '#/shared/ui/icon-button'
-import { Link } from '#/shared/ui/link'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { IconButton } from '#/shared/components/icon-button'
+import { Link } from '#/shared/components/link'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { viewTarget } from '../model/analytics'
 import { tabPaths } from '../model/filters'
@@ -25,7 +25,7 @@ export function SavedViewItem({ view }: { view: SavedView }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast(m.analytics_view_deleted())
+          toast.add({ title: m.analytics_view_deleted() })
         },
       },
     )

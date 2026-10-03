@@ -1,11 +1,11 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, Link as RouterLink } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 type NeighbourProps = { courseId: CourseId; prev: ActivityState | null; next: ActivityState | null }
 
@@ -20,28 +20,28 @@ export function NeighbourLinks({ courseId, prev, next }: NeighbourProps) {
   return (
     <nav aria-label={m.player_neighbours()} className="flex items-center justify-between gap-2">
       {prev ? (
-        <Link
+        <RouterLink
           to="/learn/$courseId/$activityId"
           params={{ courseId, activityId: prev.id }}
-          variant="ghost"
+          className={buttonVariants({ variant: 'ghost' })}
           aria-label={`${m.player_prev()}: ${prev.title}`}
         >
           <ChevronLeft aria-hidden />
           {m.player_prev()}
-        </Link>
+        </RouterLink>
       ) : (
         <span />
       )}
       {next ? (
-        <Link
+        <RouterLink
           to="/learn/$courseId/$activityId"
           params={{ courseId, activityId: next.id }}
-          variant="ghost"
+          className={buttonVariants({ variant: 'ghost' })}
           aria-label={`${m.player_next()}: ${next.title}`}
         >
           {m.player_next()}
           <ChevronRight aria-hidden />
-        </Link>
+        </RouterLink>
       ) : null}
     </nav>
   )

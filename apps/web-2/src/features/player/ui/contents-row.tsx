@@ -2,8 +2,8 @@ import { Check, Lock } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
+import { Link } from '#/shared/components/link'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { Link } from '#/shared/ui/link'
 
 type RowProps = { courseId: CourseId; activity: ActivityState; onPick: () => void }
 

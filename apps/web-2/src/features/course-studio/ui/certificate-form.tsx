@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Certification, Course } from '#/shared/api/gen/types.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import {
   CERTIFICATE_TYPES,
@@ -44,7 +44,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
           path: { certification_id: certification.id },
           body: { config: certificateConfig(certification.config, fields) },
         },
-        { onSuccess: () => toast(m.studio_saved()) },
+        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
       ),
   })
   return (

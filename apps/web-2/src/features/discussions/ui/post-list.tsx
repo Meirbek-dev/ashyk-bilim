@@ -2,8 +2,8 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
+import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 
 import { postsOptions } from '../queries'
 import { PostItem } from './post-item'

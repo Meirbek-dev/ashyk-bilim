@@ -2,11 +2,11 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { DataList } from '#/shared/components/data-list'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 
 import { contentUrl } from '../model/settings'
 import { publicProfileOptions, userCoursesListOptions } from '../queries'

@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 /** A 403 shown in place: the URL stays, so a link shared with someone without access explains itself. */
 export function ForbiddenView() {

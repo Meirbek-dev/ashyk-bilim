@@ -1,8 +1,8 @@
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
 
 import { courseState, type CourseState } from '../model/catalog'
 
@@ -23,7 +23,7 @@ export function CourseItem({ course, level = 2 }: { course: Course; level?: 2 | 
             {course.name}
           </Link>
         </Heading>
-        {state ? <Badge tone="neutral">{stateLabels[state]()}</Badge> : null}
+        {state ? <StatusBadge tone="neutral">{stateLabels[state]()}</StatusBadge> : null}
       </div>
       {course.description ? <p className="line-clamp-3 wrap-anywhere">{course.description}</p> : null}
       <p className="text-sm text-muted-foreground">

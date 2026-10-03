@@ -3,8 +3,8 @@ import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { TeacherOverviewSummary, TeacherOverviewTrends } from '#/shared/api/gen/types.gen'
+import { TimeSeries } from '#/shared/components/charts/time-series'
 import { formatDayMonth, formatNumber } from '#/shared/i18n/format'
-import { TimeSeries } from '#/shared/ui/charts/time-series'
 
 import { pickFilters, type TileMetric } from '../model/filters'
 import { overviewOptions } from '../queries'

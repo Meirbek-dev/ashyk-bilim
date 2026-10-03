@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { readinessOptions } from '../queries'
 import { ReadinessList } from './readiness-list'
@@ -17,13 +17,21 @@ export function OverviewPage() {
       <ReadinessList courseId={courseId} />
       <div>
         {readiness.ready ? (
-          <Link to="/teach/courses/$courseId/publish" params={{ courseId }} variant="outline">
+          <RouterLink
+            to="/teach/courses/$courseId/publish"
+            params={{ courseId }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
             {m.studio_go_publish()}
-          </Link>
+          </RouterLink>
         ) : (
-          <Link to="/teach/courses/$courseId/content" params={{ courseId }} variant="outline">
+          <RouterLink
+            to="/teach/courses/$courseId/content"
+            params={{ courseId }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
             {m.studio_go_content()}
-          </Link>
+          </RouterLink>
         )}
       </div>
     </section>

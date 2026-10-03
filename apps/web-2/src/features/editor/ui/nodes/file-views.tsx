@@ -2,8 +2,8 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { FileText } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { PdfFrame } from '#/shared/ui/pdf-frame'
+import { Link } from '#/shared/components/link'
+import { PdfFrame } from '#/shared/components/pdf-frame'
 
 import { blockFileUrl, isRecord, numberAttr } from '../../model/document'
 import { justify } from './align'

@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { BadgeCheck } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
 
 import { verificationOptions } from '../queries'
 import { CertificatePdfLink } from './certificate-pdf-link'
@@ -26,12 +26,12 @@ export function CertificateVerifyPage({ code }: { code: string }) {
       title={course.name}
       meta={m.certificates_summary({ date: formatDate(certificate.issued_at_unix) })}
       status={
-        <Badge tone="success">
+        <StatusBadge tone="success">
           <BadgeCheck aria-hidden className="size-3" />
           {m.certificates_valid()}
-        </Badge>
+        </StatusBadge>
       }
-      primaryAction={<CertificatePdfLink code={certificate.verify_code} variant="primary" />}
+      primaryAction={<CertificatePdfLink code={certificate.verify_code} variant="default" />}
     >
       <dl className="flex max-w-prose flex-col gap-3">
         {fields.map(field => (

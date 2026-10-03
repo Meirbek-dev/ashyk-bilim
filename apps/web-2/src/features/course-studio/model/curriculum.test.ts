@@ -28,6 +28,7 @@ const activity = (id: string, chapter_id: string, position: number): Activity =>
 const chapter = (id: string, position: number, ids: string[]): CurriculumChapter => ({
   id,
   position,
+  version: 1,
   course_id: 'c',
   name: id,
   description: '',

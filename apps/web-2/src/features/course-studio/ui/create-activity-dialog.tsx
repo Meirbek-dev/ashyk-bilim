@@ -2,14 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Chapter } from '#/shared/api/gen/types.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { IconButton } from '#/shared/components/icon-button'
+import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { IconButton } from '#/shared/ui/icon-button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { FormDialog } from '#/shared/ui/templates/form-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { createActivityOptions, createAssessmentOptions, createFileSubmissionOptions } from '../curriculum-queries'
 import { CREATABLE_TYPES, createPlan, newActivitySchema, type NewActivity } from '../model/studio'
@@ -46,7 +46,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
     onSubmit: async value => {
       const activityId = await create(value)
       changeOpen(false)
-      toast(m.studio_activity_created())
+      toast.add({ title: m.studio_activity_created() })
       await navigate({ to: '/teach/courses/$courseId/activities/$activityId/edit', params: { courseId, activityId } })
     },
   })

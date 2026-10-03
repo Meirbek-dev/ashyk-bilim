@@ -1,8 +1,24 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/inter/wght-italic.css';
 @import '@fontsource-variable/geist-mono/wght.css';
 @import './tokens.css';
+
+/* The stock kit's dark: follows the mode attribute, not only the media query: an explicit data-mode="dark", or the
+   system setting when data-mode is absent or "system"; never under data-mode="light". Our code never writes dark:
+   (G-11): light-dark() tokens carry the mode. */
+@custom-variant dark {
+  &:where([data-mode='dark'], [data-mode='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-mode]), :root:not([data-mode]) *, [data-mode='system'], [data-mode='system'] *) {
+      @slot;
+    }
+  }
+}
 
 /* TanStack Router marks the link of the current route with aria-current="page" (tab links, nav). */
 @custom-variant current (&[aria-current='page']);

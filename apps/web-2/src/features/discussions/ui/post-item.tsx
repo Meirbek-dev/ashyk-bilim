@@ -1,17 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useState } from 'react'
-import { toast } from 'sonner'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { BlockViewer } from '#/features/editor'
 import { m } from '#/paraglide/messages'
 import type { Discussion, DiscussionAction } from '#/shared/api/gen/types.gen'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { UserAvatar } from '#/shared/components/user-avatar'
 import { presentError } from '#/shared/i18n/errors'
 import { formatDate } from '#/shared/i18n/format'
-import { Avatar } from '#/shared/ui/avatar'
-import { Badge } from '#/shared/ui/badge'
-import { Button } from '#/shared/ui/button'
-import { Link } from '#/shared/ui/link'
+import { Button, buttonVariants } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { updatePostOptions } from '../queries'
 import { DeletePost } from './delete-post'
@@ -34,22 +35,22 @@ export function PostItem({ item, open = false }: PostItemProps) {
   const save = (content: string) =>
     update.mutateAsync(
       { path: { discussion_id: item.id }, body: { content } },
-      { onSuccess: () => (setEditing(false), toast(m.discussions_saved())) },
+      { onSuccess: () => (setEditing(false), toast.add({ title: m.discussions_saved() })) },
     )
   // A moderator's status change only (BUG-115): the owner's content is not sent back.
   const moderate = () =>
     update.mutate(
       { path: { discussion_id: item.id }, body: { status: hidden ? 'active' : 'hidden' } },
-      { onSuccess: () => toast(hidden ? m.discussions_restored() : m.discussions_hidden_done()) },
+      { onSuccess: () => toast.add({ title: hidden ? m.discussions_restored() : m.discussions_hidden_done() }) },
     )
   const cancel = () => (setEditing(false), update.reset())
   return (
     <article className="flex flex-col gap-3">
       <header className="flex flex-wrap items-center gap-2 text-sm">
-        <Avatar name={author} />
+        <UserAvatar name={author} />
         <span className="font-medium wrap-anywhere">{author}</span>
         <span className="text-muted-foreground">{formatDate(item.created_at_unix)}</span>
-        {hidden ? <Badge tone="warning">{m.discussions_hidden()}</Badge> : null}
+        {hidden ? <StatusBadge tone="warning">{m.discussions_hidden()}</StatusBadge> : null}
       </header>
       {editing ? (
         <PostForm
@@ -61,21 +62,21 @@ export function PostItem({ item, open = false }: PostItemProps) {
           onCancel={cancel}
         />
       ) : (
-        <Suspense fallback={<Skeleton shape="line" />}>
+        <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
           <BlockViewer content={item.content} />
         </Suspense>
       )}
       <div className="flex flex-wrap items-center gap-1">
         {can('react') ? <PostReactions item={item} /> : null}
         {!item.parent_id && item.status === 'active' ? (
-          <Link
+          <RouterLink
             to="/courses/$courseId/discussions"
             params={{ courseId: item.course_id }}
             search={{ thread: open ? undefined : item.id }}
-            variant="ghost"
+            className={buttonVariants({ variant: 'ghost' })}
           >
             {open ? m.discussions_hide_replies() : m.discussions_replies({ count: item.replies_count })}
-          </Link>
+          </RouterLink>
         ) : null}
         {can('update') && !editing ? (
           <Button variant="ghost" onClick={() => setEditing(true)}>
@@ -83,7 +84,8 @@ export function PostItem({ item, open = false }: PostItemProps) {
           </Button>
         ) : null}
         {can('moderate') ? (
-          <Button variant="ghost" pending={update.isPending && !editing} onClick={moderate}>
+          <Button variant="ghost" onClick={moderate} disabled={update.isPending && !editing}>
+            {update.isPending && !editing ? <Spinner data-icon="inline-start" /> : null}
             {hidden ? m.discussions_restore() : m.discussions_hide()}
           </Button>
         ) : null}

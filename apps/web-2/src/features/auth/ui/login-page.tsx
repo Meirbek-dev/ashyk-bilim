@@ -6,9 +6,10 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { Link } from '#/shared/components/link'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Link } from '#/shared/ui/link'
+import { Spinner } from '#/shared/ui/spinner'
 
 import { loginOptions } from '../queries'
 import { AuthForm } from './auth-form'
@@ -76,11 +77,12 @@ export function LoginPage() {
           </>
         )}
         <LoginError error={login.error} googleError={totpStep ? undefined : search.error} />
-        <Button type="submit" size="block" pending={login.isPending}>
+        <Button type="submit" className="w-full" disabled={login.isPending}>
+          {login.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.auth_login_submit()}
         </Button>
         {totpStep ? (
-          <Button variant="ghost" size="block" onClick={backToPassword}>
+          <Button variant="ghost" className="w-full" onClick={backToPassword}>
             {m.auth_login_back()}
           </Button>
         ) : null}

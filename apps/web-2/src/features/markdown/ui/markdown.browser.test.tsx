@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
-import { renderInRouter } from '#/shared/ui/testing'
+import { renderInRouter } from '#/shared/components/testing'
 
 import { sanitize } from '../model/sanitize'
 import { MarkdownEditor, MarkdownView } from '../index'

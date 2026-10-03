@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { readSwitches, type GamificationSwitches } from '../model/settings'
 import { gamificationOptions, updatePreferencesOptions } from '../queries'
@@ -22,7 +22,7 @@ export function NotificationsPage() {
     onSubmit: ({ xpGain, showOnLeaderboard }) =>
       update.mutateAsync(
         { body: { notifications: { xpGain }, privacy: { showOnLeaderboard } } },
-        { onSuccess: () => toast(m.settings_saved()) },
+        { onSuccess: () => toast.add({ title: m.settings_saved() }) },
       ),
   })
   return (

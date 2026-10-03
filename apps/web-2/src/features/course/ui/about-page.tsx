@@ -30,7 +30,7 @@ export function AboutPage() {
       ) : null}
       {description ? (
         <div className="max-w-prose">
-          <Suspense fallback={<Skeleton shape="line" />}>
+          <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
             <MarkdownView content={description} />
           </Suspense>
         </div>

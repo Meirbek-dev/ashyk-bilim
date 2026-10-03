@@ -3,8 +3,8 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { use, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { FileInput } from '#/shared/components/file-input'
 import { presentError } from '#/shared/i18n/errors'
-import { FileInput } from '#/shared/ui/file-input'
 
 import { FILE_BLOCKS, fileBlockObject, isFileBlock, type FileBlock } from '../../model/file-blocks'
 import { createBlockOptions } from '../../queries'

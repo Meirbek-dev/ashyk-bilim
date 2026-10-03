@@ -1,11 +1,11 @@
 /* Retro Arcade. Generated from the legacy theme store; colors, radius and shadows only. */
 html[data-theme="retro-arcade"] {
   --background: light-dark(oklch(0.97 0.03 90.1), oklch(0.27 0.05 219.8));
-  --foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.7 0.02 196.8));
+  --foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
   --card: light-dark(oklch(0.93 0.03 92.4), oklch(0.31 0.05 219.7));
-  --card-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.7 0.02 196.8));
+  --card-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
   --popover: light-dark(oklch(0.93 0.03 92.4), oklch(0.31 0.05 219.7));
-  --popover-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.7 0.02 196.8));
+  --popover-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
   --primary: light-dark(oklch(0.59 0.2 355.9), oklch(0.59 0.2 355.9));
   --primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
   --secondary: light-dark(oklch(0.55 0.096 187.4), oklch(0.55 0.096 187.4));
@@ -24,7 +24,7 @@ html[data-theme="retro-arcade"] {
   --chart-4: light-dark(oklch(0.58 0.17 39.5), oklch(0.58 0.17 39.5));
   --chart-5: light-dark(oklch(0.59 0.21 27.1), oklch(0.59 0.21 27.1));
   --sidebar: light-dark(oklch(0.97 0.03 90.1), oklch(0.27 0.05 219.8));
-  --sidebar-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.7 0.02 196.8));
+  --sidebar-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
   --sidebar-primary: light-dark(oklch(0.59 0.2 355.9), oklch(0.59 0.2 355.9));
   --sidebar-primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
   --sidebar-accent: light-dark(oklch(0.55 0.096 187.4), oklch(0.55 0.096 187.4));

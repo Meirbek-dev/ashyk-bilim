@@ -1,15 +1,29 @@
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Keyboard, Search } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
-import type { CommandEntry, CommandGroup } from '#/shared/ui/command'
 
 import { PALETTE_LIMIT, paletteSections } from '../model/catalog'
 import { shortcuts } from '../model/shortcuts'
 import { searchResultsOptions } from '../queries'
 import { searchKindLabels } from './kind-labels'
+
+/** One choice of the palette: arrows highlight it, Enter or a click runs `onSelect`. */
+type CommandEntry = {
+  /** Unique within the list: cmdk tracks the highlighted entry by it. */
+  id: string
+  label: string
+  /** A lucide icon, `aria-hidden`. */
+  icon?: ReactNode
+  /** Quiet text on the right: a username, a shortcut. */
+  hint?: string
+  onSelect: () => void
+}
+
+type CommandGroup = { heading: string; entries: readonly CommandEntry[] }
 
 type PaletteActions = { close: () => void; showHelp: () => void }
 

@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { can } from '../model/course'
 import { lifecycleOptions } from '../queries'
@@ -17,7 +18,7 @@ export function ArchiveSection({ course }: { course: Course }) {
   const back = () =>
     restore.mutate(
       { path: { course_id: course.id }, body: { action: 'restore' } },
-      { onSuccess: () => toast(m.studio_restored()) },
+      { onSuccess: () => toast.add({ title: m.studio_restored() }) },
     )
   return (
     <section aria-label={m.studio_archive_title()} className="flex max-w-prose flex-col items-start gap-4">
@@ -26,12 +27,13 @@ export function ArchiveSection({ course }: { course: Course }) {
         <p className="text-sm text-muted-foreground">{m.studio_archive_hint()}</p>
       </div>
       {can(course, 'restore') ? (
-        <Button variant="outline" pending={restore.isPending} onClick={back}>
+        <Button variant="outline" onClick={back} disabled={restore.isPending}>
+          {restore.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.studio_restore()}
         </Button>
       ) : null}
       {can(course, 'archive') ? <ArchiveCourse course={course} /> : null}
-      {restore.error ? <Alert>{presentError(restore.error)}</Alert> : null}
+      {restore.error ? <ErrorAlert>{presentError(restore.error)}</ErrorAlert> : null}
     </section>
   )
 }

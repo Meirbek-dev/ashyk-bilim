@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { certificateConfig, certificateFields } from '../model/studio'
 import { certificationsOptions, createCertificationOptions } from '../queries'
@@ -20,7 +21,7 @@ export function CertificateSection({ course }: { course: Course }) {
   const enable = () =>
     create.mutate(
       { body: { course_id: course.id, config: certificateConfig({}, certificateFields({})) } },
-      { onSuccess: () => toast(m.studio_certificate_enabled()) },
+      { onSuccess: () => toast.add({ title: m.studio_certificate_enabled() }) },
     )
   return (
     <section aria-label={m.studio_certificate_title()} className="flex max-w-prose flex-col items-start gap-4">
@@ -28,10 +29,11 @@ export function CertificateSection({ course }: { course: Course }) {
         <h2 className="text-xl font-semibold">{m.studio_certificate_title()}</h2>
         <p className="text-sm text-muted-foreground">{m.studio_certificate_hint()}</p>
       </div>
-      <Button variant="outline" pending={create.isPending} onClick={enable}>
+      <Button variant="outline" onClick={enable} disabled={create.isPending}>
+        {create.isPending ? <Spinner data-icon="inline-start" /> : null}
         {m.studio_certificate_enable()}
       </Button>
-      {create.error ? <Alert>{presentError(create.error)}</Alert> : null}
+      {create.error ? <ErrorAlert>{presentError(create.error)}</ErrorAlert> : null}
     </section>
   )
 }

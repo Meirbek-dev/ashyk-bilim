@@ -3,7 +3,8 @@ import { Download } from 'lucide-react'
 
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
-import { Anchor } from '#/shared/ui/link'
+import { Anchor } from '#/shared/components/anchor'
+import { buttonVariants } from '#/shared/ui/button'
 
 /** CSV downloads as plain links (the browser saves the file); only with the `analytics.export` capability. */
 export function ExportLinks({ links }: { links: readonly { href: string; label: string }[] }) {
@@ -12,7 +13,7 @@ export function ExportLinks({ links }: { links: readonly { href: string; label: 
   return (
     <div className="flex flex-wrap gap-2">
       {links.map(link => (
-        <Anchor key={link.href} variant="outline" href={link.href} download>
+        <Anchor key={link.href} className={buttonVariants({ variant: 'outline' })} href={link.href} download>
           <Download aria-hidden />
           {link.label}
         </Anchor>

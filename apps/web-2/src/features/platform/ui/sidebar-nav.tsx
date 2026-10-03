@@ -4,8 +4,8 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { visibleSections, type Workspace } from '#/shared/auth/access'
+import { Link } from '#/shared/components/link'
 import { cookieItem } from '#/shared/lib/storage'
-import { Link } from '#/shared/ui/link'
 
 // A cookie, not localStorage: the shell renders on the server too, and the first paint must match.
 const sidebarCookie = cookieItem('ab_sidebar', v.picklist(['expanded', 'collapsed']))

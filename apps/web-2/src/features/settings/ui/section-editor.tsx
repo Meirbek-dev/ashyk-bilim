@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, X } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { ProfileSection } from '#/shared/api/gen/types.gen'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
 
 import type { SectionType } from '../model/profile-sections'
 import type { BuilderForm } from './profile-builder'

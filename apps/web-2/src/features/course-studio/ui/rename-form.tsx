@@ -2,9 +2,10 @@ import { useHotkey } from '@tanstack/react-hotkeys'
 import { useEffect, useRef } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { Spinner } from '#/shared/ui/spinner'
 
 import { nameSchema } from '../model/studio'
 
@@ -43,7 +44,8 @@ export function RenameForm({ name, onSave, onCancel, pending, error }: RenameFor
           {field => <field.TextField label={m.studio_rename_field({ name })} required />}
         </form.AppField>
       </div>
-      <Button type="submit" variant="secondary" pending={pending}>
+      <Button type="submit" variant="secondary" disabled={pending}>
+        {pending ? <Spinner data-icon="inline-start" /> : null}
         {m.ui_save()}
       </Button>
       <Button variant="ghost" onClick={onCancel}>

@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { groupChoiceSchema } from '../model/admin'
 import { addMembersOptions, groupChoicesOptions } from '../queries'
@@ -23,7 +24,7 @@ export function UserGroup({ user }: { user: AdminUser }) {
         { group, members: [member] },
         {
           onSuccess: () => {
-            toast(m.admin_user_group_added())
+            toast.add({ title: m.admin_user_group_added() })
             form.reset()
           },
         },
@@ -56,12 +57,13 @@ export function UserGroup({ user }: { user: AdminUser }) {
               />
             )}
           </form.AppField>
-          <Button type="submit" variant="outline" pending={add.isPending}>
+          <Button type="submit" variant="outline" disabled={add.isPending}>
+            {add.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.admin_user_group_add()}
           </Button>
         </form>
       )}
-      {add.error ? <Alert>{presentError(add.error)}</Alert> : null}
+      {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
     </section>
   )
 }

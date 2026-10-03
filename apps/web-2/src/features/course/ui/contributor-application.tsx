@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { Course, UserId } from '#/shared/api/gen/types.gen'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { application } from '../model/course'
 import { applyOptions, contributorsOptions, withdrawOptions } from '../queries'
@@ -21,12 +22,12 @@ export function ContributorApplication({ course, userId }: { course: Course; use
   const state = application(course, roster.data, userId)
   if (!state) return null
   const path = { course_id: course.id }
-  const onApply = () => apply.mutate({ path }, { onSuccess: () => toast(m.course_applied()) })
+  const onApply = () => apply.mutate({ path }, { onSuccess: () => toast.add({ title: m.course_applied() }) })
   const onWithdraw = () =>
     withdraw.mutate(
       { path: { ...path, user_id: userId } },
       {
-        onSuccess: () => toast(m.course_withdrawn()),
+        onSuccess: () => toast.add({ title: m.course_withdrawn() }),
         // The creator already decided (UX-050): rejected is 404, approved is 403. The fresh roster shows which.
         onError: error => {
           if (isDecided(error)) void roster.refetch()
@@ -40,12 +41,14 @@ export function ContributorApplication({ course, userId }: { course: Course; use
       {state === 'pending' ? (
         <>
           <p className="text-sm text-muted-foreground">{m.course_application_pending()}</p>
-          <Button variant="outline" pending={withdraw.isPending} onClick={onWithdraw}>
+          <Button variant="outline" onClick={onWithdraw} disabled={withdraw.isPending}>
+            {withdraw.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.course_withdraw()}
           </Button>
         </>
       ) : (
-        <Button variant="outline" pending={apply.isPending} onClick={onApply}>
+        <Button variant="outline" onClick={onApply} disabled={apply.isPending}>
+          {apply.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.course_apply()}
         </Button>
       )}

@@ -1,13 +1,14 @@
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { awardFormSchema } from '../model/admin'
 import { awardOptions } from '../queries'
@@ -34,7 +35,7 @@ export function AwardXp({ user }: { user: AdminUser }) {
         {
           onSuccess: result => {
             idempotency.settle()
-            toast(m.admin_award_done({ total: result.profile.total_xp }))
+            toast.add({ title: m.admin_award_done({ total: result.profile.total_xp }) })
             form.reset()
           },
           onError: error => idempotency.settle(error),
@@ -59,9 +60,10 @@ export function AwardXp({ user }: { user: AdminUser }) {
         {field => <field.TextField label={m.admin_award_amount()} inputMode="numeric" required />}
       </form.AppField>
       <form.AppField name="reason">{field => <field.TextField label={m.admin_award_reason()} />}</form.AppField>
-      {award.error ? <Alert>{presentError(award.error)}</Alert> : null}
+      {award.error ? <ErrorAlert>{presentError(award.error)}</ErrorAlert> : null}
       <div>
-        <Button type="submit" variant="outline" pending={award.isPending}>
+        <Button type="submit" variant="outline" disabled={award.isPending}>
+          {award.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.admin_award_submit()}
         </Button>
       </div>

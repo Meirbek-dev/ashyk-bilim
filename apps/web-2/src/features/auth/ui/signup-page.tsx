@@ -1,8 +1,9 @@
 import { m } from '#/paraglide/messages'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { Link } from '#/shared/components/link'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { Link } from '#/shared/ui/link'
+import { Spinner } from '#/shared/ui/spinner'
 
 import { AuthForm } from './auth-form'
 import { AuthPage } from './auth-page'
@@ -54,8 +55,9 @@ export function SignupPage() {
             />
           )}
         </form.AppField>
-        {formError ? <Alert>{presentError(formError)}</Alert> : null}
-        <Button type="submit" size="block" pending={pending}>
+        {formError ? <ErrorAlert>{presentError(formError)}</ErrorAlert> : null}
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? <Spinner data-icon="inline-start" /> : null}
           {m.auth_signup_submit()}
         </Button>
       </AuthForm>

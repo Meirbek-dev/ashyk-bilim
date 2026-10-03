@@ -4,7 +4,7 @@ import { useDeferredValue, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { UserHit } from '#/shared/api/gen/types.gen'
-import { Combobox } from '#/shared/ui/combobox'
+import { MultiCombobox } from '#/shared/components/multi-combobox'
 
 import { peopleOptions } from '../queries'
 
@@ -24,7 +24,7 @@ export function PeoplePicker({ label, value, onValueChange }: PeoplePickerProps)
   const { data: found } = useSuspenseQuery(peopleOptions(q))
   const known = [...value, ...found]
   return (
-    <Combobox
+    <MultiCombobox
       label={label}
       placeholder={m.admin_search_placeholder()}
       options={found.map(option)}

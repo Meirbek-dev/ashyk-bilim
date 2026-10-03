@@ -3,7 +3,7 @@ import { useEditorState } from '@tiptap/react'
 import { Plus, Redo2, Undo2 } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
 
 import { FORMAT_ITEMS } from './format-items'
 import { LinkButton } from './link-button'

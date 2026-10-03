@@ -1,9 +1,9 @@
 import { m } from '#/paraglide/messages'
 import type { Collection, CollectionHit } from '#/shared/api/gen/types.gen'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
 import { collectionVisibilityLabels } from '#/shared/i18n/labels'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
 
 /** One collection card's content (inside DataList): a list item has its meta line, a search hit has none. */
 export function CollectionItem({ collection }: { collection: Collection | CollectionHit }) {
@@ -16,7 +16,7 @@ export function CollectionItem({ collection }: { collection: Collection | Collec
           </Link>
         </h2>
         {/* A guest sees only public ones; the badge marks the caller's own hidden collections (B-COL-05). */}
-        {collection.public ? null : <Badge tone="neutral">{collectionVisibilityLabels.private()}</Badge>}
+        {collection.public ? null : <StatusBadge tone="neutral">{collectionVisibilityLabels.private()}</StatusBadge>}
       </div>
       {collection.description ? <p className="wrap-anywhere text-muted-foreground">{collection.description}</p> : null}
       {'courses' in collection ? (

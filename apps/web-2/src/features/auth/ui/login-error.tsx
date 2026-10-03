@@ -4,8 +4,8 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode } from '#/shared/api/gen/types.gen'
 import { vErrorCode } from '#/shared/api/gen/valibot.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 
 import { retryMinutes } from '../model/login-search'
 
@@ -35,6 +35,6 @@ type LoginErrorProps = { error: unknown; googleError: string | undefined }
 /** The sign-in attempt's error, else the Google return error. `mfa-required` is the next step, not an error. */
 export function LoginError({ error, googleError }: LoginErrorProps) {
   if (error instanceof ApiError && error.code === 'mfa-required') return null
-  if (error) return <Alert>{attemptText(error)}</Alert>
-  return googleError ? <Alert>{googleText(googleError)}</Alert> : null
+  if (error) return <ErrorAlert>{attemptText(error)}</ErrorAlert>
+  return googleError ? <ErrorAlert>{googleText(googleError)}</ErrorAlert> : null
 }

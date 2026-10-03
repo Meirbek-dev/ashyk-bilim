@@ -1,20 +1,14 @@
-import { Switch } from '@base-ui/react/switch'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityDetail } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { Switch } from '#/shared/ui/switch'
+import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
-
-// The kit's SwitchField look, outside a form: the studio header holds no form.
-const switchClass =
-  'inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-input bg-background transition-colors duration-150 data-checked:border-primary data-checked:bg-primary'
-const thumbClass =
-  'size-3.5 translate-x-0.5 rounded-full bg-input transition-transform duration-150 data-checked:translate-x-4.5 data-checked:bg-primary-foreground'
 
 type PublishSwitchProps = { courseId: string; activity: ActivityDetail }
 
@@ -33,7 +27,7 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
       {
         onSuccess: () => {
           setConfirming(false)
-          toast(published ? m.studio_activity_published() : m.studio_activity_unpublished())
+          toast.add({ title: published ? m.studio_activity_published() : m.studio_activity_unpublished() })
         },
       },
     )
@@ -42,15 +36,12 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
       <span id={labelId} className="text-sm">
         {m.studio_published_switch()}
       </span>
-      <Switch.Root
+      <Switch
         aria-labelledby={labelId}
         checked={activity.published}
         disabled={!editable || update.isPending}
         onCheckedChange={next => (next ? set(true) : setConfirming(true))}
-        className={switchClass}
-      >
-        <Switch.Thumb className={thumbClass} />
-      </Switch.Root>
+      />
       <ConfirmDialog
         open={confirming}
         onOpenChange={next => {

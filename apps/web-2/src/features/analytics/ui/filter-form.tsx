@@ -2,8 +2,8 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { FilterOption } from '#/shared/api/gen/types.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
 
 import {
   BUCKETS,

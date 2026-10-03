@@ -2,10 +2,10 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentKind } from '#/shared/api/gen/types.gen'
+import { Bars } from '#/shared/components/charts/bars'
+import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { formatNumber } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { Bars } from '#/shared/ui/charts/bars'
-import { KpiTile } from '#/shared/ui/charts/kpi-tile'
 
 import type { Filters } from '../model/filters'
 import { assessmentOptions } from '../queries'

@@ -1,11 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { Link } from '#/shared/ui/link'
-import { ProgressBar } from '#/shared/ui/progress-bar'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
+import { buttonVariants } from '#/shared/ui/button'
+import { Progress } from '#/shared/ui/progress'
 
 import { learnerStateOptions } from '../queries'
 import { BackToCourse } from './back-to-course'
@@ -33,7 +33,7 @@ export function CompletionPage() {
           </p>
         ) : (
           <div className="flex w-full flex-col gap-2">
-            <ProgressBar value={progress.progress_pct} label={m.player_progress_label()} />
+            <Progress value={progress.progress_pct} aria-label={m.player_progress_label()} />
             <p className="text-sm text-muted-foreground tabular-nums">
               {m.player_progress({ done: progress.completed_required_count, total: progress.total_required_count })}
             </p>
@@ -50,25 +50,29 @@ export function CompletionPage() {
         </ul>
         <div className="flex flex-wrap gap-2">
           {!completed && nextId ? (
-            <Link to="/learn/$courseId/$activityId" params={{ courseId, activityId: nextId }} variant="primary">
+            <RouterLink
+              to="/learn/$courseId/$activityId"
+              params={{ courseId, activityId: nextId }}
+              className={buttonVariants()}
+            >
               {m.player_continue()}
-            </Link>
+            </RouterLink>
           ) : null}
           {code ? (
-            <Link
+            <RouterLink
               to="/certificates/$certificateId/verify"
               params={{ certificateId: code }}
-              variant={completed ? 'primary' : 'outline'}
+              className={buttonVariants({ variant: completed ? 'default' : 'outline' })}
             >
               {m.player_certificate_view()}
-            </Link>
+            </RouterLink>
           ) : null}
-          <Link to="/learning" variant="outline">
+          <RouterLink to="/learning" className={buttonVariants({ variant: 'outline' })}>
             {m.player_my_courses()}
-          </Link>
-          <Link to="/courses" variant="outline">
+          </RouterLink>
+          <RouterLink to="/courses" className={buttonVariants({ variant: 'outline' })}>
             {m.player_catalog()}
-          </Link>
+          </RouterLink>
         </div>
       </section>
     </FocusPage>

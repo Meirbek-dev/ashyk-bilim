@@ -1,14 +1,15 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { DataList } from '#/shared/components/data-list'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 import { collectionActionLabels, collectionVisibility, collectionVisibilityLabels } from '#/shared/i18n/labels'
-import { Badge } from '#/shared/ui/badge'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { can } from '../model/collections'
 import { collectionOptions } from '../queries'
@@ -22,9 +23,9 @@ export function CollectionPage() {
   const actions = (
     <div className="flex flex-col gap-2 @2xl:flex-row">
       {can(collection, 'update') ? (
-        <Link to="/collections/$collectionId/edit" params={{ collectionId }} variant="primary">
+        <RouterLink to="/collections/$collectionId/edit" params={{ collectionId }} className={buttonVariants()}>
           {collectionActionLabels.update()}
-        </Link>
+        </RouterLink>
       ) : null}
       {can(collection, 'delete') ? <DeleteCollection collection={collection} /> : null}
     </div>
@@ -33,7 +34,9 @@ export function CollectionPage() {
     <DetailPage
       title={collection.name}
       meta={`${m.collections_course_count({ count: collection.courses.length })} · ${m.collections_updated({ date: formatDate(collection.updated_at_unix) })}`}
-      status={<Badge tone="neutral">{collectionVisibilityLabels[collectionVisibility(collection)]()}</Badge>}
+      status={
+        <StatusBadge tone="neutral">{collectionVisibilityLabels[collectionVisibility(collection)]()}</StatusBadge>
+      }
       primaryAction={collection.allowed_actions.length > 0 ? actions : null}
     >
       {collection.description ? <p className="max-w-prose wrap-anywhere">{collection.description}</p> : null}

@@ -1,15 +1,16 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { IconButton } from '#/shared/components/icon-button'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
-import { Badge } from '#/shared/ui/badge'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { IconButton } from '#/shared/ui/icon-button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { canRole, canUser, roleChoiceSchema } from '../model/admin'
 import { roleName } from '../model/roles'
@@ -34,14 +35,17 @@ export function UserRoles({ user }: { user: AdminUser }) {
         { path: { user_id: user.id }, body: { role } },
         {
           onSuccess: () => {
-            toast(m.admin_user_role_added())
+            toast.add({ title: m.admin_user_role_added() })
             form.reset()
           },
         },
       ),
   })
   const remove = (slug: string) =>
-    unassign.mutate({ path: { user_id: user.id, slug } }, { onSuccess: () => toast(m.admin_user_role_removed()) })
+    unassign.mutate(
+      { path: { user_id: user.id, slug } },
+      { onSuccess: () => toast.add({ title: m.admin_user_role_removed() }) },
+    )
   const error = assign.error ?? unassign.error
   return (
     <section aria-labelledby="user-roles" className="flex flex-col gap-2">
@@ -51,7 +55,7 @@ export function UserRoles({ user }: { user: AdminUser }) {
       <ul className="flex flex-wrap gap-2">
         {user.roles.map(slug => (
           <li key={slug} className="flex items-center gap-1">
-            <Badge tone="neutral">{nameOf(slug)}</Badge>
+            <StatusBadge tone="neutral">{nameOf(slug)}</StatusBadge>
             {manage ? (
               <IconButton
                 label={m.admin_user_role_remove({ role: nameOf(slug) })}
@@ -83,12 +87,13 @@ export function UserRoles({ user }: { user: AdminUser }) {
               />
             )}
           </form.AppField>
-          <Button type="submit" variant="outline" pending={assign.isPending}>
+          <Button type="submit" variant="outline" disabled={assign.isPending}>
+            {assign.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.admin_add()}
           </Button>
         </form>
       ) : null}
-      {error ? <Alert>{presentError(error)}</Alert> : null}
+      {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
     </section>
   )
 }

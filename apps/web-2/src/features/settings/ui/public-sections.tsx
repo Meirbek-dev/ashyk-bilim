@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ProfileSection } from '#/shared/api/gen/types.gen'
+import { Anchor } from '#/shared/components/anchor'
 import { formatDate } from '#/shared/i18n/format'
-import { Anchor } from '#/shared/ui/link'
 
 import { skillLevelLabels } from './section-items'
 

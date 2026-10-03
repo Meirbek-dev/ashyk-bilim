@@ -1,15 +1,15 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CreateCollectionRequest } from '#/shared/api/gen/types.gen'
 import { vCreateCollectionRequest } from '#/shared/api/gen/valibot.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { FormDialog } from '#/shared/ui/templates/form-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { createCollectionOptions } from '../queries'
 
@@ -30,7 +30,7 @@ export function CreateCollectionDialog() {
           onSuccess: async collection => {
             idempotency.settle()
             setOpen(false)
-            toast(m.collections_created())
+            toast.add({ title: m.collections_created() })
             await navigate({ to: '/collections/$collectionId', params: { collectionId: collection.id } })
           },
           onError: error => idempotency.settle(error),

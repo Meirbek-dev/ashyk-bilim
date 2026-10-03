@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, WorkState } from '#/shared/api/gen/types.gen'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
 
 type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'destructive'
 
@@ -26,8 +26,8 @@ export function EntryCard({ entry, action }: { entry: ActivityState; action: Rea
   return (
     <div className="flex flex-col items-start gap-4 rounded-lg border bg-card p-gutter text-card-foreground">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Badge tone={status.tone}>{status.label()}</Badge>
-        {entry.is_late ? <Badge tone="warning">{m.player_late()}</Badge> : null}
+        <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+        {entry.is_late ? <StatusBadge tone="warning">{m.player_late()}</StatusBadge> : null}
       </div>
       {entry.due_at_unix || typeof entry.score === 'number' ? (
         <ul className="flex flex-col gap-1 text-sm text-muted-foreground">

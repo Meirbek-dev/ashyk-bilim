@@ -3,7 +3,7 @@ import { useEditorState } from '@tiptap/react'
 import { Bold, Code, Heading2, Italic, List, ListOrdered, Quote, Redo2, SquareCode, Undo2 } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/ui/icon-button'
+import { IconButton } from '#/shared/components/icon-button'
 
 const marks = [
   {

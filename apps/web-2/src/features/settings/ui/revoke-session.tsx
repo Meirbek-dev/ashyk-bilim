@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { revokeSessionOptions } from '../queries'
 
@@ -29,7 +29,7 @@ export function RevokeSession({ handle, device }: { handle: string; device: stri
           {
             onSuccess: () => {
               setOpen(false)
-              toast(m.settings_session_revoked())
+              toast.add({ title: m.settings_session_revoked() })
             },
           },
         )

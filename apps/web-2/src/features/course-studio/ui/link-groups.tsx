@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { MultiCombobox, type ComboboxOption } from '#/shared/components/multi-combobox'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { Combobox, type ComboboxOption } from '#/shared/ui/combobox'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { linkableGroupsOptions, linkGroupsOptions } from '../queries'
 
@@ -26,7 +27,7 @@ export function LinkGroups({ courseId, linked }: { courseId: string; linked: rea
       {
         onSuccess: () => {
           setPicked([])
-          toast(m.studio_group_linked())
+          toast.add({ title: m.studio_group_linked() })
         },
       },
     )
@@ -40,17 +41,18 @@ export function LinkGroups({ courseId, linked }: { courseId: string; linked: rea
       }}
     >
       <div className="w-full">
-        <Combobox
+        <MultiCombobox
           label={m.studio_group_link()}
           options={choices.map(option)}
           value={picked}
           onValueChange={setPicked}
         />
       </div>
-      <Button type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
+      <Button type="submit" variant="outline" disabled={picked.length === 0 || link.isPending}>
+        {link.isPending ? <Spinner data-icon="inline-start" /> : null}
         {m.studio_group_link_submit()}
       </Button>
-      {link.error ? <Alert>{presentError(link.error)}</Alert> : null}
+      {link.error ? <ErrorAlert>{presentError(link.error)}</ErrorAlert> : null}
     </form>
   )
 }

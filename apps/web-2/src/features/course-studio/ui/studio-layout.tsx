@@ -1,11 +1,12 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useMatch, useParams } from '@tanstack/react-router'
+import { Outlet, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
+import { Link } from '#/shared/components/link'
+import { FocusPage } from '#/shared/components/templates/focus-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { activityOptions } from '../curriculum-queries'
 import { PublishSwitch } from './publish-switch'
@@ -26,10 +27,14 @@ export function CourseStudioLayout() {
   const [save, setSave] = useState<{ activityId: string; state: SaveState } | null>(null)
   const state = save?.activityId === activityId ? save.state : null
   const back = (
-    <Link to="/teach/courses/$courseId/content" params={{ courseId }} variant="ghost">
+    <RouterLink
+      to="/teach/courses/$courseId/content"
+      params={{ courseId }}
+      className={buttonVariants({ variant: 'ghost' })}
+    >
       <ArrowLeft aria-hidden />
       {m.platform_back()}
-    </Link>
+    </RouterLink>
   )
   return (
     <FocusPage

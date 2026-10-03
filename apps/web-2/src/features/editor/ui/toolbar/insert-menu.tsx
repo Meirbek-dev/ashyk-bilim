@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 
 import { m } from '#/paraglide/messages'
-import { AnchoredListbox } from '#/shared/ui/anchored-listbox'
+import { AnchoredListbox } from '#/shared/components/anchored-listbox'
 
 import { INSERT_ITEMS, type MenuAnchor } from './insert-items'
 

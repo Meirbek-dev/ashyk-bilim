@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { SearchResults } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 import type { SearchKind } from '../model/catalog'
 import { searchKindLabels } from './kind-labels'

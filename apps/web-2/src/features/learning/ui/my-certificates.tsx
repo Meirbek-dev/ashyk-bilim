@@ -1,11 +1,13 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { CertificatePdfLink } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
+import { DataList } from '#/shared/components/data-list'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
 import { formatDate } from '#/shared/i18n/format'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { certificatesOptions } from '../queries'
 
@@ -46,13 +48,13 @@ export function MyCertificates() {
               ) : null}
               <div className="mt-2 flex flex-wrap gap-2">
                 <CertificatePdfLink code={certificate.verify_code} />
-                <Link
+                <RouterLink
                   to="/certificates/$certificateId/verify"
                   params={{ certificateId: certificate.verify_code }}
-                  variant="ghost"
+                  className={buttonVariants({ variant: 'ghost' })}
                 >
                   {m.learning_certificate_verify()}
-                </Link>
+                </RouterLink>
               </div>
             </>
           )}

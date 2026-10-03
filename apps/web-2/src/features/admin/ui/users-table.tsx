@@ -3,13 +3,13 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import type { DataColumn } from '#/shared/ui/data-columns'
-import { DataTable } from '#/shared/ui/data-table'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { ShowMore } from '#/shared/ui/show-more'
 
 import { usersListOptions } from '../queries'
 import { userStatusBadges } from './labels'
@@ -43,7 +43,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     priority: 2,
     cell: user => {
       const badge = userStatusBadges[user.status]
-      return <Badge tone={badge.tone}>{badge.label()}</Badge>
+      return <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
     },
   },
   {

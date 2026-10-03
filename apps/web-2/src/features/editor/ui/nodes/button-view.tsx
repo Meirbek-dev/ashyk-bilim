@@ -1,7 +1,9 @@
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import { Link as RouterLink } from '@tanstack/react-router'
+
 import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { justify, stringAttr } from './align'
 import { AttrForm } from './attr-form'
@@ -21,9 +23,14 @@ export function ButtonView({ node, editor, selected, updateAttributes }: ReactNo
     <NodeViewWrapper className="my-4 flex flex-col gap-2">
       <div className={`flex ${justify(node.attrs['alignment'])}`}>
         {href && !editor.isEditable ? (
-          <Link to={href} variant="outline" target="_blank" rel="noopener noreferrer">
+          <RouterLink
+            to={href}
+            className={buttonVariants({ variant: 'outline' })}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {label}
-          </Link>
+          </RouterLink>
         ) : (
           <span className="inline-flex h-control items-center gap-2 rounded-md border border-input px-4 text-sm font-medium">
             {label}

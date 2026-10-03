@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { lazy, Suspense, type FormEvent } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { vTotpVerifyRequest } from '#/shared/api/gen/valibot.gen'
+import { Anchor } from '#/shared/components/anchor'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
-import { Badge } from '#/shared/ui/badge'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { Anchor } from '#/shared/ui/link'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
 import { totpEnrollOptions, totpVerifyOptions } from '../queries'
@@ -34,7 +35,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
         await verify.mutateAsync({ body })
         enroll.reset()
         form.reset()
-        toast(m.settings_totp_enabled())
+        toast.add({ title: m.settings_totp_enabled() })
       } catch (error) {
         // A wrong code belongs under the code field (BUG-083).
         if (!hasCode(error, 'invalid-totp-code')) throw error
@@ -47,9 +48,9 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     void form.handleSubmit()
   }
   const status = profile.mfa_enabled ? (
-    <Badge tone="success">{m.settings_totp_on()}</Badge>
+    <StatusBadge tone="success">{m.settings_totp_on()}</StatusBadge>
   ) : (
-    <Badge tone="neutral">{m.settings_totp_off()}</Badge>
+    <StatusBadge tone="neutral">{m.settings_totp_off()}</StatusBadge>
   )
   const pending = enroll.data && !profile.mfa_enabled ? enroll.data : null
   const verifyError = hasCode(verify.error, 'invalid-totp-code') ? null : verify.error
@@ -60,7 +61,8 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
       {profile.mfa_enabled ? <DisableTotp /> : null}
       {!profile.mfa_enabled && !pending ? (
         <div>
-          <Button variant="outline" pending={enroll.isPending} onClick={() => enroll.mutate({})}>
+          <Button variant="outline" onClick={() => enroll.mutate({})} disabled={enroll.isPending}>
+            {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.settings_totp_enable()}
           </Button>
         </div>
@@ -85,9 +87,10 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
               />
             )}
           </form.AppField>
-          {verifyError ? <Alert>{presentError(verifyError)}</Alert> : null}
+          {verifyError ? <ErrorAlert>{presentError(verifyError)}</ErrorAlert> : null}
           <div className="flex gap-2">
-            <Button type="submit" variant="secondary" pending={verify.isPending}>
+            <Button type="submit" variant="secondary" disabled={verify.isPending}>
+              {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
               {m.settings_totp_confirm()}
             </Button>
             <Button variant="ghost" onClick={() => enroll.reset()}>
@@ -96,7 +99,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
           </div>
         </form>
       ) : null}
-      {enroll.error ? <Alert>{presentError(enroll.error)}</Alert> : null}
+      {enroll.error ? <ErrorAlert>{presentError(enroll.error)}</ErrorAlert> : null}
     </PlainSection>
   )
 }

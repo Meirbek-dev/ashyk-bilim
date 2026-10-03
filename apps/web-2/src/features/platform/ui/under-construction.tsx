@@ -1,9 +1,9 @@
-import { useMatch, useMatches, useRouteContext } from '@tanstack/react-router'
+import { useMatch, useMatches, useRouteContext, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/ui/link'
-import { FocusPage } from '#/shared/ui/templates/focus-page'
+import { FocusPage } from '#/shared/components/templates/focus-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 /**
  * The one stub for a route whose slice is not built yet: the route's `staticData.title` and one sentence, in the
@@ -31,10 +31,10 @@ export function UnderConstruction() {
   )
   if (self.staticData.layout !== 'focus') return page
   const back = (
-    <Link to={session ? '/home' : '/'} variant="ghost">
+    <RouterLink to={session ? '/home' : '/'} className={buttonVariants({ variant: 'ghost' })}>
       <ArrowLeft aria-hidden />
       {m.platform_back()}
-    </Link>
+    </RouterLink>
   )
   return (
     <FocusPage back={back} title={title}>

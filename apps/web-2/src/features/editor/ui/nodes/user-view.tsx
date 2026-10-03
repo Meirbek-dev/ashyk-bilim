@@ -20,7 +20,7 @@ export function UserView({ node, editor, selected, updateAttributes }: ReactNode
     <NodeViewWrapper className="my-4 flex max-w-md flex-col gap-2">
       {valid ? (
         <CatchBoundary getResetKey={() => userId} errorComponent={() => missing}>
-          <Suspense fallback={<Skeleton shape="row" />}>
+          <Suspense fallback={<Skeleton className="h-row w-full" />}>
             <UserCard userId={userId} />
           </Suspense>
         </CatchBoundary>

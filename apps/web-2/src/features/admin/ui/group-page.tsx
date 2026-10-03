@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { Link } from '#/shared/components/link'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { Link } from '#/shared/ui/link'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
 
 import { canGroup } from '../model/admin'
 import { groupOptions, membersOptions } from '../queries'

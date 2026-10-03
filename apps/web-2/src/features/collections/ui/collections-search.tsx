@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 
 import { searchBoxSchema } from '../model/collections'
 

@@ -5,7 +5,7 @@ import { expect, test } from 'vite-plus/test'
 import { m } from '#/paraglide/messages'
 import { dashboardQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { Dashboard } from '#/shared/api/gen/types.gen'
-import { renderInRouter } from '#/shared/ui/testing'
+import { renderInRouter } from '#/shared/components/testing'
 
 import { StreakBadge } from '../index'
 

@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
-import { ListPage } from '#/shared/ui/templates/list-page'
+import { ListPage } from '#/shared/components/templates/list-page'
 
 import { coursesFilter } from '../model/catalog'
 import { CoursesList } from './courses-list'

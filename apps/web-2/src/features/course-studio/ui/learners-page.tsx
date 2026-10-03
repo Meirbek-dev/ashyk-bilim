@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
+import { DataList } from '#/shared/components/data-list'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
 
 import { can, courseStatus, type CourseStatus } from '../model/course'
 import { courseGroupsOptions, courseOptions } from '../queries'

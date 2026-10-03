@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { Badge } from '#/shared/ui/badge'
+import { StatusBadge } from '#/shared/components/status-badge'
 
 import type { CourseStatus } from '../model/course'
 
@@ -12,5 +12,5 @@ const courseStatusMeta = {
 
 export function CourseStatusBadge({ status }: { status: CourseStatus }) {
   const meta = courseStatusMeta[status]
-  return <Badge tone={meta.tone}>{meta.label()}</Badge>
+  return <StatusBadge tone={meta.tone}>{meta.label()}</StatusBadge>
 }

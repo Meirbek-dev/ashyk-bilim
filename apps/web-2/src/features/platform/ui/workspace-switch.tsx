@@ -4,9 +4,9 @@ import { ChevronsUpDown } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, workspaceHome, type WorkspaceId } from '#/shared/auth/access'
+import { ChoiceItems, type MenuChoice } from '#/shared/components/choice-items'
 import { Button } from '#/shared/ui/button'
-import type { MenuChoice } from '#/shared/ui/choice-items'
-import { ChoiceMenu } from '#/shared/ui/choice-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 
 /** Learn / Teach / Admin as a menu choice, or null when the user has only one workspace (spec 5.1). */
 export function useWorkspaceChoice(session: SessionInfo, current: WorkspaceId): MenuChoice | null {
@@ -30,14 +30,18 @@ export function WorkspaceSwitch({ session, current }: { session: SessionInfo; cu
   if (!choice) return null
   const label = choice.options.find(option => option.value === current)?.label ?? ''
   return (
-    <ChoiceMenu
-      choice={choice}
-      trigger={
-        <Button variant="ghost" aria-label={`${choice.label}: ${label}`}>
-          {label}
-          <ChevronsUpDown aria-hidden />
-        </Button>
-      }
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" aria-label={`${choice.label}: ${label}`}>
+            {label}
+            <ChevronsUpDown aria-hidden />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end">
+        <ChoiceItems choice={choice} />
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

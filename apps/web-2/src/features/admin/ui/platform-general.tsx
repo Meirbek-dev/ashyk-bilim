@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen'
 import { vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { SettingsSection } from '#/shared/ui/templates/settings-section'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { toast } from '#/shared/ui/toast'
 
 import { updatePlatformOptions } from '../queries'
 
@@ -23,7 +23,7 @@ export function PlatformGeneral({ platform }: { platform: Platform }) {
   }))
   const form = useAppForm(vUpdatePlatformRequest, {
     defaultValues,
-    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast(m.admin_saved()) }),
+    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.admin_saved() }) }),
   })
   return (
     <SettingsSection

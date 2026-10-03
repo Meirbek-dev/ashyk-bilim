@@ -3,12 +3,12 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AtRiskLearnerRow } from '#/shared/api/gen/types.gen'
+import type { DataColumn } from '#/shared/components/data-columns'
+import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
+import { ListState } from '#/shared/components/list-state'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
-import { Badge } from '#/shared/ui/badge'
-import type { DataColumn } from '#/shared/ui/data-columns'
-import { DataTable } from '#/shared/ui/data-table'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
 
 import { activeFilters, type Filters, learnerSort, type LearnerSort } from '../model/filters'
 import { atRiskOptions } from '../queries'
@@ -42,9 +42,9 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     cell: row => {
       const badge = riskLevelBadges[row.risk_level]
       return (
-        <Badge tone={badge.tone}>
+        <StatusBadge tone={badge.tone}>
           {badge.label()} · {formatNumber(row.risk_score)}
-        </Badge>
+        </StatusBadge>
       )
     },
   },

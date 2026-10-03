@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
+import { Spinner } from '#/shared/ui/spinner'
+import { toast } from '#/shared/ui/toast'
 
 import { can, courseStatus } from '../model/course'
 import { courseOptions, lifecycleOptions, readinessOptions } from '../queries'
@@ -23,7 +24,7 @@ export function PublishPage() {
   const go = () =>
     publish.mutate(
       { path: { course_id: courseId }, body: { action: 'publish' } },
-      { onSuccess: () => toast(m.studio_published()) },
+      { onSuccess: () => toast.add({ title: m.studio_published() }) },
     )
   return (
     <div className="flex max-w-prose flex-col gap-12">
@@ -36,13 +37,14 @@ export function PublishPage() {
         {can(course, 'publish') ? (
           <>
             {readiness.ready ? null : <p className="text-sm text-muted-foreground">{m.studio_publish_blocked()}</p>}
-            <Button pending={publish.isPending} disabled={!readiness.ready} onClick={go}>
+            <Button disabled={!readiness.ready || publish.isPending} onClick={go}>
+              {publish.isPending ? <Spinner data-icon="inline-start" /> : null}
               {m.studio_publish()}
             </Button>
           </>
         ) : null}
         {can(course, 'unpublish') ? <UnpublishCourse course={course} /> : null}
-        {publish.error ? <Alert>{presentError(publish.error)}</Alert> : null}
+        {publish.error ? <ErrorAlert>{presentError(publish.error)}</ErrorAlert> : null}
       </section>
       <UpdatesSection course={course} />
     </div>

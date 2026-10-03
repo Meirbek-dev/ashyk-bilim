@@ -4,7 +4,7 @@ import { useSearch } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
-import { ListPage } from '#/shared/ui/templates/list-page'
+import { ListPage } from '#/shared/components/templates/list-page'
 
 import { CollectionsFound } from './collections-found'
 import { CollectionsList } from './collections-list'

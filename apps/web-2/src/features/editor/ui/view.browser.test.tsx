@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import { m } from '#/paraglide/messages'
 import { publicProfileByIdQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { renderInRouter } from '#/shared/ui/testing'
+import { renderInRouter } from '#/shared/components/testing'
 
 import { BlockViewer } from '../index'
 import type { EditorDocument } from '../model/document'

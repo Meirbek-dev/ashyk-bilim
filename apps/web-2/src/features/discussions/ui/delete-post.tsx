@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { Discussion } from '#/shared/api/gen/types.gen'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
-import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { deletePostOptions } from '../queries'
 
@@ -20,7 +20,7 @@ export function DeletePost({ item }: { item: Discussion }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast(m.discussions_deleted())
+          toast.add({ title: m.discussions_deleted() })
         },
       },
     )

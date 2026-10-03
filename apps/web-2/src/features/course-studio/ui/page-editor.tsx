@@ -2,10 +2,10 @@ import { Suspense, useState } from 'react'
 
 import { BlockEditor } from '#/features/editor'
 import type { ActivityDetail } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { presentError } from '#/shared/i18n/errors'
-import { Alert } from '#/shared/ui/alert'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { ConflictDialog } from '#/shared/ui/templates/conflict-dialog'
 
 import { useAutosave } from './use-autosave'
 
@@ -16,8 +16,8 @@ export function PageEditor({ courseId, activity }: { courseId: string; activity:
   const autosave = useAutosave(courseId, activity)
   return (
     <div className="flex flex-col gap-4">
-      {autosave.error ? <Alert>{presentError(autosave.error)}</Alert> : null}
-      <Suspense fallback={<Skeleton shape="row" />}>
+      {autosave.error ? <ErrorAlert>{presentError(autosave.error)}</ErrorAlert> : null}
+      <Suspense fallback={<Skeleton className="h-row w-full" />}>
         <BlockEditor activityId={activity.id} content={content} onChange={autosave.change} />
       </Suspense>
       <ConflictDialog

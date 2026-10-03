@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
-import { ListState } from '#/shared/ui/list-state'
+import { ListState } from '#/shared/components/list-state'
 
 import { type SearchKind, searchKinds } from '../model/catalog'
 import { searchResultsOptions } from '../queries'

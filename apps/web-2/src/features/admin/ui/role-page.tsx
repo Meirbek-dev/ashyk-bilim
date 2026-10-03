@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { Badge } from '#/shared/ui/badge'
-import { Link } from '#/shared/ui/link'
-import { DetailPage } from '#/shared/ui/templates/detail-page'
+import { Link } from '#/shared/components/link'
+import { StatusBadge } from '#/shared/components/status-badge'
+import { DetailPage } from '#/shared/components/templates/detail-page'
 
 import { canRole } from '../model/admin'
 import { roleDescription, roleName } from '../model/roles'
@@ -27,7 +27,7 @@ export function RolePage() {
     <DetailPage
       title={roleName(role)}
       meta={m.admin_role_meta({ slug: role.slug, priority: role.priority })}
-      status={<Badge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</Badge>}
+      status={<StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>}
       primaryAction={canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
     >
       <Link to="/admin/roles">{m.admin_roles_all()}</Link>

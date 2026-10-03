@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react'
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { visibleSections, type Workspace } from '#/shared/auth/access'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
 
 const MAX_ITEMS = 5
 

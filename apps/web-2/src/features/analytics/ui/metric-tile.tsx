@@ -1,7 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type { MetricCard } from '#/shared/api/gen/types.gen'
-import { KpiTile } from '#/shared/ui/charts/kpi-tile'
-import { Link } from '#/shared/ui/link'
+import { KpiTile } from '#/shared/components/charts/kpi-tile'
+import { Link } from '#/shared/components/link'
 
 import type { TileMetric } from '../model/filters'
 import { metricChange, metricValue } from './kpi'

@@ -2,8 +2,9 @@ import type { Editor } from '@tiptap/core'
 import { Heading } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { ChoiceMenu } from '#/shared/ui/choice-menu'
-import { IconButton } from '#/shared/ui/icon-button'
+import { ChoiceItems } from '#/shared/components/choice-items'
+import { IconButton } from '#/shared/components/icon-button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 
 const LEVELS = [1, 2, 3] as const
 
@@ -15,17 +16,21 @@ export function TextStyleMenu({ editor, level }: { editor: Editor; level: number
     else editor.chain().focus().setParagraph().run()
   }
   return (
-    <ChoiceMenu
-      trigger={<IconButton label={m.editor_text_style()} icon={<Heading aria-hidden />} />}
-      choice={{
-        label: m.editor_text_style(),
-        value: String(level),
-        options: [
-          { value: '0', label: m.editor_paragraph() },
-          ...LEVELS.map(candidate => ({ value: String(candidate), label: m.editor_heading({ level: candidate }) })),
-        ],
-        onValueChange: choose,
-      }}
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<IconButton label={m.editor_text_style()} icon={<Heading aria-hidden />} />} />
+      <DropdownMenuContent align="end">
+        <ChoiceItems
+          choice={{
+            label: m.editor_text_style(),
+            value: String(level),
+            options: [
+              { value: '0', label: m.editor_paragraph() },
+              ...LEVELS.map(candidate => ({ value: String(candidate), label: m.editor_heading({ level: candidate }) })),
+            ],
+            onValueChange: choose,
+          }}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

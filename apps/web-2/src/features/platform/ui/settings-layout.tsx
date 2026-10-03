@@ -1,6 +1,6 @@
 import { Outlet, useMatch } from '@tanstack/react-router'
 
-import { SettingsPage } from '#/shared/ui/templates/settings-page'
+import { SettingsPage } from '#/shared/components/templates/settings-page'
 
 import { TabLinks } from './tab-links'
 

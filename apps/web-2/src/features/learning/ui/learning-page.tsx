@@ -1,11 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useSearch, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/ui/data-list'
-import { Link } from '#/shared/ui/link'
-import { ListState } from '#/shared/ui/list-state'
-import { ListPage } from '#/shared/ui/templates/list-page'
+import { DataList } from '#/shared/components/data-list'
+import { ListState } from '#/shared/components/list-state'
+import { ListPage } from '#/shared/components/templates/list-page'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { orderRuns, runState } from '../model/learning'
 import { trailOptions } from '../queries'
@@ -34,9 +34,9 @@ export function LearningPage() {
         filtered={Boolean(state)}
         emptyText={m.learning_empty()}
         emptyAction={
-          <Link to="/courses" variant="outline">
+          <RouterLink to="/courses" className={buttonVariants({ variant: 'outline' })}>
             {m.learning_catalog()}
-          </Link>
+          </RouterLink>
         }
         onResetFilters={() => void navigate({ to: '/learning', search: {} })}
         onRetry={() => void query.refetch()}

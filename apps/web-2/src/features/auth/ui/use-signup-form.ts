@@ -1,14 +1,14 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { RegisterRequest } from '#/shared/api/gen/types.gen'
 import { vRegisterRequest } from '#/shared/api/gen/valibot.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
+import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
+import { toast } from '#/shared/ui/toast'
 
 import { signupFieldOf } from '../model/account-search'
 import { registerOptions } from '../queries'
@@ -37,7 +37,7 @@ export function useSignupForm() {
           {
             onSuccess: async () => {
               idempotency.settle()
-              toast(m.auth_signup_done())
+              toast.add({ title: m.auth_signup_done() })
               await navigate({ to: '/verify-email', search: { email: body.email } })
             },
             onError: error => idempotency.settle(error),

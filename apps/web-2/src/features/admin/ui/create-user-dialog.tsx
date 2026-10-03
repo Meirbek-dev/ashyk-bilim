@@ -1,15 +1,15 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { m } from '#/paraglide/messages'
 import type { CreateUserRequest } from '#/shared/api/gen/types.gen'
 import { vCreateUserRequest } from '#/shared/api/gen/valibot.gen'
+import { useAppForm } from '#/shared/components/form/use-app-form'
+import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { useAppForm } from '#/shared/ui/form/use-app-form'
-import { FormDialog } from '#/shared/ui/templates/form-dialog'
+import { toast } from '#/shared/ui/toast'
 
 import { takenField } from '../model/admin'
 import { createUserOptions } from '../queries'
@@ -34,7 +34,7 @@ export function CreateUserDialog() {
             onSuccess: async user => {
               setOpen(false)
               form.reset()
-              toast(m.admin_user_created())
+              toast.add({ title: m.admin_user_created() })
               await navigate({ to: '/admin/users', search: prev => ({ ...prev, user: user.username }) })
             },
           },

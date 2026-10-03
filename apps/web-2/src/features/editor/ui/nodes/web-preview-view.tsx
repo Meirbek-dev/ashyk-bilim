@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import { Link as RouterLink } from '@tanstack/react-router'
 
 import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import { linkPreviewOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { Link } from '#/shared/ui/link'
+import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/ui/button'
 
 import { textAttr } from '../../model/document'
 import { justify } from './align'
@@ -41,9 +43,14 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
           ) : null}
           {node.attrs['showButton'] ? (
             <div className="pt-2">
-              <Link to={href} variant="outline" target="_blank" rel="noopener noreferrer">
+              <RouterLink
+                to={href}
+                className={buttonVariants({ variant: 'outline' })}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {textAttr(node.attrs['buttonLabel']) ?? m.editor_preview_open()}
-              </Link>
+              </RouterLink>
             </div>
           ) : null}
         </div>
