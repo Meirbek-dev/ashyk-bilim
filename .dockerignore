@@ -16,7 +16,6 @@ docs/
 
 # Ops, infra and local data (never in an image)
 infra/
-extra/
 certs/
 backups/
 temp-restore/

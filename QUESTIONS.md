@@ -10,8 +10,9 @@ Commit 34d8cd2 ("Migrate translation catalogs to Paraglide message format", stag
 groundwork) changed `apps/web/src/messages/*.json` in place. The current Next.js app
 still loads them with next-intl, so `bun run typecheck` fails in CI (plural entries are
 now arrays) and the UI would render those keys wrong. The stage-1 pipeline therefore
-refuses to publish images from `main`, which also blocks the production cutover
-(RUNBOOK 1) and any server-only release. Choose: (a) revert 34d8cd2 in `apps/web` and
+refuses to publish images from `main`. The cutover was done from `release/stage1`
+(2026-10-03); until `main` is green again every release must be cut the same way
+(a `release/**` branch without 34d8cd2). Choose: (a) revert 34d8cd2 in `apps/web` and
 keep the Paraglide catalogs in `apps/web-2` only; (b) accept that nothing ships from
 `main` until stage 2 replaces the web app; (c) cut over from the last green commit
 (39eabe9 plus the infra fixes, branch `ci/stage1-verify`) - needs a publish from that

@@ -19,6 +19,7 @@ server.env
 # Ops state (never commit)
 certs/
 backups/
+dumps/
 temp-restore/
 tmp/
 .deploy-history

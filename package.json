@@ -4,10 +4,6 @@
   "workspaces": [
     "apps/web"
   ],
-  "scripts": {
-    "services": "docker compose -f docker-compose.dev.yml up -d",
-    "deploy": "bash ./extra/deploy.sh"
-  },
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
