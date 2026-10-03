@@ -46,7 +46,10 @@ export function FileUpload({ node, updateAttributes }: ReactNodeViewProps) {
         error={claim.error ? presentError(claim.error) : undefined}
         onUploaded={(upload, file) =>
           claim.mutate(
-            { path: { id: activityId }, body: { block_type: blockType, upload_id: upload.id, file_name: file.name } },
+            {
+              path: { activity_id: activityId },
+              body: { block_type: blockType, upload_id: upload.id, file_name: file.name },
+            },
             { onSuccess: block => updateAttributes({ blockObject: fileBlockObject(block.id, upload, file.name) }) },
           )
         }

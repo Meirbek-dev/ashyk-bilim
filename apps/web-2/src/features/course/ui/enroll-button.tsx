@@ -11,7 +11,7 @@ import { enrollOptions } from '../queries'
 /** Enrol, then the header shows what the refreshed learner state offers ("Start"), without a reload (UX-119). */
 export function EnrollButton({ courseId }: { courseId: CourseId }) {
   const enroll = useMutation(enrollOptions(courseId))
-  const submit = () => enroll.mutate({ path: { id: courseId } }, { onSuccess: () => toast(m.course_enrolled()) })
+  const submit = () => enroll.mutate({ path: { course_id: courseId } }, { onSuccess: () => toast(m.course_enrolled()) })
   return (
     <div className="flex flex-col gap-2">
       <Button pending={enroll.isPending} onClick={submit}>

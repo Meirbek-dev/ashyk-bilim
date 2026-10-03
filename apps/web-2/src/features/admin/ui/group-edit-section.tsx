@@ -17,7 +17,8 @@ export function GroupEditSection({ group }: { group: Usergroup }) {
   const [defaultValues] = useState(() => ({ name: group.name, description: group.description }))
   const form = useAppForm(vUpdateUsergroupRequest, {
     defaultValues,
-    onSubmit: body => update.mutateAsync({ path: { id: group.id }, body }, { onSuccess: () => toast(m.admin_saved()) }),
+    onSubmit: body =>
+      update.mutateAsync({ path: { usergroup_id: group.id }, body }, { onSuccess: () => toast(m.admin_saved()) }),
   })
   return (
     <SettingsSection

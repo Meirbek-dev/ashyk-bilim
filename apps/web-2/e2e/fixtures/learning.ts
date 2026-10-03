@@ -55,14 +55,14 @@ export const test = base.extend<{
     const headers = { cookie: `${cookieName}=${value}` }
     const made: CourseId[] = []
     const publish = (id: ActivityId, published: boolean) =>
-      updateActivity({ client: api, path: { id }, body: { published }, headers, throwOnError: true })
+      updateActivity({ client: api, path: { activity_id: id }, body: { published }, headers, throwOnError: true })
     await use(async ({ activities = 2, certificate = false } = {}) => {
       const name = `E2E course ${randomUUID().slice(0, 8)}`
       const { data: course } = await createCourse({ client: api, body: { name }, headers, throwOnError: true })
       made.push(course.id)
       const { data: chapter } = await createChapter({
         client: api,
-        path: { id: course.id },
+        path: { course_id: course.id },
         body: { name: 'Chapter' },
         headers,
         throwOnError: true,
@@ -71,7 +71,7 @@ export const test = base.extend<{
       for (let index = 1; index <= activities; index += 1) {
         const { data: activity } = await createActivity({
           client: api,
-          path: { id: chapter.id },
+          path: { chapter_id: chapter.id },
           body: { name: `Page ${index}`, activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
           headers,
           throwOnError: true,
@@ -89,7 +89,7 @@ export const test = base.extend<{
       }
       await courseLifecycle({
         client: api,
-        path: { id: course.id },
+        path: { course_id: course.id },
         body: { action: 'publish' },
         headers,
         throwOnError: true,
@@ -104,7 +104,7 @@ export const test = base.extend<{
         archive: async () => {
           await courseLifecycle({
             client: api,
-            path: { id: course.id },
+            path: { course_id: course.id },
             body: { action: 'archive' },
             headers,
             throwOnError: true,
@@ -112,7 +112,7 @@ export const test = base.extend<{
         },
       }
     })
-    for (const id of made) await deleteCourse({ client: api, path: { id }, headers })
+    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
   },
   learner: async ({ api, baseURL, context }, use) => {
     const account = await registerAccount(String(baseURL))
@@ -129,13 +129,18 @@ export const test = base.extend<{
       displayName: data.user.display_name,
       signIn: () => context.addCookies([{ ...cookie, url: String(baseURL) }]),
       enroll: async (course, done = 0) => {
-        await addCourse({ client: api, path: { id: course.id }, headers, throwOnError: true })
+        await addCourse({ client: api, path: { course_id: course.id }, headers, throwOnError: true })
         for (const id of course.activityIds.slice(0, done)) {
-          await addActivity({ client: api, path: { id }, headers, throwOnError: true })
+          await addActivity({ client: api, path: { activity_id: id }, headers, throwOnError: true })
         }
       },
       certificateCode: async course => {
-        const issued = await myCourseCertificates({ client: api, path: { id: course.id }, headers, throwOnError: true })
+        const issued = await myCourseCertificates({
+          client: api,
+          path: { course_id: course.id },
+          headers,
+          throwOnError: true,
+        })
         const code = issued.data[0]?.certificate.verify_code
         if (!code) throw new Error(`no certificate issued for ${course.name}`)
         return code

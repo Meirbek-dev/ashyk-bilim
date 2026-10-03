@@ -13,7 +13,7 @@ export type AccessGroup = {
 export type AccessMode = 'all_course_learners' | 'restricted';
 
 export type AccessUser = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     id: UserId;
     username: string;
@@ -35,8 +35,8 @@ export type AccessView = {
 export type ActionId = 'enroll' | 'start' | 'continue' | 'revise' | 'view_feedback' | 'wait_for_grade' | 'view_certificate' | 'review_completion' | 'none';
 
 export type Activity = {
-    activity_sub_type: string;
-    activity_type: string;
+    activity_sub_type: ActivitySubType;
+    activity_type: ActivityType;
     /**
      * What the caller may do to this activity now.
      */
@@ -62,15 +62,39 @@ export type Activity = {
 export type ActivityAction = 'update' | 'delete' | 'move';
 
 /**
+ * `activities.content`: the editor document (dynamic pages) or the media
+ * reference (video / document); `{}` for kinds that keep their content
+ * elsewhere (assessments, file submissions).
+ */
+export type ActivityContent = EditorDocument | MediaContent;
+
+/**
  * Full activity view with the heavy jsonb columns.
  */
 export type ActivityDetail = Activity & {
     /**
      * Editor content (dynamic pages) or type-specific payload.
      */
-    content: unknown;
-    details: unknown;
-    settings: unknown;
+    content: ActivityContent;
+    details: ActivityDetails;
+    settings: ActivitySettings;
+};
+
+/**
+ * `activities.details`: player settings of video activities (camelCase as
+ * the web writes them); `{}` for other kinds.
+ */
+export type ActivityDetails = {
+    autoplay?: boolean;
+    /**
+     * Seconds; absent = play to the end.
+     */
+    endTime?: number;
+    muted?: boolean;
+    /**
+     * Seconds.
+     */
+    startTime?: number;
 };
 
 export type ActivityDropoffRow = {
@@ -85,21 +109,45 @@ export type ActivityDropoffRow = {
 
 export type ActivityId = string;
 
+/**
+ * `activities.settings`. The server reads `required` (progress: `false`
+ * makes the activity optional). Migrated legacy rows keep the legacy
+ * assessment settings they had (exam / code-challenge keys such as
+ * `time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.
+ */
+export type ActivitySettings = {
+    /**
+     * Absent = required.
+     */
+    required?: boolean;
+    [key: string]: JsonValue | boolean | undefined;
+};
+
 export type ActivityState = {
     activity_type: string;
     allowed_actions: Array<string>;
     available: boolean;
-    blocked_reason?: string | null;
+    blocked_reason: string | null;
     complete: boolean;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     id: ActivityId;
     is_late: boolean;
-    passed?: boolean | null;
+    passed: boolean | null;
     required: boolean;
-    score?: number | null;
+    score: number | null;
     state: WorkState;
     title: string;
 };
+
+/**
+ * Activity sub-kind; must pair with its [`ActivityType`].
+ */
+export type ActivitySubType = 'dynamic_page' | 'video_youtube' | 'video_hosted' | 'document_pdf' | 'document_doc' | 'quiz_standard' | 'exam_standard' | 'code_general' | 'code_competitive' | 'file_submission_standard' | 'custom';
+
+/**
+ * Activity kind (`custom` exists only on migrated legacy rows).
+ */
+export type ActivityType = 'dynamic' | 'video' | 'document' | 'quiz' | 'exam' | 'code_challenge' | 'file_submission' | 'custom';
 
 /**
  * Add someone to the roster by id or username (exactly one).
@@ -108,9 +156,9 @@ export type AddContributorRequest = {
     /**
      * `maintainer | contributor | reporter` (default `contributor`).
      */
-    role?: string | null;
-    user_id?: UserId | null;
-    username?: string | null;
+    role?: string;
+    user_id?: UserId;
+    username?: string;
 };
 
 export type AdminAnalyticsResponse = {
@@ -118,7 +166,7 @@ export type AdminAnalyticsResponse = {
     content_roi: Array<AdminCourseRow>;
     course_health_ranking: Array<AdminCourseRow>;
     department_program_performance: Array<AdminProgramRow>;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     teacher_workload_comparison: Array<AdminTeacherRow>;
 };
 
@@ -127,36 +175,36 @@ export type AdminAnalyticsResponse = {
  */
 export type AdminAwardRequest = {
     amount: number;
-    idempotency_key?: string | null;
-    reason?: string | null;
+    idempotency_key?: string;
+    reason?: string;
     user_id: UserId;
 };
 
 export type AdminCohortRow = {
-    avg_progress_pct?: number | null;
+    avg_progress_pct: number | null;
     cohort_id: UsergroupId;
     cohort_name: string;
     learners: number;
     retained_learners: number;
-    retention_rate?: number | null;
+    retention_rate: number | null;
 };
 
 export type AdminCourseRow = {
     active_learners_7d: number;
     at_risk_learners: number;
     completion_rate: number;
-    content_roi_score?: number | null;
+    content_roi_score: number | null;
     course_id: CourseId;
     course_name: string;
     health_score: number;
 };
 
 export type AdminProgramRow = {
-    completion_rate?: number | null;
+    completion_rate: number | null;
     course_count: number;
-    health_score?: number | null;
+    health_score: number | null;
     learner_count: number;
-    program_id?: UserId | null;
+    program_id: UserId | null;
     program_name: string;
 };
 
@@ -164,29 +212,27 @@ export type AdminProgramRow = {
  * One run in the operations view (legacy `AIOperationRunRead`).
  */
 export type AdminRun = {
-    completed_at_unix?: number | null;
+    completed_at_unix: UnixTime | null;
     /**
      * The allow-listed part of the run metadata.
      */
-    context: {
-        [key: string]: unknown;
-    };
-    cost_estimate?: number | null;
-    duration_ms?: number | null;
-    error_code?: string | null;
+    context: RunContext;
+    cost_estimate: number | null;
+    duration_ms: number | null;
+    error_code: string | null;
     feature: AiRunKind;
     id: AiRunId;
-    input_tokens?: number | null;
-    model_name?: string | null;
-    output_tokens?: number | null;
+    input_tokens: number | null;
+    model_name: string | null;
+    output_tokens: number | null;
     retry_count: number;
-    started_at_unix: number;
+    started_at_unix: UnixTime;
     status: AiRunStatus;
     /**
      * Queued or running for over ten minutes.
      */
     stuck: boolean;
-    time_to_first_text_ms?: number | null;
+    time_to_first_text_ms: number | null;
 };
 
 export type AdminRunDetail = {
@@ -198,7 +244,7 @@ export type AdminRunDetail = {
 
 export type AdminRunPage = {
     items: Array<AdminRun>;
-    next_cursor?: AiRunId | null;
+    next_cursor: AiRunId | null;
 };
 
 export type AdminSettings = {
@@ -207,9 +253,7 @@ export type AdminSettings = {
     /**
      * The whole `AB__AI__*` section with secrets redacted.
      */
-    effective: {
-        [key: string]: unknown;
-    };
+    effective: AiEffectiveConfig;
     features: Array<FeatureSetting>;
     max_output_tokens: number;
     max_tokens_per_request: number;
@@ -221,7 +265,7 @@ export type AdminSettings = {
 export type AdminTeacherRow = {
     at_risk_learners: number;
     managed_course_count: number;
-    median_feedback_latency_hours?: number | null;
+    median_feedback_latency_hours: number | null;
     sla_breaches: number;
     teacher_display_name: string;
     teacher_user_id: UserId;
@@ -236,7 +280,7 @@ export type AdminUser = {
      * What the caller may do to this account now.
      */
     allowed_actions: Array<AdminUserAction>;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     display_name: string;
     email: string;
     id: UserId;
@@ -248,7 +292,7 @@ export type AdminUser = {
     /**
      * `active` or `disabled`.
      */
-    status: string;
+    status: UserStatus;
     username: string;
 };
 
@@ -262,7 +306,7 @@ export type AdminUserAction = 'manage_roles' | 'disable' | 'enable';
  */
 export type AdminUserPage = {
     items: Array<AdminUser>;
-    next_cursor?: UserId | null;
+    next_cursor: UserId | null;
 };
 
 export type AffiliationSection = {
@@ -271,13 +315,89 @@ export type AffiliationSection = {
     title: string;
 };
 
+/**
+ * AG-UI `Context` entry (accepted and ignored).
+ */
+export type AgUiContext = {
+    description: string;
+    value: string;
+};
+
+/**
+ * One part of an AG-UI message: `{type: "text", content: "…"}`; only text
+ * parts are read.
+ */
+export type AgUiMessagePart = {
+    content?: string;
+    type: string;
+};
+
+/**
+ * AG-UI `Tool` the client offers (accepted and ignored).
+ */
+export type AgUiTool = {
+    description: string;
+    name: string;
+    /**
+     * JSON Schema of the tool's arguments.
+     */
+    parameters: JsonValue;
+};
+
 export type AiArtifactId = string;
 
 export type AiCourseAnalysisId = string;
 
+/**
+ * The `AB__AI__*` section the server runs with, secrets replaced by
+ * `"[redacted]"` (`AiConfig::redacted`; a test pins the keys).
+ */
+export type AiEffectiveConfig = {
+    ai_draft_mode_enabled: boolean;
+    ai_enabled: boolean;
+    analysis_requests_per_hour_per_user: number;
+    course_analysis_enabled: boolean;
+    course_qa_enabled: boolean;
+    lecture_authoring_enabled: boolean;
+    max_output_tokens: number;
+    max_tokens_per_request: number;
+    monthly_token_budget: number;
+    /**
+     * `"[redacted]"` when set.
+     */
+    openai_api_key: string | null;
+    openai_base_url: string;
+    openai_model: string;
+    openai_timeout_secs: number;
+    /**
+     * `"[redacted]"` when set.
+     */
+    openrouter_api_key: string | null;
+    openrouter_base_url: string;
+    openrouter_model: string;
+    openrouter_timeout_secs: number;
+    remediation_enabled: boolean;
+    remediation_requests_per_hour_per_user: number;
+    semantic_memory_enabled: boolean;
+    /**
+     * `enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.
+     */
+    status: string;
+    study_companion_enabled: boolean;
+    submission_analysis_enabled: boolean;
+};
+
 export type AiEvalResultId = string;
 
 export type AiEventId = string;
+
+/**
+ * What an AI result was grounded on: `{citations: [...]}`, or `{}` (the
+ * column default; Q&A questions).
+ */
+export type AiEvidence = {
+    citations?: Array<Citation>;
+};
 
 export type AiEvidenceId = string;
 
@@ -317,23 +437,19 @@ export type AiThreadId = string;
 export type AiThreadRole = 'student' | 'teacher' | 'author' | 'admin';
 
 export type AlertItem = {
-    activity_id?: ActivityId | null;
-    assessment_id?: AssessmentId | null;
+    activity_id: ActivityId | null;
+    assessment_id: AssessmentId | null;
     code: AnalyticsCode;
-    course_id?: CourseId | null;
-    href?: string | null;
+    course_id: CourseId | null;
+    href: string | null;
     id: string;
-    /**
-     * `risk_spike` | `engagement_drop` | `grading_backlog` | `grading_slo` |
-     * `assessment_outlier` | `content_stale`.
-     */
-    kind: string;
-    learner_count?: number | null;
-    params: {
-        [key: string]: unknown;
-    };
+    kind: AlertKind;
+    learner_count: number | null;
+    params: MessageParams;
     severity: Severity;
 };
+
+export type AlertKind = 'RiskSpike' | 'EngagementDrop' | 'GradingBacklog' | 'GradingSlo' | 'AssessmentOutlier' | 'ContentStale';
 
 /**
  * Every server-composed analytics message. The client localises the code
@@ -367,34 +483,27 @@ export type AnalyticsDataQuality = {
     excluded_teacher_attempts: number;
     freshness_seconds: number;
     issues: Array<DataQualityIssue>;
-    last_rollup_time_unix?: number | null;
+    last_rollup_time_unix: UnixTime | null;
     missing_event_sources: Array<string>;
-    /**
-     * `live` | `rollup`.
-     */
-    mode: string;
+    mode: DataMode;
 };
 
 export type AnomalyItem = {
-    activity_id?: ActivityId | null;
-    assessment_id?: AssessmentId | null;
-    assessment_type?: AssessmentKind | null;
-    baseline_value?: number | null;
+    activity_id: ActivityId | null;
+    assessment_id: AssessmentId | null;
+    assessment_type: AssessmentKind | null;
+    baseline_value: number | null;
     code: AnalyticsCode;
-    course_id?: CourseId | null;
-    course_name?: string | null;
+    course_id: CourseId | null;
+    course_name: string | null;
     id: string;
-    /**
-     * `engagement_drop` | `submission_spike` | `fast_quiz_completion` |
-     * `score_distribution_shift`.
-     */
-    kind: string;
-    observed_value?: number | null;
-    params: {
-        [key: string]: unknown;
-    };
+    kind: AnomalyKind;
+    observed_value: number | null;
+    params: MessageParams;
     severity: Severity;
 };
+
+export type AnomalyKind = 'EngagementDrop' | 'SubmissionSpike' | 'FastQuizCompletion' | 'ScoreDistributionShift';
 
 export type Assessment = {
     access_mode: AccessMode;
@@ -403,11 +512,11 @@ export type Assessment = {
      * What the caller may do to this assessment now.
      */
     allowed_actions: Array<AssessmentAction>;
-    archived_at_unix?: number | null;
+    archived_at_unix: UnixTime | null;
     content_version: number;
     course_id: CourseId;
-    created_at_unix: number;
-    creator_id?: UserId | null;
+    created_at_unix: UnixTime;
+    creator_id: UserId | null;
     description: string;
     grading_type: GradingType;
     id: AssessmentId;
@@ -415,10 +524,10 @@ export type Assessment = {
     lifecycle: Lifecycle;
     policy: Policy;
     policy_version: number;
-    published_at_unix?: number | null;
-    scheduled_at_unix?: number | null;
+    published_at_unix: UnixTime | null;
+    scheduled_at_unix: UnixTime | null;
     title: string;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     weight: number;
 };
 
@@ -429,36 +538,33 @@ export type AssessmentAction = 'update' | 'transition' | 'duplicate' | 'grade';
 
 export type AssessmentAuditEventRow = {
     action: string;
-    actor_display_name?: string | null;
-    actor_user_id?: UserId | null;
-    affected_count?: number | null;
-    bulk_action_id?: BulkActionId | null;
+    actor_display_name: string | null;
+    actor_user_id: UserId | null;
+    affected_count: number | null;
+    bulk_action_id: BulkActionId | null;
     /**
      * The saved/published score of a grading entry; `None` for bulk actions.
      */
-    final_score?: number | null;
-    grading_entry_id?: GradingEntryId | null;
+    final_score: number | null;
+    grading_entry_id: GradingEntryId | null;
     id: string;
-    occurred_at_unix: number;
-    /**
-     * `grading_entry` | `bulk_action`.
-     */
-    source: string;
-    status?: string | null;
-    submission_id?: SubmissionId | null;
+    occurred_at_unix: UnixTime;
+    source: AuditSource;
+    status: string | null;
+    submission_id: SubmissionId | null;
 };
 
 export type AssessmentCohortRow = {
-    avg_attempts?: number | null;
+    avg_attempts: number | null;
     awaiting_grading: number;
     cohort_id: UsergroupId;
     cohort_name: string;
     eligible_learners: number;
-    median_score?: number | null;
-    pass_rate?: number | null;
+    median_score: number | null;
+    pass_rate: number | null;
     released_learners: number;
     returned_for_resubmission: number;
-    submission_rate?: number | null;
+    submission_rate: number | null;
     submitted_learners: number;
 };
 
@@ -473,7 +579,7 @@ export type AssessmentDiagnosticsSnapshot = {
     late_submissions: number;
     manual_grading_required: boolean;
     missing_scores: number;
-    note?: string | null;
+    note: string | null;
     released: number;
     returned_for_resubmission: number;
     stale_backlog: number;
@@ -497,20 +603,17 @@ export type AssessmentItem = {
 };
 
 export type AssessmentItemAnalyticsRow = {
-    accuracy_pct?: number | null;
-    impact_rate?: number | null;
+    accuracy_pct: number | null;
+    impact_rate: number | null;
     impacted_count: number;
     item_key: string;
     item_label: string;
-    /**
-     * `workflow` | `question` | `test`.
-     */
-    item_type: string;
+    item_type: ItemType;
     /**
      * Stable code for workflow rows (`manual_review_pending`, …); questions
      * and tests carry `accuracy_pct` instead.
      */
-    note?: string | null;
+    note: string | null;
     population_count: number;
     signal: ItemSignal;
 };
@@ -525,64 +628,58 @@ export type AssessmentKind = 'quiz' | 'exam' | 'code_challenge';
 
 export type AssessmentLearnerRow = {
     attempts: number;
-    best_score?: number | null;
-    graded_at_unix?: number | null;
-    last_score?: number | null;
+    best_score: number | null;
+    graded_at_unix: UnixTime | null;
+    last_score: number | null;
     /**
      * The newest attempt still awaiting the teacher (`pending` or `graded`
      * but unreleased), if any - it may be newer than the ranked attempt.
      */
-    pending_attempt?: number | null;
+    pending_attempt: number | null;
     /**
      * Submission status of the grade-of-record attempt (`published`,
      * `pending`, `graded`, …) - the gradebook cell's rule.
      */
-    status?: string | null;
-    submitted_at_unix?: number | null;
+    status: string | null;
+    submitted_at_unix: UnixTime | null;
     user_display_name: string;
     user_id: UserId;
 };
 
 export type AssessmentOutlierRow = {
-    activity_id?: ActivityId | null;
+    activity_id: ActivityId | null;
     assessment_id: AssessmentId;
     assessment_type: AssessmentKind;
-    avg_attempts?: number | null;
-    completion_rate?: number | null;
+    avg_attempts: number | null;
+    completion_rate: number | null;
     course_id: CourseId;
     course_name: string;
-    difficulty_score?: number | null;
-    discrimination_index?: number | null;
-    grading_latency_hours_p50?: number | null;
-    grading_latency_hours_p90?: number | null;
-    median_score?: number | null;
+    difficulty_score: number | null;
+    discrimination_index: number | null;
+    grading_latency_hours_p50: number | null;
+    grading_latency_hours_p90: number | null;
+    median_score: number | null;
     outlier_reason_codes: Array<string>;
-    pass_rate?: number | null;
-    reliability_score?: number | null;
-    score_variance?: number | null;
-    submission_rate?: number | null;
-    /**
-     * `too_easy` | `too_hard` | `low_discrimination` | `low_variance`.
-     */
-    suspicious_flag?: string | null;
+    pass_rate: number | null;
+    reliability_score: number | null;
+    score_variance: number | null;
+    submission_rate: number | null;
+    suspicious_flag: SuspiciousFlag | null;
     title: string;
 };
 
 export type AssessmentSloSnapshot = {
     backlog_count: number;
     note: string;
-    observed_p50_hours?: number | null;
-    observed_p90_hours?: number | null;
+    observed_p50_hours: number | null;
+    observed_p90_hours: number | null;
     overdue_backlog_count: number;
     status: SloStatus;
-    target_hours?: number | null;
+    target_hours: number | null;
 };
 
 export type AssessmentSupportAlertRow = {
-    /**
-     * `grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.
-     */
-    code: string;
+    code: SupportAlertCode;
     severity: Severity;
     summary: string;
 };
@@ -605,19 +702,19 @@ export type AssignRoleRequest = {
 };
 
 export type AtRiskLearnerRow = {
-    cohort_name?: string | null;
+    cohort_name: string | null;
     confidence_level: Confidence;
     course_id: CourseId;
     course_name: string;
-    days_since_last_activity?: number | null;
+    days_since_last_activity: number | null;
     failed_assessments: number;
     intervention_count: number;
-    last_intervention_at_unix?: number | null;
-    last_intervention_outcome?: string | null;
-    last_intervention_type?: string | null;
+    last_intervention_at_unix: UnixTime | null;
+    last_intervention_outcome: string | null;
+    last_intervention_type: string | null;
     missing_required_assessments: number;
     open_grading_blocks: number;
-    previous_risk_score?: number | null;
+    previous_risk_score: number | null;
     progress_pct: number;
     reason_codes: Array<string>;
     /**
@@ -629,9 +726,9 @@ export type AtRiskLearnerRow = {
     };
     risk_level: RiskLevel;
     risk_score: number;
-    risk_score_delta?: number | null;
+    risk_score_delta: number | null;
     risk_trend: RiskTrend;
-    top_contributing_factor?: string | null;
+    top_contributing_factor: string | null;
     user_display_name: string;
     user_id: UserId;
     /**
@@ -643,7 +740,7 @@ export type AtRiskLearnerRow = {
 export type AtRiskLearnersResponse = {
     cohort_options: Array<FilterOption>;
     course_options: Array<FilterOption>;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     items: Array<AtRiskLearnerRow>;
     page: number;
     page_size: number;
@@ -652,12 +749,12 @@ export type AtRiskLearnersResponse = {
 
 export type AttachedFile = {
     content_type: string;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     filename: string;
     id: FileAttemptFileId;
     position: number;
     scan_status: ScanStatus;
-    size_bytes?: number | null;
+    size_bytes: number | null;
     upload_id: string;
 };
 
@@ -673,11 +770,11 @@ export type Attempt = {
      */
     allowed_actions: Array<FileGradeAction>;
     attempt_number: number;
-    created_at_unix: number;
-    feedback?: string | null;
+    created_at_unix: UnixTime;
+    feedback: string | null;
     files: Array<AttachedFile>;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
     id: FileAttemptId;
     is_late: boolean;
     late_penalty_pct: number;
@@ -685,15 +782,13 @@ export type Attempt = {
      * The grader's score before `late_penalty_pct` (UX-121); `final_score`
      * is what counts. Same visibility as `final_score`.
      */
-    raw_score?: number | null;
-    rubric_scores?: {
-        [key: string]: unknown;
-    } | null;
-    started_at_unix?: number | null;
+    raw_score: number | null;
+    rubric_scores: RubricScores | null;
+    started_at_unix: UnixTime | null;
     status: FileAttemptStatus;
-    submitted_at_unix?: number | null;
-    updated_at_unix: number;
-    user?: UserSummary | null;
+    submitted_at_unix: UnixTime | null;
+    updated_at_unix: UnixTime;
+    user: UserSummary | null;
     /**
      * Optimistic lock - send back as `If-Match`.
      */
@@ -707,7 +802,7 @@ export type AttemptState = {
     /**
      * `null` = unlimited.
      */
-    attempts_remaining?: number | null;
+    attempts_remaining: number | null;
     attempts_used: number;
     /**
      * An open draft exists and may still be worked on.
@@ -718,11 +813,11 @@ export type AttemptState = {
      */
     can_start: boolean;
     disabled_reasons: Array<DisabledReason>;
-    draft_id?: SubmissionId | null;
+    draft_id: SubmissionId | null;
     effective: EffectivePolicy;
     is_teacher_preview: boolean;
     lifecycle: Lifecycle;
-    opens_at_unix?: number | null;
+    opens_at_unix: UnixTime | null;
     /**
      * The latest attempt was returned for revision; the cap is lifted.
      */
@@ -730,12 +825,68 @@ export type AttemptState = {
 };
 
 export type AuditEvent = {
-    actor_id?: UserId | null;
-    created_at_unix: number;
+    actor_id: UserId | null;
+    created_at_unix: UnixTime;
     event: string;
     id: string;
-    payload: unknown;
+    payload: AuditPayload;
 };
+
+/**
+ * `assessment_audit_events.payload`; the keys depend on `event`:
+ * `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),
+ * `auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,
+ * `users`, `usergroups`), `override-created|updated|deleted` (`user_id`),
+ * `duplicated-from` (`source`), `deadline-extension-requested` /
+ * `deadline-extended` (`action_id`, `learners`, `new_due_at`),
+ * `submission-submitted` (`submission_id`, `attempt`, `status`,
+ * `auto_submit_reason`), `grade-saved` (`submission_id`, `learner_id`,
+ * `status`, `raw_score`, `final_score`, `audit_note`), `grades-published`
+ * (`published`, `already_published`).
+ */
+export type AuditPayload = {
+    action_id?: string;
+    already_published?: number;
+    attempt?: number;
+    audit_note?: string | null;
+    auto_submit_reason?: string | null;
+    /**
+     * `scheduler` for automatic transitions.
+     */
+    by?: string;
+    final_score?: number | null;
+    from?: string;
+    learner_id?: string;
+    learners?: number;
+    mode?: string;
+    /**
+     * Unix seconds.
+     */
+    new_due_at?: number;
+    note?: string | null;
+    published?: number;
+    raw_score?: number | null;
+    /**
+     * Readiness codes that blocked an automatic publish.
+     */
+    readiness?: Array<string>;
+    /**
+     * Unix seconds.
+     */
+    scheduled_at?: number | null;
+    /**
+     * The assessment this one was duplicated from.
+     */
+    source?: string;
+    status?: string;
+    submission_id?: string;
+    to?: string;
+    user_id?: string;
+    usergroups?: number;
+    users?: number;
+};
+
+export type AuditSource = 'GradingEntry' | 'BulkAction';
 
 export type AutoSubmitReason = 'time_expired' | 'integrity_violation';
 
@@ -753,33 +904,68 @@ export type Block = {
      * `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
      */
     block_type: string;
-    /**
-     * `{upload_id, file_key, file_name, file_size, file_type}`.
-     */
-    content: unknown;
-    created_at_unix: number;
+    content: BlockContent;
+    created_at_unix: UnixTime;
     id: BlockId;
 };
 
+/**
+ * `blocks.content`: the uploaded file a content block shows. Legacy rows
+ * carry `file_id` / `file_format` / `activity_uuid` instead of `upload_id`.
+ */
+export type BlockContent = {
+    activity_uuid?: string;
+    file_format?: string;
+    file_id?: string;
+    /**
+     * Storage key, served at `/content/<key>`.
+     */
+    file_key: string;
+    file_name: string;
+    file_size: number;
+    /**
+     * MIME type.
+     */
+    file_type: string;
+    upload_id?: string;
+};
+
 export type BlockId = string;
+
+/**
+ * Content block kind (`custom` exists only on migrated legacy rows and
+ * cannot be created).
+ */
+export type BlockType = 'image' | 'pdf' | 'video' | 'custom';
+
+export type Bucket = 'day' | 'week';
 
 export type BulkAction = {
     action_type: BulkActionType;
     affected_count: number;
     assessment_id: AssessmentId;
-    completed_at_unix?: number | null;
-    created_at_unix: number;
+    completed_at_unix: UnixTime | null;
+    created_at_unix: UnixTime;
     error_log: string;
     id: BulkActionId;
-    params: {
-        [key: string]: unknown;
-    };
-    performed_by?: UserId | null;
+    params: BulkActionParams;
+    performed_by: UserId | null;
     status: BulkActionStatus;
     target_user_ids: Array<UserId>;
 };
 
 export type BulkActionId = string;
+
+/**
+ * `bulk_actions.params` of a deadline extension.
+ */
+export type BulkActionParams = {
+    /**
+     * Unix seconds.
+     */
+    new_due_at: number;
+    reason: string;
+};
 
 export type BulkActionStatus = 'pending' | 'running' | 'completed' | 'failed';
 
@@ -799,28 +985,28 @@ export type CaseResult = {
     /**
      * `stdout` with surrounding whitespace trimmed (what was compared).
      */
-    actual?: string | null;
-    compile_output?: string | null;
+    actual: string | null;
+    compile_output: string | null;
     description: string;
-    expected?: string | null;
+    expected: string | null;
     is_visible: boolean;
-    memory_kb?: number | null;
-    message?: string | null;
+    memory_kb: number | null;
+    message: string | null;
     passed: boolean;
     status_description: string;
-    status_id?: number | null;
-    stderr?: string | null;
-    stdin?: string | null;
-    stdout?: string | null;
+    status_id: number | null;
+    stderr: string | null;
+    stdin: string | null;
+    stdout: string | null;
     test_id: string;
-    time_seconds?: number | null;
+    time_seconds: number | null;
     weight: number;
 };
 
 export type Certificate = {
     certification_id: CertificationId;
     id: CertificateId;
-    issued_at_unix: number;
+    issued_at_unix: UnixTime;
     user_id: UserId;
     /**
      * Public verification code; the client links `/certificates/{code}/verify`.
@@ -837,15 +1023,20 @@ export type CertificateHolder = {
 
 export type CertificateId = string;
 
+/**
+ * The certificate's background design.
+ */
+export type CertificatePattern = 'royal' | 'tech' | 'nature' | 'geometric' | 'vintage' | 'waves' | 'minimal' | 'professional' | 'academic' | 'modern';
+
 export type CertificateState = {
     configured: boolean;
     eligible: boolean;
-    href?: string | null;
+    href: string | null;
     issued: boolean;
     /**
      * Public verification code of the issued certificate.
      */
-    verify_code?: string | null;
+    verify_code: string | null;
 };
 
 export type Certification = {
@@ -853,16 +1044,11 @@ export type Certification = {
      * What the caller may do to this template now.
      */
     allowed_actions: Array<CertificationAction>;
-    /**
-     * The client's PDF designer document (opaque to the server).
-     */
-    config: {
-        [key: string]: unknown;
-    };
+    config: CertificationConfig;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: CertificationId;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 /**
@@ -870,7 +1056,25 @@ export type Certification = {
  */
 export type CertificationAction = 'update' | 'delete';
 
+/**
+ * `certifications.config`: what the certificate editor stores. The server
+ * reads `certification_name`, `certification_type` and
+ * `certificate_instructor`; the rest is the web's.
+ */
+export type CertificationConfig = {
+    /**
+     * The name signed on the certificate; blank = the course's teachers.
+     */
+    certificate_instructor?: string;
+    certificate_pattern?: CertificatePattern;
+    certification_description?: string;
+    certification_name?: string;
+    certification_type?: CertificationType;
+};
+
 export type CertificationId = string;
+
+export type CertificationType = 'completion' | 'achievement' | 'assessment' | 'participation' | 'mastery' | 'professional' | 'continuing' | 'workshop' | 'specialization';
 
 /**
  * Password change; the current password is checked by Zitadel.
@@ -913,11 +1117,11 @@ export type ChapterState = {
 };
 
 export type ChoiceBody = {
-    explanation?: string | null;
+    explanation: string | null;
     multiple?: boolean;
     options?: Array<ChoiceOption>;
     prompt?: string;
-    variant?: ChoiceVariant | null;
+    variant: ChoiceVariant | null;
 };
 
 export type ChoiceOption = {
@@ -928,6 +1132,27 @@ export type ChoiceOption = {
 
 export type ChoiceVariant = 'single_choice' | 'multiple_choice' | 'true_false';
 
+export type Citation = {
+    citation_id: string;
+    confidence?: number;
+    excerpt?: string;
+    label: string;
+    source_type: string;
+    source_uuid?: string;
+};
+
+/**
+ * How many of the model's citations named a supplied source; just
+ * `{validation: "not_applicable"}` for runs without context sources.
+ */
+export type CitationValidation = {
+    invalid_citation_ids?: Array<string>;
+    invalid_count?: number;
+    source_count?: number;
+    valid_count?: number;
+    validation?: 'not_applicable';
+};
+
 export type CodeBody = {
     constraints?: Array<string>;
     input_spec?: string;
@@ -935,8 +1160,8 @@ export type CodeBody = {
      * Judge0 language ids.
      */
     languages?: Array<number>;
-    max_output_kb?: number | null;
-    memory_limit_mb?: number | null;
+    max_output_kb: number | null;
+    memory_limit_mb: number | null;
     output_spec?: string;
     prompt?: string;
     reference_solutions?: {
@@ -950,7 +1175,7 @@ export type CodeBody = {
         [key: string]: string;
     };
     tests?: Array<CodeTestCase>;
-    time_limit_seconds?: number | null;
+    time_limit_seconds: number | null;
 };
 
 /**
@@ -960,10 +1185,10 @@ export type CodeBody = {
 export type CodeRun = {
     assessment_id: AssessmentId;
     cases: Array<CaseResult>;
-    compile_output?: string | null;
-    created_at_unix: number;
-    error_message?: string | null;
-    finished_at_unix?: number | null;
+    compile_output: string | null;
+    created_at_unix: UnixTime;
+    error_message: string | null;
+    finished_at_unix: UnixTime | null;
     id: CodeRunId;
     item_id: AssessmentItemId;
     language_id: number;
@@ -976,9 +1201,9 @@ export type CodeRun = {
     /**
      * Weighted pass share 0..100; `null` for custom-input runs.
      */
-    score?: number | null;
+    score: number | null;
     status: CodeRunStatus;
-    submission_id?: SubmissionId | null;
+    submission_id: SubmissionId | null;
     total: number;
 };
 
@@ -989,7 +1214,7 @@ export type CodeRunPurpose = 'custom' | 'visible' | 'final' | 'reference_check';
 export type CodeRunStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'degraded';
 
 export type CodeTestCase = {
-    description?: string | null;
+    description: string | null;
     expected_output?: string;
     id: string;
     input?: string;
@@ -1011,13 +1236,13 @@ export type Collection = {
      * Member courses visible to the caller, in collection order.
      */
     courses: Array<Course>;
-    created_at_unix: number;
-    creator_id?: UserId | null;
+    created_at_unix: UnixTime;
+    creator_id: UserId | null;
     description: string;
     id: CollectionId;
     name: string;
     public: boolean;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     /**
      * Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).
      */
@@ -1046,7 +1271,7 @@ export type CollectionId = string;
  */
 export type CollectionPage = {
     items: Array<Collection>;
-    next_cursor?: CollectionId | null;
+    next_cursor: CollectionId | null;
 };
 
 export type CommonFailureRow = {
@@ -1065,70 +1290,68 @@ export type Confidence = 'low' | 'medium' | 'high';
  * The configuration block; every field optional on create and patch.
  */
 export type ConfigPatch = {
-    allow_late?: boolean | null;
-    allowed_mime_types?: Array<string> | null;
-    due_at_unix?: number | null;
-    grade_release_mode?: GradeReleaseMode | null;
-    instructions?: string | null;
-    late_policy?: LatePolicy | null;
+    allow_late?: boolean;
+    allowed_mime_types?: Array<string>;
+    due_at_unix?: UnixTime | null;
+    grade_release_mode?: GradeReleaseMode;
+    instructions?: string;
+    late_policy?: LatePolicy;
     max_attempts?: number | null;
     /**
      * `null` clears the limit.
      */
     max_file_size_mb?: number | null;
-    max_files?: number | null;
+    max_files?: number;
     /**
      * A JSON object of at most 4 KiB serialized (UX-154; same rule as the
      * grade route's `rubric_scores`).
      */
-    rubric?: {
-        [key: string]: unknown;
-    } | null;
-    settings?: {
-        [key: string]: unknown;
-    } | null;
-    title?: string | null;
+    rubric?: FileRubric;
+    settings?: FileSubmissionSettings;
+    title?: string;
 };
 
 export type ContentBottleneckRow = {
     activity_id: ActivityId;
     activity_name: string;
     activity_type: string;
-    avg_time_seconds?: number | null;
+    avg_time_seconds: number | null;
     completed_learners: number;
-    completion_rate?: number | null;
+    completion_rate: number | null;
     course_id: CourseId;
     course_name: string;
     exit_count: number;
     failed_assessments: number;
     note: string;
     severity: Severity;
-    /**
-     * `high_time_low_completion` | `exit_after_open` |
-     * `repeated_assessment_failures` | `stale_low_performance`.
-     */
-    signal: string;
-    stale_days?: number | null;
+    signal: ContentBottleneckSignal;
+    stale_days: number | null;
     started_learners: number;
 };
+
+export type ContentBottleneckSignal = 'HighTimeLowCompletion' | 'ExitAfterOpen' | 'RepeatedAssessmentFailures' | 'StaleLowPerformance';
 
 export type ContentHealthRow = {
     course_id: CourseId;
     note: string;
     severity: Severity;
-    /**
-     * `content_freshness` | `average_progress` | `grading_backlog`.
-     */
-    signal: string;
-    value?: number | null;
+    signal: ContentHealthSignal;
+    value: number | null;
 };
 
+export type ContentHealthSignal = 'ContentFreshness' | 'AverageProgress' | 'GradingBacklog';
+
 export type ContextSummary = {
-    activity_id?: ActivityId | null;
-    activity_label?: string | null;
+    activity_id: ActivityId | null;
+    activity_label: string | null;
     course_label: string;
     source_count: number;
 };
+
+/**
+ * Whose context an AI scope exposes.
+ */
+export type ContextVisibility = 'student' | 'teacher';
 
 /**
  * One roster entry.
@@ -1138,14 +1361,20 @@ export type ContextSummary = {
  * inactive`. Any active entry authors on the course like the creator.
  */
 export type Contributor = {
-    avatar_key?: string | null;
-    created_at_unix: number;
+    avatar_key: string | null;
+    created_at_unix: UnixTime;
     display_name: string;
     role: string;
     status: string;
     user_id: UserId;
     username: string;
 };
+
+/**
+ * The answer key shown after grading: correct option ids (choice) or the
+ * expected pairs (matching); `null` for kinds without a key.
+ */
+export type CorrectAnswer = Array<string> | Array<MatchingPair>;
 
 export type Course = {
     about: string;
@@ -1158,8 +1387,8 @@ export type Course = {
      * every role (writes answer 409 `course-archived`); enrolled learners
      * keep reading it. Orthogonal to `public`.
      */
-    archived_at_unix?: number | null;
-    archived_by?: UserId | null;
+    archived_at_unix: UnixTime | null;
+    archived_by: UserId | null;
     /**
      * Active maintainers / contributors (`GET /courses/{id}/contributors`,
      * status `active`, role not `reporter`); they edit the course like the
@@ -1167,8 +1396,8 @@ export type Course = {
      * Reporters are read-only and not listed.
      */
     contributor_ids: Array<UserId>;
-    created_at_unix: number;
-    creator_id?: UserId | null;
+    created_at_unix: UnixTime;
+    creator_id: UserId | null;
     description: string;
     id: CourseId;
     /**
@@ -1182,13 +1411,13 @@ export type Course = {
     /**
      * Storage key of the thumbnail image, served at `/content/<key>`.
      */
-    thumbnail_key?: string | null;
+    thumbnail_key: string | null;
     /**
      * Storage key of the legacy video thumbnail (migrated courses only;
      * read-only), served at `/content/<key>`.
      */
-    thumbnail_video_key?: string | null;
-    updated_at_unix: number;
+    thumbnail_video_key: string | null;
+    updated_at_unix: UnixTime;
 };
 
 /**
@@ -1198,28 +1427,24 @@ export type Course = {
 export type CourseAction = 'update' | 'publish' | 'unpublish' | 'archive' | 'restore' | 'delete' | 'manage_contributors';
 
 export type CourseAnalysis = {
-    content_hash?: string | null;
+    content_hash: string | null;
     course_id: CourseId;
-    created_at_unix: number;
-    evidence: {
-        [key: string]: unknown;
-    };
+    created_at_unix: UnixTime;
+    evidence: AiEvidence;
     id: AiCourseAnalysisId;
     language: string;
-    model_name?: string | null;
-    previous_public_score?: number | null;
+    model_name: string | null;
+    previous_public_score: number | null;
     public_score: number;
-    published_at_unix?: number | null;
-    report: {
-        [key: string]: unknown;
-    };
-    run_id?: AiRunId | null;
+    published_at_unix: UnixTime | null;
+    report: CourseQualityReport;
+    run_id: AiRunId | null;
     /**
      * The course content changed since this analysis (latest view only).
      */
     stale: boolean;
     status: CourseAnalysisStatus;
-    triggered_by?: UserId | null;
+    triggered_by: UserId | null;
 };
 
 /**
@@ -1269,10 +1494,12 @@ export type CourseId = string;
  * One "What you'll learn" entry.
  */
 export type CourseLearning = {
-    emoji?: string | null;
+    emoji: string | null;
     id: string;
     text: string;
 };
+
+export type CourseLifecycleAction = 'publish' | 'unpublish' | 'archive' | 'restore';
 
 export type CourseLifecycleRequest = {
     /**
@@ -1280,23 +1507,55 @@ export type CourseLifecycleRequest = {
      * `archive` | `restore` (creator, active maintainer or
      * `course:manage:platform`).
      */
-    action: string;
+    action: CourseLifecycleAction;
 };
+
+/**
+ * `GET /courses?preset=`; `archived` needs `mine=true`.
+ */
+export type CourseListPreset = 'all' | 'drafts' | 'published' | 'recent' | 'attention' | 'archived';
+
+/**
+ * `GET /courses?sort=`: `updated` (default), `name`, `progress`.
+ */
+export type CourseListSort = 'updated' | 'name' | 'progress';
 
 /**
  * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
  */
 export type CoursePage = {
     items: Array<Course>;
-    next_cursor?: CourseId | null;
-    summary?: CourseSummary | null;
+    next_cursor: CourseId | null;
+    /**
+     * Present only when the request had `mine=true`.
+     */
+    summary?: CourseSummary;
 };
 
 export type CoursePermissions = {
     can_access: boolean;
     can_discover: boolean;
     can_enroll: boolean;
-    denial_reason?: string | null;
+    denial_reason: string | null;
+};
+
+export type CourseQaAnswer = {
+    answer_markdown: string;
+    citations?: Array<Citation>;
+    confidence?: Level;
+    follow_up_suggestions?: Array<string>;
+    out_of_scope?: boolean;
+};
+
+export type CourseQualityReport = {
+    citations?: Array<Citation>;
+    confidence?: Level;
+    language?: string;
+    public_score: number;
+    recommendations?: Array<Recommendation>;
+    risks?: Array<string>;
+    strengths?: Array<string>;
+    summary: string;
 };
 
 /**
@@ -1345,10 +1604,10 @@ export type CourseSummary = {
 export type CourseUpdate = {
     content: string;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: CourseUpdateId;
     title: string;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 export type CourseUpdateId = string;
@@ -1365,11 +1624,11 @@ export type CreateActivityRequest = {
     /**
      * Must pair with `activity_type` (e.g. `video_youtube`).
      */
-    activity_sub_type: string;
+    activity_sub_type: ActivitySubType;
     /**
      * One of the closed activity-type set (e.g. `video`, `exam`).
      */
-    activity_type: string;
+    activity_type: ActivityType;
     name: string;
 };
 
@@ -1378,26 +1637,29 @@ export type CreateAssessmentRequest = {
      * The activity is appended to this chapter.
      */
     chapter_id: ChapterId;
-    description?: string | null;
-    grading_type?: GradingType | null;
+    description?: string;
+    grading_type?: GradingType;
     kind: AssessmentKind;
-    policy?: Policy | null;
+    /**
+     * Omit to start from the kind's preset.
+     */
+    policy?: Policy;
     title: string;
     /**
      * BUG-208: 0–100 - an unbounded weight overflows the course average.
      */
-    weight?: number | null;
+    weight?: number;
 };
 
 export type CreateBlockRequest = {
     /**
      * `image`, `pdf`, or `video`.
      */
-    block_type: string;
+    block_type: BlockType;
     /**
      * Original client-side file name, for display.
      */
-    file_name?: string | null;
+    file_name?: string;
     /**
      * A finalized upload (purpose must match the block type).
      */
@@ -1406,16 +1668,14 @@ export type CreateBlockRequest = {
 
 export type CreateCertificationRequest = {
     /**
-     * The designer document: an object of at most 16 KiB serialized.
+     * An object of at most 16 KiB serialized.
      */
-    config?: {
-        [key: string]: unknown;
-    };
+    config?: CertificationConfig;
     course_id: CourseId;
 };
 
 export type CreateChapterRequest = {
-    description?: string | null;
+    description?: string;
     name: string;
 };
 
@@ -1423,17 +1683,17 @@ export type CreateCollectionRequest = {
     /**
      * Course membership; every course must be readable by the caller.
      */
-    courses?: Array<CourseId> | null;
-    description?: string | null;
+    courses?: Array<CourseId>;
+    description?: string;
     name: string;
-    public?: boolean | null;
+    public?: boolean;
 };
 
 export type CreateCourseRequest = {
-    about?: string | null;
-    description?: string | null;
+    about?: string;
+    description?: string;
     name: string;
-    tags?: Array<string> | null;
+    tags?: Array<string>;
 };
 
 export type CreateCourseUpdateRequest = {
@@ -1446,7 +1706,10 @@ export type CreateDiscussionRequest = {
      * HTML or text; must contain visible text.
      */
     content: string;
-    parent_id?: DiscussionId | null;
+    /**
+     * Reply to this post (one level).
+     */
+    parent_id?: DiscussionId;
 };
 
 export type CreateFileSubmissionRequest = ConfigPatch & {
@@ -1464,19 +1727,17 @@ export type CreateInterventionRequest = {
      * `message_sent`, `submission_graded`, `extension_granted`,
      * `meeting_scheduled` or `learner_recovered`.
      */
-    intervention_type: string;
-    notes?: string | null;
-    outcome?: string | null;
+    intervention_type: InterventionType;
+    notes?: string;
+    outcome?: string;
     /**
-     * Free-form details (an object of at most 16 KiB serialized, UX-148).
+     * An object of at most 16 KiB serialized (UX-148).
      */
-    payload?: {
-        [key: string]: unknown;
-    };
+    payload?: InterventionPayload;
     /**
      * `planned`, `completed` or `resolved`.
      */
-    status?: string;
+    status?: InterventionStatus;
     user_id: UserId;
 };
 
@@ -1488,13 +1749,13 @@ export type CreateItemRequest = {
     /**
      * BUG-208: at most 10 000 - an unbounded score overflows the grade shares.
      */
-    max_score?: number | null;
-    metadata?: ItemMetadata | null;
-    title?: string | null;
+    max_score?: number;
+    metadata?: ItemMetadata;
+    title?: string;
 };
 
 export type CreateRoleRequest = {
-    description?: string | null;
+    description?: string;
     /**
      * Blank → 422 `required` (trimmed in the service).
      */
@@ -1515,7 +1776,7 @@ export type CreateUploadRequest = {
      * One of: avatar, course-thumbnail, block-image, block-pdf, block-video,
      * file-submission.
      */
-    purpose: string;
+    purpose: UploadPurpose;
     size_bytes: number;
 };
 
@@ -1527,16 +1788,16 @@ export type CreateUserRequest = {
     email: string;
     first_name: string;
     last_name: string;
-    password?: string | null;
+    password?: string;
     /**
      * Extra role slugs on top of the default `user`.
      */
-    roles?: Array<string> | null;
+    roles?: Array<string>;
     username: string;
 };
 
 export type CreateUsergroupRequest = {
-    description?: string | null;
+    description?: string;
     /**
      * Blank → 422 `required` (trimmed in the service).
      */
@@ -1572,25 +1833,28 @@ export type Dashboard = {
     /**
      * `null` when the viewer opted out of the leaderboard.
      */
-    user_rank?: number | null;
+    user_rank: number | null;
 };
+
+/**
+ * Where the analytics read came from.
+ */
+export type DataMode = 'Live' | 'Rollup';
 
 export type DataQualityIssue = {
     code: AnalyticsCode;
-    course_id?: CourseId | null;
+    course_id: CourseId | null;
     id: string;
-    params: {
-        [key: string]: unknown;
-    };
+    params: MessageParams;
     severity: Severity;
-    source?: string | null;
+    source: string | null;
 };
 
 export type DeadlineExtensionRequest = {
     /**
      * Unix seconds, at most 9999-12-31 (the timestamp range).
      */
-    new_due_at_unix: number;
+    new_due_at_unix: UnixTime;
     reason?: string;
     user_ids: Array<UserId>;
 };
@@ -1610,20 +1874,20 @@ export type Discussion = {
      * What the caller may do to this post now (supersedes the `can_*` flags).
      */
     allowed_actions: Array<DiscussionAction>;
-    author?: DiscussionAuthor | null;
+    author: DiscussionAuthor | null;
     can_delete: boolean;
     can_moderate: boolean;
     can_update: boolean;
     content: string;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     dislikes_count: number;
     id: DiscussionId;
     is_disliked: boolean;
     is_liked: boolean;
     is_owner: boolean;
     likes_count: number;
-    parent_id?: DiscussionId | null;
+    parent_id: DiscussionId | null;
     /**
      * Embedded when the list was asked for `include_replies` (replies
      * carry an empty list - one level only).
@@ -1631,7 +1895,7 @@ export type Discussion = {
     replies: Array<Discussion>;
     replies_count: number;
     status: DiscussionStatus;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 /**
@@ -1646,7 +1910,7 @@ export type DiscussionAction = 'update' | 'delete' | 'moderate' | 'reply' | 'rea
  * once the account is gone.
  */
 export type DiscussionAuthor = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     id: UserId;
     username: string;
@@ -1656,7 +1920,7 @@ export type DiscussionId = string;
 
 export type DiscussionPage = {
     items: Array<Discussion>;
-    next_cursor?: DiscussionId | null;
+    next_cursor: DiscussionId | null;
 };
 
 /**
@@ -1669,8 +1933,8 @@ export type DismissSuggestionRequest = {
 };
 
 export type DisplayPreferences = {
-    animatedEffects?: boolean | null;
-    compactMode?: boolean | null;
+    animatedEffects?: boolean;
+    compactMode?: boolean;
 };
 
 /**
@@ -1680,28 +1944,92 @@ export type DraftRequest = {
     files?: Array<FileRefRequest>;
 };
 
+export type DrillBacklogRow = {
+    age_hours: number;
+    assessment_id: string;
+    assessment_title: string;
+    assessment_type: AssessmentKind;
+    course_id: string;
+    course_name: string;
+    sla_breached: boolean;
+    status: string;
+    submission_id: string;
+    submitted_at_unix: UnixTime;
+    user_display_name: string;
+    user_id: string;
+};
+
 export type DrillMetric = 'active_learners' | 'completion_rate' | 'pass_rate' | 'backlog';
 
+export type DrillPassRateRow = {
+    attempts: number;
+    best_score: number | null;
+    graded_at_unix: UnixTime | null;
+    last_score: number | null;
+    passed: boolean;
+    status: string | null;
+    submitted_at_unix: UnixTime | null;
+    user_display_name: string;
+    user_id: string;
+};
+
+export type DrillProgressRow = {
+    /**
+     * `true`, on `active_learners` rows only.
+     */
+    active_in_window?: boolean;
+    cohorts: Array<string>;
+    completed_steps: number;
+    course_id: string;
+    course_name: string;
+    is_completed: boolean;
+    last_activity_at_unix: UnixTime | null;
+    progress_pct: number;
+    total_steps: number;
+    user_display_name: string;
+    user_id: string;
+};
+
 export type DrillThroughResponse = {
-    generated_at_unix: number;
-    items: Array<{
-        [key: string]: unknown;
-    }>;
+    generated_at_unix: UnixTime;
+    items: Array<DrillThroughRow>;
     metric: DrillMetric;
     total: number;
 };
 
+/**
+ * One drill-through row; which shape depends on the response's `metric`:
+ * learner progress (`active_learners`, `completion_rate`), a submission
+ * awaiting review (`backlog`), a learner's assessment result (`pass_rate`).
+ */
+export type DrillThroughRow = DrillProgressRow | DrillBacklogRow | DrillPassRateRow;
+
 export type DuplicateRequest = {
-    chapter_id?: ChapterId | null;
+    /**
+     * Target chapter in the same course; defaults to the source's chapter.
+     */
+    chapter_id?: ChapterId;
     /**
      * Defaults to `"<title> (copy)"`.
      */
-    title?: string | null;
+    title?: string;
 };
 
 export type EditCourseUpdateRequest = {
-    content?: string | null;
-    title?: string | null;
+    content?: string;
+    title?: string;
+};
+
+/**
+ * The rich-text editor document (Tiptap / ProseMirror JSON). The node tree
+ * is the editor's business: nodes stay open objects. The one free-form
+ * schema in the contract.
+ */
+export type EditorDocument = {
+    content: Array<{
+        [key: string]: unknown;
+    }>;
+    type: 'doc';
 };
 
 export type EducationSection = {
@@ -1712,15 +2040,15 @@ export type EducationSection = {
 
 export type EffectivePolicy = {
     allow_late: boolean;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     late_policy: LatePolicy;
-    max_attempts?: number | null;
+    max_attempts: number | null;
     /**
      * An unexpired per-student override shaped this.
      */
     override_applied: boolean;
     passing_score: number;
-    time_limit_seconds?: number | null;
+    time_limit_seconds: number | null;
     waive_late_penalty: boolean;
 };
 
@@ -1737,24 +2065,46 @@ export type EvalDashboard = {
     runs: RunAggregate;
 };
 
+/**
+ * `ai_eval_results.details` of the provider smoke eval.
+ */
+export type EvalDetails = {
+    /**
+     * The provider call failed.
+     */
+    error?: string;
+    /**
+     * The provider is not configured.
+     */
+    reason?: string;
+    /**
+     * The structured reply needed a repair pass.
+     */
+    repaired?: boolean;
+    usage?: EvalUsage;
+};
+
 export type EvalResult = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     dataset: string;
-    details: {
-        [key: string]: unknown;
-    };
+    details: EvalDetails;
     evaluator: string;
     id: AiEvalResultId;
-    passed?: boolean | null;
-    run_id?: AiRunId | null;
-    score?: number | null;
+    passed: boolean | null;
+    run_id: AiRunId | null;
+    score: number | null;
 };
 
 export type EvalSummary = {
-    average_score?: number | null;
+    average_score: number | null;
     failed: number;
     passed: number;
     total: number;
+};
+
+export type EvalUsage = {
+    input_tokens: number | null;
+    output_tokens: number | null;
 };
 
 export type ExperienceSection = {
@@ -1769,7 +2119,7 @@ export type FeatureCapability = {
      * The legacy flag key (`course_qa_enabled`, …).
      */
     key: string;
-    reason?: string | null;
+    reason: string | null;
 };
 
 export type FeatureSetting = {
@@ -1811,22 +2161,20 @@ export type FileGradeRequest = {
     /**
      * Omit to keep the stored feedback (UX-113; same rule as quiz grades).
      */
-    feedback?: string | null;
+    feedback?: string;
     /**
      * Required for save/publish; 0..=100.
      */
-    final_score?: number | null;
+    final_score?: number;
     /**
      * Omit to keep the stored rubric scores. An object of at most 4 KiB
      * serialized (UX-141).
      */
-    rubric_scores?: {
-        [key: string]: unknown;
-    } | null;
+    rubric_scores?: RubricScores;
 };
 
 export type FileRefRequest = {
-    display_name?: string | null;
+    display_name?: string;
     upload_id: string;
 };
 
@@ -1837,19 +2185,29 @@ export type FileReviewItem = {
     allowed_actions: Array<FileGradeAction>;
     attempt_number: number;
     file_count: number;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
     id: FileAttemptId;
     is_late: boolean;
     status: FileAttemptStatus;
-    submitted_at_unix?: number | null;
+    submitted_at_unix: UnixTime | null;
     user: UserSummary;
     version: number;
 };
 
 export type FileReviewPage = {
     items: Array<FileReviewItem>;
-    next_cursor?: FileAttemptId | null;
+    next_cursor: FileAttemptId | null;
+};
+
+/**
+ * A file-submission rubric (`config.rubric`): criteria the grader scores.
+ */
+export type FileRubric = {
+    /**
+     * Absent on an activity without a rubric (`{}`).
+     */
+    criteria?: Array<RubricCriterion>;
 };
 
 export type FileSubmission = {
@@ -1862,35 +2220,31 @@ export type FileSubmission = {
     attempts: Array<Attempt>;
     chapter_id: ChapterId;
     course_id: CourseId;
-    created_at_unix: number;
-    current_attempt?: Attempt | null;
+    created_at_unix: UnixTime;
+    current_attempt: Attempt | null;
     /**
      * Why the caller cannot open or submit right now (quiz vocabulary:
      * `PAST_DUE`, `REMEDIATION_REQUIRED`); empty for authors.
      */
     disabled_reasons: Array<DisabledReason>;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     grade_release_mode: GradeReleaseMode;
     id: FileSubmissionId;
     instructions: string;
     late_policy: LatePolicy;
     lifecycle: FileSubmissionLifecycle;
-    max_attempts?: number | null;
-    max_file_size_mb?: number | null;
+    max_attempts: number | null;
+    max_file_size_mb: number | null;
     max_files: number;
     /**
      * The backing activity is live.
      */
     published: boolean;
-    published_at_unix?: number | null;
-    rubric: {
-        [key: string]: unknown;
-    };
-    settings: {
-        [key: string]: unknown;
-    };
+    published_at_unix: UnixTime | null;
+    rubric: FileRubric;
+    settings: FileSubmissionSettings;
     title: string;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 export type FileSubmissionId = string;
@@ -1899,6 +2253,14 @@ export type FileSubmissionId = string;
  * File-submission activity lifecycle (legacy `FileSubmissionLifecycle`).
  */
 export type FileSubmissionLifecycle = 'draft' | 'published' | 'archived';
+
+/**
+ * `file_submissions.settings`: reserved, no keys are defined (`{}` on
+ * every row); stored and returned as sent.
+ */
+export type FileSubmissionSettings = {
+    [key: string]: JsonValue;
+};
 
 export type FilterOption = {
     label: string;
@@ -1919,31 +2281,27 @@ export type FindingReviewAction = 'accepted' | 'dismissed' | 'task_created';
 export type FindingReviewRequest = {
     action: FindingReviewAction;
     finding_id: string;
-    note?: string | null;
+    note?: string;
 };
 
 export type ForecastItem = {
-    assessment_id?: AssessmentId | null;
-    assessment_type?: AssessmentKind | null;
+    assessment_id: AssessmentId | null;
+    assessment_type: AssessmentKind | null;
     code: AnalyticsCode;
     confidence_level: Confidence;
-    course_id?: CourseId | null;
-    course_name?: string | null;
-    deadline_at_unix?: number | null;
-    expected_value?: number | null;
+    course_id: CourseId | null;
+    course_name: string | null;
+    deadline_at_unix: UnixTime | null;
+    expected_value: number | null;
     id: string;
-    /**
-     * `completion_target_miss` | `grading_backlog_7d` |
-     * `course_completion_deadline` | `assessment_failure_risk`.
-     */
-    kind: string;
-    learner_count?: number | null;
-    params: {
-        [key: string]: unknown;
-    };
+    kind: ForecastKind;
+    learner_count: number | null;
+    params: MessageParams;
     severity: Severity;
-    target_value?: number | null;
+    target_value: number | null;
 };
+
+export type ForecastKind = 'CompletionTargetMiss' | 'GradingBacklog7d' | 'CourseCompletionDeadline' | 'AssessmentFailureRisk';
 
 export type FormBody = {
     fields?: Array<FormField>;
@@ -1965,7 +2323,7 @@ export type FunnelStep = {
      * Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.
      */
     label: string;
-    pct_of_previous?: number | null;
+    pct_of_previous: number | null;
 };
 
 export type Funnels = {
@@ -1977,14 +2335,24 @@ export type GamificationConfig = {
     /**
      * `null` = platform default (500).
      */
-    daily_xp_limit?: number | null;
+    daily_xp_limit: number | null;
     /**
      * Source → XP overrides; unknown sources are ignored.
      */
     rewards: {
-        [key: string]: unknown;
+        [key: string]: number;
     };
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
+};
+
+/**
+ * Stored gamification preferences: the sections the user has set (a
+ * section never set is absent).
+ */
+export type GamificationPreferences = {
+    display?: DisplayPreferences;
+    notifications?: NotificationPreferences;
+    privacy?: PrivacyPreferences;
 };
 
 export type GamificationSection = {
@@ -2009,11 +2377,11 @@ export type GradeRequest = {
     /**
      * Grader's note for the audit trail; never shown to the learner.
      */
-    audit_note?: string | null;
+    audit_note?: string;
     /**
      * Overall feedback shown to the learner; omitted = keep the stored one.
      */
-    feedback?: string | null;
+    feedback?: string;
     /**
      * Raw 0..100 before the late penalty (a manual override). Omitted: the
      * stored override (or the 0 of an integrity-annulled attempt) is kept,
@@ -2026,7 +2394,7 @@ export type GradeRequest = {
 
 export type GradebookAssessment = {
     activity_id: ActivityId;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     id: AssessmentId;
     kind: AssessmentKind;
     passing_score: number;
@@ -2043,34 +2411,34 @@ export type GradebookAssessment = {
  */
 export type GradebookCell = {
     activity_id: ActivityId;
-    assessment_id?: AssessmentId | null;
-    attempt_id?: FileAttemptId | null;
+    assessment_id: AssessmentId | null;
+    attempt_id: FileAttemptId | null;
     attempt_number: number;
     attempts: number;
     /**
      * The learner's active due-date override for this assessment (UX-113):
      * «overdue» is judged against it, not the assessment `due_at_unix`.
      */
-    due_at_override_unix?: number | null;
-    file_submission_id?: FileSubmissionId | null;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
+    due_at_override_unix: UnixTime | null;
+    file_submission_id: FileSubmissionId | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
     is_late: boolean;
     /**
      * The newest attempt still awaiting grading (`pending`), if any - set
      * even when the grade of record is an older published attempt (BUG-175).
      */
-    pending_attempt?: number | null;
+    pending_attempt: number | null;
     /**
      * The id of that pending attempt - a submission id or a file attempt
      * id, whichever the cell is about - so the review deep link opens the
      * work awaiting grading rather than the grade of record (UX-123).
      */
-    pending_attempt_id?: string | null;
-    pending_attempt_status?: SubmissionStatus | null;
+    pending_attempt_id: string | null;
+    pending_attempt_status: SubmissionStatus | null;
     status: SubmissionStatus;
-    submission_id?: SubmissionId | null;
-    submitted_at_unix?: number | null;
+    submission_id: SubmissionId | null;
+    submitted_at_unix: UnixTime | null;
     user_id: UserId;
 };
 
@@ -2079,7 +2447,7 @@ export type GradebookCell = {
  */
 export type GradebookFileSubmission = {
     activity_id: ActivityId;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     id: FileSubmissionId;
     title: string;
 };
@@ -2092,7 +2460,7 @@ export type GradebookPage = {
     assessments: Array<GradebookAssessment>;
     cells: Array<GradebookCell>;
     file_submissions: Array<GradebookFileSubmission>;
-    next_cursor?: string | null;
+    next_cursor: string | null;
     users: Array<UserSummary>;
 };
 
@@ -2100,8 +2468,8 @@ export type GradedItem = {
     /**
      * `None` = not auto-gradeable.
      */
-    correct?: boolean | null;
-    correct_answer?: unknown;
+    correct: boolean | null;
+    correct_answer: CorrectAnswer | null;
     /**
      * English text (compatibility); the auto-grader also sets a code.
      */
@@ -2110,27 +2478,27 @@ export type GradedItem = {
      * Auto-grader verdict for the client to localize (`no-answer`,
      * `correct`, `partially-correct`, …); `None` for teacher prose.
      */
-    feedback_code?: string | null;
+    feedback_code?: string;
     /**
      * Placeholders for `feedback_code` (`{correct, total}`, …).
      */
-    feedback_params?: unknown;
+    feedback_params?: MessageParams;
     item_id: AssessmentItemId;
     item_text?: string;
     max_score: number;
     needs_manual_review?: boolean;
     score: number;
-    user_answer?: unknown;
+    user_answer: ItemAnswer | null;
 };
 
 export type GradingBacklogItem = {
-    age_hours?: number | null;
+    age_hours: number | null;
     assessment_id: AssessmentId;
     assessment_type: AssessmentKind;
     awaiting_review: number;
     course_id: CourseId;
     course_name: string;
-    oldest_submitted_at_unix?: number | null;
+    oldest_submitted_at_unix: UnixTime | null;
     sla_breaches: number;
     title: string;
 };
@@ -2147,20 +2515,20 @@ export type GradingBreakdown = {
      * BUG-205: the teacher's explicit raw override - the score of record
      * regardless of whether it equals the item-derived one. `None` = derived.
      */
-    score_override?: number | null;
+    score_override?: number;
 };
 
 export type GradingEntry = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     /**
      * Absent for a draft save that left the attempt pending.
      */
-    final_score?: number | null;
-    graded_by?: UserId | null;
+    final_score: number | null;
+    graded_by: UserId | null;
     id: GradingEntryId;
     overall_feedback: string;
     penalty_pct: number;
-    published_at_unix?: number | null;
+    published_at_unix: UnixTime | null;
     raw_score: number;
 };
 
@@ -2192,62 +2560,78 @@ export type ImageGallerySection = {
     title: string;
 };
 
+export type InsightCategory = 'Risk' | 'Assessment' | 'Content' | 'Workload' | 'Completion' | 'Intervention';
+
 export type InsightFeedItem = {
-    activity_id?: ActivityId | null;
-    assessment_id?: AssessmentId | null;
-    assessment_type?: AssessmentKind | null;
-    /**
-     * `risk` | `assessment` | `content` | `workload` | `completion` | `intervention`.
-     */
-    category: string;
+    activity_id: ActivityId | null;
+    assessment_id: AssessmentId | null;
+    assessment_type: AssessmentKind | null;
+    category: InsightCategory;
     code: AnalyticsCode;
-    course_id?: CourseId | null;
-    href?: string | null;
+    course_id: CourseId | null;
+    href: string | null;
     id: string;
-    learner_count?: number | null;
-    params: {
-        [key: string]: unknown;
-    };
+    learner_count: number | null;
+    params: MessageParams;
     priority: number;
     severity: Severity;
 };
 
 export type Intervention = {
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: InterventionId;
-    intervention_type: string;
-    notes?: string | null;
-    outcome?: string | null;
-    payload: {
-        [key: string]: unknown;
-    };
-    resolved_at_unix?: number | null;
-    risk_score_after?: number | null;
-    risk_score_before?: number | null;
-    status: string;
+    intervention_type: InterventionType;
+    notes: string | null;
+    outcome: string | null;
+    payload: InterventionPayload;
+    resolved_at_unix: UnixTime | null;
+    risk_score_after: number | null;
+    risk_score_before: number | null;
+    status: InterventionStatus;
     teacher_user_id: UserId;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     user_id: UserId;
 };
 
 export type InterventionId = string;
 
 export type InterventionList = {
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     items: Array<Intervention>;
     page: number;
     page_size: number;
     total: number;
 };
 
+/**
+ * `teacher_interventions.payload`: what the at-risk table attaches to an
+ * extension / remediation draft.
+ */
+export type InterventionPayload = {
+    reason_codes?: Array<string>;
+    remediation_draft?: string;
+    risk_score?: number;
+};
+
+/**
+ * [`INTERVENTION_STATUSES`] as a contract enum (schema only).
+ */
+export type InterventionStatus = 'planned' | 'completed' | 'resolved';
+
 export type InterventionSummary = {
-    avg_risk_delta_after_intervention?: number | null;
+    avg_risk_delta_after_intervention: number | null;
     open: number;
     recovered_learners: number;
     resolved: number;
     total: number;
 };
+
+/**
+ * [`INTERVENTION_TYPES`] as a contract enum (schema only; the wire stays a
+ * validated string).
+ */
+export type InterventionType = 'message_sent' | 'submission_graded' | 'extension_granted' | 'meeting_scheduled' | 'learner_recovered';
 
 /**
  * A certificate with its template and course.
@@ -2260,16 +2644,16 @@ export type IssuedCertificate = {
      * The name signed on the certificate (`config.certificate_instructor`,
      * else the course creator's display name) - what the PDF prints.
      */
-    instructor_name?: string | null;
+    instructor_name: string | null;
 };
 
 export type ItemAnalytics = {
-    avg_score_pct?: number | null;
-    correct_pct?: number | null;
+    avg_score_pct: number | null;
+    correct_pct: number | null;
     /**
      * Classic (top 27% − bottom 27%) / n, from six attempts up.
      */
-    discrimination_index?: number | null;
+    discrimination_index: number | null;
     item_id: AssessmentItemId;
     kind: ItemKind;
     max_score: number;
@@ -2328,10 +2712,10 @@ export type ItemBody = (ChoiceBody & {
 
 export type ItemFeedbackView = {
     comment: string;
-    created_at_unix: number;
-    item_id?: AssessmentItemId | null;
-    max_score?: number | null;
-    score?: number | null;
+    created_at_unix: UnixTime;
+    item_id: AssessmentItemId | null;
+    max_score: number | null;
+    score: number | null;
 };
 
 export type ItemGradeRequest = {
@@ -2340,20 +2724,36 @@ export type ItemGradeRequest = {
     /**
      * Points for this item (its `max_score` scale).
      */
-    score?: number | null;
+    score?: number;
 };
 
 export type ItemKind = 'choice' | 'open_text' | 'form' | 'code' | 'matching';
 
 export type ItemMetadata = {
-    difficulty?: Difficulty | null;
-    estimated_minutes?: number | null;
+    difficulty: Difficulty | null;
+    estimated_minutes: number | null;
     outcome_ids?: Array<string>;
-    section_label?: string | null;
+    section_label: string | null;
     tags?: Array<string>;
 };
 
 export type ItemSignal = 'healthy' | 'watch' | 'critical';
+
+export type ItemType = 'Workflow' | 'Question' | 'Test';
+
+/**
+ * Any JSON value. Only where the value is opaque by protocol (AG-UI
+ * `state`, `forwardedProps`, tool parameter schemas, message metadata) -
+ * never for data the server or the web interprets.
+ */
+export type JsonValue = unknown;
+
+export type KnowledgeGap = {
+    concept: string;
+    evidence?: string;
+    remediation_goal?: string;
+    severity?: Level;
+};
 
 /**
  * A Judge0 language the platform allows.
@@ -2384,7 +2784,7 @@ export type LatePolicy = {
     max_days: number;
     percent_per_day: number;
 } | {
-    cutoff_at_unix: number;
+    cutoff_at_unix: UnixTime;
     kind: 'cutoff';
 };
 
@@ -2394,7 +2794,7 @@ export type Leaderboard = {
 };
 
 export type LeaderboardEntry = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     level: number;
     rank: number;
@@ -2408,7 +2808,7 @@ export type LearnerCourseState = {
     course_id: CourseId;
     enrolled: boolean;
     enrollment_state: EnrollmentState;
-    next_action?: NextAction | null;
+    next_action: NextAction | null;
     outline: Array<ChapterState>;
     permissions: CoursePermissions;
     progress: ProgressState;
@@ -2420,8 +2820,8 @@ export type LearnerCourseState = {
  * One "What you'll learn" entry on write; omit `id` for a new one.
  */
 export type LearningInput = {
-    emoji?: string | null;
-    id?: string | null;
+    emoji?: string;
+    id?: string;
     /**
      * 1..=300 characters after trimming.
      */
@@ -2429,23 +2829,28 @@ export type LearningInput = {
 };
 
 export type LectureReview = {
-    activity_id?: ActivityId | null;
+    activity_id: ActivityId | null;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     dismissed_suggestion_ids: Array<string>;
     id: AiLectureReviewId;
     language: string;
-    run_id?: AiRunId | null;
+    run_id: AiRunId | null;
     status: LectureReviewStatus;
-    suggestions: {
-        [key: string]: unknown;
-    };
-    superseded_at_unix?: number | null;
-    triggered_by?: UserId | null;
+    suggestions: LectureReviewReport;
+    superseded_at_unix: UnixTime | null;
+    triggered_by: UserId | null;
+};
+
+export type LectureReviewReport = {
+    citations?: Array<Citation>;
+    language?: string;
+    suggestions?: Array<LectureSuggestion>;
+    summary: string;
 };
 
 export type LectureReviewRequest = {
-    activity_id?: ActivityId | null;
+    activity_id?: ActivityId;
     language?: string;
 };
 
@@ -2454,14 +2859,28 @@ export type LectureReviewRequest = {
  */
 export type LectureReviewStatus = 'active' | 'superseded';
 
+export type LectureSuggestion = {
+    location?: string;
+    priority?: Level;
+    rationale?: string;
+    replacement_markdown?: string;
+    suggestion_id: string;
+    title: string;
+};
+
+/**
+ * `low` / `medium` / `high`, tolerant of anything else (→ `medium`).
+ */
+export type Level = 'low' | 'medium' | 'high';
+
 export type Lifecycle = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type LifecycleRequest = {
-    note?: string | null;
+    note?: string;
     /**
      * Required when `to` is `scheduled`; must be in the future.
      */
-    scheduled_at_unix?: number | null;
+    scheduled_at_unix?: UnixTime;
     to: Lifecycle;
 };
 
@@ -2469,13 +2888,13 @@ export type LifecycleRequest = {
  * OpenGraph / `<title>` summary of a public web page.
  */
 export type LinkPreview = {
-    description?: string | null;
+    description: string | null;
     /**
      * Absolute `http(s)` image URL, when the page declares one.
      */
-    image_url?: string | null;
-    site_name?: string | null;
-    title?: string | null;
+    image_url: string | null;
+    site_name: string | null;
+    title: string | null;
     /**
      * The URL the page was read from (after redirects).
      */
@@ -2489,6 +2908,11 @@ export type LinksSection = {
 };
 
 /**
+ * A stored UI locale.
+ */
+export type Locale = 'ru-RU' | 'kk-KZ' | 'en-US';
+
+/**
  * Password login. No `Debug` derive - the password must never format.
  */
 export type LoginRequest = {
@@ -2500,7 +2924,7 @@ export type LoginRequest = {
     /**
      * Second factor - resubmit after a 401 `mfa-required`.
      */
-    totp_code?: string | null;
+    totp_code?: string;
 };
 
 export type MatchMode = 'exact' | 'trimmed' | 'ignore_whitespace' | 'numeric_tolerance' | 'custom_checker';
@@ -2511,7 +2935,7 @@ export type MatchingAnswer = {
 };
 
 export type MatchingBody = {
-    explanation?: string | null;
+    explanation: string | null;
     /**
      * Required on the wire so a client's untagged union can tell this
      * author shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).
@@ -2545,18 +2969,45 @@ export type MatchingPair = {
     right: string;
 };
 
+/**
+ * File-backed media activity content (video / document); every key is
+ * optional because the stored object grew over time.
+ */
+export type MediaContent = {
+    /**
+     * Original file name, for display.
+     */
+    file_name?: string;
+    /**
+     * Storage key of the uploaded file.
+     */
+    filename?: string;
+    upload_id?: string;
+    /**
+     * YouTube URL (`video_youtube`).
+     */
+    uri?: string;
+};
+
+/**
+ * Placeholders for a stable message `code`, by name.
+ */
+export type MessageParams = {
+    [key: string]: Scalar;
+};
+
 export type MetricCard = {
-    benchmark?: number | null;
-    benchmark_label?: string | null;
-    delta_pct?: number | null;
-    delta_value?: number | null;
+    benchmark: number | null;
+    benchmark_label: string | null;
+    delta_pct: number | null;
+    delta_value: number | null;
     direction: Direction;
     is_higher_better: boolean;
     /**
      * Stable code (`active_learners`, `completion_rate`, …).
      */
     label: string;
-    unit?: string | null;
+    unit: string | null;
     value: number;
 };
 
@@ -2565,7 +3016,7 @@ export type MetricCard = {
  * course, omitted keeps the current chapter.
  */
 export type MoveActivityRequest = {
-    chapter_id?: ChapterId | null;
+    chapter_id?: ChapterId;
     /**
      * 1-based target position (in the destination chapter).
      */
@@ -2583,37 +3034,37 @@ export type MoveChapterRequest = {
 };
 
 export type NextAction = {
-    activity_id?: ActivityId | null;
+    activity_id: ActivityId | null;
     enabled: boolean;
-    href?: string | null;
+    href: string | null;
     id: ActionId;
     label: string;
     reason: string;
 };
 
 export type NotificationPreferences = {
-    xpGain?: boolean | null;
+    xpGain?: boolean;
 };
 
 export type OpenTextBody = {
-    min_words?: number | null;
+    min_words: number | null;
     prompt?: string;
-    rubric?: string | null;
+    rubric: string | null;
 };
 
 /**
  * Full override block (create and update share it).
  */
 export type OverrideRequest = {
-    due_at_override_unix?: number | null;
+    due_at_override_unix?: UnixTime;
     /**
      * After this the override is ignored.
      */
-    expires_at_unix?: number | null;
+    expires_at_unix?: UnixTime;
     /**
      * 1..=10; `null` keeps the assessment's limit.
      */
-    max_attempts_override?: number | null;
+    max_attempts_override?: number;
     note?: string;
     waive_late_penalty?: boolean;
 };
@@ -2622,13 +3073,13 @@ export type Platform = {
     about: string;
     description: string;
     email: string;
-    label?: string | null;
+    label: string | null;
     /**
      * Public-bucket storage keys (served via the CDN /content route).
      */
-    logo_key?: string | null;
+    logo_key: string | null;
     name: string;
-    thumbnail_key?: string | null;
+    thumbnail_key: string | null;
 };
 
 /**
@@ -2645,7 +3096,7 @@ export type Policy = {
     completion_rule: CompletionRule;
     copy_paste_protection: boolean;
     devtools_detection: boolean;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     fullscreen_required: boolean;
     grace_period_minutes: number;
     grade_release_mode: GradeReleaseMode;
@@ -2654,7 +3105,7 @@ export type Policy = {
     /**
      * `null` = unlimited.
      */
-    max_attempts?: number | null;
+    max_attempts: number | null;
     negative_marking_percent: number;
     partial_credit: boolean;
     passing_score: number;
@@ -2667,7 +3118,7 @@ export type Policy = {
     /**
      * `null` = no limit.
      */
-    time_limit_seconds?: number | null;
+    time_limit_seconds: number | null;
     violation_threshold: number;
 };
 
@@ -2686,7 +3137,7 @@ export type PrivacyPreferences = {
     /**
      * `false` hides the profile from the leaderboard (and its rank is `null`).
      */
-    showOnLeaderboard?: boolean | null;
+    showOnLeaderboard?: boolean;
 };
 
 /**
@@ -2697,19 +3148,17 @@ export type Problem = {
      * Stable machine code - the frontend's i18n key.
      */
     code: ErrorCode;
-    detail?: string | null;
+    detail?: string;
     /**
      * Machine-readable context for some codes (e.g. `{expected, actual}`
      * on an optimistic-lock 409).
      */
-    details?: {
-        [key: string]: unknown;
-    } | null;
+    details?: ProblemDetails;
     field_errors?: Array<FieldError>;
     /**
      * Correlation id; also present as the `x-request-id` response header.
      */
-    request_id?: string | null;
+    request_id?: string;
     status: number;
     title: string;
     /**
@@ -2718,25 +3167,71 @@ export type Problem = {
     type: string;
 };
 
+/**
+ * `Problem.details`: machine-readable context; which keys appear depends
+ * on `code` (all optional).
+ */
+export type ProblemDetails = {
+    actual?: number;
+    /**
+     * Course readiness blockers.
+     */
+    blockers?: Array<ReadinessItem>;
+    estimated_tokens?: number;
+    /**
+     * Optimistic lock (412 / 409): the version the client sent / the current one.
+     */
+    expected?: number;
+    /**
+     * AI feature that is disabled.
+     */
+    feature?: string;
+    /**
+     * Analytics filter the caller may not use.
+     */
+    filter?: string;
+    is_retryable?: boolean;
+    /**
+     * Concurrency or rate limit that was hit.
+     */
+    limit?: number;
+    max_source_bytes?: number;
+    max_tokens_per_request?: number;
+    monthly_token_budget?: number;
+    /**
+     * Assessment readiness blocker codes.
+     */
+    readiness?: Array<string>;
+    /**
+     * Why the resource is read-only / not ready.
+     */
+    reason?: string;
+    run_id?: string;
+    /**
+     * Existing remediation session.
+     */
+    session_id?: string;
+    used_tokens?: number;
+    window_seconds?: number;
+};
+
 export type Profile = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     daily_xp_earned: number;
-    last_learning_at_unix?: number | null;
-    last_login_at_unix?: number | null;
-    last_xp_award_at_unix?: number | null;
+    last_learning_at_unix: UnixTime | null;
+    last_login_at_unix: UnixTime | null;
+    last_xp_award_at_unix: UnixTime | null;
     learning_streak: number;
     level: number;
     level_progress_percent: number;
     login_streak: number;
     longest_learning_streak: number;
     longest_login_streak: number;
-    preferences: {
-        [key: string]: unknown;
-    };
+    preferences: GamificationPreferences;
     total_activities_completed: number;
     total_courses_completed: number;
     total_xp: number;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     user_id: UserId;
     xp_in_current_level: number;
     xp_to_next_level: number;
@@ -2754,8 +3249,8 @@ export type ProfileAffiliation = {
 export type ProfileEducation = {
     current: boolean;
     degree: string;
-    description?: string | null;
-    endDate?: string | null;
+    description?: string;
+    endDate?: string;
     field: string;
     institution: string;
     startDate: string;
@@ -2764,7 +3259,7 @@ export type ProfileEducation = {
 export type ProfileExperience = {
     current: boolean;
     description: string;
-    endDate?: string | null;
+    endDate?: string;
     organization: string;
     /**
      * `YYYY-MM-DD` as the builder's date picker writes it.
@@ -2774,12 +3269,12 @@ export type ProfileExperience = {
 };
 
 export type ProfileImage = {
-    caption?: string | null;
+    caption?: string;
     url: string;
 };
 
 export type ProfileLink = {
-    icon?: string | null;
+    icon?: string;
     title: string;
     url: string;
 };
@@ -2818,15 +3313,15 @@ export type ProfileSections = {
 };
 
 export type ProfileSkill = {
-    category?: string | null;
-    level?: SkillLevel | null;
+    category?: string;
+    level?: SkillLevel;
     name: string;
 };
 
 export type ProgressState = {
-    completed_at_unix?: number | null;
+    completed_at_unix: UnixTime | null;
     completed_required_count: number;
-    grade_average?: number | null;
+    grade_average: number | null;
     missing_required_count: number;
     needs_grading_count: number;
     progress_pct: number;
@@ -2839,7 +3334,7 @@ export type ProgressState = {
 export type PublicCertificate = {
     certification_id: CertificationId;
     id: CertificateId;
-    issued_at_unix: number;
+    issued_at_unix: UnixTime;
     verify_code: string;
 };
 
@@ -2848,7 +3343,7 @@ export type PublicCertificate = {
  * FINDINGS #16). Search keeps the lean `UserHit`.
  */
 export type PublicProfile = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     /**
      * Empty when unset.
      */
@@ -2883,64 +3378,70 @@ export type PublishSummary = {
  * AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.
  */
 export type QaChatRequest = {
-    context?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    context?: Array<AgUiContext>;
     forwardedProps?: QaForwardedProps;
     messages?: Array<QaWireMessage>;
-    parentRunId?: string | null;
+    parentRunId?: string;
     /**
      * AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.
      */
-    protocolVersion?: string | null;
+    protocolVersion?: string;
     /**
      * AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.
      */
-    resume?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    resume?: Array<JsonValue>;
     runId: string;
-    state?: {
-        [key: string]: unknown;
-    } | null;
+    state?: JsonValue;
     threadId: string;
     /**
      * AG-UI protocol fields the client always sends; accepted and ignored.
      */
-    tools?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    tools?: Array<AgUiTool>;
 };
 
 /**
  * What this API reads from AG-UI `forwardedProps`.
  */
 export type QaForwardedProps = {
-    activity_id?: ActivityId | null;
+    /**
+     * Narrow the context to one activity of the course.
+     */
+    activity_id?: ActivityId;
     /**
      * Client turn id: a retry with the same id replays the stored answer.
      */
-    client_turn_id?: string | null;
-    language?: string | null;
-    thread_id?: AiThreadId | null;
+    client_turn_id?: string;
+    language?: string;
+    /**
+     * Continue an existing thread of the caller in this course.
+     */
+    thread_id?: AiThreadId;
 };
 
 export type QaMessage = {
-    citations: {
-        [key: string]: unknown;
-    };
-    client_turn_id?: string | null;
-    confidence?: string | null;
+    citations: AiEvidence;
+    client_turn_id: string | null;
+    confidence: string | null;
     content: string;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: AiMessageId;
-    metadata: {
-        [key: string]: unknown;
-    };
+    metadata: QaMessageMetadata;
     role: QaMessageRole;
     thread_id: AiThreadId;
-    user_id?: UserId | null;
+    user_id: UserId | null;
+};
+
+/**
+ * `ai_qa_messages.metadata`: `{}` on questions; answers carry the model
+ * and the question they reply to; `incomplete` marks a partial answer
+ * saved when the stream was cut.
+ */
+export type QaMessageMetadata = {
+    incomplete?: boolean;
+    model_name?: string;
+    out_of_scope?: boolean;
+    reply_to_message_id?: string;
 };
 
 /**
@@ -2952,43 +3453,39 @@ export type QaThreadSummary = {
     id: AiThreadId;
     last_message_preview: string;
     message_count: number;
-    title?: string | null;
-    updated_at_unix: number;
+    title: string | null;
+    updated_at_unix: UnixTime;
 };
 
 /**
  * One message of the AG-UI conversation the client sends back.
  */
 export type QaWireMessage = {
-    content?: string | null;
-    encryptedValue?: string | null;
-    id?: string | null;
-    metadata?: {
-        [key: string]: unknown;
-    } | null;
+    content?: string;
+    encryptedValue?: string;
+    id?: string;
+    metadata?: JsonValue;
     /**
      * AG-UI 1.0 message members; accepted and ignored.
      */
-    name?: string | null;
+    name?: string;
     /**
      * `[{type: "text", content: "…"}, …]` - an alternative to `content`.
      */
-    parts?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    parts?: Array<AgUiMessagePart>;
     role: string;
-    subagentRunId?: string | null;
+    subagentRunId?: string;
 };
 
 export type QuestionDifficultyRow = {
-    accuracy_pct?: number | null;
-    avg_time_seconds?: number | null;
-    discrimination_index?: number | null;
+    accuracy_pct: number | null;
+    avg_time_seconds: number | null;
+    discrimination_index: number | null;
     distractor_issue_count: number;
     question_id: string;
     question_label: string;
-    strong_miss_pct?: number | null;
-    weak_correct_pct?: number | null;
+    strong_miss_pct: number | null;
+    weak_correct_pct: number | null;
 };
 
 export type ReactionState = {
@@ -3006,23 +3503,25 @@ export type Readiness = {
 };
 
 /**
+ * [`ReadinessIssue::area`] values (schema only).
+ */
+export type ReadinessArea = 'details' | 'questions' | 'policy' | 'audience' | 'publish';
+
+/**
  * One thing blocking (or advising against) publication.
  */
 export type ReadinessIssue = {
-    /**
-     * `details` | `questions` | `policy` | `audience` | `publish`.
-     */
-    area: string;
+    area: ReadinessArea;
     /**
      * Stable machine key, e.g. `choice.options_missing`.
      */
     code: string;
-    item_id?: AssessmentItemId | null;
+    item_id: AssessmentItemId | null;
     message: string;
     /**
-     * `blocker` | `warning` | `advice` - every current rule is a blocker.
+     * Every current rule is a blocker.
      */
-    severity: string;
+    severity: ReadinessSeverity;
 };
 
 /**
@@ -3033,9 +3532,21 @@ export type ReadinessIssue = {
  * file-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.
  */
 export type ReadinessItem = {
-    activity_id?: ActivityId | null;
+    activity_id: ActivityId | null;
     code: string;
-    title?: string | null;
+    title: string | null;
+};
+
+/**
+ * [`ReadinessIssue::severity`] values (schema only).
+ */
+export type ReadinessSeverity = 'blocker' | 'warning' | 'advice';
+
+export type Recommendation = {
+    action?: string;
+    priority?: Level;
+    rationale?: string;
+    title: string;
 };
 
 /**
@@ -3043,15 +3554,15 @@ export type ReadinessItem = {
  */
 export type ReferenceCheck = {
     cases: Array<CaseResult>;
-    compile_output?: string | null;
+    compile_output: string | null;
     language_id: number;
-    message?: string | null;
+    message: string | null;
     /**
      * Every test passed.
      */
     ok: boolean;
     passed: number;
-    score?: number | null;
+    score: number | null;
     /**
      * Run status, or `missing_solution` when no reference exists.
      */
@@ -3088,8 +3599,25 @@ export type RegisterRequest = {
  */
 export type ReleaseState = 'hidden' | 'awaiting_release' | 'visible' | 'returned_for_revision';
 
+export type RemediationBundle = {
+    citations?: Array<Citation>;
+    language?: string;
+    learning_objectives?: Array<string>;
+    micro_lecture_markdown: string;
+    pass_threshold?: number;
+    practice_questions?: Array<RemediationQuestion>;
+    title: string;
+};
+
 export type RemediationCompletionRequest = {
     score: number;
+};
+
+export type RemediationQuestion = {
+    answer?: string;
+    choices?: Array<string>;
+    explanation?: string;
+    prompt: string;
 };
 
 export type RemediationRequest = {
@@ -3099,31 +3627,34 @@ export type RemediationRequest = {
 
 export type RemediationSession = {
     activity_id: ActivityId;
-    analysis_id?: AiSubmissionAnalysisId | null;
-    created_at_unix: number;
-    file_submission_attempt_id?: FileAttemptId | null;
+    analysis_id: AiSubmissionAnalysisId | null;
+    created_at_unix: UnixTime;
+    file_submission_attempt_id: FileAttemptId | null;
     gate_mode: boolean;
     id: AiRemediationSessionId;
     language: string;
-    lecture: {
-        [key: string]: unknown;
-    };
-    passed_at_unix?: number | null;
-    run_id?: AiRunId | null;
-    score?: number | null;
+    lecture: RemediationBundle;
+    passed_at_unix: UnixTime | null;
+    run_id: AiRunId | null;
+    score: number | null;
     status: RemediationStatus;
     student_user_id: UserId;
-    submission_id?: SubmissionId | null;
-    test: {
-        [key: string]: unknown;
-    };
-    updated_at_unix: number;
+    submission_id: SubmissionId | null;
+    test: RemediationTest;
+    updated_at_unix: UnixTime;
 };
 
 /**
  * Remediation session lifecycle (legacy string states).
  */
 export type RemediationStatus = 'assigned' | 'in_progress' | 'passed' | 'failed';
+
+/**
+ * A remediation session's practice test.
+ */
+export type RemediationTest = {
+    questions: Array<RemediationQuestion>;
+};
 
 export type ReorderItemsRequest = {
     /**
@@ -3139,14 +3670,14 @@ export type ReviewItem = {
      */
     allowed_actions: Array<GradeAction>;
     attempt_number: number;
-    auto_score?: number | null;
+    auto_score: number | null;
     /**
      * The learner is a course member (trail run); a leaver's row is not a
      * target for per-learner actions such as a deadline extension (UX-167).
      */
     enrolled: boolean;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
     id: SubmissionId;
     is_late: boolean;
     /**
@@ -3155,7 +3686,7 @@ export type ReviewItem = {
      */
     staff: boolean;
     status: SubmissionStatus;
-    submitted_at_unix?: number | null;
+    submitted_at_unix: UnixTime | null;
     user: UserSummary;
     /**
      * Teacher optimistic lock (`If-Match` on grade saves).
@@ -3168,7 +3699,7 @@ export type ReviewPage = {
     /**
      * Opaque; pass back as `cursor` with the same sort and order.
      */
-    next_cursor?: string | null;
+    next_cursor: string | null;
 };
 
 /**
@@ -3201,12 +3732,12 @@ export type Role = {
      * What the caller may do to this role now.
      */
     allowed_actions: Array<RoleAction>;
-    description?: string | null;
+    description: string | null;
     description_key: string;
     /**
      * Raw display text - custom roles only; `null` on seeded roles.
      */
-    display_name?: string | null;
+    display_name: string | null;
     /**
      * i18n key (frontend catalogs own the display strings of seeded roles).
      */
@@ -3222,6 +3753,36 @@ export type Role = {
  */
 export type RoleAction = 'assign' | 'update' | 'delete' | 'set_permissions';
 
+export type RubricCriterion = {
+    criterion_id: string;
+    label: string;
+    levels?: Array<RubricLevel>;
+    max_score: number;
+};
+
+export type RubricLevel = {
+    description?: string;
+    label: string;
+    score: number;
+};
+
+export type RubricScore = {
+    criterion_id: string;
+    label: string;
+    max_score: number;
+    score: number;
+};
+
+/**
+ * A grader's per-criterion scores (`rubric_scores`), at most 4 KiB.
+ */
+export type RubricScores = {
+    /**
+     * Absent when the activity has no rubric (`{}`).
+     */
+    criteria?: Array<RubricScore>;
+};
+
 export type RunAggregate = {
     aborted: number;
     failed: number;
@@ -3231,36 +3792,139 @@ export type RunAggregate = {
     total: number;
 };
 
-export type RunArtifact = {
-    content: {
-        [key: string]: unknown;
-    };
-    created_at_unix: number;
+export type RunArtifact = RunArtifactBody & {
+    created_at_unix: UnixTime;
     final: boolean;
     id: AiArtifactId;
-    kind: string;
+};
+
+/**
+ * An AI artifact by kind: the agent's structured output.
+ */
+export type RunArtifactBody = {
+    content: CourseQualityReport;
+    kind: 'course_analysis';
+} | {
+    content: SubmissionAnalysisReport;
+    kind: 'submission_analysis';
+} | {
+    content: RemediationBundle;
+    kind: 'remediation';
+} | {
+    content: StudyCompanionAnswer;
+    kind: 'study_companion';
+} | {
+    content: LectureReviewReport;
+    kind: 'lecture_review';
+} | {
+    content: CourseQaAnswer;
+    kind: 'course_qa';
+};
+
+/**
+ * The admin view's allow-listed part of [`RunMetadata`]
+ * (`ai::runs::SAFE_CONTEXT_KEYS`).
+ */
+export type RunContext = {
+    activity_id?: string | null;
+    citation_validation?: CitationValidation;
+    context_source_count?: number;
+    course_id?: string;
+    file_submission_attempt_id?: string;
+    kind?: AiRunKind;
+    language?: string;
+    mode?: StudyMode;
+    retry_count?: number;
+    submission_id?: string;
+    thread_id?: string;
+    time_to_first_text_ms?: number;
 };
 
 export type RunEvent = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     event_type: string;
     id: AiEventId;
-    payload: {
-        [key: string]: unknown;
-    };
+    payload: RunEventPayload;
     sequence: number;
 };
 
+/**
+ * `ai_events.payload`. `state` is always set; the rest by event type:
+ * `collecting_context` -> `source_count`; `budget_checked` ->
+ * `input_tokens`; `finished` -> model, tokens and citation counts;
+ * `failed` / `cancelled` -> `error_code`.
+ */
+export type RunEventPayload = {
+    citations_invalid?: number;
+    citations_valid?: number;
+    error_code?: string;
+    input_tokens?: number;
+    model_name?: string;
+    output_tokens?: number;
+    source_count?: number;
+    state: RunEventState;
+};
+
+/**
+ * Progress state an AI run event reports.
+ */
+export type RunEventState = 'queued' | 'running' | 'collecting_context' | 'checking_evidence' | 'complete' | 'failed' | 'cancelled';
+
 export type RunEvidence = {
-    artifact_id?: AiArtifactId | null;
+    artifact_id: AiArtifactId | null;
     citation_id: string;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     excerpt: string;
     id: AiEvidenceId;
     label: string;
-    score?: number | null;
-    source_ref?: string | null;
+    score: number | null;
+    source_ref: string | null;
     source_type: string;
+};
+
+/**
+ * `ai_runs.metadata`: what the run was started for, merged as it runs.
+ * Every key is optional; which ones appear depends on `kind`.
+ */
+export type RunMetadata = {
+    activity_id?: string | null;
+    assessment_id?: string | null;
+    /**
+     * Set when the run finished.
+     */
+    citation_validation?: CitationValidation;
+    client_turn_id?: string | null;
+    context_source_count?: number;
+    course_id?: string;
+    file_count?: number;
+    file_submission_attempt_id?: string;
+    file_submission_id?: string;
+    /**
+     * Remediation: the result blocks the learner's next attempt.
+     */
+    gate_mode?: boolean;
+    item_count?: number;
+    kind?: AiRunKind;
+    /**
+     * Requested answer language (`auto`, `ru`, `kk`, `en`).
+     */
+    language?: string;
+    mode?: StudyMode;
+    /**
+     * The run whose analysis a remediation was generated from.
+     */
+    parent_run_id?: string;
+    /**
+     * The learner's question (Q&A, study companion).
+     */
+    question?: string;
+    /**
+     * 1 when a Q&A turn was replayed for the same `client_turn_id`.
+     */
+    retry_count?: number;
+    submission_id?: string;
+    thread_id?: string;
+    time_to_first_text_ms?: number;
 };
 
 /**
@@ -3270,7 +3934,7 @@ export type RunRequest = {
     /**
      * When present the run is unscored: one case named `custom`.
      */
-    custom_input?: string | null;
+    custom_input?: string;
     /**
      * Judge0 language id.
      */
@@ -3282,18 +3946,16 @@ export type RunRequest = {
  * One AI run as its owner sees it (legacy `AIRunStatusRead`).
  */
 export type RunStatus = {
-    completed_at_unix?: number | null;
-    duration_ms?: number | null;
-    error_code?: string | null;
+    completed_at_unix: UnixTime | null;
+    duration_ms: number | null;
+    error_code: string | null;
     id: AiRunId;
-    input_tokens?: number | null;
+    input_tokens: number | null;
     kind: AiRunKind;
-    metadata: {
-        [key: string]: unknown;
-    };
-    model_name?: string | null;
-    output_tokens?: number | null;
-    started_at_unix: number;
+    metadata: RunMetadata;
+    model_name: string | null;
+    output_tokens: number | null;
+    started_at_unix: UnixTime;
     status: AiRunStatus;
     thread_id: AiThreadId;
 };
@@ -3302,31 +3964,19 @@ export type RunStatus = {
  * AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.
  */
 export type RunStreamRequest = {
-    context?: Array<{
-        [key: string]: unknown;
-    }> | null;
-    forwardedProps?: {
-        [key: string]: unknown;
-    } | null;
-    messages?: Array<{
-        [key: string]: unknown;
-    }> | null;
-    parentRunId?: string | null;
-    protocolVersion?: string | null;
-    resume?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    context?: Array<AgUiContext>;
+    forwardedProps?: JsonValue;
+    messages?: Array<QaWireMessage>;
+    parentRunId?: string;
+    protocolVersion?: string;
+    resume?: Array<JsonValue>;
     runId: string;
-    state?: {
-        [key: string]: unknown;
-    } | null;
+    state?: JsonValue;
     threadId: string;
     /**
      * AG-UI protocol fields the client always sends; accepted and ignored.
      */
-    tools?: Array<{
-        [key: string]: unknown;
-    }> | null;
+    tools?: Array<AgUiTool>;
 };
 
 /**
@@ -3349,34 +3999,42 @@ export type SaveViewRequest = {
     /**
      * The saved filter state (an object of at most 16 KiB serialized, UX-148).
      */
-    query?: {
-        [key: string]: unknown;
-    };
+    query?: SavedQuery;
     /**
      * Defaults to `overview`.
      */
     view_type?: string;
 };
 
+/**
+ * A saved analytics filter state: query-string parameters by name.
+ */
+export type SavedQuery = {
+    [key: string]: Scalar;
+};
+
 export type SavedView = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: SavedViewId;
     name: string;
-    query: {
-        [key: string]: unknown;
-    };
+    query: SavedQuery;
     teacher_user_id: UserId;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     view_type: string;
 };
 
 export type SavedViewId = string;
 
 export type SavedViewList = {
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     items: Array<SavedView>;
     total: number;
 };
+
+/**
+ * A string or a number: a message placeholder value, a saved query value.
+ */
+export type Scalar = string | number;
 
 /**
  * Malware-scan status of an attached file (scanning itself is a later
@@ -3386,14 +4044,14 @@ export type ScanStatus = 'pending' | 'clean' | 'flagged' | 'error';
 
 export type ScopeCapabilities = {
     available: boolean;
-    context?: ContextSummary | null;
+    context: ContextSummary | null;
     /**
      * `student` or `teacher`.
      */
-    context_visibility: string;
+    context_visibility: ContextVisibility;
     features: Array<FeatureCapability>;
     modes: Array<string>;
-    reason?: string | null;
+    reason: string | null;
     restricted: boolean;
     role: AiThreadRole;
     surface: Surface;
@@ -3452,27 +4110,27 @@ export type SessionInfo = {
  * (raw session ids never leave the server).
  */
 export type SessionSummary = {
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     current: boolean;
     handle: string;
-    ip?: string | null;
-    last_seen_unix: number;
-    user_agent?: string | null;
+    ip: string | null;
+    last_seen_unix: UnixTime;
+    user_agent: string | null;
 };
 
 /**
  * The signed-in user as the app shell shows them (a subset of `UserProfile`).
  */
 export type SessionUser = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     email: string;
     id: UserId;
-    locale: string;
+    locale: Locale;
     /**
      * UI theme slug; `null` = the web default.
      */
-    theme?: string | null;
+    theme: string | null;
     username: string;
 };
 
@@ -3507,7 +4165,7 @@ export type Severity = 'info' | 'warning' | 'critical';
 
 export type SignedDownload = {
     content_type: string;
-    expires_at_unix: number;
+    expires_at_unix: UnixTime;
     file_id: FileAttemptFileId;
     filename: string;
     url: string;
@@ -3526,7 +4184,7 @@ export type SloStatus = 'healthy' | 'warning' | 'breached' | 'not_applicable';
 export type SortOrder = 'asc' | 'desc';
 
 export type Stats = {
-    avg_score?: number | null;
+    avg_score: number | null;
     distribution: Array<ScoreBucket>;
     graded: number;
     late: number;
@@ -3534,7 +4192,7 @@ export type Stats = {
     /**
      * Percent of graded work at or above the passing score.
      */
-    pass_rate?: number | null;
+    pass_rate: number | null;
     published: number;
     returned: number;
     total: number;
@@ -3553,14 +4211,14 @@ export type StreakUpdate = {
 };
 
 export type StudentOverride = {
-    created_at_unix: number;
-    due_at_override_unix?: number | null;
-    expires_at_unix?: number | null;
-    granted_by?: UserId | null;
+    created_at_unix: UnixTime;
+    due_at_override_unix: UnixTime | null;
+    expires_at_unix: UnixTime | null;
+    granted_by: UserId | null;
     id: string;
-    max_attempts_override?: number | null;
+    max_attempts_override: number | null;
     note: string;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
     user_id: UserId;
     waive_late_penalty: boolean;
 };
@@ -3579,28 +4237,38 @@ export type StudentSubmission = {
     };
     assessment_id: AssessmentId;
     attempt_number: number;
-    auto_score?: number | null;
-    auto_submit_reason?: AutoSubmitReason | null;
+    auto_score: number | null;
+    auto_submit_reason: AutoSubmitReason | null;
     /**
      * Send back as `If-Match` on draft saves and submits.
      */
     draft_version: number;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
-    grading?: GradingBreakdown | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
+    grading: GradingBreakdown | null;
     id: SubmissionId;
     is_late: boolean;
-    late_penalty_pct?: number | null;
+    late_penalty_pct: number | null;
     release_state: ReleaseState;
-    started_at_unix?: number | null;
+    started_at_unix: UnixTime | null;
     status: SubmissionStatus;
-    submitted_at_unix?: number | null;
+    submitted_at_unix: UnixTime | null;
     /**
      * Seconds left on an open timed draft; `null` when untimed or closed.
      */
-    time_remaining_seconds?: number | null;
+    time_remaining_seconds: number | null;
     total_items: number;
     violation_count: number;
+};
+
+export type StudyCompanionAnswer = {
+    answer_markdown: string;
+    citations?: Array<Citation>;
+    confidence?: Level;
+    flashcards?: Array<JsonValue>;
+    follow_up_suggestions?: Array<string>;
+    mode: StudyMode;
+    practice_items?: Array<RemediationQuestion>;
 };
 
 /**
@@ -3615,22 +4283,27 @@ export type StudyRequest = {
 };
 
 export type SubmissionAnalysis = {
-    analysis: {
-        [key: string]: unknown;
-    };
-    created_at_unix: number;
-    evidence: {
-        [key: string]: unknown;
-    };
-    file_submission_attempt_id?: FileAttemptId | null;
+    analysis: SubmissionAnalysisReport;
+    created_at_unix: UnixTime;
+    evidence: AiEvidence;
+    file_submission_attempt_id: FileAttemptId | null;
     gap_count: number;
     id: AiSubmissionAnalysisId;
     language: string;
-    model_name?: string | null;
-    run_id?: AiRunId | null;
+    model_name: string | null;
+    run_id: AiRunId | null;
     status: string;
-    submission_id?: SubmissionId | null;
-    triggered_by?: UserId | null;
+    submission_id: SubmissionId | null;
+    triggered_by: UserId | null;
+};
+
+export type SubmissionAnalysisReport = {
+    citations?: Array<Citation>;
+    confidence?: Level;
+    knowledge_gaps?: Array<KnowledgeGap>;
+    language?: string;
+    next_action?: string;
+    summary: string;
 };
 
 export type SubmissionId = string;
@@ -3643,17 +4316,21 @@ export type SubmitRequest = {
      */
     answers?: {
         [key: string]: ItemAnswer;
-    } | null;
+    };
     /**
      * The client's anti-cheat count; the server's own count wins when higher.
      */
     violation_count?: number;
 };
 
+export type SupportAlertCode = 'GradingSloBreached' | 'GradingSloWarning' | 'SuspiciousAttempts' | 'MissingScores';
+
 /**
  * Which client screen is asking (legacy `AISurface`).
  */
 export type Surface = 'student-activity' | 'teacher-studio' | 'teacher-review' | 'course-page' | 'admin';
+
+export type SuspiciousFlag = 'TooEasy' | 'TooHard' | 'LowDiscrimination' | 'LowVariance';
 
 export type TeacherAssessmentDetailResponse = {
     activity_id: ActivityId;
@@ -3665,7 +4342,7 @@ export type TeacherAssessmentDetailResponse = {
     common_failures: Array<CommonFailureRow>;
     course_id: CourseId;
     diagnostics: AssessmentDiagnosticsSnapshot;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     item_analytics: Array<AssessmentItemAnalyticsRow>;
     learner_rows: Array<AssessmentLearnerRow>;
     pass_threshold: number;
@@ -3679,20 +4356,20 @@ export type TeacherAssessmentDetailResponse = {
 };
 
 export type TeacherAssessmentDetailSummary = {
-    avg_attempts?: number | null;
+    avg_attempts: number | null;
     eligible_learners: number;
-    grading_latency_hours_p50?: number | null;
-    grading_latency_hours_p90?: number | null;
-    median_score?: number | null;
-    pass_rate?: number | null;
-    submission_rate?: number | null;
+    grading_latency_hours_p50: number | null;
+    grading_latency_hours_p90: number | null;
+    median_score: number | null;
+    pass_rate: number | null;
+    submission_rate: number | null;
     submitted_learners: number;
 };
 
 export type TeacherAssessmentListResponse = {
     cohort_options: Array<FilterOption>;
     course_options: Array<FilterOption>;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     items: Array<AssessmentOutlierRow>;
     page: number;
     page_size: number;
@@ -3708,7 +4385,7 @@ export type TeacherCourseDetailResponse = {
     course: CourseRef;
     engagement_trend: Array<TimeSeriesPoint>;
     funnels: Funnels;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     summary: TeacherCourseDetailSummary;
 };
 
@@ -3725,7 +4402,7 @@ export type TeacherCourseDetailSummary = {
 export type TeacherCourseListResponse = {
     cohort_options: Array<FilterOption>;
     course_options: Array<FilterOption>;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     items: Array<TeacherCourseRow>;
     page: number;
     page_size: number;
@@ -3734,19 +4411,19 @@ export type TeacherCourseListResponse = {
 
 export type TeacherCourseRow = {
     active_learners_7d: number;
-    assessment_difficulty_score?: number | null;
+    assessment_difficulty_score: number | null;
     at_risk_learners: number;
-    cohort_completion_delta_pct?: number | null;
+    cohort_completion_delta_pct: number | null;
     completion_rate: number;
     content_health_score: number;
     course_id: CourseId;
     course_name: string;
-    engagement_delta_pct?: number | null;
-    historical_completion_delta_pct?: number | null;
-    last_content_update_at_unix?: number | null;
-    platform_completion_delta_pct?: number | null;
-    teacher_completion_delta_pct?: number | null;
-    top_alert?: AlertItem | null;
+    engagement_delta_pct: number | null;
+    historical_completion_delta_pct: number | null;
+    last_content_update_at_unix: UnixTime | null;
+    platform_completion_delta_pct: number | null;
+    teacher_completion_delta_pct: number | null;
+    top_alert: AlertItem | null;
     ungraded_submissions: number;
 };
 
@@ -3766,7 +4443,7 @@ export type TeacherOverviewResponse = {
     data_quality: AnalyticsDataQuality;
     forecasts: Array<ForecastItem>;
     freshness_seconds: number;
-    generated_at_unix: number;
+    generated_at_unix: UnixTime;
     insights: Array<InsightFeedItem>;
     intervention_summary: InterventionSummary;
     risk_distribution: RiskDistributionCounts;
@@ -3812,13 +4489,13 @@ export type TeacherSubmission = {
     };
     assessment_id: AssessmentId;
     attempt_number: number;
-    auto_score?: number | null;
-    auto_submit_reason?: AutoSubmitReason | null;
+    auto_score: number | null;
+    auto_submit_reason: AutoSubmitReason | null;
     content_version: number;
-    duration_seconds?: number | null;
+    duration_seconds: number | null;
     feedback: Array<ItemFeedbackView>;
-    final_score?: number | null;
-    graded_at_unix?: number | null;
+    final_score: number | null;
+    graded_at_unix: UnixTime | null;
     grading: GradingBreakdown;
     id: SubmissionId;
     is_late: boolean;
@@ -3829,19 +4506,17 @@ export type TeacherSubmission = {
      * The raw score of the latest grading entry when it is a manual
      * override (differs from the item-derived one); `null` otherwise.
      */
-    score_override?: number | null;
-    started_at_unix?: number | null;
+    score_override: number | null;
+    started_at_unix: UnixTime | null;
     status: SubmissionStatus;
-    submitted_at_unix?: number | null;
+    submitted_at_unix: UnixTime | null;
     user: UserSummary;
     /**
      * Send back as `If-Match` on grade saves.
      */
     version: number;
     violation_count: number;
-    violations: Array<{
-        [key: string]: unknown;
-    }>;
+    violations: Array<ViolationEvent>;
 };
 
 export type TeacherWorkloadSummary = {
@@ -3849,7 +4524,7 @@ export type TeacherWorkloadSummary = {
     backlog_by_assessment: Array<GradingBacklogItem>;
     backlog_total: number;
     forecast_backlog_7d: number;
-    median_feedback_latency_hours?: number | null;
+    median_feedback_latency_hours: number | null;
     sla_breaches: number;
 };
 
@@ -3860,7 +4535,7 @@ export type TextSection = {
 };
 
 export type TimeSeriesPoint = {
-    bucket_start_unix: number;
+    bucket_start_unix: UnixTime;
     value: number;
 };
 
@@ -3886,10 +4561,10 @@ export type TotpVerifyRequest = {
  * The caller's trail. `id` is `null` until something was added.
  */
 export type Trail = {
-    created_at_unix?: number | null;
-    id?: TrailId | null;
+    created_at_unix: UnixTime | null;
+    id: TrailId | null;
     runs: Array<TrailRun>;
-    updated_at_unix?: number | null;
+    updated_at_unix: UnixTime | null;
     user_id: UserId;
 };
 
@@ -3902,17 +4577,17 @@ export type TrailRun = {
      * Published activities in the course.
      */
     course_total_steps: number;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: TrailRunId;
     /**
      * The learner's course progress percent, the value `learner-state`'s
      * `progress.progress_pct` reports; `null` until the progress
      * projection has a row for the course (UX-250).
      */
-    progress_pct?: number | null;
+    progress_pct: number | null;
     status: TrailRunStatus;
     steps: Array<TrailStep>;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 export type TrailRunId = string;
@@ -3927,95 +4602,98 @@ export type TrailStep = {
     activity_id: ActivityId;
     complete: boolean;
     course_id: CourseId;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     grade: number;
     id: TrailStepId;
     teacher_verified: boolean;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 export type TrailStepId = string;
 
 export type Transaction = {
     amount: number;
-    created_at_unix: number;
+    created_at_unix: UnixTime;
     id: XpTransactionId;
     previous_level: number;
-    reason?: string | null;
+    reason: string | null;
     source: XpSource;
-    source_id?: string | null;
+    source_id: string | null;
     triggered_level_up: boolean;
     user_id: UserId;
 };
 
+/**
+ * Unix time: whole seconds since 1970-01-01T00:00:00Z.
+ */
+export type UnixTime = number;
+
 export type UpdateActivityRequest = {
-    activity_sub_type?: string | null;
+    activity_sub_type?: ActivitySubType;
     /**
      * Change together with `activity_sub_type` (both or neither).
      */
-    activity_type?: string | null;
-    content?: unknown;
-    details?: unknown;
-    name?: string | null;
-    published?: boolean | null;
-    settings?: unknown;
+    activity_type?: ActivityType;
+    content?: ActivityContent;
+    details?: ActivityDetails;
+    name?: string;
+    published?: boolean;
+    settings?: ActivitySettings;
 };
 
 export type UpdateAssessmentRequest = {
-    description?: string | null;
-    grading_type?: GradingType | null;
-    title?: string | null;
+    description?: string;
+    grading_type?: GradingType;
+    title?: string;
     /**
      * BUG-208: 0–100 - an unbounded weight overflows the course average.
      */
-    weight?: number | null;
+    weight?: number;
 };
 
 export type UpdateCertificationRequest = {
     /**
-     * The designer document: an object of at most 16 KiB serialized.
+     * An object of at most 16 KiB serialized.
      */
-    config: {
-        [key: string]: unknown;
-    };
+    config: CertificationConfig;
 };
 
 export type UpdateChapterRequest = {
-    description?: string | null;
-    name?: string | null;
+    description?: string;
+    name?: string;
 };
 
 export type UpdateCollectionRequest = {
     /**
      * Replaces the whole membership when present (legacy semantics).
      */
-    courses?: Array<CourseId> | null;
-    description?: string | null;
-    name?: string | null;
-    public?: boolean | null;
+    courses?: Array<CourseId>;
+    description?: string;
+    name?: string;
+    public?: boolean;
 };
 
 export type UpdateContributorRequest = {
     /**
      * `maintainer | contributor | reporter`.
      */
-    role?: string | null;
+    role?: string;
     /**
      * `pending | active | inactive` (`active` approves an application).
      */
-    status?: string | null;
+    status?: string;
 };
 
 export type UpdateCourseRequest = {
-    about?: string | null;
-    description?: string | null;
+    about?: string;
+    description?: string;
     /**
      * Replaces the whole "What you'll learn" list (≤ 30 entries).
      */
-    learnings?: Array<LearningInput> | null;
-    name?: string | null;
-    open_to_contributors?: boolean | null;
-    tags?: Array<string> | null;
+    learnings?: Array<LearningInput>;
+    name?: string;
+    open_to_contributors?: boolean;
+    tags?: Array<string>;
     /**
      * Finalized `course-thumbnail` upload to claim as the thumbnail;
      * `null` removes the current one.
@@ -4024,31 +4702,34 @@ export type UpdateCourseRequest = {
 };
 
 export type UpdateDiscussionRequest = {
-    content?: string | null;
-    status?: DiscussionStatus | null;
+    content?: string;
+    status?: DiscussionStatus;
 };
 
 export type UpdateGamificationConfigRequest = {
-    daily_xp_limit?: number | null;
+    daily_xp_limit?: number;
     rewards?: {
-        [key: string]: unknown;
+        [key: string]: number;
     };
 };
 
 export type UpdateItemRequest = {
-    body?: ItemBody | null;
+    body?: ItemBody;
     /**
      * BUG-208: at most 10 000 - an unbounded score overflows the grade shares.
      */
-    max_score?: number | null;
-    metadata?: ItemMetadata | null;
-    title?: string | null;
+    max_score?: number;
+    /**
+     * Replaces the whole metadata block when present.
+     */
+    metadata?: ItemMetadata;
+    title?: string;
 };
 
 export type UpdatePlatformRequest = {
-    about?: string | null;
-    description?: string | null;
-    email?: string | null;
+    about?: string;
+    description?: string;
+    email?: string;
     /**
      * `null` clears the label; blank is stored as cleared too (UX-135).
      */
@@ -4056,15 +4737,15 @@ export type UpdatePlatformRequest = {
     /**
      * Finalized `platform-logo` upload to claim as the new logo.
      */
-    logo_upload_id?: string | null;
+    logo_upload_id?: string;
     /**
      * Blank → 422 `required` (trimmed in the service).
      */
-    name?: string | null;
+    name?: string;
     /**
      * Finalized `platform-thumbnail` upload to claim.
      */
-    thumbnail_upload_id?: string | null;
+    thumbnail_upload_id?: string;
 };
 
 /**
@@ -4076,17 +4757,22 @@ export type UpdateProfileRequest = {
      * removes the current one.
      */
     avatar_upload_id?: string | null;
-    bio?: string | null;
-    display_name?: string | null;
+    bio?: string;
+    display_name?: string;
     /**
      * One of the platform locales.
      */
-    locale?: string | null;
+    locale?: Locale;
     /**
      * School / university / company; a blank value is 422 `required`.
      */
-    organization?: string | null;
-    profile?: ProfileSections | null;
+    organization?: string;
+    /**
+     * The whole profile builder document (replaces the stored one). Unknown
+     * section kinds/fields, non-`http(s)` URLs and oversized text are 422
+     * with `profile.sections[i]…` field errors.
+     */
+    profile?: ProfileSections;
     /**
      * UI theme registry slug (the web `theme-store.json` names, e.g.
      * `modern-minimal`); `null` clears it.
@@ -4095,15 +4781,20 @@ export type UpdateProfileRequest = {
 };
 
 export type UpdateRoleRequest = {
-    description?: string | null;
-    display_name?: string | null;
-    priority?: number | null;
+    description?: string;
+    display_name?: string;
+    priority?: number;
 };
 
 export type UpdateUsergroupRequest = {
-    description?: string | null;
-    name?: string | null;
+    description?: string;
+    name?: string;
 };
+
+/**
+ * What an upload is for: decides bucket, size cap and allowed MIME types.
+ */
+export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission';
 
 /**
  * Platform usage against the monthly budget (legacy `AIUsageSummary`)
@@ -4122,7 +4813,7 @@ export type UsageSummary = {
  * Public-profile projection (no email - FINDINGS #16).
  */
 export type UserHit = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     id: UserId;
     username: string;
@@ -4131,7 +4822,7 @@ export type UserHit = {
 export type UserId = string;
 
 export type UserProfile = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     bio: string;
     display_name: string;
     email: string;
@@ -4146,7 +4837,7 @@ export type UserProfile = {
      */
     has_password: boolean;
     id: UserId;
-    locale: string;
+    locale: Locale;
     /**
      * TOTP enrolled on the account (`false` where no session is involved,
      * e.g. the registration answer).
@@ -4164,7 +4855,7 @@ export type UserProfile = {
     /**
      * UI theme slug chosen by the user; `null` = the web default.
      */
-    theme?: string | null;
+    theme: string | null;
     username: string;
 };
 
@@ -4172,9 +4863,11 @@ export type UserRank = {
     /**
      * `null` when the profile opted out of the leaderboard.
      */
-    rank?: number | null;
+    rank: number | null;
     user_id: UserId;
 };
+
+export type UserStatus = 'active' | 'disabled';
 
 export type UserSummary = {
     display_name: string;
@@ -4205,13 +4898,13 @@ export type Usergroup = {
      * `usergroup:create:platform`).
      */
     can_write: boolean;
-    created_at_unix: number;
-    creator_id?: UserId | null;
+    created_at_unix: UnixTime;
+    creator_id: UserId | null;
     description: string;
     id: UsergroupId;
     member_count: number;
     name: string;
-    updated_at_unix: number;
+    updated_at_unix: UnixTime;
 };
 
 /**
@@ -4226,7 +4919,7 @@ export type UsergroupCoursesRequest = {
 export type UsergroupId = string;
 
 export type UsergroupMember = {
-    avatar_key?: string | null;
+    avatar_key: string | null;
     display_name: string;
     id: UserId;
     username: string;
@@ -4241,7 +4934,7 @@ export type UsergroupMembersRequest = {
  */
 export type UsergroupPage = {
     items: Array<Usergroup>;
-    next_cursor?: UsergroupId | null;
+    next_cursor: UsergroupId | null;
 };
 
 /**
@@ -4255,7 +4948,7 @@ export type VerifiedCertificate = {
     /**
      * The name signed on the certificate - what the PDF prints.
      */
-    instructor_name?: string | null;
+    instructor_name: string | null;
 };
 
 /**
@@ -4266,8 +4959,23 @@ export type VerifyEmailRequest = {
     email: string;
 };
 
+/**
+ * One anti-cheat event of a draft (newest kept).
+ */
+export type ViolationEvent = {
+    /**
+     * Unix seconds.
+     */
+    at: number;
+    detail: string | null;
+    /**
+     * Client-reported kind (`tab_switch`, `copy_paste`, …).
+     */
+    kind: string;
+};
+
 export type ViolationRequest = {
-    detail?: string | null;
+    detail?: string;
     /**
      * e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.
      */
@@ -4298,9 +5006,9 @@ export type WorkItem = {
     allowed_actions: Array<string>;
     course_id: CourseId;
     course_title: string;
-    created_at_unix?: number | null;
+    created_at_unix: UnixTime | null;
     description: string;
-    due_at_unix?: number | null;
+    due_at_unix: UnixTime | null;
     /**
      * Client route for the primary action.
      */
@@ -4321,7 +5029,7 @@ export type WorkPriority = 'critical' | 'high' | 'normal' | 'low';
  */
 export type WorkQueue = {
     items: Array<WorkItem>;
-    next_cursor?: string | null;
+    next_cursor: string | null;
     total: number;
 };
 
@@ -4361,10 +5069,10 @@ export type DeleteActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}';
+    url: '/api/v2/activities/{activity_id}';
 };
 
 export type DeleteActivityErrors = {
@@ -4399,10 +5107,10 @@ export type GetActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}';
+    url: '/api/v2/activities/{activity_id}';
 };
 
 export type GetActivityErrors = {
@@ -4435,10 +5143,10 @@ export type UpdateActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}';
+    url: '/api/v2/activities/{activity_id}';
 };
 
 export type UpdateActivityErrors = {
@@ -4469,10 +5177,10 @@ export type GetActivityAssessmentData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}/assessment';
+    url: '/api/v2/activities/{activity_id}/assessment';
 };
 
 export type GetActivityAssessmentErrors = {
@@ -4499,10 +5207,10 @@ export type ListBlocksData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}/blocks';
+    url: '/api/v2/activities/{activity_id}/blocks';
 };
 
 export type ListBlocksErrors = {
@@ -4529,10 +5237,10 @@ export type CreateBlockData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}/blocks';
+    url: '/api/v2/activities/{activity_id}/blocks';
 };
 
 export type CreateBlockErrors = {
@@ -4567,10 +5275,10 @@ export type GetActivityFileSubmissionData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}/file-submission';
+    url: '/api/v2/activities/{activity_id}/file-submission';
 };
 
 export type GetActivityFileSubmissionResponses = {
@@ -4588,10 +5296,10 @@ export type MoveActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/activities/{id}/move';
+    url: '/api/v2/activities/{activity_id}/move';
 };
 
 export type MoveActivityErrors = {
@@ -4686,10 +5394,10 @@ export type AdminRunDetailData = {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/admin/runs/{id}';
+    url: '/api/v2/ai/admin/runs/{run_id}';
 };
 
 export type AdminRunDetailErrors = {
@@ -5276,35 +5984,35 @@ export type LatestRemediationResponses = {
 
 export type LatestRemediationResponse = LatestRemediationResponses[keyof LatestRemediationResponses];
 
-export type GetRunData = {
+export type GetAiRunData = {
     body?: never;
     path: {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/runs/{id}';
+    url: '/api/v2/ai/runs/{run_id}';
 };
 
-export type GetRunErrors = {
+export type GetAiRunErrors = {
     /**
      * Unknown run
      */
     404: Problem;
 };
 
-export type GetRunError = GetRunErrors[keyof GetRunErrors];
+export type GetAiRunError = GetAiRunErrors[keyof GetAiRunErrors];
 
-export type GetRunResponses = {
+export type GetAiRunResponses = {
     /**
      * Run status
      */
     200: RunStatus;
 };
 
-export type GetRunResponse = GetRunResponses[keyof GetRunResponses];
+export type GetAiRunResponse = GetAiRunResponses[keyof GetAiRunResponses];
 
 export type RunArtifactsData = {
     body?: never;
@@ -5312,10 +6020,10 @@ export type RunArtifactsData = {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/runs/{id}/artifacts';
+    url: '/api/v2/ai/runs/{run_id}/artifacts';
 };
 
 export type RunArtifactsResponses = {
@@ -5333,10 +6041,10 @@ export type CancelRunData = {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/runs/{id}/cancel';
+    url: '/api/v2/ai/runs/{run_id}/cancel';
 };
 
 export type CancelRunResponses = {
@@ -5354,10 +6062,10 @@ export type RunEventsData = {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/runs/{id}/events';
+    url: '/api/v2/ai/runs/{run_id}/events';
 };
 
 export type RunEventsResponses = {
@@ -5381,10 +6089,10 @@ export type StreamRunData = {
         /**
          * Run id
          */
-        id: AiRunId;
+        run_id: AiRunId;
     };
     query?: never;
-    url: '/api/v2/ai/runs/{id}/stream';
+    url: '/api/v2/ai/runs/{run_id}/stream';
 };
 
 export type StreamRunErrors = {
@@ -5434,9 +6142,7 @@ export type StudyAskResponses = {
     /**
      * The answer artifact
      */
-    200: {
-        [key: string]: unknown;
-    };
+    200: StudyCompanionAnswer;
 };
 
 export type StudyAskResponse = StudyAskResponses[keyof StudyAskResponses];
@@ -5570,15 +6276,15 @@ export type AdminOverviewData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5611,7 +6317,7 @@ export type AdminOverviewData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/admin/overview';
 };
@@ -5641,15 +6347,15 @@ export type AssessmentListData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5682,7 +6388,7 @@ export type AssessmentListData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/assessments';
 };
@@ -5712,15 +6418,15 @@ export type AssessmentDetailData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5753,7 +6459,7 @@ export type AssessmentDetailData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/assessments/{assessment_type}/{assessment_id}';
 };
@@ -5783,15 +6489,15 @@ export type CourseListData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5824,7 +6530,7 @@ export type CourseListData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/courses';
 };
@@ -5844,21 +6550,21 @@ export type CourseDetailData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5891,9 +6597,9 @@ export type CourseDetailData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
-    url: '/api/v2/analytics/teacher/courses/{id}';
+    url: '/api/v2/analytics/teacher/courses/{course_id}';
 };
 
 export type CourseDetailErrors = {
@@ -5926,15 +6632,15 @@ export type DrillThroughData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -5967,7 +6673,7 @@ export type DrillThroughData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
         course_id?: CourseId;
         assessment_type?: AssessmentKind;
         assessment_id?: AssessmentId;
@@ -6006,15 +6712,15 @@ export type ExportAssessmentOutcomesData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6047,7 +6753,7 @@ export type ExportAssessmentOutcomesData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/exports/assessment-outcomes.csv';
 };
@@ -6056,7 +6762,7 @@ export type ExportAssessmentOutcomesResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type ExportAssessmentOutcomesResponse = ExportAssessmentOutcomesResponses[keyof ExportAssessmentOutcomesResponses];
@@ -6074,15 +6780,15 @@ export type ExportAtRiskData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6115,7 +6821,7 @@ export type ExportAtRiskData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/exports/at-risk.csv';
 };
@@ -6124,7 +6830,7 @@ export type ExportAtRiskResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type ExportAtRiskResponse = ExportAtRiskResponses[keyof ExportAtRiskResponses];
@@ -6142,15 +6848,15 @@ export type ExportCourseProgressData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6183,7 +6889,7 @@ export type ExportCourseProgressData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/exports/course-progress.csv';
 };
@@ -6192,7 +6898,7 @@ export type ExportCourseProgressResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type ExportCourseProgressResponse = ExportCourseProgressResponses[keyof ExportCourseProgressResponses];
@@ -6210,15 +6916,15 @@ export type ExportGradingBacklogData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6251,7 +6957,7 @@ export type ExportGradingBacklogData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/exports/grading-backlog.csv';
 };
@@ -6260,7 +6966,7 @@ export type ExportGradingBacklogResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type ExportGradingBacklogResponse = ExportGradingBacklogResponses[keyof ExportGradingBacklogResponses];
@@ -6272,15 +6978,15 @@ export type ListInterventionsData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6313,7 +7019,7 @@ export type ListInterventionsData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
         user_id?: UserId;
         course_id?: CourseId;
     };
@@ -6336,15 +7042,15 @@ export type CreateInterventionData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6377,7 +7083,7 @@ export type CreateInterventionData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/interventions';
 };
@@ -6411,15 +7117,15 @@ export type AtRiskLearnersData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6452,7 +7158,7 @@ export type AtRiskLearnersData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/learners/at-risk';
 };
@@ -6473,15 +7179,15 @@ export type TeacherOverviewData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6514,7 +7220,7 @@ export type TeacherOverviewData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/overview';
 };
@@ -6544,15 +7250,15 @@ export type ListSavedViewsData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6585,7 +7291,7 @@ export type ListSavedViewsData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/saved-views';
 };
@@ -6606,15 +7312,15 @@ export type SaveViewData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6647,7 +7353,7 @@ export type SaveViewData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/saved-views';
 };
@@ -6682,15 +7388,15 @@ export type DeleteViewData = {
         /**
          * `7d`, `28d` (default) or `90d`.
          */
-        window?: string;
+        window?: Window;
         /**
          * `previous_period` (default) or `none`.
          */
-        compare?: string;
+        compare?: Compare;
         /**
          * `day` (default) or `week`.
          */
-        bucket?: string;
+        bucket?: Bucket;
         /**
          * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
          */
@@ -6723,7 +7429,7 @@ export type DeleteViewData = {
         /**
          * `asc` or `desc` (default).
          */
-        sort_order?: string;
+        sort_order?: SortOrder;
     };
     url: '/api/v2/analytics/teacher/saved-views/{view_id}';
 };
@@ -6752,10 +7458,10 @@ export type DeleteItemData = {
         /**
          * Item id
          */
-        id: AssessmentItemId;
+        item_id: AssessmentItemId;
     };
     query?: never;
-    url: '/api/v2/assessment-items/{id}';
+    url: '/api/v2/assessment-items/{item_id}';
 };
 
 export type DeleteItemErrors = {
@@ -6782,10 +7488,10 @@ export type UpdateItemData = {
         /**
          * Item id
          */
-        id: AssessmentItemId;
+        item_id: AssessmentItemId;
     };
     query?: never;
-    url: '/api/v2/assessment-items/{id}';
+    url: '/api/v2/assessment-items/{item_id}';
 };
 
 export type UpdateItemErrors = {
@@ -6818,10 +7524,10 @@ export type RunItemData = {
         /**
          * Code item id
          */
-        id: AssessmentItemId;
+        item_id: AssessmentItemId;
     };
     query?: never;
-    url: '/api/v2/assessment-items/{id}/runs';
+    url: '/api/v2/assessment-items/{item_id}/runs';
 };
 
 export type RunItemErrors = {
@@ -6897,10 +7603,10 @@ export type GetAssessmentData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}';
+    url: '/api/v2/assessments/{assessment_id}';
 };
 
 export type GetAssessmentErrors = {
@@ -6927,10 +7633,10 @@ export type UpdateAssessmentData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}';
+    url: '/api/v2/assessments/{assessment_id}';
 };
 
 export type UpdateAssessmentErrors = {
@@ -6957,10 +7663,10 @@ export type GetAccessData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/access';
+    url: '/api/v2/assessments/{assessment_id}/access';
 };
 
 export type GetAccessResponses = {
@@ -6984,10 +7690,10 @@ export type SetAccessData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/access';
+    url: '/api/v2/assessments/{assessment_id}/access';
 };
 
 export type SetAccessErrors = {
@@ -7018,10 +7724,10 @@ export type AttemptStateData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/attempt-state';
+    url: '/api/v2/assessments/{assessment_id}/attempt-state';
 };
 
 export type AttemptStateErrors = {
@@ -7048,7 +7754,7 @@ export type AuditTrailData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: {
         /**
@@ -7056,7 +7762,7 @@ export type AuditTrailData = {
          */
         limit?: number;
     };
-    url: '/api/v2/assessments/{id}/audit';
+    url: '/api/v2/assessments/{assessment_id}/audit';
 };
 
 export type AuditTrailResponses = {
@@ -7074,10 +7780,10 @@ export type ExtendDeadlineData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/deadline-extensions';
+    url: '/api/v2/assessments/{assessment_id}/deadline-extensions';
 };
 
 export type ExtendDeadlineErrors = {
@@ -7104,10 +7810,10 @@ export type DuplicateAssessmentData = {
         /**
          * Source assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/duplicate';
+    url: '/api/v2/assessments/{assessment_id}/duplicate';
 };
 
 export type DuplicateAssessmentErrors = {
@@ -7134,10 +7840,10 @@ export type ItemAnalyticsData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/item-analytics';
+    url: '/api/v2/assessments/{assessment_id}/item-analytics';
 };
 
 export type ItemAnalyticsResponses = {
@@ -7155,10 +7861,10 @@ export type CreateItemData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/items';
+    url: '/api/v2/assessments/{assessment_id}/items';
 };
 
 export type CreateItemErrors = {
@@ -7185,10 +7891,10 @@ export type ReorderItemsData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/items/reorder';
+    url: '/api/v2/assessments/{assessment_id}/items/reorder';
 };
 
 export type ReorderItemsErrors = {
@@ -7215,10 +7921,10 @@ export type LifecycleData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/lifecycle';
+    url: '/api/v2/assessments/{assessment_id}/lifecycle';
 };
 
 export type LifecycleErrors = {
@@ -7249,10 +7955,10 @@ export type ListOverridesData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/overrides';
+    url: '/api/v2/assessments/{assessment_id}/overrides';
 };
 
 export type ListOverridesResponses = {
@@ -7270,14 +7976,14 @@ export type DeleteOverrideData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
         /**
          * Student
          */
         user_id: UserId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/overrides/{user_id}';
+    url: '/api/v2/assessments/{assessment_id}/overrides/{user_id}';
 };
 
 export type DeleteOverrideResponses = {
@@ -7295,14 +8001,14 @@ export type CreateOverrideData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
         /**
          * Student
          */
         user_id: UserId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/overrides/{user_id}';
+    url: '/api/v2/assessments/{assessment_id}/overrides/{user_id}';
 };
 
 export type CreateOverrideErrors = {
@@ -7333,14 +8039,14 @@ export type UpdateOverrideData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
         /**
          * Student
          */
         user_id: UserId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/overrides/{user_id}';
+    url: '/api/v2/assessments/{assessment_id}/overrides/{user_id}';
 };
 
 export type UpdateOverrideResponses = {
@@ -7358,10 +8064,10 @@ export type SetPolicyData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/policy';
+    url: '/api/v2/assessments/{assessment_id}/policy';
 };
 
 export type SetPolicyErrors = {
@@ -7388,10 +8094,10 @@ export type PublishGradesData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/publish-grades';
+    url: '/api/v2/assessments/{assessment_id}/publish-grades';
 };
 
 export type PublishGradesResponses = {
@@ -7409,10 +8115,10 @@ export type ReadinessData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/readiness';
+    url: '/api/v2/assessments/{assessment_id}/readiness';
 };
 
 export type ReadinessResponses = {
@@ -7430,10 +8136,10 @@ export type ReferenceCheckData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/reference-check';
+    url: '/api/v2/assessments/{assessment_id}/reference-check';
 };
 
 export type ReferenceCheckErrors = {
@@ -7458,13 +8164,13 @@ export type ReferenceCheckResponses = {
 
 export type ReferenceCheckResponse2 = ReferenceCheckResponses[keyof ReferenceCheckResponses];
 
-export type ReviewQueueData = {
+export type AssessmentReviewQueueData = {
     body?: never;
     path: {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: {
         status?: ReviewStatus | null;
@@ -7491,26 +8197,26 @@ export type ReviewQueueData = {
          */
         limit?: number | null;
     };
-    url: '/api/v2/assessments/{id}/submissions';
+    url: '/api/v2/assessments/{assessment_id}/submissions';
 };
 
-export type ReviewQueueErrors = {
+export type AssessmentReviewQueueErrors = {
     /**
      * No grading access
      */
     403: Problem;
 };
 
-export type ReviewQueueError = ReviewQueueErrors[keyof ReviewQueueErrors];
+export type AssessmentReviewQueueError = AssessmentReviewQueueErrors[keyof AssessmentReviewQueueErrors];
 
-export type ReviewQueueResponses = {
+export type AssessmentReviewQueueResponses = {
     /**
      * Review page
      */
     200: ReviewPage;
 };
 
-export type ReviewQueueResponse = ReviewQueueResponses[keyof ReviewQueueResponses];
+export type AssessmentReviewQueueResponse = AssessmentReviewQueueResponses[keyof AssessmentReviewQueueResponses];
 
 export type StartSubmissionData = {
     body?: never;
@@ -7518,10 +8224,10 @@ export type StartSubmissionData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/submissions';
+    url: '/api/v2/assessments/{assessment_id}/submissions';
 };
 
 export type StartSubmissionErrors = {
@@ -7552,10 +8258,10 @@ export type CurrentDraftData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/submissions/draft';
+    url: '/api/v2/assessments/{assessment_id}/submissions/draft';
 };
 
 export type CurrentDraftErrors = {
@@ -7576,7 +8282,7 @@ export type CurrentDraftResponses = {
 
 export type CurrentDraftResponse = CurrentDraftResponses[keyof CurrentDraftResponses];
 
-export type ExportCsvData = {
+export type ExportAssessmentSubmissionsCsvData = {
     body?: never;
     headers?: {
         /**
@@ -7588,20 +8294,20 @@ export type ExportCsvData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/submissions/export';
+    url: '/api/v2/assessments/{assessment_id}/submissions/export';
 };
 
-export type ExportCsvResponses = {
+export type ExportAssessmentSubmissionsCsvResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
-export type ExportCsvResponse = ExportCsvResponses[keyof ExportCsvResponses];
+export type ExportAssessmentSubmissionsCsvResponse = ExportAssessmentSubmissionsCsvResponses[keyof ExportAssessmentSubmissionsCsvResponses];
 
 export type MySubmissionsData = {
     body?: never;
@@ -7609,10 +8315,10 @@ export type MySubmissionsData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/submissions/me';
+    url: '/api/v2/assessments/{assessment_id}/submissions/me';
 };
 
 export type MySubmissionsResponses = {
@@ -7630,10 +8336,10 @@ export type StatsData = {
         /**
          * Assessment id
          */
-        id: AssessmentId;
+        assessment_id: AssessmentId;
     };
     query?: never;
-    url: '/api/v2/assessments/{id}/submissions/stats';
+    url: '/api/v2/assessments/{assessment_id}/submissions/stats';
 };
 
 export type StatsResponses = {
@@ -7992,10 +8698,10 @@ export type DeleteBlockData = {
         /**
          * Block id
          */
-        id: BlockId;
+        block_id: BlockId;
     };
     query?: never;
-    url: '/api/v2/blocks/{id}';
+    url: '/api/v2/blocks/{block_id}';
 };
 
 export type DeleteBlockErrors = {
@@ -8022,10 +8728,10 @@ export type GetBlockData = {
         /**
          * Block id
          */
-        id: BlockId;
+        block_id: BlockId;
     };
     query?: never;
-    url: '/api/v2/blocks/{id}';
+    url: '/api/v2/blocks/{block_id}';
 };
 
 export type GetBlockErrors = {
@@ -8052,10 +8758,10 @@ export type GetBulkActionData = {
         /**
          * Bulk action id
          */
-        id: BulkActionId;
+        bulk_action_id: BulkActionId;
     };
     query?: never;
-    url: '/api/v2/bulk-actions/{id}';
+    url: '/api/v2/bulk-actions/{bulk_action_id}';
 };
 
 export type GetBulkActionResponses = {
@@ -8164,10 +8870,10 @@ export type DeleteCertificationData = {
         /**
          * Certification id
          */
-        id: CertificationId;
+        certification_id: CertificationId;
     };
     query?: never;
-    url: '/api/v2/certifications/{id}';
+    url: '/api/v2/certifications/{certification_id}';
 };
 
 export type DeleteCertificationResponses = {
@@ -8185,10 +8891,10 @@ export type GetCertificationData = {
         /**
          * Certification id
          */
-        id: CertificationId;
+        certification_id: CertificationId;
     };
     query?: never;
-    url: '/api/v2/certifications/{id}';
+    url: '/api/v2/certifications/{certification_id}';
 };
 
 export type GetCertificationResponses = {
@@ -8206,10 +8912,10 @@ export type UpdateCertificationData = {
         /**
          * Certification id
          */
-        id: CertificationId;
+        certification_id: CertificationId;
     };
     query?: never;
-    url: '/api/v2/certifications/{id}';
+    url: '/api/v2/certifications/{certification_id}';
 };
 
 export type UpdateCertificationResponses = {
@@ -8227,10 +8933,10 @@ export type DeleteChapterData = {
         /**
          * Chapter id
          */
-        id: ChapterId;
+        chapter_id: ChapterId;
     };
     query?: never;
-    url: '/api/v2/chapters/{id}';
+    url: '/api/v2/chapters/{chapter_id}';
 };
 
 export type DeleteChapterErrors = {
@@ -8257,10 +8963,10 @@ export type UpdateChapterData = {
         /**
          * Chapter id
          */
-        id: ChapterId;
+        chapter_id: ChapterId;
     };
     query?: never;
-    url: '/api/v2/chapters/{id}';
+    url: '/api/v2/chapters/{chapter_id}';
 };
 
 export type UpdateChapterErrors = {
@@ -8287,10 +8993,10 @@ export type CreateActivityData = {
         /**
          * Chapter id
          */
-        id: ChapterId;
+        chapter_id: ChapterId;
     };
     query?: never;
-    url: '/api/v2/chapters/{id}/activities';
+    url: '/api/v2/chapters/{chapter_id}/activities';
 };
 
 export type CreateActivityErrors = {
@@ -8321,10 +9027,10 @@ export type MoveChapterData = {
         /**
          * Chapter id
          */
-        id: ChapterId;
+        chapter_id: ChapterId;
     };
     query?: never;
-    url: '/api/v2/chapters/{id}/move';
+    url: '/api/v2/chapters/{chapter_id}/move';
 };
 
 export type MoveChapterErrors = {
@@ -8345,35 +9051,35 @@ export type MoveChapterResponses = {
 
 export type MoveChapterResponse = MoveChapterResponses[keyof MoveChapterResponses];
 
-export type GetRun2Data = {
+export type GetCodeRunData = {
     body?: never;
     path: {
         /**
          * Code run id
          */
-        id: CodeRunId;
+        run_id: CodeRunId;
     };
     query?: never;
-    url: '/api/v2/code-runs/{id}';
+    url: '/api/v2/code-runs/{run_id}';
 };
 
-export type GetRun2Errors = {
+export type GetCodeRunErrors = {
     /**
      * Unknown or not yours
      */
     404: Problem;
 };
 
-export type GetRun2Error = GetRun2Errors[keyof GetRun2Errors];
+export type GetCodeRunError = GetCodeRunErrors[keyof GetCodeRunErrors];
 
-export type GetRun2Responses = {
+export type GetCodeRunResponses = {
     /**
      * Run
      */
     200: CodeRun;
 };
 
-export type GetRun2Response = GetRun2Responses[keyof GetRun2Responses];
+export type GetCodeRunResponse = GetCodeRunResponses[keyof GetCodeRunResponses];
 
 export type LanguagesData = {
     body?: never;
@@ -8468,10 +9174,10 @@ export type DeleteCollectionData = {
         /**
          * Collection id
          */
-        id: CollectionId;
+        collection_id: CollectionId;
     };
     query?: never;
-    url: '/api/v2/collections/{id}';
+    url: '/api/v2/collections/{collection_id}';
 };
 
 export type DeleteCollectionErrors = {
@@ -8506,10 +9212,10 @@ export type GetCollectionData = {
         /**
          * Collection id
          */
-        id: CollectionId;
+        collection_id: CollectionId;
     };
     query?: never;
-    url: '/api/v2/collections/{id}';
+    url: '/api/v2/collections/{collection_id}';
 };
 
 export type GetCollectionErrors = {
@@ -8542,10 +9248,10 @@ export type UpdateCollectionData = {
         /**
          * Collection id
          */
-        id: CollectionId;
+        collection_id: CollectionId;
     };
     query?: never;
-    url: '/api/v2/collections/{id}';
+    url: '/api/v2/collections/{collection_id}';
 };
 
 export type UpdateCollectionErrors = {
@@ -8580,10 +9286,10 @@ export type DeleteCourseUpdateData = {
         /**
          * Course update id
          */
-        id: CourseUpdateId;
+        update_id: CourseUpdateId;
     };
     query?: never;
-    url: '/api/v2/course-updates/{id}';
+    url: '/api/v2/course-updates/{update_id}';
 };
 
 export type DeleteCourseUpdateErrors = {
@@ -8610,10 +9316,10 @@ export type EditCourseUpdateData = {
         /**
          * Course update id
          */
-        id: CourseUpdateId;
+        update_id: CourseUpdateId;
     };
     query?: never;
-    url: '/api/v2/course-updates/{id}';
+    url: '/api/v2/course-updates/{update_id}';
 };
 
 export type EditCourseUpdateErrors = {
@@ -8655,13 +9361,13 @@ export type ListCoursesData = {
          */
         q?: string;
         /**
-         * `updated` (default), `name`, or `progress` (caller's in-progress courses first)
+         * `progress`: the caller's in-progress courses first; default `updated`
          */
-        sort?: string;
+        sort?: CourseListSort;
         /**
-         * `all` | `drafts` | `published` | `recent` | `attention` | `archived` (with `mine=true`)
+         * Default `all`; `archived` needs `mine=true`
          */
-        preset?: string;
+        preset?: CourseListPreset;
     };
     url: '/api/v2/courses';
 };
@@ -8715,10 +9421,10 @@ export type DeleteCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}';
+    url: '/api/v2/courses/{course_id}';
 };
 
 export type DeleteCourseErrors = {
@@ -8749,10 +9455,10 @@ export type GetCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}';
+    url: '/api/v2/courses/{course_id}';
 };
 
 export type GetCourseErrors = {
@@ -8779,10 +9485,10 @@ export type UpdateCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}';
+    url: '/api/v2/courses/{course_id}';
 };
 
 export type UpdateCourseErrors = {
@@ -8813,10 +9519,10 @@ export type CourseArchivePreviewData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/archive-preview';
+    url: '/api/v2/courses/{course_id}/archive-preview';
 };
 
 export type CourseArchivePreviewErrors = {
@@ -8847,10 +9553,10 @@ export type ListCourseAssessmentsData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/assessments';
+    url: '/api/v2/courses/{course_id}/assessments';
 };
 
 export type ListCourseAssessmentsResponses = {
@@ -8868,10 +9574,10 @@ export type MyCourseCertificatesData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/certificates/me';
+    url: '/api/v2/courses/{course_id}/certificates/me';
 };
 
 export type MyCourseCertificatesResponses = {
@@ -8889,10 +9595,10 @@ export type ListCourseCertificationsData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/certifications';
+    url: '/api/v2/courses/{course_id}/certifications';
 };
 
 export type ListCourseCertificationsResponses = {
@@ -8910,10 +9616,10 @@ export type CreateChapterData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/chapters';
+    url: '/api/v2/courses/{course_id}/chapters';
 };
 
 export type CreateChapterErrors = {
@@ -8940,10 +9646,10 @@ export type ListContributorsData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/contributors';
+    url: '/api/v2/courses/{course_id}/contributors';
 };
 
 export type ListContributorsErrors = {
@@ -8970,10 +9676,10 @@ export type AddContributorData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/contributors';
+    url: '/api/v2/courses/{course_id}/contributors';
 };
 
 export type AddContributorErrors = {
@@ -9008,10 +9714,10 @@ export type ApplyContributorData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/contributors/apply';
+    url: '/api/v2/courses/{course_id}/contributors/apply';
 };
 
 export type ApplyContributorErrors = {
@@ -9042,14 +9748,14 @@ export type RemoveContributorData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
         /**
          * Contributor user id
          */
         user_id: UserId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/contributors/{user_id}';
+    url: '/api/v2/courses/{course_id}/contributors/{user_id}';
 };
 
 export type RemoveContributorErrors = {
@@ -9080,14 +9786,14 @@ export type UpdateContributorData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
         /**
          * Contributor user id
          */
         user_id: UserId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/contributors/{user_id}';
+    url: '/api/v2/courses/{course_id}/contributors/{user_id}';
 };
 
 export type UpdateContributorErrors = {
@@ -9118,10 +9824,10 @@ export type GetCurriculumData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/curriculum';
+    url: '/api/v2/courses/{course_id}/curriculum';
 };
 
 export type GetCurriculumErrors = {
@@ -9148,7 +9854,7 @@ export type ListDiscussionsData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: {
         /**
@@ -9161,7 +9867,7 @@ export type ListDiscussionsData = {
          */
         limit?: number | null;
     };
-    url: '/api/v2/courses/{id}/discussions';
+    url: '/api/v2/courses/{course_id}/discussions';
 };
 
 export type ListDiscussionsErrors = {
@@ -9194,10 +9900,10 @@ export type CreateDiscussionData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/discussions';
+    url: '/api/v2/courses/{course_id}/discussions';
 };
 
 export type CreateDiscussionErrors = {
@@ -9224,7 +9930,7 @@ export type GradebookData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: {
         /**
@@ -9236,7 +9942,7 @@ export type GradebookData = {
          */
         limit?: number | null;
     };
-    url: '/api/v2/courses/{id}/gradebook';
+    url: '/api/v2/courses/{course_id}/gradebook';
 };
 
 export type GradebookResponses = {
@@ -9260,10 +9966,10 @@ export type ExportGradebookCsvData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/gradebook/export';
+    url: '/api/v2/courses/{course_id}/gradebook/export';
 };
 
 export type ExportGradebookCsvErrors = {
@@ -9279,7 +9985,7 @@ export type ExportGradebookCsvResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type ExportGradebookCsvResponse = ExportGradebookCsvResponses[keyof ExportGradebookCsvResponses];
@@ -9296,10 +10002,10 @@ export type CourseGradingEventsData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/grading/events';
+    url: '/api/v2/courses/{course_id}/grading/events';
 };
 
 export type CourseGradingEventsErrors = {
@@ -9334,10 +10040,10 @@ export type LearnerCourseStateData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/learner-state';
+    url: '/api/v2/courses/{course_id}/learner-state';
 };
 
 export type LearnerCourseStateErrors = {
@@ -9364,10 +10070,10 @@ export type CourseLifecycleData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/lifecycle';
+    url: '/api/v2/courses/{course_id}/lifecycle';
 };
 
 export type CourseLifecycleErrors = {
@@ -9406,10 +10112,10 @@ export type CourseReadinessData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/readiness';
+    url: '/api/v2/courses/{course_id}/readiness';
 };
 
 export type CourseReadinessErrors = {
@@ -9436,10 +10142,10 @@ export type ListCourseUpdatesData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/updates';
+    url: '/api/v2/courses/{course_id}/updates';
 };
 
 export type ListCourseUpdatesErrors = {
@@ -9466,10 +10172,10 @@ export type CreateCourseUpdateData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/updates';
+    url: '/api/v2/courses/{course_id}/updates';
 };
 
 export type CreateCourseUpdateErrors = {
@@ -9496,10 +10202,10 @@ export type UsergroupsForCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/courses/{id}/usergroups';
+    url: '/api/v2/courses/{course_id}/usergroups';
 };
 
 export type UsergroupsForCourseResponses = {
@@ -9517,10 +10223,10 @@ export type DeleteDiscussionData = {
         /**
          * Discussion id
          */
-        id: DiscussionId;
+        discussion_id: DiscussionId;
     };
     query?: never;
-    url: '/api/v2/discussions/{id}';
+    url: '/api/v2/discussions/{discussion_id}';
 };
 
 export type DeleteDiscussionErrors = {
@@ -9547,10 +10253,10 @@ export type UpdateDiscussionData = {
         /**
          * Discussion id
          */
-        id: DiscussionId;
+        discussion_id: DiscussionId;
     };
     query?: never;
-    url: '/api/v2/discussions/{id}';
+    url: '/api/v2/discussions/{discussion_id}';
 };
 
 export type UpdateDiscussionErrors = {
@@ -9577,10 +10283,10 @@ export type ToggleDislikeData = {
         /**
          * Discussion id
          */
-        id: DiscussionId;
+        discussion_id: DiscussionId;
     };
     query?: never;
-    url: '/api/v2/discussions/{id}/dislike';
+    url: '/api/v2/discussions/{discussion_id}/dislike';
 };
 
 export type ToggleDislikeResponses = {
@@ -9598,10 +10304,10 @@ export type ToggleLikeData = {
         /**
          * Discussion id
          */
-        id: DiscussionId;
+        discussion_id: DiscussionId;
     };
     query?: never;
-    url: '/api/v2/discussions/{id}/like';
+    url: '/api/v2/discussions/{discussion_id}/like';
 };
 
 export type ToggleLikeResponses = {
@@ -9619,7 +10325,7 @@ export type ListRepliesData = {
         /**
          * Discussion id
          */
-        id: DiscussionId;
+        discussion_id: DiscussionId;
     };
     query?: {
         cursor?: DiscussionId | null;
@@ -9628,7 +10334,7 @@ export type ListRepliesData = {
          */
         limit?: number | null;
     };
-    url: '/api/v2/discussions/{id}/replies';
+    url: '/api/v2/discussions/{discussion_id}/replies';
 };
 
 export type ListRepliesResponses = {
@@ -9646,10 +10352,10 @@ export type GetAttemptData = {
         /**
          * Attempt id
          */
-        id: FileAttemptId;
+        attempt_id: FileAttemptId;
     };
     query?: never;
-    url: '/api/v2/file-submission-attempts/{id}';
+    url: '/api/v2/file-submission-attempts/{attempt_id}';
 };
 
 export type GetAttemptResponses = {
@@ -9673,10 +10379,10 @@ export type GradeAttemptData = {
         /**
          * Attempt id
          */
-        id: FileAttemptId;
+        attempt_id: FileAttemptId;
     };
     query?: never;
-    url: '/api/v2/file-submission-attempts/{id}/grade';
+    url: '/api/v2/file-submission-attempts/{attempt_id}/grade';
 };
 
 export type GradeAttemptErrors = {
@@ -9707,10 +10413,10 @@ export type FileUrlData = {
         /**
          * Attached file id
          */
-        id: FileAttemptFileId;
+        file_id: FileAttemptFileId;
     };
     query?: never;
-    url: '/api/v2/file-submission-files/{id}/url';
+    url: '/api/v2/file-submission-files/{file_id}/url';
 };
 
 export type FileUrlResponses = {
@@ -9753,10 +10459,10 @@ export type GetFileSubmissionData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}';
+    url: '/api/v2/file-submissions/{file_submission_id}';
 };
 
 export type GetFileSubmissionResponses = {
@@ -9774,10 +10480,10 @@ export type UpdateFileSubmissionData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}';
+    url: '/api/v2/file-submissions/{file_submission_id}';
 };
 
 export type UpdateFileSubmissionResponses = {
@@ -9795,10 +10501,10 @@ export type GetDraftData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/draft';
+    url: '/api/v2/file-submissions/{file_submission_id}/draft';
 };
 
 export type GetDraftErrors = {
@@ -9819,7 +10525,7 @@ export type GetDraftResponses = {
 
 export type GetDraftResponse = GetDraftResponses[keyof GetDraftResponses];
 
-export type SaveDraftData = {
+export type SaveFileSubmissionDraftData = {
     body: DraftRequest;
     headers?: {
         /**
@@ -9831,13 +10537,13 @@ export type SaveDraftData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/draft';
+    url: '/api/v2/file-submissions/{file_submission_id}/draft';
 };
 
-export type SaveDraftErrors = {
+export type SaveFileSubmissionDraftErrors = {
     /**
      * Not published or attempt cap reached
      */
@@ -9852,16 +10558,16 @@ export type SaveDraftErrors = {
     422: Problem;
 };
 
-export type SaveDraftError = SaveDraftErrors[keyof SaveDraftErrors];
+export type SaveFileSubmissionDraftError = SaveFileSubmissionDraftErrors[keyof SaveFileSubmissionDraftErrors];
 
-export type SaveDraftResponses = {
+export type SaveFileSubmissionDraftResponses = {
     /**
      * Saved
      */
     200: Attempt;
 };
 
-export type SaveDraftResponse = SaveDraftResponses[keyof SaveDraftResponses];
+export type SaveFileSubmissionDraftResponse = SaveFileSubmissionDraftResponses[keyof SaveFileSubmissionDraftResponses];
 
 export type StartDraftData = {
     body?: never;
@@ -9869,10 +10575,10 @@ export type StartDraftData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/draft';
+    url: '/api/v2/file-submissions/{file_submission_id}/draft';
 };
 
 export type StartDraftErrors = {
@@ -9903,10 +10609,10 @@ export type MyAttemptsData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/me';
+    url: '/api/v2/file-submissions/{file_submission_id}/me';
 };
 
 export type MyAttemptsResponses = {
@@ -9924,10 +10630,10 @@ export type PublishFileSubmissionData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/publish';
+    url: '/api/v2/file-submissions/{file_submission_id}/publish';
 };
 
 export type PublishFileSubmissionErrors = {
@@ -9948,13 +10654,13 @@ export type PublishFileSubmissionResponses = {
 
 export type PublishFileSubmissionResponse = PublishFileSubmissionResponses[keyof PublishFileSubmissionResponses];
 
-export type ReviewQueue2Data = {
+export type FileSubmissionReviewQueueData = {
     body?: never;
     path: {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: {
         status?: FileAttemptStatus | null;
@@ -9968,19 +10674,19 @@ export type ReviewQueue2Data = {
          */
         limit?: number | null;
     };
-    url: '/api/v2/file-submissions/{id}/submissions';
+    url: '/api/v2/file-submissions/{file_submission_id}/submissions';
 };
 
-export type ReviewQueue2Responses = {
+export type FileSubmissionReviewQueueResponses = {
     /**
      * Review page
      */
     200: FileReviewPage;
 };
 
-export type ReviewQueue2Response = ReviewQueue2Responses[keyof ReviewQueue2Responses];
+export type FileSubmissionReviewQueueResponse = FileSubmissionReviewQueueResponses[keyof FileSubmissionReviewQueueResponses];
 
-export type ExportCsv2Data = {
+export type ExportFileSubmissionCsvData = {
     body?: never;
     headers?: {
         /**
@@ -9992,20 +10698,20 @@ export type ExportCsv2Data = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/submissions/export';
+    url: '/api/v2/file-submissions/{file_submission_id}/submissions/export';
 };
 
-export type ExportCsv2Responses = {
+export type ExportFileSubmissionCsvResponses = {
     /**
      * CSV
      */
-    200: string;
+    200: Blob | File;
 };
 
-export type ExportCsv2Response = ExportCsv2Responses[keyof ExportCsv2Responses];
+export type ExportFileSubmissionCsvResponse = ExportFileSubmissionCsvResponses[keyof ExportFileSubmissionCsvResponses];
 
 export type SubmitData = {
     body: SubmitRequest;
@@ -10023,10 +10729,10 @@ export type SubmitData = {
         /**
          * File submission id
          */
-        id: FileSubmissionId;
+        file_submission_id: FileSubmissionId;
     };
     query?: never;
-    url: '/api/v2/file-submissions/{id}/submit';
+    url: '/api/v2/file-submissions/{file_submission_id}/submit';
 };
 
 export type SubmitErrors = {
@@ -10494,10 +11200,10 @@ export type GetSubmissionData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}';
+    url: '/api/v2/submissions/{submission_id}';
 };
 
 export type GetSubmissionErrors = {
@@ -10518,7 +11224,7 @@ export type GetSubmissionResponses = {
 
 export type GetSubmissionResponse = GetSubmissionResponses[keyof GetSubmissionResponses];
 
-export type SaveDraft2Data = {
+export type SaveSubmissionDraftData = {
     body: SaveDraftRequest;
     headers: {
         /**
@@ -10530,13 +11236,13 @@ export type SaveDraft2Data = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/draft';
+    url: '/api/v2/submissions/{submission_id}/draft';
 };
 
-export type SaveDraft2Errors = {
+export type SaveSubmissionDraftErrors = {
     /**
      * Gate closed: `TIME_LIMIT_EXPIRED`, `PAST_DUE` or `REMEDIATION_REQUIRED`
      */
@@ -10559,16 +11265,16 @@ export type SaveDraft2Errors = {
     429: Problem;
 };
 
-export type SaveDraft2Error = SaveDraft2Errors[keyof SaveDraft2Errors];
+export type SaveSubmissionDraftError = SaveSubmissionDraftErrors[keyof SaveSubmissionDraftErrors];
 
-export type SaveDraft2Responses = {
+export type SaveSubmissionDraftResponses = {
     /**
      * Saved
      */
     200: StudentSubmission;
 };
 
-export type SaveDraft2Response = SaveDraft2Responses[keyof SaveDraft2Responses];
+export type SaveSubmissionDraftResponse = SaveSubmissionDraftResponses[keyof SaveSubmissionDraftResponses];
 
 export type SubmissionEventsData = {
     body?: never;
@@ -10582,10 +11288,10 @@ export type SubmissionEventsData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/events';
+    url: '/api/v2/submissions/{submission_id}/events';
 };
 
 export type SubmissionEventsErrors = {
@@ -10616,10 +11322,10 @@ export type MyFeedbackData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/feedback';
+    url: '/api/v2/submissions/{submission_id}/feedback';
 };
 
 export type MyFeedbackResponses = {
@@ -10643,10 +11349,10 @@ export type SaveGradeData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/grade';
+    url: '/api/v2/submissions/{submission_id}/grade';
 };
 
 export type SaveGradeErrors = {
@@ -10681,10 +11387,10 @@ export type GradingHistoryData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/grading-history';
+    url: '/api/v2/submissions/{submission_id}/grading-history';
 };
 
 export type GradingHistoryResponses = {
@@ -10702,10 +11408,10 @@ export type ReviewSubmissionData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/review';
+    url: '/api/v2/submissions/{submission_id}/review';
 };
 
 export type ReviewSubmissionErrors = {
@@ -10742,10 +11448,10 @@ export type SubmitSubmissionData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/submit';
+    url: '/api/v2/submissions/{submission_id}/submit';
 };
 
 export type SubmitSubmissionErrors = {
@@ -10788,10 +11494,10 @@ export type ReportViolationData = {
         /**
          * Submission id
          */
-        id: SubmissionId;
+        submission_id: SubmissionId;
     };
     query?: never;
-    url: '/api/v2/submissions/{id}/violations';
+    url: '/api/v2/submissions/{submission_id}/violations';
 };
 
 export type ReportViolationErrors = {
@@ -10834,10 +11540,10 @@ export type RemoveActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/trail/activities/{id}';
+    url: '/api/v2/trail/activities/{activity_id}';
 };
 
 export type RemoveActivityResponses = {
@@ -10855,10 +11561,10 @@ export type AddActivityData = {
         /**
          * Activity id
          */
-        id: ActivityId;
+        activity_id: ActivityId;
     };
     query?: never;
-    url: '/api/v2/trail/activities/{id}';
+    url: '/api/v2/trail/activities/{activity_id}';
 };
 
 export type AddActivityResponses = {
@@ -10876,10 +11582,10 @@ export type RemoveCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/trail/courses/{id}';
+    url: '/api/v2/trail/courses/{course_id}';
 };
 
 export type RemoveCourseErrors = {
@@ -10922,10 +11628,10 @@ export type AddCourseData = {
         /**
          * Course id
          */
-        id: CourseId;
+        course_id: CourseId;
     };
     query?: never;
-    url: '/api/v2/trail/courses/{id}';
+    url: '/api/v2/trail/courses/{course_id}';
 };
 
 export type AddCourseErrors = {
@@ -10997,10 +11703,10 @@ export type DownloadUploadData = {
         /**
          * Upload id
          */
-        id: string;
+        upload_id: string;
     };
     query?: never;
-    url: '/api/v2/uploads/{id}/download';
+    url: '/api/v2/uploads/{upload_id}/download';
 };
 
 export type DownloadUploadErrors = {
@@ -11024,10 +11730,10 @@ export type FinalizeUploadData = {
         /**
          * Upload id
          */
-        id: string;
+        upload_id: string;
     };
     query?: never;
-    url: '/api/v2/uploads/{id}/finalize';
+    url: '/api/v2/uploads/{upload_id}/finalize';
 };
 
 export type FinalizeUploadErrors = {
@@ -11104,10 +11810,10 @@ export type DeleteUsergroupData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}';
+    url: '/api/v2/usergroups/{usergroup_id}';
 };
 
 export type DeleteUsergroupErrors = {
@@ -11134,10 +11840,10 @@ export type GetUsergroupData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}';
+    url: '/api/v2/usergroups/{usergroup_id}';
 };
 
 export type GetUsergroupErrors = {
@@ -11164,10 +11870,10 @@ export type UpdateUsergroupData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}';
+    url: '/api/v2/usergroups/{usergroup_id}';
 };
 
 export type UpdateUsergroupErrors = {
@@ -11194,10 +11900,10 @@ export type RemoveUsergroupCoursesData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/courses';
+    url: '/api/v2/usergroups/{usergroup_id}/courses';
 };
 
 export type RemoveUsergroupCoursesResponses = {
@@ -11215,10 +11921,10 @@ export type ListUsergroupCoursesData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/courses';
+    url: '/api/v2/usergroups/{usergroup_id}/courses';
 };
 
 export type ListUsergroupCoursesResponses = {
@@ -11236,10 +11942,10 @@ export type AddUsergroupCoursesData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/courses';
+    url: '/api/v2/usergroups/{usergroup_id}/courses';
 };
 
 export type AddUsergroupCoursesResponses = {
@@ -11257,10 +11963,10 @@ export type RemoveUsergroupMembersData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/members';
+    url: '/api/v2/usergroups/{usergroup_id}/members';
 };
 
 export type RemoveUsergroupMembersResponses = {
@@ -11278,10 +11984,10 @@ export type ListUsergroupMembersData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/members';
+    url: '/api/v2/usergroups/{usergroup_id}/members';
 };
 
 export type ListUsergroupMembersResponses = {
@@ -11299,10 +12005,10 @@ export type AddUsergroupMembersData = {
         /**
          * Usergroup id
          */
-        id: UsergroupId;
+        usergroup_id: UsergroupId;
     };
     query?: never;
-    url: '/api/v2/usergroups/{id}/members';
+    url: '/api/v2/usergroups/{usergroup_id}/members';
 };
 
 export type AddUsergroupMembersResponses = {

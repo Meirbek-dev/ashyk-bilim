@@ -20,9 +20,6 @@
     "enforceFromPhase": 7,
     "reason": "Phase 1.2b lays out the whole route tree before the slices exist; each slice replaces its UnderConstruction routes. The gate lists them and turns red from phase 7 (spec 12, Ф7: no stubs at cutover)."
   },
-  "contractReportOnly": {
-    "reason": "Server lane L-2 (S-01 contract hygiene) is in progress; remove this entry when it lands so G-08 enforces again."
-  },
   "suppressions": [],
   "i18nSameAsRu": [
     {

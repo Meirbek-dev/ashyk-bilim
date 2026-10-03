@@ -11,6 +11,9 @@ const profile = (patch: Partial<Profile>): Profile => ({
   created_at_unix: 0,
   daily_xp_earned: 0,
   learning_streak: 0,
+  last_learning_at_unix: null,
+  last_login_at_unix: null,
+  last_xp_award_at_unix: null,
   level: 3,
   level_progress_percent: 37.5,
   login_streak: 0,
@@ -32,6 +35,7 @@ const entry = (user_id: string, rank: number): LeaderboardEntry => ({
   rank,
   display_name: user_id,
   username: user_id,
+  avatar_key: null,
   level: 1,
   total_xp: 100 - rank,
 })

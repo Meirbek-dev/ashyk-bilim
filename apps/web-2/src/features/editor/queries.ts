@@ -3,5 +3,5 @@ import { createBlockMutation, listBlocksQueryKey } from '#/shared/api/gen/@tanst
 /** Claims a finalized upload as a file block of the activity (otherwise storage reaps the object). */
 export const createBlockOptions = (activityId: string) => ({
   ...createBlockMutation(),
-  meta: { invalidates: [listBlocksQueryKey({ path: { id: activityId } })] },
+  meta: { invalidates: [listBlocksQueryKey({ path: { activity_id: activityId } })] },
 })

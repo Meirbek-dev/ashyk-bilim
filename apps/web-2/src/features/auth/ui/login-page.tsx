@@ -16,7 +16,7 @@ import { AuthPage } from './auth-page'
 import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
 
-const defaultValues: LoginRequest = { login: '', password: '', totp_code: null }
+const defaultValues: LoginRequest = { login: '', password: '' }
 
 /** Password sign-in; a 401 `mfa-required` turns the form into the code step and the same sign-in is sent again. */
 export function LoginPage() {
@@ -29,7 +29,7 @@ export function LoginPage() {
     defaultValues,
     onSubmit: body =>
       login.mutateAsync(
-        { body: totpStep ? body : { ...body, totp_code: null } },
+        { body: totpStep ? body : { ...body, totp_code: undefined } },
         {
           onSuccess: () => navigate({ href: redirect }),
           onError: error => {

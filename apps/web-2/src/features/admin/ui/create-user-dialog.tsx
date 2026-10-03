@@ -29,7 +29,7 @@ export function CreateUserDialog() {
     onSubmit: body =>
       create
         .mutateAsync(
-          { body: { ...body, password: body.password || null } },
+          { body: { ...body, password: body.password || undefined } },
           {
             onSuccess: async user => {
               setOpen(false)

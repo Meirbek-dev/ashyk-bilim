@@ -5,7 +5,7 @@ import { locales, type Locale } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
 import { checkUpload } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
-import type { Profile, SessionSummary } from '#/shared/api/gen/types.gen'
+import type { Locale as ProfileLocale, Profile, SessionSummary } from '#/shared/api/gen/types.gen'
 import { vNotificationPreferences, vPrivacyPreferences } from '#/shared/api/gen/valibot.gen'
 
 /** Public storage keys (`avatar_key`...) are served anonymously at /content/<key>. */
@@ -23,9 +23,9 @@ export function avatarProblem(file: { size: number; type: string }): string | nu
     : m.settings_avatar_wrong_type()
 }
 
-/** `UserProfile.locale` still takes region tags (D-03 makes it the `ru` / `kk` / `en` enum). */
-const profileLocales: Record<Locale, string> = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' }
-export const profileLocale = (locale: Locale): string => profileLocales[locale]
+/** `UserProfile.locale` takes region tags (D-03 makes it the `ru` / `kk` / `en` enum). */
+const profileLocales: Record<Locale, ProfileLocale> = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' }
+export const profileLocale = (locale: Locale): ProfileLocale => profileLocales[locale]
 
 /** The appearance form: theme slug, mode and interface language. */
 export const vAppearance = v.object({ theme: v.string(), mode: v.picklist(MODES), locale: v.picklist(locales) })
@@ -40,8 +40,11 @@ export const startTheme = (profileTheme: string | null | undefined, shown: strin
 /** The two switches of the notifications page. An unset preference is on (the server's default). */
 export type GamificationSwitches = { xpGain: boolean; showOnLeaderboard: boolean }
 
-/** `Profile.preferences` is untyped in the contract: read its sections with the generated section schemas. */
-export function readSwitches(preferences: Profile['preferences']): GamificationSwitches {
+/**
+ * The server passes stored `Profile.preferences` through as JSON (legacy rows may hold anything): read its sections
+ * with the generated section schemas.
+ */
+export function readSwitches(preferences: { [K in keyof Profile['preferences']]?: unknown }): GamificationSwitches {
   const notifications = v.safeParse(vNotificationPreferences, preferences['notifications'])
   const privacy = v.safeParse(vPrivacyPreferences, preferences['privacy'])
   return {

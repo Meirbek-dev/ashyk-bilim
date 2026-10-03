@@ -22,13 +22,17 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
       description: '',
       allowed_actions: [],
       archived_at_unix: archived ? 1 : null,
+      archived_by: null,
       contributor_ids: [],
+      creator_id: null,
       created_at_unix: 0,
       updated_at_unix: 0,
       learnings: [],
       open_to_contributors: false,
       public: true,
       tags: [],
+      thumbnail_key: null,
+      thumbnail_video_key: null,
     },
   }
 }
@@ -36,7 +40,6 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
 describe('learning model', () => {
   test('B-LRN-02 the state follows the server rule: 100 % is completed, no progress row or 0 % is not started', () => {
     expect(runState({ progress_pct: null })).toBe('not_started')
-    expect(runState({})).toBe('not_started')
     expect(runState({ progress_pct: 0 })).toBe('not_started')
     expect(runState({ progress_pct: 0.5 })).toBe('in_progress')
     expect(runState({ progress_pct: 99.9 })).toBe('in_progress')

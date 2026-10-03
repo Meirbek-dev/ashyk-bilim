@@ -17,6 +17,8 @@ function render(learning_streak: number, last_learning_at_unix: number) {
       daily_xp_earned: 0,
       learning_streak,
       last_learning_at_unix,
+      last_login_at_unix: null,
+      last_xp_award_at_unix: null,
       level: 1,
       level_progress_percent: 0,
       login_streak: 1,
@@ -33,6 +35,7 @@ function render(learning_streak: number, last_learning_at_unix: number) {
     },
     recent_transactions: [],
     leaderboard: { entries: [], total_participants: 0 },
+    user_rank: null,
   }
   client.setQueryData(dashboardQueryKey(), dashboard)
   return renderInRouter(

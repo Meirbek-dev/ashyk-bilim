@@ -17,7 +17,7 @@ import {
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { Contributor, CourseId, SessionInfo, UserId } from '#/shared/api/gen/types.gen'
 
-const byId = (id: CourseId) => ({ path: { id } })
+const byId = (id: CourseId) => ({ path: { course_id: id } })
 
 export const courseOptions = (id: CourseId) => getCourseOptions(byId(id))
 export const curriculumOptions = (id: CourseId) => getCurriculumOptions(byId(id))

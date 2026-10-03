@@ -20,7 +20,7 @@ export function ContributorApplication({ course, userId }: { course: Course; use
   const withdraw = useMutation(withdrawOptions(queryClient, course.id, userId))
   const state = application(course, roster.data, userId)
   if (!state) return null
-  const path = { id: course.id }
+  const path = { course_id: course.id }
   const onApply = () => apply.mutate({ path }, { onSuccess: () => toast(m.course_applied()) })
   const onWithdraw = () =>
     withdraw.mutate(

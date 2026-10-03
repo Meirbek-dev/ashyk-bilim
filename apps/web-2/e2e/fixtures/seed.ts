@@ -97,7 +97,7 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   if (!course) throw new Error('"E2E seed course" is missing: run `ashyq admin seed-e2e`')
   const curriculum = await getCurriculum({
     client,
-    path: { id: course.id },
+    path: { course_id: course.id },
     headers: cookieOf(teacher),
     throwOnError: true,
   })
@@ -105,8 +105,14 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   if (!activity) throw new Error('the seed course has no activity')
   const collectionId = await seedCollection(client, teacher, course.id)
   const actionsOf = async (account: Account) =>
-    (await getCollection({ client, path: { id: collectionId }, headers: cookieOf(account), throwOnError: true })).data
-      .allowed_actions
+    (
+      await getCollection({
+        client,
+        path: { collection_id: collectionId },
+        headers: cookieOf(account),
+        throwOnError: true,
+      })
+    ).data.allowed_actions
   // No seeded certificate or submission yet: the routes are stubs, any well-formed id renders them.
   const placeholder = '00000000-0000-4000-8000-000000000000'
   return {

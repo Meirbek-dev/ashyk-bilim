@@ -1,3 +1,4 @@
+import type { BlockType } from '#/shared/api/gen/types.gen'
 import type { UploadPurpose } from '#/shared/api/upload'
 
 /** The block types that hold an uploaded file, with their upload purpose and `createBlock` type. */
@@ -5,7 +6,7 @@ export const FILE_BLOCKS = {
   blockImage: { purpose: 'block-image', blockType: 'image' },
   blockPDF: { purpose: 'block-pdf', blockType: 'pdf' },
   blockVideo: { purpose: 'block-video', blockType: 'video' },
-} as const satisfies Record<string, { purpose: UploadPurpose; blockType: string }>
+} as const satisfies Record<string, { purpose: UploadPurpose; blockType: BlockType }>
 
 export type FileBlock = keyof typeof FILE_BLOCKS
 

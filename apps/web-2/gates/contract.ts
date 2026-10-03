@@ -23,11 +23,14 @@ const isBareObject = (schema: Json): boolean => {
   return objectType && !isObject(schema['properties']) && !isObject(schema['additionalProperties'])
 }
 
-// The one allowed optional+nullable property: a request field whose explicit `null` means "clear" (absent = keep),
-// marked `x-null-clears: true` by the server, in a schema reachable only from request bodies. Responses never.
+// Optional+nullable is allowed in two places only: a request field whose explicit `null` means "clear" (absent = keep),
+// marked `x-null-clears: true` by the server, in a schema reachable only from request bodies; and a key of a stored JSON
+// document (schema marked `x-stored-json: true`) whose real rows have it both absent and `null`.
 let requestOnly = new Set<string>()
-const clearsOnRequest = (property: Json, pointer: string) =>
-  property['x-null-clears'] === true && requestOnly.has(/^\/components\/schemas\/([^/]+)/.exec(pointer)?.[1] ?? '')
+let storedJson = new Set<string>()
+const componentOf = (pointer: string) => /^\/components\/schemas\/([^/]+)/.exec(pointer)?.[1] ?? ''
+const optionalNullableAllowed = (property: Json, pointer: string) =>
+  (property['x-null-clears'] === true && requestOnly.has(componentOf(pointer))) || storedJson.has(componentOf(pointer))
 
 function refsOf(node: unknown, schemas: Json, seen: Set<string>): Set<string> {
   if (Array.isArray(node)) node.forEach(item => refsOf(item, schemas, seen))
@@ -52,7 +55,7 @@ function checkProperties(schema: Json, pointer: string, findings: Finding[]): vo
     const at = `${FILE}#${pointer}/properties/${name}`
     if (!hasType(property))
       findings.push({ file: at, rule: 'contract-untyped', fix: 'give the property a type or a named schema' })
-    if (!required.includes(name) && isNullable(property) && !clearsOnRequest(property, pointer)) {
+    if (!required.includes(name) && isNullable(property) && !optionalNullableAllowed(property, pointer)) {
       findings.push({
         file: at,
         rule: 'contract-optional-nullable',
@@ -106,6 +109,9 @@ export function contract(): Finding[] {
     new Set(),
   )
   requestOnly = new Set([...fromRequests].filter(name => !fromResponses.has(name)))
+  storedJson = new Set(
+    Object.keys(schemas).filter(name => isObject(schemas[name]) && schemas[name]['x-stored-json'] === true),
+  )
   for (const item of Object.values(paths)) {
     if (!isObject(item)) continue
     for (const operation of Object.values(item)) {

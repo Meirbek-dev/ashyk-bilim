@@ -30,7 +30,8 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; group: (owner?:
       made.push([data.id, owner])
       return data
     })
-    for (const [id, owner] of made) await deleteUsergroup({ client: api, path: { id }, headers: cookie(seed, owner) })
+    for (const [id, owner] of made)
+      await deleteUsergroup({ client: api, path: { usergroup_id: id }, headers: cookie(seed, owner) })
   },
 })
 
@@ -50,7 +51,12 @@ test('B-ADM-17 a teacher lists groups and makes one in the dialog', async ({ pag
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(page.getByText(m.admin_group_created({}, ru))).toBeVisible()
   const id = new URL(page.url()).pathname.split('/').at(-1) ?? ''
-  await deleteUsergroup({ client: api, path: { id }, headers: cookie(seed, 'teacher'), throwOnError: true })
+  await deleteUsergroup({
+    client: api,
+    path: { usergroup_id: id },
+    headers: cookie(seed, 'teacher'),
+    throwOnError: true,
+  })
 })
 
 test('B-ADM-18 the group page edits its name; an unknown group is not found', async ({ page, signInAs, group }) => {
@@ -98,7 +104,7 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   const student = seed.accounts.student.session.user_id
   await addUsergroupMembers({
     client: api,
-    path: { id: others.id },
+    path: { usergroup_id: others.id },
     body: { user_ids: [student] },
     headers: cookie(seed, 'admin'),
   })

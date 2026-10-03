@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { Contributor, Course, LearnerCourseState } from '#/shared/api/gen/types.gen'
+import type { Activity, Contributor, Course, LearnerCourseState } from '#/shared/api/gen/types.gen'
 
 import { application, authorNames, curriculumSyllabus, outlineSyllabus, primaryAction } from './course'
 
@@ -10,13 +10,18 @@ const course = (patch: Partial<Course> = {}): Course => ({
   about: '',
   description: '',
   allowed_actions: [],
+  archived_at_unix: null,
+  archived_by: null,
   contributor_ids: [],
+  creator_id: null,
   created_at_unix: 0,
   updated_at_unix: 0,
   learnings: [],
   open_to_contributors: false,
   public: true,
   tags: [],
+  thumbnail_key: null,
+  thumbnail_video_key: null,
   ...patch,
 })
 
@@ -26,16 +31,25 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
   public: true,
   enrolled: false,
   enrollment_state: 'not_enrolled',
-  permissions: { can_access: true, can_discover: true, can_enroll: true },
+  permissions: { can_access: true, can_discover: true, can_enroll: true, denial_reason: null },
   progress: {
     completed_required_count: 0,
     total_required_count: 1,
     missing_required_count: 1,
     needs_grading_count: 0,
     progress_pct: 0,
+    completed_at_unix: null,
+    grade_average: null,
   },
-  certificate: { configured: false, eligible: false, issued: false },
-  next_action: { id: 'enroll', label: 'Start course', reason: 'not_enrolled', enabled: true },
+  certificate: { configured: false, eligible: false, issued: false, href: null, verify_code: null },
+  next_action: {
+    id: 'enroll',
+    label: 'Start course',
+    reason: 'not_enrolled',
+    enabled: true,
+    activity_id: null,
+    href: null,
+  },
   outline: [
     {
       id: 'ch1',
@@ -48,7 +62,11 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
           activity_type: 'dynamic',
           allowed_actions: [],
           available: true,
+          blocked_reason: null,
           complete: true,
+          due_at_unix: null,
+          passed: null,
+          score: null,
           is_late: false,
           required: true,
           state: 'complete',
@@ -63,6 +81,7 @@ const row = (patch: Partial<Contributor>): Contributor => ({
   user_id: 'u1',
   username: 'u1',
   display_name: 'User',
+  avatar_key: null,
   role: 'contributor',
   status: 'active',
   created_at_unix: 0,
@@ -76,12 +95,14 @@ describe('primary action', () => {
 
   test('B-CRS-04 a signed-in user who may enrol gets "Enrol"; one who may not gets nothing', () => {
     expect(primaryAction(course(), state())).toEqual({ kind: 'enroll' })
-    const closed = state({ permissions: { can_access: true, can_discover: true, can_enroll: false } })
+    const closed = state({
+      permissions: { can_access: true, can_discover: true, can_enroll: false, denial_reason: null },
+    })
     expect(primaryAction(course(), closed)).toBeNull()
   })
 
   test("B-CRS-05 an enrolled learner continues at the server's next activity, or opens the summary", () => {
-    const next = { label: 'Continue course', reason: 'next_required', enabled: true, activity_id: 'a2' }
+    const next = { label: 'Continue course', reason: 'next_required', enabled: true, activity_id: 'a2', href: null }
     const enrolled = state({
       enrolled: true,
       enrollment_state: 'in_progress',
@@ -91,13 +112,22 @@ describe('primary action', () => {
     const done = state({
       enrolled: true,
       enrollment_state: 'completed',
-      next_action: { id: 'review_completion', label: 'Review', reason: 'complete', enabled: true },
+      next_action: {
+        id: 'review_completion',
+        label: 'Review',
+        reason: 'complete',
+        enabled: true,
+        activity_id: null,
+        href: null,
+      },
     })
     expect(primaryAction(course(), done)).toEqual({ kind: 'complete', action: 'review_completion' })
   })
 
   test('B-CRS-06 staff who may not enrol get the workspace, never "Enrol"', () => {
-    const staff = state({ permissions: { can_access: true, can_discover: true, can_enroll: false } })
+    const staff = state({
+      permissions: { can_access: true, can_discover: true, can_enroll: false, denial_reason: null },
+    })
     expect(primaryAction(course({ allowed_actions: ['update'] }), staff)).toEqual({ kind: 'workspace' })
   })
 })
@@ -161,7 +191,7 @@ describe('authors and co-authorship', () => {
   })
 })
 
-function activity(id: string) {
+function activity(id: string): Activity {
   return {
     id,
     name: id,

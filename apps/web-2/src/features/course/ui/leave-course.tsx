@@ -15,7 +15,7 @@ export function LeaveCourse({ course }: { course: Course }) {
   const leave = useMutation(leaveOptions(course.id))
   const confirm = () =>
     leave.mutate(
-      { path: { id: course.id } },
+      { path: { course_id: course.id } },
       {
         onSuccess: () => {
           setOpen(false)

@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // Start, Vite, Vitest and Playwright entries are detected by knip's plugins.
-  "entry": ["src/routes/**/*.tsx", "gates/*.ts"],
+  "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs"],
   "project": ["src/**/*.{ts,tsx}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
   "ignore": ["src/shared/api/gen/**"],
   "ignoreDependencies": [
@@ -11,5 +11,7 @@
     "tailwindcss",
     "@fontsource-variable/inter",
     "@fontsource-variable/geist-mono",
+    // Resolved by the codegen module hook (gates/ts6-hooks.mjs), not by an import statement.
+    "typescript-6",
   ],
 }

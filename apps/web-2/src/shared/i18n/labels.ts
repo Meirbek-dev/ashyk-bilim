@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { CollectionAction } from '#/shared/api/gen/types.gen'
+import type { ActivityType, CollectionAction } from '#/shared/api/gen/types.gen'
 
 // Spec 7.9: every enum the UI renders has one exhaustive map here. A new value in the contract without a text is a
 // type error at the map, not a raw value on screen. Status badges add their tone next to the label (DESIGN 8).
@@ -28,20 +28,9 @@ export const collectionVisibility = (collection: { public: boolean }): Collectio
   collection.public ? 'public' : 'private'
 
 /**
- * The closed activity-type set of the server (`TYPE_SUBTYPES` in the catalog; the contract types it as a string).
- * `custom` has no row in DESIGN 3: it borrows the page token with its own icon.
+ * DESIGN 3: the one table that maps an activity type to its icon, label and color token (icon ink only). `custom` has
+ * no row in DESIGN 3: it borrows the page token with its own icon.
  */
-export type ActivityType =
-  | 'dynamic'
-  | 'video'
-  | 'document'
-  | 'file_submission'
-  | 'quiz'
-  | 'exam'
-  | 'code_challenge'
-  | 'custom'
-
-/** DESIGN 3: the one table that maps an activity type to its icon, label and color token (icon ink only). */
 export const activityTypeMeta = {
   dynamic: { icon: NotebookText, label: m.activity_type_dynamic, ink: 'text-activity-page' },
   video: { icon: Video, label: m.activity_type_video, ink: 'text-activity-video' },
@@ -55,7 +44,10 @@ export const activityTypeMeta = {
 
 const isActivityType = (value: string): value is ActivityType => Object.hasOwn(activityTypeMeta, value)
 
-/** The contract's `activity_type` string as a known type; a value the table does not know reads as `custom`. */
+/**
+ * `ActivityState.activity_type` (the learner outline) is still a string in the contract: a value the table does not
+ * know reads as `custom`.
+ */
 export const activityType = (value: string): ActivityType => (isActivityType(value) ? value : 'custom')
 
 export const collectionActionLabels = {

@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 
-import type { Course, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Course, CourseListSort, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, type Section, visibleSections, type Workspace } from '#/shared/auth/access'
 
 /** Free text in the URL: trimmed, and blank is "no search", so `?q=` and no `q` are the same page. */
@@ -13,8 +13,8 @@ const queryText = v.optional(
 )
 
 /** `GET /courses?sort=`: the server's three orders (anything else is its `updated`). */
-const COURSE_SORTS = ['progress', 'updated', 'name'] as const
-export type CourseSort = (typeof COURSE_SORTS)[number]
+export type CourseSort = CourseListSort
+const COURSE_SORTS = ['progress', 'updated', 'name'] as const satisfies readonly CourseSort[]
 const courseSort = v.picklist(COURSE_SORTS)
 
 /** /courses?q=&sort=. An unknown sort is dropped, i.e. the default (B-CAT-06). */

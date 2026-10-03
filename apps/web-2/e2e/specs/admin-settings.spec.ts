@@ -77,7 +77,8 @@ test('B-ADM-15 the XP rules save, survive a reload and keep the overrides the fo
   seed,
 }) => {
   const { data: before } = await getConfig({ client: api, headers: cookie(seed), throwOnError: true })
-  const restore = { daily_xp_limit: before.daily_xp_limit ?? null, rewards: before.rewards }
+  // A `null` limit is the platform default: the `PUT` leaves it out.
+  const restore = { daily_xp_limit: before.daily_xp_limit ?? undefined, rewards: before.rewards }
   await updateConfig({
     client: api,
     body: { ...restore, rewards: { ...before.rewards, admin_award: 3 } },

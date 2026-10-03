@@ -1,6 +1,8 @@
 import { m } from '#/paraglide/messages'
 
-import type { RewardSource, UserStatus } from '../model/admin'
+import type { UserStatus } from '#/shared/api/gen/types.gen'
+
+import type { RewardSource } from '../model/admin'
 
 // Exhaustive maps (spec 7.9, DESIGN 8): a new value without a text is a type error here.
 

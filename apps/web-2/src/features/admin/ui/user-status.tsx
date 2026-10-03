@@ -9,7 +9,6 @@ import { Alert } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
 import { ConfirmDialog } from '#/shared/ui/templates/confirm-dialog'
 
-import { userStatus } from '../model/admin'
 import { setUserStatusOptions } from '../queries'
 
 /**
@@ -35,7 +34,7 @@ export function UserStatus({ user }: { user: AdminUser }) {
       <h3 id="user-access" className="font-medium">
         {m.admin_user_access_title()}
       </h3>
-      {userStatus(user) === 'active' ? (
+      {user.status === 'active' ? (
         <ConfirmDialog
           open={confirming}
           onOpenChange={next => {

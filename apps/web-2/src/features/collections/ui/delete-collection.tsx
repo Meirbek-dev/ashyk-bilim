@@ -18,7 +18,7 @@ export function DeleteCollection({ collection }: { collection: Collection }) {
   const remove = useMutation(deleteCollectionOptions())
   const confirm = () =>
     remove.mutate(
-      { path: { id: collection.id }, headers: { 'If-Match': collection.version } },
+      { path: { collection_id: collection.id }, headers: { 'If-Match': collection.version } },
       {
         onSuccess: async () => {
           setOpen(false)

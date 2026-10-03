@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { Role } from '#/shared/api/gen/types.gen'
 
-import { permissionLines, permissionsByResource, rulesBody, rulesForm, takenField, userStatus } from './admin'
+import { permissionLines, permissionsByResource, rulesBody, rulesForm, takenField } from './admin'
 import { roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
@@ -60,11 +60,6 @@ describe('admin model', () => {
     expect(takenField(new Error('network'))).toBeNull()
   })
 
-  test('B-ADM-05 a status other than "disabled" reads as active', () => {
-    expect(userStatus({ status: 'disabled' })).toBe('disabled')
-    expect(userStatus({ status: 'active' })).toBe('active')
-  })
-
   test('B-ADM-15 the rules form keeps overrides it does not show and drops cleared ones', () => {
     const current = {
       daily_xp_limit: 300,
@@ -80,7 +75,7 @@ describe('admin model', () => {
       current,
     )
     expect(body).toEqual({
-      daily_xp_limit: null,
+      daily_xp_limit: undefined,
       rewards: { course_completion: 250, admin_award: 5, quiz_completion: 40 },
     })
   })

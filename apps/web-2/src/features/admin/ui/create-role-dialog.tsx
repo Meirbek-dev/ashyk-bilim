@@ -24,7 +24,7 @@ export function CreateRoleDialog() {
     onSubmit: ({ priority, description, ...rest }) =>
       create
         .mutateAsync(
-          { body: { ...rest, description: description.trim() || null, priority: Number(priority) } },
+          { body: { ...rest, description: description.trim() || undefined, priority: Number(priority) } },
           {
             onSuccess: async () => {
               setOpen(false)

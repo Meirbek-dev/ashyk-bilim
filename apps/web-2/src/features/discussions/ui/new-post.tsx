@@ -21,8 +21,8 @@ export function NewPost({ courseId, parentId }: { courseId: CourseId; parentId?:
   const submit = (content: string) =>
     create.mutateAsync(
       {
-        path: { id: courseId },
-        body: { content, parent_id: parentId ?? null },
+        path: { course_id: courseId },
+        body: { content, parent_id: parentId },
         headers: { 'Idempotency-Key': idempotency.key },
       },
       {

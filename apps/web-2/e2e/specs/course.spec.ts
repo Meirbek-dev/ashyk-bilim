@@ -48,21 +48,21 @@ const test = base.extend<{
       if (!empty) {
         const chapter = await createChapter({
           client: api,
-          path: { id: course.id },
+          path: { course_id: course.id },
           body: { name: 'Глава первая' },
           headers: teacher,
           throwOnError: true,
         })
         const created = await createActivity({
           client: api,
-          path: { id: chapter.data.id },
+          path: { chapter_id: chapter.data.id },
           body: { name: 'Вводная страница', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
           headers: teacher,
           throwOnError: true,
         })
         const published = await updateActivity({
           client: api,
-          path: { id: created.data.id },
+          path: { activity_id: created.data.id },
           body: { published: true },
           headers: teacher,
           throwOnError: true,
@@ -71,17 +71,17 @@ const test = base.extend<{
         // Publishing needs a published activity (readiness): an empty course stays a draft its author sees.
         await courseLifecycle({
           client: api,
-          path: { id: course.id },
+          path: { course_id: course.id },
           body: { action: 'publish' },
           headers: teacher,
           throwOnError: true,
         })
       }
       if (Object.keys(patch).length === 0) return { course, activity }
-      const updated = await updateCourse({ client: api, path: { id: course.id }, body: patch, headers: teacher })
+      const updated = await updateCourse({ client: api, path: { course_id: course.id }, body: patch, headers: teacher })
       return { course: updated.data ?? course, activity }
     })
-    for (const id of made) await deleteCourse({ client: api, path: { id }, headers: teacher })
+    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers: teacher })
   },
 })
 
@@ -142,7 +142,8 @@ test("B-CRS-05 an enrolled learner continues at the server's next activity", asy
   seed,
 }) => {
   const made = await course()
-  await addCourse({ client: api, path: { id: made.course.id }, headers: cookie(seed, 'student'), throwOnError: true })
+  const path = { course_id: made.course.id }
+  await addCourse({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toHaveAttribute(
@@ -171,7 +172,8 @@ test('B-CRS-07 leaving asks with the course name, starts on Cancel, then offers 
   seed,
 }) => {
   const made = await course()
-  await addCourse({ client: api, path: { id: made.course.id }, headers: cookie(seed, 'student'), throwOnError: true })
+  const path = { course_id: made.course.id }
+  await addCourse({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   const confirm = page.getByRole('alertdialog', { name: m.course_leave_title({ name: made.course.name }, ru) })
@@ -212,8 +214,9 @@ test('B-CRS-09 the syllabus lists chapters and typed activities, or says there a
 test('B-CRS-10 progress and done marks come from the server', async ({ page, signInAs, course, api, seed }) => {
   const made = await course()
   const student = cookie(seed, 'student')
-  await addCourse({ client: api, path: { id: made.course.id }, headers: student, throwOnError: true })
-  await addActivity({ client: api, path: { id: made.activity?.id ?? '' }, headers: student, throwOnError: true })
+  await addCourse({ client: api, path: { course_id: made.course.id }, headers: student, throwOnError: true })
+  const path = { activity_id: made.activity?.id ?? '' }
+  await addActivity({ client: api, path, headers: student, throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   await expect(page.getByText(m.course_progress_count({ done: 1, total: 1 }, ru))).toBeVisible()
@@ -248,7 +251,7 @@ test('B-CRS-11 a user applies to co-author, withdraws, and learns when it was al
   const studentId = seed.accounts.student.session.user_id
   await removeContributor({
     client: api,
-    path: { id: made.course.id, user_id: studentId },
+    path: { course_id: made.course.id, user_id: studentId },
     headers: cookie(seed, 'teacher'),
     throwOnError: true,
   })
@@ -267,7 +270,7 @@ test('B-CRS-12 announcements are listed for everyone, or the tab says there are 
   const empty = await course({ empty: true })
   await createCourseUpdate({
     client: api,
-    path: { id: made.course.id },
+    path: { course_id: made.course.id },
     body: { title: 'Новый модуль', content: 'Добавили **главу**.' },
     headers: cookie(seed, 'teacher'),
     throwOnError: true,

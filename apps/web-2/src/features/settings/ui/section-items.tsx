@@ -70,9 +70,7 @@ const experience: Editor = (form, s) => (
     {list => (
       <ItemList
         count={list.state.value.length}
-        onAdd={() =>
-          list.pushValue({ title: '', organization: '', startDate: '', endDate: null, current: false, description: '' })
-        }
+        onAdd={() => list.pushValue({ title: '', organization: '', startDate: '', current: false, description: '' })}
         onRemove={i => list.removeValue(i)}
         fields={i => (
           <>
@@ -106,9 +104,7 @@ const education: Editor = (form, s) => (
     {list => (
       <ItemList
         count={list.state.value.length}
-        onAdd={() =>
-          list.pushValue({ institution: '', degree: '', field: '', startDate: '', endDate: null, current: false })
-        }
+        onAdd={() => list.pushValue({ institution: '', degree: '', field: '', startDate: '', current: false })}
         onRemove={i => list.removeValue(i)}
         fields={i => (
           <>

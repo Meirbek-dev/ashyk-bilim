@@ -33,11 +33,6 @@ export const canRole = (role: Pick<Role, 'allowed_actions'>, action: RoleAction)
 export const canGroup = (group: Pick<Usergroup, 'allowed_actions'>, action: UsergroupAction) =>
   group.allowed_actions.includes(action)
 
-/** `AdminUser.status` is a string documented as `active` / `disabled` (SPEC: waits for an enum). */
-export type UserStatus = 'active' | 'disabled'
-export const userStatus = (user: Pick<AdminUser, 'status'>): UserStatus =>
-  user.status === 'disabled' ? 'disabled' : 'active'
-
 /** The 409 codes of `POST /users` and `POST /rbac/roles` that name a field: shown under it, not as the form message. */
 export function takenField(error: unknown): 'username' | 'email' | 'slug' | null {
   if (!(error instanceof ApiError)) return null
@@ -113,7 +108,7 @@ export const rulesFormSchema = v.object({
 })
 export type RulesForm = v.InferOutput<typeof rulesFormSchema>
 
-const asText = (value: unknown) => (typeof value === 'number' ? String(value) : '')
+const asText = (value: number | null | undefined) => (value == null ? '' : String(value))
 
 /** The stored overrides as form text; a source without an override is blank. */
 export const rulesForm = (config: GamificationConfig): RulesForm => ({
@@ -126,11 +121,12 @@ export const rulesForm = (config: GamificationConfig): RulesForm => ({
  * this web does not know yet) are carried over; a blank field drops its override.
  */
 export function rulesBody(form: RulesForm, current: GamificationConfig): UpdateGamificationConfigRequest {
-  const rewards: Record<string, unknown> = { ...current.rewards }
+  const rewards = { ...current.rewards }
   for (const source of REWARD_SOURCES) {
     const text = form.rewards[source]
     if (text) rewards[source] = Number(text)
     else delete rewards[source]
   }
-  return { daily_xp_limit: form.daily_xp_limit ? Number(form.daily_xp_limit) : null, rewards }
+  // An absent limit is the platform default (`PUT` replaces the whole config).
+  return { daily_xp_limit: form.daily_xp_limit ? Number(form.daily_xp_limit) : undefined, rewards }
 }

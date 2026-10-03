@@ -9,6 +9,8 @@ const post = (id: string, patch: Partial<Discussion> = {}): Discussion => ({
   course_id: 'c1',
   content: 'text',
   allowed_actions: [],
+  author: null,
+  parent_id: null,
   can_delete: false,
   can_moderate: false,
   can_update: false,

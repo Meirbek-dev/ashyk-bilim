@@ -47,21 +47,24 @@ const blankSections: { [T in SectionType]: (id: string, title: string) => Extrac
 export const newSection = (type: SectionType, id: string, title: string): ProfileSection =>
   blankSections[type](id, title)
 
-const blankToNull = (value: string | null | undefined) => (value ? value : null)
+const blankToAbsent = (value: string | undefined) => value || undefined
 
-const span = <T extends { current: boolean; endDate?: string | null }>(item: T): T => ({
+const span = <T extends { current: boolean; endDate?: string }>(item: T): T => ({
   ...item,
-  endDate: item.current ? null : blankToNull(item.endDate),
+  endDate: item.current ? undefined : blankToAbsent(item.endDate),
 })
 
-/** What the form edits -> what the API stores: blank optional dates become null, "current" clears the end. */
+/** What the form edits -> what the API stores: blank optional dates are left out, "current" clears the end. */
 export function normalizeSections(document: ProfileSections): ProfileSections {
   return {
     sections: document.sections.map(section => {
       if (section.type === 'experience') return { ...section, experiences: section.experiences.map(span) }
       if (section.type === 'education') return { ...section, education: section.education.map(span) }
       if (section.type === 'image-gallery')
-        return { ...section, images: section.images.map(image => ({ ...image, caption: blankToNull(image.caption) })) }
+        return {
+          ...section,
+          images: section.images.map(image => ({ ...image, caption: blankToAbsent(image.caption) })),
+        }
       return section
     }),
   }

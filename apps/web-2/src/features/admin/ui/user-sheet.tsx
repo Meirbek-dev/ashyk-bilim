@@ -9,7 +9,7 @@ import { Badge } from '#/shared/ui/badge'
 import { Link } from '#/shared/ui/link'
 import { Sheet } from '#/shared/ui/sheet'
 
-import { canUser, userStatus } from '../model/admin'
+import { canUser } from '../model/admin'
 import { userOptions } from '../queries'
 import { AwardXp } from './award-xp'
 import { userStatusBadges } from './labels'
@@ -28,7 +28,7 @@ export function UserSheet({ username }: { username: string }) {
   const navigate = useNavigate()
   const close = () => void navigate({ to: '/admin/users', search: prev => ({ ...prev, user: undefined }) })
   const namedRoles = hasCapability(session, 'admin.roles')
-  const badge = user ? userStatusBadges[userStatus(user)] : null
+  const badge = user ? userStatusBadges[user.status] : null
   return (
     <Sheet
       open

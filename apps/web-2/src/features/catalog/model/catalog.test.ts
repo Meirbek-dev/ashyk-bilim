@@ -21,7 +21,15 @@ const session = (capabilities: Capability[]): SessionInfo => ({
   permissions: [],
   roles: [],
   user_id: 'u',
-  user: { id: 'u', username: 'u', display_name: 'U', email: 'u@e.test', locale: 'ru' },
+  user: {
+    id: 'u',
+    username: 'u',
+    display_name: 'U',
+    email: 'u@e.test',
+    locale: 'ru-RU',
+    avatar_key: null,
+    theme: null,
+  },
 })
 
 describe('catalog model', () => {
@@ -29,7 +37,6 @@ describe('catalog model', () => {
     const cursor = '7f0c1a2e-0000-4000-8000-000000000001'
     expect(nextCoursesCursor({ items: [], next_cursor: cursor })).toBe(cursor)
     expect(nextCoursesCursor({ items: [], next_cursor: null })).toBeUndefined()
-    expect(nextCoursesCursor({ items: [] })).toBeUndefined()
   })
 
   test('B-CAT-06 the sort defaults per caller, hides "in progress first" from guests, drops unknown values', () => {
@@ -46,7 +53,7 @@ describe('catalog model', () => {
 
   test('B-CAT-03 a card marks only an unpublished or an archived course', () => {
     expect(courseState({ public: true, archived_at_unix: null })).toBeNull()
-    expect(courseState({ public: false })).toBe('unpublished')
+    expect(courseState({ public: false, archived_at_unix: null })).toBe('unpublished')
     expect(courseState({ public: true, archived_at_unix: 1_790_000_000 })).toBe('archived')
   })
 

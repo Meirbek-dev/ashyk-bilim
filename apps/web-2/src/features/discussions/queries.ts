@@ -20,7 +20,7 @@ const nextCursor = (page: DiscussionPage) => page.next_cursor ?? undefined
 
 // Composed by hand like collections: the generated infinite options type their queryFn as skippable.
 export const postsOptions = (courseId: CourseId) => {
-  const options = { path: { id: courseId }, query: { limit: PAGE_SIZE } }
+  const options = { path: { course_id: courseId }, query: { limit: PAGE_SIZE } }
   return infiniteQueryOptions<
     DiscussionPage,
     ApiError,
@@ -40,7 +40,7 @@ export const postsOptions = (courseId: CourseId) => {
 }
 
 export const repliesOptions = (postId: DiscussionId) => {
-  const options = { path: { id: postId }, query: { limit: PAGE_SIZE } }
+  const options = { path: { discussion_id: postId }, query: { limit: PAGE_SIZE } }
   return infiniteQueryOptions<
     DiscussionPage,
     ApiError,

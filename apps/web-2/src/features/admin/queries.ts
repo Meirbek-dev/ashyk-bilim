@@ -67,7 +67,7 @@ import type { UsersSearch } from './model/admin'
 const PAGE_SIZE = 20
 
 /** Keyset paging: the next request carries the previous page's opaque `next_cursor`. */
-const nextCursor = (page: { next_cursor?: string | null }) => page.next_cursor ?? undefined
+const nextCursor = (page: { next_cursor: string | null }) => page.next_cursor ?? undefined
 
 // Composed by hand: the generated infinite options type the queryFn as skippable, which useSuspenseInfiniteQuery
 // rejects. Key and request still come from the generated client.
@@ -243,8 +243,8 @@ export const groupChoicesOptions = () => ({
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_members')),
 })
 
-export const groupOptions = (id: UsergroupId) => getUsergroupOptions({ path: { id } })
-export const membersOptions = (id: UsergroupId) => listUsergroupMembersOptions({ path: { id } })
+export const groupOptions = (id: UsergroupId) => getUsergroupOptions({ path: { usergroup_id: id } })
+export const membersOptions = (id: UsergroupId) => listUsergroupMembersOptions({ path: { usergroup_id: id } })
 
 /** Route loader of a group page: an unknown or malformed id is "not found". */
 export const ensureGroup = (queryClient: QueryClient, id: UsergroupId) =>
@@ -259,7 +259,8 @@ export const createGroupOptions = () => ({ ...createUsergroupMutation(), meta: {
 
 export const updateGroupOptions = (queryClient: QueryClient, id: UsergroupId) => ({
   ...updateUsergroupMutation(),
-  onSuccess: (group: Usergroup) => queryClient.setQueryData(getUsergroupQueryKey({ path: { id } }), group),
+  onSuccess: (group: Usergroup) =>
+    queryClient.setQueryData(getUsergroupQueryKey({ path: { usergroup_id: id } }), group),
   meta: { invalidates: [groupLists()] },
 })
 
@@ -275,13 +276,13 @@ const patchMembers = (
   change: (list: UsergroupMember[]) => UsergroupMember[],
 ) =>
   queryClient.setQueryData(
-    listUsergroupMembersQueryKey({ path: { id } }),
+    listUsergroupMembersQueryKey({ path: { usergroup_id: id } }),
     (list: UsergroupMember[] | undefined) => list && change(list),
   )
 
 export const addMembersOptions = (queryClient: QueryClient) => ({
   mutationFn: ({ group, members }: Membership) =>
-    addUsergroupMembers({ path: { id: group }, body: ids(members), throwOnError: true }),
+    addUsergroupMembers({ path: { usergroup_id: group }, body: ids(members), throwOnError: true }),
   onSuccess: (_: unknown, { group, members }: Membership) =>
     patchMembers(queryClient, group, list => [...list, ...members.filter(added => !list.some(m => m.id === added.id))]),
   meta: { invalidates: [groupLists()] },
@@ -289,7 +290,7 @@ export const addMembersOptions = (queryClient: QueryClient) => ({
 
 export const removeMembersOptions = (queryClient: QueryClient) => ({
   mutationFn: ({ group, members }: Membership) =>
-    removeUsergroupMembers({ path: { id: group }, body: ids(members), throwOnError: true }),
+    removeUsergroupMembers({ path: { usergroup_id: group }, body: ids(members), throwOnError: true }),
   onSuccess: (_: unknown, { group, members }: Membership) =>
     patchMembers(queryClient, group, list => list.filter(member => !members.some(gone => gone.id === member.id))),
   meta: { invalidates: [groupLists()] },

@@ -33,7 +33,8 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; draftCourse: ()
       made.push(data.id)
       return data
     })
-    for (const id of made) await deleteCourse({ client: api, path: { id }, headers: cookie(seed, 'teacher') })
+    for (const id of made)
+      await deleteCourse({ client: api, path: { course_id: id }, headers: cookie(seed, 'teacher') })
   },
 })
 

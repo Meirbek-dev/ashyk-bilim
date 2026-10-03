@@ -11,7 +11,6 @@ import { Link } from '#/shared/ui/link'
 import { ListState } from '#/shared/ui/list-state'
 import { ShowMore } from '#/shared/ui/show-more'
 
-import { userStatus } from '../model/admin'
 import { usersListOptions } from '../queries'
 import { userStatusBadges } from './labels'
 import { RoleNames } from './role-names'
@@ -43,7 +42,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     header: m.admin_users_col_status(),
     priority: 2,
     cell: user => {
-      const badge = userStatusBadges[userStatus(user)]
+      const badge = userStatusBadges[user.status]
       return <Badge tone={badge.tone}>{badge.label()}</Badge>
     },
   },

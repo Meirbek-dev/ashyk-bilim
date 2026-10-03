@@ -58,7 +58,7 @@ export const collectionsSearchOptions = (q: string) => ({
   select: (results: SearchResults) => results.collections,
 })
 
-export const collectionOptions = (id: CollectionId) => getCollectionOptions({ path: { id } })
+export const collectionOptions = (id: CollectionId) => getCollectionOptions({ path: { collection_id: id } })
 
 // Every list variant (any page size, any cursor) is a prefix match of the bare key.
 const lists = () => listCollectionsInfiniteQueryKey()
@@ -68,7 +68,8 @@ export const createCollectionOptions = () => ({ ...createCollectionMutation(), m
 // The answer carries the new `version`: it replaces the cached collection (spec 7.6) instead of a refetch.
 export const updateCollectionOptions = (queryClient: QueryClient, id: CollectionId) => ({
   ...updateCollectionMutation(),
-  onSuccess: (collection: Collection) => queryClient.setQueryData(getCollectionQueryKey({ path: { id } }), collection),
+  onSuccess: (collection: Collection) =>
+    queryClient.setQueryData(getCollectionQueryKey({ path: { collection_id: id } }), collection),
   meta: { invalidates: [lists()] },
 })
 

@@ -11,6 +11,8 @@ const session = (handle: string, current: boolean, seen: number): SessionSummary
   current,
   last_seen_unix: seen,
   created_at_unix: 0,
+  ip: null,
+  user_agent: null,
 })
 
 describe('settings model', () => {

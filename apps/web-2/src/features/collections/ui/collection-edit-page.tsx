@@ -29,7 +29,7 @@ export function CollectionEditPage() {
     public: query.data.public,
   }))
   const request = (body: UpdateCollectionRequest, version: number) => ({
-    path: { id: collectionId },
+    path: { collection_id: collectionId },
     body,
     headers: { 'If-Match': version },
   })

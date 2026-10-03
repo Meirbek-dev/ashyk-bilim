@@ -8,7 +8,7 @@ import { ADDABLE_SECTIONS, newSection, normalizeSections, vBuilderDocument } fro
 const issues = (document: ProfileSections) =>
   v.safeParse(vBuilderDocument, document).issues?.map(issue => v.getDotPath(issue)) ?? []
 
-test('B-SET-05 every offered kind starts empty and valid; blank optional values go out as null', () => {
+test('B-SET-05 every offered kind starts empty and valid; blank optional values are left out', () => {
   const sections = ADDABLE_SECTIONS.map((type, index) => newSection(type, `id-${index}`, type))
   expect(sections.map(section => section.type)).toEqual([
     'text',
@@ -50,11 +50,25 @@ test('B-SET-05 every offered kind starts empty and valid; blank optional values 
         id: 'x',
         title: 'Опыт',
         experiences: [
-          { title: 'A', organization: 'B', startDate: '2020-01-01', endDate: null, current: false, description: '' },
-          { title: 'C', organization: 'D', startDate: '2021-01-01', endDate: null, current: true, description: '' },
+          {
+            title: 'A',
+            organization: 'B',
+            startDate: '2020-01-01',
+            endDate: undefined,
+            current: false,
+            description: '',
+          },
+          {
+            title: 'C',
+            organization: 'D',
+            startDate: '2021-01-01',
+            endDate: undefined,
+            current: true,
+            description: '',
+          },
         ],
       },
-      { type: 'image-gallery', id: 'g', title: 'G', images: [{ url: 'https://e.test/a.png', caption: null }] },
+      { type: 'image-gallery', id: 'g', title: 'G', images: [{ url: 'https://e.test/a.png', caption: undefined }] },
     ],
   })
 })

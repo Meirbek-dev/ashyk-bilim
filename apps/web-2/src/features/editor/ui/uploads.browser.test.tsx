@@ -30,7 +30,13 @@ function stubNetwork(claim: () => Response = () => blockResponse()) {
   return { api, release: () => held.resolve(null) }
 }
 const blockResponse = () =>
-  json({ id: BLOCK, activity_id: ACTIVITY, block_type: 'image', content: {}, created_at_unix: 1 })
+  json({
+    id: BLOCK,
+    activity_id: ACTIVITY,
+    block_type: 'image',
+    content: { file_key: SLOT.key, file_name: 'Photo.PNG', file_size: 4, file_type: 'image/png' },
+    created_at_unix: 1,
+  })
 
 /** A file dropped at the top-left corner of `target` (+2 px), as the browser dispatches it. */
 function dropFile(target: Element, file: File) {

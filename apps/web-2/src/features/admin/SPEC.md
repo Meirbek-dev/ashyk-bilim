@@ -42,11 +42,10 @@
 - Сортировка и фильтры списка пользователей (статус, роль): у `GET /users` есть только `q`, `cursor`, `limit`; сортировать загруженную страницу в браузере нельзя.
 - `GET /users/{user_id}` для администратора: панель находит пользователя через `GET /users?q=<имя пользователя>` с точным совпадением.
 - Группы пользователя (`GET /users/{user_id}/groups`): панель только добавляет в группу, состав групп виден на их страницах.
-- `AdminUser.status` - строка с описанием `active` / `disabled`, а не enum (S-01).
 - `Idempotency-Key` у `POST /users`, `POST /rbac/roles`, `POST /usergroups` (S-04): повтор после обрыва создаст дубль или ответит 409.
 - Ответы `204` без тела у `assignRole`, `unassignRole`, `setUserStatus`, `updateRole`, `setRolePermissions`, `addUsergroupMembers`, `removeUsergroupMembers`: веб пишет изменение в кэш сам (роли, статус, состав), `allowed_actions` пользователя после смены статуса не обновляются до перечитывания - кнопка статуса следует полю `status`.
 - Право создавать пользователей и роли (`platform:manage`, `role:manage`) не приходит ни в `capabilities`, ни в `allowed_actions`: кнопки видны всем с `admin.users` / `admin.roles`, отказ - 403 в диалоге.
 - `GET /rbac/roles/{slug}`: страница роли читает весь список.
-- `GamificationConfig.rewards` без типа (`{[key]: unknown}`) и значения платформы по умолчанию не в контракте: пустое поле подписано «по умолчанию» без числа.
-- `Platform` без `version` / `If-Match` и без `allowed_actions` (S-02, S-04); назначения загрузки `platform-logo` / `platform-thumbnail` - строка, не enum (S-01).
+- Значения платформы по умолчанию для `GamificationConfig` не в контракте: пустое поле подписано «по умолчанию» без числа.
+- `Platform` без `version` / `If-Match` и без `allowed_actions` (S-02, S-04).
 - Живое обновление списков при чужих изменениях - S-06.

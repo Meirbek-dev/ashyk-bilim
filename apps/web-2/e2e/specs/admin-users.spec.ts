@@ -109,10 +109,14 @@ test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, a
     await sheet.getByLabel(m.admin_user_group_field({}, ru)).selectOption({ label: name })
     await sheet.getByRole('button', { name: m.admin_user_group_add({}, ru) }).click()
     await expect(page.getByText(m.admin_user_group_added({}, ru))).toBeVisible()
-    const members = await listUsergroupMembers({ client: api, path: { id: group.data.id }, headers: cookie(seed) })
+    const members = await listUsergroupMembers({
+      client: api,
+      path: { usergroup_id: group.data.id },
+      headers: cookie(seed),
+    })
     expect(members.data?.map(member => member.username)).toEqual([account.username])
   } finally {
-    await deleteUsergroup({ client: api, path: { id: group.data.id }, headers: cookie(seed) })
+    await deleteUsergroup({ client: api, path: { usergroup_id: group.data.id }, headers: cookie(seed) })
   }
 })
 

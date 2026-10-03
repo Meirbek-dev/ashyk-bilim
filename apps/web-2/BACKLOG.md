@@ -45,7 +45,34 @@ Admin gaps: `GET /users` no sort/filter, no admin read of one user; `POST /users
 Idempotency-Key; several writes answer 204 without body (allowed_actions stale until reload). Dev storage CORS allows
 only `http://localhost:3000` (logo upload e2e fails on other ports). Discussion images: no learner upload purpose.
 
+Analytics gaps: `AtRiskLearnerRow` no `allowed_actions`; `DrillThroughResponse.items` object[]; `SavedView.query`
+free; strings without enums (`intervention_type`, `status`, `outcome`, `reason_codes`, ...); alert/insight `params`
+free; CSV language only via Accept-Language (needs `?lang=`); unknown `cohort_ids` -> 422 kills the layout.
+
+Player gaps: activity `allowed_actions` has no mark/unmark; mark returns the trail, not the learner state; no attempt
+counts, no typed activity content, no "next course"; API login rate limit 20/5min per address hits parallel e2e
+(seed fixtures send a random `x-real-ip`).
+
 Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Base UI `combobox.tsx` - pick one in phase 7; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
+
+## Resume notes (session cut by the usage limit, 2026-10-03 ~12:00 local)
+
+- OWNER REQUEST (2026-10-03): the kit must be real shadcn-ui like tou-rent/noplagiat: `components.json` (base-nova,
+  Base UI), primitives via `shadcn add` with standard names/API (`className`, `cn()`), lint overrides only for the
+  generator dir; our templates/composites stay on top. Task K-3 in the MAIN tree after F-1 lands; then migrate
+  features; update DESIGN.md, AGENTS.md, DECISIONS.md. Slice 4.1 adapts to the new kit on merge.
+- UNCOMMITTED in the main tree: CI stand (`compose.web2.yaml`, `infra/scripts/lib.sh`, `justfile`,
+  `infra/nginx/routes.conf`, `.github/workflows/ci.yaml`, `docs/INFRA.md`, `apps/web-2/e2e/playwright.config.ts`;
+  report `CI-1.md`) - commit failed on a `.git/index.lock` (check no git process runs, then remove it); F-1 type
+  fixes in `apps/web-2`; L-2b server changes in `apps/server`.
+- Running when cut: F-1 (type fallout, main tree), L-2b (server), S-4.1 course studio (worktree
+  `agent-ac6d5318f2a8fd636`). Reports land in `<scratchpad>/reports/`.
+- Committed worktrees waiting for merge after F-1: 3.5 player (`agent-a171a02f2ed032438`, f9b358c), 4.3 analytics
+  (`agent-a9fbf6f094e1018a5`, 0f4140f). Merge: `git merge --no-ff --no-commit <branch>`, resolve
+  `project.inlang/settings.json` with `<scratchpad>/resolve-inlang.py`, `bun install && bun run codegen`, verify.
+- The WSL/podman machine died during the CI-stand work: dev containers and the local API's backing services may be
+  down - `podman machine start`, recreate containers, restart the API.
+- Nothing pushed yet. CI jobs `web2-gates` and `web2-e2e` are untested on GitHub.
 
 ## Server lane (sequential)
 
@@ -81,13 +108,13 @@ Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Bas
 | 3.2 | catalog, landing, search, command palette                         | done   |
 | 3.3 | course page + discussions                                         | done   |
 | 3.4 | learning, certificates (+ locale-prefixed verify alias)           | done   |
-| 3.5 | player                                                            | wip    |
+| 3.5 | player (child route stubs for 5.2/5.3/5.4)                        | done (worktree, merge after F-1) |
 | 3.6 | settings, public profile (profile builder e2e waits ProfileSection fix) | done |
 | 3.7 | achievements                                                      | done   |
 | 3.8 | notifications                                                     | todo   |
 | 4.1 | course studio                                                     | wip    |
 | 4.2 | admin: users, roles, groups, platform, gamification config        | done   |
-| 4.3 | analytics                                                         | wip    |
+| 4.3 | analytics                                                         | done (worktree 0f4140f, merge after F-1) |
 | 5.1 | assessment studio                                                 | todo   |
 | 5.2 | attempt                                                           | todo   |
 | 5.3 | code arena                                                        | todo   |

@@ -36,7 +36,8 @@ const test = base.extend<{
       made.push([data.id, owner])
       return data
     })
-    for (const [id, owner] of made) await deleteCollection({ client: api, path: { id }, headers: cookie(seed, owner) })
+    for (const [id, owner] of made)
+      await deleteCollection({ client: api, path: { collection_id: id }, headers: cookie(seed, owner) })
   },
 })
 
@@ -136,8 +137,8 @@ test('B-COL-06 a teacher creates a collection in the dialog and lands on its pag
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(page.getByText(m.collections_created({}, ru))).toBeVisible()
   await expect(page.getByText(m.collections_visibility_private({}, ru))).toBeVisible()
-  const id = new URL(page.url()).pathname.split('/').at(-1) ?? ''
-  await deleteCollection({ client: api, path: { id }, headers: cookie(seed, 'teacher'), throwOnError: true })
+  const path = { collection_id: new URL(page.url()).pathname.split('/').at(-1) ?? '' }
+  await deleteCollection({ client: api, path, headers: cookie(seed, 'teacher'), throwOnError: true })
 })
 
 test('B-COL-07 the page lists the courses, or says there are none', async ({ page, signInAs, collection, seed }) => {
@@ -205,7 +206,7 @@ test("B-COL-10 a save over someone else's change asks, keeps the input and retri
   await description.fill('Мой вариант описания')
   await updateCollection({
     client: api,
-    path: { id: own.id },
+    path: { collection_id: own.id },
     body: { name: `${own.name} (другая вкладка)` },
     headers: { ...cookie(seed, 'teacher'), 'If-Match': own.version },
     throwOnError: true,
@@ -255,7 +256,7 @@ test('B-COL-12 delete asks with the name, starts on Cancel, then shows the list'
   await confirm.getByRole('button', { name: m.collections_action_delete({}, ru) }).click()
   await expect(page).toHaveURL(/\/collections$/)
   await expect(page.getByText(m.collections_deleted({}, ru))).toBeVisible()
-  const gone = await getCollection({ client: api, path: { id: own.id }, headers: cookie(seed, 'teacher') })
+  const gone = await getCollection({ client: api, path: { collection_id: own.id }, headers: cookie(seed, 'teacher') })
   expect(gone.response?.status).toBe(404)
 })
 

@@ -7,6 +7,5 @@ describe('collections paging', () => {
     const cursor = '7f0c1a2e-0000-4000-8000-000000000001'
     expect(nextCollectionsCursor({ items: [], next_cursor: cursor })).toBe(cursor)
     expect(nextCollectionsCursor({ items: [], next_cursor: null })).toBeUndefined()
-    expect(nextCollectionsCursor({ items: [] })).toBeUndefined()
   })
 })

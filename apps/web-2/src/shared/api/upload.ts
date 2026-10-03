@@ -1,4 +1,4 @@
-import type { FinalizedUpload } from './gen/types.gen'
+import type { FinalizedUpload, UploadPurpose } from './gen/types.gen'
 import { createUpload, finalizeUpload } from './gen/sdk.gen'
 
 // Spec 7.3: the one way to upload a file. create (policy check, presigned PUT) -> PUT the bytes straight to storage
@@ -9,21 +9,13 @@ const MB = 1024 * 1024
 const IMAGES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']
 const VIDEOS = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime', 'video/x-msvideo', 'video/x-flv']
 
-/**
- * The purposes and caps of `POST /uploads` (the server's purpose policy, crates/domain/src/files/uploads.rs). The
- * contract describes `purpose` as a free string (S-01 will make it an enum with the limits); this pre-check only
- * saves a doomed upload, the server still decides. An empty `mimes` list accepts any type.
- */
-export type UploadPurpose =
-  | 'avatar'
-  | 'course-thumbnail'
-  | 'block-image'
-  | 'block-pdf'
-  | 'block-video'
-  | 'file-submission'
-  | 'platform-logo'
-  | 'platform-thumbnail'
+export type { UploadPurpose }
 
+/**
+ * The caps of `POST /uploads` per purpose (the server's purpose policy, crates/domain/src/files/uploads.rs; the
+ * contract has the purpose enum, not the limits): this pre-check only saves a doomed upload, the server still
+ * decides. An empty `mimes` list accepts any type.
+ */
 const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[] }> = {
   avatar: { maxBytes: 5 * MB, mimes: IMAGES },
   'course-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
@@ -93,7 +85,7 @@ export async function upload(
   await put(slot.put_url, file, options)
   // The slot id is the retry token: a repeated finalize replays the first answer instead of a 409.
   const { data } = await finalizeUpload({
-    path: { id: slot.id },
+    path: { upload_id: slot.id },
     headers: { 'Idempotency-Key': slot.id },
     signal: options.signal,
     throwOnError: true,

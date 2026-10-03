@@ -33,13 +33,13 @@ export function PostItem({ item, open = false }: PostItemProps) {
   const hidden = item.status === 'hidden'
   const save = (content: string) =>
     update.mutateAsync(
-      { path: { id: item.id }, body: { content } },
+      { path: { discussion_id: item.id }, body: { content } },
       { onSuccess: () => (setEditing(false), toast(m.discussions_saved())) },
     )
   // A moderator's status change only (BUG-115): the owner's content is not sent back.
   const moderate = () =>
     update.mutate(
-      { path: { id: item.id }, body: { status: hidden ? 'active' : 'hidden' } },
+      { path: { discussion_id: item.id }, body: { status: hidden ? 'active' : 'hidden' } },
       { onSuccess: () => toast(hidden ? m.discussions_restored() : m.discussions_hidden_done()) },
     )
   const cancel = () => (setEditing(false), update.reset())

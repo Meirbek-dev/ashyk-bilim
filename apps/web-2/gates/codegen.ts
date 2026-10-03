@@ -30,7 +30,10 @@ export const paraglideOptions = {
 
 /** src/shared/api/gen from ../server/openapi.v2.json (config: openapi-ts.config.ts). */
 export function generateApi(outputDir = './src/shared/api/gen'): void {
-  run('bunx', ['openapi-ts'], { OPENAPI_OUTPUT: outputDir })
+  // TypeScript 7 has no compiler JS API: the generator runs with the `typescript-6` alias (gates/ts6-register.mjs).
+  run('node', ['--import', './gates/ts6-register.mjs', './node_modules/@hey-api/openapi-ts/dist/run.mjs'], {
+    OPENAPI_OUTPUT: outputDir,
+  })
 }
 
 // The footer TanStack Start's Vite plugin appends; kept identical so `vp dev` and codegen write the same bytes.

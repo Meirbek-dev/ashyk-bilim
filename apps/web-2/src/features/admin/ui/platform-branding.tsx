@@ -10,7 +10,7 @@ import { SettingsSection } from '#/shared/ui/templates/settings-section'
 
 import { updatePlatformOptions } from '../queries'
 
-const defaultValues: UpdatePlatformRequest = { logo_upload_id: null, thumbnail_upload_id: null }
+const defaultValues: UpdatePlatformRequest = {}
 
 /** Public storage keys are served anonymously at /content/<key>. */
 const contentUrl = (key: string) => `/content/${key}`

@@ -43,23 +43,33 @@ const test = base.extend<{
       const name = `E2E discussions ${randomUUID().slice(0, 8)}`
       const { data: course } = await createCourse({ client: api, body: { name }, headers, throwOnError: true })
       made.push(course.id)
-      const path = { id: course.id }
+      const path = { course_id: course.id }
       const chapter = await createChapter({ client: api, path, body: { name: 'Глава' }, headers, throwOnError: true })
-      const body = { name: 'Страница', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' }
-      const activity = await createActivity({ client: api, path: { id: chapter.data.id }, body, headers })
+      const activity = await createActivity({
+        client: api,
+        path: { chapter_id: chapter.data.id },
+        body: { name: 'Страница', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
+        headers,
+      })
       const id = activity.data?.id ?? ''
-      await updateActivity({ client: api, path: { id }, body: { published: true }, headers, throwOnError: true })
+      await updateActivity({
+        client: api,
+        path: { activity_id: id },
+        body: { published: true },
+        headers,
+        throwOnError: true,
+      })
       await courseLifecycle({ client: api, path, body: { action: 'publish' }, headers, throwOnError: true })
       return course
     })
-    for (const id of made) await deleteCourse({ client: api, path: { id }, headers })
+    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
   },
   post: async ({ api, seed }, use) =>
     use(async (course, text, author = 'student', parent) => {
       const { data } = await createDiscussion({
         client: api,
-        path: { id: course.id },
-        body: { content: doc(text), parent_id: parent ?? null },
+        path: { course_id: course.id },
+        body: { content: doc(text), parent_id: parent },
         headers: cookie(seed, author),
         throwOnError: true,
       })

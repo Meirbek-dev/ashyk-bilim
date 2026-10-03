@@ -13,7 +13,7 @@ export function PostReactions({ item }: { item: Discussion }) {
   const queryClient = useQueryClient()
   const like = useMutation(likeOptions(queryClient, item))
   const dislike = useMutation(dislikeOptions(queryClient, item))
-  const path = { id: item.id }
+  const path = { discussion_id: item.id }
   const error = like.error ?? dislike.error
   return (
     <>

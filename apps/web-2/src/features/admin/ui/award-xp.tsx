@@ -27,7 +27,7 @@ export function AwardXp({ user }: { user: AdminUser }) {
           body: {
             user_id: user.id,
             amount: Number(amount),
-            reason: reason.trim() || null,
+            reason: reason.trim() || undefined,
             idempotency_key: idempotency.key,
           },
         },
