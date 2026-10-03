@@ -1,9 +1,17 @@
-import type { ActivityId, GradebookCell, GradebookPage, UserSummary } from '#/shared/api/gen/types.gen'
+import type { ActivityId, GradebookCell, GradebookData, GradebookPage, UserSummary } from '#/shared/api/gen/types.gen'
 
 import type { GradebookSearch } from '../route'
 
 /** Learners per page; each comes with all their cells. */
-export const GRADEBOOK_PAGE = 100
+const GRADEBOOK_PAGE = 100
+
+/** The URL filters as the server's: search, "has work to review" and the group (B-GRD-20, B-GRD-24). */
+export const gradebookQuery = (search: GradebookSearch): NonNullable<GradebookData['query']> => ({
+  limit: GRADEBOOK_PAGE,
+  ...(search.q ? { q: search.q } : {}),
+  ...(search.pending ? { status: 'needs_grading' } : {}),
+  ...(search.group ? { group_id: search.group } : {}),
+})
 
 /** A graded activity as a column: an assessment or a file submission. */
 export type GradebookColumn = { activityId: ActivityId; title: string }
@@ -27,21 +35,6 @@ export function gradebookRows(pages: readonly GradebookPage[]): GradebookRow[] {
       user,
       cells: new Map(page.cells.filter(cell => cell.user_id === user.id).map(cell => [cell.activity_id, cell])),
     })),
-  )
-}
-
-/** Has work waiting: a pending grade of record or a newer pending attempt behind a released one (BUG-175). */
-export const waiting = (cell: GradebookCell): boolean => cell.status === 'pending' || cell.pending_attempt_id !== null
-
-// ponytail: the gradebook API has no search or status filter, so these narrow the pages loaded so far.
-export function filterRows(rows: readonly GradebookRow[], { q, pending }: GradebookSearch): GradebookRow[] {
-  const needle = q?.toLocaleLowerCase()
-  return rows.filter(
-    row =>
-      (!needle ||
-        row.user.display_name.toLocaleLowerCase().includes(needle) ||
-        row.user.username.toLocaleLowerCase().includes(needle)) &&
-      (!pending || [...row.cells.values()].some(waiting)),
   )
 }
 

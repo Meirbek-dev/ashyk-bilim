@@ -21,17 +21,20 @@ const optionalText = v.fallback(
   undefined,
 )
 const flag = v.fallback(v.optional(v.literal(true)), undefined)
+/** `?group=`: one of the course's groups (B-GRD-24); a malformed id is no filter. */
+const group = v.fallback(v.optional(v.pipe(v.string(), v.uuid())), undefined)
 
-/** `?status=&q=&late=&sort=&order=` of the queue and of the review page (prev/next walk the same queue). */
+/** `?status=&q=&late=&group=&sort=&order=` of the queue and of the review page (prev/next walk the same queue). */
 export const queueSearchSchema = v.object({
   status: v.fallback(v.optional(v.picklist(QUEUE_STATUSES)), undefined),
   q: optionalText,
   late: flag,
+  group,
   sort: v.fallback(v.optional(v.picklist(SORTS)), undefined),
   order: v.fallback(v.optional(v.picklist(['asc', 'desc'])), undefined),
 })
 export type QueueSearch = v.InferOutput<typeof queueSearchSchema>
 
-/** `/teach/courses/$courseId/gradebook?q=&pending=`: both narrow the loaded pages (the API has no filters). */
-export const gradebookSearchSchema = v.object({ q: optionalText, pending: flag })
+/** `/teach/courses/$courseId/gradebook?q=&pending=&group=`: all three go to the server (B-GRD-20, B-GRD-24). */
+export const gradebookSearchSchema = v.object({ q: optionalText, pending: flag, group })
 export type GradebookSearch = v.InferOutput<typeof gradebookSearchSchema>

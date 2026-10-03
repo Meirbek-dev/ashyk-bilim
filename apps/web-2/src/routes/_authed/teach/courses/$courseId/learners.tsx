@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { courseGroupsOptions, LearnersPage, linkableGroupsOptions } from '#/features/course-studio'
+import { courseGroupsOptions, LearnersPage, learnersOptions, linkableGroupsOptions } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/courses/$courseId/learners')({
@@ -8,6 +8,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/learners'
     Promise.all([
       context.queryClient.ensureQueryData(courseGroupsOptions(params.courseId)),
       context.queryClient.ensureQueryData(linkableGroupsOptions()),
+      context.queryClient.ensureInfiniteQueryData(learnersOptions(params.courseId)),
     ]),
   staticData: { title: m.platform_tab_learners },
   component: LearnersPage,

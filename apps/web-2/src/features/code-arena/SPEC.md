@@ -1,6 +1,6 @@
 # code-arena
 
-Операции: getActivityAssessment, attemptState, mySubmissions, startSubmission, saveSubmissionDraft, submitSubmission, runItem, getCodeRun, runner, updateItem, referenceCheckItem
+Операции: getActivityAssessment, attemptState, mySubmissions, startSubmission, saveSubmissionDraft, submitSubmission, runItem, getCodeRun, listMyCodeRuns, runner, updateItem, referenceCheckItem
 
 Задача с кодом учащегося `/learn/$courseId/$activityId/code` (фокус-режим, вход из карточки плеера) и редактор
 вопроса с кодом в студии активности `/teach/courses/$courseId/activities/$activityId/edit` (5.3, 5.4). Редактор кода -
@@ -51,6 +51,11 @@ CodeMirror 6 за ленивой границей, режимы только я�
 - B-COD-19 «Проверить эталон» сначала сохраняет несохранённое, затем запускает сохранённые эталонные решения на всех
   тестах: по каждому языку вердикт, «Пройдено N из M» и сообщение; языку без решения - «Нет эталонного решения».
 - B-COD-20 Страница задачи и редактор вопроса работают на kk и en: тексты из каталога, `<html lang>` верный.
+- B-COD-21 «Мои запуски» - свои запуски «Запустить», новые сначала (20 последних, `purpose=visible`): дата, вердикт
+  и «Пройдено N из M»; «Результаты» открывает таблицу вердиктов запуска (`?run=`), в том числе без открытой попытки.
+  Новый запуск сразу встаёт первым; запуски сдач - в истории у своей попытки (B-COD-22).
+- B-COD-22 Сданная попытка в истории (`?submission=`) показывает запуск, по которому выставлена оценка
+  (`purpose=final`), с таблицей вердиктов по тестам; без такого запуска (ещё не оценена) - только итог попытки.
 
 ## Изменено
 
@@ -70,8 +75,6 @@ CodeMirror 6 за ленивой границей, режимы только я�
 ## Ждёт сервера
 
 - Подсказок в `CodeBody` нет: учащийся их не видит, автор не задаёт.
-- Сервер готов (L-6), веб ещё не перешёл: список своих запусков (`GET /assessment-items/{id}/runs`, финальный -
-  `purpose=final`); история пока показывает балл и «Пройдено N из M» без таблицы тестов.
 - Диапазоны лимитов (`time_limit_seconds`, `memory_limit_mb`) не объявлены и не проверяются сервером.
 - `LanguageInfo.monaco_language` назван по Monaco: используется как id режима редактора.
 - Нет `allowed_actions` у попытки и запуска: «Запустить» и «Сдать» выводятся из открытого черновика.

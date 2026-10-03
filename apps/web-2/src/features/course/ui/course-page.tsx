@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useParams, Link as RouterLink } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
@@ -27,7 +27,7 @@ const TABS = [
 export function CoursePage({ ai }: { ai?: ReactNode }) {
   const { courseId } = useParams({ from: '/_public/courses/$courseId' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
-  const { data: roster } = useSuspenseQuery(contributorsOptions(courseId))
+  const { data: roster } = useSuspenseInfiniteQuery(contributorsOptions(courseId))
   const { data: session } = useSuspenseQuery(sessionOptions())
   const authors = authorNames(roster)
   const meta = [

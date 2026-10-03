@@ -175,7 +175,7 @@ test('B-ASM-23 schedule, unschedule, archive and restore', async ({ page, studio
   const area = publishing(page)
   await area.getByLabel(m.assessments_schedule_at({}, ru)).fill('2030-01-01T10:00')
   await area.getByRole('button', { name: m.assessments_schedule({}, ru) }).click()
-  await expect(page.getByText(m.assessments_toast_scheduled({}, ru))).toBeVisible()
+  await expect(page.getByText(m.assessments_toast_scheduled({}, ru), { exact: true })).toBeVisible()
   await expect(area.getByText(m.assessments_lifecycle_scheduled({}, ru), { exact: true })).toBeVisible()
   await area.getByRole('button', { name: m.assessments_unschedule({}, ru) }).click()
   await expect(page.getByText(m.assessments_toast_unscheduled({}, ru))).toBeVisible()
@@ -187,6 +187,46 @@ test('B-ASM-23 schedule, unschedule, archive and restore', async ({ page, studio
   await area.getByRole('button', { name: m.assessments_restore({}, ru) }).click()
   await expect(page.getByText(m.assessments_toast_restored({}, ru))).toBeVisible()
   await expect(area.getByText(m.assessments_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
+})
+
+test('B-ASM-28 a locked assessment (archived) keeps its name, basics and rules read-only and says why', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const { courseId, assessment, headers } = await makeAssessment(studio, seed, { kind: 'exam' })
+  const path = { assessment_id: assessment.id }
+  await lifecycle({ client: studio.api, path, body: { to: 'archived' }, headers, throwOnError: true })
+  await page.goto(studioUrl(courseId, assessment.activity_id, 'settings'))
+  const locked = (name: string) => page.getByRole('region', { name })
+  const reason = m.assessments_lock_archived({}, ru)
+  for (const name of [
+    m.platform_tab_settings({}, ru),
+    m.assessments_nav_details({}, ru),
+    m.assessments_nav_rules({}, ru),
+  ]) {
+    await expect(locked(name).getByText(reason)).toBeVisible()
+    await expect(locked(name).getByRole('button', { name: m.ui_save({}, ru) })).toHaveCount(0)
+  }
+  await expect(locked(m.platform_tab_settings({}, ru)).getByLabel(m.studio_field_name({}, ru))).toBeDisabled()
+  await expect(locked(m.assessments_nav_details({}, ru)).getByLabel(m.assessments_field_weight({}, ru))).toBeDisabled()
+  const rules = locked(m.assessments_nav_rules({}, ru))
+  await expect(rules.getByLabel(m.assessments_field_attempts({}, ru))).toBeDisabled()
+  const copyPaste = rules.getByRole('switch', { name: m.assessments_field_copy_paste({}, ru), includeHidden: true })
+  const checked = (await copyPaste.getAttribute('aria-checked')) ?? ''
+  await copyPaste.click({ force: true })
+  await expect(copyPaste).toHaveAttribute('aria-checked', checked)
+  // Access is not part of the lock: it still saves.
+  await expect(
+    section(page, m.assessments_nav_access({}, ru)).getByRole('button', { name: m.ui_save({}, ru) }),
+  ).toBeVisible()
+  await publishing(page)
+    .getByRole('button', { name: m.assessments_restore({}, ru) })
+    .click()
+  await expect(page.getByText(m.assessments_toast_restored({}, ru))).toBeVisible()
+  const details = section(page, m.assessments_nav_details({}, ru))
+  await expect(details.getByLabel(m.assessments_field_weight({}, ru))).toBeEnabled()
+  await expect(details.getByRole('button', { name: m.ui_save({}, ru) })).toBeVisible()
 })
 
 test('B-ASM-25 B-ASM-26 a copy opens its own studio; the log names the transitions and who', async ({

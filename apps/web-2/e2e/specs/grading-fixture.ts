@@ -1,17 +1,24 @@
 import { randomUUID } from 'node:crypto'
+import type { Page } from '@playwright/test'
 
 import { createClient, createConfig, type Client } from '#/shared/api/gen/client'
 import {
+  addGroupCourses,
+  addGroupMembers,
   enroll,
   courseLifecycle,
   createAssessment,
   createChapter,
   createCourse,
   createFileSubmission,
+  createGroup,
   createItem,
   createUpload,
   deleteCourse,
+  deleteGroup,
   finalizeUpload,
+  getAttempt,
+  gradeAttempt,
   lifecycle,
   login,
   logout,
@@ -23,7 +30,7 @@ import {
   submit,
   submitSubmission,
 } from '#/shared/api/gen/sdk.gen'
-import type { GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
+import type { FileGradeRequest, GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
 
 import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect as baseExpect, test as base } from '../fixtures/seed'
@@ -45,9 +52,18 @@ export type Graded = {
   boris: Learner
   /** A grade write as the teacher (a colleague), with the submission's current version. */
   grade: (submissionId: string, body: GradeRequest) => Promise<TeacherSubmission>
+  /** A group of the teacher's, linked to the course, with only this learner in it (deleted after the test). */
+  groupOf: (learner: Learner) => Promise<string>
 }
 
-export type FileTask = { courseId: string; activityId: string; attemptId: string; name: string }
+export type FileTask = {
+  courseId: string
+  activityId: string
+  attemptId: string
+  name: string
+  /** A grade write on the attempt as the teacher, with its current version. */
+  grade: (body: FileGradeRequest) => Promise<void>
+}
 
 async function learnerSession(api: Client, baseUrl: string) {
   const account = await registerAccount(baseUrl)
@@ -83,6 +99,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
     const teacher = { cookie: `${seed.accounts.teacher.cookie.name}=${seed.accounts.teacher.cookie.value}` }
     const quiz = `Проверка ${randomUUID().slice(0, 8)}`
     const { courseId, chapterId, call } = await course(api, teacher, `E2E grading ${randomUUID().slice(0, 8)}`)
+    const groups: string[] = []
     try {
       const assessment = await createAssessment({ ...call, body: { chapter_id: chapterId, kind: 'quiz', title: quiz } })
       const path = { assessment_id: assessment.data.id }
@@ -142,8 +159,18 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
           const { version } = (await reviewSubmission({ ...call, path: target })).data
           return (await saveGrade({ ...call, path: target, body, headers: { ...teacher, 'If-Match': version } })).data
         },
+        groupOf: async learner => {
+          const { user } = (await reviewSubmission({ ...call, path: { submission_id: learner.submissionId } })).data
+          const group = await createGroup({ ...call, body: { name: `E2E ${learner.name}` } })
+          groups.push(group.data.id)
+          const ofGroup = { group_id: group.data.id }
+          await addGroupMembers({ ...call, path: ofGroup, body: { user_ids: [user?.id ?? ''] } })
+          await addGroupCourses({ ...call, path: ofGroup, body: { course_ids: [courseId] } })
+          return group.data.name
+        },
       })
     } finally {
+      for (const id of groups) await deleteGroup({ client: api, path: { group_id: id }, headers: teacher })
       await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
     }
   },
@@ -181,7 +208,17 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       await saveFileSubmissionDraft({ ...asLearner, path: task, body: { files } })
       const attempt = await submit({ ...asLearner, path: task, body: {} })
       await logout({ client: api, headers: learner.headers })
-      await use({ courseId, activityId: created.data.activity_id, attemptId: attempt.data.id, name: learner.username })
+      await use({
+        courseId,
+        activityId: created.data.activity_id,
+        attemptId: attempt.data.id,
+        name: learner.username,
+        grade: async body => {
+          const path = { attempt_id: attempt.data.id }
+          const { version } = (await getAttempt({ ...call, path })).data
+          await gradeAttempt({ ...call, path, body, headers: { ...teacher, 'If-Match': version } })
+        },
+      })
     } finally {
       await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
     }
@@ -190,3 +227,9 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
 
 // Under `vp dev` a fresh context loads the review's modules unbundled: the first render can be slow.
 export const expect = baseExpect.configure({ timeout: 15_000 })
+
+export const queue = (g: { courseId: string; activityId: string }) =>
+  `/teach/courses/${g.courseId}/activities/${g.activityId}/submissions`
+export const review = (g: Graded, id: string) => `${queue(g)}/${id}`
+export const row = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text })
+export const toast = (page: Page, text: string) => page.getByText(text, { exact: true }).first()

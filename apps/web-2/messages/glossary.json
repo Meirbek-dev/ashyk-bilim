@@ -1,5 +1,5 @@
 {
-  "$comment": "Required term translations (spec 7.9). Each value is a lowercase stem; a message whose ru text contains the ru stem must contain the kk and en stems (gate G-03). Wording follows the legacy catalogs (apps/web/src/messages).",
+  "$comment": "Required term translations (spec 7.9). Each value is a lowercase stem; a message whose ru text contains the ru stem must contain the kk and en stems (gate G-03); a term without a locale leaves it free (en says score, points or credit for балл by context). Wording follows the legacy catalogs (apps/web/src/messages).",
   "terms": [
     { "ru": "курс", "kk": "курс", "en": "course" },
     { "ru": "глава", "kk": "тарау", "en": "chapter" },
@@ -20,7 +20,7 @@
     { "ru": "проверк", "kk": "тексер", "en": "review" },
     { "ru": "отзыв", "kk": "пікір", "en": "feedback" },
     { "ru": "учащи", "kk": "білім алушы", "en": "learner" },
-    { "ru": "преподавател", "kk": "мұғалім", "en": "teacher" },
+    { "ru": "преподавател", "kk": "оқытушы", "en": "teacher" },
     { "ru": "администратор", "kk": "әкімші", "en": "admin" },
     { "ru": "страниц", "kk": "бет", "en": "page" },
     { "ru": "видео", "kk": "бейне", "en": "video" },
@@ -29,6 +29,18 @@
     { "ru": "тест", "kk": "тест", "en": "quiz" },
     { "ru": "экзамен", "kk": "емтихан", "en": "exam" },
     { "ru": "задача с кодом", "kk": "код", "en": "code" },
-    { "ru": "парол", "kk": "құпиясөз", "en": "password" }
+    { "ru": "парол", "kk": "құпиясөз", "en": "password" },
+    { "ru": "соавтор", "kk": "бірлескен автор", "en": "co-author" },
+    { "ru": "доработк", "kk": "пысықта", "en": "revision" },
+    { "ru": "на исправлени", "kk": "пысықта", "en": "revision" },
+    { "ru": "балл", "kk": "ұпай" },
+    { "ru": "разбор ошибок", "kk": "қателерді талдау", "en": "mistake review" },
+    { "ru": "учётн", "kk": "тіркелгі", "en": "account" },
+    { "ru": "аккаунт", "kk": "тіркелгі", "en": "account" },
+    { "ru": "сеанс", "kk": "сеанс", "en": "session" },
+    { "ru": "вопрос", "kk": "сұра", "en": "question" },
+    { "ru": "наблюдател", "kk": "бақылаушы", "en": "observer" },
+    { "ru": "объявлени", "kk": "хабарландыру", "en": "announcement" },
+    { "ru": "тред", "kk": "сұхбат", "en": "conversation" }
   ]
 }

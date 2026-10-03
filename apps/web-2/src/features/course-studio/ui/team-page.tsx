@@ -1,8 +1,9 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
+import { ShowMore } from '#/shared/components/show-more'
 
 import { can } from '../model/course'
 import { splitRoster } from '../model/studio'
@@ -14,9 +15,9 @@ import { ContributorRow } from './contributor-row'
 export function TeamPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/team' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
-  const { data: roster } = useSuspenseQuery(contributorsOptions(courseId))
+  const query = useSuspenseInfiniteQuery(contributorsOptions(courseId))
   const manage = can(course, 'manage_contributors')
-  const { team, pending } = splitRoster(roster)
+  const { team, pending } = splitRoster(query.data)
   return (
     <div className="flex max-w-prose flex-col gap-12">
       <section className="flex flex-col gap-4">
@@ -28,6 +29,11 @@ export function TeamPage() {
         <DataList items={team} getKey={row => row.user_id}>
           {row => <ContributorRow courseId={courseId} row={row} manage={manage} />}
         </DataList>
+        <ShowMore
+          hasMore={query.hasNextPage}
+          pending={query.isFetchingNextPage}
+          onMore={() => void query.fetchNextPage()}
+        />
       </section>
       {pending.length > 0 ? (
         <section className="flex flex-col gap-4">

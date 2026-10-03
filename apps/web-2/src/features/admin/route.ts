@@ -8,6 +8,6 @@ const blankToUndefined = v.pipe(
   v.transform(text => text || undefined),
 )
 
-/** /admin/users?q=&user=: the directory search and the user open in the side panel (by username: shareable). */
+/** /admin/users?q=&user=: the directory search and the user open in the side panel (by id: shareable). */
 export const usersSearchSchema = v.object({ q: v.optional(blankToUndefined), user: v.optional(blankToUndefined) })
 export type UsersSearch = v.InferOutput<typeof usersSearchSchema>

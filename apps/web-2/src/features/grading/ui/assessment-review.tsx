@@ -30,7 +30,7 @@ export function AssessmentReview({ courseId, activityId, submissionId, aside }: 
         {/* One form per submission: prev / next swap the work, not the inputs of the last one. */}
         <AssessmentGradeForm key={submission.id} ids={ids} submission={submission} items={items} />
       </section>
-      <HistorySection key={`history-${submission.id}`} submissionId={submission.id} />
+      <HistorySection key={`history-${submission.id}`} work={ids.work} submissionId={submission.id} />
     </ReviewFrame>
   )
 }

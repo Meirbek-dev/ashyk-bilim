@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { GradebookCell, GradebookPage } from '#/shared/api/gen/types.gen'
 
-import { filterRows, gradebookColumns, gradebookRows, reviewTarget, waiting } from './gradebook'
+import { gradebookColumns, gradebookQuery, gradebookRows, reviewTarget } from './gradebook'
 import { gradebookSearchSchema } from '../route'
 
 const user = (name: string) => ({ id: `u-${name}`, display_name: `Name ${name}`, username: name, email: '' })
@@ -57,13 +57,16 @@ describe('gradebook', () => {
     expect(reviewTarget(cell('u', 'x', { submission_id: null, attempt_id: 'att' }))).toBe('att')
   })
 
-  test('B-GRD-20 search and "has work to review" narrow the loaded learners; unknown URL values are dropped', () => {
-    const rows = gradebookRows([
-      page(['alice', 'bob'], [cell('u-alice', 'act-q'), cell('u-bob', 'act-q', { pending_attempt_id: 'p' })]),
-    ])
-    expect(filterRows(rows, { q: 'ALI', pending: undefined }).map(row => row.user.username)).toEqual(['alice'])
-    expect(filterRows(rows, { q: undefined, pending: true }).map(row => row.user.username)).toEqual(['bob'])
-    expect(waiting(cell('u', 'x', { status: 'pending' }))).toBe(true)
-    expect(v.parse(gradebookSearchSchema, { q: ' ', pending: 'no' })).toEqual({ q: undefined, pending: undefined })
+  test('B-GRD-20 search and "has work to review" go to the server; unknown URL values are dropped', () => {
+    const search = v.parse(gradebookSearchSchema, { q: ' ali ', pending: true })
+    expect(gradebookQuery(search)).toEqual({ limit: 100, q: 'ali', status: 'needs_grading' })
+    const junk = v.parse(gradebookSearchSchema, { q: ' ', pending: 'no', group: 'x' })
+    expect(junk).toEqual({ q: undefined, pending: undefined, group: undefined })
+    expect(gradebookQuery(junk)).toEqual({ limit: 100 })
+  })
+
+  test('B-GRD-24 the group in the URL filters the gradebook on the server', () => {
+    const group = '0190f3f4-6b1c-7a00-8000-000000000001'
+    expect(gradebookQuery(v.parse(gradebookSearchSchema, { group }))).toEqual({ limit: 100, group_id: group })
   })
 })

@@ -1,10 +1,12 @@
 # course-studio
 
-Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, listContributors, addContributor, updateContributor, removeContributor, listCourseUpdates, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification
+Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, removeCourseLearner, deleteCourse
 
 Рабочее место курса `/teach/courses/$courseId/{overview,content,learners,team,settings,publish}` и студия
 активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}` (5.3, 5.4). Вкладки `gradebook`,
-`submissions`, `results` - срез 6.1 (`grading`), они остаются заглушками. Каталог сообщений - `studio`.
+`submissions`, `results` - срез 6.1 (`grading`). Каталог сообщений - `studio`. Списки
+соавторов и объявлений (`listContributorsPage`, `listCourseUpdatesPage`) - те же запросы и ключи кэша, что у страницы
+курса: из `#/features/course`.
 
 ## Поведение
 
@@ -77,6 +79,16 @@
   сохраняет введённое. Перенос главы перечитывает программу: соседи получают новые `version`.
 - B-CST-33 В диалоге «Новый курс» «Начать с» - пустой курс или копия своего курса (`POST /courses/{id}/duplicate`
   с `Idempotency-Key`): копия получает введённое название, главы и активности черновиками; открывается её `overview`.
+- B-CST-34 `edit` активности старого типа «Другая активность» (`custom`): фраза «нет редактора содержимого, меняется
+  только название» и ссылка в `settings`; заглушки нет ни у одного типа (тест, экзамен, задача с кодом, отправка
+  файла открывают свои конструкторы).
+- B-CST-35 `learners`, раздел «Учащиеся»: записанные на курс, сначала новые, «Показать ещё» по `next_cursor`; у
+  строки имя, дата записи и прогресс сервера. «Исключить из курса» (при `remove` в `allowed_actions` строки) -
+  подтверждение с именем: запись и прогресс уходят, работы остаются; после - сообщение и строки без него.
+- B-CST-36 `settings`, «Удаление курса» (при `delete` в `allowed_actions`): необратимо и каскадом, поэтому кнопка
+  подтверждения доступна только после ввода названия курса (фокус на «Отмена»); после - сообщение и список курсов.
+- B-CST-37 Секция «Сертификат»: «Предпросмотр PDF» показывает во фрейме того же источника образец, напечатанный
+  сервером (`GET /certifications/{id}/preview.pdf?lang=` языка интерфейса); сохранённая правка перерисовывает его.
 
 ## Изменено
 
@@ -92,8 +104,9 @@
 ## Не переносится
 
 - Конструктор вопросов теста и экзамена, тесты задачи с кодом, настройка отправки файла, сроки и «обязательная»
-  (`Policy.due_at_unix`, `Policy.required`, `FileSubmission.due_at_unix`) - срезы 5.1, 5.3, 5.4: их `edit` пока
-  заглушка, а у записи активности этих полей нет.
+  (`Policy.due_at_unix`, `Policy.required`, `FileSubmission.due_at_unix`) - срезы 5.1, 5.3, 5.4: `edit` и
+  `settings` этих типов отдаёт их срезам маршрут, у записи активности этих полей нет.
+- Редактор содержимого активности `custom` (B-CST-34).
 - `gradebook`, `submissions`, `results` - срез 6.1.
 - Наборы «Недавние» и «Требуют внимания» списка курсов: подписи без определения на сервере.
 
@@ -103,11 +116,12 @@
   принимают, веб его пока не шлёт.
 - `Idempotency-Key` у `POST /courses`, `/courses/{id}/chapters`, `/chapters/{id}/activities`, `/assessments`,
   `/file-submissions`, `/courses/{id}/updates`, `/courses/{id}/contributors`, `/certifications`.
-- Список учащихся курса с прогрессом и «Исключить учащегося»: нет `GET /courses/{id}/learners` и операции
-  отчисления (есть только `DELETE /enrollments/{id}` самого учащегося).
-- Предпросмотр PDF сертификата: `GET /certificates/{code}/pdf` требует выданный код, предпросмотра настройки нет.
+- Списки соавторов, объявлений и учащихся пагинируются, а правки отвечают одной строкой (или 204): загруженные
+  страницы кэша правятся на клиенте, новая строка встаёт в первую (объявление) или последнюю (соавтор) страницу.
 - `Contributor` без `allowed_actions`, `role`/`status` - строки; у `CourseUpdate` нет автора и `allowed_actions`;
   `ReadinessItem.code` - строка, а не перечисление.
 - `moveChapter`, `moveActivity`, `addGroupCourses`, `removeGroupCourses` отвечают 204 без тела: кэш
   правится на клиенте.
+- `PATCH /activities/{id}` закрепляет загрузки блоков (`sync_block_claims`) только у `dynamic`: правка документа
+  `custom` потеряла бы их, поэтому редактора у `custom` нет.
 - Срок у самой активности (`Activity`): поля нет. `settings.required` в контракте есть, студия его пока не правит.

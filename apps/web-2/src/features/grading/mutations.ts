@@ -1,21 +1,37 @@
+import { asyncRetry } from '@tanstack/react-pacer'
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query'
 
 import {
-  extendDeadlineMutation,
+  fileGradingHistoryQueryKey,
+  fileSubmissionReviewStatsQueryKey,
   getAttemptQueryKey,
   gradeAttemptMutation,
   gradebookInfiniteQueryKey,
   gradingHistoryQueryKey,
-  publishGradesMutation,
   reviewSubmissionQueryKey,
   saveGradeMutation,
   statsQueryKey,
   workQueueInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { gradeAttempt, saveGrade } from '#/shared/api/gen/sdk.gen'
-import type { Attempt, CourseId, TeacherSubmission } from '#/shared/api/gen/types.gen'
+import {
+  extendDeadline,
+  extendFileDeadline,
+  getBulkAction,
+  publishFileGrades,
+  publishGrades,
+  returnFileGrades,
+  returnGrades,
+} from '#/shared/api/gen/sdk.gen'
+import type {
+  Attempt,
+  BulkActionId,
+  BulkGradeSummary,
+  CourseId,
+  DeadlineExtensionRequest,
+  TeacherSubmission,
+} from '#/shared/api/gen/types.gen'
 
-import type { QueuePage, QueueRow } from './model/queue'
+import { type ExtendOutcome, extendOutcome, type QueuePage, type QueueRow } from './model/queue'
 import { queueBaseKey, type Work } from './queries'
 
 // The grading writes, apart from queries.ts: only the lazy screens import them, so the route entry stays light.
@@ -41,14 +57,18 @@ function patchQueue(queryClient: QueryClient, work: Work, saved: TeacherSubmissi
 
 export type ReviewIds = { work: Work; courseId: CourseId; submissionId: string }
 
-// Counts, the course gradebook and the teacher inbox change with a grade: read again where they are shown next.
+/** The work's counts, whatever group they were asked for. */
+const statsKey = (work: Work): QueryKey =>
+  work.kind === 'assessment'
+    ? statsQueryKey({ path: { assessment_id: work.id } })
+    : fileSubmissionReviewStatsQueryKey({ path: { file_submission_id: work.id } })
+
+// Counts, history, the course gradebook and the teacher inbox change with a grade: read again where shown next.
 const afterGrade = ({ work, courseId, submissionId }: ReviewIds): QueryKey[] => [
-  ...(work.kind === 'assessment'
-    ? [
-        statsQueryKey({ path: { assessment_id: work.id } }),
-        gradingHistoryQueryKey({ path: { submission_id: submissionId } }),
-      ]
-    : []),
+  statsKey(work),
+  work.kind === 'assessment'
+    ? gradingHistoryQueryKey({ path: { submission_id: submissionId } })
+    : fileGradingHistoryQueryKey({ path: { attempt_id: submissionId } }),
   gradebookInfiniteQueryKey({ path: { course_id: courseId } }),
   workQueueInfiniteQueryKey(),
 ]
@@ -75,41 +95,71 @@ export const gradeAttemptOptions = (queryClient: QueryClient, ids: ReviewIds) =>
 const bulkMeta = (work: Work, courseId: CourseId) => ({
   invalidates: [
     queueBaseKey(work),
-    ...(work.kind === 'assessment' ? [statsQueryKey({ path: { assessment_id: work.id } })] : []),
+    statsKey(work),
     gradebookInfiniteQueryKey({ path: { course_id: courseId } }),
     workQueueInfiniteQueryKey(),
   ],
 })
 
-export const publishAllOptions = (work: Work, courseId: CourseId) => ({
-  ...publishGradesMutation(),
-  meta: bulkMeta(work, courseId),
-})
+/** What publish-all came to (B-GRD-07, B-GRD-25); only an assessment tells how many still wait for grading. */
+export type PublishOutcome = { published: number; skipped: number; pending: number | null }
 
-/**
- * "Return for revision" on the selected rows (B-GRD-08): one grade save per row with its own `If-Match`; a refused
- * row is named, the others still go back. One invalidation for the whole batch.
- */
-export const returnManyOptions = (work: Work, courseId: CourseId) => ({
-  mutationFn: async (rows: readonly QueueRow[]) => {
-    const results = await Promise.allSettled(
-      rows.map(row => {
-        const headers = { 'If-Match': row.version }
-        return work.kind === 'assessment'
-          ? saveGrade({ path: { submission_id: row.id }, body: { action: 'return' }, headers, throwOnError: true })
-          : gradeAttempt({ path: { attempt_id: row.id }, body: { action: 'return' }, headers, throwOnError: true })
-      }),
-    )
-    const failed = rows.filter((_, index) => results[index]?.status === 'rejected')
-    return {
-      returned: rows.length - failed.length,
-      failed: failed.map(row => row.user.display_name || row.user.username),
+export const publishAllOptions = (work: Work, courseId: CourseId) => ({
+  mutationFn: async (): Promise<PublishOutcome> => {
+    if (work.kind === 'file') {
+      const path = { file_submission_id: work.id }
+      const { data } = await publishFileGrades({ path, throwOnError: true })
+      return { published: data.done_count, skipped: data.skipped_count, pending: null }
     }
+    const { data } = await publishGrades({ path: { assessment_id: work.id }, throwOnError: true })
+    return { published: data.published_count, skipped: data.skipped_count, pending: data.needs_grading_count }
   },
   meta: bulkMeta(work, courseId),
 })
 
+/** "Return for revision" on the selected rows in one call (B-GRD-08): the server counts returned and skipped rows. */
+export const returnManyOptions = (work: Work, courseId: CourseId) => ({
+  mutationFn: async (rows: readonly QueueRow[]): Promise<BulkGradeSummary> => {
+    const ids = rows.map(row => row.id)
+    const { data } =
+      work.kind === 'assessment'
+        ? await returnGrades({ path: { assessment_id: work.id }, body: { submission_ids: ids }, throwOnError: true })
+        : await returnFileGrades({
+            path: { file_submission_id: work.id },
+            body: { attempt_ids: ids },
+            throwOnError: true,
+          })
+    return data
+  },
+  meta: bulkMeta(work, courseId),
+})
+
+/**
+ * An assessment extension is a bulk action the worker runs (202): getBulkAction is asked once a second until it
+ * settles, so the queue is read again only once lateness is re-judged (B-GRD-27). Unsettled after 20 tries (or the
+ * check itself failing) reads as `queued`: the extension was accepted and the worker still applies it. One retryer
+ * per extension: a retryer aborts its previous run.
+ */
+async function settle(id: BulkActionId): Promise<ExtendOutcome> {
+  const check = async (): Promise<ExtendOutcome> => {
+    const outcome = extendOutcome((await getBulkAction({ path: { bulk_action_id: id }, throwOnError: true })).data)
+    if (outcome.state === 'queued') throw new Error('bulk action still running')
+    return outcome
+  }
+  const retry = asyncRetry(check, { backoff: 'fixed', baseWait: 1000, maxAttempts: 20, throwOnError: false })
+  return (await retry()) ?? { state: 'queued', count: 0 }
+}
+
+/** "Extend deadline" for selected learners (B-GRD-09): a file submission's is done in the call (B-GRD-25). */
 export const extendOptions = (work: Work, courseId: CourseId) => ({
-  ...extendDeadlineMutation(),
+  mutationFn: async (body: DeadlineExtensionRequest): Promise<ExtendOutcome> => {
+    if (work.kind === 'file') {
+      const path = { file_submission_id: work.id }
+      const { data } = await extendFileDeadline({ path, body, throwOnError: true })
+      return { state: 'done', count: data.done_count }
+    }
+    const { data: action } = await extendDeadline({ path: { assessment_id: work.id }, body, throwOnError: true })
+    return settle(action.id)
+  },
   meta: bulkMeta(work, courseId),
 })

@@ -25,7 +25,7 @@
   "notifications_type_submission_returned": "Submission returned",
   "notifications_type_deadline_extended": "Deadline extended",
   "notifications_type_deadline_approaching": "Deadline approaching",
-  "notifications_type_course_update": "Course update",
+  "notifications_type_course_update": "Course announcement",
   "notifications_type_discussion_reply": "Discussion reply",
   "notifications_type_contributor_application": "Co-author application",
   "notifications_text_activity": "“{activity}”, course “{course}”",

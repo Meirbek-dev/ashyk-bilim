@@ -106,3 +106,23 @@ for (const role of ['student', 'teacher', 'admin'] as const) {
     }
   })
 }
+
+/** Every message key: a raw key on screen means a text that was never translated. */
+const messageKeys = Object.keys(m)
+
+// kk and en smoke of every route (spec 9): each leaf as the first role that may see it.
+for (const locale of ['kk', 'en'] as const) {
+  for (const leaf of leaves) {
+    test(`${locale} smoke of ${leaf.id}`, async ({ page, context, seed, signInAs, baseURL }) => {
+      const role = (['admin', 'student', 'guest'] as const).find(each => expected(leaf, each, seed) === 'renders')
+      expect(role, 'some role sees the route').toBeDefined()
+      if (role) await signInAs(role)
+      await context.addCookies([{ name: 'ab_locale', value: locale, url: String(baseURL) }])
+      await page.goto(withParams(leaf.path, seed.params))
+      await expect(page.locator('html')).toHaveAttribute('lang', locale)
+      await expect(page.getByRole('main')).toBeVisible()
+      const text = await page.locator('body').innerText()
+      expect(messageKeys.filter(key => text.includes(key))).toEqual([])
+    })
+  }
+}

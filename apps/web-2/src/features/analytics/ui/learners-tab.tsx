@@ -42,13 +42,7 @@ export function LearnersTab() {
       <AtRiskTable search={search} filters={filters} />
       <ExportLinks links={[{ href: exportHrefs(filters).atRisk, label: m.analytics_export_at_risk() }]} />
       {learnerId && courseId ? (
-        <LearnerSheet
-          key={`${learnerId}:${courseId}`}
-          learnerId={learnerId}
-          courseId={courseId}
-          name={open?.user_display_name}
-          course={open?.course_name}
-        />
+        <LearnerSheet key={`${learnerId}:${courseId}`} learnerId={learnerId} courseId={courseId} row={open} />
       ) : null}
     </div>
   )

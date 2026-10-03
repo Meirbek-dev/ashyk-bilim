@@ -12,7 +12,7 @@ import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, isAssignableRole } from '../model/studio'
-import { updateContributorOptions } from '../queries'
+import { updateContributorOptions } from '../people-queries'
 import { RemoveContributor } from './remove-contributor'
 import { roleLabels } from './role-labels'
 

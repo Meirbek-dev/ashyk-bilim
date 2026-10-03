@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { createGroup, deleteGroup, listGroupMembers, listUsers } from '#/shared/api/gen/sdk.gen'
+import { createGroup, deleteGroup, listGroupMembersPage, listUsers } from '#/shared/api/gen/sdk.gen'
 
 import { type NewAccount, registerAccount } from '../fixtures/accounts'
 import { expect, type Seed, test as base } from '../fixtures/seed'
@@ -26,9 +26,13 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; account: NewAcc
 })
 
 const panel = (page: Page, name: string) => page.getByRole('dialog', { name })
-// The list is searched for the same user, so the table behind the panel shows their row.
-const openPanel = (page: Page, username: string) =>
-  page.goto(`/admin/users?q=${username}&user=${username}`).then(() => panel(page, 'E2E Account'))
+// The list is searched for the same user, so the table behind the panel shows their row; its link opens the panel.
+async function openPanel(page: Page, username: string) {
+  await page.goto(`/admin/users?q=${username}`)
+  await page.getByRole('table').getByRole('link', { name: 'E2E Account' }).click()
+  return panel(page, 'E2E Account')
+}
+const userParam = /[?&]user=[0-9a-f-]{36}(&|$)/
 
 test('B-ADM-01 one directory with "Show more", cards at 390 px', async ({ page, signInAs }) => {
   await signInAs('admin')
@@ -62,15 +66,17 @@ test('B-ADM-02 the search lives in the URL', async ({ page, account }) => {
 test('B-ADM-03 the panel is a shareable address that survives a reload', async ({ page, account }) => {
   await page.goto(`/admin/users?q=${account.username}`)
   await page.getByRole('table').getByRole('link', { name: 'E2E Account' }).click()
-  await expect(page).toHaveURL(new RegExp(`user=${account.username}`))
+  await expect(page).toHaveURL(userParam)
   const sheet = panel(page, 'E2E Account')
   await expect(sheet.getByText(account.email)).toBeVisible()
   await page.reload()
   await expect(sheet.getByText(`@${account.username}`)).toBeVisible()
   await sheet.getByRole('button', { name: m.ui_close({}, ru) }).click()
   await expect(page).not.toHaveURL(/user=/)
-  await page.goto(`/admin/users?user=nobody-${randomUUID().slice(0, 8)}`)
-  await expect(panel(page, m.admin_user_not_found({}, ru))).toBeVisible()
+  for (const id of [randomUUID(), 'nobody']) {
+    await page.goto(`/admin/users?user=${id}`)
+    await expect(panel(page, m.admin_user_not_found({}, ru))).toBeVisible()
+  }
 })
 
 test('B-ADM-04 roles are added and removed in the panel; the table follows', async ({ page, account }) => {
@@ -109,12 +115,12 @@ test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, a
     await sheet.getByLabel(m.admin_user_group_field({}, ru)).selectOption({ label: name })
     await sheet.getByRole('button', { name: m.admin_user_group_add({}, ru) }).click()
     await expect(page.getByText(m.admin_user_group_added({}, ru))).toBeVisible()
-    const members = await listGroupMembers({
+    const members = await listGroupMembersPage({
       client: api,
       path: { group_id: group.data.id },
       headers: cookie(seed),
     })
-    expect(members.data?.map(member => member.username)).toEqual([account.username])
+    expect(members.data?.items.map(member => member.username)).toEqual([account.username])
   } finally {
     await deleteGroup({ client: api, path: { group_id: group.data.id }, headers: cookie(seed) })
   }
@@ -143,7 +149,7 @@ test('B-ADM-07 a new user is made in the dialog; a taken username lands under it
   await dialog.getByLabel(m.admin_user_username({}, ru)).fill(username)
   await create.click()
   await expect(page.getByText(m.admin_user_created({}, ru))).toBeVisible()
-  await expect(page).toHaveURL(new RegExp(`user=${username}`))
+  await expect(page).toHaveURL(userParam)
   await expect(panel(page, 'Новый Пользователь').getByText(`${username}@e2e.test`)).toBeVisible()
 })
 

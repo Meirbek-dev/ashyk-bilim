@@ -1,0 +1,105 @@
+{
+  "$comment": "Operations without a web consumer, scheduled for deletion from the server in phase 9 (spec 10.1 S-12, G-07). The server lane's own list is apps/server/docs/phase9-removals.md. api-coverage skips these and fails on an entry that is gone or has a consumer again.",
+  "operations": [
+    {
+      "operation": "studyAsk",
+      "reason": "inline study answer; the AI panel uses the queued run stream (S-6.3)"
+    },
+    {
+      "operation": "analyzeCourse",
+      "reason": "inline variant; the web uses queueCourseAnalysis"
+    },
+    {
+      "operation": "analyzeSubmission",
+      "reason": "inline variant; the web uses the queued submission analysis"
+    },
+    {
+      "operation": "generateRemediation",
+      "reason": "inline variant; the web uses the queued run"
+    },
+    {
+      "operation": "critiqueLecture",
+      "reason": "inline variant; the web uses the queued lecture critique"
+    },
+    {
+      "operation": "getAiRun",
+      "reason": "run state comes over the run stream"
+    },
+    {
+      "operation": "runEvents",
+      "reason": "adminRunDetail carries the run journal"
+    },
+    {
+      "operation": "remediationSession",
+      "reason": "no screen reads a stored session; mistake review runs as an AI run"
+    },
+    {
+      "operation": "courseGradingEvents",
+      "reason": "per-course stream replaced by GET /me/events grading.updated (L-4)"
+    },
+    {
+      "operation": "submissionEvents",
+      "reason": "per-submission stream replaced by GET /me/events submission.updated (L-4)"
+    },
+    {
+      "operation": "listContributors",
+      "reason": "bare array; the web reads listContributorsPage (S-05, L-3)"
+    },
+    {
+      "operation": "listCourseUpdates",
+      "reason": "bare array; the web reads listCourseUpdatesPage (S-05, L-3)"
+    },
+    {
+      "operation": "listGroupMembers",
+      "reason": "bare array; the web reads listGroupMembersPage (S-05, L-3)"
+    },
+    {
+      "operation": "myCertificates",
+      "reason": "bare array; the web reads myCertificatesPage and myCourseCertificates (S-05, L-3)"
+    },
+    {
+      "operation": "listGroupCourses",
+      "reason": "the group screen shows no courses; links are managed from the course (groupsForCourse)"
+    },
+    {
+      "operation": "listBlocks",
+      "reason": "blocks are created by the editor only; a page save releases the files of removed blocks"
+    },
+    {
+      "operation": "getBlock",
+      "reason": "no screen reads one block; the document carries the block's file"
+    },
+    {
+      "operation": "deleteBlock",
+      "reason": "a page save releases removed blocks on the server; no explicit delete"
+    },
+    {
+      "operation": "downloadUpload",
+      "reason": "downloads use SignedDownload.path (same-origin, L-6)"
+    },
+    {
+      "operation": "getAssessment",
+      "reason": "the web reads getActivityAssessment (by activity)"
+    },
+    {
+      "operation": "currentDraft",
+      "reason": "the learner's draft comes from attemptState + mySubmissions"
+    },
+    {
+      "operation": "listCourseAssessments",
+      "reason": "the course overview is getCurriculum + readiness and the gradebook"
+    },
+    {
+      "operation": "getFileSubmission",
+      "reason": "the web reads getActivityFileSubmission (current_attempt included)"
+    },
+    {
+      "operation": "getDraft",
+      "reason": "the open attempt is getActivityFileSubmission.current_attempt"
+    },
+    {
+      "operation": "getCertification",
+      "reason": "settings read the course's one template through listCourseCertifications"
+    }
+  ]
+}

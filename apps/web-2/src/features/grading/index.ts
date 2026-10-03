@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { lazy } from 'react'
 
-import type { QueueSearch } from './route'
+import type { GradebookSearch, QueueSearch } from './route'
 
 // Route files import only these (and the URL schemas from `route.ts`): the loaders and the screens behind dynamic
 // imports, so the grading code and its API calls stay out of the route entry. The router's pending boundary is the
@@ -15,8 +15,8 @@ export const ensureReview = async (queryClient: QueryClient, activityId: string,
   (await reads()).ensureReview(queryClient, activityId, id, search)
 export const ensureResults = async (queryClient: QueryClient, activityId: string) =>
   (await reads()).ensureResults(queryClient, activityId)
-export const ensureGradebook = async (queryClient: QueryClient, courseId: string) =>
-  (await reads()).ensureGradebook(queryClient, courseId)
+export const ensureGradebook = async (queryClient: QueryClient, courseId: string, search: GradebookSearch) =>
+  (await reads()).ensureGradebook(queryClient, courseId, search)
 
 export const QueuePage = lazy(() => import('./ui/queue-page').then(module => ({ default: module.QueuePage })))
 export const ReviewPage = lazy(() => import('./ui/review-page').then(module => ({ default: module.ReviewPage })))

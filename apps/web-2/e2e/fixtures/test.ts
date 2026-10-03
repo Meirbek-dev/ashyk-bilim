@@ -5,6 +5,14 @@ import { test as base, expect, type Page } from '@playwright/test'
 // repeated GET of the same URL within one navigation, on serious/critical axe findings, and on
 // horizontal page overflow at 390 px. Specs import `test` and `expect` from here, never from Playwright.
 
+/** Paths a test expects to be read again within one navigation: a colleague's change arrives as an event. */
+const repeatable = new WeakMap<Page, string[]>()
+
+/** Declares that `pathname` is read again on purpose (a change made elsewhere while the page is open, B-NOT-14). */
+export function expectReread(page: Page, pathname: string): void {
+  repeatable.set(page, [...(repeatable.get(page) ?? []), pathname])
+}
+
 function watch(page: Page, problems: string[]): void {
   let requested = new Set<string>()
   page.on('framenavigated', frame => {
@@ -12,6 +20,9 @@ function watch(page: Page, problems: string[]): void {
   })
   page.on('request', request => {
     if (request.method() !== 'GET' || !['fetch', 'xhr'].includes(request.resourceType())) return
+    // A worker's bulk action has no event: its status is polled by design (grading B-GRD-27).
+    const { pathname } = new URL(request.url())
+    if (pathname.startsWith('/api/v2/bulk-actions/') || repeatable.get(page)?.includes(pathname)) return
     if (requested.has(request.url())) problems.push(`duplicate GET ${request.url()}`)
     requested.add(request.url())
   })

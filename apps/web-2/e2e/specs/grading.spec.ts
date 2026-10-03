@@ -1,19 +1,12 @@
-import type { Page } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
-import { expect, type Graded, ru, test } from './grading-fixture'
+import { expectReread } from '../fixtures/test'
+import { expect, queue, review, row, ru, test, toast } from './grading-fixture'
 
 // Slice 6.1: the queue, one review, the results and the gradebook. Each test gets its own course (grading-fixture).
 // The fixture registers and signs in two learners and hands in their work: more than the default 30 s on a busy stand.
 test.describe.configure({ timeout: 90_000 })
-
-const queue = (g: { courseId: string; activityId: string }) =>
-  `/teach/courses/${g.courseId}/activities/${g.activityId}/submissions`
-const review = (g: Graded, id: string) => `${queue(g)}/${id}`
-const row = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text })
-const toast = (page: Page, text: string) => page.getByText(text, { exact: true }).first()
 
 test('B-GRD-01 B-GRD-02 B-GRD-03 B-GRD-05 B-GRD-06 the queue lists the hand-ins with server counts; filters and sort live in the URL', async ({
   page,
@@ -94,6 +87,8 @@ test('B-GRD-15 a grade saved meanwhile by a colleague opens the conflict dialog;
   await page.goto(review(graded, graded.boris.submissionId))
   const points = page.getByLabel(m.grading_item_score({ max: 10 }, ru))
   await points.fill('3')
+  // The colleague's save reaches the open page as an event: the review is read again (B-NOT-14), by design.
+  expectReread(page, `/api/v2/submissions/${graded.boris.submissionId}/review`)
   await graded.grade(graded.boris.submissionId, { action: 'save', feedback: 'Коллега' })
   await page.getByRole('button', { name: m.grading_save({}, ru) }).click()
   const dialog = page.getByRole('alertdialog')
@@ -145,7 +140,7 @@ test('B-GRD-08 the selected hand-ins go back for revision', async ({ page, signI
   await expect(row(page, graded.boris.name)).toContainText(m.grading_status_pending({}, ru))
 })
 
-test('B-GRD-09 a deadline extension takes a future date; a past one is an error under the field', async ({
+test('B-GRD-09 B-GRD-27 a deadline extension takes a future date (a past one is an error under the field); the toast waits for the worker', async ({
   page,
   signInAs,
   graded,
@@ -162,10 +157,48 @@ test('B-GRD-09 a deadline extension takes a future date; a past one is an error 
   await due.fill(toDateTimeInput(Math.floor(Date.now() / 1000) + 7 * 86_400))
   await dialog.getByLabel(m.grading_extend_reason({}, ru)).fill('Болезнь')
   await dialog.getByRole('button', { name: m.grading_extend({}, ru) }).click()
-  await expect(toast(page, m.grading_extend_done({}, ru))).toBeVisible()
+  await expect(toast(page, m.grading_extend_done({ count: '1' }, ru))).toBeVisible()
 })
 
-test('B-GRD-16 a file attempt: download by a signed link, rubric points, grade and feedback publish', async ({
+test('B-GRD-24 the group filter narrows the queue and the gradebook (URL)', async ({ page, signInAs, graded }) => {
+  const group = await graded.groupOf(graded.ana)
+  await signInAs('teacher')
+  await page.goto(queue(graded))
+  await page.getByLabel(m.grading_group({}, ru)).selectOption({ label: group })
+  await expect(page).toHaveURL(/group=/)
+  await expect(row(page, graded.boris.name)).toHaveCount(0)
+  await expect(row(page, graded.ana.name)).toBeVisible()
+  await page.goto(`/teach/courses/${graded.courseId}/gradebook`)
+  const cells = page.getByRole('table', { name: m.grading_gradebook_table({}, ru) }).getByRole('link')
+  await expect(cells).toHaveCount(2)
+  await page.getByLabel(m.grading_group({}, ru)).selectOption({ label: group })
+  await expect(cells).toHaveCount(1)
+  await expect(cells).toHaveAttribute('href', review(graded, graded.ana.submissionId))
+})
+
+test('B-GRD-25 the file queue: server counts, publish-all, extension', async ({ page, signInAs, fileTask }) => {
+  await fileTask.grade({ action: 'save', final_score: 70, feedback: 'Черновик' })
+  await signInAs('teacher')
+  await page.goto(queue(fileTask))
+  await expect(page.getByText(m.grading_queue_count({ count: 1 }, ru))).toBeVisible()
+  await expect(page.getByRole('link', { name: m.grading_filter_graded({}, ru) })).toContainText('1')
+  await page.getByRole('button', { name: m.grading_publish_all({}, ru) }).click()
+  const confirm = page.getByRole('alertdialog')
+  await expect(confirm).toContainText(m.grading_publish_all_text({ count: '1' }, ru))
+  await confirm.getByRole('button', { name: m.grading_publish({}, ru) }).click()
+  await expect(toast(page, m.grading_publish_files_done({ published: '1', skipped: '0' }, ru))).toBeVisible()
+  await expect(row(page, fileTask.name)).toContainText(m.grading_status_published({}, ru))
+  // A second write reads the queue again: a new navigation, so the page-health check counts it apart.
+  await page.reload()
+  await row(page, fileTask.name).getByRole('checkbox').click()
+  await page.getByRole('button', { name: m.grading_extend({}, ru) }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(m.grading_extend_due({}, ru)).fill(toDateTimeInput(Math.floor(Date.now() / 1000) + 86_400))
+  await dialog.getByRole('button', { name: m.grading_extend({}, ru) }).click()
+  await expect(toast(page, m.grading_extend_done({ count: '1' }, ru))).toBeVisible()
+})
+
+test('B-GRD-16 B-GRD-26 a file attempt: download by a signed link, rubric points, grade and feedback publish; the history lists it', async ({
   page,
   signInAs,
   fileTask,
@@ -180,6 +213,10 @@ test('B-GRD-16 a file attempt: download by a signed link, rubric points, grade a
   await page.getByRole('button', { name: m.grading_publish({}, ru) }).click()
   await expect(toast(page, m.grading_published({}, ru))).toBeVisible()
   await expect(page.getByRole('main')).toContainText(m.grading_status_published({}, ru))
+  await page.getByText(m.grading_history({}, ru)).click()
+  const history = page.getByRole('group').filter({ hasText: m.grading_history({}, ru) })
+  await expect(history).toContainText('Ясно и по делу')
+  await expect(history).toContainText(m.grading_status_published({}, ru))
 })
 
 test('B-GRD-18 results summarize the assessment from the server; a file task says it has no summary', async ({

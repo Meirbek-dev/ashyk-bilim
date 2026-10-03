@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
-import { StreakBadge } from '#/features/achievements'
+import { StreakBadge, useLoginStreak } from '#/features/achievements'
 import { learnerWorkOptions } from '#/features/teach-inbox'
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
@@ -18,6 +18,7 @@ import { UpdatesSection } from './updates-section'
 
 /** /home "Today": what to do now, from the agenda; the learner's queue adds only what the agenda lacks. */
 export function HomePage() {
+  useLoginStreak()
   const agenda = useSuspenseQuery(homeAgendaOptions())
   const work = useSuspenseInfiniteQuery(learnerWorkOptions())
   const { continue_learning, deadlines, recent_results, course_updates } = agenda.data

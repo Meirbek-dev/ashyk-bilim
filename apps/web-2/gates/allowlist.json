@@ -1,9 +1,9 @@
 {
   "$comment": "Every exception to a gate, each with a reason (spec 4.7, G-12). Changes here are reported in the phase report (8.6).",
   "apiCoverage": {
-    "phase": 0,
+    "phase": 7,
     "enforceFromPhase": 7,
-    "reason": "During the rewrite most operations have no consumer yet; G-07 reports the count and turns red from phase 7 (spec 12, Ф7: G-07 without exceptions except service operations).",
+    "reason": "Enforced from phase 7 (spec 12, Ф7): every operation has a consumer, is a service operation below, or is scheduled for server deletion in gates/server-removals.json.",
     "serviceOperations": [
       {
         "operation": "live",
@@ -12,13 +12,17 @@
       {
         "operation": "ready",
         "reason": "readiness probe for infra (/api/v2/health/ready), not a UI operation"
+      },
+      {
+        "operation": "googleCallback",
+        "reason": "Google's redirect target: the browser reaches it from Google's consent screen, the web never calls it (the Google start link sends the browser there)"
       }
     ]
   },
   "underConstruction": {
-    "phase": 1,
+    "phase": 7,
     "enforceFromPhase": 7,
-    "reason": "Phase 1.2b lays out the whole route tree before the slices exist; each slice replaces its UnderConstruction routes. The gate lists them and turns red from phase 7 (spec 12, Ф7: no stubs at cutover)."
+    "reason": "Enforced from phase 7 (spec 12, Ф7: no stubs at cutover); the UnderConstruction component is deleted, the gate keeps any new stub out."
   },
   "suppressions": [],
   "i18nSameAsRu": [

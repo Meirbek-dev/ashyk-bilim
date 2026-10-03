@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -16,7 +16,7 @@ const isDecided = (error: unknown) => error instanceof ApiError && (error.status
 /** Apply to co-author an open course, or withdraw one's own pending application (UX-023). */
 export function ContributorApplication({ course, userId }: { course: Course; userId: UserId }) {
   const queryClient = useQueryClient()
-  const roster = useSuspenseQuery(contributorsOptions(course.id))
+  const roster = useSuspenseInfiniteQuery(contributorsOptions(course.id))
   const apply = useMutation(applyOptions(queryClient, course.id))
   const withdraw = useMutation(withdrawOptions(queryClient, course.id, userId))
   const state = application(course, roster.data, userId)

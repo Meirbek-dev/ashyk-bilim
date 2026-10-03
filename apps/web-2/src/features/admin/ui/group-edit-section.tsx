@@ -8,7 +8,7 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
-import { updateGroupOptions } from '../queries'
+import { updateGroupOptions } from '../group-queries'
 
 /** The group's one edit place (`update`): name and description; the answer replaces the cached group. */
 export function GroupEditSection({ group }: { group: Usergroup }) {

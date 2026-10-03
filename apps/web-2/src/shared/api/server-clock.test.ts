@@ -1,38 +1,36 @@
-import { expect, test } from 'vite-plus/test'
+import { beforeEach, expect, test } from 'vite-plus/test'
 
-import { eventServerTime, noteServerDate, readMayPredate, serverOffset } from './server-clock'
+import { eventClientTime, noteServerDate, noteStreamEvent, readMayPredate, resetServerClock } from './server-clock'
 
 const SECOND = 1_700_000_000
+const MS = SECOND * 1000
+const event = (appended: number | string, sentAt = SECOND) => ({ event_id: `${appended}-0`, sent_at: sentAt })
 
-test('B-NOT-14 the event time is its stream id when that agrees with `sent_at`, else the end of that second', () => {
-  expect(eventServerTime({ event_id: `${SECOND * 1000 + 420}-0`, sent_at: SECOND })).toBe(SECOND * 1000 + 420)
-  // The append may fall into the next second after the stamp.
-  expect(eventServerTime({ event_id: `${SECOND * 1000 + 1010}-3`, sent_at: SECOND })).toBe(SECOND * 1000 + 1010)
-  // Another clock (behind or far ahead) or another id form: never early.
-  expect(eventServerTime({ event_id: `${SECOND * 1000 - 5}-0`, sent_at: SECOND })).toBe(SECOND * 1000 + 1000)
-  expect(eventServerTime({ event_id: `${SECOND * 1000 + 9000}-0`, sent_at: SECOND })).toBe(SECOND * 1000 + 1000)
-  expect(eventServerTime({ event_id: 'opaque', sent_at: SECOND })).toBe(SECOND * 1000 + 1000)
+beforeEach(resetServerClock)
+
+test('B-NOT-14 an event is timed by its append through the stream offset, the tightest arrival so far', () => {
+  // The server clock runs 5 s behind the tab; events arrive 40 ms and then 5 ms after their append.
+  noteStreamEvent(event(MS + 100), MS + 100 + 5000 + 40)
+  expect(eventClientTime(event(MS + 100))).toBe(MS + 100 + 5000 + 40)
+  noteStreamEvent(event(MS + 300), MS + 300 + 5000 + 5)
+  expect(eventClientTime(event(MS + 420))).toBe(MS + 420 + 5000 + 5)
 })
 
-test('B-NOT-14 a read that landed after the event (on the server clock) is not read again; an older one is', () => {
-  const at = SECOND * 1000 + 420
-  // The server clock runs 5 s behind the tab.
-  const offset = -5000
-  // The own write's refetch landed 80 ms after the echo was sent: the late echo skips it.
-  expect(readMayPredate(at - offset + 80, at, offset)).toBe(false)
-  // A colleague's change after the read landed: the read is stale.
-  expect(readMayPredate(at - offset - 80, at, offset)).toBe(true)
-  // Clocks compared as if equal would have skipped that stale read.
-  expect(readMayPredate(at - offset - 80, at, 0)).toBe(false)
-  // No response seen yet: no offset, always read again.
-  expect(readMayPredate(Number.MAX_SAFE_INTEGER, at, undefined)).toBe(true)
+test('B-NOT-14 an id that disagrees with `sent_at` falls back to the end of that second through the `Date` offset', () => {
+  noteStreamEvent(event(MS), MS)
+  expect(eventClientTime(event(MS - 5))).toBeUndefined()
+  noteServerDate(new Date(MS).toUTCString(), MS + 300)
+  noteServerDate('not a date', 0)
+  // Date samples: stamped (floored) before arrival, so the offset is at most -300 here.
+  expect(eventClientTime(event(MS - 5))).toBe(MS + 1000 + 300)
+  expect(eventClientTime(event(MS + 9000))).toBe(MS + 1000 + 300)
+  expect(eventClientTime({ event_id: 'opaque', sent_at: SECOND })).toBe(MS + 1000 + 300)
 })
 
-test('B-NOT-14 the clock offset is the largest `Date - receipt` sample (a lower bound of the true one)', () => {
-  noteServerDate(null)
-  noteServerDate('not a date')
-  expect(serverOffset()).toBeUndefined()
-  noteServerDate('Thu, 01 Jan 1970 00:00:10 GMT', 9000)
-  noteServerDate('Thu, 01 Jan 1970 00:00:10 GMT', 9500)
-  expect(serverOffset()).toBe(1000)
+test('B-NOT-14 a read that landed after the event is not read again; an older or an unplaced one is', () => {
+  // The own write's refetch landed after its echo had arrived (the echo waited for the write to settle).
+  expect(readMayPredate(MS + 80, MS)).toBe(false)
+  // A colleague's change after the read landed.
+  expect(readMayPredate(MS - 80, MS)).toBe(true)
+  expect(readMayPredate(Number.MAX_SAFE_INTEGER, undefined)).toBe(true)
 })

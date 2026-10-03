@@ -45,7 +45,7 @@
   "platform_page_studio": "Activity studio",
   "platform_page_submission": "Submission",
   "platform_tab_about": "About",
-  "platform_tab_updates": "Updates",
+  "platform_tab_updates": "Announcements",
   "platform_tab_discussions": "Discussions",
   "platform_tab_overview": "Overview",
   "platform_tab_content": "Content",
@@ -62,7 +62,6 @@
   "platform_tab_profile": "Profile",
   "platform_tab_security": "Security",
   "platform_tab_appearance": "Appearance",
-  "platform_under_construction": "This section is coming soon.",
   "platform_back": "Back",
   "platform_not_found_search": "Search for it"
 }

@@ -1,4 +1,5 @@
 export { curriculumOptions, ensureStudio } from './curriculum-queries'
+export { learnersOptions } from './people-queries'
 export {
   contributorsOptions,
   courseGroupsOptions,
@@ -12,6 +13,7 @@ export {
 export { ActivityEditPage } from './ui/activity-edit-page'
 export { ActivityNotFound } from './ui/activity-not-found'
 export { ActivitySettingsPage } from './ui/activity-settings-page'
+export { LockableSection } from './ui/lockable-section'
 export { SaveStatusContext } from './ui/save-status'
 export { ContentPage } from './ui/content-page'
 export { CourseSettingsPage } from './ui/settings-page'

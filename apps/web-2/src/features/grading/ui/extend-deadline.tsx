@@ -3,7 +3,8 @@ import { useState } from 'react'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentId, CourseId } from '#/shared/api/gen/types.gen'
+import type { CourseId } from '#/shared/api/gen/types.gen'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { formatNumber, fromDateTimeInput } from '#/shared/i18n/format'
@@ -12,6 +13,7 @@ import { toast } from '#/shared/ui/toast'
 
 import { extensionTargets, type QueueRow } from '../model/queue'
 import { extendOptions } from '../mutations'
+import type { Work } from '../queries'
 
 // Field names follow the request, so the server's 422 (a past date) lands under the date field.
 const extendSchema = v.object({
@@ -19,26 +21,30 @@ const extendSchema = v.object({
   reason: v.string(),
 })
 
-type ExtendDeadlineProps = { assessmentId: AssessmentId; courseId: CourseId; rows: readonly QueueRow[] }
+type ExtendDeadlineProps = { work: Work; courseId: CourseId; rows: readonly QueueRow[] }
 
-/** "Extend deadline" for the selected course members (B-GRD-09): a date in the platform zone and a reason. */
-export function ExtendDeadline({ assessmentId, courseId, rows }: ExtendDeadlineProps) {
+/**
+ * "Extend deadline" for the selected course members (B-GRD-09, B-GRD-25): a date in the platform zone and a reason;
+ * the toast waits for the outcome (B-GRD-27), a failed extension stays in the dialog.
+ */
+export function ExtendDeadline({ work, courseId, rows }: ExtendDeadlineProps) {
   const [open, setOpen] = useState(false)
-  const extend = useMutation(extendOptions({ kind: 'assessment', id: assessmentId }, courseId))
+  const extend = useMutation(extendOptions(work, courseId))
   const { ids, skipped } = extensionTargets(rows)
   const form = useAppForm(extendSchema, {
     defaultValues: { new_due_at_unix: '', reason: '' },
     onSubmit: ({ new_due_at_unix: due, reason }) =>
       extend.mutateAsync(
+        { new_due_at_unix: fromDateTimeInput(due), user_ids: ids, ...(reason.trim() ? { reason } : {}) },
         {
-          path: { assessment_id: assessmentId },
-          body: { new_due_at_unix: fromDateTimeInput(due), user_ids: ids, ...(reason.trim() ? { reason } : {}) },
-        },
-        {
-          onSuccess: () => {
+          onSuccess: ({ state, count }) => {
+            if (state === 'failed') return
             setOpen(false)
             form.reset()
-            toast.add({ title: m.grading_extend_done() })
+            toast.add({
+              title:
+                state === 'done' ? m.grading_extend_done({ count: formatNumber(count) }) : m.grading_extend_queued(),
+            })
           },
         },
       ),
@@ -59,6 +65,7 @@ export function ExtendDeadline({ assessmentId, courseId, rows }: ExtendDeadlineP
       error={extend.error}
     >
       <p className="text-sm text-muted-foreground">{m.grading_extend_text({ count: formatNumber(ids.length) })}</p>
+      {extend.data?.state === 'failed' ? <ErrorAlert>{m.grading_extend_failed()}</ErrorAlert> : null}
       {skipped.length > 0 ? (
         <p className="text-sm text-muted-foreground">{m.grading_extend_skipped({ names: skipped.join(', ') })}</p>
       ) : null}

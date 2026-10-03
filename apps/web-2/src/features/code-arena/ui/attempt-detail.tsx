@@ -8,6 +8,7 @@ import { Skeleton } from '#/shared/ui/skeleton'
 
 import { answerOf, languageOf, testsPassed, type CodeItem } from '../model/arena'
 import { languagesOptions } from '../queries'
+import { FinalRun } from './final-run'
 import { CodeEditor } from './lazy-editor'
 
 /** What the attempt came to (B-COD-10): the grade once released, else why it is not shown yet. */
@@ -22,7 +23,7 @@ function outcome(attempt: StudentSubmission): string[] {
   ]
 }
 
-/** A handed-in attempt: its result and its code in its language, read only (B-COD-11). */
+/** A handed-in attempt: its result, the run it was graded on and its code in its language, read only (B-COD-11). */
 export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; code: CodeItem }) {
   const { data: languages } = useSuspenseQuery(languagesOptions())
   const answer = answerOf(attempt, code.item.id)
@@ -32,6 +33,7 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
       {outcome(attempt).map(line => (
         <p key={line}>{line}</p>
       ))}
+      {attempt.status === 'draft' ? null : <FinalRun itemId={code.item.id} submissionId={attempt.id} />}
       {answer ? (
         <>
           <p className="text-muted-foreground">{language?.name ?? m.code_language_unknown({ id: answer.language })}</p>

@@ -13,7 +13,7 @@ import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, type RoleForm, roleSchema } from '../model/studio'
-import { addContributorsOptions } from '../queries'
+import { addContributorsOptions } from '../people-queries'
 import { roleLabels } from './role-labels'
 
 const defaultRole: RoleForm = { role: 'contributor' }

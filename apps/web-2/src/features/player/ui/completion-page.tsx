@@ -7,7 +7,7 @@ import { formatDate, formatNumber } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/ui/button'
 import { Progress } from '#/shared/ui/progress'
 
-import { learnerStateOptions } from '../queries'
+import { courseCertificatesOptions, learnerStateOptions } from '../queries'
 import { BackToCourse } from './back-to-course'
 
 /**
@@ -17,10 +17,13 @@ import { BackToCourse } from './back-to-course'
 export function CompletionPage() {
   const { courseId } = useParams({ from: '/_authed/learn/$courseId/complete' })
   const { data: state } = useSuspenseQuery(learnerStateOptions(courseId))
+  // Not the state's `certificate.verify_code`: that one only reports, this read issues a certificate configured after
+  // the learner finished.
+  const { data: certificates } = useSuspenseQuery(courseCertificatesOptions(courseId))
   const { progress, certificate } = state
   const completed = state.enrollment_state === 'completed'
   const nextId = state.next_action?.enabled ? state.next_action.activity_id : null
-  const code = certificate.issued ? certificate.verify_code : null
+  const code = certificates[0]?.certificate.verify_code ?? null
   return (
     <FocusPage back={<BackToCourse courseId={courseId} />} title={state.title}>
       <section className="flex flex-col items-start gap-gutter">

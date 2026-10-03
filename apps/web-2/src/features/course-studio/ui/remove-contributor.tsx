@@ -7,7 +7,7 @@ import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
-import { removeContributorOptions } from '../queries'
+import { removeContributorOptions } from '../people-queries'
 
 type RemoveContributorProps = { courseId: string; row: Contributor; applying: boolean }
 

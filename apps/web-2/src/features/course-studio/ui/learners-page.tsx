@@ -8,6 +8,7 @@ import { ListState } from '#/shared/components/list-state'
 
 import { can, courseStatus, type CourseStatus } from '../model/course'
 import { courseGroupsOptions, courseOptions } from '../queries'
+import { LearnersSection } from './learners-section'
 import { LinkGroups } from './link-groups'
 import { UnlinkGroup } from './unlink-group'
 
@@ -17,7 +18,10 @@ const accessText: Record<CourseStatus, () => string> = {
   archived: m.studio_access_archived,
 }
 
-/** `learners`: who can see the course (from its status) and the groups whose members see it while it is a draft. */
+/**
+ * `learners`: who can see the course (from its status), the groups whose members see it while it is a draft, and the
+ * enrolled learners.
+ */
 export function LearnersPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/learners' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
@@ -66,6 +70,7 @@ export function LearnersPage() {
           </DataList>
         </ListState>
       </section>
+      <LearnersSection courseId={courseId} />
     </div>
   )
 }

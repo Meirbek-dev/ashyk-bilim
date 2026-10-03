@@ -5,12 +5,13 @@ import { m } from '#/paraglide/messages'
 import { attemptOptions, taskOptions } from '../queries'
 import { FileGradeForm } from './file-grade-form'
 import { FilesList } from './files-list'
+import { HistorySection } from './history-section'
 import type { ReviewAside } from './review-aside'
 import { ReviewFrame } from './review-frame'
 
 type FileReviewProps = { courseId: string; activityId: string; submissionId: string; aside?: ReviewAside | undefined }
 
-/** A file attempt under review: its files, then the rubric, grade and feedback (B-GRD-16). */
+/** A file attempt under review: its files, then the rubric, grade and feedback (B-GRD-16), then the history. */
 export function FileReview({ courseId, activityId, submissionId, aside }: FileReviewProps) {
   const { data: task } = useSuspenseQuery(taskOptions(activityId))
   const { data: attempt } = useSuspenseQuery(attemptOptions(submissionId))
@@ -24,6 +25,7 @@ export function FileReview({ courseId, activityId, submissionId, aside }: FileRe
         <FilesList files={attempt.files} />
       </section>
       <FileGradeForm key={attempt.id} ids={ids} attempt={attempt} rubric={task.rubric} />
+      <HistorySection key={`history-${attempt.id}`} work={ids.work} submissionId={attempt.id} />
     </ReviewFrame>
   )
 }

@@ -12,6 +12,7 @@ import { AccessSection } from './access-section'
 import { CopySection } from './copy-section'
 import { DetailsSection } from './details-section'
 import { JournalSection } from './journal-section'
+import { lockReason } from './labels'
 import { OverridesSection } from './overrides-section'
 import { PolicySection } from './policy-section'
 import { PublishingSection } from './publishing-section'
@@ -50,7 +51,7 @@ export function AssessmentSettingsPage() {
   return (
     <SettingsPage title={m.assessments_settings_title()} nav={nav}>
       <div id="name">
-        <ActivitySettingsPage />
+        <ActivitySettingsPage lock={lockReason(assessment)} />
       </div>
       <div id="details">
         <DetailsSection activityId={activityId} assessment={assessment} />

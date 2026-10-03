@@ -10,7 +10,8 @@ import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { groupChoiceSchema } from '../model/admin'
-import { addMembersOptions, groupChoicesOptions } from '../queries'
+import { addMembersOptions } from '../group-queries'
+import { groupChoicesOptions } from '../queries'
 
 /** "Add to group": the groups the caller may change the members of (`manage_members`). Shown with `groups.manage`. */
 export function UserGroup({ user }: { user: AdminUser }) {

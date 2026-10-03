@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { applyContributor, updateCourse } from '#/shared/api/gen/sdk.gen'
+import { applyContributor, enroll, updateCourse } from '#/shared/api/gen/sdk.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
 
@@ -17,6 +17,26 @@ test('B-CST-13 learners says who sees the course, by its status', async ({ page,
   const published = await studio.course({ chapters: [{ pages: [{ published: true }] }], publish: true })
   await page.goto(tab(published.course.id, 'learners'))
   await expect(page.getByText(m.studio_access_published({}, ru))).toBeVisible()
+})
+
+test('B-CST-35 learners lists who enrolled; one is removed from the course after a confirmation', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const { course } = await studio.course({ chapters: [{ pages: [{ published: true }] }], publish: true })
+  const student = cookieOf(seed, 'student')
+  await enroll({ client: studio.api, path: { course_id: course.id }, headers: student, throwOnError: true })
+  await page.goto(tab(course.id, 'learners'))
+  const learners = page.getByRole('region', { name: m.studio_learners_title({}, ru) })
+  const row = learners.getByRole('listitem').filter({ hasText: '@e2e-student1' })
+  await expect(row).toContainText('0 %')
+  await row.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
+  const confirm = page.getByRole('alertdialog', { name: /^Исключить «/ })
+  await expect(confirm.getByText(m.studio_learner_remove_consequence({}, ru))).toBeVisible()
+  await confirm.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
+  await expect(page.getByText(m.studio_learner_removed({}, ru))).toBeVisible()
+  await expect(learners.getByText(m.studio_learners_empty({}, ru))).toBeVisible()
 })
 
 test('B-CST-14 a group is linked from the choices and unlinked after a confirmation', async ({ page, studio }) => {

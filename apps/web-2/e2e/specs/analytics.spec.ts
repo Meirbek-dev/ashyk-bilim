@@ -216,6 +216,33 @@ test('B-ANL-22 an unknown group leaves the URL before any read', async ({ page }
   await expect(page.getByRole('heading', { level: 1, name: m.platform_nav_analytics({}, ru) })).toBeVisible()
 })
 
+test('B-ANL-23 B-ANL-24 alerts on the overview, forecasts on performance, why now for a learner', async ({
+  page,
+  seed,
+}) => {
+  await page.goto('/teach/analytics/overview')
+  // The seed learner has no progress: the overview raises a risk alert, its count read from params.
+  const alerts = page.getByRole('region', { name: m.analytics_alerts_title({}, ru) })
+  await expect(
+    alerts.getByRole('listitem').filter({ hasText: m.analytics_code_risk_spike({ count: '' }, ru) }),
+  ).toBeVisible()
+  await expect(alerts.getByText(m.analytics_severity_warning({}, ru)).first()).toBeVisible()
+  await page.goto('/teach/analytics/performance')
+  await expect(
+    page
+      .getByRole('region', { name: m.analytics_forecasts_title({}, ru) })
+      .getByRole('listitem')
+      .first(),
+  ).toBeVisible()
+  await page.goto('/teach/analytics/learners')
+  const table = page.getByRole('table', { name: m.analytics_at_risk_table({}, ru) })
+  await expect(table.getByRole('columnheader', { name: m.analytics_col_why_now({}, ru) })).toBeVisible()
+  // The panel is modal: the table behind it leaves the accessibility tree, so it is opened last.
+  const learner = seed.accounts.student.session.user_id
+  await page.goto(`/teach/analytics/learners?learnerId=${learner}&courseId=${seed.params.courseId}`)
+  await expect(page.getByRole('dialog')).toContainText(m.analytics_learner_action({}, ru))
+})
+
 test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', async ({ page, signInAs }) => {
   await page.goto('/admin/analytics')
   await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()

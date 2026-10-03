@@ -1,6 +1,6 @@
 # certificates
 
-Операции: verifyCertificate, certificatePdf
+Операции: verifyCertificate, certificatePdf, certificationPreviewPdf
 
 ## Поведение
 
@@ -19,7 +19,8 @@
 
 ## Не переносится
 
-- Настройка и предпросмотр сертификата курса - студия курса (срез 4.1, `settings`).
+- Настройка и предпросмотр сертификата курса - студия курса (срез 4.1, `settings`, B-CST-21, B-CST-37); здесь только
+  адрес предпросмотра (`certificationPreviewHref`), рядом с адресом PDF.
 
 ## Ждёт сервера
 

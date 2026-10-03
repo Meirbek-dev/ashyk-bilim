@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/publish')
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(readinessOptions(params.courseId)),
-      context.queryClient.ensureQueryData(updatesOptions(params.courseId)),
+      context.queryClient.ensureInfiniteQueryData(updatesOptions(params.courseId)),
     ]),
   staticData: { title: m.platform_tab_publish },
   component: PublishPage,

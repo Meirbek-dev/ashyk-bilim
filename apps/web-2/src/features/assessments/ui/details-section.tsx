@@ -1,22 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { LockableSection } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { detailsBody, detailsForm, detailsFormSchema } from '../model/details'
 import { updateAssessmentOptions } from '../queries'
-import { gradingLabels, optionsOf } from './labels'
+import { gradingLabels, lockReason, optionsOf } from './labels'
 import { MarkdownField } from './markdown-field'
 import { isStale, useVersion } from './use-version'
 
 type DetailsSectionProps = { activityId: string; assessment: AssessmentDetail }
 
-/** "Basics": the description learners read, the weight in the course total and the scale. */
+/** "Basics": the description learners read, the weight in the course total and the scale; read-only while locked. */
 export function DetailsSection({ activityId, assessment }: DetailsSectionProps) {
   const update = useMutation(updateAssessmentOptions(useQueryClient(), activityId))
   const version = useVersion(activityId)
@@ -30,9 +30,11 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
         { onSuccess: () => toast.add({ title: m.assessments_saved() }), onError: version.onError },
       ),
   })
+  const lock = lockReason(assessment)
   return (
     <>
-      <SettingsSection
+      <LockableSection
+        lock={lock}
         title={m.assessments_nav_details()}
         description={m.assessments_details_hint()}
         onSubmit={() => form.handleSubmit()}
@@ -45,7 +47,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
               label={m.assessments_field_description()}
               value={field.state.value}
               onChange={field.handleChange}
-              editable
+              editable={!lock}
             />
           )}
         </form.AppField>
@@ -63,7 +65,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
             <field.RadioGroupField label={m.assessments_field_grading_type()} options={optionsOf(gradingLabels)} />
           )}
         </form.AppField>
-      </SettingsSection>
+      </LockableSection>
       <ConflictDialog
         open={version.conflict}
         onOpenChange={version.setConflict}

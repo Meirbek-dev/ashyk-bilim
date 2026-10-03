@@ -9,7 +9,7 @@ import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
 
-import { groupsListOptions } from '../queries'
+import { groupsListOptions } from '../group-queries'
 import { CreateGroupDialog } from './create-group-dialog'
 
 const columns: DataColumn<Usergroup>[] = [

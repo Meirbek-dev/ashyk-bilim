@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { Suspense } from 'react'
 
@@ -6,6 +6,7 @@ import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 import { formatDate } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -14,7 +15,7 @@ import { updatesOptions } from '../queries'
 /** The `updates` tab: the course's announcements as the server orders them; written in the course workspace. */
 export function UpdatesPage() {
   const { courseId } = useParams({ from: '/_public/courses/$courseId/updates' })
-  const query = useSuspenseQuery(updatesOptions(courseId))
+  const query = useSuspenseInfiniteQuery(updatesOptions(courseId))
   return (
     <ListState
       pending={false}
@@ -35,6 +36,11 @@ export function UpdatesPage() {
           </article>
         )}
       </DataList>
+      <ShowMore
+        hasMore={query.hasNextPage}
+        pending={query.isFetchingNextPage}
+        onMore={() => void query.fetchNextPage()}
+      />
     </ListState>
   )
 }

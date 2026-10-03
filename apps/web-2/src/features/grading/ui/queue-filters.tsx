@@ -10,17 +10,15 @@ const QUEUE = '/teach/courses/$courseId/activities/$activityId/submissions'
 type QueueFiltersProps = {
   ids: { courseId: string; activityId: string }
   search: QueueSearch
-  /** The server's count per status (assessments); null hides the numbers. */
-  counts: Record<QueueStatus, number> | null
-  /** "Late only" exists for assessments only. */
-  late: boolean
+  /** The server's count per status. */
+  counts: Record<QueueStatus, number>
 }
 
 /**
  * Status filter as links (`?status=`) with the server's counts (B-GRD-02, B-GRD-05), and "Late only" (`?late=true`)
  * as a link that toggles it.
  */
-export function QueueFilters({ ids, search, counts, late }: QueueFiltersProps) {
+export function QueueFilters({ ids, search, counts }: QueueFiltersProps) {
   const options = [
     { status: undefined, label: m.grading_filter_all() },
     ...QUEUE_STATUSES.map(status => ({ status, label: filterLabels[status]() })),
@@ -39,7 +37,7 @@ export function QueueFilters({ ids, search, counts, late }: QueueFiltersProps) {
           >
             <span className="flex items-center gap-1">
               {option.label}
-              {counts && option.status ? (
+              {option.status ? (
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {formatNumber(counts[option.status])}
                 </span>
@@ -48,17 +46,15 @@ export function QueueFilters({ ids, search, counts, late }: QueueFiltersProps) {
           </Link>
         ))}
       </nav>
-      {late ? (
-        <Link
-          to={QUEUE}
-          params={ids}
-          search={{ ...search, late: search.late ? undefined : true }}
-          activeOptions={{ exact: true, includeSearch: true }}
-          variant="tab"
-        >
-          {m.grading_late_only()}
-        </Link>
-      ) : null}
+      <Link
+        to={QUEUE}
+        params={ids}
+        search={{ ...search, late: search.late ? undefined : true }}
+        activeOptions={{ exact: true, includeSearch: true }}
+        variant="tab"
+      >
+        {m.grading_late_only()}
+      </Link>
     </>
   )
 }

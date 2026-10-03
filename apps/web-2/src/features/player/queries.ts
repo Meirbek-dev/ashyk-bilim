@@ -7,7 +7,9 @@ import {
   getActivityOptions,
   listEnrollmentsQueryKey,
   learnerCourseStateOptions,
-  myCertificatesQueryKey,
+  myCertificatesPageInfiniteQueryKey,
+  myCourseCertificatesOptions,
+  myCourseCertificatesQueryKey,
   uncompleteActivityMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { ActivityId, CourseId, Trail } from '#/shared/api/gen/types.gen'
@@ -17,15 +19,23 @@ import { activityKind, locate } from './model/player'
 // The same keys as the course page: one learner state per course in the cache.
 export const learnerStateOptions = (id: CourseId) => learnerCourseStateOptions({ path: { course_id: id } })
 export const activityOptions = (id: ActivityId) => getActivityOptions({ path: { activity_id: id } })
+/** The caller's certificates for the course: reading them issues one to a finished course that has none yet. */
+export const courseCertificatesOptions = (id: CourseId) => myCourseCertificatesOptions({ path: { course_id: id } })
 
 // Marks with `Prefer: return=representation` answer the Trail with the course's `learner_state`: the cache takes
-// it; "my courses" and certificates (a finished course issues one on the spot) are read again.
+// it; "my courses" and the certificates (a finished course issues one on the spot) are read again.
 const withState = { headers: { Prefer: 'return=representation' } }
 const progress = (queryClient: QueryClient, courseId: CourseId) => ({
   onSuccess: ({ learner_state: state }: Trail) => {
     if (state) queryClient.setQueryData(learnerStateOptions(courseId).queryKey, state)
   },
-  meta: { invalidates: [listEnrollmentsQueryKey(), myCertificatesQueryKey()] },
+  meta: {
+    invalidates: [
+      listEnrollmentsQueryKey(),
+      myCertificatesPageInfiniteQueryKey(),
+      myCourseCertificatesQueryKey({ path: { course_id: courseId } }),
+    ],
+  },
 })
 export const markOptions = (queryClient: QueryClient, courseId: CourseId) => ({
   ...completeActivityMutation(withState),
@@ -49,6 +59,12 @@ export async function ensureLearner(queryClient: QueryClient, courseId: CourseId
   const state = await queryClient.ensureQueryData(learnerStateOptions(courseId)).catch(missing)
   if (!state.enrolled) throw forbidden()
   return state
+}
+
+/** The summary's loader: the learner state, then the course's certificates (issued on the spot when due). */
+export async function ensureCompletion(queryClient: QueryClient, courseId: CourseId) {
+  await ensureLearner(queryClient, courseId)
+  await queryClient.ensureQueryData(courseCertificatesOptions(courseId))
 }
 
 /**

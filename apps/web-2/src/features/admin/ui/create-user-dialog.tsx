@@ -41,7 +41,7 @@ export function CreateUserDialog() {
               setOpen(false)
               form.reset()
               toast.add({ title: m.admin_user_created() })
-              await navigate({ to: '/admin/users', search: prev => ({ ...prev, user: user.username }) })
+              await navigate({ to: '/admin/users', search: prev => ({ ...prev, user: user.id }) })
             },
           },
         )

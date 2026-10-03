@@ -1,7 +1,7 @@
-import { createBlockMutation, listBlocksQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { createBlockMutation } from '#/shared/api/gen/@tanstack/react-query.gen'
 
-/** Claims a finalized upload as a file block of the activity (otherwise storage reaps the object). */
-export const createBlockOptions = (activityId: string) => ({
-  ...createBlockMutation(),
-  meta: { invalidates: [listBlocksQueryKey({ path: { activity_id: activityId } })] },
-})
+/**
+ * Claims a finalized upload as a file block of the activity (otherwise storage reaps the object). No block list is
+ * read: saving the content releases the upload of a block that left it (server BUG-263).
+ */
+export const createBlockOptions = () => createBlockMutation()

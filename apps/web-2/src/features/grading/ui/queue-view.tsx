@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { CourseId, Stats } from '#/shared/api/gen/types.gen'
+import type { CourseId, FileReviewStats, Stats } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
@@ -14,6 +14,7 @@ import { buttonVariants } from '#/shared/ui/button'
 import { queueCsvHref } from '../model/exports'
 import { activeFilters, sortSearch, statusCounts, tableSort } from '../model/queue'
 import { queueOptions, type Work } from '../queries'
+import { GroupFilter } from './group-filter'
 import { LearnerSearch } from './learner-search'
 import { PublishAll } from './publish-all'
 import { queueColumns } from './queue-columns'
@@ -25,13 +26,13 @@ const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId/submissi
 type QueueViewProps = {
   work: Work
   courseId: CourseId
-  /** The assessment's counts; null for a file submission (no stats operation). */
-  stats: Stats | null
-  /** `grade` in the assessment's `allowed_actions`: publish-all is offered. */
+  /** The server's counts: `stats` of an assessment, `fileSubmissionReviewStats` of a file submission. */
+  stats: Stats | FileReviewStats
+  /** Publish-all is offered: `grade` in an assessment's `allowed_actions`; a file queue's reader is a grader. */
   canGrade: boolean
 }
 
-/** One queue for both kinds of work (B-GRD-01..08): filters, sort and cursor in the URL, counts from the server. */
+/** One queue for both kinds of work (B-GRD-01..09, 24, 25): filters, sort and cursor in the URL, server counts. */
 export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
   const ids = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
@@ -46,20 +47,20 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
       return next
     })
   const active = activeFilters(search)
-  const assessment = work.kind === 'assessment'
   return (
     <ListPage
       title={m.platform_tab_submissions()}
-      count={stats ? m.grading_queue_count({ count: stats.total }) : undefined}
-      primaryAction={
-        assessment && canGrade && stats ? (
-          <PublishAll assessmentId={work.id} courseId={courseId} held={stats.graded} />
-        ) : null
-      }
+      count={m.grading_queue_count({ count: stats.total })}
+      primaryAction={canGrade ? <PublishAll work={work} courseId={courseId} held={stats.graded} /> : null}
       search={<LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />}
       filters={
         <>
-          <QueueFilters ids={ids} search={search} counts={stats ? statusCounts(stats) : null} late />
+          <QueueFilters ids={ids} search={search} counts={statusCounts(stats)} />
+          <GroupFilter
+            courseId={courseId}
+            group={search.group}
+            onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
+          />
           <Anchor className={buttonVariants({ variant: 'outline' })} href={queueCsvHref(work.kind, work.id)} download>
             {m.grading_export_csv()}
           </Anchor>

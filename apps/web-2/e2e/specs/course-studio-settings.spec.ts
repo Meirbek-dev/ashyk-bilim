@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { createUpload, finalizeUpload, getCourse, updateCourse } from '#/shared/api/gen/sdk.gen'
+import { createCertification, createUpload, finalizeUpload, getCourse, updateCourse } from '#/shared/api/gen/sdk.gen'
 import type { CreateUploadRequest } from '#/shared/api/gen/types.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
@@ -161,4 +161,49 @@ test('B-CST-25 announcements are created, edited in place and deleted', async ({
   })
   await confirm.getByRole('button', { name: m.studio_delete({}, ru) }).click()
   await expect(page.getByText(m.studio_updates_empty({}, ru))).toBeVisible()
+})
+
+test('B-CST-36 deleting the course asks for its name, then lands on the course list', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const { course } = await studio.course()
+  await page.goto(tab(course.id, 'settings'))
+  await page.getByRole('button', { name: m.studio_course_delete({}, ru) }).click()
+  const confirm = page.getByRole('alertdialog', {
+    name: m.studio_course_delete_confirm_title({ name: course.name }, ru),
+  })
+  await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
+  const submit = confirm.getByRole('button', { name: m.studio_course_delete({}, ru) })
+  await expect(submit).toBeDisabled()
+  await confirm.getByRole('textbox', { name: m.studio_course_delete_name({}, ru) }).fill(course.name)
+  await submit.click()
+  await expect(page.getByText(m.studio_course_deleted({}, ru))).toBeVisible()
+  await expect(page).toHaveURL(/\/teach\/courses$/)
+  const headers = cookieOf(seed, 'teacher')
+  const gone = await getCourse({ client: studio.api, path: { course_id: course.id }, headers })
+  expect(gone.response?.status).toBe(404)
+})
+
+test('B-CST-37 the certificate template is previewed as the server PDF', async ({ page, studio, seed }) => {
+  const { course } = await studio.course()
+  const headers = cookieOf(seed, 'teacher')
+  await createCertification({
+    client: studio.api,
+    body: { course_id: course.id, config: {} },
+    headers,
+    throwOnError: true,
+  })
+  await page.goto(tab(course.id, 'settings'))
+  const toggle = page.getByRole('button', { name: m.studio_certificate_preview({}, ru) })
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  const frame = page.locator(`iframe[title="${m.studio_certificate_preview_title({}, ru)}"]`)
+  const src = await frame.getAttribute('src')
+  expect(src).toMatch(/^\/api\/v2\/certifications\/[^/]+\/preview\.pdf\?lang=ru$/)
+  const pdf = await page.request.get(src ?? '')
+  expect(pdf.status()).toBe(200)
+  expect(pdf.headers()['content-type']).toBe('application/pdf')
+  expect(pdf.headers()['content-disposition']).toMatch(/^inline/)
 })

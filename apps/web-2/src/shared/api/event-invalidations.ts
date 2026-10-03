@@ -103,3 +103,33 @@ export function invalidationsFor<T extends EventType>(type: T, payload: Payloads
   const table: EventInvalidations = eventInvalidations
   return Object.hasOwn(table, type) ? table[type](payload) : []
 }
+
+const isTaskRead = (data: unknown): data is { id: string; activity_id: string } =>
+  typeof data === 'object' &&
+  data !== null &&
+  'id' in data &&
+  'activity_id' in data &&
+  typeof data.id === 'string' &&
+  typeof data.activity_id === 'string'
+
+/** The assessment or file task a cached read is keyed by (its path), if any. */
+function taskOf(queryKey: QueryKey): string | undefined {
+  const [head] = queryKey
+  if (typeof head !== 'object' || head === null || !('path' in head)) return undefined
+  const { path } = head
+  if (typeof path !== 'object' || path === null) return undefined
+  const id =
+    'assessment_id' in path ? path.assessment_id : 'file_submission_id' in path ? path.file_submission_id : null
+  return typeof id === 'string' ? id : undefined
+}
+
+/**
+ * Whether a read keyed by an assessment or file task (`anyOf` rows above) belongs to another activity than the
+ * event's: the task's activity comes from its cached read (`id` + `activity_id`); unknown counts as the same.
+ */
+export function aboutOtherActivity(queryKey: QueryKey, activityId: string, cached: readonly unknown[]): boolean {
+  const task = taskOf(queryKey)
+  if (task === undefined) return false
+  const owner = cached.find(data => isTaskRead(data) && data.id === task)
+  return isTaskRead(owner) && owner.activity_id !== activityId
+}

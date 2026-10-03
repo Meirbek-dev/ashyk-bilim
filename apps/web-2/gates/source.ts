@@ -11,6 +11,7 @@ import {
   read,
   repoDir,
   sdkOperations,
+  serverRemovals,
   usesOperation,
   walk,
 } from './lib.ts'
@@ -20,17 +21,32 @@ const CODE = /\.(ts|tsx)$/
 export function apiCoverage(phaseOverride?: number): { findings: Finding[]; enforced: boolean; summary: string } {
   const policy = allowlist().apiCoverage
   const service = new Set(policy.serviceOperations.map(entry => entry.operation))
+  const removals = new Set(serverRemovals().map(entry => entry.operation))
   const sources = walk('src', CODE).map(read).join('\n')
   const deprecated = deprecatedOperations()
-  const operations = sdkOperations().filter(operation => !deprecated.has(operation))
-  const unused = operations.filter(operation => !service.has(operation) && !usesOperation(sources, operation))
+  const all = sdkOperations()
+  const operations = all.filter(operation => !deprecated.has(operation))
+  const unused = operations.filter(
+    operation => !service.has(operation) && !removals.has(operation) && !usesOperation(sources, operation),
+  )
   const phase = phaseOverride ?? policy.phase
-  const findings = unused.map(operation => ({
+  const findings: Finding[] = unused.map(operation => ({
     file: 'src/shared/api/gen/sdk.gen.ts',
     rule: 'api-coverage',
-    fix: `no consumer for ${operation}(): build its UI or delete the operation from the server`,
+    fix: `no consumer for ${operation}(): build its UI or list it in gates/server-removals.json with a reason`,
   }))
-  const summary = `api-coverage: ${unused.length} of ${operations.length} operations without a consumer (phase ${phase}, enforced from ${policy.enforceFromPhase}; ${deprecated.size} deprecated skipped)`
+  // A scheduled removal must still exist and still be unused, or the list lies to the server lane.
+  for (const operation of removals) {
+    if (!all.includes(operation))
+      findings.push({ file: 'gates/server-removals.json', rule: 'api-coverage', fix: `${operation} is gone: drop it` })
+    else if (usesOperation(sources, operation))
+      findings.push({
+        file: 'gates/server-removals.json',
+        rule: 'api-coverage',
+        fix: `${operation} has a consumer now: drop it from the removal list`,
+      })
+  }
+  const summary = `api-coverage: ${unused.length} of ${operations.length} operations without a consumer, ${removals.size} scheduled for server removal (phase ${phase}, enforced from ${policy.enforceFromPhase}; ${deprecated.size} deprecated skipped)`
   return { findings, enforced: phase >= policy.enforceFromPhase, summary }
 }
 

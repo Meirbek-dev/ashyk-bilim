@@ -151,3 +151,20 @@ test('B-CST-30 the activity settings rename it with its own Save', async ({ page
   await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
   await expect(page.getByRole('banner').getByText('Новое')).toBeVisible()
 })
+
+test('B-CST-34 a legacy custom activity has no editor: edit says so and links to its name', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const made = await studio.course({ chapters: [{}] })
+  const body: CreateActivityRequest = { name: 'Своя', activity_type: 'custom', activity_sub_type: 'custom' }
+  const path = { chapter_id: made.chapters[0]?.chapter.id ?? '' }
+  const headers = cookieOf(seed, 'teacher')
+  const custom = await createActivity({ client: studio.api, path, body, headers, throwOnError: true })
+  await page.goto(studioUrl(made.course.id, custom.data.id))
+  await expect(page.getByText(m.studio_custom_no_editor({}, ru))).toBeVisible()
+  await page.getByRole('link', { name: m.studio_custom_open_settings({}, ru) }).click()
+  await expect(page).toHaveURL(new RegExp(`/activities/${custom.data.id}/settings`))
+  await expect(page.getByRole('textbox', { name: m.studio_field_name({}, ru) })).toHaveValue('Своя')
+})

@@ -1,7 +1,12 @@
 import { infiniteQueryOptions, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 
 import type { ApiError } from '#/shared/api/errors'
-import { dashboardOptions, leaderboardInfiniteQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
+import {
+  dashboardOptions,
+  dashboardQueryKey,
+  leaderboardInfiniteQueryKey,
+  recordStreakMutation,
+} from '#/shared/api/gen/@tanstack/react-query.gen'
 import { leaderboard } from '#/shared/api/gen/sdk.gen'
 import type { Leaderboard } from '#/shared/api/gen/types.gen'
 
@@ -9,6 +14,12 @@ import { LEADERBOARD_PAGE } from './model/achievements'
 
 /** Profile, the 10 latest XP awards and the viewer's rank; the same cache entry the settings page writes. */
 export const achievementsOptions = () => dashboardOptions()
+
+/** Touches today's login streak; the profile (both streaks) is read again. */
+export const recordLoginOptions = () => ({
+  ...recordStreakMutation(),
+  meta: { invalidates: [dashboardQueryKey()] },
+})
 
 // Composed by hand like collectionsListOptions: the generated infinite options are not suspense-typed.
 export const leaderboardListOptions = () => {

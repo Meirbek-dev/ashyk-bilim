@@ -59,7 +59,7 @@
   "submission_attempt_started": "Попытка начата",
   "submission_returned": "Работа возвращена на доработку",
   "submission_reason_past_due": "Срок прошёл, работы больше не принимаются.",
-  "submission_reason_remediation": "Сначала пройдите назначенное исправление.",
+  "submission_reason_remediation": "Сначала пройдите назначенный разбор ошибок.",
   "submission_reason_course_archived": "Курс в архиве: сдавать работы нельзя.",
   "submission_reason_other": "Сейчас сдать работу нельзя.",
   "submission_history": "Попытки",

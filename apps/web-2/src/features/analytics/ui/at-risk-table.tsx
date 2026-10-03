@@ -11,6 +11,7 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { activeFilters, type Filters, learnerSort, type LearnerSort } from '../model/filters'
+import { whyNowLabels } from '../model/signals'
 import { atRiskOptions } from '../queries'
 import { riskLevelBadges, riskTrendLabels } from './labels'
 import { Pager } from './pager'
@@ -69,6 +70,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     ),
   },
   { id: 'trend', header: m.analytics_col_trend(), priority: 3, cell: row => riskTrendLabels[row.risk_trend]() },
+  { id: 'why', header: m.analytics_col_why_now(), priority: 3, cell: row => whyNowLabels[row.why_now]() },
   {
     id: 'interventions',
     header: m.analytics_col_interventions(),

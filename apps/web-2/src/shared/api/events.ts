@@ -4,10 +4,10 @@ import * as v from 'valibot'
 
 import { sessionOptions } from '#/shared/auth/session'
 
-import { invalidationsFor, type UserEvent } from './event-invalidations'
+import { aboutOtherActivity, invalidationsFor, type UserEvent } from './event-invalidations'
 import type { MyEventsData, UserStreamEvent } from './gen/types.gen'
 import { vUserStreamEvent } from './gen/valibot.gen'
-import { eventServerTime, noteServerDate, readMayPredate, serverOffset } from './server-clock'
+import { eventClientTime, noteServerDate, noteStreamEvent, readMayPredate } from './server-clock'
 
 // The one live connection of a tab (spec 7.7): the `myEvents` operation, `GET /me/events`. The generated SSE client
 // cannot be steered (no pause, no Last-Event-ID on our terms, its own retry timers), so the stream is read here.
@@ -106,6 +106,7 @@ export function createEventStream(options: EventStreamOptions): EventStream {
         } else if (event?.event === 'closed') {
           return end()
         } else if (event) {
+          noteStreamEvent(event)
           lastEventId = event.event_id
           options.onEvent(event)
         }
@@ -175,8 +176,18 @@ export function startEventStream(queryClient: QueryClient, onEvent: (event: User
   const stream = createEventStream({
     fetch: (url, init) => fetch(url, init),
     onEvent: event => {
-      const at = eventServerTime(event)
-      const predicate = (query: Query) => readMayPredate(query.state.dataUpdatedAt, at, serverOffset())
+      // Timed on arrival: an event that waits for a write of this tab still compares with when it came.
+      const at = eventClientTime(event)
+      const activity = 'activity_id' in event.payload ? event.payload.activity_id : undefined
+      let data: unknown[] | undefined
+      const cached = () =>
+        (data ??= queryClient
+          .getQueryCache()
+          .getAll()
+          .map(query => query.state.data))
+      const predicate = (query: Query) =>
+        readMayPredate(query.state.dataUpdatedAt, at) &&
+        !(activity && aboutOtherActivity(query.queryKey, activity, cached()))
       for (const queryKey of invalidationsFor(event.event, event.payload)) invalidate({ queryKey, predicate })
       onEvent(event)
     },

@@ -1,6 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type {
   AccessMode,
+  AssessmentDetail,
   AuditEventKind,
   EditLock,
   FormFieldType,
@@ -10,6 +11,8 @@ import type {
   ReadinessIssueCode,
   ReviewVisibility,
 } from '#/shared/api/gen/types.gen'
+
+import { can } from '../model/route'
 import type { StatusTone } from '#/shared/components/status-badge'
 
 import type { NewItemKind } from '../model/items'
@@ -120,9 +123,17 @@ export const issueLabels: Record<ReadinessIssueCode, () => string> = {
   'matching.right_duplicate': m.assessments_issue_matching_right_duplicate,
 }
 
-/** Why the questions are read-only for an author (`edit_lock`). */
-export const lockLabels: Record<EditLock, () => string> = {
+/** Why the questions, name, basics and rules are read-only for an author (`edit_lock`). */
+const lockLabels: Record<EditLock, () => string> = {
   archived: m.assessments_lock_archived,
   scheduled: m.assessments_lock_scheduled,
   has_submissions: m.assessments_lock_has_submissions,
+}
+
+/** Why the caller cannot edit the assessment now (B-ASM-11, B-ASM-28); null while it is editable (`edit`). */
+export function lockReason(assessment: Pick<AssessmentDetail, 'allowed_actions' | 'edit_lock'>): string | null {
+  if (can(assessment, 'edit')) return null
+  return assessment.edit_lock && can(assessment, 'update')
+    ? lockLabels[assessment.edit_lock]()
+    : m.assessments_readonly()
 }

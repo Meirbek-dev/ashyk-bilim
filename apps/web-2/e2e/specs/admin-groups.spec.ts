@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { addGroupMembers, createGroup, deleteGroup, listGroups } from '#/shared/api/gen/sdk.gen'
+import { addGroupMembers, createGroup, deleteGroup, listGroups, listUsers } from '#/shared/api/gen/sdk.gen'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
@@ -132,4 +132,35 @@ test('B-ADM-20 deleting a group asks with its name, then returns to the list', a
   await expect(page).toHaveURL(/\/teach\/groups$/)
   const left = await listGroups({ client: api, query: { limit: 100 }, headers: cookie(seed, 'teacher') })
   expect(left.data?.items.some(item => item.id === own.id)).toBe(false)
+})
+
+test('B-ADM-22 members come in pages of 20 with "Show more"; the count is the whole group', async ({
+  page,
+  signInAs,
+  group,
+  api,
+  seed,
+}) => {
+  const own = await group('admin')
+  const users = await listUsers({
+    client: api,
+    query: { limit: 21 },
+    headers: cookie(seed, 'admin'),
+    throwOnError: true,
+  })
+  await addGroupMembers({
+    client: api,
+    path: { group_id: own.id },
+    body: { user_ids: users.data.items.map(user => user.id) },
+    headers: cookie(seed, 'admin'),
+    throwOnError: true,
+  })
+  await signInAs('admin')
+  await page.goto(`/teach/groups/${own.id}`)
+  await expect(page.getByText(m.admin_group_member_count({ count: 21 }, ru))).toBeVisible()
+  const rows = page.getByRole('listitem').filter({ hasText: '@' })
+  await expect(rows).toHaveCount(20)
+  await page.getByRole('button', { name: m.ui_show_more({}, ru) }).click()
+  await expect(rows).toHaveCount(21)
+  await expect(page.getByRole('button', { name: m.ui_show_more({}, ru) })).toHaveCount(0)
 })

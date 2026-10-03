@@ -1,6 +1,6 @@
 # player
 
-Операции: learnerCourseState, getActivity, completeActivity, uncompleteActivity
+Операции: learnerCourseState, getActivity, completeActivity, uncompleteActivity, myCourseCertificates
 
 Плеер `/learn/$courseId/$activityId` и итоги курса `/learn/$courseId/complete` (5.3, 5.4): фокус-режим, слева
 оглавление, в середине активность, справа слот панели AI (срез 6.3). Оглавление, отметки, блокировки, прогресс и
@@ -39,6 +39,8 @@
   активность; средняя оценка и число работ на проверке, если есть; сертификат - ссылка на проверку, если выдан,
   иначе одна фраза, если курс его выдаёт; ссылки «Мои курсы» и «Каталог».
 - B-PLY-15 Плеер и итоги работают на kk и en: тексты из каталога, `<html lang>` верный.
+- B-PLY-16 Сертификат итогов - из `GET /courses/{id}/certificates/me`, а не из `certificate.verify_code` состояния:
+  чтение выдаёт сертификат курсу, пройденному до того, как сертификат включили (состояние только сообщает).
 
 ## Изменено
 

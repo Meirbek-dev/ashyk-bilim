@@ -41,7 +41,7 @@ export function UsersPage() {
       }
     >
       <UsersTable q={q} namedRoles={hasCapability(session, 'admin.roles')} />
-      {user ? <UserSheet key={user} username={user} /> : null}
+      {user ? <UserSheet key={user} id={user} /> : null}
     </ListPage>
   )
 }

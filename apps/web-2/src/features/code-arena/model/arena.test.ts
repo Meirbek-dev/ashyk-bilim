@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { AssessmentItem, CodeBody, StudentSubmission } from '#/shared/api/gen/types.gen'
 
-import { answerOf, codeItemOf, draftOf, initialAnswer, switchLanguage, testsPassed, upsertAttempt } from './arena'
+import { answerOf, codeItemOf, draftOf, initialAnswer, switchLanguage, testsPassed, upsert } from './arena'
 import { caseVerdict } from './verdict'
 
 const body: CodeBody = {
@@ -112,9 +112,15 @@ describe('code arena model', () => {
   test('B-COD-11 a write replaces its attempt in the history or leads it', () => {
     const first = attempt({ id: 's1', status: 'published' })
     const second = attempt({ id: 's2' })
-    expect(upsertAttempt([first], second).map(row => row.id)).toEqual(['s2', 's1'])
+    expect(upsert([first], second).map(row => row.id)).toEqual(['s2', 's1'])
     const sent = attempt({ id: 's2', status: 'pending' })
-    expect(upsertAttempt([second, first], sent)[0]?.status).toBe('pending')
+    expect(upsert([second, first], sent)[0]?.status).toBe('pending')
     expect(draftOf([first, second])?.id).toBe('s2')
+  })
+
+  test('B-COD-21 a new run leads the own runs; a replayed one keeps its place', () => {
+    const runs = [{ id: 'r2' }, { id: 'r1' }]
+    expect(upsert(runs, { id: 'r3' }).map(run => run.id)).toEqual(['r3', 'r2', 'r1'])
+    expect(upsert(runs, { id: 'r1' }).map(run => run.id)).toEqual(['r2', 'r1'])
   })
 })

@@ -11,25 +11,25 @@ import { ShowMore } from '#/shared/components/show-more'
 import { buttonVariants } from '#/shared/ui/button'
 
 import { gradebookCsvHref } from '../model/exports'
-import { filterRows, gradebookColumns, gradebookRows } from '../model/gradebook'
+import { gradebookColumns, gradebookRows } from '../model/gradebook'
 import { gradebookOptions } from '../queries'
 import { gradebookTableColumns } from './gradebook-columns'
+import { GroupFilter } from './group-filter'
 import { LearnerSearch } from './learner-search'
 
 const ROUTE = '/_authed/teach/courses/$courseId/gradebook'
 
 // ponytail: a plain table (100 learners per page x the course's graded activities); virtualize when a measured
 // course makes it slow.
-/** The course gradebook (B-GRD-19..21): learners x graded activities, cards per learner when narrow. */
+/** The course gradebook (B-GRD-19..21, B-GRD-24): learners x graded activities, cards per learner when narrow. */
 export function GradebookPage(): ReactElement {
   const { courseId } = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
   const navigate = useNavigate({ from: '/teach/courses/$courseId/gradebook' })
-  const query = useSuspenseInfiniteQuery(gradebookOptions(courseId))
+  const query = useSuspenseInfiniteQuery(gradebookOptions(courseId, search))
   const rows = gradebookRows(query.data.pages)
-  const shown = filterRows(rows, search)
   const columns = gradebookTableColumns(courseId, gradebookColumns(query.data.pages))
-  const active = [search.q, search.pending].filter(Boolean).length
+  const active = [search.q, search.pending, search.group].filter(Boolean).length
   return (
     <section aria-labelledby="grading-gradebook" className="@container flex flex-col gap-gutter">
       <h2 id="grading-gradebook" className="text-xl font-semibold">
@@ -46,6 +46,11 @@ export function GradebookPage(): ReactElement {
         >
           {m.grading_pending_only()}
         </Link>
+        <GroupFilter
+          courseId={courseId}
+          group={search.group}
+          onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
+        />
         <Anchor className={buttonVariants({ variant: 'outline' })} href={gradebookCsvHref(courseId)} download>
           {m.grading_export_csv()}
         </Anchor>
@@ -53,20 +58,19 @@ export function GradebookPage(): ReactElement {
       <ListState
         pending={false}
         error={query.error}
-        count={shown.length}
+        count={rows.length}
         filtered={active > 0}
         emptyText={m.grading_gradebook_empty()}
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable label={m.grading_gradebook_table()} rows={shown} columns={columns} getKey={row => row.user.id} />
+        <DataTable label={m.grading_gradebook_table()} rows={rows} columns={columns} getKey={row => row.user.id} />
+        <ShowMore
+          hasMore={query.hasNextPage}
+          pending={query.isFetchingNextPage}
+          onMore={() => void query.fetchNextPage()}
+        />
       </ListState>
-      {/* Outside ListState: the filters narrow loaded pages only, so the next page may still hold matches. */}
-      <ShowMore
-        hasMore={query.hasNextPage}
-        pending={query.isFetchingNextPage}
-        onMore={() => void query.fetchNextPage()}
-      />
     </section>
   )
 }

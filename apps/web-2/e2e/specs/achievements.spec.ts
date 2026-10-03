@@ -80,12 +80,25 @@ test('B-ACH-02 level and progress come from the server; B-ACH-03 streaks; B-ACH-
 test('B-ACH-04 the own row is marked by id with the shared rank; B-ACH-05 the place is stated; B-ACH-06 "Show more" pages by 20', async ({
   page,
   me,
+  seed,
   baseURL,
 }) => {
   // The board needs more than one page: top it up with fresh accounts on a young stand.
   const client = createClient(createConfig({ baseUrl: String(baseURL) }))
-  const total = async () => (await leaderboard({ client, headers: me.headers, throwOnError: true })).data
-  while ((await total()).total_participants <= 20) await signIn(client, String(baseURL))
+  const board25 = async () =>
+    (await leaderboard({ client, query: { limit: 25 }, headers: me.headers, throwOnError: true })).data
+  while ((await board25()).total_participants <= 25) await signIn(client, String(baseURL))
+  // A fresh account sits at the very end of a board every run makes longer: lift it to just below the 25th row,
+  // so it lands on the second page whatever the stand's history (parallel awards move it by a few places at most).
+  const xp25 = (await board25()).entries.at(-1)?.total_xp ?? 0
+  const admin = seed.accounts.admin.cookie
+  if (xp25 > 0)
+    await adminAward({
+      client: me.client,
+      body: { user_id: me.userId, amount: Math.min(xp25, 100_000), reason: 'E2E leaderboard place' },
+      headers: { cookie: `${admin.name}=${admin.value}` },
+      throwOnError: true,
+    })
   const { profile } = await dashboardOf(me)
 
   await page.goto('/achievements')
@@ -141,3 +154,17 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.locator('body')).not.toContainText(/\b(achievements|platform|ui|errors)_[a-z_]+/)
   })
 }
+
+test('B-ACH-10 /home records the login streak once per day and session', async ({ page, me }) => {
+  const posts: string[] = []
+  page.on('request', sent => {
+    if (sent.method() === 'POST' && sent.url().endsWith('/gamification/streaks/login')) posts.push(sent.url())
+  })
+  const recorded = page.waitForResponse(answer => answer.url().endsWith('/gamification/streaks/login'))
+  await page.goto('/home')
+  expect((await recorded).status()).toBe(200)
+  await expect.poll(async () => (await dashboardOf(me)).profile.login_streak).toBe(1)
+  await page.reload()
+  await expect(page.getByRole('heading', { level: 1, name: m.home_title({}, ru) })).toBeVisible()
+  expect(posts).toHaveLength(1)
+})

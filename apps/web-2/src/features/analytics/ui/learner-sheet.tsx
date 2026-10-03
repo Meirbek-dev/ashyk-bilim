@@ -2,10 +2,11 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import type { CourseId, UserId } from '#/shared/api/gen/types.gen'
+import type { AtRiskLearnerRow, CourseId, UserId } from '#/shared/api/gen/types.gen'
 import { SheetPanel } from '#/shared/components/sheet-panel'
 import { formatDate } from '#/shared/i18n/format'
 
+import { recommendedActionLabels, riskReasonLabels, whyNowLabels } from '../model/signals'
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
 import { interventionStatusLabels, interventionTypeLabels } from './labels'
@@ -13,13 +14,15 @@ import { interventionStatusLabels, interventionTypeLabels } from './labels'
 type LearnerSheetProps = {
   learnerId: UserId
   courseId: CourseId
-  /** From the at-risk row on the page; a forwarded link to a learner no longer listed shows a generic title. */
-  name: string | undefined
-  course: string | undefined
+  /** The at-risk row on the page; a forwarded link to a learner not on this page shows a generic title, no risk. */
+  row: AtRiskLearnerRow | undefined
 }
 
-/** The learner open by `?learnerId=&courseId=`: the interventions in this course, newest first, and a new one. */
-export function LearnerSheet({ learnerId, courseId, name, course }: LearnerSheetProps) {
+/**
+ * The learner open by `?learnerId=&courseId=`: why now, what to do and the risk signals (from the row), the
+ * interventions in this course, newest first, and a new one.
+ */
+export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
   const { data } = useSuspenseQuery(interventionsOptions(learnerId, courseId))
   const navigate = useNavigate()
   const close = () =>
@@ -31,9 +34,30 @@ export function LearnerSheet({ learnerId, courseId, name, course }: LearnerSheet
         if (!open) close()
       }}
       side="right"
-      title={name ?? m.analytics_col_learner()}
+      title={row?.user_display_name ?? m.analytics_col_learner()}
     >
-      {course ? <p className="text-sm wrap-anywhere text-muted-foreground">{course}</p> : null}
+      {row ? (
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <dt className="text-muted-foreground">{m.analytics_col_course()}</dt>
+          <dd className="wrap-anywhere">{row.course_name}</dd>
+          <dt className="text-muted-foreground">{m.analytics_col_why_now()}</dt>
+          <dd>{whyNowLabels[row.why_now]()}</dd>
+          <dt className="text-muted-foreground">{m.analytics_learner_action()}</dt>
+          <dd>{recommendedActionLabels[row.recommended_action]()}</dd>
+          {row.reason_codes.length > 0 ? (
+            <>
+              <dt className="text-muted-foreground">{m.analytics_learner_reasons()}</dt>
+              <dd>{row.reason_codes.map(code => riskReasonLabels[code]()).join(', ')}</dd>
+            </>
+          ) : null}
+          {row.last_intervention_type ? (
+            <>
+              <dt className="text-muted-foreground">{m.analytics_learner_last_intervention()}</dt>
+              <dd>{interventionTypeLabels[row.last_intervention_type]()}</dd>
+            </>
+          ) : null}
+        </dl>
+      ) : null}
       <div>
         <InterventionDialog learnerId={learnerId} courseId={courseId} />
       </div>

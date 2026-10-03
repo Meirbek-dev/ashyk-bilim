@@ -1,7 +1,9 @@
 import type {
   ActivityType,
   AssessmentReviewQueueData,
+  BulkAction,
   FileReviewItem,
+  FileReviewStats,
   FileSubmissionReviewQueueData,
   ReviewItem,
   Stats,
@@ -30,6 +32,7 @@ export const assessmentQuery = (search: QueueSearch): NonNullable<AssessmentRevi
   ...(search.status ? { status: search.status } : {}),
   ...(search.q ? { search: search.q } : {}),
   ...(search.late ? { late_only: true } : {}),
+  ...(search.group ? { group_id: search.group } : {}),
   ...(search.sort ? { sort: search.sort, order: search.order ?? 'desc' } : {}),
 })
 
@@ -39,12 +42,13 @@ export const fileQuery = (search: QueueSearch): NonNullable<FileSubmissionReview
   ...(search.status ? { status: search.status === 'needs_grading' ? 'submitted' : search.status } : {}),
   ...(search.q ? { search: search.q } : {}),
   ...(search.late ? { late_only: true } : {}),
+  ...(search.group ? { group_id: search.group } : {}),
   ...(search.sort ? { sort: search.sort, order: search.order ?? 'desc' } : {}),
 })
 
 /** The filters that narrow the queue (sort does not): "nothing found" vs "nothing yet". */
 export const activeFilters = (search: QueueSearch): number =>
-  [search.status, search.q, search.late].filter(Boolean).length
+  [search.status, search.q, search.late, search.group].filter(Boolean).length
 
 /** DataTable's sort <-> the URL: the server's default (newest first) is no sort at all. */
 export const tableSort = (search: QueueSearch) =>
@@ -61,9 +65,9 @@ export type QueuePage = { items: QueueRow[]; next_cursor: string | null }
 /** Keyset paging: the next request carries the previous page's opaque `next_cursor`. */
 export const nextQueueCursor = (page: QueuePage): string | undefined => page.next_cursor ?? undefined
 
-/** The counts on the status links, from the server's stats (assessments only). */
-export const statusCounts = (stats: Stats): Record<QueueStatus, number> => ({
-  needs_grading: stats.needs_grading,
+/** The counts on the status links, from the server's stats; a file attempt's "needs grading" is `submitted`. */
+export const statusCounts = (stats: Stats | FileReviewStats): Record<QueueStatus, number> => ({
+  needs_grading: 'needs_grading' in stats ? stats.needs_grading : stats.submitted,
   graded: stats.graded,
   published: stats.published,
   returned: stats.returned,
@@ -84,11 +88,20 @@ export const returnable = (rows: readonly QueueRow[]): QueueRow[] =>
 
 /**
  * Deadline extension targets (B-GRD-09): course members only; a leaver or a staff member is named instead (UX-167,
- * UX-199). A file row has neither flag: no extension exists for file submissions.
+ * UX-199).
  */
 export function extensionTargets(rows: readonly QueueRow[]): { ids: string[]; skipped: string[] } {
-  const ok = rows.filter(row => 'enrolled' in row && row.enrolled && !row.staff)
+  const ok = rows.filter(row => row.enrolled && !row.staff)
   const ids = [...new Set(ok.map(row => row.user.id))]
   const skipped = rows.filter(row => !ok.includes(row)).map(row => row.user.display_name || row.user.username)
   return { ids, skipped }
 }
+
+/** What a deadline extension came to (B-GRD-27): done for `count` learners, failed, or still with the worker. */
+export type ExtendOutcome = { state: 'done' | 'failed' | 'queued'; count: number }
+
+/** An assessment extension is a bulk action the worker runs: settled once it is completed or failed. */
+export const extendOutcome = (action: Pick<BulkAction, 'status' | 'affected_count'>): ExtendOutcome => ({
+  state: action.status === 'completed' ? 'done' : action.status === 'failed' ? 'failed' : 'queued',
+  count: action.affected_count,
+})

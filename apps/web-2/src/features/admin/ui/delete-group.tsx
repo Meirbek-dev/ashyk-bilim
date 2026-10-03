@@ -8,7 +8,7 @@ import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
-import { deleteGroupOptions } from '../queries'
+import { deleteGroupOptions } from '../group-queries'
 
 /** Delete through the confirmation that names the group; then the list without it. */
 export function DeleteGroup({ group }: { group: Usergroup }) {

@@ -10,6 +10,7 @@ import { ListState } from '#/shared/components/list-state'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 
 import { activeFilters, type Filters } from '../model/filters'
+import { outlierLabels } from '../model/signals'
 import { assessmentsOptions } from '../queries'
 import { hours, percent, score } from './kpi'
 import { Pager } from './pager'
@@ -56,6 +57,12 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     header: m.analytics_col_latency(),
     priority: 3,
     cell: row => hours(row.grading_latency_hours_p50),
+  },
+  {
+    id: 'outliers',
+    header: m.analytics_col_outliers(),
+    priority: 3,
+    cell: row => row.outlier_reason_codes.map(code => outlierLabels[code]()).join(', '),
   },
 ]
 

@@ -47,11 +47,9 @@ export function switchLanguage(body: CodeBody, current: CodeAnswer, language: nu
   return { language, source: untouched ? starterOf(body, language) : current.source }
 }
 
-/** A write answers with the attempt: it replaces its row (or leads the list, newest first). */
-export function upsertAttempt(list: StudentSubmission[], attempt: StudentSubmission): StudentSubmission[] {
-  return list.some(row => row.id === attempt.id)
-    ? list.map(row => (row.id === attempt.id ? attempt : row))
-    : [attempt, ...list]
+/** A write answers with the attempt or the run: it replaces its row (or leads the list, newest first). */
+export function upsert<T extends { id: string }>(list: T[], next: T): T[] {
+  return list.some(row => row.id === next.id) ? list.map(row => (row.id === next.id ? next : row)) : [next, ...list]
 }
 
 /** "N of M tests passed" of a graded attempt (the grader's `tests-passed` verdict), null when not given. */

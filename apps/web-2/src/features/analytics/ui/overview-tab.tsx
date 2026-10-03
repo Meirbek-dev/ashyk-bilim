@@ -11,6 +11,7 @@ import { overviewOptions } from '../queries'
 import { DrillSection } from './drill-section'
 import { drillTitles, kpiLabels } from './labels'
 import { MetricTile } from './metric-tile'
+import { SignalList } from './signal-list'
 
 /** Each KPI in reading order, with the drill-through behind it (if the server has one). */
 const tiles: readonly { name: keyof TeacherOverviewSummary; drill?: TileMetric }[] = [
@@ -29,7 +30,7 @@ const series: readonly { name: keyof TeacherOverviewTrends; label: () => string 
   { name: 'grading_completed', label: m.analytics_series_grading },
 ]
 
-/** The overview tab: six KPIs against the previous period, the rows behind one of them, and the trends. */
+/** The overview tab: six KPIs against the previous period, the rows behind one of them, alerts and insights, the trends. */
 export function OverviewTab() {
   const search = useSearch({ from: '/_authed/teach/analytics/overview' })
   const filters = pickFilters(search)
@@ -50,6 +51,10 @@ export function OverviewTab() {
           closable
         />
       ) : null}
+      <div className="grid gap-gutter @3xl:grid-cols-2">
+        <SignalList title={m.analytics_alerts_title()} items={data.alerts} />
+        <SignalList title={m.analytics_insights_title()} items={data.insights} />
+      </div>
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">{m.analytics_trends_title()}</h2>
         <div className="grid gap-gutter @3xl:grid-cols-2">

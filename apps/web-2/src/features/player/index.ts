@@ -1,4 +1,4 @@
-export { ensureLearner, ensurePlayer } from './queries'
+export { ensureCompletion, ensureLearner, ensurePlayer } from './queries'
 export { CompletionPage } from './ui/completion-page'
 export { PlayerError } from './ui/player-error'
 export { PlayerNotFound } from './ui/player-not-found'

@@ -1,9 +1,10 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
 import { DataList } from '#/shared/components/data-list'
 import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 
 import { can } from '../model/course'
 import { updatesOptions } from '../queries'
@@ -12,7 +13,7 @@ import { UpdateItem } from './update-item'
 
 /** The course's announcements (learners read them in the course page's `updates` tab); written here. */
 export function UpdatesSection({ course }: { course: Course }) {
-  const updates = useSuspenseQuery(updatesOptions(course.id))
+  const updates = useSuspenseInfiniteQuery(updatesOptions(course.id))
   const editable = can(course, 'update')
   return (
     <section aria-label={m.studio_updates_title()} className="flex flex-col gap-4">
@@ -34,6 +35,11 @@ export function UpdatesSection({ course }: { course: Course }) {
         <DataList items={updates.data} getKey={update => update.id}>
           {update => <UpdateItem courseId={course.id} update={update} editable={editable} />}
         </DataList>
+        <ShowMore
+          hasMore={updates.hasNextPage}
+          pending={updates.isFetchingNextPage}
+          onMore={() => void updates.fetchNextPage()}
+        />
       </ListState>
     </section>
   )

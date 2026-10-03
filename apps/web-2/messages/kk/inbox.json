@@ -15,7 +15,7 @@
   "inbox_filter_all": "Барлығы",
   "inbox_course_all": "Барлық курстар",
   "inbox_course_selected": "Таңдалған курс",
-  "inbox_kind_sla_breach": "Тексеру кешіктірілді",
+  "inbox_kind_sla_breach": "Тексеру мерзімі өтті",
   "inbox_kind_needs_grading": "Тексеруді күтуде",
   "inbox_kind_awaiting_release": "Жариялауды күтуде",
   "inbox_kind_other": "Назар аударуды қажет етеді",
@@ -23,7 +23,7 @@
   "inbox_col_course": "Курс атауы",
   "inbox_col_since": "Күтіп тұр",
   "inbox_col_due": "Мерзімі",
-  "inbox_col_action": "Әрекет",
+  "inbox_col_action": "Іс-әрекет",
   "inbox_action_grade": "Тексеру",
   "inbox_action_review": "Бағаны ашу"
 }

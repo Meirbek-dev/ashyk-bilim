@@ -10,7 +10,7 @@ import { routeTree } from './routeTree.gen'
 
 declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
-    /** The screen's name: the document title, a layout's heading, an UnderConstruction stub's heading. */
+    /** The screen's name: the document title, a layout's heading. */
     title?: () => string
     /** 'focus': the route draws the focus layout (FocusPage) itself and the app shell steps aside (spec 5.2). */
     layout?: 'focus'

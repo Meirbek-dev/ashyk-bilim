@@ -1,35 +1,53 @@
-import { infiniteQueryOptions, type InfiniteData, type QueryClient, type QueryKey } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  type InfiniteData,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
   assessmentReviewQueueInfiniteQueryKey,
+  fileGradingHistoryQueryKey,
   fileSubmissionReviewQueueInfiniteQueryKey,
+  fileSubmissionReviewStatsOptions,
   fileUrlOptions,
   getActivityAssessmentOptions,
   getActivityFileSubmissionOptions,
   getActivityOptions,
   getAttemptOptions,
   gradebookInfiniteQueryKey,
-  gradingHistoryOptions,
+  gradingHistoryQueryKey,
+  groupsForCourseQueryKey,
   itemAnalyticsOptions,
   reviewSubmissionOptions,
   statsOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { assessmentReviewQueue, fileSubmissionReviewQueue, gradebook } from '#/shared/api/gen/sdk.gen'
+import {
+  assessmentReviewQueue,
+  fileGradingHistory,
+  fileSubmissionReviewQueue,
+  gradebook,
+  gradingHistory,
+  groupsForCourse,
+} from '#/shared/api/gen/sdk.gen'
 import type {
   ActivityId,
   AssessmentId,
   CourseId,
   Disposition,
   FileAttemptFileId,
+  FileGradingEntry,
   FileSubmissionId,
   GradebookPage,
+  GradingEntry,
 } from '#/shared/api/gen/types.gen'
 
-import { GRADEBOOK_PAGE } from './model/gradebook'
+import { gradebookQuery } from './model/gradebook'
 import { assessmentQuery, fileQuery, nextQueueCursor, type QueuePage, workKind } from './model/queue'
-import type { QueueSearch } from './route'
+import type { GradebookSearch, QueueSearch } from './route'
 
 // Reads and the route loaders (the writes are in mutations.ts).
 
@@ -44,7 +62,42 @@ export const statsOptionsOf = (id: AssessmentId) => statsOptions({ path: { asses
 export const itemStatsOptions = (id: AssessmentId) => itemAnalyticsOptions({ path: { assessment_id: id } })
 export const reviewOptions = (id: string) => reviewSubmissionOptions({ path: { submission_id: id } })
 export const attemptOptions = (id: string) => getAttemptOptions({ path: { attempt_id: id } })
-export const historyOptions = (id: string) => gradingHistoryOptions({ path: { submission_id: id } })
+
+/** The grading history of a submission (B-GRD-17) or of a file attempt (B-GRD-26); keys from the generated client. */
+export const historyOptions = (work: Work, id: string) =>
+  queryOptions<GradingEntry[] | FileGradingEntry[], ApiError, GradingEntry[] | FileGradingEntry[]>({
+    queryKey:
+      work.kind === 'assessment'
+        ? gradingHistoryQueryKey({ path: { submission_id: id } })
+        : fileGradingHistoryQueryKey({ path: { attempt_id: id } }),
+    queryFn: async ({ signal }) =>
+      work.kind === 'assessment'
+        ? (await gradingHistory({ path: { submission_id: id }, signal, throwOnError: true })).data
+        : (await fileGradingHistory({ path: { attempt_id: id }, signal, throwOnError: true })).data,
+  })
+/** The file queue's counts, of one group when the queue is filtered by it (B-GRD-24, B-GRD-25). */
+export const fileStatsOptions = (id: FileSubmissionId, group: string | undefined) =>
+  fileSubmissionReviewStatsOptions({
+    path: { file_submission_id: id },
+    ...(group ? { query: { group_id: group } } : {}),
+  })
+
+/**
+ * The course's groups for the group filter (B-GRD-24). A grader who may not read groups (403) gets no filter rather
+ * than a broken queue.
+ */
+export const groupsOptions = (courseId: CourseId) =>
+  queryOptions({
+    queryKey: groupsForCourseQueryKey({ path: { course_id: courseId } }),
+    queryFn: async ({ signal }) =>
+      groupsForCourse({ path: { course_id: courseId }, signal, throwOnError: true }).then(
+        response => response.data,
+        (error: unknown) => {
+          if (error instanceof ApiError && error.status === 403) return []
+          throw error
+        },
+      ),
+  })
 /** A short-lived signed URL of a learner's file (1 h): asked for on click, not prefetched per file. */
 /** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
 export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
@@ -102,13 +155,17 @@ export function queueOptions(work: Work, search: QueueSearch) {
   })
 }
 
-/** The queue tab's loader: the first page and, for an assessment, the server's counts (B-GRD-05). */
+/** The queue tab's loader: the first page, the server's counts (B-GRD-05) and the course's groups (B-GRD-24). */
 export async function ensureQueue(queryClient: QueryClient, activityId: ActivityId, search: QueueSearch) {
   const work = await ensureWork(queryClient, activityId)
   if (!work) return
+  const { course_id: courseId } = await queryClient.ensureQueryData(activityOptions(activityId))
   await Promise.all([
     queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
-    work.kind === 'assessment' ? queryClient.ensureQueryData(statsOptionsOf(work.id)) : null,
+    work.kind === 'assessment'
+      ? queryClient.ensureQueryData(statsOptionsOf(work.id))
+      : queryClient.ensureQueryData(fileStatsOptions(work.id, search.group)),
+    queryClient.ensureQueryData(groupsOptions(courseId)),
   ])
 }
 
@@ -139,10 +196,10 @@ export async function ensureResults(queryClient: QueryClient, activityId: Activi
   ])
 }
 
-// ---- Gradebook (B-GRD-19) ----
+// ---- Gradebook (B-GRD-19, B-GRD-20) ----
 
-export const gradebookOptions = (courseId: CourseId) => {
-  const options = { path: { course_id: courseId }, query: { limit: GRADEBOOK_PAGE } }
+export const gradebookOptions = (courseId: CourseId, search: GradebookSearch) => {
+  const options = { path: { course_id: courseId }, query: gradebookQuery(search) }
   return infiniteQueryOptions<
     GradebookPage,
     ApiError,
@@ -160,5 +217,8 @@ export const gradebookOptions = (courseId: CourseId) => {
   })
 }
 
-export const ensureGradebook = (queryClient: QueryClient, courseId: CourseId) =>
-  queryClient.ensureInfiniteQueryData(gradebookOptions(courseId))
+export const ensureGradebook = (queryClient: QueryClient, courseId: CourseId, search: GradebookSearch) =>
+  Promise.all([
+    queryClient.ensureInfiniteQueryData(gradebookOptions(courseId, search)),
+    queryClient.ensureQueryData(groupsOptions(courseId)),
+  ])

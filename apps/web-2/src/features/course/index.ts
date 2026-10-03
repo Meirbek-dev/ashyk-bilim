@@ -1,4 +1,11 @@
-export { curriculumOptions, ensureCoursePage, updatesOptions } from './queries'
+export {
+  contributorsOptions,
+  curriculumOptions,
+  ensureCoursePage,
+  setRoster,
+  setUpdates,
+  updatesOptions,
+} from './queries'
 export { AboutPage } from './ui/about-page'
 export { CourseNotFound } from './ui/course-not-found'
 export { CoursePage } from './ui/course-page'

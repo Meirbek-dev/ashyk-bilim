@@ -1,6 +1,6 @@
 # course
 
-Операции: getCourse, getCurriculum, learnerCourseState, listContributors, enroll, leaveCourse, applyContributor, removeContributor, listCourseUpdates
+Операции: getCourse, getCurriculum, learnerCourseState, listContributorsPage, enroll, leaveCourse, applyContributor, removeContributor, listCourseUpdatesPage
 
 Страница курса `/courses/$courseId/{about,updates,discussions}` (5.3, 5.4): шапка `DetailPage` с одним главным
 действием, вкладки - дочерние маршруты. Обсуждения - фича `discussions`.
@@ -32,8 +32,8 @@
 - B-CRS-11 Соавторство на курсе с `open_to_contributors`: вошедший без своей строки в списке - «Стать соавтором»;
   со своей заявкой `pending` - «Заявка на рассмотрении» и «Отозвать заявку» (UX-023); ответ 403 или 404 при отзыве
   (заявку уже приняли или отклонили) - сообщение и свежий список (UX-050).
-- B-CRS-12 Вкладка `updates`: объявления курса (заголовок, текст markdown, дата), видны и гостю; пусто - «Объявлений
-  пока нет».
+- B-CRS-12 Вкладка `updates`: объявления курса (заголовок, текст markdown, дата), видны и гостю, «Показать ещё» по
+  `next_cursor`; пусто - «Объявлений пока нет».
 - B-CRS-13 Страницы курса работают на kk и en: тексты из каталога, `<html lang>` верный.
 
 ## Изменено
@@ -63,3 +63,5 @@
 - Подать и отозвать заявку соавтора нет в `allowed_actions`: доступность выводится из `open_to_contributors` и своей
   строки списка соавторов.
 - Длительность и уровень курса: в контракте нет полей.
+- Авторы для шапки и своя заявка читаются из первой страницы списка соавторов (100 строк): отдельных полей у курса
+  нет, хвост большей команды не учитывается.

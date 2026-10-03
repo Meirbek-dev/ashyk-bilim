@@ -1,12 +1,5 @@
-export {
-  configOptions,
-  ensureGroup,
-  ensureRole,
-  groupsListOptions,
-  loadUsersPage,
-  platformOptions,
-  rolesOptions,
-} from './queries'
+export { ensureGroup, groupsListOptions } from './group-queries'
+export { configOptions, ensureRole, loadUsersPage, platformOptions, rolesOptions } from './queries'
 export { GamificationPage } from './ui/gamification-page'
 export { GroupNotFound } from './ui/group-not-found'
 export { GroupPage } from './ui/group-page'

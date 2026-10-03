@@ -10,7 +10,7 @@ import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
-import { createGroupOptions } from '../queries'
+import { createGroupOptions } from '../group-queries'
 
 const defaultValues: CreateUsergroupRequest = { name: '', description: '' }
 

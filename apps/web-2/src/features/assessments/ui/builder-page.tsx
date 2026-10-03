@@ -1,14 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, useSearch } from '@tanstack/react-router'
 
-import { m } from '#/paraglide/messages'
-
 import { openItem } from '../model/items'
-import { can } from '../model/route'
 import { assessmentOptions } from '../queries'
 import { ItemEditor } from './item-editor'
 import { ItemList } from './item-list'
-import { lockLabels } from './labels'
+import { lockReason } from './labels'
 
 const EDIT = '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
 
@@ -18,15 +15,10 @@ export function AssessmentEditPage() {
   const { item: itemId } = useSearch({ from: EDIT })
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activityId))
   const open = openItem(assessment.items, itemId)
+  const lock = lockReason(assessment)
   return (
     <div className="@container flex flex-col gap-gutter">
-      {can(assessment, 'edit') ? null : (
-        <p className="text-sm text-muted-foreground">
-          {assessment.edit_lock && can(assessment, 'update')
-            ? lockLabels[assessment.edit_lock]()
-            : m.assessments_readonly()}
-        </p>
-      )}
+      {lock ? <p className="text-sm text-muted-foreground">{lock}</p> : null}
       <div className="grid gap-gutter @3xl:grid-cols-3">
         <ItemList courseId={courseId} activityId={activityId} assessment={assessment} openId={open?.id} />
         <div className="min-w-0 @3xl:col-span-2">

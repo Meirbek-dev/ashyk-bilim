@@ -1,7 +1,7 @@
 import { partialMatchKey } from '@tanstack/react-query'
 import { expect, expectTypeOf, test } from 'vite-plus/test'
 
-import { eventInvalidations, type EventType, invalidationsFor } from './event-invalidations'
+import { aboutOtherActivity, eventInvalidations, type EventType, invalidationsFor } from './event-invalidations'
 import {
   agendaQueryKey,
   assessmentReviewQueueInfiniteQueryKey,
@@ -93,4 +93,17 @@ test('B-NOT-12 an extended due date refreshes the course plan, "Today" and that 
   expect(hits(keys, learnerCourseStateQueryKey({ path: { course_id: COURSE } }))).toBe(true)
   expect(hits(keys, learnerCourseStateQueryKey({ path: { course_id: OTHER_COURSE } }))).toBe(false)
   expect(hits(keys, getActivityFileSubmissionQueryKey({ path: { activity_id: ACTIVITY } }))).toBe(true)
+})
+
+test('B-NOT-15 a task-keyed read of another activity is left alone; an unknown task counts as the event’s', () => {
+  const assessment = '0190a5d2-0000-7000-8000-0000000000f1'
+  const queue = statsQueryKey({ path: { assessment_id: assessment } })
+  const read = (activity: string) => [{ id: assessment, activity_id: activity }, null, 'text']
+  expect(aboutOtherActivity(queue, ACTIVITY, read(ACTIVITY))).toBe(false)
+  expect(aboutOtherActivity(queue, ACTIVITY, read('0190a5d2-0000-7000-8000-0000000000f2'))).toBe(true)
+  expect(aboutOtherActivity(queue, ACTIVITY, [])).toBe(false)
+  // Not keyed by a task: never narrowed.
+  expect(aboutOtherActivity(gradebookInfiniteQueryKey({ path: { course_id: COURSE } }), ACTIVITY, read('x'))).toBe(
+    false,
+  )
 })

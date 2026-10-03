@@ -6,7 +6,8 @@ import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/courses/$courseId/gradebook')({
   validateSearch: gradebookSearchSchema,
-  loader: ({ context, params }) => ensureGradebook(context.queryClient, params.courseId),
+  loaderDeps: ({ search }) => search,
+  loader: ({ context, params, deps }) => ensureGradebook(context.queryClient, params.courseId, deps),
   staticData: { title: m.platform_tab_gradebook },
   component: GradebookPage,
 })

@@ -8,7 +8,7 @@ import { DetailPage } from '#/shared/components/templates/detail-page'
 
 import { canRole } from '../model/admin'
 import { roleDescription, roleName } from '../model/roles'
-import { rolesOptions } from '../queries'
+import { roleOptions } from '../queries'
 import { DeleteRole } from './delete-role'
 import { roleKindLabels } from './labels'
 import { RoleEditSection } from './role-edit-section'
@@ -18,10 +18,7 @@ import { RolePermissionsSection } from './role-permissions-section'
 /** One role: what it is and grants, and only the edits its `allowed_actions` list (system roles have none). */
 export function RolePage() {
   const { roleSlug } = useParams({ from: '/_authed/admin/roles/$roleSlug' })
-  const { data: roles } = useSuspenseQuery(rolesOptions())
-  const role = roles.find(entry => entry.slug === roleSlug)
-  // The loader answered "not found" for an unknown slug; a role just deleted renders nothing on the way out.
-  if (!role) return null
+  const { data: role } = useSuspenseQuery(roleOptions(roleSlug))
   const description = roleDescription(role)
   return (
     <DetailPage

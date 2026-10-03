@@ -27,6 +27,8 @@
 - B-ANL-21 Вкладки и страница администратора работают на kk и en: тексты из каталога, `<html lang>` верный; на 390 px нет горизонтальной прокрутки.
 - B-ANL-22 Неизвестная группа в адресе (удалена, чужая ссылка) убирается из адреса до запросов: страница
   открывается без фильтра группы, а не ошибкой 422.
+- B-ANL-23 Обзор: блоки "Требует внимания" (алерты) и "Наблюдения" (инсайты); успеваемость: "Прогнозы" и "Аномалии" (из ответа обзора). Пункт - важность словом (сведения / внимание / срочно) и фраза по `code` с подставленными `params`: числа, проценты и часы в формате языка, сигнал узкого места - словом; незнакомое значение параметра показывается как пришло. Пустой блок не показывается.
+- B-ANL-24 Зона риска: столбец "Почему сейчас" (`why_now`); панель учащегося - курс, почему сейчас, что сделать (`recommended_action`), признаки риска (`reason_codes`), последнее вмешательство (`last_intervention_type`); задания - столбец "Отклонения" (`outlier_reason_codes`). Тексты - исчерпывающие карты по enum.
 
 ## Изменено
 
@@ -46,7 +48,7 @@
 - `allowed_actions` у строк зоны риска: право записать вмешательство сейчас равно праву читать курс, кнопка есть у каждой строки списка (`POST /analytics/teacher/interventions`).
 - `DrillThroughResponse.items` - `object[]` без схемы (`GET /analytics/teacher/drill-through/{metric}`): поля читаются локальной схемой Valibot, нужен tagged union по `metric`.
 - `SavedView.query` и `SaveViewRequest.query` - свободный object, `view_type` - строка: храним объект фильтров и разбираем схемой фильтров (`/analytics/teacher/saved-views`).
-- `CreateInterventionRequest.outcome` - строка с перечислением в описании, нужен enum.
-- `reason_codes`, `recommended_action`, `why_now`, `outlier_reason_codes` - строки без enum; `params` у алертов, инсайтов, аномалий, прогнозов и проблем качества данных - свободный object: эти блоки обзора не показываются.
+- `CreateInterventionRequest.outcome`, `Intervention.outcome`, `AtRiskLearnerRow.last_intervention_outcome` - строки, нужен enum (сейчас не показываются).
+- `params` (`MessageParams`) - словарь `string | number` без схемы по `code`: имена параметров читаются по описанию `AnalyticsCode`, нужен tagged union. `missing_event_sources` шлёт `sources` массивом вопреки схеме, поэтому блок качества данных не показывается.
 - CSV берёт язык только из `Accept-Language`, ссылка не может его задать: нужен query-параметр языка (`GET /analytics/teacher/exports/*.csv`).
 - Правка и закрытие вмешательства: операции нет.

@@ -15,12 +15,12 @@ import type { Work } from '../queries'
 
 type ReturnSelectedProps = { work: Work; courseId: CourseId; rows: readonly QueueRow[]; onDone: () => void }
 
-/** "Return for revision" for the selected rows the server lets go back (B-GRD-08); refused rows are named. */
+/** "Return for revision" for the selected rows the server lets go back (B-GRD-08); skipped rows are counted. */
 export function ReturnSelected({ work, courseId, rows, onDone }: ReturnSelectedProps) {
   const [open, setOpen] = useState(false)
   const back = useMutation(returnManyOptions(work, courseId))
   const targets = returnable(rows)
-  const failed = back.data?.failed.join(', ')
+  const skipped = back.data?.skipped_count ?? 0
   return (
     <>
       <ConfirmDialog
@@ -40,14 +40,14 @@ export function ReturnSelected({ work, courseId, rows, onDone }: ReturnSelectedP
           back.mutate(targets, {
             onSuccess: result => {
               setOpen(false)
-              if (result.returned > 0)
-                toast.add({ title: m.grading_return_done({ count: formatNumber(result.returned) }) })
+              if (result.done_count > 0)
+                toast.add({ title: m.grading_return_done({ count: formatNumber(result.done_count) }) })
               onDone()
             },
           })
         }
       />
-      {failed ? <ErrorAlert>{m.grading_return_failed({ names: failed })}</ErrorAlert> : null}
+      {skipped > 0 ? <ErrorAlert>{m.grading_return_skipped({ count: formatNumber(skipped) })}</ErrorAlert> : null}
     </>
   )
 }

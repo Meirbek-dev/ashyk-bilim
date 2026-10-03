@@ -24,7 +24,7 @@ const LOOKS: Record<FileBlock, { label: () => string; hint: () => string }> = {
 export function FileUpload({ node, updateAttributes }: ReactNodeViewProps) {
   const activityId = use(ActivityContext)
   const [queued] = useState(() => queuedFiles.get(node))
-  const claim = useMutation(createBlockOptions(activityId ?? ''))
+  const claim = useMutation(createBlockOptions())
   const name = node.type.name
   if (!activityId || !isFileBlock(name))
     return (

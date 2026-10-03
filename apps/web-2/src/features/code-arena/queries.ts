@@ -10,6 +10,7 @@ import {
   getActivityOptions,
   getCodeRunQueryKey,
   learnerCourseStateQueryKey,
+  listMyCodeRunsOptions,
   mySubmissionsOptions,
   referenceCheckItemMutation,
   runnerOptions,
@@ -25,15 +26,17 @@ import type {
   AssessmentDetail,
   AssessmentId,
   AssessmentItem,
+  AssessmentItemId,
   CodeRun,
   CodeRunId,
   CourseId,
   CodeRunnerInfo,
   LanguageInfo,
   StudentSubmission,
+  SubmissionId,
 } from '#/shared/api/gen/types.gen'
 
-import { codeItemOf, upsertAttempt } from './model/arena'
+import { codeItemOf, upsert } from './model/arena'
 
 const byActivity = (id: ActivityId) => ({ path: { activity_id: id } })
 const assessmentKey = (activityId: ActivityId) => getActivityAssessmentQueryKey(byActivity(activityId))
@@ -79,10 +82,31 @@ export const runOptions = (id: CodeRunId) =>
     },
   })
 
-type ArenaParams = { courseId: CourseId; activityId: ActivityId; run?: CodeRunId | undefined }
+/**
+ * The caller's "Run"s of the code item, newest first (the server's 20 latest, B-COD-21). Hand-in runs are not here:
+ * each is shown with its attempt (B-COD-22), so a hand-in leaves this list as it is.
+ */
+export const myRunsOptions = (itemId: AssessmentItemId) =>
+  listMyCodeRunsOptions({ path: { item_id: itemId }, query: { purpose: 'visible' } })
+
+/** The run a handed-in attempt was graded on (B-COD-22); null before grading or for a grade without one. */
+export const finalRunOptions = (itemId: AssessmentItemId, submissionId: SubmissionId) => ({
+  ...listMyCodeRunsOptions({
+    path: { item_id: itemId },
+    query: { submission_id: submissionId, purpose: 'final', limit: 1 },
+  }),
+  select: (runs: CodeRun[]) => runs[0] ?? null,
+})
+
+type ArenaParams = {
+  courseId: CourseId
+  activityId: ActivityId
+  run?: CodeRunId | undefined
+  submission?: SubmissionId | undefined
+}
 
 /** The code page's loader: an enrolled learner (else 403 in place), a code challenge of the course, its attempts. */
-export async function ensureArena(queryClient: QueryClient, { courseId, activityId, run }: ArenaParams) {
+export async function ensureArena(queryClient: QueryClient, { courseId, activityId, run, submission }: ArenaParams) {
   const state = await ensureLearner(queryClient, courseId)
   const entry = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === activityId)
   if (entry?.activity_type !== 'code_challenge') throw notFound()
@@ -92,11 +116,14 @@ export async function ensureArena(queryClient: QueryClient, { courseId, activity
     queryClient.ensureQueryData(challengeOptions(activityId)),
     queryClient.ensureQueryData(languagesOptions()),
   ])
-  if (!challenge || !codeItemOf(challenge)) return names
+  const code = codeItemOf(challenge)
+  if (!challenge || !code) return names
   await Promise.all([
     queryClient.ensureQueryData(stateOptions(challenge.id)),
     queryClient.ensureQueryData(attemptsOptions(challenge.id)),
+    queryClient.ensureQueryData(myRunsOptions(code.item.id)),
     run ? queryClient.ensureQueryData(runOptions(run)) : null,
+    submission ? queryClient.ensureQueryData(finalRunOptions(code.item.id, submission)) : null,
   ])
   return names
 }
@@ -104,7 +131,7 @@ export async function ensureArena(queryClient: QueryClient, { courseId, activity
 // ---- Learner writes: each answers the attempt, which goes into the history instead of a refetch. ----
 
 const putAttempt = (queryClient: QueryClient, assessmentId: AssessmentId) => (attempt: StudentSubmission) =>
-  queryClient.setQueryData(attemptsOptions(assessmentId).queryKey, list => list && upsertAttempt(list, attempt))
+  queryClient.setQueryData(attemptsOptions(assessmentId).queryKey, list => list && upsert(list, attempt))
 
 // The player's outline shows the work state; nothing on this page observes it, so it is only marked stale.
 const outline = (courseId: CourseId) => learnerCourseStateQueryKey({ path: { course_id: courseId } })
@@ -128,10 +155,16 @@ export const submitOptions = (queryClient: QueryClient, courseId: CourseId, asse
   meta: { invalidates: [attemptStateQueryKey({ path: { assessment_id: assessmentId } }), outline(courseId)] },
 })
 
-/** A run answers finished (the server waits for the judge): it goes into the run resource's cache for `?run=`. */
+/**
+ * A run answers finished (the server waits for the judge): it goes into the run resource's cache for `?run=` and
+ * leads the own runs (B-COD-21).
+ */
 export const runCodeOptions = (queryClient: QueryClient) => ({
   ...runItemMutation(),
-  onSuccess: (run: CodeRun) => queryClient.setQueryData(runOptions(run.id).queryKey, run),
+  onSuccess: (run: CodeRun) => {
+    queryClient.setQueryData(runOptions(run.id).queryKey, run)
+    queryClient.setQueryData(myRunsOptions(run.item_id).queryKey, list => list && upsert(list, run))
+  },
 })
 
 // ---- Studio ----

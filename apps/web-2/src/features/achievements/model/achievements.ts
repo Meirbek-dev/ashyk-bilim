@@ -14,7 +14,7 @@ export function levelProgress(profile: Profile) {
 }
 
 // The server's streak day: unix seconds div 86 400 (UTC), as in `record_streak`.
-const dayOf = (unix: number) => Math.floor(unix / 86_400)
+export const dayOf = (unix: number) => Math.floor(unix / 86_400)
 
 /**
  * A streak is alive while its last day is today or yesterday; the server only resets it on the next record, so an

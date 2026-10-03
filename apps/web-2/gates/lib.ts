@@ -54,6 +54,13 @@ const Allowlist = v.object({
 /** gates/allowlist.json, validated: an exception without a reason is itself an error. */
 export const allowlist = () => v.parse(Allowlist, JSON.parse(read('gates/allowlist.json')))
 
+const ServerRemovals = v.object({
+  operations: v.array(v.object({ ...Reasoned.entries, operation: v.string() })),
+})
+
+/** gates/server-removals.json: operations without a web consumer that the server deletes in phase 9 (S-12). */
+export const serverRemovals = () => v.parse(ServerRemovals, JSON.parse(read('gates/server-removals.json'))).operations
+
 /** SDK function names in the generated client: the names agents search for. */
 export const sdkOperations = (): string[] =>
   matches(read('src/shared/api/gen/sdk.gen.ts'), /^export const (\w+) = </m).map(match =>

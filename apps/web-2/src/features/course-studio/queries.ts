@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
+import { contributorsOptions, setUpdates, updatesOptions } from '#/features/course'
 import { ApiError } from '#/shared/api/errors'
 import {
   courseArchivePreviewOptions,
@@ -11,28 +12,23 @@ import {
   createCourseMutation,
   createCourseUpdateMutation,
   deleteCertificationMutation,
+  deleteCourseMutation,
   deleteCourseUpdateMutation,
   duplicateCourseMutation,
   editCourseUpdateMutation,
   getCourseOptions,
   getCourseQueryKey,
-  listContributorsOptions,
   listCourseCertificationsOptions,
-  listCourseUpdatesOptions,
   listCoursesInfiniteQueryKey,
   listCoursesOptions,
   listGroupsOptions,
-  removeContributorMutation,
   updateCertificationMutation,
-  updateContributorMutation,
   updateCourseMutation,
   groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { addContributor, addGroupCourses, listCourses, removeGroupCourses } from '#/shared/api/gen/sdk.gen'
+import { addGroupCourses, listCourses, removeGroupCourses } from '#/shared/api/gen/sdk.gen'
 import type {
   Certification,
-  Contributor,
-  ContributorRole,
   Course,
   CourseId,
   CoursePage,
@@ -73,10 +69,9 @@ const lists = () => listCoursesInfiniteQueryKey()
 export const courseOptions = (id: CourseId) => getCourseOptions(byId(id))
 export const readinessOptions = (id: CourseId) => courseReadinessOptions(byId(id))
 export const archivePreviewOptions = (id: CourseId) => courseArchivePreviewOptions(byId(id))
-export const contributorsOptions = (id: CourseId) => listContributorsOptions(byId(id))
 export const courseGroupsOptions = (id: CourseId) => groupsForCourseOptions(byId(id))
-export const updatesOptions = (id: CourseId) => listCourseUpdatesOptions(byId(id))
 export const certificationsOptions = (id: CourseId) => listCourseCertificationsOptions(byId(id))
+export { contributorsOptions, updatesOptions }
 
 /**
  * Loader of every workspace tab: the course, read once for the layout. An unknown or malformed id is "not found";
@@ -167,57 +162,24 @@ export const unlinkGroupOptions = (queryClient: QueryClient, id: CourseId) => ({
     setGroups(queryClient, id, groups => groups.filter(g => g.id !== gone.id)),
 })
 
-// ---- Team ----
+/**
+ * Delete the course and everything under it (cascades: progress, attempts, grades, certificates). The lists are read
+ * again; its own cached course is left alone (the page navigates to the list, nothing reads it again).
+ */
+export const deleteCourseOptions = () => ({ ...deleteCourseMutation(), meta: { invalidates: [lists()] } })
 
-const setRoster = (queryClient: QueryClient, id: CourseId, change: (rows: Contributor[]) => Contributor[]) =>
-  queryClient.setQueryData(contributorsOptions(id).queryKey, rows => rows && change(rows))
-
-const putRow = (row: Contributor) => (rows: Contributor[]) =>
-  rows.some(old => old.user_id === row.user_id)
-    ? rows.map(old => (old.user_id === row.user_id ? row : old))
-    : [...rows, row]
-
-/** Several people at once, one request each; every answered row joins the roster. */
-export const addContributorsOptions = (queryClient: QueryClient, id: CourseId) => ({
-  mutationFn: ({ userIds, role }: { userIds: string[]; role: ContributorRole }) =>
-    Promise.all(
-      userIds.map(async userId => {
-        const { data } = await addContributor({
-          path: { course_id: id },
-          body: { user_id: userId, role },
-          throwOnError: true,
-        })
-        return data
-      }),
-    ),
-  onSuccess: (rows: Contributor[]) =>
-    setRoster(queryClient, id, list => rows.reduce((acc, row) => putRow(row)(acc), list)),
-})
-
-export const updateContributorOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...updateContributorMutation(),
-  onSuccess: (row: Contributor) => setRoster(queryClient, id, putRow(row)),
-})
-
-export const removeContributorOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...removeContributorMutation(),
-  onSuccess: (_: unknown, { path }: { path: { user_id: string } }) =>
-    setRoster(queryClient, id, rows => rows.filter(row => row.user_id !== path.user_id)),
-})
-
-// ---- Announcements: the list takes each answer (newest first). ----
-
-const setUpdates = (queryClient: QueryClient, id: CourseId, change: (rows: CourseUpdate[]) => CourseUpdate[]) =>
-  queryClient.setQueryData(updatesOptions(id).queryKey, rows => rows && change(rows))
+// ---- Announcements: the cached list takes each answer (newest first). ----
 
 export const createUpdateOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...createCourseUpdateMutation(),
-  onSuccess: (row: CourseUpdate) => setUpdates(queryClient, id, rows => [row, ...rows]),
+  onSuccess: (row: CourseUpdate) => setUpdates(queryClient, id, rows => [row, ...rows], 'first'),
 })
 
+// Every loaded page is read again; a row gone meanwhile keeps its old version (the write then answers 404).
 export const updateVersion = async (queryClient: QueryClient, id: CourseId, update: CourseUpdate) =>
-  (await queryClient.fetchQuery({ ...updatesOptions(id), staleTime: 0 })).find(row => row.id === update.id)?.version ??
-  update.version
+  (await queryClient.fetchInfiniteQuery({ ...updatesOptions(id), staleTime: 0 })).pages
+    .flatMap(page => page.items)
+    .find(row => row.id === update.id)?.version ?? update.version
 
 export const editUpdateOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...editCourseUpdateMutation(),

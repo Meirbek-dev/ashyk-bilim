@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { CertificatePdfLink } from '#/features/certificates'
@@ -6,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 import { formatDate } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/ui/button'
 
@@ -13,7 +14,7 @@ import { certificatesOptions } from '../queries'
 
 /** Every certificate the caller holds: the course, when and by whom, the PDF and its public verify page. */
 export function MyCertificates() {
-  const query = useSuspenseQuery(certificatesOptions())
+  const query = useSuspenseInfiniteQuery(certificatesOptions())
   return (
     <section aria-labelledby="my-certificates" className="flex flex-col gap-4">
       <h2 id="my-certificates" className="text-xl font-semibold">
@@ -59,6 +60,11 @@ export function MyCertificates() {
             </>
           )}
         </DataList>
+        <ShowMore
+          hasMore={query.hasNextPage}
+          pending={query.isFetchingNextPage}
+          onMore={() => void query.fetchNextPage()}
+        />
       </ListState>
     </section>
   )

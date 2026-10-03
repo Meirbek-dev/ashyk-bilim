@@ -1,7 +1,7 @@
 {
   "settings_saved": "Saved",
   "settings_details_title": "Basics",
-  "settings_details_hint": "Your name and \"About\" appear on your public profile.",
+  "settings_details_hint": "Your name and “About” appear on your public profile.",
   "settings_field_email": "Email",
   "settings_field_username": "Username",
   "settings_field_display_name": "Name",
@@ -80,7 +80,7 @@
   "settings_session_seen": "Last activity: {date}",
   "settings_session_ip": "IP: {ip}",
   "settings_session_revoke": "End",
-  "settings_session_revoke_title": "End the session \"{device}\"?",
+  "settings_session_revoke_title": "End the session “{device}”?",
   "settings_session_revoke_consequence": "You will have to sign in again on that device.",
   "settings_session_revoked": "Session ended",
   "settings_totp_title": "Two-factor authentication",

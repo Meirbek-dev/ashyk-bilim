@@ -24,7 +24,7 @@
   "platform_nav_users": "Пользователи",
   "platform_nav_roles": "Роли",
   "platform_nav_platform": "Платформа",
-  "platform_nav_ai": "AI",
+  "platform_nav_ai": "ИИ",
   "platform_nav_gamification": "Геймификация",
   "platform_nav_signup": "Регистрация",
   "platform_nav_more": "Ещё",
@@ -45,7 +45,7 @@
   "platform_page_studio": "Студия активности",
   "platform_page_submission": "Работа",
   "platform_tab_about": "Описание",
-  "platform_tab_updates": "Обновления",
+  "platform_tab_updates": "Объявления",
   "platform_tab_discussions": "Обсуждения",
   "platform_tab_overview": "Обзор",
   "platform_tab_content": "Содержание",
@@ -62,7 +62,6 @@
   "platform_tab_profile": "Профиль",
   "platform_tab_security": "Безопасность",
   "platform_tab_appearance": "Оформление",
-  "platform_under_construction": "Раздел скоро появится.",
   "platform_back": "Назад",
   "platform_not_found_search": "Найти через поиск"
 }

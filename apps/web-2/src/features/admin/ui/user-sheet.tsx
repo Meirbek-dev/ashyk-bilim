@@ -19,11 +19,11 @@ import { UserRoles } from './user-roles'
 import { UserStatus } from './user-status'
 
 /**
- * The user open by `?user=<username>` (R-07: the address is shareable): who they are, and every action the API lists
+ * The user open by `?user=<id>` (R-07: the address is shareable): who they are, and every action the API lists
  * for them in `allowed_actions`, plus "add to group" and "award XP" by the caller's capabilities.
  */
-export function UserSheet({ username }: { username: string }) {
-  const { data: user } = useSuspenseQuery(userOptions(username))
+export function UserSheet({ id }: { id: string }) {
+  const { data: user } = useSuspenseQuery(userOptions(id))
   const { data: session } = useSuspenseQuery(sessionOptions())
   const navigate = useNavigate()
   const close = () => void navigate({ to: '/admin/users', search: prev => ({ ...prev, user: undefined }) })

@@ -24,6 +24,6 @@
   "inbox_col_since": "Waiting since",
   "inbox_col_due": "Deadline",
   "inbox_col_action": "Action",
-  "inbox_action_grade": "Grade",
+  "inbox_action_grade": "Review",
   "inbox_action_review": "Open grade"
 }
