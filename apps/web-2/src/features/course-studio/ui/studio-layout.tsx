@@ -33,7 +33,8 @@ export function CourseStudioLayout({ aside }: { aside?: { label: string; content
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.platform_back()}
+      {/* Text only when wide: with the AI panel button the narrow header has no room for it. */}
+      <span className="sr-only @3xl:not-sr-only">{m.platform_back()}</span>
     </RouterLink>
   )
   return (

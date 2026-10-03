@@ -7,7 +7,7 @@ export const CourseAnalysis = lazy(() =>
   import('./ui/course-analysis').then(module => ({ default: module.CourseAnalysis })),
 )
 export const AdminAiPage = lazy(() => import('./ui/admin-ai-page').then(module => ({ default: module.AdminAiPage })))
-/** For slice 6.1: mount in the submission workspace's side panel. */
+/** @public For slice 6.1 (not merged yet): the grader workspace mounts it in its side panel. */
 export const SubmissionAiPanel = lazy(() =>
   import('./ui/submission-ai-panel').then(module => ({ default: module.SubmissionAiPanel })),
 )
