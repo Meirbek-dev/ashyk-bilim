@@ -130,13 +130,15 @@ test('B-ASM-12 B-ASM-13 B-ASM-14 questions are duplicated, deleted and reordered
   await expect(page.getByRole('link', { name: '1. Гамма' })).toBeVisible()
 })
 
-test('B-ASM-09 a code challenge shows its code question as a summary only', async ({ page, studio, seed }) => {
+test('B-ASM-09 a code challenge is edited by the code arena, not the question builder', async ({
+  page,
+  studio,
+  seed,
+}) => {
   const { courseId, assessment } = await makeAssessment(studio, seed, { kind: 'code_challenge', title: 'Код' })
   await page.goto(studioUrl(courseId, assessment.activity_id))
-  await expect(page.getByText(m.assessments_code_note({}, ru))).toBeVisible()
-  await page.getByRole('button', { name: m.assessments_item_add({}, ru) }).click()
-  await expect(page.getByRole('menuitem')).toHaveText([m.assessments_kind_code({}, ru)])
-  await page.keyboard.press('Escape')
+  await expect(page.getByRole('heading', { name: m.code_studio_title({}, ru) })).toBeVisible()
+  await expect(page.getByRole('button', { name: m.assessments_item_add({}, ru) })).toHaveCount(0)
 })
 
 test('B-ASM-11 a save the server refuses (scheduled) shows why and keeps the input', async ({ page, studio, seed }) => {

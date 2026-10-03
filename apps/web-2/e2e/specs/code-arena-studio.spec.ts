@@ -8,7 +8,8 @@ import type { MadeCourse } from '../fixtures/learning'
 import { expect, routeLanguages, ru, test, type Made } from './code-arena-fixture'
 
 // A code challenge in the activity studio (slice 5.3): the `edit` tab holds its code item. The language list comes
-// from the sandbox, which the local stack lacks: it is routed for a client navigation from the `settings` tab.
+// from the sandbox, which the local stack lacks: it is routed for a client navigation from the course's content tab
+// (outside the activity studio, whose layout reads the assessment on the server).
 
 test.describe.configure({ timeout: 60_000 })
 test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
@@ -19,8 +20,8 @@ const form = (page: Page) => page.getByRole('form', { name: m.code_studio_title(
 const problemOf = (code: string, status: number) => ({ type: 'about:blank', title: code, status, code })
 
 async function openEdit(page: Page, course: MadeCourse, made: Made) {
-  await page.goto(studio(course, made, 'settings'))
-  await page.getByRole('link', { name: m.platform_tab_edit({}, ru) }).click()
+  await page.goto(`/teach/courses/${course.id}/content`)
+  await page.getByRole('link', { name: made.assessment.title, exact: true }).click()
   await expect(form(page)).toBeVisible()
 }
 
