@@ -23,11 +23,11 @@ secrets, restorable by one script and checked by `just restore-drill`
 the only offsite protection left.
 
 ### 2. Redis has no AUTH
-**Fixed in repo, takes effect at cutover (RUNBOOK).** Redis runs with
+**Fixed (cutover 2026-10-03).** Redis runs with
 `--requirepass` (`REDIS_PASSWORD`); the server URL carries it.
 
 ### 1. Judge0 has no auth token
-**Fixed in repo, takes effect at cutover (RUNBOOK).** Judge0 requires
+**Fixed (cutover 2026-10-03).** Judge0 requires
 `AUTHN_TOKEN` (`JUDGE0_AUTHN_TOKEN`, sent by the server as
 `AB__JUDGE0__API_KEY`); smoke checks that a request without it gets 401. Its
 port is not published.
@@ -44,7 +44,7 @@ On 2026-10-02 the host's SSH password was pasted into `docs/MODERNIZATION-STAGE-
 switch the host to key-only authentication (`PasswordAuthentication no`).
 
 ### 8. Judge0 shares the production Postgres and Redis instances
-**Fixed in repo, takes effect at cutover (RUNBOOK).** Judge0 gets its own
+**Fixed (cutover 2026-10-03).** Judge0 gets its own
 `judge0-db` and `judge0-redis` on the internal `exec-net` and has no network
 path to the app's `db` or `redis`.
 
@@ -60,12 +60,12 @@ deploys an outage, a failed nightly backup or a filling disk goes unnoticed
 until someone looks.
 
 ### 10. Legacy secrets linger in the production `.env`
-**Fixed in repo, takes effect at cutover (RUNBOOK).** `split-env.sh` moves
+**Fixed (cutover 2026-10-03).** `split-env.sh` moves
 the `PLATFORM_*` values out of `.env` into `.env.legacy-removed`, preflight
 fails while any remain in `.env`, and RUNBOOK 1.5 deletes that file.
 
 ### 11. deploy.sh builds on the production box
-**Fixed in repo, takes effect at cutover (RUNBOOK).** CI builds both images,
+**Fixed (cutover 2026-10-03).** CI builds both images,
 smoke-tests the full stack and publishes `<sha>` tags to GHCR; `just deploy`
 pulls them and refuses a sha without images. Migrations are still
 forward-only: deploy dumps the database before a release that changes them.

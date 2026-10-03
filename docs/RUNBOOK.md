@@ -2,8 +2,11 @@
 
 Operations for the stack described in `docs/INFRA.md`. Prod host: deploy dir
 `~/openu-prod`, compose project `openu-prod`, domain `cs-mooc.tou.edu.kz`,
-TLS-terminating university proxy in front. Until section 1 has been executed
-the host runs the legacy stack (`docs/DEPLOYMENT.md`).
+TLS-terminating university proxy (`192.168.1.46`, plain http to port 80 with
+`X-Forwarded-Proto`) in front. Section 1 was executed on 2026-10-03 (release
+`f5e493c4` from branch `release/stage1`, downtime 05:22:57-05:24:28 UTC); it stays
+as the record of the procedure. The legacy compose files live in git history
+(last at `f5e493c4`).
 
 ## 0. Conventions
 
@@ -87,7 +90,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
    a=$(ls -1t backups/backup-*.tar.zst | head -n 1) && mv "$a" "backups/legacy-final-${a#backups/}" && ls -l backups/legacy-final-*
    ```
 
-   It is a raw volume copy (legacy format, restore recipe in `docs/DEPLOYMENT.md`
+   It is a raw volume copy (legacy format, restore recipe in `docs/DEPLOYMENT.md` of git history
    at `$LEGACY_SHA`). It is also the only remaining copy of the legacy `openu`
    database. Rollback: none needed.
 
@@ -291,17 +294,13 @@ Legacy images (`ashyq-server:$LEGACY_TAG`, `ashyq-web:$LEGACY_TAG`,
 
 ### 1.5 After a successful cutover
 
-- Same day: replace the certbot hook (3.7). The legacy hook uses `install`
+- Certbot hook: the legacy root-owned hook (`openu-prod.sh`) keeps working: it writes
+  into `./certs` (a directory mount now) and reloads `openu-prod-nginx-1`. Replace it
+  with 3.7 only when the project name or checkout path changes. (Old note: it uses `install`
   (new inode), which the new single-file bind mounts would not see.
 - Within the week, when the host has spare RAM: `just restore-drill` (3.5).
-- Repo (dev machine, one commit): delete `docker-compose.yml`,
-  `docker-compose.dev.yml`, root `.env.example`, root `judge0.conf`,
-  `extra/Dockerfile.db`, `extra/deploy.sh`, `extra/nginx.conf.template`,
-  `extra/nginx.routes.conf`, `extra/renew-certificate.sh`,
-  `extra/storage-cors.json`, `extra/storage-public-policy.json`,
-  `docs/DEPLOYMENT.md`, and the root `package.json` scripts `services` and
-  `deploy`; drop the "until section 1" note at the top of this file; mark
-  FINDINGS #1, #2, #8, #10, #11 closed. Then `git pull` on the host.
+- Repo: legacy files deleted and FINDINGS #1, #2, #8, #10, #11 closed (done
+  2026-10-03, after the cutover).
 - After a week without rollback: `rm .env.pre-split .env.legacy-removed`
   (the legacy `PLATFORM_*` secrets, FINDINGS #10), `docker image rm
   ashyq-server:$LEGACY_TAG ashyq-web:$LEGACY_TAG openu-prod-db`, `docker

@@ -29,10 +29,9 @@ infra/
 .github/workflows/ci.yaml   gates, images, stack smoke, publish
 ```
 
-Legacy files kept until the cutover, then deleted (RUNBOOK 1.5):
-`docker-compose.yml`, `docker-compose.dev.yml`, root `.env.example`, root
-`judge0.conf`, `extra/`, `docs/DEPLOYMENT.md`, and the root `package.json`
-scripts `services` and `deploy`.
+The legacy stack (`docker-compose.yml`, `extra/`, `judge0.conf`,
+`docs/DEPLOYMENT.md`) was deleted after the 2026-10-03 cutover; last version in
+git at `f5e493c4`.
 
 Root `justfile` recipes: `dev-up`, `dev-down`, `dev-reset`, `bootstrap`,
 `stack-up`, `stack-down`, `smoke`, `ci-infra`, `preflight`, `deploy`,
@@ -441,14 +440,16 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
 
 ## Known gaps
 
-- **Prod cutover pending.** Nothing of the above runs on the prod host yet.
+- ~~Prod cutover pending~~ - done 2026-10-03: release `f5e493c4` (branch
+  `release/stage1`), downtime 91 s, smoke green, real client addresses in the
+  nginx log (proxy `192.168.1.46/32`), Judge0 healthy on its own db/redis.
+  The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
 - **No release is published yet.** `main` is red since 34d8cd2 (message catalogs
   moved to the Paraglide format while `apps/web` still reads them through
   next-intl: web typecheck fails), so `publish` has never run and there is no
   `<sha>` tag to deploy. See `QUESTIONS.md` Q-2026-10-03-1.
-- **Judge0 untested in the new layout** (own db/redis, token, `judge0.conf`
-  precedence). Off in CI smoke (privileged). First real check: the cutover
-  verification (RUNBOOK 1.3).
+- **Judge0 in CI smoke is off** (privileged). Verified on prod at the cutover:
+  healthy, 401 without token, `judge0-tune` applied.
 - **No external monitoring** (owner decision 2026-10-02: no external
   services). preflight checks PAT/cert expiry and disk at deploy time only.
 - **Backups are local only and unencrypted** (owner decision 2026-10-02). A
