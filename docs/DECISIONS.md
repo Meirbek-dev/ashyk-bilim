@@ -1899,6 +1899,19 @@ then deviations from the spec.
   apps/web). G-07 is report-only until phase 7 (`gates/allowlist.json`). The login form is disabled
   until hydration: text typed earlier never reached TanStack Form state. The Dockerfile does not
   copy `openapi.v2.json`: the generated client is committed and the build never reads the contract.
+- **Kit on real shadcn (K-3, 2026-10-03).** Was: `shared/ui` was hand-written Base UI + cva that only looked
+  like shadcn (no `components.json`, no `cn`, no `className`, own names). Now: `shared/ui` = stock base-nova
+  output of `bunx shadcn@4.21.1 add` (27 files; stock imports `cn` from the `cn` package and carry `.tsx` import
+  suffixes because the CLI resolves `#/` through package `imports`); `shared/components` = our composites on
+  them (templates, form fields on `Field`, DataTable, MultiCombobox, IconButton = Button + Tooltip, StatusBadge,
+  ErrorAlert, SheetPanel, AccountMenu). Tokens no longer clear Tailwind namespaces; `dark:` follows
+  `data-mode`. Exemptions, `src/shared/ui/**` only: lint (forbid-elements, no-multi-comp, React namespace
+  import, 4 jsx-a11y rules, no-unsafe-type-assertion, no-underscore-dangle), G-11, knip unused exports, fmt.
+  Stock edits: catalog texts in dialog/sheet/spinner/toast, chip `removeLabel` (aria-label), skeleton without
+  pulse, button `hover:bg-primary/90` and no dark /20 destructive tint (G-15, e2e axe). Themes: retro-arcade
+  dark ink 0.70 -> 0.76, t3-chat dark destructive 0.66 -> 0.70. Choice menus are `dropdown-menu` radio
+  groups (icon triggers, menuitemradio roles), not `select`. sonner -> stock base `toast`; initial JS budget
+  190 -> 200 KB (`cn` in the entry, gates/budgets.json).
 
 ## Generator-friendly contract (2026-10-03, stage 2 S-01)
 

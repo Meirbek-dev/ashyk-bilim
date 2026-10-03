@@ -16,8 +16,8 @@ rule or the reference slice; a rule nobody can check does not belong here.
 
 ## 2. Tokens
 
-Utilities come only from these tokens. Palette classes (`bg-red-500`, `bg-white`), `text-3xl`, `font-bold`,
-`tracking-*` and `shadow-2xl` do not exist, because tokens.css clears those namespaces.
+Our code (features, `shared/components`) uses only these tokens. Tailwind keeps its namespaces for the stock kit:
+palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `shadow-2xl` are forbidden in our code.
 
 | Token (utility suffix)                          | Meaning                                    | Use                                                       |
 | ----------------------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
@@ -48,7 +48,8 @@ Utilities come only from these tokens. Palette classes (`bg-red-500`, `bg-white`
   Themes never set fonts, spacing or tracking, and never set the derived tokens. Mode comes from
   `html[data-mode="light"|"dark"]`; with no attribute the system setting applies. Each color is a `light-dark()`
   pair.
-- Hex values, `oklch()` literals and `dark:` appear only in `src/styles/` and `public/themes/` (G-11).
+- Hex, `oklch()` and `dark:` only in `src/styles/`, `public/themes/` and the stock kit (G-11); the kit's `dark:` is one
+  `@custom-variant` in globals.css: `data-mode="dark"`, or the system setting when it is absent or `system`.
 
 ## 3. Color meaning
 
@@ -77,10 +78,8 @@ title, a row or a card background.
 
 ## 4. Typography
 
-- Sans: `@fontsource-variable/inter@5.3.0` (OFL-1.1). Import `wght.css` and `wght-italic.css`. Kazakh coverage was
-  verified from the cmap of the shipped woff2 files: the `cyrillic` subset has Іі and Ұұ, `cyrillic-ext` has
-  ӘәҒғҚқҢңӨөҮүҺһ, 18/18 in both roman and italic. `tnum` is present. Inter is the only Cyrillic-first candidate
-  checked that has a true italic; Onest and Golos Text have none, and lecture content needs italic.
+- Sans: `@fontsource-variable/inter@5.3.0` (OFL-1.1), `wght.css` + `wght-italic.css`: 18/18 Kazakh letters
+  (`cyrillic` + `cyrillic-ext`) in roman and italic, `tnum` present; Onest and Golos Text lack the italic.
 - Mono: `@fontsource-variable/geist-mono@5.3.0` (OFL-1.1), `wght.css`: 18/18 Kazakh letters. JetBrains Mono was
   rejected because its fontsource subsets are missing 12 of the 18 Kazakh letters.
 - Weights: `font-normal` (body), `font-medium` (labels, buttons, table headers), `font-semibold` (headings).
@@ -109,9 +108,9 @@ title, a row or a card background.
 - Shadow: none on in-flow content. Use `shadow-xs` for raised controls, `shadow-md` for menus and popovers, and
   `shadow-lg` for dialogs and sheets. `shadow-sm` and `shadow-xl` exist only for kit primitives.
 - Density: comfortable (default) for learning and reading; compact for teacher and admin tables. The layout or
-  template sets `data-density="compact"` on its region. Features never pass density classes. Kit primitives use
-  `h-control` (36 / 32 px), `min-h-row` (48 / 36 px) and `gap-gutter` / `p-gutter` (24 / 16 px). Touch targets stay
-  >= 24 px.
+  template sets `data-density="compact"` on its region. Features never pass density classes. Our composites use
+  `h-control` (36 / 32 px), `min-h-row` (48 / 36 px) and `gap-gutter` / `p-gutter` (24 / 16 px); stock controls keep
+  their own heights. Touch targets stay >= 24 px.
 
 ## 6. Layouts and templates
 
@@ -131,7 +130,7 @@ then actions on the right. Used by the activity player, attempt, activity editor
 | `DetailPage`    | object title + meta line (`text-sm text-muted-foreground`) + status + primary action right; tab links; `Outlet` | primary action full-width under the title; the tab row scrolls inside itself |
 | `FocusPage`     | focus top bar; left panel (contents) `w-72`; main column `max-w-prose` or full width for editors; right panel (AI, rubric) `w-96` | panels become sheets opened from top-bar buttons; main column full width |
 | `SettingsPage`  | section nav (route links) left; stacked sections: `h2` + one-line description + fields + its own Save at the section's end | section nav becomes the tab row; sections stack |
-| `FormDialog`    | title, minimum fields, footer: Cancel (ghost) + Create (primary); on success, navigate to the new entity | full-width bottom sheet; footer sticks to the bottom |
+| `FormDialog`    | title, minimum fields, footer: Cancel (ghost) + Create (primary); on success, navigate to the new entity | the stock dialog at full width minus the gutter; scrolls inside |
 | `ConfirmDialog` | "Delete course «X»?", consequence in one sentence, Cancel + destructive verb; focus starts on Cancel | same, full width |
 
 - Tables switch to `DataList` with a container query (`@container`), not a viewport breakpoint. No page at 390 px
@@ -149,7 +148,17 @@ Every data region renders exactly one of the kit's four states:
 4. Error / no access: the `ApiError` message from the code map plus "Retry"; a 403 is shown in place on the
    same URL.
 
-## 8. Component rules
+## 8. Kit: shadcn base-nova + our composites
+
+- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI): `bunx shadcn@4.21.1 add <name>` when a
+  feature needs a primitive, `add --diff` to update. No hand edits beyond those listed in docs/DECISIONS.md.
+- `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
+  regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status
+  tones, link looks, a dialog width) is a variant there; features pass layout classes only, never restyle.
+- Features use stock props (`variant`, `size`, `render`); a route link that looks like a button is the router
+  `Link` with `className={buttonVariants({ variant })}`. Pending: `disabled` + `<Spinner data-icon="inline-start" />`.
+
+## 9. Component rules
 
 - One primary button per view: one in a template header and one in each dialog footer. Everything else is
   secondary, outline or ghost.
@@ -166,34 +175,26 @@ Every data region renders exactly one of the kit's four states:
 - Status badges come from an exhaustive `Record<Status, {label, token}>`, never from ad-hoc classes.
 - A card is one object. Sections are separated by headings and spacing, not by borders around them.
 
-## 9. Motion and focus
+## 10. Motion and focus
 
-- Use only `transition-colors`, `transition-opacity` and `transition-transform` (`transition-all` is forbidden).
-  Durations: `duration-100`, `duration-150` or `duration-200`, or `--duration-fast|base|slow`.
-- Motion is allowed for overlays opening and closing, accordions, a chevron rotating, and progress. Hover
-  scaling, translating, bouncing, pulsing and entrance animations are forbidden.
-- `prefers-reduced-motion: reduce` sets every duration to zero (tokens.css does this globally).
-- Focus: the global `:focus-visible` outline in `ring`, 2 px with a 2 px offset. Never use `outline-none`
-  without an equal replacement. Focus order follows visual order.
+- Our code: only `transition-colors|opacity|transform`, `duration-100|150|200` (or `--duration-*`); motion only for
+  overlays, accordions, a rotating chevron and progress; no hover scale, translate, bounce, pulse or entrance
+  animation. Stock overlays animate with tw-animate-css. Reduced motion zeroes every duration (tokens.css).
+- Focus: the global `:focus-visible` outline in `ring` (2 px, offset 2 px); stock controls draw their own `ring`.
+  Never `outline-none` without an equal replacement. Focus order follows visual order.
 
-## 10. Writing tone (ru / kk / en)
+## 11. Writing tone (ru / kk / en)
 
-- Buttons are a short verb, without "please", without exclamation marks, in sentence case: «Сохранить» /
-  «Сақтау» / "Save", «Отправить работу» / «Жұмысты жіберу» / "Submit work".
-- The toast repeats the verb in the past tense: «Сохранено» / «Сақталды» / "Saved".
-- Errors say what happened and what to do next. They never apologize and never blame: «Файл больше 50 МБ.
-  Выберите файл поменьше.»
-- Address the user with formal «вы» (ru, lowercase) and «сіз» (kk).
-- Confirmations name the object and the consequence. Empty states invite one action.
-- Terms come only from the 7.9 glossary. Dates and numbers come only from the format module.
+- Buttons: a short verb in sentence case, no "please", no "!": «Сохранить» / «Сақтау» / "Save". The toast repeats
+  it in the past tense: «Сохранено» / «Сақталды» / "Saved".
+- Errors say what happened and what to do next, never apologize or blame: «Файл больше 50 МБ. Выберите файл поменьше.»
+- Formal «вы» (ru, lowercase) and «сіз» (kk). Confirmations name the object and the consequence; empty states invite
+  one action. Terms only from the 7.9 glossary; dates and numbers only from the format module.
 
-## 11. Never
+## 12. Never
 
 - gradients, glass/blur surfaces, decorative icons (`Sparkles`, `Rocket`, `Flame`, `Zap`, `PartyPopper`, `Wand2`)
-- palette classes, `dark:`, hex, inline `style`, arbitrary values in feature code (G-11)
-- cards inside cards, a second primary button, a delete without confirmation
-- `text-primary` as text color; color as the only signal
-- all-caps labels, letter-spacing, `font-bold`, sizes outside the six above
-- animations longer than 200 ms, `transition-all`, hover scale or lift
-- horizontal page scroll at 390 px; "desktop only" outside the two editors
-- tabs held in component state; edit forms in dialogs
+- palette classes, `dark:`, hex, inline `style`, arbitrary values in our code (G-11); `text-primary` as text color
+- cards inside cards, a second primary button, a delete without confirmation; color as the only signal
+- all-caps labels, letter-spacing, `font-bold`, sizes outside the six above; animations > 200 ms, hover scale or lift
+- horizontal scroll at 390 px; "desktop only" outside the two editors; tabs in state; edit forms in dialogs

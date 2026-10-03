@@ -27,7 +27,8 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   const axe = await new AxeBuilder({ page }).analyze()
   for (const violation of axe.violations) {
     if (violation.impact === 'serious' || violation.impact === 'critical') {
-      problems.push(`axe ${violation.impact}: ${violation.id} (${violation.nodes.length} nodes) ${violation.helpUrl}`)
+      const nodes = violation.nodes.map(node => node.target.join(' ')).join(', ')
+      problems.push(`axe ${violation.impact}: ${violation.id} at ${nodes} ${violation.helpUrl}`)
     }
   }
   const viewport = page.viewportSize()

@@ -6,22 +6,23 @@ frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until 
 
 ## Map
 
-| Path                               | What lives there                                                             |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| `src/routes/`                      | file routes: `validateSearch`, `beforeLoad`, `loader`, `head`, component     |
-| `src/features/<name>/`             | `SPEC.md`, `index.ts` (public entry), `queries.ts`, `model/`, `ui/`          |
-| `src/shared/api/`                  | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`      |
-| `src/shared/api/gen/`              | generated SDK, types, Valibot schemas, query options. Never edit             |
-| `src/shared/auth/`                 | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
-| `src/shared/i18n/`                 | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
-| `src/shared/lib/`                  | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
-| `src/shared/ui/`                   | kit components; the only place with raw `<button>`, `<input>`, `<a>`         |
-| `src/shared/ui/templates/`         | the 6 screen templates (DESIGN.md 6); `form/` = `useAppForm` + bound fields  |
-| `src/server.ts`                    | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |
-| `serve.ts`                         | production entry: srvx static files + the Start handler                      |
-| `messages/<locale>/<feature>.json` | catalogs (ru base, kk, en); `glossary.json` = required terms                 |
-| `gates/`                           | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks  |
-| `e2e/`                             | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)    |
+| Path                                | What lives there                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `src/routes/`                       | file routes: `validateSearch`, `beforeLoad`, `loader`, `head`, component     |
+| `src/features/<name>/`              | `SPEC.md`, `index.ts` (public entry), `queries.ts`, `model/`, `ui/`          |
+| `src/shared/api/`                   | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`      |
+| `src/shared/api/gen/`               | generated SDK, types, Valibot schemas, query options. Never edit             |
+| `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
+| `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
+| `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
+| `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.21.1 add <name>`; never hand-edit   |
+| `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest  |
+| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`; `cn` (shadcn's `cn` package)                                    |
+| `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |
+| `serve.ts`                          | production entry: srvx static files + the Start handler                      |
+| `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                 |
+| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks  |
+| `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)    |
 
 Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>`;
 inside a feature use relative paths; across layers use `#/`. Lint enforces all of it.
@@ -54,12 +55,14 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                                           |
 | Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`                             |
 | File upload     | `FileInput` (`purpose` sets types and cap) / `FileField`; pasted image: `useUpload` + `clipboardImage` |
-| Pick from list  | `Combobox` (multi, server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`     |
+| Pick from list  | `MultiCombobox` (server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`       |
 | Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`        |
 | Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                          |
 | Dates, numbers  | `#/shared/i18n/format`                                                                                 |
-| Screens         | a template from `#/shared/kit/templates`; lists through `ListState`                                    |
-| UI elements     | `#/shared/kit`; colors and spacing only via tokens and the Tailwind scale                              |
+| Screens         | a template from `#/shared/components/templates`; lists through `ListState`                             |
+| UI elements     | stock `#/shared/ui/<name>` (`variant`, `size`, `render`) or a composite; layout classes only, tokens   |
+| Button looks    | route: router `Link` + `className={buttonVariants({ variant })}`; pending: `disabled` + `<Spinner />`  |
+| Toast           | `toast.add({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                      |
 | API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                            |
 | Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                           |
 | Memoization     | none: React Compiler                                                                                   |
