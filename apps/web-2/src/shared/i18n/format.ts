@@ -31,6 +31,15 @@ function kkDate(epochMs: number): string {
   return `${part('year')} ж. ${part('day')} ${KK_MONTHS[Number(part('month')) - 1]}`
 }
 
+/**
+ * A count with digit grouping, e.g. "1 295"; `signed` adds "+" to a positive one. kk groups like ru (a space), and
+ * Chromium has no kk number data, so kk formats as ru.
+ */
+export function formatNumber(value: number, { signed = false } = {}, locale: string = getLocale()): string {
+  const format = new Intl.NumberFormat(locale === 'kk' ? 'ru' : locale, { signDisplay: signed ? 'exceptZero' : 'auto' })
+  return format.format(value)
+}
+
 /** A calendar date from the API's unix seconds, e.g. "2026 ж. 1 ақпан". */
 export function formatDate(unixSeconds: number, locale: string = getLocale()): string {
   const epochMs = unixSeconds * 1000
