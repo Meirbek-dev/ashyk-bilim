@@ -92,6 +92,13 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
   })
 }
 
+/** Dev: a bucket URL goes through the dev server's storage proxy (same origin, as nginx serves it in prod). */
+const storageUrl = (url: string): string => {
+  if (!import.meta.env.DEV) return url
+  const target = new URL(url)
+  return /^\/ab-(public|private)\//.test(target.pathname) ? `${target.pathname}${target.search}` : url
+}
+
 /** Uploads a file checked with `checkUpload`; resolves with the finalized upload whose id a resource claims. */
 export async function upload(
   file: File,
@@ -103,7 +110,7 @@ export async function upload(
     signal: options.signal,
     throwOnError: true,
   })
-  await put(slot.put_url, file, options)
+  await put(storageUrl(slot.put_url), file, options)
   // The slot id is the retry token: a repeated finalize replays the first answer instead of a 409.
   const { data } = await finalizeUpload({
     path: { upload_id: slot.id },

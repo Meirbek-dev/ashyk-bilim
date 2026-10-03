@@ -28,7 +28,7 @@ async function stored(
   return data
 }
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-FSB-13 B-FSB-14 a draft task gets its instructions and is published from edit', async ({
   page,

@@ -9,6 +9,8 @@ process.env['INTERNAL_API_URL'] ??= baseURL
 
 export default defineConfig({
   testDir: './specs',
+  // Against `vp dev`: compiles every route once before the specs (cold first loads, F-2).
+  globalSetup: './global-setup.ts',
   outputDir: '../test-results',
   // Short output for agents (8.4): one line per test; a failure prints the trace path, not the trace.
   reporter: 'line',

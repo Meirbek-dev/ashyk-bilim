@@ -9,7 +9,7 @@ import { cookieOf, expect, ru, test } from './course-studio-fixture'
 const studioUrl = (courseId: string, activityId: string, tab = 'edit') =>
   `/teach/courses/${courseId}/activities/${activityId}/${tab}`
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-CST-26 the header switch publishes at once and asks before unpublishing; a refusal is shown', async ({
   page,

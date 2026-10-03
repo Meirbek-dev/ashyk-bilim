@@ -98,12 +98,12 @@ under-construction` lists what is left; report-only until phase 7 (`gates/allowl
 
 ## e2e locally
 
-API on `http://127.0.0.1:8000` (`vp dev` proxies `/api/v2`; another address: `API_PROXY_TARGET`), seeded by
-`ashyq admin seed-e2e`. Run `E2E_PASSWORD=<seed password> vp run e2e [--grep x]`: it reuses or starts `vp dev`.
-Never write the password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API logs email
-verification codes, and `auth.spec.ts` reads them there. `e2e/fixtures/seed.ts` gives `seed` (accounts and route
-params, read with the SDK) and `signInAs(role)`; `access.spec.ts` walks every route of `routeTree.gen.ts` for guest,
-student, teacher, admin.
+API on `http://127.0.0.1:8000` (`vp dev` proxies `/api/v2`, else `API_PROXY_TARGET`; buckets and `/content`: storage
+`STORAGE_PROXY_TARGET`, `localhost:9002`), seeded by `ashyq admin seed-e2e`. Run `E2E_PASSWORD=<seed password> vp run
+e2e [--grep x]`: it reuses or starts `vp dev` and warms every route first (`e2e/global-setup.ts`). Never write the
+password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API logs email verification codes, and
+`auth.spec.ts` reads them there. `e2e/fixtures/seed.ts` gives `seed` (accounts and route params, read with the SDK),
+`test.use({ as: role })` (one API sign-in per worker and role, as storage state), `signInAs(role)` to switch.
 
 ## Slice cycle (one feature)
 

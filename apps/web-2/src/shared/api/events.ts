@@ -21,8 +21,11 @@ type Fetch = (url: string, init: RequestInit) => Promise<Response>
 export type EventStreamOptions = {
   fetch: Fetch
   onEvent: (event: UserEvent) => void
-  /** A reconnect without an event id to resume from: whatever happened meanwhile must be read again. */
-  onResync: () => void
+  /**
+   * A reconnect without an event id to resume from: whatever happened since the last connection dropped (`since`,
+   * epoch ms) must be read again; a read that landed after it already shows it.
+   */
+  onResync: (since: number) => void
   /** 401 or `closed`: the session is gone (or changed); the stream has ended for good. */
   onSessionLost: () => void
   /** First backoff step in ms (doubles per failed attempt, up to 30 s). */
@@ -74,7 +77,7 @@ function readEvent(data: string): UserStreamEvent | null {
  */
 export function createEventStream(options: EventStreamOptions): EventStream {
   let lastEventId: string | undefined
-  let connectedBefore = false
+  let droppedAt = 0
   let ended = false
 
   const end = () => {
@@ -94,8 +97,7 @@ export function createEventStream(options: EventStreamOptions): EventStream {
       for await (const data of sseData(response.body)) {
         const event = readEvent(data)
         if (event?.event === 'connected') {
-          if (connectedBefore && !lastEventId) options.onResync()
-          connectedBefore = true
+          if (droppedAt && !lastEventId) options.onResync(droppedAt)
           opened = Date.now()
         } else if (event?.event === 'closed') {
           return end()
@@ -106,6 +108,8 @@ export function createEventStream(options: EventStreamOptions): EventStream {
       }
     } catch (error) {
       if (!healthy()) throw error
+    } finally {
+      if (opened !== undefined) droppedAt = Date.now()
     }
     // Ended by the server or the network: a long-lived stream reopens at once, a short one backs off (no hot loop).
     if (!healthy()) throw new Error('event stream ended early')
@@ -157,8 +161,7 @@ export function startEventStream(queryClient: QueryClient, onEvent: (event: User
   // event (often its echo, sent before the write answers) then skips what that refetch brought.
   // ponytail: receipt-time window, not server time (client clocks skew); a colleague's change racing a read that
   // landed in the last FRESH_MS stays stale until the next event or focus.
-  const invalidate = (queryKey?: readonly unknown[]) => {
-    const before = Date.now() - FRESH_MS
+  const invalidate = (queryKey?: readonly unknown[], before = Date.now() - FRESH_MS) => {
     const run = () =>
       void queryClient.invalidateQueries(
         { ...(queryKey ? { queryKey } : {}), predicate: query => query.state.dataUpdatedAt < before },
@@ -180,7 +183,8 @@ export function startEventStream(queryClient: QueryClient, onEvent: (event: User
       for (const queryKey of invalidationsFor(event.event, event.payload)) invalidate(queryKey)
       onEvent(event)
     },
-    onResync: () => invalidate(),
+    // Only reads older than the drop: one that landed during the gap (a navigation meanwhile) is current.
+    onResync: since => invalidate(undefined, since),
     // The session read decides: a lost session clears it, which re-runs the guards and unmounts the stream.
     onSessionLost: () => invalidate(sessionOptions().queryKey),
   })

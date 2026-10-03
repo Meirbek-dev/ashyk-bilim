@@ -14,7 +14,7 @@ const PIXEL = Buffer.from(
   'base64',
 )
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-CST-19 details save with their own button; an empty name stays on the field', async ({
   page,

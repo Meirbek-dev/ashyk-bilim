@@ -18,7 +18,7 @@ const test = base.extend<{ api: ReturnType<typeof createClient> }>({
 })
 
 // Every analytics test acts as the seeded teacher: the seed course, its learner e2e-student1 (at risk: no progress).
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 const kpis = (page: import('@playwright/test').Page) => page.getByRole('region', { name: m.analytics_kpis({}, ru) })
 

@@ -8,7 +8,7 @@ import { expect, ru, test } from './course-studio-fixture'
 
 const tab = (courseId: string, name: string) => `/teach/courses/${courseId}/${name}`
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-CST-01 the list shows my courses with status, update date and the server count', async ({ page, studio }) => {
   const { course } = await studio.course()

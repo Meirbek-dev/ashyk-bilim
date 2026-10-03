@@ -7,7 +7,7 @@ import { cookieOf, expect, ru, test } from './course-studio-fixture'
 
 const tab = (courseId: string, name: string) => `/teach/courses/${courseId}/${name}`
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-CST-13 learners says who sees the course, by its status', async ({ page, studio }) => {
   const draft = await studio.course()

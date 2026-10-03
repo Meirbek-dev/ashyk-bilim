@@ -7,7 +7,7 @@ import { expect, ru, test } from './course-studio-fixture'
 
 // The question builder of quizzes, exams and code challenges (slice 5.1): `edit` of the activity studio.
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 const saved = (page: import('@playwright/test').Page) =>
   expect(page.getByText(m.studio_save_saved({}, ru), { exact: true })).toBeVisible({ timeout: 10_000 })

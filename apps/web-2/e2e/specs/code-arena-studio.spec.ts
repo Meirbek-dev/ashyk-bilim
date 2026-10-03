@@ -12,7 +12,7 @@ import { expect, routeLanguages, ru, test, type Made } from './code-arena-fixtur
 // (outside the activity studio, whose layout reads the assessment on the server).
 
 test.describe.configure({ timeout: 60_000 })
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 const studio = (course: MadeCourse, made: Made, tab: string) =>
   `/teach/courses/${course.id}/activities/${made.activityId}/${tab}`

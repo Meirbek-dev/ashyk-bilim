@@ -26,7 +26,7 @@ async function dragByKeyboard(handle: Locator, arrow: 'ArrowUp' | 'ArrowDown') {
   await expect(handle).toBeFocused()
 }
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 test('B-CST-06 chapters list typed activities with status and studio links; an empty course says so', async ({
   page,

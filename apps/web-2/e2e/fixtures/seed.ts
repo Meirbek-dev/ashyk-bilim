@@ -157,15 +157,29 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   }
 }
 
-// Module state lives once per worker process: the stand is read once per worker, not once per test.
+// Module state lives once per worker process: the stand is read once per worker, not once per test. The CI stand
+// runs as production (no relaxed auth limits): each role signs in through the API once per worker, and every test
+// starts from that session as Playwright storage state. Only auth.spec drives the sign-in form itself.
 let seedOnce: Promise<Seed> | undefined
+const seedOf = (baseURL: string | undefined) => (seedOnce ??= loadSeed(String(baseURL)))
 
-export const test = base.extend<{ seed: Seed; signInAs: (role: Role) => Promise<void> }>({
-  seed: async ({ baseURL }, use) => use(await (seedOnce ??= loadSeed(String(baseURL)))),
+const storageStateOf = (account: Account, baseURL: string) => {
+  const url = new URL(baseURL)
+  const cookie = { ...account.cookie, domain: url.hostname, path: '/', expires: -1, httpOnly: true }
+  return { cookies: [{ ...cookie, secure: url.protocol === 'https:', sameSite: 'Lax' as const }], origins: [] }
+}
+
+export const test = base.extend<{ as: Role; seed: Seed; signInAs: (role: Role) => Promise<void> }>({
+  /** The role the test's browser starts signed in as: `test.use({ as: 'teacher' })`. */
+  as: ['guest', { option: true }],
+  storageState: async ({ as, baseURL, storageState }, use) =>
+    use(as === 'guest' ? storageState : storageStateOf((await seedOf(baseURL)).accounts[as], String(baseURL))),
+  seed: async ({ baseURL }, use) => use(await seedOf(baseURL)),
+  /** Switches the browser to another role mid-test (the same per-worker session, no sign-in). */
   signInAs: async ({ context, seed, baseURL }, use) => {
     await use(async role => {
       if (role === 'guest') return
-      await context.addCookies([{ ...seed.accounts[role].cookie, url: String(baseURL) }])
+      await context.addCookies(storageStateOf(seed.accounts[role], String(baseURL)).cookies)
     })
   },
 })

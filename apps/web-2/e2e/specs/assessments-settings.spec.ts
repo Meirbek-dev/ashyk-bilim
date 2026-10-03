@@ -15,7 +15,7 @@ import { cookieOf, expect, ru, test } from './course-studio-fixture'
 
 // Settings of an assessment (slice 5.1): rules, access, exceptions, publishing, copy, log; the header switch.
 
-test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
+test.use({ as: 'teacher' })
 
 const section = (page: Page, name: string) => page.getByRole('form', { name })
 const publishing = (page: Page) => page.locator('#publishing')

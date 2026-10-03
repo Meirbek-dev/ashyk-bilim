@@ -21,17 +21,20 @@ export function ChartFigure({ title, data, formatValue, children }: ChartFigureP
     <figure className="flex min-w-0 flex-col gap-2">
       <figcaption className="text-sm font-medium">{title}</figcaption>
       <Suspense fallback={<div aria-hidden className="h-44 rounded-md bg-muted" />}>{children}</Suspense>
-      <Table className="sr-only">
-        <TableCaption>{title}</TableCaption>
-        <TableBody>
-          {data.map(datum => (
-            <TableRow key={datum.label}>
-              <TableHead scope="row">{datum.label}</TableHead>
-              <TableCell>{formatValue(datum.value)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {/* Clipped, and not a scroll region: an unreachable scroller fails axe scrollable-region-focusable. */}
+      <div className="sr-only [&_[data-slot=table-container]]:overflow-hidden">
+        <Table>
+          <TableCaption>{title}</TableCaption>
+          <TableBody>
+            {data.map(datum => (
+              <TableRow key={datum.label}>
+                <TableHead scope="row">{datum.label}</TableHead>
+                <TableCell>{formatValue(datum.value)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </figure>
   )
 }

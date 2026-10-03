@@ -75,7 +75,8 @@ test('B-CAT-02 the landing says how to start and leads to the catalog', async ({
   await page.goto('/')
   await expect(page.getByRole('heading', { name: m.catalog_landing_start_title({}, ru) })).toBeVisible()
   await expect(page.getByRole('link', { name: m.catalog_landing_signup({}, ru) })).toHaveAttribute('href', '/signup')
-  await expect(page.getByRole('link', { name: SEED_COURSE }).first()).toBeVisible()
+  // Up to 6 newest public courses: other specs publish courses, so any course link, not the seed one.
+  await expect(page.locator('main a[href^="/courses/"]').first()).toBeVisible()
   await untilActs(
     () => page.getByRole('link', { name: m.catalog_landing_all_courses({}, ru) }).click(),
     () => expect(page).toHaveURL(/\/courses$/, { timeout: 1000 }),

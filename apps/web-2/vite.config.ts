@@ -12,9 +12,15 @@ import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bu
 
 // Dev is same-origin like prod: the API stack (`just dev-up`) sits behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
-const proxy = Object.fromEntries(
-  ['/api/v2', '/content', '/ab-public', '/ab-private'].map(path => [path, { target: apiTarget, changeOrigin: true }]),
-)
+// Storage like nginx in prod (infra/nginx/routes.conf): the buckets and `/content/<key>` (the public bucket) on this
+// origin, so an upload works on any dev port. The target is the API's storage endpoint: presigned URLs sign its host.
+const storage = { target: process.env['STORAGE_PROXY_TARGET'] ?? 'http://localhost:9002', changeOrigin: true }
+const proxy = {
+  '/api/v2': { target: apiTarget, changeOrigin: true },
+  '/ab-public': storage,
+  '/ab-private': storage,
+  '/content': { ...storage, rewrite: (path: string) => path.replace(/^\/content\//, '/ab-public/') },
+}
 
 const plugins = lazyPlugins(() => [
   paraglideVitePlugin(paraglideOptions),
@@ -227,6 +233,7 @@ const lint: OxlintConfig = {
         'vite.config.ts',
         'openapi-ts.config.ts',
         'e2e/playwright.config.ts',
+        'e2e/global-setup.ts',
         'src/server.ts',
         'gates/lint-plugin.ts',
       ],

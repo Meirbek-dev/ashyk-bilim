@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import type { CreateUserRequest } from '#/shared/api/gen/types.gen'
@@ -15,6 +16,11 @@ import { takenField } from '../model/admin'
 import { createUserOptions } from '../queries'
 
 const defaultValues: CreateUserRequest = { first_name: '', last_name: '', username: '', email: '', password: '' }
+// An empty password field means "none" (Google only): only a typed one must meet the contract's length.
+const schema = v.object({
+  ...vCreateUserRequest.entries,
+  password: v.union([v.literal(''), vCreateUserRequest.entries.password]),
+})
 
 /**
  * "New user": the account with a verified email and the `user` role; roles are added in the panel that opens next.
@@ -24,7 +30,7 @@ export function CreateUserDialog() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const create = useMutation(createUserOptions())
-  const form = useAppForm(vCreateUserRequest, {
+  const form = useAppForm(schema, {
     defaultValues,
     onSubmit: body =>
       create

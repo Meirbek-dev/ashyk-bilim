@@ -130,7 +130,7 @@ test('B-ADM-07 a new user is made in the dialog; a taken username lands under it
   const dialog = page.getByRole('dialog', { name: m.admin_user_new({}, ru) })
   const create = dialog.getByRole('button', { name: m.admin_create_submit({}, ru) })
   await create.click()
-  // The contract declares no field constraints yet (S-01): the server's 422 marks the fields.
+  // The contract schema marks the empty required fields before any request.
   const firstName = dialog.getByLabel(m.admin_user_field_first_name({}, ru), { exact: true })
   await expect(firstName).toHaveAttribute('aria-invalid', 'true')
   const username = `e2e-new-${randomUUID().slice(0, 8)}`

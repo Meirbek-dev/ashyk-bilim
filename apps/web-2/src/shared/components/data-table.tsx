@@ -20,6 +20,17 @@ type DataTableProps<T extends RowData> = {
 
 const features = tableFeatures({ rowSortingFeature })
 
+/**
+ * The stock Table's scroll container as a named, focusable region: a table wider than its box scrolls by keyboard
+ * (WCAG 2.1.1, axe `scrollable-region-focusable`).
+ */
+const scrollRegion = (label: string) => (wrapper: HTMLDivElement | null) => {
+  const region = wrapper?.querySelector('[data-slot="table-container"]')
+  region?.setAttribute('tabindex', '0')
+  region?.setAttribute('role', 'region')
+  region?.setAttribute('aria-label', label)
+}
+
 const ariaSort = (sort: Sort | undefined, id: string) =>
   sort?.id !== id ? undefined : sort.desc ? ('descending' as const) : ('ascending' as const)
 
@@ -35,7 +46,7 @@ export function DataTable<T extends RowData>({ label, rows, columns, getKey, sor
   })
   return (
     <div className="@container">
-      <div className="hidden @2xl:block">
+      <div ref={scrollRegion(label)} className="hidden @2xl:block">
         <Table>
           <TableCaption className="sr-only">{label}</TableCaption>
           <TableHeader className="bg-muted">
