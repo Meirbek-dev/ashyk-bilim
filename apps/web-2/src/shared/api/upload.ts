@@ -21,6 +21,8 @@ export type UploadPurpose =
   | 'block-pdf'
   | 'block-video'
   | 'file-submission'
+  | 'platform-logo'
+  | 'platform-thumbnail'
 
 const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[] }> = {
   avatar: { maxBytes: 5 * MB, mimes: IMAGES },
@@ -29,6 +31,8 @@ const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly st
   'block-pdf': { maxBytes: 50 * MB, mimes: ['application/pdf'] },
   'block-video': { maxBytes: 500 * MB, mimes: VIDEOS },
   'file-submission': { maxBytes: 100 * MB, mimes: [] },
+  'platform-logo': { maxBytes: 10 * MB, mimes: IMAGES },
+  'platform-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
 }
 
 export type UploadProblem = { kind: 'too-large'; maxBytes: number } | { kind: 'wrong-type'; mimes: readonly string[] }
