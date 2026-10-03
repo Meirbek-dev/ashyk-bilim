@@ -1,6 +1,6 @@
 {
-  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`. Phase 0 baseline; tighten when the kit lands.",
-  "initialJsGzipKb": 170,
+  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`. 2026-10-03: initial JS raised 170 -> 190 after phase 3/4 merges: the entry (132 KB) carries the route tree incl. every route`s validateSearch schema (66 routes), which TanStack Router does not code-split; measured 177 KB with all phase-3/4 slices. Re-measure in phase 7 and tighten.",
+  "initialJsGzipKb": 190,
   "chunkGzipKb": 150,
   "cssGzipKb": 30
 }
