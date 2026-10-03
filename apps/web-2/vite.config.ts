@@ -49,6 +49,8 @@ const chromium = {
   headless: true,
   provider: playwright(),
   instances: [{ browser: 'chromium' as const }],
+  // Several worktrees run verify at once: a fixed port (vitest default 63315) collides.
+  api: { strictPort: false },
 }
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium }
 // G-15 is a phase gate (spec 9), not part of `vp test run`: `bun run g15` sets G15 and runs only this project.
