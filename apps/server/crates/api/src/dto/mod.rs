@@ -60,3 +60,30 @@ pub(crate) fn new_password(value: &str, _ctx: &()) -> garde::Result {
     }
     Ok(())
 }
+
+/// S-05 query of the keyset `/page` operations: `cursor` is the previous
+/// page's `next_cursor` (opaque); `limit` 1..=100, default 20.
+#[derive(Debug, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+#[serde(deny_unknown_fields)]
+pub struct KeysetQuery {
+    pub cursor: Option<String>,
+    pub limit: Option<i64>,
+}
+
+impl KeysetQuery {
+    /// Page an already ordered list by `key` (see [`ab_core::page_after`]).
+    pub fn page<T>(
+        &self,
+        items: Vec<T>,
+        key: impl Fn(&T) -> String,
+    ) -> ab_core::Result<(Vec<T>, Option<String>)> {
+        ab_core::page_after(
+            items,
+            self.cursor.as_deref(),
+            self.limit.unwrap_or(20),
+            100,
+            key,
+        )
+    }
+}

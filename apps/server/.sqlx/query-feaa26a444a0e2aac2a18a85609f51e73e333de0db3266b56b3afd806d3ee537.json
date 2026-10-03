@@ -1,0 +1,109 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT b.rank AS \"rank!\", b.user_id AS \"user_id!: UserId\", b.total_xp AS \"total_xp!\",\n                  b.level AS \"level!\", b.username AS \"username!\",\n                  b.display_name AS \"display_name!\", b.avatar_key,\n                  b.profile_id AS \"profile_id!\"\n           FROM (SELECT rank() OVER (ORDER BY p.total_xp DESC) AS rank, p.user_id,\n                        p.total_xp, p.level, u.username, u.display_name, u.avatar_key,\n                        p.id AS profile_id\n                 FROM gamification_profiles p JOIN users u ON u.id = p.user_id\n                 WHERE p.preferences #> '{privacy,showOnLeaderboard}'\n                       IS DISTINCT FROM 'false'::jsonb) b\n           WHERE $2::int IS NULL\n              OR b.total_xp < $2 OR (b.total_xp = $2 AND b.profile_id > $3)\n           ORDER BY b.total_xp DESC, b.profile_id\n           LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rank!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "total_xp!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "total_xp"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "level!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "username!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "display_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "avatar_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar_key"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "profile_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "feaa26a444a0e2aac2a18a85609f51e73e333de0db3266b56b3afd806d3ee537"
+}

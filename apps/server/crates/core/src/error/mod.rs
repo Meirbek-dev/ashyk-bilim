@@ -102,6 +102,39 @@ pub fn page_limit(limit: i64, max: i64) -> Result<i64> {
     Ok(limit)
 }
 
+/// S-05 keyset page over an already ordered list.
+///
+/// The items after the one
+/// whose `key` is `cursor` (all from the start without one), at most `limit`
+/// (`1..=max`), plus the key of the last item when more follow. A cursor
+/// that matches nothing (its row is gone) yields an empty page.
+// ponytail: pages in memory over the full list; push into SQL when a list
+// (course updates, roster, group members, certificates) grows past thousands.
+pub fn page_after<T>(
+    items: Vec<T>,
+    cursor: Option<&str>,
+    limit: i64,
+    max: i64,
+    key: impl Fn(&T) -> String,
+) -> Result<(Vec<T>, Option<String>)> {
+    let limit = usize::try_from(page_limit(limit, max)?).unwrap_or(usize::MAX);
+    let start = match cursor {
+        None => 0,
+        Some(c) => items
+            .iter()
+            .position(|item| key(item) == c)
+            .map_or(items.len(), |i| i + 1),
+    };
+    let mut page: Vec<T> = items.into_iter().skip(start).collect();
+    let next = if page.len() > limit {
+        page.truncate(limit);
+        page.last().map(&key)
+    } else {
+        None
+    };
+    Ok((page, next))
+}
+
 /// The workspace error type.
 ///
 /// - `App` carries a stable [`ErrorCode`] and is safe to show to clients.
@@ -236,6 +269,18 @@ impl Error {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    #[test]
+    fn page_after_walks_an_ordered_list() {
+        let key = |n: &i32| n.to_string();
+        let (page, next) = super::page_after(vec![1, 2, 3, 4, 5], None, 2, 100, key).unwrap();
+        assert_eq!((page, next.as_deref()), (vec![1, 2], Some("2")));
+        let (page, next) = super::page_after(vec![1, 2, 3, 4, 5], Some("4"), 2, 100, key).unwrap();
+        assert_eq!((page, next), (vec![5], None));
+        let (page, _) = super::page_after(vec![1, 2], Some("9"), 2, 100, key).unwrap();
+        assert!(page.is_empty());
+        assert!(super::page_after(vec![1], None, 0, 100, key).is_err());
+    }
+
     #[test]
     fn required_str_treats_format_characters_as_blank() {
         assert!(super::required_str("title", "\u{200B} \u{FEFF}").is_err());

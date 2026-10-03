@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, description, about, email, label, logo_key, thumbnail_key, version\n         FROM platforms WHERE singleton",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "logo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "logo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "thumbnail_key"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "fb179d419688421a56ccc9f1d8559c7e6fd21248eb7d39db7532547392d19fb8"
+}

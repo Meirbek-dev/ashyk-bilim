@@ -351,13 +351,13 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
         .await;
     assert!(empty.json()["items"].as_array().unwrap().is_empty());
 
-    // Gates: anonymous 401; a private course is invisible; no read grant → 403.
-    assert_eq!(
-        app.get(&format!("/api/v2/courses/{course_id}/discussions"))
-            .await
-            .status,
-        StatusCode::UNAUTHORIZED
-    );
+    // Gates: a guest gets an empty page (L-3, no discussion data); a private
+    // course is invisible; no read grant → 403.
+    let guest = app
+        .get(&format!("/api/v2/courses/{course_id}/discussions"))
+        .await;
+    assert_eq!(guest.status, StatusCode::OK);
+    assert_eq!(guest.json()["items"], serde_json::json!([]));
     let private = app
         .post_as(
             &teacher,

@@ -21,6 +21,22 @@ pub struct Trail {
     pub runs: Vec<TrailRun>,
     pub created_at_unix: Option<i64>,
     pub updated_at_unix: Option<i64>,
+    /// With `limit`/`cursor` on `GET /trail`: pass back as `cursor` for the
+    /// next runs; `null` on the last page and without paging.
+    pub next_cursor: Option<String>,
+    /// On a trail write sent with `Prefer: return=representation`: the
+    /// learner state of the course written to (no re-read needed);
+    /// `null` otherwise.
+    pub learner_state: Option<LearnerCourseState>,
+}
+
+/// Where the learner stands in one course.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum LearningStatus {
+    NotStarted,
+    InProgress,
+    Completed,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -36,6 +52,12 @@ pub struct TrailRun {
     /// projection has a row for the course (UX-250).
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
+    /// The real state (`status` is always `in_progress`, legacy):
+    /// `completed` at 100 %, `not_started` with no progress and no steps.
+    pub learning_status: LearningStatus,
+    /// The first published activity (course order) not done yet and not
+    /// waiting on a grade - the "continue" target; `null` when none is left.
+    pub next_activity_id: Option<ActivityId>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -65,6 +87,8 @@ impl Trail {
                 .into_iter()
                 .map(|r| TrailRun::for_actor(r, actor))
                 .collect(),
+            next_cursor: None,
+            learner_state: None,
         }
     }
 }
@@ -72,7 +96,17 @@ impl Trail {
 impl TrailRun {
     fn for_actor(r: domain::TrailRun, actor: &ab_domain::identity::Actor) -> Self {
         let editable = ab_domain::catalog::CurriculumService::editable(actor, &r.course);
+        let pct = r.progress_pct.unwrap_or(0.0);
+        let learning_status = if pct >= 100.0 {
+            LearningStatus::Completed
+        } else if pct > 0.0 || !r.steps.is_empty() {
+            LearningStatus::InProgress
+        } else {
+            LearningStatus::NotStarted
+        };
         Self {
+            learning_status,
+            next_activity_id: r.next_activity_id,
             id: r.row.id,
             course_id: r.row.course_id,
             status: r.row.status,
@@ -104,4 +138,35 @@ impl TrailStep {
             updated_at_unix: s.row.updated_at,
         }
     }
+}
+
+/// One member of a course with their progress (`GET /courses/{id}/learners`).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseLearner {
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+    /// `null` until the progress projection has a row.
+    pub progress_pct: Option<f64>,
+    pub completed_at_unix: Option<i64>,
+    pub last_activity_at_unix: Option<i64>,
+    pub enrolled_at_unix: i64,
+    /// What the caller may do to this membership now.
+    pub allowed_actions: Vec<CourseLearnerAction>,
+}
+
+/// `CourseLearner.allowed_actions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CourseLearnerAction {
+    /// `DELETE /courses/{id}/learners/{user_id}` (roster managers, open course).
+    Remove,
+}
+
+/// Keyset page of a course's members (newest first).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseLearnerPage {
+    pub items: Vec<CourseLearner>,
+    pub next_cursor: Option<String>,
 }

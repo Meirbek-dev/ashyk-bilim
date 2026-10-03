@@ -106,6 +106,8 @@ pub struct CourseInfoRow {
     pub name: String,
     pub creator_id: Option<UserId>,
     pub updated_at: i64,
+    /// Archived courses are read-only (no new interventions).
+    pub archived: bool,
 }
 
 /// The database clock in epoch seconds, converted exactly like every row
@@ -123,7 +125,8 @@ pub async fn list_courses(pool: &PgPool, course_ids: &[CourseId]) -> Result<Vec<
     let rows = sqlx::query_as!(
         CourseInfoRow,
         r#"SELECT id AS "id: CourseId", name, creator_id AS "creator_id: UserId",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!",
+                  archived_at IS NOT NULL AS "archived!"
            FROM courses WHERE id = ANY($1) ORDER BY id"#,
         &ids
     )

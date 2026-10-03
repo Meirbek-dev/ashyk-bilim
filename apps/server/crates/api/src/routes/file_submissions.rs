@@ -366,6 +366,7 @@ pub async fn review_queue(
     params(
         ("file_submission_id" = FileSubmissionId, Path, description = "File submission id"),
         ("Accept-Language" = Option<String>, Header, description = "ru / kk / en (default ru)"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]

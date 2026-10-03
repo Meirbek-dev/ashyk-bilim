@@ -13,6 +13,8 @@ pub struct Role {
     pub priority: i32,
     pub is_system: bool,
     pub permissions: Vec<String>,
+    /// Optimistic lock: `If-Match` on `PATCH` and the permissions `PUT`.
+    pub version: i32,
     /// What the caller may do to this role now.
     pub allowed_actions: Vec<ab_domain::identity::rbac_admin::RoleAction>,
 }
@@ -32,6 +34,7 @@ impl Role {
             priority: r.priority,
             is_system: r.is_system,
             permissions: r.permissions,
+            version: r.version,
         }
     }
 }

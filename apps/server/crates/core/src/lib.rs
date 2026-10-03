@@ -15,6 +15,6 @@ pub mod telemetry;
 pub mod time;
 
 pub use error::{
-    Error, ErrorCode, FieldError, Result, page_limit, required_str, required_text, strip_controls,
-    strip_controls_multiline, trim_blank,
+    Error, ErrorCode, FieldError, Result, page_after, page_limit, required_str, required_text,
+    strip_controls, strip_controls_multiline, trim_blank,
 };

@@ -13,7 +13,7 @@ use sqlx::PgPool;
 use utoipa::ToSchema;
 
 use crate::assessments::service::AssessmentsService;
-use crate::catalog::courses::CoursesService;
+use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 
 const DUE_SOON_WINDOW_SECS: i64 = 7 * 86_400;
@@ -98,10 +98,14 @@ pub enum EnrollmentState {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct NextAction {
     pub id: ActionId,
+    /// English fallback; the web localizes by `id` + `reason`.
     pub label: String,
     pub reason: String,
     pub enabled: bool,
+    /// The course the action is in (build the web URL from the ids).
+    pub course_id: CourseId,
     pub activity_id: Option<ActivityId>,
+    /// Legacy web URL (old `/course/...` scheme) - kept for the old web.
     pub href: Option<String>,
 }
 
@@ -199,37 +203,68 @@ impl LearnerStateService {
         }
     }
 
-    /// Visible course (404) the caller may access (403).
+    /// The course gate; `true` for the course's staff. BUG-287: staff
+    /// preview it - the enrol door refuses them. BUG-384: a platform author
+    /// previews a private course she is not on the access list of -
+    /// `courses/{id}` and `activities/{id}` let her in. Guests reach only
+    /// what `courses.get` showed them (public courses).
+    async fn require_access(&self, actor: &Actor, course: &Course) -> Result<bool> {
+        let staff = AssessmentsService::require_scoped(
+            actor,
+            course,
+            ab_core::permission::Action::Author,
+            "preview",
+        )
+        .is_ok();
+        if !staff
+            && !actor.is_anonymous()
+            && !self
+                .assessments
+                .user_has_course_access(course, actor.user_id)
+                .await?
+        {
+            return Err(Error::forbidden("no access to this course"));
+        }
+        Ok(staff)
+    }
+
+    /// Activities a learner marks by hand (`POST`/`DELETE
+    /// /trail/activities/{id}`): neither file submissions nor
+    /// assessment-backed - those complete through their submissions.
+    async fn hand_markable(
+        &self,
+        course_id: CourseId,
+        activities: &[ab_db::catalog::ActivityRow],
+    ) -> Result<Vec<ActivityId>> {
+        let owned: Vec<ActivityId> =
+            ab_db::assessments::list_assessments_for_course(&self.pool, course_id)
+                .await?
+                .into_iter()
+                .map(|a| a.activity_id)
+                .collect();
+        Ok(activities
+            .iter()
+            .filter(|a| a.activity_type != "file_submission" && !owned.contains(&a.id))
+            .map(|a| a.id)
+            .collect())
+    }
+
+    /// Visible course (404) the caller may access (403). A guest gets the
+    /// anonymous state of a public course: not enrolled, nothing done.
     pub async fn course_state(
         &self,
         actor: &Actor,
         course_id: CourseId,
     ) -> Result<LearnerCourseState> {
         let course = self.courses.get(actor, course_id).await?;
-        // BUG-287: the course's staff preview it - the enrol door refuses them.
-        let staff = AssessmentsService::require_scoped(
-            actor,
-            &course,
-            ab_core::permission::Action::Author,
-            "preview",
-        )
-        .is_ok();
-        // BUG-384: a platform author previews a private course she is not on
-        // the access list of - `courses/{id}` and `activities/{id}` let her in.
-        if !staff
-            && !self
-                .assessments
-                .user_has_course_access(&course, actor.user_id)
-                .await?
-        {
-            return Err(Error::forbidden("no access to this course"));
-        }
+        let staff = self.require_access(actor, &course).await?;
+        let guest = actor.is_anonymous();
         let user_id: UserId = actor.user_id;
         let chapters = ab_db::catalog::list_chapters(&self.pool, course.id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
         // BUG-292: a run kept from before joining the staff is no member's -
         // its ticks and counts are not shown (the outline and sidebar read these).
-        let (rows, course_progress, restricted) = if staff {
+        let (rows, course_progress, restricted) = if staff || guest {
             (Vec::new(), None, Vec::new())
         } else {
             (
@@ -238,7 +273,16 @@ impl LearnerStateService {
                 ab_db::progress::restricted_activity_ids(&self.pool, course.id, user_id).await?,
             )
         };
-        let has_run = ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
+        let has_run =
+            !guest && ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
+        let archived = course.archived_at.is_some();
+        // Hand-marking (`POST`/`DELETE /trail/activities/{id}`): signed-in
+        // non-staff on an open course, never on submission-owned activities.
+        let markable = if !guest && !staff && !archived {
+            Some(self.hand_markable(course.id, &activities).await?)
+        } else {
+            None
+        };
         // Enrolment is the trail run, as in the legacy `TrailRun`: projection
         // rows survive a leave (submissions stay), so they cannot mean
         // "enrolled" - otherwise a learner who left could never re-enrol.
@@ -255,6 +299,13 @@ impl LearnerStateService {
                 if restricted.contains(&a.id) {
                     state.required = false;
                     state.blocked_reason = Some("restricted".to_owned());
+                }
+                if markable.as_ref().is_some_and(|ids| ids.contains(&a.id)) {
+                    state.allowed_actions.push(if state.complete {
+                        "unmark_complete"
+                    } else {
+                        "mark_complete"
+                    });
                 }
                 (a.chapter_id, state)
             })
@@ -275,7 +326,6 @@ impl LearnerStateService {
             .copied()
             .filter(|a| a.blocked_reason.is_none())
             .collect();
-        let archived = course.archived_at.is_some();
         let next_action =
             (!archived).then(|| next_action(enrolled, course.id, &open, &certificate, &progress));
         // UX-187: a leaver is not enrolled, whatever their old progress says.
@@ -444,6 +494,7 @@ fn activity_action(
         label: label.to_owned(),
         reason: reason.to_owned(),
         enabled: true,
+        course_id,
         activity_id: Some(activity.id),
         href: Some(format!("/course/{course_id}/activity/{}", activity.id)),
     }
@@ -463,6 +514,7 @@ fn next_action(
             label: "Start course".to_owned(),
             reason: "not_enrolled".to_owned(),
             enabled: true,
+            course_id,
             activity_id: None,
             href: Some(format!("/course/{course_id}")),
         };
@@ -537,6 +589,7 @@ fn fallback_action(
             label: "View certificate".to_owned(),
             reason: "certificate_issued".to_owned(),
             enabled: true,
+            course_id,
             activity_id: None,
             href: Some(href.clone()),
         };
@@ -547,6 +600,7 @@ fn fallback_action(
             label: "Review course completion".to_owned(),
             reason: "course_complete".to_owned(),
             enabled: true,
+            course_id,
             activity_id: None,
             href: Some(format!("/course/{course_id}")),
         };
@@ -557,6 +611,7 @@ fn fallback_action(
             label: "Waiting for feedback".to_owned(),
             reason: "waiting_for_grade".to_owned(),
             enabled: false,
+            course_id,
             activity_id: None,
             href: None,
         };
@@ -575,6 +630,7 @@ fn fallback_action(
         label: "No action available".to_owned(),
         reason: "no_available_action".to_owned(),
         enabled: false,
+        course_id,
         activity_id: None,
         href: None,
     }

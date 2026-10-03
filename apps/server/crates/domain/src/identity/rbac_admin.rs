@@ -44,6 +44,8 @@ pub struct RoleWithGrants {
     pub priority: i32,
     pub is_system: bool,
     pub permissions: Vec<String>,
+    /// `If-Match` lock (metadata and grant-set writes bump it).
+    pub version: i32,
 }
 
 /// What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).
@@ -152,19 +154,41 @@ impl RbacAdminService {
         Self::require_read_roles(actor)?;
         let mut out = Vec::new();
         for role in ab_db::identity::list_roles(&self.pool).await? {
-            let permissions = ab_db::identity::role_grants(&self.pool, role.id).await?;
-            out.push(RoleWithGrants {
-                slug: role.slug,
-                display_name_key: role.display_name_key,
-                description_key: role.description_key,
-                display_name: role.display_name,
-                description: role.description,
-                priority: role.priority,
-                is_system: role.is_system,
-                permissions,
-            });
+            out.push(self.with_grants(role).await?);
         }
         Ok(out)
+    }
+
+    /// One role by slug (`role:read:platform`; 404 unknown).
+    pub async fn get_role(&self, actor: &Actor, slug: &str) -> Result<RoleWithGrants> {
+        Self::require_read_roles(actor)?;
+        let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
+            .await?
+            .ok_or_else(|| Error::not_found("role"))?;
+        self.with_grants(role).await
+    }
+
+    async fn with_grants(&self, role: ab_db::identity::RoleRow) -> Result<RoleWithGrants> {
+        let permissions = ab_db::identity::role_grants(&self.pool, role.id).await?;
+        Ok(RoleWithGrants {
+            slug: role.slug,
+            display_name_key: role.display_name_key,
+            description_key: role.description_key,
+            display_name: role.display_name,
+            description: role.description,
+            priority: role.priority,
+            is_system: role.is_system,
+            permissions,
+            version: role.version,
+        })
+    }
+
+    /// One account in the admin directory (`platform:read:platform`).
+    pub async fn get_user(&self, actor: &Actor, user_id: UserId) -> Result<AdminUser> {
+        Self::require_read_users(actor)?;
+        ab_db::identity::get_admin_user(&self.pool, user_id)
+            .await?
+            .ok_or_else(|| Error::not_found("user"))
     }
 
     pub async fn assign_role(&self, actor: &Actor, user_id: UserId, slug: &str) -> Result<()> {
@@ -365,17 +389,18 @@ impl RbacAdminService {
         .await
     }
 
-    /// Admin listing of all users with their roles (keyset, newest first).
+    /// Admin listing of all users with their roles (keyset; newest first
+    /// unless `filter.sort` is `name`).
     pub async fn list_users(
         &self,
         actor: &Actor,
-        q: Option<&str>,
+        filter: ab_db::identity::UserFilter<'_>,
         cursor: Option<UserId>,
         limit: i64,
     ) -> Result<(Vec<AdminUser>, Option<UserId>)> {
         Self::require_read_users(actor)?;
         let limit = ab_core::page_limit(limit, 100)?;
-        let mut rows = ab_db::identity::list_users(&self.pool, q, cursor, limit + 1).await?;
+        let mut rows = ab_db::identity::list_users(&self.pool, filter, cursor, limit + 1).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|u| u.id)

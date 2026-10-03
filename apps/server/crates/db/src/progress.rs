@@ -793,3 +793,47 @@ pub async fn published_activity_counts(
     .await?;
     Ok(rows)
 }
+
+/// One member of a course (a trail run) with their progress.
+#[derive(Debug, Clone)]
+pub struct CourseLearnerRow {
+    pub run_id: TrailRunId,
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_key: Option<String>,
+    pub progress_pct: Option<f64>,
+    pub completed_at: Option<i64>,
+    pub last_activity_at: Option<i64>,
+    pub enrolled_at: i64,
+}
+
+/// Newest members first (keyset on the run id, UUIDv7 = join time).
+pub async fn list_course_learners(
+    pool: &PgPool,
+    course_id: CourseId,
+    cursor: Option<TrailRunId>,
+    limit: i64,
+) -> Result<Vec<CourseLearnerRow>> {
+    let rows = sqlx::query_as!(
+        CourseLearnerRow,
+        r#"SELECT tr.id AS "run_id: TrailRunId", u.id AS "user_id: UserId", u.username,
+                  u.display_name, u.avatar_key,
+                  cp.progress_pct AS "progress_pct?",
+                  (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?",
+                  (extract(epoch FROM cp.last_activity_at))::bigint AS "last_activity_at?",
+                  (extract(epoch FROM tr.created_at))::bigint AS "enrolled_at!"
+           FROM trail_runs tr
+           JOIN users u ON u.id = tr.user_id
+           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
+           WHERE tr.course_id = $1 AND ($2::uuid IS NULL OR tr.id < $2)
+           ORDER BY tr.id DESC
+           LIMIT $3"#,
+        course_id.0,
+        cursor.map(|c| c.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}

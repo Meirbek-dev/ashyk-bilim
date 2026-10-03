@@ -105,6 +105,7 @@ pub async fn search_courses(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
+                  version,
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')

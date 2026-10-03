@@ -32,6 +32,9 @@ pub struct Course {
     pub archived_by: Option<UserId>,
     /// What the caller may do to this course now - draw only these actions.
     pub allowed_actions: Vec<ab_domain::catalog::courses::CourseAction>,
+    /// Optimistic lock: send it back as `If-Match` on `PATCH` and
+    /// lifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.
+    pub version: i32,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -58,6 +61,7 @@ impl Course {
             contributor_ids: c.contributor_ids,
             archived_at_unix: c.archived_at,
             archived_by: c.archived_by,
+            version: c.version,
             created_at_unix: c.created_at,
             updated_at_unix: c.updated_at,
         }
@@ -328,12 +332,26 @@ pub struct Contributor {
     pub role: String,
     #[schema(value_type = crate::dto::enums::ContributorStatus)]
     pub status: String,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412). Always 1 on
+    /// the synthesized creator row.
+    pub version: i32,
+    /// What the caller may do to this row now.
+    pub allowed_actions: Vec<ab_domain::catalog::contributors::ContributorAction>,
     pub created_at_unix: i64,
 }
 
-impl From<ab_domain::catalog::contributors::Contributor> for Contributor {
-    fn from(c: ab_domain::catalog::contributors::Contributor) -> Self {
+impl Contributor {
+    /// The row as `actor` sees it on `course`.
+    pub fn for_actor(
+        c: ab_domain::catalog::contributors::Contributor,
+        actor: &Actor,
+        course: &ab_domain::catalog::courses::Course,
+    ) -> Self {
         Self {
+            allowed_actions: ab_domain::catalog::CoursesService::contributor_actions(
+                actor, course, &c,
+            ),
+            version: c.version,
             user_id: c.user_id,
             username: c.username,
             display_name: c.display_name,
@@ -444,13 +462,36 @@ pub struct CourseUpdate {
     pub course_id: CourseId,
     pub title: String,
     pub content: String,
+    /// Who posted it; `null` for announcements older than authorship
+    /// tracking, or a deleted account.
+    pub author: Option<CourseUpdateAuthor>,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412).
+    pub version: i32,
+    /// What the caller may do to this announcement now.
+    pub allowed_actions: Vec<ab_domain::catalog::courses::CourseUpdateAction>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
 
-impl From<ab_domain::catalog::courses::CourseUpdate> for CourseUpdate {
-    fn from(u: ab_domain::catalog::courses::CourseUpdate) -> Self {
+/// The author of an announcement.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseUpdateAuthor {
+    pub id: UserId,
+    pub display_name: String,
+}
+
+impl CourseUpdate {
+    pub fn new(
+        u: ab_domain::catalog::courses::CourseUpdate,
+        allowed_actions: Vec<ab_domain::catalog::courses::CourseUpdateAction>,
+    ) -> Self {
         Self {
+            author: u.author_id.map(|id| CourseUpdateAuthor {
+                id,
+                display_name: u.author_name.unwrap_or_default(),
+            }),
+            version: u.version,
+            allowed_actions,
             id: u.id,
             course_id: u.course_id,
             title: u.title,
@@ -481,4 +522,18 @@ pub struct EditCourseUpdateRequest {
     #[garde(inner(length(min = 1, max = 50_000)))]
     #[schema(min_length = 1, max_length = 50_000)]
     pub content: Option<String>,
+}
+
+/// Keyset page of announcements (newest first).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseUpdatePage {
+    pub items: Vec<CourseUpdate>,
+    pub next_cursor: Option<String>,
+}
+
+/// Keyset page of the roster (creator first).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ContributorPage {
+    pub items: Vec<Contributor>,
+    pub next_cursor: Option<String>,
 }

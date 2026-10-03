@@ -15,6 +15,8 @@ pub struct Certification {
     pub config: serde_json::Value,
     /// What the caller may do to this template now.
     pub allowed_actions: Vec<domain::CertificationAction>,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.
+    pub version: i32,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -29,6 +31,7 @@ impl Certification {
             id: r.id,
             course_id: r.course_id,
             config: r.config,
+            version: r.version,
             created_at_unix: r.created_at,
             updated_at_unix: r.updated_at,
         }
@@ -155,4 +158,11 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
             instructor_name: v.issued.instructor_name,
         }
     }
+}
+
+/// Keyset page of the caller's certificates.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct IssuedCertificatePage {
+    pub items: Vec<IssuedCertificate>,
+    pub next_cursor: Option<String>,
 }

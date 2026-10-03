@@ -60,6 +60,22 @@ e2e suites use and prints them as JSON (never the password):
 It refuses `AB__ENVIRONMENT=production`. Run from `apps/server` with the same
 env as the API (`.env`): `E2E_PASSWORD=... just seed-e2e`.
 
+### Auth throttles (`AB__AUTH__LIMITS__*`)
+
+Sign-in throttles and the session cap are config; the defaults are the
+production values, and `AB__ENVIRONMENT=production` refuses anything looser
+(config error at boot / `ashyq admin config-check`). Parallel e2e runs and
+local dev raise them:
+
+| Variable | Default | Counts |
+| --- | --- | --- |
+| `AB__AUTH__LIMITS__LOGIN_IP` | 20 | failed logins per IP / 5 min |
+| `AB__AUTH__LIMITS__LOGIN_NAME` | 10 | login attempts per account / 15 min |
+| `AB__AUTH__LIMITS__PASSWORD_CHECK` | 5 | wrong current-password guesses per user / 15 min |
+| `AB__AUTH__LIMITS__REGISTER_IP` | 10 | accounts created per IP / hour |
+| `AB__AUTH__LIMITS__REGISTER_ATTEMPT_IP` | 60 | register + verify attempts per IP / hour |
+| `AB__AUTH__LIMITS__SESSIONS_PER_USER` | 10 | live sessions per user (oldest evicted) |
+
 From the repo root the same recipes run as `just server <recipe>` (e.g.
 `just server test`; it also sets `TEST_REDIS_URL` from `infra/env/dev.env`).
 

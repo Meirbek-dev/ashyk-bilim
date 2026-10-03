@@ -19,7 +19,7 @@ use super::context::{
 };
 use super::filters::{AnalyticsFilters, SortOrder};
 use super::scope::TeacherScope;
-use super::types::{AtRiskLearnerRow, Confidence, RiskLevel, RiskTrend};
+use super::types::{AtRiskAction, AtRiskLearnerRow, Confidence, RiskLevel, RiskTrend};
 
 pub const HIGH_RISK_SCORE: f64 = 70.0;
 pub const MEDIUM_RISK_SCORE: f64 = 40.0;
@@ -342,6 +342,13 @@ pub fn build_risk_rows(
             last_intervention_type: None,
             last_intervention_at_unix: None,
             last_intervention_outcome: None,
+            // Every listed row is in the caller's read scope - the
+            // intervention gate - so only the archive freeze removes it.
+            allowed_actions: if course.archived {
+                Vec::new()
+            } else {
+                vec![AtRiskAction::RecordIntervention]
+            },
         });
     }
     rows.sort_by(|a, b| {

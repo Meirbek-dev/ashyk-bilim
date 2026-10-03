@@ -396,6 +396,7 @@ pub async fn drill_through(
     params(
         AnalyticsQuery,
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
@@ -418,6 +419,7 @@ pub async fn export_at_risk(
     params(
         AnalyticsQuery,
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
@@ -440,6 +442,7 @@ pub async fn export_grading_backlog(
     params(
         AnalyticsQuery,
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]
@@ -462,6 +465,7 @@ pub async fn export_course_progress(
     params(
         AnalyticsQuery,
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
+        ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
 )]

@@ -50,7 +50,76 @@ pub struct Config {
     /// with `ai_enabled=false`) every AI route answers 503 `ai-disabled`.
     #[serde(default)]
     pub ai: AiConfig,
+    /// Sign-in throttles (`AB__AUTH__LIMITS__*`).
+    #[serde(default)]
+    pub auth: AuthConfig,
     pub telemetry: TelemetryConfig,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct AuthConfig {
+    #[serde(default)]
+    pub limits: AuthLimits,
+}
+
+/// Attempt counts per window (the windows are fixed) and the live-session
+/// cap.
+///
+/// The defaults are the production values; a parallel e2e stand or
+/// local dev raises them (`AB__AUTH__LIMITS__LOGIN_IP=1000`). Production
+/// refuses anything looser than the default ([`Config::validate`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AuthLimits {
+    /// Failed logins per IP per 5 minutes.
+    pub login_ip: u32,
+    /// Login attempts per account per 15 minutes.
+    pub login_name: u32,
+    /// Wrong `current_password` guesses per user per 15 minutes.
+    pub password_check: u32,
+    /// Accounts created per IP per hour.
+    pub register_ip: u32,
+    /// Registration + verification attempts per IP per hour.
+    pub register_attempt_ip: u32,
+    /// Live sessions per user (the oldest is evicted past it).
+    pub sessions_per_user: u32,
+}
+
+impl Default for AuthLimits {
+    fn default() -> Self {
+        Self {
+            login_ip: 20,
+            login_name: 10,
+            password_check: 5,
+            register_ip: 10,
+            register_attempt_ip: 60,
+            sessions_per_user: 10,
+        }
+    }
+}
+
+impl AuthLimits {
+    /// The first field above its production default, if any.
+    #[must_use]
+    pub fn relaxed_field(&self) -> Option<&'static str> {
+        let d = Self::default();
+        [
+            ("LOGIN_IP", self.login_ip > d.login_ip),
+            ("LOGIN_NAME", self.login_name > d.login_name),
+            ("PASSWORD_CHECK", self.password_check > d.password_check),
+            ("REGISTER_IP", self.register_ip > d.register_ip),
+            (
+                "REGISTER_ATTEMPT_IP",
+                self.register_attempt_ip > d.register_attempt_ip,
+            ),
+            (
+                "SESSIONS_PER_USER",
+                self.sessions_per_user > d.sessions_per_user,
+            ),
+        ]
+        .into_iter()
+        .find_map(|(name, relaxed)| relaxed.then_some(name))
+    }
 }
 
 /// Provider keys, models, budgets and feature flags. Field names and
@@ -476,6 +545,11 @@ impl Config {
                     "AB__TELEMETRY__JSON_LOGS must be true in production",
                 ));
             }
+            if let Some(field) = self.auth.limits.relaxed_field() {
+                return Err(Error::config(format!(
+                    "AB__AUTH__LIMITS__{field} must not exceed its default in production"
+                )));
+            }
         }
         Ok(())
     }
@@ -519,6 +593,7 @@ impl Config {
                 },
             })),
             "ai": self.ai.redacted(),
+            "auth": { "limits": self.auth.limits },
             "telemetry": {
                 "json_logs": self.telemetry.json_logs,
                 "otlp_endpoint": self.telemetry.otlp_endpoint,
@@ -553,6 +628,7 @@ mod tests {
             storage: None,
             judge0: None,
             ai: AiConfig::default(),
+            auth: AuthConfig::default(),
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,
@@ -610,6 +686,23 @@ mod tests {
         cfg.telemetry.json_logs = true;
         cfg.server.cors_origins = vec!["*".into()];
         assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn production_refuses_relaxed_auth_limits() {
+        let mut cfg = base();
+        cfg.server.cors_origins = vec!["https://app.example".into()];
+        cfg.telemetry.json_logs = true;
+        cfg.auth.limits.login_ip = 1000;
+        cfg.validate().unwrap();
+        cfg.environment = Environment::Production;
+        let err = cfg.validate().unwrap_err().to_string();
+        assert!(err.contains("AB__AUTH__LIMITS__LOGIN_IP"), "{err}");
+        cfg.auth.limits = AuthLimits {
+            sessions_per_user: 3,
+            ..AuthLimits::default()
+        };
+        cfg.validate().unwrap();
     }
 
     #[test]
