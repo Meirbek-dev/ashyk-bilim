@@ -1,7 +1,14 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
-import { addCourse, getAccess, getActivityAssessment, lifecycle, setAccess } from '#/shared/api/gen/sdk.gen'
+import {
+  addCourse,
+  getAccess,
+  getActivityAssessment,
+  lifecycle,
+  setAccess,
+  updateAssessment,
+} from '#/shared/api/gen/sdk.gen'
 
 import { makeAssessment, readyChoice, studioUrl } from './assessments-fixture'
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
@@ -13,7 +20,7 @@ test.beforeEach(async ({ signInAs }) => signInAs('teacher'))
 const section = (page: Page, name: string) => page.getByRole('form', { name })
 const publishing = (page: Page) => page.locator('#publishing')
 
-test('B-ASM-16 B-ASM-17 B-ASM-18 an exam saves its basics and rules, with its protection', async ({
+test('B-ASM-16 B-ASM-17 B-ASM-18 an exam saves its basics and rules, with its protection; a stale save is retried', async ({
   page,
   studio,
   seed,
@@ -50,6 +57,18 @@ test('B-ASM-16 B-ASM-17 B-ASM-18 an exam saves its basics and rules, with its pr
   // 10:00 in Almaty (UTC+5).
   expect(saved.policy.due_at_unix).toBe(Date.UTC(2030, 0, 15, 5, 0) / 1000)
   expect(saved.policy.copy_paste_protection).toBe(!assessment.policy.copy_paste_protection)
+  // Someone else saves the assessment meanwhile: the next rules save is stale (412) and is retried over it.
+  // (A fresh page: each rules save reads readiness again.)
+  await page.reload()
+  const path = { assessment_id: assessment.id }
+  const ifMatch = { ...headers, 'If-Match': saved.version }
+  await updateAssessment({ client: studio.api, path, body: { weight: 30 }, headers: ifMatch, throwOnError: true })
+  await rules.getByLabel(m.assessments_field_attempts({}, ru)).fill('3')
+  await rules.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  const dialog = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await dialog.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect.poll(async () => (await read()).policy.max_attempts).toBe(3)
+  expect((await read()).weight).toBe(30)
 })
 
 test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the conflict dialog', async ({

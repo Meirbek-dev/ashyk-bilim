@@ -2,23 +2,22 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentDetail, UserSummary } from '#/shared/api/gen/types.gen'
+import type { AssessmentDetail, CourseLearner } from '#/shared/api/gen/types.gen'
 import { Button } from '#/shared/ui/button'
 
-import { can } from '../model/items'
+import { can } from '../model/route'
 import { learnerName } from '../model/overrides'
 import { overridesOptions } from '../queries'
 import { OverrideDialog } from './override-dialog'
 import { OverrideRow } from './override-row'
 
-type OverridesSectionProps = { assessment: AssessmentDetail; learners: readonly UserSummary[] | null }
+type OverridesSectionProps = { assessment: AssessmentDetail; learners: readonly CourseLearner[] }
 
 /** "Exceptions": learners with their own terms; a new one picks a learner of the course without one. */
 export function OverridesSection({ assessment, learners }: OverridesSectionProps) {
   const { data: rows } = useSuspenseQuery(overridesOptions(assessment.id))
   const editable = can(assessment, 'update')
-  const known = learners ?? []
-  const free = known.filter(user => !rows.some(row => row.user_id === user.id))
+  const free = learners.filter(user => !rows.some(row => row.user_id === user.user_id))
   return (
     <section aria-labelledby="exceptions-title" className="flex max-w-prose flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -36,13 +35,12 @@ export function OverridesSection({ assessment, learners }: OverridesSectionProps
               key={row.user_id}
               assessmentId={assessment.id}
               row={row}
-              name={learnerName(known, row.user_id) ?? m.assessments_learner_unknown()}
+              name={learnerName(learners, row.user_id) ?? m.assessments_learner_unknown()}
               editable={editable}
             />
           ))}
         </ul>
       )}
-      {learners === null ? <p className="text-sm text-muted-foreground">{m.assessments_learners_hidden()}</p> : null}
       {editable && free.length > 0 ? (
         <div>
           <OverrideDialog

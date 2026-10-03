@@ -117,7 +117,6 @@
   "assessments_field_learners": "Білім алушылар",
   "assessments_field_groups": "Курс топтары",
   "assessments_access_count": "Қолжетімділігі барлар: {count}",
-  "assessments_learners_hidden": "Курстың білім алушылар тізімін тек тексерушілер көреді.",
   "assessments_access_empty_title": "Қолжетімділік білім алушыларсыз сақталсын ба?",
   "assessments_access_empty_consequence": "Бірде-бір білім алушы бұл тапсырманы өте алмайды.",
   "assessments_access_saved": "Қолжетімділік сақталды",

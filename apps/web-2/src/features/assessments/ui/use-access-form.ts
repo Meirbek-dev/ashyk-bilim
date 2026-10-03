@@ -2,15 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { ApiError } from '#/shared/api/errors'
 import type { AccessView, AssessmentDetail, SetAccessRequest } from '#/shared/api/gen/types.gen'
 import { vSetAccessRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { toast } from '#/shared/ui/toast'
 
 import { assessmentOptions, setAccessOptions } from '../queries'
-
-const isStale = (error: unknown) => error instanceof ApiError && error.status === 412
+import { isStale } from './use-version'
 
 /** Restricted with nobody chosen locks every learner out (UX-057): saving that asks first. */
 const locksOut = (body: SetAccessRequest) =>

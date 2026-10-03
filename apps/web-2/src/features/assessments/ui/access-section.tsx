@@ -1,23 +1,22 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
-import { courseGroupsOptions } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
-import { ApiError } from '#/shared/api/errors'
-import type { AssessmentDetail, UserSummary } from '#/shared/api/gen/types.gen'
+import type { AssessmentDetail, CourseLearner } from '#/shared/api/gen/types.gen'
 import { MultiSelectField } from '#/shared/components/form/multi-select-field'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { accessOptions } from '../queries'
+import { accessOptions, courseGroupsOptions } from '../queries'
 import { accessLabels, optionsOf } from './labels'
 import { useAccessForm } from './use-access-form'
+import { isStale } from './use-version'
 
-type AccessSectionProps = { activityId: string; assessment: AssessmentDetail; learners: readonly UserSummary[] | null }
+type AccessSectionProps = { activityId: string; assessment: AssessmentDetail; learners: readonly CourseLearner[] }
 
-const person = (user: { id: string; display_name: string; username: string }) => ({
-  value: user.id,
+const person = (user: { display_name: string; username: string }, id: string) => ({
+  value: id,
   label: `${user.display_name} (@${user.username})`,
 })
 
@@ -27,9 +26,14 @@ export function AccessSection({ activityId, assessment, learners }: AccessSectio
   const { data: groups } = useSuspenseQuery(courseGroupsOptions(assessment.course_id))
   const access = useAccessForm(activityId, assessment, view)
   const { form, save } = access
-  const stale = save.error instanceof ApiError && save.error.status === 412
+  const stale = isStale(save.error)
   // Chosen people keep their labels even when they are past the learner page.
-  const people = [...view.users, ...(learners ?? []).filter(user => !view.users.some(chosen => chosen.id === user.id))]
+  const people = [
+    ...view.users.map(user => person(user, user.id)),
+    ...learners
+      .filter(user => !view.users.some(chosen => chosen.id === user.user_id))
+      .map(user => person(user, user.user_id)),
+  ]
   const groupOptions = [
     ...view.usergroups,
     ...groups.filter(group => !view.usergroups.some(old => old.id === group.id)),
@@ -54,13 +58,7 @@ export function AccessSection({ activityId, assessment, learners }: AccessSectio
             mode === 'restricted' ? (
               <>
                 <form.AppField name="user_ids">
-                  {() => (
-                    <MultiSelectField
-                      label={m.assessments_field_learners()}
-                      description={learners ? undefined : m.assessments_learners_hidden()}
-                      options={people.map(person)}
-                    />
-                  )}
+                  {() => <MultiSelectField label={m.assessments_field_learners()} options={people} />}
                 </form.AppField>
                 <form.AppField name="usergroup_ids">
                   {() => (

@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 
-import type { OverrideRequest, StudentOverride, UserSummary } from '#/shared/api/gen/types.gen'
+import type { CourseLearner, OverrideRequest, StudentOverride } from '#/shared/api/gen/types.gen'
 import { vOverrideRequest } from '#/shared/api/gen/valibot.gen'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
@@ -44,5 +44,5 @@ export function overrideBody(form: OverrideForm, stored?: StudentOverride): Over
 }
 
 /** The learner's name from the course list; null when the list does not have them (the row carries only an id). */
-export const learnerName = (learners: readonly UserSummary[], userId: string): string | null =>
-  learners.find(user => user.id === userId)?.display_name ?? null
+export const learnerName = (learners: readonly CourseLearner[], userId: string): string | null =>
+  learners.find(user => user.user_id === userId)?.display_name ?? null

@@ -3,7 +3,8 @@ import { useParams, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 
-import { can, openItem } from '../model/items'
+import { openItem } from '../model/items'
+import { can } from '../model/route'
 import { assessmentOptions } from '../queries'
 import { ItemEditor } from './item-editor'
 import { ItemList } from './item-list'

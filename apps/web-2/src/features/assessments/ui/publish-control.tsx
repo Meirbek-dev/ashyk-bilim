@@ -1,6 +1,6 @@
 import type { ActivityDetail } from '#/shared/api/gen/types.gen'
 
-import { isAssessmentType } from '../model/items'
+import { isAssessmentType } from '../model/route'
 import { AssessmentPublishSwitch } from './publish-switch'
 
 /** The studio header's published control (course-studio `publishControl`): assessments only, null for the rest. */

@@ -7,7 +7,6 @@ import { itemForm, itemFormSchema, itemPatch } from './item-form'
 import {
   copyItem,
   inOrder,
-  isAssessmentType,
   itemKindOf,
   newItem,
   newItemKinds,
@@ -16,6 +15,7 @@ import {
   withVariant,
   type Choice,
 } from './items'
+import { isAssessmentType } from './route'
 
 const metadata = { difficulty: null, estimated_minutes: null, section_label: null }
 const item = (id: string, body: ItemBody, extra: Partial<AssessmentItem> = {}): AssessmentItem => ({

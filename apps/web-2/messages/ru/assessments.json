@@ -117,7 +117,6 @@
   "assessments_field_learners": "Учащиеся",
   "assessments_field_groups": "Группы курса",
   "assessments_access_count": "Людей с доступом: {count}",
-  "assessments_learners_hidden": "Список учащихся курса видят только проверяющие.",
   "assessments_access_empty_title": "Сохранить доступ без учащихся?",
   "assessments_access_empty_consequence": "Никто из учащихся не сможет пройти это задание.",
   "assessments_access_saved": "Доступ сохранён",

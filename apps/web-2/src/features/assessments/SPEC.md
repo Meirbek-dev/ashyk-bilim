@@ -1,6 +1,6 @@
 # assessments
 
-Операции: getActivityAssessment, updateAssessment, createItem, updateItem, deleteItem, reorderItems, setPolicy, getAccess, setAccess, listOverrides, createOverride, updateOverride, deleteOverride, readiness, lifecycle, duplicateAssessment, auditTrail, gradebook
+Операции: getActivityAssessment, updateAssessment, createItem, updateItem, deleteItem, reorderItems, setPolicy, getAccess, setAccess, listOverrides, createOverride, updateOverride, deleteOverride, readiness, lifecycle, duplicateAssessment, auditTrail, listCourseLearners
 
 Студийная часть тестов, экзаменов и задач с кодом внутри студии активности (срез 4.1, `course-studio`):
 `/teach/courses/$courseId/activities/$activityId/{edit,settings}` у активности типа `quiz`, `exam`, `code_challenge`
@@ -44,6 +44,8 @@
   штрафа / штраф % в день до N дней / жёсткий срок), отсрочка в минутах, проходной балл, перемешивание вопросов и
   вариантов, частичный балл, штраф за неверный ответ, выдача результатов (сразу / вручную), что видно после
   проверки, «обязательная»; сохраняется целиком, ошибки сервера (422) - под полями. Даты - в поясе платформы.
+  «Основное» и «Правила» сохраняются с `If-Match: version`; чужое изменение (412) - диалог конфликта, «Обновить и
+  повторить» сохраняет введённое поверх новой версии.
 - B-ASM-18 У экзамена в «Правилах» есть защита: запрет копирования, учёт ухода со вкладки, обнаружение инструментов
   разработчика, запрет правой кнопки, полноэкранный режим и порог нарушений; у теста и задачи их нет (значения
   сохраняются как были).
@@ -77,7 +79,10 @@
 - Предупреждения правил считает сервер (готовность, `policy.*`), клиентские пороги убраны.
 - Экзамен предлагает те же типы вопросов, что и тест (сервер разрешает оба набора).
 - Видны раньше скрытые правила: поздняя сдача, выдача результатов, «обязательная», отсрочка (BUG-326).
-- Учащиеся для доступа и исключений - первая страница журнала оценок курса (до 500 человек) с поиском в списке.
+- Учащиеся для доступа и исключений - первая страница участников курса (`GET /courses/{id}/learners`, до 100) с
+  поиском в списке.
+- Переход жизненного цикла уходит без `If-Match`: правки вопросов меняют `version` оценивания, не возвращая его,
+  и переключатель в шапке ловил бы ложный 412; правила перехода проверяет сервер.
 - Новые операции (N-5): копия оценивания и журнал событий.
 
 ## Не переносится
@@ -90,12 +95,13 @@
 
 ## Ждёт сервера
 
-- `If-Match` / `version` у `PATCH /assessment-items/{id}`, `POST .../items`, `DELETE`, `.../items/reorder`,
-  `PUT .../policy`, `PATCH /assessments/{id}`: `content_version` и `policy_version` есть в ответе, но не
-  проверяются - вопросы и правила сохраняются «последний побеждает».
-- `AccessView` без `version` (сервер шлёт его только в `ETag`): клиент берёт `policy_version` оценивания.
+- `If-Match` / `version` у `PATCH /assessment-items/{id}`, `POST .../items`, `DELETE`, `.../items/reorder`: вопросы
+  сохраняются «последний побеждает»; их ответы не несут новый `version` оценивания (кэш устаревает до чтения
+  `settings`, которое перечитывает оценивание).
+- `AccessView` без `version` (сервер шлёт его только в `ETag`): клиент берёт `policy_version` оценивания и сдвигает
+  `policy_version` и `version` на 1 после сохранения доступа.
 - `allowed_actions` не учитывает блокировку правки (запланировано, архив, есть попытки) - узнаём по 409; нет списка
   разрешённых переходов жизненного цикла.
-- `StudentOverride` и `AuditEvent` без имени человека (`user_id`, `actor_id`); нет списка учащихся курса - имена
-  берутся из журнала оценок; `AuditEvent.event` и `ReadinessIssue.code` - строки, не перечисления.
+- `StudentOverride` и `AuditEvent` без имени человека (`user_id`, `actor_id`): имя берётся из участников курса (первые
+  100), автор журнала - «Вы» / «Другой автор»; `AuditEvent.event` и `ReadinessIssue.code` - строки, не перечисления.
 - Нет лимитов длины у полей тела вопроса (`ItemBody`) и диапазонов у `Policy` в контракте.

@@ -10,7 +10,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { Switch } from '#/shared/ui/switch'
 import { toast } from '#/shared/ui/toast'
 
-import { can } from '../model/items'
+import { can } from '../model/route'
 import { assessmentOptions, lifecycleOptions } from '../queries'
 
 /** A publish refused for readiness answers 422 with the blockers as field errors. */

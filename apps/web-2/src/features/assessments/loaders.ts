@@ -1,13 +1,13 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { courseGroupsOptions } from '#/features/course-studio'
 import { getActivityOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 
-import { can, isAssessmentType } from './model/items'
+import { isAssessmentType } from './model/route'
 import {
   accessOptions,
   assessmentOptions,
   assessmentReadinessOptions,
+  courseGroupsOptions,
   learnersOptions,
   overridesOptions,
 } from './queries'
@@ -26,16 +26,17 @@ export async function ensureAssessment(queryClient: QueryClient, activityId: str
   return true
 }
 
-/** `settings`: also access, the course's groups, overrides, readiness and, for whoever grades, its learners. */
+/** `settings`: also access, the course's groups and learners, overrides and readiness. */
 export async function ensureAssessmentSettings(queryClient: QueryClient, activityId: string): Promise<boolean> {
   if (!(await ensureAssessment(queryClient, activityId))) return false
-  const assessment = await queryClient.ensureQueryData(assessmentOptions(activityId))
+  // Read fresh: question saves change the assessment's `version` without answering it, and the rules save with it.
+  const assessment = await queryClient.fetchQuery({ ...assessmentOptions(activityId), staleTime: 0 })
   await Promise.all([
     queryClient.ensureQueryData(accessOptions(assessment.id)),
     queryClient.ensureQueryData(courseGroupsOptions(assessment.course_id)),
     queryClient.ensureQueryData(overridesOptions(assessment.id)),
     queryClient.ensureQueryData(assessmentReadinessOptions(assessment.id)),
-    can(assessment, 'grade') ? queryClient.ensureQueryData(learnersOptions(assessment.course_id)) : null,
+    queryClient.ensureQueryData(learnersOptions(assessment.course_id)),
   ])
   return true
 }

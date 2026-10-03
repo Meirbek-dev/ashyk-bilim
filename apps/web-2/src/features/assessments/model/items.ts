@@ -1,9 +1,4 @@
-import * as v from 'valibot'
-
 import type {
-  ActivityType,
-  AssessmentAction,
-  AssessmentDetail,
   AssessmentItem,
   AssessmentKind,
   ChoiceBody,
@@ -12,20 +7,8 @@ import type {
   ItemBody,
 } from '#/shared/api/gen/types.gen'
 
-/** `edit?item=`: the open question (unknown or absent: the first). */
-export const builderSearchSchema = v.object({ item: v.optional(v.string()) })
-
-// The builder's pure rules: which activities are assessments, what "add a question" offers, the blank bodies,
-// copies and the choice variants. The server checks the rest (readiness, 422).
-
-const ASSESSMENT_TYPES = ['quiz', 'exam', 'code_challenge'] as const satisfies readonly ActivityType[]
-
-/** The activity types backed by an assessment (`/activities/{id}/assessment`). */
-export const isAssessmentType = (type: ActivityType): type is AssessmentKind =>
-  (ASSESSMENT_TYPES as readonly string[]).includes(type)
-
-export const can = (assessment: Pick<AssessmentDetail, 'allowed_actions'>, action: AssessmentAction): boolean =>
-  assessment.allowed_actions.includes(action)
+// The builder's pure rules: what "add a question" offers, the blank bodies, copies and the choice variants. The
+// server checks the rest (readiness, 422).
 
 /** What "add a question" offers: the server's item kinds per assessment kind, choice split by its variants. */
 export type NewItemKind = ChoiceVariant | 'matching' | 'open_text' | 'form' | 'code'

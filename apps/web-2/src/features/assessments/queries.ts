@@ -12,7 +12,7 @@ import {
   getActivityAssessmentOptions,
   getActivityQueryKey,
   getCurriculumQueryKey,
-  gradebookOptions,
+  listCourseLearnersOptions,
   lifecycleMutation,
   listOverridesOptions,
   readinessOptions,
@@ -23,13 +23,14 @@ import {
   updateAssessmentMutation,
   updateItemMutation,
   updateOverrideMutation,
+  usergroupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type {
   AccessView,
   ActivityDetail,
   AssessmentDetail,
   AssessmentItem,
-  GradebookPage,
+  CourseLearnerPage,
   StudentOverride,
 } from '#/shared/api/gen/types.gen'
 
@@ -43,12 +44,15 @@ export const assessmentOptions = (activityId: string) =>
 export const accessOptions = (id: string) => getAccessOptions(byId(id))
 export const overridesOptions = (id: string) => listOverridesOptions(byId(id))
 export const assessmentReadinessOptions = (id: string) => readinessOptions(byId(id))
+/** Groups linked to the course: the only ones an access list may name. */
+export const courseGroupsOptions = (courseId: string) => usergroupsForCourseOptions({ path: { course_id: courseId } })
 export const auditOptions = (id: string) => auditTrailOptions({ ...byId(id), query: { limit: 50 } })
 
-/** Learners of the course: the first gradebook page (its people; the cells are not used). */
+// ponytail: the first 100 learners (one keyset page); a searchable picker when courses outgrow it.
+/** Learners of the course (its members) for the access and exception pickers. */
 export const learnersOptions = (courseId: string) => ({
-  ...gradebookOptions({ path: { course_id: courseId }, query: { limit: 500 } }),
-  select: (page: GradebookPage) => page.users,
+  ...listCourseLearnersOptions({ path: { course_id: courseId }, query: { limit: 100 } }),
+  select: (page: CourseLearnerPage) => page.items,
 })
 
 const readiness = (id: string) => readinessQueryKey(byId(id))
@@ -147,7 +151,10 @@ export const reorderItemsOptions = (queryClient: QueryClient, activityId: string
   onSuccess: (items: AssessmentItem[]) => placeItems(queryClient, activityId, items),
 })
 
-/** Every access save bumps `policy_version` (server, UX-154): the next `If-Match` takes the bumped one. */
+/**
+ * Every access save bumps `policy_version` (server, UX-154) and, as a row change, `version` (S-04 trigger): the next
+ * `If-Match` of access and of the rules take the bumped ones.
+ */
 export const setAccessOptions = (queryClient: QueryClient, activityId: string, id: string) => ({
   ...setAccessMutation(),
   onSuccess: (view: AccessView) => {
@@ -155,6 +162,7 @@ export const setAccessOptions = (queryClient: QueryClient, activityId: string, i
     patchAssessment(queryClient, activityId, assessment => ({
       ...assessment,
       policy_version: assessment.policy_version + 1,
+      version: assessment.version + 1,
     }))
   },
 })

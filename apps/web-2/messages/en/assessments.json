@@ -117,7 +117,6 @@
   "assessments_field_learners": "Learners",
   "assessments_field_groups": "Course groups",
   "assessments_access_count": "People with access: {count}",
-  "assessments_learners_hidden": "Only reviewers see the list of the course's learners.",
   "assessments_access_empty_title": "Save access with no learners?",
   "assessments_access_empty_consequence": "No learner will be able to take this task.",
   "assessments_access_saved": "Access saved",

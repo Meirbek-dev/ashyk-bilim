@@ -3,7 +3,7 @@ import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
-import { can } from '../model/items'
+import { can } from '../model/route'
 import { lifecycleBadges } from './labels'
 import { LifecycleActions } from './lifecycle-actions'
 import { ReadinessList } from './readiness-list'

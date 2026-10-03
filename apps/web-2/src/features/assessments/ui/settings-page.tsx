@@ -1,4 +1,4 @@
-import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { ActivitySettingsPage } from '#/features/course-studio'
@@ -6,7 +6,7 @@ import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 import { SettingsPage } from '#/shared/components/templates/settings-page'
 
-import { can } from '../model/items'
+import { can } from '../model/route'
 import { assessmentOptions, learnersOptions } from '../queries'
 import { AccessSection } from './access-section'
 import { CopySection } from './copy-section'
@@ -34,11 +34,7 @@ const navLabels: Record<(typeof SECTIONS)[number], () => string> = {
 export function AssessmentSettingsPage() {
   const { courseId, activityId } = useParams({ from: SETTINGS })
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activityId))
-  // The course's learners come from the gradebook, which only graders may read.
-  const people = useSuspenseQueries({
-    queries: [learnersOptions(assessment.course_id)].filter(() => can(assessment, 'grade')),
-    combine: results => results[0]?.data ?? null,
-  })
+  const { data: people } = useSuspenseQuery(learnersOptions(assessment.course_id))
   const nav = SECTIONS.map(section => (
     <Link
       key={section}

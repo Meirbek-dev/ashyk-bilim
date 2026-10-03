@@ -8,7 +8,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { FieldError } from '#/shared/ui/field'
 
 import { itemForm, itemFormSchema, itemPatch } from '../model/item-form'
-import { can } from '../model/items'
+import { can } from '../model/route'
 import { BodyFields } from './body-fields'
 import { ItemActions } from './item-actions'
 import { useItemAutosave } from './use-item-autosave'

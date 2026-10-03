@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { StudentOverride, UserSummary } from '#/shared/api/gen/types.gen'
+import type { CourseLearner, StudentOverride } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { toast } from '#/shared/ui/toast'
@@ -16,7 +16,7 @@ type OverrideDialogProps = {
   /** The exception being changed; none: a new one for a learner picked here. */
   row?: StudentOverride
   /** Learners who can get a new exception (those without one). */
-  learners: readonly UserSummary[]
+  learners: readonly CourseLearner[]
 }
 
 /** Adds or changes one learner's exception: attempts, a personal deadline, no late penalty and a note. */
@@ -43,7 +43,7 @@ export function OverrideDialog({ assessmentId, trigger, row, learners }: Overrid
   })
   const choices = [
     { value: '', label: m.assessments_learner_pick() },
-    ...learners.map(user => ({ value: user.id, label: `${user.display_name} (@${user.username})` })),
+    ...learners.map(user => ({ value: user.user_id, label: `${user.display_name} (@${user.username})` })),
   ]
   return (
     <FormDialog
