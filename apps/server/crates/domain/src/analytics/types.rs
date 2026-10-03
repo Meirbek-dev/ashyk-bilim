@@ -22,7 +22,11 @@ use super::filters::{Compare, Window};
 /// A closed set of stable codes: the variant's literal is both its wire
 /// value and `as_str()`.
 macro_rules! code_enum {
-    ($(#[$doc:meta])* $name:ident { $($variant:ident => $s:literal),+ $(,)? }) => {
+    // `$s:tt`, not `:literal`: a `literal` fragment reaches derives wrapped
+    // in an invisible group, which utoipa's `serde(rename)` parser skips -
+    // the schema then listed the Rust names (`RiskSpike`) while the wire
+    // sent `risk_spike` (pinned by `code_enum_schemas_match_the_wire`).
+    ($(#[$doc:meta])* $name:ident { $($variant:ident => $s:tt),+ $(,)? }) => {
         $(#[$doc])*
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
         pub enum $name {
@@ -30,6 +34,8 @@ macro_rules! code_enum {
         }
 
         impl $name {
+            pub const ALL: &'static [Self] = &[$(Self::$variant),+];
+
             #[must_use]
             pub const fn as_str(self) -> &'static str {
                 match self { $(Self::$variant => $s),+ }
@@ -629,6 +635,17 @@ pub struct AtRiskLearnerRow {
     pub last_intervention_outcome: Option<String>,
     /// Stable code (`review_submissions_first`, …).
     pub recommended_action: &'static str,
+    /// What the caller may do for this learner now (the gates of
+    /// `POST /analytics/teacher/interventions`).
+    pub allowed_actions: Vec<AtRiskAction>,
+}
+
+/// `AtRiskLearnerRow.allowed_actions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AtRiskAction {
+    /// Record an intervention (course in the caller's scope, not archived).
+    RecordIntervention,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -1009,4 +1026,61 @@ pub struct AtRiskLearnersResponse {
     pub items: Vec<AtRiskLearnerRow>,
     pub course_options: Vec<FilterOption>,
     pub cohort_options: Vec<FilterOption>,
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod code_enum_schema_tests {
+    use super::*;
+    use utoipa::PartialSchema;
+
+    /// The schema's `enum` values, as JSON.
+    fn schema_values<T: PartialSchema>() -> Vec<serde_json::Value> {
+        let schema = serde_json::to_value(T::schema()).unwrap();
+        schema["enum"].as_array().cloned().unwrap_or_default()
+    }
+
+    fn wire_values<T: Serialize>(all: &[T]) -> Vec<serde_json::Value> {
+        all.iter()
+            .map(|v| serde_json::to_value(v).unwrap())
+            .collect()
+    }
+
+    macro_rules! pin {
+        ($($t:ident),+ $(,)?) => {{
+            $(
+                assert_eq!(
+                    schema_values::<$t>(),
+                    wire_values($t::ALL),
+                    concat!(stringify!($t), ": schema enum != serde output"),
+                );
+                for v in $t::ALL {
+                    assert_eq!(serde_json::to_value(v).unwrap(), v.as_str());
+                }
+            )+
+            [$(stringify!($t)),+].len()
+        }};
+    }
+
+    #[test]
+    fn code_enum_schemas_match_the_wire() {
+        let pinned = pin!(
+            AlertKind,
+            ContentBottleneckSignal,
+            InsightCategory,
+            DataMode,
+            ForecastKind,
+            AnomalyKind,
+            ContentHealthSignal,
+            SuspiciousFlag,
+            AuditSource,
+            SupportAlertCode,
+            ItemType,
+        );
+        // A new `code_enum!` must join the list above.
+        let declared = include_str!("types.rs")
+            .matches(concat!("code_enum", "!("))
+            .count();
+        assert_eq!(pinned, declared);
+    }
 }

@@ -56,12 +56,8 @@
 
 ## Ждёт сервера
 
-- `version` курса для `If-Match` (S-04): у `Course` нет поля, у `updateCourse` нет заголовка.
-- `Idempotency-Key` у записи на курс (`POST /trail/courses/{id}`, S-04).
-- Автор объявления: у `CourseUpdate` нет автора (`GET /courses/{id}/updates`).
-- `next_action.href` ведёт на старые адреса (`/course/.../activity/...`), `label` не переведён: страница строит
-  адрес из `activity_id` и подпись из `id`.
-- Запись и выход отвечают `Trail`, а не состоянием учащегося: после них состояние перечитывается отдельным GET.
+- Сервер готов, веб ещё не перешёл (S-04): `Idempotency-Key` у записи на курс (`POST /trail/courses/{id}`), автор
+  объявления (`CourseUpdate.author`), чтение гостем `learner-state`.
 - `ActivityState.activity_type` (план учащегося) - строка, а не enum `ActivityType`; тип `custom` есть на сервере, но
   не в таблице DESIGN 3.
 - Подать и отозвать заявку соавтора нет в `allowed_actions`: доступность выводится из `open_to_contributors` и своей

@@ -5,7 +5,7 @@ import { dashboardOptions, leaderboardInfiniteQueryKey } from '#/shared/api/gen/
 import { leaderboard } from '#/shared/api/gen/sdk.gen'
 import type { Leaderboard } from '#/shared/api/gen/types.gen'
 
-import { LEADERBOARD_PAGE, nextLeaderboardOffset } from './model/achievements'
+import { LEADERBOARD_PAGE } from './model/achievements'
 
 /** Profile, the 10 latest XP awards and the viewer's rank; the same cache entry the settings page writes. */
 export const achievementsOptions = () => dashboardOptions()
@@ -18,19 +18,20 @@ export const leaderboardListOptions = () => {
     ApiError,
     InfiniteData<Leaderboard>,
     ReturnType<typeof leaderboardInfiniteQueryKey>,
-    number
+    string
   >({
     queryKey: leaderboardInfiniteQueryKey(options),
     queryFn: async ({ pageParam, signal }) => {
       const { data } = await leaderboard({
-        query: { ...options.query, offset: pageParam },
+        query: { ...options.query, cursor: pageParam },
         signal,
         throwOnError: true,
       })
       return data
     },
-    initialPageParam: 0,
-    getNextPageParam: nextLeaderboardOffset,
+    // Keyset paging: an empty cursor starts from the top; `next_cursor` is null on the last page.
+    initialPageParam: '',
+    getNextPageParam: page => page.next_cursor ?? undefined,
   })
 }
 

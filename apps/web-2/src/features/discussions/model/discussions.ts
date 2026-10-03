@@ -39,6 +39,14 @@ export const replaceItem = (data: Pages, next: Discussion): Pages =>
 export const removeItem = (data: Pages, id: DiscussionId): Pages =>
   mapItems(data, items => items.filter(item => item.id !== id))
 
+/** A reply's create answer carries its post's new `replies_count`: the post takes it without a list re-read. */
+export const setRepliesCount = (data: Pages, id: DiscussionId, count: number): Pages =>
+  mapItems(data, items => items.map(item => (item.id === id ? { ...item, replies_count: count } : item)))
+
+/** One post (a deep-linked thread) through the list changes above: a removed post becomes `null`. */
+export const changePost = (post: Discussion, change: (data: Pages) => Pages): Discussion | null =>
+  change({ pages: [{ items: [post], next_cursor: null }], pageParams: [undefined] })?.pages[0]?.items[0] ?? null
+
 /** Like / dislike: counts and pressed state exactly as the toggle answered. */
 export const applyReaction = (data: Pages, id: DiscussionId, state: ReactionState): Pages =>
   mapItems(data, items => items.map(item => (item.id === id ? { ...item, ...state } : item)))

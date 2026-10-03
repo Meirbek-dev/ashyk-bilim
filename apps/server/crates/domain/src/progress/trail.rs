@@ -6,6 +6,7 @@
 //! assessment and file-submission activities are projected by their own
 //! pipelines and the step is UX-only there.
 
+use ab_core::assessments::ActivityProgressState;
 use ab_core::id::{ActivityId, CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
@@ -38,6 +39,9 @@ pub struct TrailRun {
     /// reports - or `None` before the projection wrote a row (UX-250).
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
+    /// The first published activity (course order) the learner has not
+    /// completed and is not waiting on a grade for; `None` when nothing is left.
+    pub next_activity_id: Option<ActivityId>,
 }
 
 #[derive(Debug, Clone)]
@@ -235,6 +239,7 @@ impl TrailService {
                 continue;
             }
             let activities = ab_db::catalog::list_activities(&self.pool, run.course_id).await?;
+            let next_activity_id = self.next_activity(&run, &activities, &steps).await?;
             let run_steps = steps
                 .iter()
                 .filter(|s| s.trail_run_id == run.id)
@@ -258,6 +263,7 @@ impl TrailService {
                     .find(|p| p.course_id == run.course_id)
                     .map(|p| p.progress_pct),
                 steps: run_steps,
+                next_activity_id,
                 row: run,
                 course,
             });
@@ -267,6 +273,42 @@ impl TrailService {
             row: Some(trail),
             runs: out,
         })
+    }
+
+    /// [`TrailRun::next_activity_id`]: chapters by position, then activities.
+    async fn next_activity(
+        &self,
+        run: &TrailRunRow,
+        activities: &[ActivityRow],
+        steps: &[TrailStepRow],
+    ) -> Result<Option<ActivityId>> {
+        let chapters = ab_db::catalog::list_chapters(&self.pool, run.course_id).await?;
+        let progress =
+            ab_db::progress::list_course_progress_rows(&self.pool, run.course_id, run.user_id)
+                .await?;
+        let done = |a: &ActivityRow| {
+            steps
+                .iter()
+                .any(|s| s.trail_run_id == run.id && s.activity_id == a.id && s.complete)
+                || progress.iter().any(|p| {
+                    p.activity_id == a.id
+                        && (super::projector::progress_is_completed(p)
+                            || matches!(
+                                p.state,
+                                ActivityProgressState::Submitted
+                                    | ActivityProgressState::NeedsGrading
+                                    | ActivityProgressState::Graded
+                            ))
+                })
+        };
+        Ok(chapters.iter().find_map(|c| {
+            let mut in_chapter: Vec<&ActivityRow> = activities
+                .iter()
+                .filter(|a| a.chapter_id == c.id && a.published)
+                .collect();
+            in_chapter.sort_by_key(|a| (a.position, a.id));
+            in_chapter.into_iter().find(|a| !done(a)).map(|a| a.id)
+        }))
     }
 
     async fn lock(
@@ -341,33 +383,94 @@ impl TrailService {
         if ab_db::progress::has_trail_run(&self.pool, course_id, actor.user_id).await? {
             self.course_open(course_id).await?;
         }
-        // BUG-210: leave and mark for this (user, course) run one at a time;
-        // BUG-221: the run and the un-projection commit together.
-        let mut tx = self.lock(actor.user_id, course_id).await?;
-        if !ab_db::progress::delete_trail_run(&mut *tx, trail.id, course_id).await? {
+        if !self.drop_run(trail.id, actor.user_id, course_id).await? {
             return Err(Error::not_found("trail run"));
         }
-        let dropped =
-            ab_db::assessments::drop_member_access(&mut tx, course_id, actor.user_id).await?;
+        self.hydrate(actor, trail).await
+    }
+
+    /// Delete `user_id`'s run in a course and un-project it (`false`: no
+    /// such run). Shared by leaving and a teacher removing a learner.
+    async fn drop_run(
+        &self,
+        trail_id: ab_core::id::TrailId,
+        user_id: UserId,
+        course_id: CourseId,
+    ) -> Result<bool> {
+        // BUG-210: leave and mark for this (user, course) run one at a time;
+        // BUG-221: the run and the un-projection commit together.
+        let mut tx = self.lock(user_id, course_id).await?;
+        if !ab_db::progress::delete_trail_run(&mut *tx, trail_id, course_id).await? {
+            return Ok(false);
+        }
+        let dropped = ab_db::assessments::drop_member_access(&mut tx, course_id, user_id).await?;
         // BUG-235: inside the lock only `tx`, never a second pool connection.
         let mut hooks = AfterCommit::default();
         for activity in ab_db::catalog::list_activities(&mut *tx, course_id).await? {
             hooks = hooks.and(
                 self.projector
-                    .unmark_complete(&mut tx, &activity, actor.user_id)
+                    .unmark_complete(&mut tx, &activity, user_id)
                     .await?,
             );
         }
         // BUG-276: an all-quiz course un-marks nothing; the aggregate still
         // drops the leaver's completion.
         self.projector
-            .recalculate_course_on(&mut tx, course_id, actor.user_id)
+            .recalculate_course_on(&mut tx, course_id, user_id)
             .await?;
         tx.commit().await?;
         hooks.fire(&self.pool).await;
         // BUG-306: the dropped overrides settle lateness like a delete.
-        crate::grading::bulk::settle_dropped(&self.pool, actor.user_id, dropped).await?;
-        self.hydrate(actor, trail).await
+        crate::grading::bulk::settle_dropped(&self.pool, user_id, dropped).await?;
+        Ok(true)
+    }
+
+    /// The course's members, newest first, with their progress (course
+    /// write access: the creator, active authors, platform updaters).
+    pub async fn course_learners(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        cursor: Option<ab_core::id::TrailRunId>,
+        limit: i64,
+    ) -> Result<(
+        Vec<ab_db::progress::CourseLearnerRow>,
+        Option<ab_core::id::TrailRunId>,
+    )> {
+        // An archived course still lists its members (read-only).
+        let course = self.courses.get(actor, course_id).await?;
+        CoursesService::require_write(actor, &course)?;
+        let limit = ab_core::page_limit(limit, 100)?;
+        let mut rows =
+            ab_db::progress::list_course_learners(&self.pool, course_id, cursor, limit + 1).await?;
+        let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
+            rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+            rows.last().map(|r| r.run_id)
+        } else {
+            None
+        };
+        Ok((rows, next))
+    }
+
+    /// Remove a learner from a course (roster managers: the creator, an
+    /// active maintainer, `course:manage:platform`): their run goes as on
+    /// leave; submissions stay. 404 when they are not a member.
+    pub async fn remove_learner(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        user_id: UserId,
+    ) -> Result<()> {
+        self.courses
+            .require_roster_manager(actor, course_id)
+            .await?;
+        let trail = ab_db::progress::get_trail(&self.pool, user_id)
+            .await?
+            .ok_or_else(|| Error::not_found("learner"))?;
+        if !self.drop_run(trail.id, user_id, course_id).await? {
+            return Err(Error::not_found("learner"));
+        }
+        Ok(())
     }
 
     /// Mark an activity done: run + step, and an explicit completion for

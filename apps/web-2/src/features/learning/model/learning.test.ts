@@ -13,6 +13,8 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
     created_at_unix: 0,
     updated_at_unix: 0,
     progress_pct: progress,
+    learning_status: 'in_progress',
+    next_activity_id: null,
     status: 'in_progress',
     steps: [],
     course: {

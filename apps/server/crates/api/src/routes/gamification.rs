@@ -37,10 +37,20 @@ pub async fn leaderboard(
     CurrentActor(_actor): CurrentActor,
     Query(query): Query<LeaderboardQuery>,
 ) -> ApiResult<Json<Leaderboard>> {
+    let limit = query.limit.unwrap_or(10);
+    if let Some(cursor) = query.cursor {
+        let (board, next) = state
+            .gamification
+            .leaderboard_page(limit, Some(cursor.as_str()).filter(|c| !c.is_empty()))
+            .await?;
+        let mut board = Leaderboard::from(board);
+        board.next_cursor = next;
+        return Ok(Json(board));
+    }
     Ok(Json(
         state
             .gamification
-            .leaderboard(query.limit.unwrap_or(10), query.offset.unwrap_or(0))
+            .leaderboard(limit, query.offset.unwrap_or(0))
             .await?
             .into(),
     ))

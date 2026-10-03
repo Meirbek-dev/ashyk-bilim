@@ -345,7 +345,7 @@ where
         let pool = &task_pool;
         let Some(key) = task_key else {
             let (status, _, value) = run(fresh).await?;
-            return Ok((status, Json(value)).into_response());
+            return Ok(reply(status, value));
         };
         if let Some(response) = reserve_or_replay(pool, user_id, &key, &request_hash).await? {
             return Ok(response);
@@ -374,7 +374,7 @@ where
         };
         let status_code = i32::from(status.as_u16());
         ab_db::submissions::complete_idempotent(pool, user_id, &key, status_code, &value).await?;
-        Ok::<_, ApiError>((status, Json(value)).into_response())
+        Ok::<_, ApiError>(reply(status, value))
     });
     match task.await {
         Ok(result) => result,
@@ -426,7 +426,7 @@ where
         )
         .await?;
     }
-    Ok((status, Json(value)).into_response())
+    Ok(reply(status, value))
 }
 
 /// The action plus its serialized reply.
@@ -464,7 +464,7 @@ fn replay(
     }
     let status = StatusCode::from_u16(u16::try_from(stored.status_code).unwrap_or(500))
         .unwrap_or(StatusCode::OK);
-    Ok((status, Json(stored.response)).into_response())
+    Ok(reply(status, stored.response))
 }
 
 /// Reserve the key or replay the owner's reply; `Ok(None)` means this
@@ -497,4 +497,61 @@ async fn reserve_or_replay(
         }
         tokio::time::sleep(IN_PROGRESS_POLL).await;
     }
+}
+
+/// S-04 `If-Match` on a versioned row.
+///
+/// Absent → no check; a version that no
+/// longer matches → 412 `precondition-failed` with `details {expected,
+/// actual}`. A missing row passes, so the write answers its own 404.
+///
+/// Call it after the write's permission gate (a 412 must not reveal more
+/// than the 403/404 would).
+// ponytail: check-then-write, so a save landing in the milliseconds between
+// this read and the UPDATE is not caught; move the guard into each UPDATE's
+// WHERE (the collections pattern) if two-tab races ever show up in logs.
+pub async fn require_if_match(
+    pool: &sqlx::PgPool,
+    of: ab_db::versions::Versioned<'_>,
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
+    let Some(expected) = crate::routes::curriculum::if_match(headers)? else {
+        return Ok(());
+    };
+    match ab_db::versions::current_version(pool, of).await? {
+        Some(actual) if actual != expected => Err(ApiError(Error::app_with_details(
+            ErrorCode::PreconditionFailed,
+            "changed since you loaded it; reload and try again",
+            serde_json::json!({ "expected": expected, "actual": actual }),
+        ))),
+        _ => Ok(()),
+    }
+}
+
+/// A JSON body with its `version` as a quoted `ETag` (the next `If-Match`).
+pub fn with_etag<T: serde::Serialize>(status: StatusCode, version: i32, body: T) -> Response {
+    let etag = axum::http::HeaderValue::from_str(&format!("\"{version}\""))
+        .unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""));
+    (status, [(axum::http::header::ETAG, etag)], Json(body)).into_response()
+}
+
+/// An idempotent action's reply; a 204 carries no body (a `null` would
+/// break clients that expect an empty one).
+fn reply(status: StatusCode, value: serde_json::Value) -> Response {
+    if status == StatusCode::NO_CONTENT {
+        status.into_response()
+    } else {
+        (status, Json(value)).into_response()
+    }
+}
+
+/// `Prefer: return=representation` (RFC 7240): the new web asks a write that
+/// answers 204 for the updated resource instead. Without it the old 204 stays.
+pub fn wants_representation(headers: &HeaderMap) -> bool {
+    headers
+        .get_all("prefer")
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .flat_map(|v| v.split(','))
+        .any(|p| p.trim().eq_ignore_ascii_case("return=representation"))
 }

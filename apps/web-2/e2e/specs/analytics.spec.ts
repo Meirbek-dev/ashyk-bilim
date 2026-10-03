@@ -210,6 +210,12 @@ test('B-ANL-19 a filter nobody matches: "no matches" and a reset', async ({ page
   }
 })
 
+test('B-ANL-22 an unknown group leaves the URL before any read', async ({ page }) => {
+  await page.goto(`/teach/analytics/learners?window=7d&cohort=${NO_SUCH}`)
+  await expect(page).toHaveURL(/\/teach\/analytics\/learners\?window=7d$/)
+  await expect(page.getByRole('heading', { level: 1, name: m.platform_nav_analytics({}, ru) })).toBeVisible()
+})
+
 test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', async ({ page, signInAs }) => {
   await page.goto('/admin/analytics')
   await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()

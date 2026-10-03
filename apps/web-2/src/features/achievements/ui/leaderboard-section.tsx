@@ -7,7 +7,6 @@ import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { leaderboardRows } from '../model/achievements'
 import { leaderboardListOptions } from '../queries'
 import { LeaderboardRow } from './leaderboard-row'
 
@@ -18,7 +17,7 @@ import { LeaderboardRow } from './leaderboard-row'
 export function LeaderboardSection({ rank }: { rank: number | null }) {
   const { session } = useRouteContext({ from: '/_authed' })
   const query = useSuspenseInfiniteQuery(leaderboardListOptions())
-  const rows = leaderboardRows(query.data.pages)
+  const rows = query.data.pages.flatMap(page => page.entries)
   const total = query.data.pages.at(-1)?.total_participants ?? rows.length
   return (
     <section aria-label={m.achievements_leaderboard_title()} className="flex max-w-prose flex-col gap-3">

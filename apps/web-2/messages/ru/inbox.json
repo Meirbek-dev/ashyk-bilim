@@ -1,0 +1,31 @@
+{
+  "inbox_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} работа",
+        "countPlural=few": "{count} работы",
+        "countPlural=many": "{count} работ",
+        "countPlural=other": "{count} работы"
+      }
+    }
+  ],
+  "inbox_empty": "Ничего не ждёт вашей реакции.",
+  "inbox_table": "Работы, которые ждут вашей реакции",
+  "inbox_state": "Состояние",
+  "inbox_filter_all": "Все",
+  "inbox_course_all": "Все курсы",
+  "inbox_course_selected": "Выбранный курс",
+  "inbox_kind_sla_breach": "Проверка просрочена",
+  "inbox_kind_needs_grading": "Ждёт проверки",
+  "inbox_kind_awaiting_release": "Ждёт публикации",
+  "inbox_kind_other": "Требует внимания",
+  "inbox_col_activity": "Активность",
+  "inbox_col_course": "Курс",
+  "inbox_col_since": "Ждёт с",
+  "inbox_col_due": "Срок",
+  "inbox_col_action": "Действие",
+  "inbox_action_grade": "Проверить",
+  "inbox_action_review": "Открыть оценку"
+}

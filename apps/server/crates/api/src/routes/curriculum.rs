@@ -13,8 +13,9 @@ use crate::dto::curriculum::{
     UpdateActivityRequest, UpdateChapterRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson, idempotent, require_if_match};
 use crate::state::AppState;
+use ab_db::versions::Versioned;
 
 /// `If-Match: "<version>"` → version; absent → `None`; malformed → 422.
 pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i32>> {
@@ -74,7 +75,10 @@ pub async fn get_curriculum(
     post,
     path = "/courses/{course_id}/chapters",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
     request_body = CreateChapterRequest,
     responses(
         (status = 201, description = "Created (appended last)", body = Chapter),
@@ -86,22 +90,33 @@ pub async fn create_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<Chapter>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.courses.require_writable(&actor, id).await?;
     let request = ValidJson::<CreateChapterRequest>::parse(&body)?;
-    let chapter = state
-        .curriculum
-        .add_chapter(
-            &actor,
-            id,
-            &request.name,
-            request.description.as_deref().unwrap_or(""),
-        )
-        .await?;
-    // Created behind the curriculum write gate: editable.
-    Ok((StatusCode::CREATED, Json(Chapter::new(chapter, true))))
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("chapter:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let chapter = state
+                .curriculum
+                .add_chapter(
+                    &actor,
+                    id,
+                    &request.name,
+                    request.description.as_deref().unwrap_or(""),
+                )
+                .await?;
+            // Created behind the curriculum write gate: editable.
+            Ok((StatusCode::CREATED, Chapter::new(chapter, true)))
+        },
+    )
+    .await
 }
 
 /// Rename/redescribe a chapter.
@@ -109,10 +124,15 @@ pub async fn create_chapter(
     patch,
     path = "/chapters/{chapter_id}",
     tag = "courses",
-    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
+    params(
+        ("chapter_id" = ChapterId, Path, description = "Chapter id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
+    ),
     request_body = UpdateChapterRequest,
     responses(
         (status = 200, description = "Updated", body = Chapter),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -121,11 +141,13 @@ pub async fn update_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<Chapter>> {
     // UX-311: permission before the body.
     state.curriculum.writable_chapter(&actor, id).await?;
     let request = ValidJson::<UpdateChapterRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Chapter(id), &headers).await?;
     let chapter = state
         .curriculum
         .update_chapter(
@@ -198,7 +220,10 @@ pub async fn move_chapter(
     post,
     path = "/chapters/{chapter_id}/activities",
     tag = "courses",
-    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
+    params(
+        ("chapter_id" = ChapterId, Path, description = "Chapter id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
     request_body = CreateActivityRequest,
     responses(
         (status = 201, description = "Created (appended last)", body = Activity),
@@ -212,23 +237,34 @@ pub async fn create_activity(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<Activity>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.curriculum.writable_chapter(&actor, id).await?;
     let request = ValidJson::<CreateActivityRequest>::parse(&body)?;
-    let activity = state
-        .curriculum
-        .add_activity(
-            &actor,
-            id,
-            &request.name,
-            &request.activity_type,
-            &request.activity_sub_type,
-        )
-        .await?;
-    // Created behind the curriculum write gate: editable.
-    Ok((StatusCode::CREATED, Json(Activity::new(activity, true))))
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("activity:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let activity = state
+                .curriculum
+                .add_activity(
+                    &actor,
+                    id,
+                    &request.name,
+                    &request.activity_type,
+                    &request.activity_sub_type,
+                )
+                .await?;
+            // Created behind the curriculum write gate: editable.
+            Ok((StatusCode::CREATED, Activity::new(activity, true)))
+        },
+    )
+    .await
 }
 
 /// Full activity including content/details/settings. Unpublished

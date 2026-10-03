@@ -1,11 +1,13 @@
-use axum::Json;
+use ab_db::versions::Versioned;
 use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 
 use ab_domain::catalog::platform::PlatformChanges;
 
 use crate::dto::platform::{Platform, UpdatePlatformRequest};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, ValidJson};
+use crate::extract::{CurrentActor, MaybeActor, ValidJson, require_if_match, with_etag};
 use crate::state::AppState;
 
 /// The platform singleton. Intentionally public: the frontend bootstraps
@@ -15,10 +17,15 @@ use crate::state::AppState;
     get,
     path = "/platform",
     tag = "platform",
-    responses((status = 200, description = "Platform settings", body = Platform)),
+    responses((status = 200, description = "Platform settings", body = Platform,
+               headers(("ETag" = String, description = "Quoted `version`")))),
 )]
-pub async fn get_platform(State(state): State<AppState>) -> ApiResult<Json<Platform>> {
-    Ok(Json(state.platform.get().await?.into()))
+pub async fn get_platform(
+    State(state): State<AppState>,
+    MaybeActor(actor): MaybeActor,
+) -> ApiResult<Response> {
+    let platform = Platform::for_actor(state.platform.get().await?, &actor);
+    Ok(with_etag(StatusCode::OK, platform.version, platform))
 }
 
 /// Update platform settings (requires `platform:update:platform` - admins).
@@ -28,9 +35,13 @@ pub async fn get_platform(State(state): State<AppState>) -> ApiResult<Json<Platf
     patch,
     path = "/platform",
     tag = "platform",
+    params(("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412")),
     request_body = UpdatePlatformRequest,
     responses(
-        (status = 200, description = "Updated", body = Platform),
+        (status = 200, description = "Updated", body = Platform,
+         headers(("ETag" = String, description = "Quoted new version"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "Missing permission", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -38,11 +49,13 @@ pub async fn get_platform(State(state): State<AppState>) -> ApiResult<Json<Platf
 pub async fn update_platform(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<Platform>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     ab_domain::catalog::PlatformService::require_update(&actor)?;
     let request = ValidJson::<UpdatePlatformRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Platform, &headers).await?;
     let platform = state
         .platform
         .update(
@@ -58,5 +71,6 @@ pub async fn update_platform(
             request.thumbnail_upload_id,
         )
         .await?;
-    Ok(Json(platform.into()))
+    let platform = Platform::for_actor(platform, &actor);
+    Ok(with_etag(StatusCode::OK, platform.version, platform))
 }

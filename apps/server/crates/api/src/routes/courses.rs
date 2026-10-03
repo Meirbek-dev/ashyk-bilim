@@ -1,9 +1,11 @@
 use ab_core::id::{CourseId, CourseUpdateId, UserId};
+use ab_db::versions::Versioned;
 use ab_domain::catalog::contributors::Target;
 use ab_domain::catalog::courses::{CourseChanges, ListParams};
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 
 use crate::detach::detached;
 use crate::dto::courses::{
@@ -13,14 +15,18 @@ use crate::dto::courses::{
     EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
+use crate::extract::{
+    CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent, require_if_match, with_etag,
+};
 use crate::state::AppState;
 
-/// Create a course (requires `course:create:platform`).
+/// Create a course (requires `course:create:platform`). Honours
+/// `Idempotency-Key` (a retry replays the 201 instead of a second course).
 #[utoipa::path(
     post,
     path = "/courses",
     tag = "courses",
+    params(("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key")),
     request_body = CreateCourseRequest,
     responses(
         (status = 201, description = "Created", body = Course),
@@ -31,22 +37,33 @@ use crate::state::AppState;
 pub async fn create_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<Course>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     ab_domain::catalog::CoursesService::require_create(&actor)?;
     let request = ValidJson::<CreateCourseRequest>::parse(&body)?;
-    let course = state
-        .courses
-        .create(
-            &actor,
-            &request.name,
-            request.description.as_deref().unwrap_or(""),
-            request.about.as_deref().unwrap_or(""),
-            request.tags.unwrap_or_default(),
-        )
-        .await?;
-    Ok((StatusCode::CREATED, Json(Course::for_actor(course, &actor))))
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        "course",
+        &headers,
+        &body,
+        move || async move {
+            let course = state
+                .courses
+                .create(
+                    &actor,
+                    &request.name,
+                    request.description.as_deref().unwrap_or(""),
+                    request.about.as_deref().unwrap_or(""),
+                    request.tags.unwrap_or_default(),
+                )
+                .await?;
+            Ok((StatusCode::CREATED, Course::for_actor(course, &actor)))
+        },
+    )
+    .await
 }
 
 /// Course listing.
@@ -184,17 +201,27 @@ pub async fn list_contributors(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<Contributor>>> {
     let rows = state.courses.list_contributors(&actor, id).await?;
-    Ok(Json(rows.into_iter().map(Into::into).collect()))
+    let course = state.courses.get(&actor, id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|row| Contributor::for_actor(row, &actor, &course))
+            .collect(),
+    ))
 }
 
 /// Add an active contributor by `user_id` or `username` (creator, active
 /// maintainer, or `course:manage:platform`). 409 `conflict` when the user
 /// is already on the roster (or is the creator).
+///
+/// Honours `Idempotency-Key`.
 #[utoipa::path(
     post,
     path = "/courses/{course_id}/contributors",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
     request_body = AddContributorRequest,
     responses(
         (status = 201, description = "Added", body = Contributor),
@@ -210,8 +237,9 @@ pub async fn add_contributor(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<Contributor>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.courses.require_roster_manager(&actor, id).await?;
     let request = ValidJson::<AddContributorRequest>::parse(&body)?;
@@ -227,19 +255,31 @@ pub async fn add_contributor(
             .into());
         }
     };
-    // Roster insert → BUG-303 access sweep outlive the connection (BUG-305).
-    detached(async move {
-        let row = state
-            .courses
-            .add_contributor(
-                &actor,
-                id,
-                target,
-                request.role.as_deref().unwrap_or("contributor"),
-            )
-            .await?;
-        Ok((StatusCode::CREATED, Json(row.into())))
-    })
+    // Roster insert → BUG-303 access sweep outlive the connection (BUG-305):
+    // `idempotent` runs the action on its own task.
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("contributor:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let row = state
+                .courses
+                .add_contributor(
+                    &actor,
+                    id,
+                    target,
+                    request.role.as_deref().unwrap_or("contributor"),
+                )
+                .await?;
+            let course = state.courses.get(&actor, id).await?;
+            Ok((
+                StatusCode::CREATED,
+                Contributor::for_actor(row, &actor, &course),
+            ))
+        },
+    )
     .await
 }
 
@@ -252,10 +292,13 @@ pub async fn add_contributor(
     params(
         ("course_id" = CourseId, Path, description = "Course id"),
         ("user_id" = UserId, Path, description = "Contributor user id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale → 412"),
     ),
     request_body = UpdateContributorRequest,
     responses(
         (status = 200, description = "Updated", body = Contributor),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No roster access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Not on the roster", body = Problem,
@@ -266,11 +309,13 @@ pub async fn update_contributor(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(CourseId, UserId)>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<Contributor>> {
     // UX-311: permission before the body.
     state.courses.require_roster_manager(&actor, id).await?;
     let request = ValidJson::<UpdateContributorRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Contributor(id, user_id), &headers).await?;
     // Roster write → member re-projection outlive the connection (BUG-291).
     detached(async move {
         let row = state
@@ -283,7 +328,8 @@ pub async fn update_contributor(
                 request.status.as_deref(),
             )
             .await?;
-        Ok(Json(row.into()))
+        let course = state.courses.get(&actor, id).await?;
+        Ok(Json(Contributor::for_actor(row, &actor, &course)))
     })
     .await
 }
@@ -343,7 +389,11 @@ pub async fn apply_contributor(
     Path(id): Path<CourseId>,
 ) -> ApiResult<(StatusCode, Json<Contributor>)> {
     let row = state.courses.apply_contributor(&actor, id).await?;
-    Ok((StatusCode::CREATED, Json(row.into())))
+    let course = state.courses.get(&actor, id).await?;
+    Ok((
+        StatusCode::CREATED,
+        Json(Contributor::for_actor(row, &actor, &course)),
+    ))
 }
 
 /// One course (404 for private courses the caller cannot see).
@@ -353,7 +403,8 @@ pub async fn apply_contributor(
     tag = "courses",
     params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
-        (status = 200, description = "Course", body = Course),
+        (status = 200, description = "Course", body = Course,
+         headers(("ETag" = String, description = "Quoted `version`"))),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -362,11 +413,9 @@ pub async fn get_course(
     State(state): State<AppState>,
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
-) -> ApiResult<Json<Course>> {
-    Ok(Json(Course::for_actor(
-        state.courses.get(&actor, id).await?,
-        &actor,
-    )))
+) -> ApiResult<Response> {
+    let course = Course::for_actor(state.courses.get(&actor, id).await?, &actor);
+    Ok(with_etag(StatusCode::OK, course.version, course))
 }
 
 /// Partial update (creator with `course:update:own` or platform updaters).
@@ -374,10 +423,16 @@ pub async fn get_course(
     patch,
     path = "/courses/{course_id}",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale â†’ 412"),
+    ),
     request_body = UpdateCourseRequest,
     responses(
-        (status = 200, description = "Updated", body = Course),
+        (status = 200, description = "Updated", body = Course,
+         headers(("ETag" = String, description = "Quoted new version"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -388,11 +443,13 @@ pub async fn update_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<Course>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.courses.require_writable(&actor, id).await?;
     let request = ValidJson::<UpdateCourseRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Course(id), &headers).await?;
     let course = state
         .courses
         .update(
@@ -411,7 +468,8 @@ pub async fn update_course(
             },
         )
         .await?;
-    Ok(Json(Course::for_actor(course, &actor)))
+    let course = Course::for_actor(course, &actor);
+    Ok(with_etag(StatusCode::OK, course.version, course))
 }
 
 /// Lifecycle: `publish` / `unpublish` (course write access, readiness
@@ -424,10 +482,16 @@ pub async fn update_course(
     post,
     path = "/courses/{course_id}/lifecycle",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale â†’ 412"),
+    ),
     request_body = CourseLifecycleRequest,
     responses(
-        (status = 200, description = "Lifecycle changed", body = Course),
+        (status = 200, description = "Lifecycle changed", body = Course,
+         headers(("ETag" = String, description = "Quoted new version"))),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No write / roster access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -442,11 +506,13 @@ pub async fn course_lifecycle(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<Course>> {
+) -> ApiResult<Response> {
     // UX-311: visibility before the body; the action picks its gate.
     state.courses.get(&actor, id).await?;
     let request = ValidJson::<CourseLifecycleRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Course(id), &headers).await?;
     let course = match request.action.as_str() {
         "archive" => state.courses.archive(&actor, id).await?,
         "restore" => state.courses.restore(&actor, id).await?,
@@ -460,7 +526,8 @@ pub async fn course_lifecycle(
             .await?
         }
     };
-    Ok(Json(Course::for_actor(course, &actor)))
+    let course = Course::for_actor(course, &actor);
+    Ok(with_etag(StatusCode::OK, course.version, course))
 }
 
 /// What archiving the course would freeze - the numbers for the
@@ -515,6 +582,68 @@ pub async fn delete_course(
     .await
 }
 
+/// Announcements as keyset pages (S-05; `GET .../updates` stays the full list).
+#[utoipa::path(
+    get,
+    path = "/courses/{course_id}/updates/page",
+    tag = "courses",
+    params(("course_id" = CourseId, Path, description = "Course id"), crate::dto::KeysetQuery),
+    responses(
+        (status = 200, description = "Page of announcements", body = crate::dto::courses::CourseUpdatePage),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn list_course_updates_page(
+    State(state): State<AppState>,
+    MaybeActor(actor): MaybeActor,
+    Path(id): Path<CourseId>,
+    Query(query): Query<crate::dto::KeysetQuery>,
+) -> ApiResult<Json<crate::dto::courses::CourseUpdatePage>> {
+    let updates = state.courses.list_updates(&actor, id).await?;
+    let actions = update_actions(&state, &actor, id).await?;
+    let all = updates
+        .into_iter()
+        .map(|u| CourseUpdate::new(u, actions.clone()))
+        .collect();
+    let (items, next_cursor) = query.page(all, |u| u.id.to_string())?;
+    Ok(Json(crate::dto::courses::CourseUpdatePage {
+        items,
+        next_cursor,
+    }))
+}
+
+/// The roster as keyset pages (S-05; `GET .../contributors` stays the full list).
+#[utoipa::path(
+    get,
+    path = "/courses/{course_id}/contributors/page",
+    tag = "courses",
+    params(("course_id" = CourseId, Path, description = "Course id"), crate::dto::KeysetQuery),
+    responses(
+        (status = 200, description = "Page of the roster", body = crate::dto::courses::ContributorPage),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn list_contributors_page(
+    State(state): State<AppState>,
+    MaybeActor(actor): MaybeActor,
+    Path(id): Path<CourseId>,
+    Query(query): Query<crate::dto::KeysetQuery>,
+) -> ApiResult<Json<crate::dto::courses::ContributorPage>> {
+    let rows = state.courses.list_contributors(&actor, id).await?;
+    let course = state.courses.get(&actor, id).await?;
+    let all = rows
+        .into_iter()
+        .map(|row| Contributor::for_actor(row, &actor, &course))
+        .collect();
+    let (items, next_cursor) = query.page(all, |c| c.user_id.to_string())?;
+    Ok(Json(crate::dto::courses::ContributorPage {
+        items,
+        next_cursor,
+    }))
+}
+
 /// Course announcements, newest first (read follows course visibility).
 #[utoipa::path(
     get,
@@ -533,15 +662,36 @@ pub async fn list_course_updates(
     Path(id): Path<CourseId>,
 ) -> ApiResult<Json<Vec<CourseUpdate>>> {
     let updates = state.courses.list_updates(&actor, id).await?;
-    Ok(Json(updates.into_iter().map(Into::into).collect()))
+    let actions = update_actions(&state, &actor, id).await?;
+    Ok(Json(
+        updates
+            .into_iter()
+            .map(|u| CourseUpdate::new(u, actions.clone()))
+            .collect(),
+    ))
 }
 
-/// Post an announcement (course write access).
+/// The caller's announcement actions on a course they can read.
+async fn update_actions(
+    state: &AppState,
+    actor: &ab_domain::identity::Actor,
+    course_id: CourseId,
+) -> ApiResult<Vec<ab_domain::catalog::courses::CourseUpdateAction>> {
+    let course = state.courses.get(actor, course_id).await?;
+    Ok(ab_domain::catalog::CoursesService::update_actions(
+        actor, &course,
+    ))
+}
+
+/// Post an announcement (course write access). Honours `Idempotency-Key`.
 #[utoipa::path(
     post,
     path = "/courses/{course_id}/updates",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(
+        ("course_id" = CourseId, Path, description = "Course id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
     request_body = CreateCourseUpdateRequest,
     responses(
         (status = 201, description = "Created", body = CourseUpdate),
@@ -553,16 +703,28 @@ pub async fn create_course_update(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<CourseUpdate>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.courses.require_writable(&actor, id).await?;
     let request = ValidJson::<CreateCourseUpdateRequest>::parse(&body)?;
-    let update = state
-        .courses
-        .create_update(&actor, id, &request.title, &request.content)
-        .await?;
-    Ok((StatusCode::CREATED, Json(update.into())))
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("course-update:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let update = state
+                .courses
+                .create_update(&actor, id, &request.title, &request.content)
+                .await?;
+            let actions = update_actions(&state, &actor, id).await?;
+            Ok((StatusCode::CREATED, CourseUpdate::new(update, actions)))
+        },
+    )
+    .await
 }
 
 /// Edit an announcement (course write access).
@@ -570,10 +732,15 @@ pub async fn create_course_update(
     patch,
     path = "/course-updates/{update_id}",
     tag = "courses",
-    params(("update_id" = CourseUpdateId, Path, description = "Course update id")),
+    params(
+        ("update_id" = CourseUpdateId, Path, description = "Course update id"),
+        ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
+    ),
     request_body = EditCourseUpdateRequest,
     responses(
         (status = 200, description = "Updated", body = CourseUpdate),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -582,11 +749,13 @@ pub async fn edit_course_update(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseUpdateId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<CourseUpdate>> {
     // UX-311: permission before the body.
     state.courses.require_writable_update(&actor, id).await?;
     let request = ValidJson::<EditCourseUpdateRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::CourseUpdate(id), &headers).await?;
     let update = state
         .courses
         .edit_update(
@@ -596,7 +765,8 @@ pub async fn edit_course_update(
             request.content.as_deref(),
         )
         .await?;
-    Ok(Json(update.into()))
+    let actions = update_actions(&state, &actor, update.course_id).await?;
+    Ok(Json(CourseUpdate::new(update, actions)))
 }
 
 /// Delete an announcement (course write access).

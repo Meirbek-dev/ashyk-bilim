@@ -14,9 +14,12 @@ use crate::dto::assessments::{
     UpdateAssessmentRequest, UpdateItemRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson};
+use crate::extract::{
+    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, with_etag,
+};
 use crate::routes::curriculum::if_match;
 use crate::state::AppState;
+use ab_db::versions::Versioned;
 
 /// The access view with an `ETag` carrying its version (UX-154), echoed
 /// back as `If-Match` by the access tab.
@@ -35,6 +38,7 @@ fn access_with_etag(view: ab_domain::assessments::access::AccessView) -> Respons
 /// item.
 #[utoipa::path(
     post, path = "/assessments", tag = "assessments",
+    params(("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key")),
     request_body = CreateAssessmentRequest,
     responses(
         (status = 201, description = "Created (draft)", body = AssessmentDetail),
@@ -47,32 +51,48 @@ fn access_with_etag(view: ab_domain::assessments::access::AccessView) -> Respons
 pub async fn create_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<AssessmentDetail>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.assessments.require_some_authoring(&actor).await?;
     let request = ValidJson::<CreateAssessmentRequest>::parse(&body)?;
-    let detail = state
-        .assessments
-        .create(
-            &actor,
-            CreateAssessment {
-                chapter_id: request.chapter_id,
-                kind: request.kind,
-                title: &request.title,
-                description: request.description.as_deref().unwrap_or(""),
-                weight: request.weight.unwrap_or(1.0),
-                grading_type: request
-                    .grading_type
-                    .unwrap_or(ab_core::assessments::GradingType::Percentage),
-                policy: request.policy.map(Into::into),
-            },
-        )
-        .await?;
-    Ok((
-        StatusCode::CREATED,
-        Json(detail_view(&state, &actor, detail).await?),
-    ))
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        "assessment",
+        &headers,
+        &body,
+        move || async move {
+            let detail = state
+                .assessments
+                .create(
+                    &actor,
+                    CreateAssessment {
+                        chapter_id: request.chapter_id,
+                        kind: request.kind,
+                        title: &request.title,
+                        description: request.description.as_deref().unwrap_or(""),
+                        weight: request.weight.unwrap_or(1.0),
+                        grading_type: request
+                            .grading_type
+                            .unwrap_or(ab_core::assessments::GradingType::Percentage),
+                        policy: request.policy.map(Into::into),
+                    },
+                )
+                .await?;
+            Ok((
+                StatusCode::CREATED,
+                detail_view(&state, &actor, detail).await?,
+            ))
+        },
+    )
+    .await
+}
+
+/// The detail with its `version` as `ETag`.
+fn detail_with_etag(detail: AssessmentDetail) -> Response {
+    with_etag(StatusCode::OK, detail.assessment.version, detail)
 }
 
 /// Full assessment with items and policy. Authors always; learners only
@@ -81,7 +101,8 @@ pub async fn create_assessment(
     get, path = "/assessments/{assessment_id}", tag = "assessments",
     params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
-        (status = 200, description = "Assessment", body = AssessmentDetail),
+        (status = 200, description = "Assessment", body = AssessmentDetail,
+         headers(("ETag" = String, description = "Quoted `version`"))),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -90,9 +111,9 @@ pub async fn get_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
-) -> ApiResult<Json<AssessmentDetail>> {
+) -> ApiResult<Response> {
     let detail = state.assessments.get(&actor, id).await?;
-    Ok(Json(detail_view(&state, &actor, detail).await?))
+    Ok(detail_with_etag(detail_view(&state, &actor, detail).await?))
 }
 
 /// The assessment behind an activity (same access rules as by id).
@@ -138,10 +159,15 @@ pub async fn list_course_assessments(
 /// read-only; a published one with submissions must be unpublished first.
 #[utoipa::path(
     patch, path = "/assessments/{assessment_id}", tag = "assessments",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = UpdateAssessmentRequest,
     responses(
         (status = 200, description = "Updated", body = AssessmentDetail),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 409, description = "Read-only in this state", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -150,11 +176,13 @@ pub async fn update_assessment(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<AssessmentDetail>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.assessments.require_authorable(&actor, id).await?;
     let request = ValidJson::<UpdateAssessmentRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(id), &headers).await?;
     let detail = state
         .assessments
         .update(
@@ -168,16 +196,21 @@ pub async fn update_assessment(
             },
         )
         .await?;
-    Ok(Json(detail_view(&state, &actor, detail).await?))
+    Ok(detail_with_etag(detail_view(&state, &actor, detail).await?))
 }
 
 /// Replace the whole policy block (bumps `policy_version`).
 #[utoipa::path(
     put, path = "/assessments/{assessment_id}/policy", tag = "assessments",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = Policy,
     responses(
         (status = 200, description = "Updated", body = AssessmentDetail),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 422, description = "Out of range", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -186,18 +219,20 @@ pub async fn set_policy(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<AssessmentDetail>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.assessments.require_authorable(&actor, id).await?;
     let request = ValidJson::<Policy>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(id), &headers).await?;
     // Detached (BUG-313): the post-commit lateness settle outlives a hang-up.
     detached(async move {
         let detail = state
             .assessments
             .set_policy(&actor, id, request.into())
             .await?;
-        Ok(Json(detail_view(&state, &actor, detail).await?))
+        Ok(detail_with_etag(detail_view(&state, &actor, detail).await?))
     })
     .await
 }
@@ -210,10 +245,15 @@ pub async fn set_policy(
 /// the issues as field errors); scheduling needs a future time.
 #[utoipa::path(
     post, path = "/assessments/{assessment_id}/lifecycle", tag = "assessments",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
+        ("If-Match" = Option<i32>, Header, description = "Assessment `version`; stale → 412 (without it nothing changes)"),
+    ),
     request_body = LifecycleRequest,
     responses(
         (status = 200, description = "Transitioned", body = AssessmentDetail),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 409, description = "Transition not allowed", body = Problem,
          content_type = "application/problem+json"),
         (status = 422, description = "Not ready / bad schedule", body = Problem,
@@ -224,11 +264,13 @@ pub async fn lifecycle(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<Json<AssessmentDetail>> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.assessments.require_publishable(&actor, id).await?;
     let request = ValidJson::<LifecycleRequest>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::Assessment(id), &headers).await?;
     // BUG-232: the projection and audit row after the commit must not die
     // with the socket.
     detached(async move {
@@ -242,7 +284,7 @@ pub async fn lifecycle(
                 request.note.as_deref(),
             )
             .await?;
-        Ok(Json(detail_view(&state, &actor, detail).await?))
+        Ok(detail_with_etag(detail_view(&state, &actor, detail).await?))
     })
     .await
 }

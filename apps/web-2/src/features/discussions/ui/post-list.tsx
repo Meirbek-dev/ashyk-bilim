@@ -6,13 +6,14 @@ import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 
 import { postsOptions } from '../queries'
-import { PostItem } from './post-item'
-import { Thread } from './thread'
+import { LinkedThread } from './linked-thread'
+import { PostRow } from './post-row'
 
 /** The course's posts, newest first, by keyset "Show more"; the open thread unfolds under its post. */
 export function PostList({ courseId, thread }: { courseId: CourseId; thread: string | undefined }) {
   const query = useSuspenseInfiniteQuery(postsOptions(courseId))
   const posts = query.data.pages.flatMap(page => page.items)
+  const linked = thread && !posts.some(post => post.id === thread) ? thread : null
   return (
     <ListState
       pending={false}
@@ -23,15 +24,10 @@ export function PostList({ courseId, thread }: { courseId: CourseId; thread: str
       onRetry={() => void query.refetch()}
     >
       <ul className="flex flex-col gap-3">
-        {posts.map(post => {
-          const open = post.id === thread && post.status === 'active'
-          return (
-            <li key={post.id} className="flex flex-col gap-4 rounded-lg border bg-card p-4 text-card-foreground">
-              <PostItem item={post} open={open} />
-              {open ? <Thread post={post} /> : null}
-            </li>
-          )
-        })}
+        {linked ? <LinkedThread courseId={courseId} id={linked} /> : null}
+        {posts.map(post => (
+          <PostRow key={post.id} post={post} open={post.id === thread && post.status === 'active'} />
+        ))}
       </ul>
       <ShowMore
         hasMore={query.hasNextPage}

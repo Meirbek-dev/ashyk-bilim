@@ -2003,3 +2003,45 @@ status code changed (one new 422: a malformed `GET /search` `cursor`).
   and `GET /users/{username}/courses` items carry `authors` and the caller's
   `progress`; `GET /search` `cursor` / `next_cursor` (an offset shared by the
   three sections).
+
+## Concurrency, pagination and the stage 2 server gaps (2026-10-03, stage 2 S-04/S-05, L-3)
+
+Additive only until cutover: nothing removed or renamed, no status code of a
+request valid today changed. The dual paths are listed for phase 9.
+
+- **`version` by trigger** (migration `20261003000002`): `bump_version()`
+  increments `version` on any real change (a no-op UPDATE does not count; a
+  statement that sets `version` itself is left alone) on courses, chapters,
+  course updates, roster rows, certifications, usergroups, roles, platforms,
+  assessments. Replaces "bump in each UPDATE" (collections, activities keep
+  theirs): no write path can forget it. A chapter move renumbers siblings,
+  so their versions move too.
+- **`If-Match` is checked before the write, not inside it** (`require_if_match`,
+  after the permission gate so a 412 reveals nothing a 403/404 hides). A save
+  landing in the milliseconds between check and UPDATE is not caught -
+  accepted for human two-tab edits (`ponytail:` note in `extract.rs`).
+- **Assessments**: `If-Match` → 412 on the assessment `version`; without it
+  the old 409s stay. The submission draft save keeps its 409 for a stale
+  `draft_version` (the old web always sends `If-Match` there, so no request
+  shape tells the clients apart) - flip it in phase 9.
+- **`Prefer: return=representation`** instead of 204 → 200: the old web's
+  generated client rejects a non-empty body on void operations
+  (`voidParser`), so the new behaviour is opt-in. Trail writes keep answering
+  `Trail`; the representation is its new `learner_state` field.
+- **Pagination**: bare-array lists get `/page` siblings (`{items,
+  next_cursor}`) instead of a response shape that depends on the query;
+  `ab_core::page_after` pages them in memory. `GET /trail` and the
+  leaderboard page in place (`next_cursor` field).
+- **Guests**: `GET /courses/{id}/learner-state` and the discussion list answer
+  anonymous callers (anonymous state; an empty page) instead of 401 - the old
+  web never calls them without a session.
+- **`?lang=`**: a middleware turns it into `Accept-Language` and strips it from
+  the query (strict query DTOs never see it).
+- **Not changed**: an unknown `cohort_ids` stays 422 (BUG-121, a valid request
+  is unaffected either way; the web drops ids not in `cohort_options`).
+- **Auth throttles** are config (`AB__AUTH__LIMITS__*`, AGENTS.md); production
+  refuses values above the defaults.
+- **`code_enum!`** takes its wire string as `tt`: a `literal` fragment reached
+  utoipa's `serde(rename)` parser wrapped in an invisible group and the schema
+  listed the Rust names. A test pins every `code_enum!` schema to serde.
+

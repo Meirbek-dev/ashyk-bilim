@@ -39,6 +39,7 @@ use serde::{Deserialize, Serialize};
 
 pub const IDLE_TTL: Duration = Duration::from_hours(14 * 24);
 pub const ABSOLUTE_CAP: Duration = Duration::from_hours(90 * 24);
+/// The default live-session cap (`AB__AUTH__LIMITS__SESSIONS_PER_USER`).
 pub const MAX_SESSIONS_PER_USER: usize = 10;
 
 fn session_key(id: &str) -> String {
@@ -170,6 +171,7 @@ pub struct NewSession {
 pub struct SessionStore {
     client: redis::Client,
     redis: ConnectionManager,
+    max_sessions: usize,
 }
 
 impl SessionStore {
@@ -192,7 +194,18 @@ impl SessionStore {
             .get_connection_manager()
             .await
             .map_err(|e| Error::internal("connecting to redis", e))?;
-        Ok(Self { client, redis })
+        Ok(Self {
+            client,
+            redis,
+            max_sessions: MAX_SESSIONS_PER_USER,
+        })
+    }
+
+    /// Override the live-session cap (config `auth.limits.sessions_per_user`).
+    #[must_use]
+    pub const fn with_max_sessions(mut self, max_sessions: usize) -> Self {
+        self.max_sessions = max_sessions;
+        self
     }
 
     /// The user's current epoch - read it before the checks a login rests on,
@@ -221,7 +234,7 @@ impl SessionStore {
     /// the user's epoch moved since `new.epoch` was read (a mutation landed
     /// mid-login - the caller re-reads the account and refuses as a fresh
     /// login would). Prunes dead registry ids, then evicts the oldest live
-    /// sessions beyond [`MAX_SESSIONS_PER_USER`].
+    /// sessions beyond the cap ([`MAX_SESSIONS_PER_USER`] by default).
     pub async fn create(&self, new: NewSession) -> Result<Option<String>> {
         // 256 bits of randomness; the id never appears in logs.
         let id = format!(
@@ -264,7 +277,7 @@ impl SessionStore {
                 now_unix_millis()
                     .saturating_sub(i64::try_from(ABSOLUTE_CAP.as_millis()).unwrap_or(i64::MAX)),
             )
-            .arg(MAX_SESSIONS_PER_USER)
+            .arg(self.max_sessions)
             .invoke_async(&mut conn)
             .await
             .map_err(|e| Error::internal("storing session", e))?;

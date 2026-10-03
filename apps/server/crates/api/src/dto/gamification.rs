@@ -116,6 +116,9 @@ pub struct LeaderboardEntry {
 pub struct Leaderboard {
     pub entries: Vec<LeaderboardEntry>,
     pub total_participants: i64,
+    /// Keyset paging (`cursor` in, this out; `null` on the last page and
+    /// for `limit`/`offset` reads).
+    pub next_cursor: Option<String>,
 }
 
 impl From<domain::Leaderboard> for Leaderboard {
@@ -135,6 +138,7 @@ impl From<domain::Leaderboard> for Leaderboard {
                 })
                 .collect(),
             total_participants: l.total_participants,
+            next_cursor: None,
         }
     }
 }
@@ -164,7 +168,11 @@ impl From<domain::Dashboard> for Dashboard {
 pub struct LeaderboardQuery {
     /// 1..=100 (default 10).
     pub limit: Option<i64>,
+    /// Legacy paging; ignored when `cursor` is given.
     pub offset: Option<i64>,
+    /// Keyset paging: the previous page's `next_cursor` (an empty string
+    /// starts from the top).
+    pub cursor: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

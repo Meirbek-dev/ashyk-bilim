@@ -21,6 +21,17 @@ use crate::progress::ProgressProjector;
 pub const ROLES: &[&str] = &["maintainer", "contributor", "reporter"];
 pub const STATUSES: &[&str] = &["pending", "active", "inactive"];
 
+/// `Contributor.allowed_actions`: what the caller may do to one roster row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ContributorAction {
+    /// `PATCH /courses/{id}/contributors/{user_id}` (roster managers).
+    Update,
+    /// `DELETE` the row: roster managers, or the caller withdrawing their
+    /// own pending application.
+    Remove,
+}
+
 /// Who to add: by id, or by username (resolved case-insensitively).
 #[derive(Debug, Clone)]
 pub enum Target {
@@ -54,6 +65,27 @@ impl CoursesService {
         actor.has(perm(Action::Manage, Scope::Platform))
             || course.creator_id == Some(actor.user_id)
             || course.maintainer_ids.contains(&actor.user_id)
+    }
+
+    /// The gates of the roster writes, for one row (never on the creator).
+    #[must_use]
+    pub fn contributor_actions(
+        actor: &Actor,
+        course: &Course,
+        row: &Contributor,
+    ) -> Vec<ContributorAction> {
+        if course.archived_at.is_some() || course.creator_id == Some(row.user_id) {
+            return Vec::new();
+        }
+        let manager = Self::manages_roster(actor, course);
+        let withdraw = row.user_id == actor.user_id && row.status == "pending";
+        [
+            (ContributorAction::Update, manager),
+            (ContributorAction::Remove, manager || withdraw),
+        ]
+        .into_iter()
+        .filter_map(|(action, ok)| ok.then_some(action))
+        .collect()
     }
 
     fn not_creator(course: &Course, user_id: UserId) -> Result<()> {

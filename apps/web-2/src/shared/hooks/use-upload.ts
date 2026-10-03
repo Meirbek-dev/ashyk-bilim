@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
-import { checkUpload, upload, type UploadProblem, type UploadPurpose } from '#/shared/api/upload'
+import { checkUpload, upload, type UploadLimits, type UploadProblem, type UploadPurpose } from '#/shared/api/upload'
 import { presentError } from '#/shared/i18n/errors'
 
 const MB = 1024 * 1024
@@ -14,9 +14,10 @@ const problemText = (problem: UploadProblem): string =>
 /**
  * One file through `shared/api/upload.ts` with its state: `start(file)` checks the purpose's limits, uploads and
  * resolves with the finalized upload (or null; `error` then says why). `progress` is 0..1 while uploading.
+ * `limits`: the narrower rules of the resource the file is for (`UploadLimits`).
  * The file input uses it; the editor calls it for pasted images (`clipboardImage` from `#/shared/api/upload`).
  */
-export function useUpload(purpose: UploadPurpose) {
+export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   const [progress, setProgress] = useState<number | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const mutation = useMutation({
@@ -25,7 +26,7 @@ export function useUpload(purpose: UploadPurpose) {
   })
 
   async function start(file: File): Promise<FinalizedUpload | null> {
-    const issue = checkUpload(file, purpose)
+    const issue = checkUpload(file, purpose, limits)
     setProblem(issue ? problemText(issue) : null)
     mutation.reset()
     if (issue) return null

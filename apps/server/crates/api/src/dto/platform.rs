@@ -1,3 +1,4 @@
+use ab_domain::identity::Actor;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -11,11 +12,17 @@ pub struct Platform {
     /// Public-bucket storage keys (served via the CDN /content route).
     pub logo_key: Option<String>,
     pub thumbnail_key: Option<String>,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.
+    pub version: i32,
+    /// What the caller may do to the settings (empty for anonymous readers).
+    pub allowed_actions: Vec<ab_domain::catalog::platform::PlatformAction>,
 }
 
-impl From<ab_domain::catalog::platform::Platform> for Platform {
-    fn from(p: ab_domain::catalog::platform::Platform) -> Self {
+impl Platform {
+    pub fn for_actor(p: ab_domain::catalog::platform::Platform, actor: &Actor) -> Self {
         Self {
+            allowed_actions: ab_domain::catalog::PlatformService::allowed_actions(actor),
+            version: p.version,
             name: p.name,
             description: p.description,
             about: p.about,

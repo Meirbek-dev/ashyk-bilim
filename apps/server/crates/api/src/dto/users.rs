@@ -211,6 +211,14 @@ pub struct AdminUserPage {
 pub struct AdminUserListQuery {
     /// Substring filter over username/display name/email/organization.
     pub q: Option<String>,
+    /// `newest` (default) or `name`.
+    #[schema(value_type = Option<crate::dto::enums::AdminUserSort>)]
+    pub sort: Option<String>,
+    /// Only `active` or only `disabled` accounts.
+    #[schema(value_type = Option<crate::dto::enums::UserStatus>)]
+    pub status: Option<String>,
+    /// Only holders of this role slug.
+    pub role: Option<String>,
     pub cursor: Option<UserId>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,

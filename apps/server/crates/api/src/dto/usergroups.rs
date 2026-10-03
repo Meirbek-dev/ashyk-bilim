@@ -16,6 +16,9 @@ pub struct Usergroup {
     pub can_write: bool,
     /// What the caller may do to this group now.
     pub allowed_actions: Vec<ab_domain::identity::usergroups::UsergroupAction>,
+    /// Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of
+    /// `GET`. Membership and course links do not move it.
+    pub version: i32,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -30,6 +33,7 @@ impl Usergroup {
             description: g.description,
             creator_id: g.creator_id,
             member_count: g.member_count,
+            version: g.version,
             created_at_unix: g.created_at,
             updated_at_unix: g.updated_at,
         }
@@ -106,4 +110,11 @@ pub struct UsergroupListQuery {
     pub cursor: Option<UsergroupId>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,
+}
+
+/// Keyset page of group members.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UsergroupMemberPage {
+    pub items: Vec<UsergroupMember>,
+    pub next_cursor: Option<String>,
 }
