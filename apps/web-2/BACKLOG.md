@@ -68,6 +68,28 @@ Known red e2e for phase 7 (`reports/F-2.md`): analytics table container axe "scr
 32px overflow at 390px; B-ADM-07 (empty password now rejected by the generated schema); B-ACH-01/02 cold-dev timeouts.
 The CI e2e stand runs as production and cannot relax auth limits: e2e needs one login per worker (storage state).
 
+Server gaps for L-6 (from S-5.3, S-6.1, S-6.3; details in those reports): grader cannot read
+`GET /submissions/{id}/feedback`; no group filter in review queues/gradebook, gradebook has no search/status filter;
+file-submission queue lacks late filter, sort, counts, bulk publish/extend; no bulk-return; grading history only for
+quiz/exam/code; signed download URLs are not same-origin (inline PDF preview blocked); `CodeBody` hints; submission ->
+final run link and list of own runs; `feedback_code/params` untyped; reference-check per item with Idempotency-Key;
+`/code/languages` 503 without Judge0; AI: streaming endpoints typed as strings, feature switches read-only, quality
+report has no teacher verdict field, 8 AI operations without a consumer (delete per G-07); register-then-login 401 race.
+
+## Resume notes (session cut by the usage limit, 2026-10-03 late evening)
+
+- All feature slices of the URL map are built. Integration agent I-2 was merging 5.1, 5.2, 6.3, 5.3, 6.1, 3.8, 3.1 into
+  main (see `git log` for `merge: slice ...` commits and `<scratchpad>/reports/I-2.md`); it was running the full e2e
+  suite when the orchestrator stopped. Any `worktree-agent-*` branch still listed by `git branch` is NOT merged yet -
+  merge it with the recipe (union `project.inlang/settings.json`, regenerate, `route.ts` convention, verify, build).
+- Server L-5 (gaps from 5.1/5.2, S-11 link scheme, S-10 renames, D-01..D-03 commands, copy course) was running in the
+  main tree `apps/server` (uncommitted); report `reports/L-5.md`. After it: commit server, restart API + worker from
+  the new binary (`migrate` first), `bun run codegen` in web-2, fix fallout.
+- Then: L-6 (server gaps listed above), phase 7 hardening - flip `apiCoverage` and `underConstruction` to enforcing in
+  `gates/allowlist.json`, fix the red e2e list, replace `networkidle` waits, e2e one login per worker, G-14 corpus and
+  G-15 re-run, translation back-check, first push + CI (`web2-gates`, `web2-e2e` never ran on GitHub).
+- Nothing pushed.
+
 ## Server lane (sequential)
 
 | #    | Item                                              | Status |
@@ -107,9 +129,9 @@ The CI e2e stand runs as production and cannot relax auth limits: e2e needs one 
 | 4.3 | analytics (e2e red until the server enum casing fix lands)        | done   |
 | 5.1 | assessment studio                                                 | done (merge in progress, I-2) |
 | 5.2 | attempt                                                           | done (merge in progress, I-2) |
-| 5.3 | code arena                                                        | wip    |
+| 5.3 | code arena (CodeMirror)                                           | done (merge in progress, I-2) |
 | 5.4 | file submissions                                                  | done   |
-| 6.1 | grading, gradebook                                                | wip    |
+| 6.1 | grading, results, gradebook                                       | done (merge in progress, I-2) |
 | 6.2 | teach inbox                                                       | done   |
 | 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | done (merge in progress, I-2) |
 | 7   | hardening                                                         | todo   |

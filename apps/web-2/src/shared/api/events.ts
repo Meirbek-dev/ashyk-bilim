@@ -148,10 +148,32 @@ export function createEventStream(options: EventStreamOptions): EventStream {
  * The tab's stream (mounted once by the authed shell): each event invalidates its table keys and goes to `onEvent`;
  * a hidden tab closes the connection and a visible one resumes it. Returns the stop function.
  */
+/** A read that landed this recently already reflects an event that arrives now. */
+const FRESH_MS = 2000
+
 export function startEventStream(queryClient: QueryClient, onEvent: (event: UserEvent) => void): () => void {
-  // An event never cancels a read already in flight: that read is newer than the event.
-  const invalidate = (queryKey?: readonly unknown[]) =>
-    void queryClient.invalidateQueries(queryKey ? { queryKey } : {}, { cancelRefetch: false })
+  // An event never cancels a read already in flight, nor repeats one that landed after it or just before it: those
+  // already show the change. A write of this tab still in flight goes first: its own invalidation refetches, and the
+  // event (often its echo, sent before the write answers) then skips what that refetch brought.
+  // ponytail: receipt-time window, not server time (client clocks skew); a colleague's change racing a read that
+  // landed in the last FRESH_MS stays stale until the next event or focus.
+  const invalidate = (queryKey?: readonly unknown[]) => {
+    const before = Date.now() - FRESH_MS
+    const run = () =>
+      void queryClient.invalidateQueries(
+        { ...(queryKey ? { queryKey } : {}), predicate: query => query.state.dataUpdatedAt < before },
+        { cancelRefetch: false },
+      )
+    if (queryClient.isMutating() === 0) {
+      run()
+      return
+    }
+    const unsubscribe = queryClient.getMutationCache().subscribe(() => {
+      if (queryClient.isMutating() > 0) return
+      unsubscribe()
+      run()
+    })
+  }
   const stream = createEventStream({
     fetch: (url, init) => fetch(url, init),
     onEvent: event => {
