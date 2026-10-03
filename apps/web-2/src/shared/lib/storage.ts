@@ -21,6 +21,9 @@ export function storageItem<T>(key: StorageKey, schema: v.GenericSchema<T>, area
     set(value: T): void {
       store().setItem(key, JSON.stringify(value))
     },
+    remove(): void {
+      store().removeItem(key)
+    },
   }
 }
 
