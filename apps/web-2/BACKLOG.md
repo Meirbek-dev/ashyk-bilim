@@ -61,27 +61,12 @@ K-3 done (9069df9, dc7d159): the kit is stock shadcn `base-nova` in `shared/ui` 
 Local e2e: `sh <scratchpad>/clear-rate-limits.sh` clears API login throttles. Local API restart recipe: copy the debug
 binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see notes above).
 
-## Resume notes (session cut by the usage limit, 2026-10-03 ~17:30 local)
+B-1 (wip, main tree): entry bundle diet - initial JS hit 200.9 KB (limit 200); find structural causes (routes pulling
+feature index files, generated code, messages, shell) and bring it to <= 175 KB with an enforcing rule.
 
-- main = 6fcb110 (web adopted the L-3 contract; client regenerated and committed). Nothing pushed.
-- Running when cut (results stay on disk, uncommitted unless noted): server L-4 (S-08, S-06, S-07, S-09, S-13) in the
-  MAIN tree `apps/server`; worktree slices 5.1 assessment studio (`agent-a086fc3e54ce3f5a5`), 5.2 attempt
-  (`agent-a022fc42b40546119`), 5.4 file submissions (`agent-afd3931c0795451c4`), 6.3 AI (`agent-ab757a87d2543d0f7`).
-  Reports: `<scratchpad>/reports/{L-4,S-5.1,S-5.2,S-5.4,S-6.3}.md`.
-- Committed worktree waiting for merge: 6.2 teach inbox (`agent-a38c2ddff9adb459c`, 2e4ca0a).
-- Merge recipe: commit inside the worktree, `git merge --no-ff --no-commit <branch>` in main, union-resolve
-  `project.inlang/settings.json` (`<scratchpad>/resolve-inlang.py`), `bun install && bun run codegen`, fix type fallout,
-  `vp run verify`, `bun run build`, commit. If conflicts are in code, hand the merge to an integration agent.
-- After L-4 lands: commit server, copy the debug binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`,
-  restart `serve` (dot-source `<scratchpad>/api-env.ps1`, it now sets relaxed auth limits), regenerate the client.
-- Next: slices 5.3 code arena, 6.1 grading + gradebook, 3.1 home (needs S-09), 3.8 notifications + `events.ts`
-  (needs S-06/S-07), reset-password page (S-08), `/admin/ai` (in 6.3); server L-5 (S-10 renames, S-11 link scheme +
-  prefixless certificate URL, copy course) and D-01..D-03; phase 7.
-- Known red e2e to fix in phase 7 (from `reports/F-2.md`): analytics table container axe "scrollable-region-focusable";
-  `FileField` 32px overflow at 390px; B-ADM-07 expects an empty password to reach the server (schema now min 8);
-  B-ACH-01/02 5s timeouts on a cold `vp dev`.
-- The e2e stand cannot relax auth limits (it runs as production and config-check refuses) - e2e must use one login
-  per worker (storage state) or the stand needs a dedicated non-production environment name.
+Known red e2e for phase 7 (`reports/F-2.md`): analytics table container axe "scrollable-region-focusable"; `FileField`
+32px overflow at 390px; B-ADM-07 (empty password now rejected by the generated schema); B-ACH-01/02 cold-dev timeouts.
+The CI e2e stand runs as production and cannot relax auth limits: e2e needs one login per worker (storage state).
 
 ## Server lane (sequential)
 
@@ -125,9 +110,9 @@ binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see
 | 5.1 | assessment studio                                                 | wip    |
 | 5.2 | attempt                                                           | wip    |
 | 5.3 | code arena                                                        | todo   |
-| 5.4 | file submissions                                                  | wip    |
+| 5.4 | file submissions                                                  | done   |
 | 6.1 | grading, gradebook                                                | todo   |
-| 6.2 | teach inbox                                                       | wip    |
+| 6.2 | teach inbox                                                       | done   |
 | 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | wip    |
 | 7   | hardening                                                         | todo   |
 | 8   | cutover (needs owner: prod access, exam-free window)              | todo   |
