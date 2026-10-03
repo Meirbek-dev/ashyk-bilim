@@ -1,0 +1,41 @@
+{
+  "notifications_title": "Notifications",
+  "notifications_bell_unread": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Notifications: {count} unread",
+        "countPlural=other": "Notifications: {count} unread"
+      }
+    }
+  ],
+  "notifications_latest": "Latest notifications",
+  "notifications_all_link": "All notifications",
+  "notifications_mark_read": "Mark as read",
+  "notifications_mark_all": "Mark all as read",
+  "notifications_marked_all": "All notifications are read",
+  "notifications_empty": "No notifications yet",
+  "notifications_empty_unread": "No unread notifications",
+  "notifications_filter_label": "Which notifications to show",
+  "notifications_filter_all": "All",
+  "notifications_filter_unread": "Unread",
+  "notifications_new": "New",
+  "notifications_type_grade_published": "Grade published",
+  "notifications_type_submission_returned": "Submission returned",
+  "notifications_type_deadline_extended": "Deadline extended",
+  "notifications_type_deadline_approaching": "Deadline approaching",
+  "notifications_type_course_update": "Course update",
+  "notifications_type_discussion_reply": "Discussion reply",
+  "notifications_type_contributor_application": "Co-author application",
+  "notifications_text_activity": "“{activity}”, course “{course}”",
+  "notifications_text_score": "Grade: {score}",
+  "notifications_text_due": "Deadline: {date}",
+  "notifications_text_update": "“{title}”, course “{course}”",
+  "notifications_text_reply": "{author} replied in a discussion of the course “{course}”",
+  "notifications_text_application": "{applicant} wants to co-author the course “{course}”",
+  "notifications_xp_awarded": "{amount} XP earned",
+  "notifications_prefs_title": "What to send",
+  "notifications_prefs_hint": "Notifications arrive only in the app: the bell and the Notifications page.",
+  "notifications_prefs_saved": "Notification settings saved"
+}

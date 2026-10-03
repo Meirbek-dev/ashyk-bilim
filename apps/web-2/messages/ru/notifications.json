@@ -1,0 +1,43 @@
+{
+  "notifications_title": "Уведомления",
+  "notifications_bell_unread": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Уведомления: {count} непрочитанное",
+        "countPlural=few": "Уведомления: {count} непрочитанных",
+        "countPlural=many": "Уведомления: {count} непрочитанных",
+        "countPlural=other": "Уведомления: {count} непрочитанного"
+      }
+    }
+  ],
+  "notifications_latest": "Последние уведомления",
+  "notifications_all_link": "Все уведомления",
+  "notifications_mark_read": "Отметить прочитанным",
+  "notifications_mark_all": "Прочитать все",
+  "notifications_marked_all": "Все уведомления прочитаны",
+  "notifications_empty": "Уведомлений пока нет",
+  "notifications_empty_unread": "Непрочитанных уведомлений нет",
+  "notifications_filter_label": "Какие уведомления показать",
+  "notifications_filter_all": "Все",
+  "notifications_filter_unread": "Непрочитанные",
+  "notifications_new": "Новое",
+  "notifications_type_grade_published": "Оценка опубликована",
+  "notifications_type_submission_returned": "Работа возвращена",
+  "notifications_type_deadline_extended": "Срок продлён",
+  "notifications_type_deadline_approaching": "Срок приближается",
+  "notifications_type_course_update": "Объявление курса",
+  "notifications_type_discussion_reply": "Ответ в обсуждении",
+  "notifications_type_contributor_application": "Заявка соавтора",
+  "notifications_text_activity": "«{activity}», курс «{course}»",
+  "notifications_text_score": "Оценка: {score}",
+  "notifications_text_due": "Срок: {date}",
+  "notifications_text_update": "«{title}», курс «{course}»",
+  "notifications_text_reply": "{author} ответил(а) в обсуждении курса «{course}»",
+  "notifications_text_application": "{applicant} хочет стать соавтором курса «{course}»",
+  "notifications_xp_awarded": "Начислено {amount} XP",
+  "notifications_prefs_title": "Что присылать",
+  "notifications_prefs_hint": "Уведомления приходят только в приложение: на колокольчик и страницу «Уведомления».",
+  "notifications_prefs_saved": "Настройки уведомлений сохранены"
+}

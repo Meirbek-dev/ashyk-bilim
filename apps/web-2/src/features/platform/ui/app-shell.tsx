@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useMatches } from '@tanstack/react-router'
 
+import { useLiveEvents } from '#/features/notifications/route'
 import { shellWorkspace } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 
@@ -18,6 +19,8 @@ export function AppShell() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const focus = useMatches({ select: matches => matches.some(match => match.staticData.layout === 'focus') })
   const workspace = shellWorkspace(session, useLocation({ select: location => location.pathname }))
+  // The tab's event stream lives as long as the session, focus pages included (spec 7.7).
+  useLiveEvents(session?.user.id)
   if (focus) return <Outlet />
   return (
     <div className="flex min-h-dvh flex-col">

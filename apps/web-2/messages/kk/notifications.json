@@ -1,0 +1,41 @@
+{
+  "notifications_title": "Хабарландырулар",
+  "notifications_bell_unread": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Хабарландырулар: {count} оқылмаған",
+        "countPlural=other": "Хабарландырулар: {count} оқылмаған"
+      }
+    }
+  ],
+  "notifications_latest": "Соңғы хабарландырулар",
+  "notifications_all_link": "Барлық хабарландырулар",
+  "notifications_mark_read": "Оқылды деп белгілеу",
+  "notifications_mark_all": "Барлығын оқу",
+  "notifications_marked_all": "Барлық хабарландырулар оқылды",
+  "notifications_empty": "Әзірге хабарландырулар жоқ",
+  "notifications_empty_unread": "Оқылмаған хабарландырулар жоқ",
+  "notifications_filter_label": "Қандай хабарландыруларды көрсету",
+  "notifications_filter_all": "Барлығы",
+  "notifications_filter_unread": "Оқылмағандар",
+  "notifications_new": "Жаңа",
+  "notifications_type_grade_published": "Баға жарияланды",
+  "notifications_type_submission_returned": "Жұмыс қайтарылды",
+  "notifications_type_deadline_extended": "Мерзім ұзартылды",
+  "notifications_type_deadline_approaching": "Мерзім жақындап қалды",
+  "notifications_type_course_update": "Курс жаңартуы",
+  "notifications_type_discussion_reply": "Талқылаудағы жауап",
+  "notifications_type_contributor_application": "Қосалқы автор өтінімі",
+  "notifications_text_activity": "«{activity}», «{course}» курсы",
+  "notifications_text_score": "Баға: {score}",
+  "notifications_text_due": "Мерзімі: {date}",
+  "notifications_text_update": "«{title}», «{course}» курсы",
+  "notifications_text_reply": "{author} «{course}» курсының талқылауында жауап берді",
+  "notifications_text_application": "{applicant} «{course}» курсының қосалқы авторы болғысы келеді",
+  "notifications_xp_awarded": "{amount} XP есептелді",
+  "notifications_prefs_title": "Нені жіберу керек",
+  "notifications_prefs_hint": "Хабарландырулар тек қолданбаға келеді: қоңырауға және «Хабарландырулар» бетіне.",
+  "notifications_prefs_saved": "Хабарландыру баптаулары сақталды"
+}

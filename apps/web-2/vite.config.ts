@@ -198,7 +198,8 @@ const lint: OxlintConfig = {
       },
     },
     {
-      files: ['src/shared/api/query-client.ts'],
+      // events.ts: the event stream invalidates by its table "event -> keys" (spec 7.7).
+      files: ['src/shared/api/query-client.ts', 'src/shared/api/events.ts'],
       rules: { 'no-restricted-properties': restrictProperties('invalidateQueries') },
     },
     // The two link composites are the one place that renders <a> (routes through createLink, other URLs plainly).

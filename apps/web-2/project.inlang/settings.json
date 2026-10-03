@@ -27,7 +27,8 @@
       "./messages/{locale}/analytics.json",
       "./messages/{locale}/studio.json",
       "./messages/{locale}/inbox.json",
-      "./messages/{locale}/submission.json"
+      "./messages/{locale}/submission.json",
+      "./messages/{locale}/notifications.json"
     ]
   }
 }
