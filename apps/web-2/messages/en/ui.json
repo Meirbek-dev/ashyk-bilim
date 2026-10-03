@@ -21,5 +21,13 @@
   "ui_locale_name": "English",
   "ui_conflict_title": "Changed by someone else",
   "ui_conflict_text": "Someone saved it while you were editing. Your changes are kept.",
-  "ui_conflict_retry": "Reload and retry"
+  "ui_conflict_retry": "Reload and retry",
+  "ui_file_choose": "Choose file",
+  "ui_file_drop": "or drop it here",
+  "ui_file_uploading": "Uploading the file",
+  "ui_file_uploaded": "Uploaded: {name}",
+  "ui_file_too_large": "The file is larger than {mb} MB. Choose a smaller file.",
+  "ui_file_wrong_type": "This file type is not accepted. Choose another file.",
+  "ui_options_empty": "Nothing found",
+  "ui_option_remove": "Remove “{label}”"
 }

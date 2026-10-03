@@ -41,6 +41,17 @@ export function checkUpload(file: { size: number; type: string }, purpose: Uploa
   return null
 }
 
+/** The `accept` attribute of a file picker for this purpose ("" = any type). */
+export const uploadAccept = (purpose: UploadPurpose): string => uploadPolicy[purpose].mimes.join(',')
+
+/** The image of a paste (a screenshot, a copied picture), or null when the clipboard holds none. */
+export function clipboardImage(clipboard: DataTransfer | null): File | null {
+  for (const item of clipboard?.items ?? []) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) return item.getAsFile()
+  }
+  return null
+}
+
 type UploadOptions = { onProgress?: (fraction: number) => void; signal?: AbortSignal }
 
 /** PUT with upload progress: fetch has none on HTTP/1.1, so this is the one XMLHttpRequest of the app. */

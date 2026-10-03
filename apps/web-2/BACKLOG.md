@@ -22,7 +22,16 @@ Orchestration rules (not in the spec):
   `reports/L-1.md`. Restart from a fresh copy after each server lane step.
 
 Server gaps found by slices (feed into the server lane): collection cover field + upload purpose; `listCollections`
-`q`/`sort`; email links and Google error redirect still point at `/auth/...` (S-11).
+`q`/`sort`; email links and Google error redirect still point at `/auth/...` (S-11); `GET /courses` items lack
+author names (only ids) and the signed-in user's progress; `GET /search` has no cursor (50 per section max).
+
+BLOCKING for settings: `ProfileSection` is `allOf` of a variant with `additionalProperties: false` plus a separate
+`type` tag -> generated validator rejects every section (`GET/PATCH /users/me`, `GET /users/{username}` fail dev
+validation). `UserProfile` has no `version` (ETag only). `locale` accepts only `ru-RU`/`kk-KZ`/`en-US` (D-03).
+Dev storage: presigned `put_url` is `http://localhost:9002` -> blocked by CSP `connect-src 'self'` in `vp dev`;
+the API must presign against the web origin (vite proxies `/ab-public`, `/ab-private`).
+
+Kit follow-ups: vitest browser server uses a fixed port (63315) -> parallel worktree runs collide, make it dynamic; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
 
 ## Server lane (sequential)
 
@@ -55,11 +64,11 @@ Server gaps found by slices (feed into the server lane): collection cover field 
 | 1.7 | AGENTS.md final                                                   | todo   |
 | 2   | editor + markdown (wip, worktree); video, PDF, discussions (todo) | wip    |
 | 3.1 | home                                                              | todo   |
-| 3.2 | catalog, landing, search, command palette                         | wip    |
+| 3.2 | catalog, landing, search, command palette                         | done (worktree, merge pending K-2) |
 | 3.3 | course page                                                       | todo   |
 | 3.4 | learning, certificates                                            | todo   |
 | 3.5 | player                                                            | todo   |
-| 3.6 | settings, public profile                                          | wip    |
+| 3.6 | settings, public profile                                          | done (worktree, merge pending K-2) |
 | 3.7 | achievements                                                      | todo   |
 | 3.8 | notifications                                                     | todo   |
 | 4.1 | course studio                                                     | todo   |

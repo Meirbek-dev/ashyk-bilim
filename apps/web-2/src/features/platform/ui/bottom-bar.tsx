@@ -18,12 +18,12 @@ export function BottomBar({ session, workspace }: { session: SessionInfo; worksp
   return (
     <nav
       aria-label={m.platform_nav_label()}
-      className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch gap-1 border-t bg-sidebar px-2 py-1 text-sidebar-foreground lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch gap-1 border-t bg-sidebar px-2 py-0.5 text-sidebar-foreground lg:hidden"
     >
       {shown.map(section => (
         <Link key={section.to} variant="bar" to={section.to} activeOptions={{ exact: section.exact === true }}>
           <section.icon aria-hidden />
-          <span className="max-w-full truncate">{section.label()}</span>
+          <span className="line-clamp-2">{section.label()}</span>
         </Link>
       ))}
       {rest.length > 0 ? (

@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 import { safeImageUrl, safeUrl } from '../model/sanitize'
 import { CodeBlock } from './code-block'
 import { rehypeExternalLinks } from './external-links'
-import proseCss from './prose.css?url'
+import proseCss from '#/styles/prose.css?url'
 
 type Math = typeof import('./math')
 let math: Promise<Math> | null = null

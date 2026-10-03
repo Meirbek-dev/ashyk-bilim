@@ -8,7 +8,7 @@ export const MarkdownEditor = lazy(() =>
 
 /** The shared shiki highlighter (code blocks of the block editor too), loaded on first use. */
 export const loadHighlighter = () => import('./ui/shiki')
-export { default as proseCss } from './ui/prose.css?url'
+export { default as proseCss } from '#/styles/prose.css?url'
 
 export { markdownPlainText, markdownSummary } from './model/plain-text'
 export { hasRawHtml, safeImageUrl, safeUrl, sanitize } from './model/sanitize'

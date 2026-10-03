@@ -43,23 +43,26 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## One way to do each thing (lint and gates reject the alternatives)
 
-| Task            | The way                                                                       |
-| --------------- | ----------------------------------------------------------------------------- |
-| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`     |
-| Read            | route `loader: ensureQueryData(xOptions())` + `useSuspenseQuery(xOptions())`  |
-| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`       |
-| Query keys      | generated `xQueryKey()`; never literal arrays                                 |
-| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table) |
-| Action access   | `allowed_actions` from the API response; never roles or permission strings    |
-| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                  |
-| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`    |
-| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                 |
-| Dates, numbers  | `#/shared/i18n/format`                                                        |
-| Screens         | a template from `#/shared/ui/templates`; lists through `ListState`            |
-| UI elements     | `#/shared/ui`; colors and spacing only via tokens and the Tailwind scale      |
-| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`   |
-| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                  |
-| Memoization     | none: React Compiler                                                          |
+| Task            | The way                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`                              |
+| Read            | route `loader: ensureQueryData(xOptions())` + `useSuspenseQuery(xOptions())`                           |
+| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`                                |
+| Query keys      | generated `xQueryKey()`; never literal arrays                                                          |
+| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table)                          |
+| Action access   | `allowed_actions` from the API response; never roles or permission strings                             |
+| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                                           |
+| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`                             |
+| File upload     | `FileInput` (`purpose` sets types and cap) / `FileField`; pasted image: `useUpload` + `clipboardImage` |
+| Pick from list  | `Combobox` (multi, server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`     |
+| Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`        |
+| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                          |
+| Dates, numbers  | `#/shared/i18n/format`                                                                                 |
+| Screens         | a template from `#/shared/ui/templates`; lists through `ListState`                                     |
+| UI elements     | `#/shared/ui`; colors and spacing only via tokens and the Tailwind scale                               |
+| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                            |
+| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                           |
+| Memoization     | none: React Compiler                                                                                   |
 
 No suppressions: `oxlint-disable`, `@ts-expect-error`, `as any`, `test.skip`, TODO are errors unless
 listed in `gates/allowlist.json` with a reason (G-12).
@@ -76,6 +79,11 @@ listed in `gates/allowlist.json` with a reason (G-12).
 - A stub route has `component: UnderConstruction`. To build it: in that route file only, replace the component with
   the feature's (add `validateSearch`, `loader`, `head`), keep `staticData.title`. `bun gates/gates.ts
 under-construction` lists what is left; report-only until phase 7 (`gates/allowlist.json` `underConstruction`).
+- Before hydration (/login: ~140 ms, ~540 ms at 4x CPU) clicks do nothing: React cannot replay them until Start has
+  loaded the route's chunks and hydrated the root. An SSR page works natively until then: navigation is a `Link`
+  (a real `<a>`), a form keeps its fieldset disabled until `useHydrated()` (`features/auth/ui/auth-form.tsx`), and
+  e2e waits for an enabled control rather than retrying clicks. `FileField` / `MultiSelectField` are not bound
+  fields (they would put the combobox in every form's chunk): render them inside `form.AppField`.
 - Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
   signed-in). Set the slice's component there; an unset slot renders nothing. Menus in the shell load lazily.
 

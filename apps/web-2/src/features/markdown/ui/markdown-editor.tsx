@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 
 import { markdownSchema } from '../model/schema'
 import { MarkdownToolbar } from './markdown-toolbar'
-import proseCss from './prose.css?url'
+import proseCss from '#/styles/prose.css?url'
 
 type MarkdownEditorProps = {
   value: string

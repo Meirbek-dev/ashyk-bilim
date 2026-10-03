@@ -1,39 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 
+import { FakeStorage, json, SLOT } from './testing'
 import { upload } from './upload'
-
-const SLOT = { id: '0190a5d2-0000-7000-8000-000000000001', key: 'uploads/a.png', put_url: 'https://storage.test/put' }
-
-/** Storage's side of the PUT: records the request, reports progress, answers with `status`. */
-class FakeStorage extends EventTarget {
-  static last: FakeStorage | null = null
-  static status = 200
-  readonly upload = new EventTarget()
-  readonly headers = new Map<string, string>()
-  method = ''
-  url = ''
-  status = 0
-  open(method: string, url: string) {
-    this.method = method
-    this.url = url
-  }
-  setRequestHeader(name: string, value: string) {
-    this.headers.set(name, value)
-  }
-  abort() {
-    this.dispatchEvent(new Event('abort'))
-  }
-  send(body: Blob) {
-    FakeStorage.last = this
-    this.upload.dispatchEvent(
-      new ProgressEvent('progress', { lengthComputable: true, loaded: body.size / 2, total: body.size }),
-    )
-    this.status = FakeStorage.status
-    this.dispatchEvent(new Event('load'))
-  }
-}
-
-const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } })
 
 afterEach(() => {
   vi.unstubAllGlobals()

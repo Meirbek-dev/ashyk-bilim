@@ -21,5 +21,13 @@
   "ui_locale_name": "Қазақша",
   "ui_conflict_title": "Жазба өзгерді",
   "ui_conflict_text": "Сіз өңдеп жатқанда, оны басқа біреу сақтады. Енгізгеніңіз сақталды.",
-  "ui_conflict_retry": "Жаңартып, қайталау"
+  "ui_conflict_retry": "Жаңартып, қайталау",
+  "ui_file_choose": "Файлды таңдау",
+  "ui_file_drop": "немесе оны осында сүйреп әкеліңіз",
+  "ui_file_uploading": "Файл жүктелуде",
+  "ui_file_uploaded": "Жүктелді: {name}",
+  "ui_file_too_large": "Файл {mb} МБ-тан үлкен. Кішірек файл таңдаңыз.",
+  "ui_file_wrong_type": "Бұл түрдегі файл жарамайды. Басқа файл таңдаңыз.",
+  "ui_options_empty": "Ештеңе табылмады",
+  "ui_option_remove": "«{label}» алып тастау"
 }

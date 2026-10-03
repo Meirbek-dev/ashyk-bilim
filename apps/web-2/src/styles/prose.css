@@ -1,0 +1,167 @@
+/*
+ * Reading typography of rendered content: block documents, markdown, AI answers (one set, spec 7.10).
+ * Usage: class `ab-prose` on the content root + <link rel="stylesheet" href={proseCss} precedence="ab-prose" />
+ * (import proseCss from '#/styles/prose.css?url'), so the rules load with the first content view, not the shell.
+ * Sizes, weights and fonts come from the kit utilities (@apply), colors from tokens; compact density under
+ * [data-density='compact'] shrinks one step (DESIGN 4, 5).
+ */
+@reference './globals.css';
+
+/* A layer, so a utility on the same element (max-w-none in editors) still wins. */
+@layer components {
+  .ab-prose {
+    --prose-gap: 0.75rem;
+    max-width: 65ch;
+    overflow-wrap: break-word;
+    @apply text-base;
+  }
+  [data-density='compact'] .ab-prose {
+    --prose-gap: 0.5rem;
+    @apply text-sm;
+  }
+  .ab-prose > :first-child {
+    margin-top: 0;
+  }
+  .ab-prose > :last-child {
+    margin-bottom: 0;
+  }
+  .ab-prose :where(p, ul, ol, blockquote, table, figure, hr, pre, [data-callout]) {
+    margin-block: var(--prose-gap);
+  }
+
+  /* Headings: content h1-h3 = text-2xl / xl / lg (DESIGN 4); deeper levels read as h3. */
+  .ab-prose :where(h1, h2, h3, h4, h5, h6) {
+    margin-block: calc(var(--prose-gap) * 2) calc(var(--prose-gap) * 0.75);
+    @apply font-semibold;
+  }
+  .ab-prose h1 {
+    @apply text-2xl;
+  }
+  .ab-prose h2 {
+    @apply text-xl;
+  }
+  .ab-prose :where(h3, h4, h5, h6) {
+    @apply text-lg;
+  }
+  [data-density='compact'] .ab-prose h1 {
+    @apply text-xl;
+  }
+  [data-density='compact'] .ab-prose h2 {
+    @apply text-lg;
+  }
+  [data-density='compact'] .ab-prose :where(h3, h4, h5, h6) {
+    @apply text-base;
+  }
+
+  /* Lists, links, quotes, rules */
+  .ab-prose :where(ul, ol) {
+    padding-inline-start: 1.5rem;
+  }
+  .ab-prose ul {
+    list-style: disc;
+  }
+  .ab-prose ol {
+    list-style: decimal;
+  }
+  .ab-prose li > :where(p, ul, ol) {
+    margin-block: 0.25rem;
+  }
+  .ab-prose a {
+    @apply underline underline-offset-4;
+  }
+  .ab-prose blockquote {
+    border-inline-start: 3px solid var(--border);
+    padding-inline-start: 1rem;
+    color: var(--muted-foreground);
+  }
+  .ab-prose hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin-block: calc(var(--prose-gap) * 2);
+  }
+
+  /* Code: inline and blocks; shiki dual theme follows the page mode through light-dark(). */
+  .ab-prose :not(pre) > code {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.875em;
+    @apply rounded-sm bg-muted font-mono;
+  }
+  .ab-prose pre {
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+    @apply rounded-md bg-muted font-mono text-sm;
+  }
+  .ab-prose .ab-code pre {
+    margin: 0;
+    border-radius: 0;
+  }
+  .ab-prose .shiki,
+  .ab-prose .shiki span {
+    background-color: transparent;
+    color: light-dark(var(--shiki-light), var(--shiki-dark));
+  }
+
+  /* Tables scroll inside themselves, never the page (390 px rule). */
+  .ab-prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    @apply text-sm;
+  }
+  .ab-prose :where(th, td) {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    text-align: start;
+    vertical-align: top;
+  }
+  .ab-prose th {
+    @apply bg-muted font-medium;
+  }
+
+  /* Images and figures */
+  .ab-prose img {
+    max-width: 100%;
+    height: auto;
+    @apply rounded-lg;
+  }
+  .ab-prose figcaption {
+    margin-top: 0.5rem;
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Callouts: <div data-callout="info|warning"> (DESIGN 3: tinted /10 fill, /30 border, ink in the token). */
+  .ab-prose [data-callout] {
+    padding: 1rem;
+    @apply rounded-lg border;
+  }
+  .ab-prose [data-callout='info'] {
+    @apply border-info/30 bg-info/10;
+  }
+  .ab-prose [data-callout='warning'] {
+    @apply border-warning/30 bg-warning/10;
+  }
+
+  /* Math: KaTeX display formulas scroll inside themselves. */
+  .ab-prose .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* Editors (block and markdown): empty-document hint, selected block, selected table cells. */
+  .ab-prose .is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: inline-start;
+    height: 0;
+    pointer-events: none;
+    color: var(--muted-foreground);
+  }
+  .ab-prose .ProseMirror-selectednode {
+    outline: var(--focus-ring-width) solid var(--ring);
+    outline-offset: var(--focus-ring-offset);
+    @apply rounded-lg;
+  }
+  .ab-prose .selectedCell {
+    @apply bg-accent;
+  }
+}

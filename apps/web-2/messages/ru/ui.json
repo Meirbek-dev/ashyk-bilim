@@ -21,5 +21,13 @@
   "ui_locale_name": "Русский",
   "ui_conflict_title": "Запись изменилась",
   "ui_conflict_text": "Пока вы редактировали, её сохранил кто-то другой. Ваш ввод не потерян.",
-  "ui_conflict_retry": "Обновить и повторить"
+  "ui_conflict_retry": "Обновить и повторить",
+  "ui_file_choose": "Выбрать файл",
+  "ui_file_drop": "или перетащите его сюда",
+  "ui_file_uploading": "Загрузка файла",
+  "ui_file_uploaded": "Загружено: {name}",
+  "ui_file_too_large": "Файл больше {mb} МБ. Выберите файл поменьше.",
+  "ui_file_wrong_type": "Файл этого типа не подходит. Выберите другой файл.",
+  "ui_options_empty": "Ничего не найдено",
+  "ui_option_remove": "Убрать «{label}»"
 }

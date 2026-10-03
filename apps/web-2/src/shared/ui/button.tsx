@@ -3,16 +3,17 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { LoaderCircle } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
+// The border color lives in each variant: a base border-transparent would win the cascade over border-input.
 /** Shared with the kit Link, so a navigation that looks like a button is still a link. */
 export const buttonVariants = cva(
-  'inline-flex h-control shrink-0 items-center justify-center gap-2 rounded-md border border-transparent text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex h-control shrink-0 items-center justify-center gap-2 rounded-md border text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        primary: 'border-transparent bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        secondary: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
         outline: 'border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground',
-        ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground',
+        ghost: 'border-transparent text-foreground hover:bg-accent hover:text-accent-foreground',
         destructive: 'border-destructive/40 text-destructive hover:bg-destructive/10',
       },
       size: {

@@ -1,4 +1,4 @@
-import { createRouter } from '@tanstack/react-router'
+import { createRouter, type AnyRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 
 import { ErrorView, NotFoundView, PendingView } from '#/features/platform'
@@ -35,5 +35,28 @@ export function getRouter() {
     ssr: { nonce: requestNonce() },
   })
   setupRouterSsrQueryIntegration({ router, queryClient })
+  guardViewTransitions(router)
   return router
+}
+
+/**
+ * The router's own startViewTransition returns only `updateCallbackDone`, so a skipped transition (a resize or a
+ * hidden tab mid-navigation) rejects `ready` and `finished` with nobody listening. Same logic, rejections handled:
+ * a skipped transition only loses the animation, the update itself still ran.
+ * ponytail: ignores `{ types }` view-transition options; the app only uses `true`.
+ */
+function guardViewTransitions(router: AnyRouter) {
+  router.startViewTransition = update => {
+    const wanted = router.shouldViewTransition ?? router.options.defaultViewTransition
+    router.shouldViewTransition = undefined
+    if (!wanted || typeof document === 'undefined' || typeof document.startViewTransition !== 'function')
+      return update()
+    const transition = document.startViewTransition(update)
+    for (const settled of [transition.ready, transition.finished]) settled.catch(skippedTransition)
+    return transition.updateCallbackDone
+  }
+}
+
+function skippedTransition(): void {
+  // Nothing to recover: the DOM update already happened (or failed, and updateCallbackDone carries that).
 }

@@ -17,7 +17,8 @@ export function contentSecurityPolicy(nonce: string): string {
     "connect-src 'self'",
     "font-src 'self'",
     "img-src 'self' data: blob: https:",
-    'frame-src https:',
+    // 'self': uploaded PDFs are framed from our own origin (http in dev); https: covers embed providers.
+    "frame-src 'self' https:",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
