@@ -1,10 +1,10 @@
 # code-arena
 
-Операции: getActivityAssessment, attemptState, mySubmissions, startSubmission, saveSubmissionDraft, submitSubmission, runItem, getCodeRun, languages, updateItem, referenceCheck
+Операции: getActivityAssessment, attemptState, mySubmissions, startSubmission, saveSubmissionDraft, submitSubmission, runItem, getCodeRun, runner, updateItem, referenceCheckItem
 
 Задача с кодом учащегося `/learn/$courseId/$activityId/code` (фокус-режим, вход из карточки плеера) и редактор
 вопроса с кодом в студии активности `/teach/courses/$courseId/activities/$activityId/edit` (5.3, 5.4). Редактор кода -
-CodeMirror 6 за ленивой границей, режимы только языков платформы (`/code/languages`). Задача с кодом - отдельное
+CodeMirror 6 за ленивой границей, режимы только языков платформы (`/code/runner`). Задача с кодом - отдельное
 оценивание вида `code_challenge` с одним вопросом `code`: попытка (черновик, сдача) живёт здесь, а не в `/attempt`.
 Каталог сообщений - `code`.
 
@@ -70,13 +70,8 @@ CodeMirror 6 за ленивой границей, режимы только я�
 ## Ждёт сервера
 
 - Подсказок в `CodeBody` нет: учащийся их не видит, автор не задаёт.
-- У попытки нет ссылки на финальный запуск (`CodeRun.submission_id` есть, обратной нет) и нет списка своих
-  запусков: история показывает балл и «Пройдено N из M» из `grading.items[].feedback_params`, без таблицы тестов.
-- `feedback_code` и `feedback_params` - свободная строка и словарь, а не перечисление и схема.
+- Сервер готов (L-6), веб ещё не перешёл: список своих запусков (`GET /assessment-items/{id}/runs`, финальный -
+  `purpose=final`); история пока показывает балл и «Пройдено N из M» без таблицы тестов.
 - Диапазоны лимитов (`time_limit_seconds`, `memory_limit_mb`) не объявлены и не проверяются сервером.
-- `POST /assessments/{id}/reference-check` проверяет первый вопрос с кодом оценивания и только сохранённые решения,
-  без `Idempotency-Key`; `status` - строка, а не `CodeRunStatus`.
-- `PATCH /assessment-items/{id}` без `If-Match` / `version`: последняя запись побеждает.
-- `GET /code/languages` без настроенной песочницы - 503: имён языков нет (показывается «Язык #id»).
 - `LanguageInfo.monaco_language` назван по Monaco: используется как id режима редактора.
 - Нет `allowed_actions` у попытки и запуска: «Запустить» и «Сдать» выводятся из открытого черновика.

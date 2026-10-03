@@ -50,7 +50,7 @@ export function useCodeItemForm({ activityId, challenge, code }: Ids) {
       await form.handleSubmit()
       if (unsaved(form.state.values, stored())) return
     }
-    check.mutate({ path: { assessment_id: challenge.id } })
+    check.mutate({ path: { item_id: code.item.id }, headers: { 'Idempotency-Key': crypto.randomUUID() } })
   }
 
   return {

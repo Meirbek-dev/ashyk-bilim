@@ -9,17 +9,17 @@ import {
   getActivityAssessmentQueryKey,
   getActivityOptions,
   getCodeRunQueryKey,
-  languagesQueryKey,
   learnerCourseStateQueryKey,
   mySubmissionsOptions,
-  referenceCheckMutation,
+  referenceCheckItemMutation,
+  runnerOptions,
   runItemMutation,
   saveSubmissionDraftMutation,
   startSubmissionMutation,
   submitSubmissionMutation,
   updateItemMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { getActivityAssessment, getCodeRun, languages } from '#/shared/api/gen/sdk.gen'
+import { getActivityAssessment, getCodeRun } from '#/shared/api/gen/sdk.gen'
 import type {
   ActivityId,
   AssessmentDetail,
@@ -28,6 +28,7 @@ import type {
   CodeRun,
   CodeRunId,
   CourseId,
+  CodeRunnerInfo,
   LanguageInfo,
   StudentSubmission,
 } from '#/shared/api/gen/types.gen'
@@ -53,22 +54,14 @@ export const challengeOptions = (activityId: ActivityId) =>
   })
 
 /**
- * The platform's languages; null while the sandbox is not configured (503, B-COD-09). The server caches the list for
- * 10 minutes and it changes only with the platform's config: one read per tab.
+ * The platform's languages (`GET /code/runner`); null while the sandbox is not configured (`runner_configured`,
+ * B-COD-09). It changes only with the platform's config: one read per tab.
  */
-export const languagesOptions = () =>
-  queryOptions({
-    queryKey: languagesQueryKey(),
-    staleTime: Number.POSITIVE_INFINITY,
-    queryFn: async ({ signal }): Promise<LanguageInfo[] | null> => {
-      try {
-        return (await languages({ signal, throwOnError: true })).data
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 503) return null
-        throw error
-      }
-    },
-  })
+export const languagesOptions = () => ({
+  ...runnerOptions(),
+  staleTime: Number.POSITIVE_INFINITY,
+  select: (info: CodeRunnerInfo): LanguageInfo[] | null => (info.runner_configured ? info.languages : null),
+})
 
 export const stateOptions = (id: AssessmentId) => attemptStateOptions({ path: { assessment_id: id } })
 export const attemptsOptions = (id: AssessmentId) => mySubmissionsOptions({ path: { assessment_id: id } })
@@ -170,4 +163,5 @@ export const updateCodeOptions = (queryClient: QueryClient, activityId: Activity
     ),
 })
 
-export const referenceCheckOptions = () => referenceCheckMutation()
+/** The stored solutions of one code item against its tests; a retry replays with the same `Idempotency-Key`. */
+export const referenceCheckOptions = () => referenceCheckItemMutation()

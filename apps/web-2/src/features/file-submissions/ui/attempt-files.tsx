@@ -29,7 +29,7 @@ export function AttemptFiles({ files, onRemove, disabled = false }: AttemptFiles
     try {
       const signed = await queryClient.fetchQuery(downloadOptions(file.id))
       setError(null)
-      window.open(signed.url, '_blank', 'noopener')
+      window.open(signed.path, '_blank', 'noopener')
     } catch (failed) {
       setError(failed)
     }

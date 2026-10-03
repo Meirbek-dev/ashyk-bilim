@@ -104,7 +104,9 @@ export const test = base.extend<{ challenges: Challenges }>({
 
 /** The platform's languages as a configured sandbox lists them (fetched by the browser on client navigation). */
 export const routeLanguages = (page: Page) =>
-  page.route('**/api/v2/code/languages', route => route.fulfill({ json: LANGUAGES }))
+  page.route('**/api/v2/code/runner', route =>
+    route.fulfill({ json: { runner_configured: true, languages: LANGUAGES } }),
+  )
 
 /** Opens the challenge from the player's entry card: a client navigation, so the browser reads what is routed. */
 export async function openFromPlayer(page: Page, course: MadeCourse, made: Made) {

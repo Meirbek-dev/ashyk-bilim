@@ -21,6 +21,7 @@ import type {
   ActivityId,
   AssessmentId,
   CourseId,
+  Disposition,
   FileAttemptFileId,
   FileSubmissionId,
   GradebookPage,
@@ -45,7 +46,9 @@ export const reviewOptions = (id: string) => reviewSubmissionOptions({ path: { s
 export const attemptOptions = (id: string) => getAttemptOptions({ path: { attempt_id: id } })
 export const historyOptions = (id: string) => gradingHistoryOptions({ path: { submission_id: id } })
 /** A short-lived signed URL of a learner's file (1 h): asked for on click, not prefetched per file. */
-export const downloadOptions = (id: FileAttemptFileId) => fileUrlOptions({ path: { file_id: id } })
+/** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
+export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
+  fileUrlOptions({ path: { file_id: id }, query: { disposition } })
 
 /** 404 and a malformed id (422) are the same "not found" in place. */
 const orNotFound = (error: unknown): never => {

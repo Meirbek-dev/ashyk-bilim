@@ -121,9 +121,7 @@ test('B-COD-19 B-COD-18 the reference check saves first; a refused save keeps th
       },
     ],
   }
-  await page.route(`**/api/v2/assessments/${made.assessment.id}/reference-check`, route =>
-    route.fulfill({ json: check }),
-  )
+  await page.route(`**/api/v2/assessment-items/${made.itemId}/reference-check`, route => route.fulfill({ json: check }))
   await openEdit(page, course, made)
   const editor = form(page)
   await expect(editor.getByRole('button', { name: m.ui_save({}, ru) })).toBeDisabled()

@@ -24,6 +24,7 @@ import type {
   ActivityId,
   Attempt,
   CourseId,
+  Disposition,
   FileAttemptFileId,
   FileSubmission,
   FileSubmissionId,
@@ -58,7 +59,9 @@ export const taskOptions = (activityId: ActivityId) =>
 export const historyOptions = (id: FileSubmissionId) => myAttemptsOptions({ path: { file_submission_id: id } })
 
 /** A short-lived signed URL of an own file (1 h): asked for on click, not prefetched per file. */
-export const downloadOptions = (id: FileAttemptFileId) => fileUrlOptions({ path: { file_id: id } })
+/** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
+export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
+  fileUrlOptions({ path: { file_id: id }, query: { disposition } })
 
 /** The submission page's loader: an enrolled learner (else 403 in place), a file-submission activity of the course. */
 export async function ensureSubmission(queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) {

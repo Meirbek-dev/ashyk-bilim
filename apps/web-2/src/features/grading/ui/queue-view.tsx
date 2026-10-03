@@ -59,7 +59,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
       search={<LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />}
       filters={
         <>
-          <QueueFilters ids={ids} search={search} counts={stats ? statusCounts(stats) : null} late={assessment} />
+          <QueueFilters ids={ids} search={search} counts={stats ? statusCounts(stats) : null} late />
           <Anchor className={buttonVariants({ variant: 'outline' })} href={queueCsvHref(work.kind, work.id)} download>
             {m.grading_export_csv()}
           </Anchor>
@@ -87,10 +87,8 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
           rows={rows}
           columns={queueColumns(ids, search, { has: id => selected.has(id), toggle })}
           getKey={row => row.id}
-          sort={assessment ? tableSort(search) : undefined}
-          onSortChange={
-            assessment ? sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) }) : undefined
-          }
+          sort={tableSort(search)}
+          onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}
         />
       </ListState>
       <ShowMore

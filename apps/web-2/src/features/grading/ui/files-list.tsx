@@ -3,27 +3,30 @@ import { Download, Eye } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { AttachedFile } from '#/shared/api/gen/types.gen'
+import type { AttachedFile, Disposition } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { IconButton } from '#/shared/components/icon-button'
+import { PdfFrame } from '#/shared/components/pdf-frame'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
 import { downloadOptions } from '../queries'
 
+const previewable = (type: string) => type.startsWith('image/') || type === 'application/pdf'
+
 /**
- * The attempt's files (B-GRD-16). A name asks for a short-lived signed URL and opens it in a new tab; an image can be
- * shown here. The URLs expire, so they are asked for on click, not for every row up front.
+ * The attempt's files (B-GRD-16). A name asks for a short-lived signed path on our origin and opens it in a new tab;
+ * an image or a PDF can be shown here (`disposition=inline`). The paths expire, so they are asked for on click.
  */
 export function FilesList({ files }: { files: readonly AttachedFile[] }) {
   const queryClient = useQueryClient()
   const [error, setError] = useState<unknown>(null)
-  const [shown, setShown] = useState<{ name: string; url: string } | null>(null)
-  async function signed(file: AttachedFile) {
+  const [shown, setShown] = useState<{ name: string; path: string; pdf: boolean } | null>(null)
+  async function signed(file: AttachedFile, disposition?: Disposition) {
     try {
-      const answer = await queryClient.fetchQuery(downloadOptions(file.id))
+      const answer = await queryClient.fetchQuery(downloadOptions(file.id, disposition))
       setError(null)
-      return answer.url
+      return answer.path
     } catch (failed) {
       setError(failed)
       return null
@@ -44,18 +47,24 @@ export function FilesList({ files }: { files: readonly AttachedFile[] }) {
               <Download data-icon="inline-start" aria-hidden />
               <span className="truncate">{file.filename}</span>
             </Button>
-            {file.content_type.startsWith('image/') ? (
+            {previewable(file.content_type) ? (
               <IconButton
                 label={m.grading_preview({ name: file.filename })}
                 icon={<Eye aria-hidden />}
-                onClick={() => void signed(file).then(url => url && setShown({ name: file.filename, url }))}
+                onClick={() =>
+                  void signed(file, 'inline').then(
+                    path =>
+                      path && setShown({ name: file.filename, path, pdf: file.content_type === 'application/pdf' }),
+                  )
+                }
               />
             ) : null}
           </li>
         ))}
       </ul>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
-      {shown ? <img src={shown.url} alt={shown.name} className="max-w-full rounded-lg border" /> : null}
+      {shown?.pdf ? <PdfFrame src={shown.path} title={shown.name} /> : null}
+      {shown && !shown.pdf ? <img src={shown.path} alt={shown.name} className="max-w-full rounded-lg border" /> : null}
     </div>
   )
 }

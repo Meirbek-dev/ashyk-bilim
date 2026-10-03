@@ -33,11 +33,13 @@ export const assessmentQuery = (search: QueueSearch): NonNullable<AssessmentRevi
   ...(search.sort ? { sort: search.sort, order: search.order ?? 'desc' } : {}),
 })
 
-// ponytail: the file queue has no late filter and no sort (SPEC: waits for the server); they are dropped here.
+/** The file queue takes the same filters and sort; its "needs grading" is `submitted`. */
 export const fileQuery = (search: QueueSearch): NonNullable<FileSubmissionReviewQueueData['query']> => ({
   limit: PAGE_SIZE,
   ...(search.status ? { status: search.status === 'needs_grading' ? 'submitted' : search.status } : {}),
   ...(search.q ? { search: search.q } : {}),
+  ...(search.late ? { late_only: true } : {}),
+  ...(search.sort ? { sort: search.sort, order: search.order ?? 'desc' } : {}),
 })
 
 /** The filters that narrow the queue (sort does not): "nothing found" vs "nothing yet". */

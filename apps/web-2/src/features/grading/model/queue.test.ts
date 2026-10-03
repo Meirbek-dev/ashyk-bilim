@@ -73,10 +73,10 @@ describe('queue', () => {
     expect(activeFilters({ ...junk, status: 'returned', q: 'x' })).toBe(2)
   })
 
-  test('B-GRD-02 the filters go to the server; the file queue calls "needs grading" submitted and has no late filter', () => {
+  test('B-GRD-02 the filters go to the server; the file queue calls "needs grading" submitted', () => {
     const search = v.parse(queueSearchSchema, { status: 'needs_grading', q: 'ali', late: true })
     expect(assessmentQuery(search)).toEqual({ limit: 50, status: 'needs_grading', search: 'ali', late_only: true })
-    expect(fileQuery(search)).toEqual({ limit: 50, status: 'submitted', search: 'ali' })
+    expect(fileQuery(search)).toEqual({ limit: 50, status: 'submitted', search: 'ali', late_only: true })
   })
 
   test('B-GRD-03 a header sort goes to the URL and to the server; no sort is the server default', () => {
