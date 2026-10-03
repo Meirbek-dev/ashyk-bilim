@@ -45,6 +45,7 @@ const messages: Record<ErrorCode, () => string> = {
   'ai-rate-limited': m.errors_ai_rate_limited,
   'ai-run-cancelled': m.errors_ai_run_cancelled,
   'ai-provider-unavailable': m.errors_ai_provider_unavailable,
+  'reset-code-invalid': m.errors_reset_code_invalid,
 }
 
 /** The user-facing text of any thrown error: the code's text for an ApiError, "no connection" otherwise. */

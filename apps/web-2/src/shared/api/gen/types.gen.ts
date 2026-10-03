@@ -110,6 +110,11 @@ export type ActivityDropoffRow = {
 export type ActivityId = string;
 
 /**
+ * Canonical per-learner activity state (legacy `ActivityProgressState`).
+ */
+export type ActivityProgressState = 'not_started' | 'in_progress' | 'submitted' | 'needs_grading' | 'returned' | 'graded' | 'passed' | 'failed' | 'completed';
+
+/**
  * `activities.settings`.
  *
  * The server reads `required` (progress: `false` makes the activity
@@ -344,6 +349,58 @@ export type AgUiTool = {
      * JSON Schema of the tool's arguments.
      */
     parameters: JsonValue;
+};
+
+/**
+ * `GET /me/agenda`.
+ */
+export type Agenda = {
+    /**
+     * Up to three in-progress courses, most recently active first.
+     */
+    continue_learning: Array<ContinueLearning>;
+    /**
+     * Announcements on enrolled courses in the last 14 days, newest first.
+     */
+    course_updates: Array<AgendaCourseUpdate>;
+    /**
+     * Due within the requested window, soonest first.
+     */
+    deadlines: Array<AgendaDeadline>;
+    /**
+     * Grades released and work returned in the last 14 days, newest first.
+     */
+    recent_results: Array<RecentResult>;
+};
+
+export type AgendaCourseUpdate = {
+    course_id: CourseId;
+    course_name: string;
+    created_at_unix: UnixTime;
+    title: string;
+    update_id: CourseUpdateId;
+};
+
+export type AgendaDeadline = {
+    activity_id: ActivityId;
+    activity_name: string;
+    /**
+     * `quiz`, `exam`, `code_challenge` or `file_submission`.
+     */
+    activity_type: string;
+    assessment_id: AssessmentId | null;
+    course_id: CourseId;
+    course_name: string;
+    /**
+     * Late hand-ins close here (`cutoff` late policy); null otherwise.
+     */
+    cutoff_at_unix: UnixTime | null;
+    /**
+     * The learner's effective due date (overrides applied).
+     */
+    due_at_unix: UnixTime;
+    file_submission_id: FileSubmissionId | null;
+    state: ActivityProgressState;
 };
 
 export type AiArtifactId = string;
@@ -1385,6 +1442,23 @@ export type ContextSummary = {
 export type ContextVisibility = 'student' | 'teacher';
 
 /**
+ * Where to pick a course up.
+ */
+export type ContinueLearning = {
+    /**
+     * The first activity not done yet (course order).
+     */
+    activity_id: ActivityId;
+    activity_name: string;
+    course_id: CourseId;
+    course_name: string;
+    /**
+     * Null before the projection wrote the course's progress.
+     */
+    progress_pct: number | null;
+};
+
+/**
  * One roster entry.
  *
  * The creator is always listed first as `creator/active`; the other roles
@@ -2291,7 +2365,7 @@ export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -2779,6 +2853,24 @@ export type GradingEntryId = string;
 export type GradingMode = 'auto' | 'manual' | 'auto_then_manual';
 
 export type GradingType = 'numeric' | 'percentage';
+
+/**
+ * A grade change or hand-in on a course the recipient grades (the
+ * per-user copy of the course grading stream). `submission_id` for
+ * assessments, `attempt_id` for file submissions.
+ */
+export type GradingUpdated = {
+    activity_id: ActivityId;
+    attempt_id: FileAttemptId | null;
+    course_id: CourseId;
+    final_score: number | null;
+    status: SubmissionStatus;
+    submission_id: SubmissionId | null;
+    /**
+     * The learner whose work changed.
+     */
+    user_id: UserId;
+};
 
 export type Health = {
     /**
@@ -3312,9 +3404,124 @@ export type NextAction = {
     reason: string;
 };
 
+/**
+ * One notification as served (list items and `notification.created`).
+ */
+export type Notification = {
+    created_at_unix: UnixTime;
+    id: NotificationId;
+    payload: NotificationPayload;
+    /**
+     * Null while unread.
+     */
+    read_at_unix: UnixTime | null;
+    /**
+     * Same as `payload.type`.
+     */
+    type: NotificationType;
+};
+
+export type NotificationId = string;
+
+/**
+ * Newest first.
+ */
+export type NotificationPage = {
+    items: Array<Notification>;
+    next_cursor: string | null;
+};
+
+/**
+ * What happened, with the ids a client needs to route and to invalidate
+ * caches, and the names the bell renders without another request.
+ */
+export type NotificationPayload = {
+    activity_id: ActivityId;
+    activity_name: string;
+    attempt_id: FileAttemptId | null;
+    course_id: CourseId;
+    course_name: string;
+    final_score: number | null;
+    submission_id: SubmissionId | null;
+    type: 'grade_published';
+} | {
+    activity_id: ActivityId;
+    activity_name: string;
+    attempt_id: FileAttemptId | null;
+    course_id: CourseId;
+    course_name: string;
+    submission_id: SubmissionId | null;
+    type: 'submission_returned';
+} | {
+    activity_id: ActivityId;
+    activity_name: string;
+    assessment_id: AssessmentId;
+    course_id: CourseId;
+    course_name: string;
+    due_at_unix: UnixTime;
+    type: 'deadline_extended';
+} | {
+    activity_id: ActivityId;
+    activity_name: string;
+    course_id: CourseId;
+    course_name: string;
+    due_at_unix: UnixTime;
+    type: 'deadline_approaching';
+} | {
+    course_id: CourseId;
+    course_name: string;
+    title: string;
+    type: 'course_update';
+    update_id: CourseUpdateId;
+} | {
+    author_id: UserId;
+    author_name: string;
+    course_id: CourseId;
+    course_name: string;
+    /**
+     * The thread (top-level post).
+     */
+    discussion_id: DiscussionId;
+    reply_id: DiscussionId;
+    type: 'discussion_reply';
+} | {
+    applicant_id: UserId;
+    applicant_name: string;
+    course_id: CourseId;
+    course_name: string;
+    type: 'contributor_application';
+};
+
 export type NotificationPreferences = {
     xpGain?: boolean;
 };
+
+/**
+ * Read state changed: one notification, or all (`notification_id` null).
+ */
+export type NotificationRead = {
+    notification_id: NotificationId | null;
+    unread_count: number;
+};
+
+/**
+ * In-app notifications on (`true`) or off, one switch per type. `PUT`
+ * takes the full set.
+ */
+export type NotificationSettings = {
+    contributor_application: boolean;
+    course_update: boolean;
+    deadline_approaching: boolean;
+    deadline_extended: boolean;
+    discussion_reply: boolean;
+    grade_published: boolean;
+    submission_returned: boolean;
+};
+
+/**
+ * In-app notification types (S-07; `notifications.kind`).
+ */
+export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application';
 
 export type OpenTextBody = {
     min_words: number | null;
@@ -3337,6 +3544,29 @@ export type OverrideRequest = {
     max_attempts_override?: number;
     note?: string;
     waive_late_penalty?: boolean;
+};
+
+/**
+ * Set a new password with the emailed reset code. No `Debug` - carries a
+ * password.
+ */
+export type PasswordResetConfirmRequest = {
+    code: string;
+    /**
+     * The username or email the code was requested for.
+     */
+    login: string;
+    new_password: string;
+};
+
+/**
+ * Ask for a password reset code (S-08).
+ */
+export type PasswordResetRequest = {
+    /**
+     * Username or email.
+     */
+    login: string;
 };
 
 export type Platform = {
@@ -3856,6 +4086,20 @@ export type ReadinessItem = {
  */
 export type ReadinessSeverity = 'blocker' | 'warning' | 'advice';
 
+export type RecentResult = {
+    activity_id: ActivityId;
+    activity_name: string;
+    at_unix: UnixTime;
+    course_id: CourseId;
+    course_name: string;
+    kind: ResultKind;
+    /**
+     * Released score (null for returned work).
+     */
+    score: number | null;
+    submission_id: SubmissionId | null;
+};
+
 export type Recommendation = {
     action?: string;
     priority?: Level;
@@ -3977,6 +4221,18 @@ export type ReorderItemsRequest = {
      */
     items: Array<AssessmentItemId>;
 };
+
+/**
+ * Ask for a fresh email verification code.
+ */
+export type ResendVerificationRequest = {
+    email: string;
+};
+
+/**
+ * What a recent result is.
+ */
+export type ResultKind = 'grade_published' | 'submission_returned';
 
 export type ReviewItem = {
     /**
@@ -4691,6 +4947,19 @@ export type SubmissionStreamEvent = {
     event: 'closed';
 };
 
+/**
+ * The recipient's own submission or file attempt changed state.
+ * `final_score` only once the grade is released (`published`).
+ */
+export type SubmissionUpdated = {
+    activity_id: ActivityId;
+    attempt_id: FileAttemptId | null;
+    course_id: CourseId;
+    final_score: number | null;
+    status: SubmissionStatus;
+    submission_id: SubmissionId | null;
+};
+
 export type SubmitRequest = {
     /**
      * A last patch applied before grading.
@@ -5021,6 +5290,10 @@ export type Transaction = {
  */
 export type UnixTime = number;
 
+export type UnreadCount = {
+    unread_count: number;
+};
+
 export type UpdateActivityRequest = {
     activity_sub_type?: ActivitySubType;
     /**
@@ -5272,6 +5545,59 @@ export type UserRank = {
 
 export type UserStatus = 'active' | 'disabled';
 
+/**
+ * `GET /me/events`: one message's `data`. The SSE `event:` name equals the
+ * `event` member; `event_id` is the SSE `id:` (send it back as
+ * `Last-Event-ID`).
+ */
+export type UserStreamEvent = {
+    event: 'connected';
+    user_id: UserId;
+} | {
+    event: 'grading.updated';
+    event_id: string;
+    payload: GradingUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'submission.updated';
+    event_id: string;
+    payload: SubmissionUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'notification.created';
+    event_id: string;
+    payload: Notification;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'notification.read';
+    event_id: string;
+    payload: NotificationRead;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'xp.awarded';
+    event_id: string;
+    payload: XpAwarded;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    code: ErrorCode;
+    event: 'closed';
+};
+
 export type UserSummary = {
     display_name: string;
     email: string;
@@ -5464,6 +5790,24 @@ export type WorkloadAgingBuckets = {
     d3_7: number;
     d7_plus: number;
     h0_24: number;
+};
+
+/**
+ * XP granted to the recipient (S-13).
+ */
+export type XpAwarded = {
+    amount: number;
+    level: number;
+    /**
+     * Free-text reason (admin awards); null for automatic sources.
+     */
+    reason: string | null;
+    source: XpSource;
+    /**
+     * The new total and level after this award.
+     */
+    total_xp: number;
+    transaction_id: XpTransactionId;
 };
 
 /**
@@ -9013,6 +9357,72 @@ export type ChangePasswordResponses = {
 
 export type ChangePasswordResponse = ChangePasswordResponses[keyof ChangePasswordResponses];
 
+export type RequestPasswordResetData = {
+    body: PasswordResetRequest;
+    headers?: {
+        /**
+         * ru, kk or en - the locale of the reset link
+         */
+        'Accept-Language'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v2/auth/password-reset';
+};
+
+export type RequestPasswordResetErrors = {
+    /**
+     * Validation failed
+     */
+    422: Problem;
+    /**
+     * Too many attempts
+     */
+    429: Problem;
+};
+
+export type RequestPasswordResetError = RequestPasswordResetErrors[keyof RequestPasswordResetErrors];
+
+export type RequestPasswordResetResponses = {
+    /**
+     * Accepted; a code is mailed if the account exists
+     */
+    202: unknown;
+};
+
+export type ConfirmPasswordResetData = {
+    body: PasswordResetConfirmRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/auth/password-reset/confirm';
+};
+
+export type ConfirmPasswordResetErrors = {
+    /**
+     * A password change is already in progress
+     */
+    409: Problem;
+    /**
+     * `reset-code-invalid` (unknown login, wrong or expired code), or the new password fails the policy (`field_errors[].field == "new_password"`)
+     */
+    422: Problem;
+    /**
+     * Too many attempts
+     */
+    429: Problem;
+};
+
+export type ConfirmPasswordResetError = ConfirmPasswordResetErrors[keyof ConfirmPasswordResetErrors];
+
+export type ConfirmPasswordResetResponses = {
+    /**
+     * Password set; all sessions revoked
+     */
+    204: void;
+};
+
+export type ConfirmPasswordResetResponse = ConfirmPasswordResetResponses[keyof ConfirmPasswordResetResponses];
+
 export type RegisterData = {
     body: RegisterRequest;
     headers?: {
@@ -9164,6 +9574,39 @@ export type VerifyEmailResponses = {
 };
 
 export type VerifyEmailResponse = VerifyEmailResponses[keyof VerifyEmailResponses];
+
+export type ResendVerificationData = {
+    body: ResendVerificationRequest;
+    headers?: {
+        /**
+         * ru, kk or en - the locale of the verification link
+         */
+        'Accept-Language'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v2/auth/verify-email/resend';
+};
+
+export type ResendVerificationErrors = {
+    /**
+     * Validation failed
+     */
+    422: Problem;
+    /**
+     * Too many attempts
+     */
+    429: Problem;
+};
+
+export type ResendVerificationError = ResendVerificationErrors[keyof ResendVerificationErrors];
+
+export type ResendVerificationResponses = {
+    /**
+     * Accepted; a code is mailed if the address awaits verification
+     */
+    202: unknown;
+};
 
 export type DeleteBlockData = {
     body?: never;
@@ -11785,6 +12228,40 @@ export type ReadyResponses = {
 
 export type ReadyResponse = ReadyResponses[keyof ReadyResponses];
 
+export type AgendaData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Deadline window in days, 1..=60 (default 14).
+         */
+        days?: number;
+    };
+    url: '/api/v2/me/agenda';
+};
+
+export type AgendaErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * `days` out of range
+     */
+    422: Problem;
+};
+
+export type AgendaError = AgendaErrors[keyof AgendaErrors];
+
+export type AgendaResponses = {
+    /**
+     * Agenda
+     */
+    200: Agenda;
+};
+
+export type AgendaResponse = AgendaResponses[keyof AgendaResponses];
+
 export type MyCertificatesData = {
     body?: never;
     path?: never;
@@ -11819,6 +12296,221 @@ export type MyCertificatesPageResponses = {
 };
 
 export type MyCertificatesPageResponse = MyCertificatesPageResponses[keyof MyCertificatesPageResponses];
+
+export type MyEventsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Resume after this event id
+         */
+        'Last-Event-ID'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/events';
+};
+
+export type MyEventsErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Too many open streams for this user
+     */
+    429: Problem;
+};
+
+export type MyEventsError = MyEventsErrors[keyof MyEventsErrors];
+
+export type MyEventsResponses = {
+    /**
+     * Event stream: each message's `data` is one event
+     */
+    200: UserStreamEvent;
+};
+
+export type MyEventsResponse = MyEventsResponses[keyof MyEventsResponses];
+
+export type GetNotificationPreferencesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/notification-preferences';
+};
+
+export type GetNotificationPreferencesErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+};
+
+export type GetNotificationPreferencesError = GetNotificationPreferencesErrors[keyof GetNotificationPreferencesErrors];
+
+export type GetNotificationPreferencesResponses = {
+    /**
+     * One switch per type
+     */
+    200: NotificationSettings;
+};
+
+export type GetNotificationPreferencesResponse = GetNotificationPreferencesResponses[keyof GetNotificationPreferencesResponses];
+
+export type PutNotificationPreferencesData = {
+    body: NotificationSettings;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/notification-preferences';
+};
+
+export type PutNotificationPreferencesErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Validation failed
+     */
+    422: Problem;
+};
+
+export type PutNotificationPreferencesError = PutNotificationPreferencesErrors[keyof PutNotificationPreferencesErrors];
+
+export type PutNotificationPreferencesResponses = {
+    /**
+     * Saved switches
+     */
+    200: NotificationSettings;
+};
+
+export type PutNotificationPreferencesResponse = PutNotificationPreferencesResponses[keyof PutNotificationPreferencesResponses];
+
+export type ListNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only unread ones (default false).
+         */
+        unread?: boolean;
+        /**
+         * The previous page's `next_cursor` (opaque).
+         */
+        cursor?: string;
+        /**
+         * 1..=100, default 20.
+         */
+        limit?: number;
+    };
+    url: '/api/v2/me/notifications';
+};
+
+export type ListNotificationsErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Bad `cursor` or `limit`
+     */
+    422: Problem;
+};
+
+export type ListNotificationsError = ListNotificationsErrors[keyof ListNotificationsErrors];
+
+export type ListNotificationsResponses = {
+    /**
+     * Page of notifications
+     */
+    200: NotificationPage;
+};
+
+export type ListNotificationsResponse = ListNotificationsResponses[keyof ListNotificationsResponses];
+
+export type MarkAllNotificationsReadData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/notifications/read-all';
+};
+
+export type MarkAllNotificationsReadErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+};
+
+export type MarkAllNotificationsReadError = MarkAllNotificationsReadErrors[keyof MarkAllNotificationsReadErrors];
+
+export type MarkAllNotificationsReadResponses = {
+    /**
+     * Marked; the unread count after (0)
+     */
+    200: UnreadCount;
+};
+
+export type MarkAllNotificationsReadResponse = MarkAllNotificationsReadResponses[keyof MarkAllNotificationsReadResponses];
+
+export type UnreadCountData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/notifications/unread-count';
+};
+
+export type UnreadCountErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+};
+
+export type UnreadCountError = UnreadCountErrors[keyof UnreadCountErrors];
+
+export type UnreadCountResponses = {
+    /**
+     * Unread count
+     */
+    200: UnreadCount;
+};
+
+export type UnreadCountResponse = UnreadCountResponses[keyof UnreadCountResponses];
+
+export type MarkNotificationReadData = {
+    body?: never;
+    path: {
+        /**
+         * Notification id
+         */
+        notification_id: NotificationId;
+    };
+    query?: never;
+    url: '/api/v2/me/notifications/{notification_id}/read';
+};
+
+export type MarkNotificationReadErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Unknown, or another user's
+     */
+    404: Problem;
+};
+
+export type MarkNotificationReadError = MarkNotificationReadErrors[keyof MarkNotificationReadErrors];
+
+export type MarkNotificationReadResponses = {
+    /**
+     * Marked; the unread count after
+     */
+    200: UnreadCount;
+};
+
+export type MarkNotificationReadResponse = MarkNotificationReadResponses[keyof MarkNotificationReadResponses];
 
 export type GetPlatformData = {
     body?: never;

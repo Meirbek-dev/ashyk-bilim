@@ -39,6 +39,21 @@ export const vActivityDetails = v.object({
 export const vActivityId = v.pipe(v.string(), v.uuid());
 
 /**
+ * Canonical per-learner activity state (legacy `ActivityProgressState`).
+ */
+export const vActivityProgressState = v.picklist([
+    'not_started',
+    'in_progress',
+    'submitted',
+    'needs_grading',
+    'returned',
+    'graded',
+    'passed',
+    'failed',
+    'completed'
+]);
+
+/**
  * Activity sub-kind; must pair with its [`ActivityType`].
  */
 export const vActivitySubType = v.picklist([
@@ -764,6 +779,17 @@ export const vChapter = v.object({
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
+/**
+ * Where to pick a course up.
+ */
+export const vContinueLearning = v.object({
+    activity_id: vActivityId,
+    activity_name: v.string(),
+    course_id: vCourseId,
+    course_name: v.string(),
+    progress_pct: v.nullable(v.number())
+});
+
 export const vCourseDataGap = v.object({
     course_id: vCourseId,
     course_name: v.string(),
@@ -1081,6 +1107,7 @@ export const vErrorCode = v.picklist([
     'invalid-totp-code',
     'username-taken',
     'email-taken',
+    'reset-code-invalid',
     'role-slug-taken',
     'last-admin',
     'self-disable',
@@ -1727,14 +1754,68 @@ export const vNextAction = v.object({
     reason: v.string()
 });
 
+export const vNotificationId = v.pipe(v.string(), v.uuid());
+
 export const vNotificationPreferences = v.strictObject({
     xpGain: v.optional(v.boolean())
 });
+
+/**
+ * Read state changed: one notification, or all (`notification_id` null).
+ */
+export const vNotificationRead = v.object({
+    notification_id: v.nullable(vNotificationId),
+    unread_count: v.pipe(v.number(), v.integer())
+});
+
+/**
+ * In-app notifications on (`true`) or off, one switch per type. `PUT`
+ * takes the full set.
+ */
+export const vNotificationSettings = v.strictObject({
+    contributor_application: v.boolean(),
+    course_update: v.boolean(),
+    deadline_approaching: v.boolean(),
+    deadline_extended: v.boolean(),
+    discussion_reply: v.boolean(),
+    grade_published: v.boolean(),
+    submission_returned: v.boolean()
+});
+
+/**
+ * In-app notification types (S-07; `notifications.kind`).
+ */
+export const vNotificationType = v.picklist([
+    'grade_published',
+    'submission_returned',
+    'deadline_extended',
+    'deadline_approaching',
+    'course_update',
+    'discussion_reply',
+    'contributor_application'
+]);
 
 export const vOpenTextBody = v.object({
     min_words: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     prompt: v.optional(v.string()),
     rubric: v.nullable(v.string())
+});
+
+/**
+ * Set a new password with the emailed reset code. No `Debug` - carries a
+ * password.
+ */
+export const vPasswordResetConfirmRequest = v.strictObject({
+    code: v.pipe(v.string(), v.minLength(1), v.maxLength(32)),
+    login: v.pipe(v.string(), v.minLength(1), v.maxLength(320)),
+    new_password: v.pipe(v.string(), v.minLength(8), v.maxLength(72))
+});
+
+/**
+ * Ask for a password reset code (S-08).
+ */
+export const vPasswordResetRequest = v.strictObject({
+    login: v.pipe(v.string(), v.minLength(1), v.maxLength(320))
 });
 
 /**
@@ -2147,6 +2228,18 @@ export const vRemediationTest = v.object({
 export const vReorderItemsRequest = v.strictObject({
     items: v.pipe(v.array(vAssessmentItemId), v.minLength(1), v.maxLength(200))
 });
+
+/**
+ * Ask for a fresh email verification code.
+ */
+export const vResendVerificationRequest = v.strictObject({
+    email: v.pipe(v.string(), v.maxLength(320))
+});
+
+/**
+ * What a recent result is.
+ */
+export const vResultKind = v.picklist(['grade_published', 'submission_returned']);
 
 /**
  * Queue order (BUG-351): newest submission, score (ungraded lowest) or
@@ -2871,6 +2964,19 @@ export const vSubmissionStreamEvent = v.union([
     })
 ]);
 
+/**
+ * The recipient's own submission or file attempt changed state.
+ * `final_score` only once the grade is released (`published`).
+ */
+export const vSubmissionUpdated = v.object({
+    activity_id: vActivityId,
+    attempt_id: v.nullable(vFileAttemptId),
+    course_id: vCourseId,
+    final_score: v.nullable(v.number()),
+    status: vSubmissionStatus,
+    submission_id: v.nullable(vSubmissionId)
+});
+
 export const vSubmitRequest = v.strictObject({
     answers: v.optional(v.object({})),
     violation_count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
@@ -3044,6 +3150,27 @@ export const vAdminRun = v.object({
 export const vAdminRunPage = v.object({
     items: v.array(vAdminRun),
     next_cursor: v.nullable(vAiRunId)
+});
+
+export const vAgendaCourseUpdate = v.object({
+    course_id: vCourseId,
+    course_name: v.string(),
+    created_at_unix: vUnixTime,
+    title: v.string(),
+    update_id: vCourseUpdateId
+});
+
+export const vAgendaDeadline = v.object({
+    activity_id: vActivityId,
+    activity_name: v.string(),
+    activity_type: v.string(),
+    assessment_id: v.nullable(vAssessmentId),
+    course_id: vCourseId,
+    course_name: v.string(),
+    cutoff_at_unix: v.nullable(vUnixTime),
+    due_at_unix: vUnixTime,
+    file_submission_id: v.nullable(vFileSubmissionId),
+    state: vActivityProgressState
 });
 
 export const vAnalyticsDataQuality = v.object({
@@ -3420,6 +3547,27 @@ export const vQaThreadSummary = v.object({
     updated_at_unix: vUnixTime
 });
 
+export const vRecentResult = v.object({
+    activity_id: vActivityId,
+    activity_name: v.string(),
+    at_unix: vUnixTime,
+    course_id: vCourseId,
+    course_name: v.string(),
+    kind: vResultKind,
+    score: v.nullable(v.number()),
+    submission_id: v.nullable(vSubmissionId)
+});
+
+/**
+ * `GET /me/agenda`.
+ */
+export const vAgenda = v.object({
+    continue_learning: v.array(vContinueLearning),
+    course_updates: v.array(vAgendaCourseUpdate),
+    deadlines: v.array(vAgendaDeadline),
+    recent_results: v.array(vRecentResult)
+});
+
 export const vRunArtifact = v.intersect([vRunArtifactBody, v.object({
         created_at_unix: vUnixTime,
         final: v.boolean(),
@@ -3579,6 +3727,10 @@ export const vTrailStep = v.object({
     id: vTrailStepId,
     teacher_verified: v.boolean(),
     updated_at_unix: vUnixTime
+});
+
+export const vUnreadCount = v.object({
+    unread_count: v.pipe(v.number(), v.integer())
 });
 
 export const vUpdateActivityRequest = v.strictObject({
@@ -4183,6 +4335,21 @@ export const vGradingEntry = v.object({
     raw_score: v.number()
 });
 
+/**
+ * A grade change or hand-in on a course the recipient grades (the
+ * per-user copy of the course grading stream). `submission_id` for
+ * assessments, `attempt_id` for file submissions.
+ */
+export const vGradingUpdated = v.object({
+    activity_id: vActivityId,
+    attempt_id: v.nullable(vFileAttemptId),
+    course_id: vCourseId,
+    final_score: v.nullable(v.number()),
+    status: vSubmissionStatus,
+    submission_id: v.nullable(vSubmissionId),
+    user_id: vUserId
+});
+
 export const vIntervention = v.object({
     course_id: vCourseId,
     created_at_unix: vUnixTime,
@@ -4254,6 +4421,91 @@ export const vLectureReview = v.object({
     suggestions: vLectureReviewReport,
     superseded_at_unix: v.nullable(vUnixTime),
     triggered_by: v.nullable(vUserId)
+});
+
+/**
+ * What happened, with the ids a client needs to route and to invalidate
+ * caches, and the names the bell renders without another request.
+ */
+export const vNotificationPayload = v.union([
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        attempt_id: v.nullable(vFileAttemptId),
+        course_id: vCourseId,
+        course_name: v.string(),
+        final_score: v.nullable(v.number()),
+        submission_id: v.nullable(vSubmissionId),
+        type: v.picklist(['grade_published'])
+    }),
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        attempt_id: v.nullable(vFileAttemptId),
+        course_id: vCourseId,
+        course_name: v.string(),
+        submission_id: v.nullable(vSubmissionId),
+        type: v.picklist(['submission_returned'])
+    }),
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        assessment_id: vAssessmentId,
+        course_id: vCourseId,
+        course_name: v.string(),
+        due_at_unix: vUnixTime,
+        type: v.picklist(['deadline_extended'])
+    }),
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        course_id: vCourseId,
+        course_name: v.string(),
+        due_at_unix: vUnixTime,
+        type: v.picklist(['deadline_approaching'])
+    }),
+    v.object({
+        course_id: vCourseId,
+        course_name: v.string(),
+        title: v.string(),
+        type: v.picklist(['course_update']),
+        update_id: vCourseUpdateId
+    }),
+    v.object({
+        author_id: vUserId,
+        author_name: v.string(),
+        course_id: vCourseId,
+        course_name: v.string(),
+        discussion_id: vDiscussionId,
+        reply_id: vDiscussionId,
+        type: v.picklist(['discussion_reply'])
+    }),
+    v.object({
+        applicant_id: vUserId,
+        applicant_name: v.string(),
+        course_id: vCourseId,
+        course_name: v.string(),
+        type: v.picklist(['contributor_application'])
+    })
+]);
+
+/**
+ * One notification as served (list items and `notification.created`).
+ */
+export const vNotification = v.object({
+    created_at_unix: vUnixTime,
+    id: vNotificationId,
+    payload: vNotificationPayload,
+    read_at_unix: v.nullable(vUnixTime),
+    type: vNotificationType
+});
+
+/**
+ * Newest first.
+ */
+export const vNotificationPage = v.object({
+    items: v.array(vNotification),
+    next_cursor: v.nullable(v.string())
 });
 
 export const vProfile = v.object({
@@ -5029,6 +5281,64 @@ export const vDashboard = v.object({
     recent_transactions: v.array(vTransaction),
     user_rank: v.nullable(v.pipe(v.number(), v.integer()))
 });
+
+/**
+ * XP granted to the recipient (S-13).
+ */
+export const vXpAwarded = v.object({
+    amount: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    reason: v.nullable(v.string()),
+    source: vXpSource,
+    total_xp: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    transaction_id: vXpTransactionId
+});
+
+/**
+ * `GET /me/events`: one message's `data`. The SSE `event:` name equals the
+ * `event` member; `event_id` is the SSE `id:` (send it back as
+ * `Last-Event-ID`).
+ */
+export const vUserStreamEvent = v.union([
+    v.object({
+        event: v.picklist(['connected']),
+        user_id: vUserId
+    }),
+    v.object({
+        event: v.picklist(['grading.updated']),
+        event_id: v.string(),
+        payload: vGradingUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['submission.updated']),
+        event_id: v.string(),
+        payload: vSubmissionUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['notification.created']),
+        event_id: v.string(),
+        payload: vNotification,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['notification.read']),
+        event_id: v.string(),
+        payload: vNotificationRead,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['xp.awarded']),
+        event_id: v.string(),
+        payload: vXpAwarded,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        code: vErrorCode,
+        event: v.picklist(['closed'])
+    })
+]);
 
 export const vDeleteActivityHeaders = v.object({
     'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
@@ -6243,6 +6553,19 @@ export const vChangePasswordBody = vChangePasswordRequest;
  */
 export const vChangePasswordResponse = v.void();
 
+export const vRequestPasswordResetBody = vPasswordResetRequest;
+
+export const vRequestPasswordResetHeaders = v.object({
+    'Accept-Language': v.nullish(v.string())
+});
+
+export const vConfirmPasswordResetBody = vPasswordResetConfirmRequest;
+
+/**
+ * Password set; all sessions revoked
+ */
+export const vConfirmPasswordResetResponse = v.void();
+
 export const vRegisterBody = vRegisterRequest;
 
 export const vRegisterHeaders = v.object({
@@ -6280,6 +6603,12 @@ export const vVerifyEmailBody = vVerifyEmailRequest;
  * Email verified
  */
 export const vVerifyEmailResponse = v.void();
+
+export const vResendVerificationBody = vResendVerificationRequest;
+
+export const vResendVerificationHeaders = v.object({
+    'Accept-Language': v.nullish(v.string())
+});
 
 export const vDeleteBlockPath = v.object({
     block_id: vBlockId
@@ -7199,6 +7528,15 @@ export const vLiveResponse = vHealth;
  */
 export const vReadyResponse = vHealth;
 
+export const vAgendaQuery = v.object({
+    days: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Agenda
+ */
+export const vAgendaResponse = vAgenda;
+
 /**
  * Certificates
  */
@@ -7213,6 +7551,57 @@ export const vMyCertificatesPageQuery = v.object({
  * Page of certificates
  */
 export const vMyCertificatesPageResponse = vIssuedCertificatePage;
+
+export const vMyEventsHeaders = v.object({
+    'Last-Event-ID': v.nullish(v.string())
+});
+
+/**
+ * Event stream: each message's `data` is one event
+ */
+export const vMyEventsResponse = vUserStreamEvent;
+
+/**
+ * One switch per type
+ */
+export const vGetNotificationPreferencesResponse = vNotificationSettings;
+
+export const vPutNotificationPreferencesBody = vNotificationSettings;
+
+/**
+ * Saved switches
+ */
+export const vPutNotificationPreferencesResponse = vNotificationSettings;
+
+export const vListNotificationsQuery = v.object({
+    unread: v.optional(v.boolean()),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Page of notifications
+ */
+export const vListNotificationsResponse = vNotificationPage;
+
+/**
+ * Marked; the unread count after (0)
+ */
+export const vMarkAllNotificationsReadResponse = vUnreadCount;
+
+/**
+ * Unread count
+ */
+export const vUnreadCountResponse = vUnreadCount;
+
+export const vMarkNotificationReadPath = v.object({
+    notification_id: vNotificationId
+});
+
+/**
+ * Marked; the unread count after
+ */
+export const vMarkNotificationReadResponse = vUnreadCount;
 
 /**
  * Platform settings
