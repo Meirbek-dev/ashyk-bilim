@@ -89,6 +89,72 @@ const noDynamicMessage: Rule = {
   }),
 }
 
+// The entry chunk (G-05): a feature's route.ts and the unsplit options of a route are in it (AGENTS.md "Entry chunk").
+const SPLIT_OPTIONS = new Set(['loader', 'component', 'pendingComponent', 'errorComponent', 'notFoundComponent'])
+const SDK_RUNTIME = /^#\/shared\/api\/(gen\/(sdk|valibot)\.gen|gen\/@tanstack\/|client$)/
+const importSource = (node: Node): string => {
+  const source = child(node, 'source')?.['value']
+  return typeof source === 'string' ? source : ''
+}
+
+const walk = (value: unknown, visit: (node: Node) => void): void => {
+  if (Array.isArray(value)) value.forEach(item => walk(item, visit))
+  else if (isNode(value)) {
+    visit(value)
+    for (const [key, item] of Object.entries(value)) if (key !== 'parent') walk(item, visit)
+  }
+}
+
+const routeEntryImports: Rule = {
+  create: context => ({
+    ImportDeclaration(node) {
+      const source = importSource(node)
+      if (node['importKind'] === 'type' || !(source.startsWith('.') || SDK_RUNTIME.test(source))) return
+      context.report({
+        node,
+        message:
+          'route.ts is in the entry chunk: define route-level code here (no static import of the feature or the SDK); load the rest with import().',
+      })
+    },
+  }),
+}
+
+// validateSearch, search, beforeLoad, loaderDeps, head, staticData stay in the route tree: they may use a feature
+// only through #/features/<name>/route; its index (UI, queries) is for loader and the components.
+const routeLevelImports: Rule = {
+  create: context => {
+    const fromIndex = new Map<string, string>()
+    return {
+      ImportDeclaration(node) {
+        const feature = /^#\/features\/([^/]+)$/.exec(importSource(node))?.[1]
+        const specifiers = node['specifiers']
+        if (!feature || node['importKind'] === 'type' || !Array.isArray(specifiers)) return
+        for (const specifier of specifiers.filter(isNode)) {
+          const local = child(specifier, 'local')?.['name']
+          if (specifier['importKind'] !== 'type' && typeof local === 'string') fromIndex.set(local, feature)
+        }
+      },
+      CallExpression(node) {
+        const factory = child(node, 'callee')
+        if (factory?.type !== 'CallExpression' || child(factory, 'callee')?.['name'] !== 'createFileRoute') return
+        const options = Array.isArray(node['arguments']) ? node['arguments'][0] : null
+        const properties = isNode(options) && Array.isArray(options['properties']) ? options['properties'] : []
+        for (const property of properties.filter(isNode)) {
+          if (SPLIT_OPTIONS.has(String(child(property, 'key')?.['name']))) continue
+          walk(child(property, 'value'), used => {
+            const feature = used.type === 'Identifier' ? fromIndex.get(String(used['name'])) : undefined
+            if (feature)
+              context.report({
+                node: used,
+                message: `Route-level options are in the entry chunk: import ${String(used['name'])} from #/features/${feature}/route (move it there).`,
+              })
+          })
+        }
+      },
+    }
+  },
+}
+
 export default {
   meta: { name: 'ab' },
   rules: {
@@ -96,5 +162,7 @@ export default {
     'no-empty-fallback': noEmptyFallback,
     'no-literal-query-key': noLiteralQueryKey,
     'no-dynamic-message': noDynamicMessage,
+    'route-entry-imports': routeEntryImports,
+    'route-level-imports': routeLevelImports,
   },
 }

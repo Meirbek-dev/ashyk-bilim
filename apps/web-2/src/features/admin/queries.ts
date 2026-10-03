@@ -51,7 +51,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 import { hasCapability } from '#/shared/auth/access'
 
-import type { UsersSearch } from './model/admin'
+import type { UsersSearch } from './route'
 
 const PAGE_SIZE = 20
 

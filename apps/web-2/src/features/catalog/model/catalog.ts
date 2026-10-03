@@ -1,28 +1,11 @@
 import * as v from 'valibot'
 
-import type { Course, CourseListSort, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Course, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, type Section, visibleSections, type Workspace } from '#/shared/auth/access'
 
-/** Free text in the URL: trimmed, and blank is "no search", so `?q=` and no `q` are the same page. */
-const queryText = v.optional(
-  v.pipe(
-    v.string(),
-    v.trim(),
-    v.transform(text => text || undefined),
-  ),
-)
+import { COURSE_SORTS, courseSort, type CourseSort, type CoursesSearch, SEARCH_KINDS, type SearchKind } from '../route'
 
-/** `GET /courses?sort=`: the server's three orders (anything else is its `updated`). */
-export type CourseSort = CourseListSort
-const COURSE_SORTS = ['progress', 'updated', 'name'] as const satisfies readonly CourseSort[]
-const courseSort = v.picklist(COURSE_SORTS)
-
-/** /courses?q=&sort=. An unknown sort is dropped, i.e. the default (B-CAT-06). */
-export const coursesSearchSchema = v.object({
-  q: queryText,
-  sort: v.fallback(v.optional(courseSort), undefined),
-})
-export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
+export type { CourseSort, SearchKind } from '../route'
 
 export const isCourseSort = (value: string): value is CourseSort => v.is(courseSort, value)
 
@@ -44,16 +27,6 @@ export type CoursesFilter = ReturnType<typeof coursesFilter>
 
 /** Keyset paging: the next request carries the previous page's opaque `next_cursor`. */
 export const nextCoursesCursor = (page: CoursePage) => page.next_cursor ?? undefined
-
-/** The sections of one `search` answer; people come only to signed-in callers (contract). */
-const SEARCH_KINDS = ['courses', 'collections', 'users'] as const
-export type SearchKind = (typeof SEARCH_KINDS)[number]
-
-/** /search?q=&kind=. No kind, or an unknown one, is "all" (BUG-382). */
-export const searchPageSchema = v.object({
-  q: queryText,
-  kind: v.fallback(v.optional(v.picklist(SEARCH_KINDS)), undefined),
-})
 
 export const searchKinds = (signedIn: boolean): readonly SearchKind[] =>
   signedIn ? SEARCH_KINDS : SEARCH_KINDS.filter(kind => kind !== 'users')

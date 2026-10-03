@@ -5,15 +5,14 @@ import type { Capability, SessionInfo } from '#/shared/api/gen/types.gen'
 
 import {
   coursesFilter,
-  coursesSearchSchema,
   courseState,
   nextCoursesCursor,
   paletteSections,
   resolveSort,
   searchKinds,
-  searchPageSchema,
   sortOptions,
 } from './catalog'
+import { coursesSearchSchema, searchPageSchema } from '../route'
 
 const session = (capabilities: Capability[]): SessionInfo => ({
   capabilities,

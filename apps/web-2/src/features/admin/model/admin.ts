@@ -13,16 +13,6 @@ import type {
   XpSource,
 } from '#/shared/api/gen/types.gen'
 
-const blankToUndefined = v.pipe(
-  v.string(),
-  v.trim(),
-  v.transform(text => text || undefined),
-)
-
-/** /admin/users?q=&user=: the directory search and the user open in the side panel (by username: shareable). */
-export const usersSearchSchema = v.object({ q: v.optional(blankToUndefined), user: v.optional(blankToUndefined) })
-export type UsersSearch = v.InferOutput<typeof usersSearchSchema>
-
 /** A search box's own form value (a form, so Enter submits; the URL is the source of truth). */
 export const searchBoxSchema = v.object({ q: v.string() })
 

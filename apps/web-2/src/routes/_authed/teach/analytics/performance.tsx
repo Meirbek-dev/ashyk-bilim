@@ -1,6 +1,7 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { DrillNotFound, loadPerformance, PerformanceTab, performanceSearchSchema } from '#/features/analytics'
+import { DrillNotFound, loadPerformance, PerformanceTab } from '#/features/analytics'
+import { performanceSearchSchema } from '#/features/analytics/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/analytics/performance')({

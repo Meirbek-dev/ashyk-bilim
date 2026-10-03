@@ -1,19 +1,8 @@
-import * as v from 'valibot'
-
 import type { CourseId, WorkItem, WorkQueue } from '#/shared/api/gen/types.gen'
 
-/** The teacher `kind`s `GET /work` returns (`WorkItem.kind` is a plain string in the contract). */
-export const INBOX_KINDS = ['sla_breach', 'needs_grading', 'awaiting_release'] as const
-export type InboxKind = (typeof INBOX_KINDS)[number]
+import type { InboxSearch } from '../route'
 
-export const isInboxKind = (kind: string): kind is InboxKind => INBOX_KINDS.some(known => known === kind)
-
-/** /teach?kind=&course=: both optional; an unknown value is the whole queue, not an error page. */
-export const inboxSearchSchema = v.object({
-  kind: v.fallback(v.optional(v.picklist(INBOX_KINDS)), undefined),
-  course: v.fallback(v.optional(v.pipe(v.string(), v.uuid())), undefined),
-})
-export type InboxSearch = v.InferOutput<typeof inboxSearchSchema>
+export { INBOX_KINDS, type InboxKind, type InboxSearch, isInboxKind } from '../route'
 
 // ponytail: /work has no kind/course filter, so the filters narrow the pages loaded so far; move them into the
 // request when the server takes `kind` and `course_id`.

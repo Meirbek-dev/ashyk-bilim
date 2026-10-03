@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { DiscussionsPage, discussionsSearchSchema, ensureDiscussions } from '#/features/discussions'
+import { DiscussionsPage, ensureDiscussions } from '#/features/discussions'
+import { discussionsSearchSchema } from '#/features/discussions/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_public/courses/$courseId/discussions')({

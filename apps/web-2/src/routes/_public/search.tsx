@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SearchPage, searchPageSchema, searchResultsOptions } from '#/features/catalog'
+import { SearchPage, searchResultsOptions } from '#/features/catalog'
+import { searchPageSchema } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_public/search')({

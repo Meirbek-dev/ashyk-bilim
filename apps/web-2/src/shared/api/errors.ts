@@ -1,8 +1,7 @@
+// ApiError is in the entry chunk (G-05): no runtime import of ./gen here; client.ts parses the problem body.
 import { createSerializationAdapter } from '@tanstack/react-router'
-import * as v from 'valibot'
 
 import type { ErrorCode, FieldError } from './gen/types.gen'
-import { vProblem } from './gen/valibot.gen'
 
 type ApiErrorInit = {
   status: number
@@ -28,21 +27,6 @@ export class ApiError extends Error {
     this.fieldErrors = init.fieldErrors
     this.requestId = init.requestId
     this.retryAfter = init.retryAfter
-  }
-
-  static async fromResponse(response: Response): Promise<ApiError> {
-    // A proxy in front of the API can answer with HTML: such a body is not a problem, not a crash.
-    const body: unknown = await response.json().catch(() => null)
-    const parsed = v.safeParse(vProblem, body)
-    const problem = parsed.success ? parsed.output : null
-    const retryAfter = Number(response.headers.get('retry-after'))
-    return new ApiError({
-      status: response.status,
-      code: problem?.code ?? 'internal',
-      fieldErrors: problem?.field_errors ?? [],
-      requestId: problem?.request_id ?? response.headers.get('x-request-id'),
-      retryAfter: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
-    })
   }
 }
 

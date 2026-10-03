@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { coursesFilter, coursesListOptions, CoursesPage, coursesSearchSchema } from '#/features/catalog'
+import { coursesFilter, coursesListOptions, CoursesPage } from '#/features/catalog'
+import { coursesSearchSchema } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_public/courses/')({

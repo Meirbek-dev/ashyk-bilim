@@ -1,11 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import {
-  CollectionsPage,
-  collectionsListOptions,
-  collectionsSearchOptions,
-  collectionsSearchSchema,
-} from '#/features/collections'
+import { CollectionsPage, collectionsListOptions, collectionsSearchOptions } from '#/features/collections'
+import { collectionsSearchSchema } from '#/features/collections/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_public/collections/')({

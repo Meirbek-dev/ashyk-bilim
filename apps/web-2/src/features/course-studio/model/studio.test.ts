@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { Contributor, CourseSummary } from '#/shared/api/gen/types.gen'
 
-import { courseStatus, coursesSearchSchema, presetCount } from './course'
+import { coursesSearchSchema } from '../route'
+import { courseStatus, presetCount } from './course'
 import {
   certificateConfig,
   certificateFields,

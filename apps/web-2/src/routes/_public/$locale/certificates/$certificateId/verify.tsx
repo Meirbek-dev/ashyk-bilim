@@ -2,13 +2,8 @@ import { notFound, rootRouteId, createFileRoute } from '@tanstack/react-router'
 import { createIsomorphicFn } from '@tanstack/react-start'
 import { setCookie } from '@tanstack/react-start/server'
 
-import {
-  CertificateInvalid,
-  CertificateVerifyPage,
-  certificateHead,
-  ensureVerification,
-  printedLocale,
-} from '#/features/certificates'
+import { CertificateInvalid, CertificateVerifyPage, ensureVerification } from '#/features/certificates'
+import { certificateHead, printedLocale } from '#/features/certificates/route'
 import { m } from '#/paraglide/messages'
 import {
   cookieMaxAge,

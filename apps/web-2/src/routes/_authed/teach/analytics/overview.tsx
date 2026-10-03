@@ -1,6 +1,7 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { loadMetricTab, metricSearchSchema, OverviewTab } from '#/features/analytics'
+import { loadMetricTab, OverviewTab } from '#/features/analytics'
+import { metricSearchSchema } from '#/features/analytics/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/analytics/overview')({

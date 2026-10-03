@@ -6,25 +6,25 @@ frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until 
 
 ## Map
 
-| Path                                | What lives there                                                             |
-| ----------------------------------- | ---------------------------------------------------------------------------- |
-| `src/routes/`                       | file routes: `validateSearch`, `beforeLoad`, `loader`, `head`, component     |
-| `src/features/<name>/`              | `SPEC.md`, `index.ts` (public entry), `queries.ts`, `model/`, `ui/`          |
-| `src/shared/api/`                   | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`      |
-| `src/shared/api/gen/`               | generated SDK, types, Valibot schemas, query options. Never edit             |
-| `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
-| `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
-| `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
-| `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.21.1 add <name>`; never hand-edit   |
-| `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest  |
-| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`; `cn` (shadcn's `cn` package)                                    |
-| `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |
-| `serve.ts`                          | production entry: srvx static files + the Start handler                      |
-| `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                 |
-| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks  |
-| `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)    |
+| Path                                | What lives there                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `src/routes/`                       | file routes: `validateSearch`, `beforeLoad`, `loader`, `head`, component       |
+| `src/features/<name>/`              | `SPEC.md`, `index.ts`, `route.ts` (entry chunk), `queries.ts`, `model/`, `ui/` |
+| `src/shared/api/`                   | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`        |
+| `src/shared/api/gen/`               | generated SDK, types, Valibot schemas, query options. Never edit               |
+| `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities)   |
+| `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`    |
+| `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts`   |
+| `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.21.1 add <name>`; never hand-edit     |
+| `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest    |
+| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`; `cn` (shadcn's `cn` package)                                      |
+| `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP           |
+| `serve.ts`                          | production entry: srvx static files + the Start handler                        |
+| `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                   |
+| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks    |
+| `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)      |
 
-Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>`;
+Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
 inside a feature use relative paths; across layers use `#/`. Lint enforces all of it.
 
 ## Commands (run in apps/web-2)
@@ -88,7 +88,13 @@ under-construction` lists what is left; report-only until phase 7 (`gates/allowl
   e2e waits for an enabled control rather than retrying clicks. `FileField` / `MultiSelectField` are not bound
   fields (they would put the combobox in every form's chunk): render them inside `form.AppField`.
 - Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
-  signed-in). Set the slice's component there; an unset slot renders nothing. Menus in the shell load lazily.
+  signed-in). Set the slice's (lazy) component there, from its `route.ts`; an unset slot renders nothing.
+- Entry chunk (G-05, checked by `bun run build`): only `loader` and the components are code-split; `validateSearch`,
+  `search`, `beforeLoad`, `loaderDeps`, `head`, `staticData` and the root route (the shell) stay in the entry, which
+  takes whole modules. Those options use a feature only via `#/features/<name>/route` (lint `ab/route-level-imports`);
+  `route.ts` holds that code itself, no static import of its feature (`ab/route-entry-imports`; else `import()`). No
+  generated SDK there (the session key is spelled out, pinned by `session.test.ts`). The gate prints any other
+  feature module or SDK file in the initial chunks with its import chain (`dist/initial-modules.json`).
 
 ## e2e locally
 
@@ -106,14 +112,9 @@ student, teacher, admin.
 2. Add `messages/{ru,kk,en}/<name>.json` and list the file in `project.inlang/settings.json`.
 3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`, then bind it in `src/routes/`.
 4. Every behavior id appears in a test title (`test('B-COL-02 ...')`), unit or e2e (G-10).
-5. `vp run verify` green. A gate you cannot satisfy is a question for the orchestrator, not an
-   allowlist entry.
+5. `vp run verify` and `bun run build` green. A gate you cannot satisfy is a question for the orchestrator.
 
-Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the
-orchestrator; ask for a missing primitive or operation instead of writing your own.
-
-## Output budgets
-
-Gates print `file:line rule - what to do`, at most 30 lines per gate. Playwright uses the `line`
-reporter and prints the trace path on failure. Do not paste generated files into context: search
-`sdk.gen.ts` for the operation name.
+Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator;
+ask for a missing primitive or operation instead of writing your own. Output budgets: gates print `file:line rule -
+what to do`, at most 30 lines per gate; Playwright uses the `line` reporter and prints the trace path on failure. Do
+not paste generated files into context: search `sdk.gen.ts`.

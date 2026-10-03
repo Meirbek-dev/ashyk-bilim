@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { CertificateInvalid, CertificateVerifyPage, certificateHead, ensureVerification } from '#/features/certificates'
+import { CertificateInvalid, CertificateVerifyPage, ensureVerification } from '#/features/certificates'
+import { certificateHead } from '#/features/certificates/route'
 import { m } from '#/paraglide/messages'
 
 // The canonical verify URL: `$certificateId` is the certificate's public verification code.

@@ -1,4 +1,3 @@
-export { collectionsSearchSchema } from './model/collections'
 export { collectionsListOptions, collectionsSearchOptions, ensureCollection } from './queries'
 export { CollectionEditPage } from './ui/collection-edit-page'
 export { CollectionNotFound } from './ui/collection-not-found'

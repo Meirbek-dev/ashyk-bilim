@@ -3,8 +3,11 @@ import * as v from 'valibot'
 import { ApiError } from '#/shared/api/errors'
 import type { Course, CourseAction, CourseSummary } from '#/shared/api/gen/types.gen'
 
-// What the route loaders and the workspace frame need, apart from the rest of the model: the route tree (the
-// initial bundle) carries only this.
+import type { Preset } from '../route'
+
+export type { CoursesSearch, Preset } from '../route'
+
+// What the route loaders and the workspace frame need, apart from the rest of the model.
 
 export const can = (course: Pick<Course, 'allowed_actions'>, action: CourseAction): boolean =>
   course.allowed_actions.includes(action)
@@ -21,20 +24,6 @@ export type CourseStatus = 'draft' | 'published' | 'archived'
 /** Archived wins over published: an archived course keeps `public` but is read-only for everyone. */
 export const courseStatus = (course: Pick<Course, 'public' | 'archived_at_unix'>): CourseStatus =>
   course.archived_at_unix ? 'archived' : course.public ? 'published' : 'draft'
-
-const blankToUndefined = v.pipe(
-  v.string(),
-  v.trim(),
-  v.transform(text => text || undefined),
-)
-
-/** /teach/courses?q=&preset=: the name search and the server preset; no preset is "all". */
-export const coursesSearchSchema = v.object({
-  q: v.optional(blankToUndefined),
-  preset: v.optional(v.picklist(['drafts', 'published', 'archived'])),
-})
-export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
-export type Preset = NonNullable<CoursesSearch['preset']>
 
 /** The search box's own form value (Enter submits; the URL is the source of truth). */
 export const searchBoxSchema = v.object({ q: v.string() })

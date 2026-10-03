@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { TrailRun } from '#/shared/api/gen/types.gen'
 
-import { countByState, learningSearchSchema, orderRuns, runState } from './learning'
+import { learningSearchSchema } from '../route'
+import { countByState, orderRuns, runState } from './learning'
 
 function run(id: string, progress: number | null, archived = false): TrailRun {
   return {

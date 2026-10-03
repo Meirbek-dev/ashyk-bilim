@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import { CommandPalette } from '#/features/catalog'
+import { CommandPalette } from '#/features/catalog/route'
 
 /**
  * The right side of the top bar, filled by later slices: `search` (the command palette trigger, everyone) and

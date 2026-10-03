@@ -1,19 +1,4 @@
-export {
-  filterDefaults,
-  filtersSchema,
-  learnersSearchSchema,
-  metricSearchSchema,
-  performanceSearchSchema,
-  pickFilters,
-} from './model/filters'
-export {
-  hasUnknownCohort,
-  loadAdminAnalytics,
-  loadAnalytics,
-  loadLearners,
-  loadMetricTab,
-  loadPerformance,
-} from './loaders'
+export { loadAdminAnalytics, loadAnalytics, loadLearners, loadMetricTab, loadPerformance } from './loaders'
 export { AdminAnalyticsPage } from './ui/admin-analytics-page'
 export { AnalyticsLayout } from './ui/analytics-layout'
 export { DrillNotFound } from './ui/drill-not-found'

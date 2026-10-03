@@ -1,5 +1,4 @@
 export { curriculumOptions, ensureStudio } from './curriculum-queries'
-export { coursesSearchSchema } from './model/course'
 export {
   contributorsOptions,
   courseGroupsOptions,

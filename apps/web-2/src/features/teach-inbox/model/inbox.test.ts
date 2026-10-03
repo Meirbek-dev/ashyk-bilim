@@ -3,15 +3,8 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { WorkItem } from '#/shared/api/gen/types.gen'
 
-import {
-  courseOptions,
-  filterItems,
-  inboxSearchSchema,
-  isInboxKind,
-  nextWorkCursor,
-  rowAction,
-  submissionIdOf,
-} from './inbox'
+import { courseOptions, filterItems, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
+import { inboxSearchSchema } from '../route'
 
 const COURSE_A = '7f0c1a2e-0000-4000-8000-00000000000a'
 const COURSE_B = '7f0c1a2e-0000-4000-8000-00000000000b'

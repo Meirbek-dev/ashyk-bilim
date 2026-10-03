@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { InboxPage, inboxSearchSchema, teachWorkOptions } from '#/features/teach-inbox'
+import { InboxPage, teachWorkOptions } from '#/features/teach-inbox'
+import { inboxSearchSchema } from '#/features/teach-inbox/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/teach/')({

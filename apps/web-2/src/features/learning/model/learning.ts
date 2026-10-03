@@ -1,14 +1,8 @@
-import * as v from 'valibot'
-
 import type { TrailRun } from '#/shared/api/gen/types.gen'
 
-export const RUN_STATES = ['in_progress', 'not_started', 'completed'] as const
-export type RunState = (typeof RUN_STATES)[number]
+import type { RunState } from '../route'
 
-/** /learning?state=: one state or all. An unknown value is the whole list, not an error page. */
-export const learningSearchSchema = v.object({
-  state: v.fallback(v.optional(v.picklist(RUN_STATES)), undefined),
-})
+export { RUN_STATES, type RunState } from '../route'
 
 /**
  * The server's own rule (learner-state `enrollment_state`: completed from 100 %), read from the run's

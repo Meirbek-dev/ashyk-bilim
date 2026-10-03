@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { loadUsersPage, UsersPage, usersSearchSchema } from '#/features/admin'
+import { loadUsersPage, UsersPage } from '#/features/admin'
+import { usersSearchSchema } from '#/features/admin/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/admin/users')({

@@ -1,11 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query'
-import * as v from 'valibot'
 
 import { extractPlainText } from '#/features/editor'
 import type { Discussion, DiscussionId, DiscussionPage, ReactionState } from '#/shared/api/gen/types.gen'
-
-/** /courses/$courseId/discussions?thread=<post id>: the post whose replies are open (spec 7.8: URL state). */
-export const discussionsSearchSchema = v.object({ thread: v.optional(v.string()) })
 
 /**
  * A post or reply has text a reader can see. The server counts any non-tag character, so an empty editor document

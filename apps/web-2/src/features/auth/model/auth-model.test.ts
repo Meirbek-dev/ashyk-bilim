@@ -4,8 +4,9 @@ import { describe, expect, test } from 'vite-plus/test'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
-import { isWrongCode, signupFieldOf, verifyEmailSearchSchema } from './account-search'
-import { googleStartHref, loginSearchSchema, retryMinutes } from './login-search'
+import { loginSearchSchema, verifyEmailSearchSchema } from '../route'
+import { isWrongCode, signupFieldOf } from './account-search'
+import { googleStartHref, retryMinutes } from './login-search'
 
 const redirectOf = (value: unknown) => v.parse(loginSearchSchema, { redirect: value }).redirect
 const apiError = (code: ErrorCode, fieldErrors: FieldError[] = []) =>

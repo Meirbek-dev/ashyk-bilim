@@ -1,21 +1,5 @@
-import * as v from 'valibot'
-
 import type { GoogleStartData } from '#/shared/api/gen/types.gen'
 import { safeRedirect } from '#/shared/auth/redirect'
-
-/**
- * /login?redirect=<path>&error=<code>. `redirect` is reduced to a same-origin path while the URL is parsed, so no
- * component ever sees an outside address; `error` is the code a failed Google sign-in comes back with.
- */
-export const loginSearchSchema = v.object({
-  redirect: v.optional(
-    v.pipe(
-      v.string(),
-      v.transform(path => safeRedirect(path)),
-    ),
-  ),
-  error: v.optional(v.string()),
-})
 
 const GOOGLE_START: GoogleStartData['url'] = '/api/v2/auth/google'
 

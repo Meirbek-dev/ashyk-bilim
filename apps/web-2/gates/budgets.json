@@ -1,6 +1,6 @@
 {
-  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`. 2026-10-03: initial JS raised 170 -> 190 after phase 3/4 merges: the entry (132 KB) carries the route tree incl. every route`s validateSearch schema (66 routes), which TanStack Router does not code-split; measured 177 KB with all phase-3/4 slices. Re-measure in phase 7 and tighten. 2026-10-03 (K-3, shadcn kit): initial JS raised 190 -> 200: the stock shadcn components merge classes with the `cn` package (shadcn's clsx + tailwind-merge replacement, 10.6 KB gzip), and the shell's buttons (stock Button + Tooltip) are in the entry, so `cn` is too; measured 197.5 KB. Fitted `cn build` tables would need every stock file re-pointed at a local module (no longer stock).",
-  "initialJsGzipKb": 200,
+  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`; the gate also rejects feature modules other than route.ts and the generated SDK in the initial chunks (dist/initial-modules.json, AGENTS.md 'Entry chunk'). 2026-10-03 (B-1): initial JS measured 171.0 KB with all phase-3..6 slices after splitting loaders, moving route-level code to features' route.ts, keeping the SDK out of the entry and loading ErrorView on demand; budget = measured + 5%. What is left grows only per route (route options, title messages).",
+  "initialJsGzipKb": 180,
   "chunkGzipKb": 150,
   "cssGzipKb": 30
 }

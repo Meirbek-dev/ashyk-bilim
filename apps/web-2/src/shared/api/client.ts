@@ -1,21 +1,19 @@
 import { createIsomorphicFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import * as v from 'valibot'
 
 import { serverEnv } from '#/shared/lib/env.server'
 
 import { ApiError } from './errors'
 import type { CreateClientConfig } from './gen/client.gen'
+import { vProblem } from './gen/valibot.gen'
+import { KEY_ORIGIN } from './key-origin'
 
 // The one seam between the app and the generated SDK (spec 7.4). Wired in by openapi-ts.config.ts
 // `runtimeConfigPath`, so every SDK call goes through apiFetch.
 
 const FORWARDED_HEADERS = ['accept-language', 'user-agent', 'x-forwarded-for', 'x-request-id', 'traceparent']
 const SESSION_COOKIE = 'ab_session'
-
-// The SDK builds every URL on this placeholder origin, the same in SSR and in the browser: the generated
-// query keys embed the base URL, so a per-environment base would break hydration (and leak the internal
-// address into the page). apiFetch swaps in the real origin: same-origin in the browser, INTERNAL_API_URL in SSR.
-const KEY_ORIGIN = 'https://api.invalid'
 
 const apiOrigin = createIsomorphicFn()
   .server(() => serverEnv.apiOrigin)
@@ -58,8 +56,24 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
     forwarded.forEach((value, name) => request.headers.set(name, value))
   }
   const response = await fetch(request)
-  if (!response.ok) throw await ApiError.fromResponse(response)
+  if (!response.ok) throw await problemError(response)
   return response
+}
+
+/** Every failed response becomes an ApiError, built from the server's problem+json body. */
+async function problemError(response: Response): Promise<ApiError> {
+  // A proxy in front of the API can answer with HTML: such a body is not a problem, not a crash.
+  const body: unknown = await response.json().catch(() => null)
+  const parsed = v.safeParse(vProblem, body)
+  const problem = parsed.success ? parsed.output : null
+  const retryAfter = Number(response.headers.get('retry-after'))
+  return new ApiError({
+    status: response.status,
+    code: problem?.code ?? 'internal',
+    fieldErrors: problem?.field_errors ?? [],
+    requestId: problem?.request_id ?? response.headers.get('x-request-id'),
+    retryAfter: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+  })
 }
 
 export const createClientConfig: CreateClientConfig = config => ({ ...config, baseUrl: KEY_ORIGIN, fetch: apiFetch })

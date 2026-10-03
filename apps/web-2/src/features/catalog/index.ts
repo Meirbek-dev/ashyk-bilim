@@ -1,7 +1,6 @@
-export { coursesFilter, coursesSearchSchema, searchPageSchema } from './model/catalog'
+export { coursesFilter } from './model/catalog'
 export { shortcuts } from './model/shortcuts'
 export { coursesListOptions, landingCoursesOptions, platformOptions, searchResultsOptions } from './queries'
-export { CommandPalette } from './ui/command-palette'
 export { CoursesPage } from './ui/courses-page'
 export { LandingPage } from './ui/landing-page'
 export { SearchPage } from './ui/search-page'

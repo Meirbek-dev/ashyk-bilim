@@ -6,6 +6,7 @@ import { gzipSync } from 'node:zlib'
 
 import * as v from 'valibot'
 
+import { INITIAL_MODULES, type InitialModules } from './bundle.ts'
 import { generateApi, generateRouteTree } from './codegen.ts'
 import { appDir, type Finding, read, repoDir } from './lib.ts'
 
@@ -117,14 +118,38 @@ const Manifest = v.record(
 
 const kb = (file: string) => gzipSync(readFileSync(resolve(appDir, 'dist/client', file))).length / 1024
 
-/** G-05: gzip sizes of the built client against gates/budgets.json. */
+// What the entry chunk may hold of our code (AGENTS.md "Entry chunk"): every slice would grow it otherwise.
+const ENTRY_RULES: [RegExp, string][] = [
+  [
+    /^src\/shared\/api\/gen\/(sdk\.gen|valibot\.gen|@tanstack\/)/,
+    'the generated SDK holds every operation the app uses: use it from loader/component code or import() it',
+  ],
+  [
+    /^src\/features\/(?!platform\/)[^/]+\/(?!route\.tsx?$)/,
+    'route-level options and the shell use a feature only through its route.ts, which imports nothing of the feature',
+  ],
+]
+
+function entryModules(): Finding[] {
+  if (!existsSync(resolve(appDir, INITIAL_MODULES)))
+    return [{ file: INITIAL_MODULES, rule: 'budgets', fix: 'run `vp build` first' }]
+  const modules: InitialModules = JSON.parse(read(INITIAL_MODULES))
+  return Object.entries(modules).flatMap(([module, { via }]) => {
+    const rule = ENTRY_RULES.find(([pattern]) => pattern.test(module))
+    if (!rule) return []
+    const chain = via.filter(link => link.startsWith('src/')).join(' > ')
+    return [{ file: module, rule: 'entry-chunk', fix: `${rule[1]}; imported via ${chain}` }]
+  })
+}
+
+/** G-05: gzip sizes of the built client against gates/budgets.json, and what the entry chunk holds. */
 export function budgets(): Finding[] {
   const manifestPath = 'dist/client/.vite/manifest.json'
   if (!existsSync(resolve(appDir, manifestPath)))
     return [{ file: manifestPath, rule: 'budgets', fix: 'run `vp build` first' }]
   const limits = v.parse(Budgets, JSON.parse(read('gates/budgets.json')))
   const manifest = v.parse(Manifest, JSON.parse(read(manifestPath)))
-  const findings: Finding[] = []
+  const findings: Finding[] = entryModules()
   const initial = new Set<string>()
   const collect = (key: string) => {
     const chunk = manifest[key]

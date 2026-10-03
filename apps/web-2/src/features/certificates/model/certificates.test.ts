@@ -1,6 +1,6 @@
 import { expect, test } from 'vite-plus/test'
 
-import { printedLocale } from './certificates'
+import { printedLocale } from '../route'
 
 test('B-CRT-06 the printed prefixes map to interface locales (kz is kk); anything else is no URL', () => {
   expect(printedLocale('ru')).toBe('ru')

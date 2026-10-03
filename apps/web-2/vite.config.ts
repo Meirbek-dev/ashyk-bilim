@@ -3,11 +3,12 @@ import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
-import { defineConfig, lazyPlugins, type Plugin } from 'vite-plus'
+import { defineConfig, lazyPlugins } from 'vite-plus'
 import type { OxlintConfig } from 'vite-plus/lint'
 import { playwright } from 'vite-plus/test/browser-playwright'
 
 import { paraglideOptions } from './gates/codegen.ts'
+import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
 // Dev is same-origin like prod: the API stack (`just dev-up`) sits behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
@@ -15,28 +16,14 @@ const proxy = Object.fromEntries(
   ['/api/v2', '/content', '/ab-public', '/ab-private'].map(path => [path, { target: apiTarget, changeOrigin: true }]),
 )
 
-// Spec 7.4: responses are validated with the generated Valibot schemas in dev and tests only.
-// The production build drops the per-operation validators so the schemas tree-shake out.
-const VALIDATOR_LINE = /^\s*responseValidator: async \(data\) => await v\.parseAsync\(\w+, data\),\n/gm
-const stripResponseValidators: Plugin = {
-  name: 'ab:strip-response-validators',
-  apply: 'build',
-  transform(code, id) {
-    if (!id.replaceAll('\\', '/').endsWith('/shared/api/gen/sdk.gen.ts')) return null
-    const stripped = code.replaceAll(VALIDATOR_LINE, '')
-    if (stripped.includes('responseValidator'))
-      this.error('sdk.gen.ts changed shape: update VALIDATOR_LINE in vite.config.ts')
-    return { code: stripped, map: null }
-  },
-}
-
 const plugins = lazyPlugins(() => [
   paraglideVitePlugin(paraglideOptions),
   tailwindcss(),
-  tanstackStart(),
+  tanstackStart({ router: { codeSplittingOptions: { defaultBehavior: ROUTE_SPLIT } } }),
   viteReact(),
   babel({ presets: [reactCompilerPreset()] }),
   stripResponseValidators,
+  initialModules(),
 ])
 
 const unit = {
@@ -64,7 +51,7 @@ const STORAGE = 'Browser storage goes through storageItem() / cookieItem() from 
 const TIMERS =
   'No hand-made timers or polling: TanStack Pacer for debounce/throttle; Query + the event stream for freshness.'
 const FEATURE_INDEX =
-  'Import another feature only through its index: #/features/<name>. Inside a feature use relative paths.'
+  'Import another feature only through #/features/<name> (or its entry-chunk part #/features/<name>/route). Inside a feature use relative paths.'
 
 type Rules = NonNullable<OxlintConfig['rules']>
 
@@ -129,10 +116,10 @@ const layerPatterns = {
   ],
   features: [
     { regex: '^#/routes/', message: 'features/ must not import routes/ (one-way: routes -> features -> shared).' },
-    { regex: '^#/features/[^/]+/.', message: FEATURE_INDEX },
+    { regex: '^#/features/[^/]+/(?!route$).', message: FEATURE_INDEX },
     { regex: '^@tanstack/react-start/server$', message: 'Server request APIs stay in src/server.ts and shared/.' },
   ],
-  routes: [{ regex: '^#/features/[^/]+/.', message: FEATURE_INDEX }],
+  routes: [{ regex: '^#/features/[^/]+/(?!route$).', message: FEATURE_INDEX }],
 }
 const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricted-imports'] => [
   'error',
@@ -184,9 +171,14 @@ const lint: OxlintConfig = {
     { files: ['**/*.test.ts', '**/*.test.tsx'], rules: { 'max-lines': ['error', { max: 500 }] } },
     { files: ['src/shared/**'], rules: { 'no-restricted-imports': restrictImports('shared') } },
     { files: ['src/features/**'], rules: { 'no-restricted-imports': restrictImports('features') } },
+    { files: ['src/features/*/route.{ts,tsx}'], rules: { 'ab/route-entry-imports': 'error' } },
     {
       files: ['src/routes/**'],
-      rules: { 'no-restricted-imports': restrictImports('routes'), 'unicorn/filename-case': 'off' },
+      rules: {
+        'no-restricted-imports': restrictImports('routes'),
+        'ab/route-level-imports': 'error',
+        'unicorn/filename-case': 'off',
+      },
     },
     // upload.ts: XMLHttpRequest is the only browser API with upload progress (spec 7.3).
     { files: ['src/shared/api/**'], rules: { 'no-restricted-globals': restrictGlobals('fetch', 'XMLHttpRequest') } },

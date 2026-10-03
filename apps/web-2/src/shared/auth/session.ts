@@ -2,16 +2,24 @@ import { queryOptions } from '@tanstack/react-query'
 import { redirect } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
-import { currentSessionQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { currentSession } from '#/shared/api/gen/sdk.gen'
+import type { currentSessionQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
+import { KEY_ORIGIN } from '#/shared/api/key-origin'
+
+// The root route reads the session, so this module is in the entry chunk: no runtime import of the generated SDK
+// or query options here (each holds every operation the app uses; gate G-05). The key is the generated one,
+// spelled out: session.test.ts pins it to currentSessionQueryKey().
+const sessionQueryKey = (): ReturnType<typeof currentSessionQueryKey> => [
+  { _id: 'currentSession', baseUrl: KEY_ORIGIN },
+]
 
 /** The caller's session, or null for a guest. Read by the root route into the router context (spec 7.5). */
 export const sessionOptions = () =>
   queryOptions({
-    queryKey: currentSessionQueryKey(),
+    queryKey: sessionQueryKey(),
     queryFn: async ({ signal }): Promise<SessionInfo | null> => {
       try {
+        const { currentSession } = await import('#/shared/api/gen/sdk.gen')
         const { data } = await currentSession({ signal, throwOnError: true })
         return data
       } catch (error) {

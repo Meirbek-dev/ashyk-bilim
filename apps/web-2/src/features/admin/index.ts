@@ -1,4 +1,3 @@
-export { usersSearchSchema } from './model/admin'
 export {
   configOptions,
   ensureGroup,

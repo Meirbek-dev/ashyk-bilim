@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { LoginPage, loginSearchSchema } from '#/features/auth'
+import { LoginPage } from '#/features/auth'
+import { loginSearchSchema } from '#/features/auth/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_guest/login')({
