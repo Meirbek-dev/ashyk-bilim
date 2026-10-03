@@ -12,7 +12,6 @@ import { SubmissionAiPanel } from './submission-ai-panel'
 
 const SUBMISSION = '0190a5d2-0000-7000-8000-0000000000e1'
 const RUN = '0190a5d2-0000-7000-8000-0000000000e2'
-const ru = { locale: 'ru' } as const
 
 const analysis: SubmissionAnalysis = {
   analysis: {
@@ -109,9 +108,9 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
   test('B-AI-16 B-AI-17 without an analysis the gate is off and asks for an analysis first', async () => {
     stubApi({ analysis: null, gate: null })
     const screen = await render()
-    await expect.element(screen.getByText(m.ai_submission_empty({}, ru))).toBeVisible()
-    await expect.element(screen.getByText(m.ai_gate_needs_analysis({}, ru))).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: m.ai_gate_assign({}, ru) })).toBeDisabled()
+    await expect.element(screen.getByText(m.ai_submission_empty())).toBeVisible()
+    await expect.element(screen.getByText(m.ai_gate_needs_analysis())).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: m.ai_gate_assign() })).toBeDisabled()
   })
 
   test('B-AI-16 B-AI-17 the analysis shows its gaps; the gate asks first, queues with gate_mode, then holds', async () => {
@@ -119,10 +118,10 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     const screen = await render()
     await expect.element(screen.getByText('Условие выхода')).toBeVisible()
     await expect.element(screen.getByText('Повторить тему циклов')).toBeVisible()
-    await userEvent.click(screen.getByRole('button', { name: m.ai_gate_assign({}, ru) }))
-    await userEvent.click(screen.getByRole('alertdialog').getByRole('button', { name: m.ai_gate_assign({}, ru) }))
-    await expect.element(screen.getByText(m.ai_gate_assigned({}, ru))).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: m.ai_gate_assign({}, ru) })).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: m.ai_gate_assign() }))
+    await userEvent.click(screen.getByRole('alertdialog').getByRole('button', { name: m.ai_gate_assign() }))
+    await expect.element(screen.getByText(m.ai_gate_assigned())).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: m.ai_gate_assign() })).toBeDisabled()
     const queue = api.mock.calls.map(([request]) => request).find(request => request.url.endsWith('/generate/queue'))
     expect(await queue?.json()).toMatchObject({ gate_mode: true })
   })
