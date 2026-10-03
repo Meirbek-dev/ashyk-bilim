@@ -65,6 +65,40 @@ export function formatDayMonth(unixSeconds: number, locale: string = getLocale()
   )
 }
 
+/** Wall-clock parts of an instant in the platform zone, zero-padded, 24 h. */
+function platformParts(epochMs: number) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: PLATFORM_TIME_ZONE,
+  }).formatToParts(epochMs)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value ?? ''
+  return { year: part('year'), month: part('month'), day: part('day'), hour: part('hour'), minute: part('minute') }
+}
+
+/** A date with its time of day (deadlines, hand-ins), e.g. "1 февраля 2026 г., 01:30" / "2026 ж. 1 ақпан, 01:30". */
+export function formatDateTime(unixSeconds: number, locale: string = getLocale()): string {
+  const { hour, minute } = platformParts(unixSeconds * 1000)
+  return `${formatDate(unixSeconds, locale)}, ${hour}:${minute}`
+}
+
+/** The `<input type="datetime-local">` value of an instant, as the platform zone reads it. */
+export function toDateTimeInput(unixSeconds: number): string {
+  const { year, month, day, hour, minute } = platformParts(unixSeconds * 1000)
+  return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
+/** The instant (unix seconds) a `datetime-local` value names in the platform zone, whatever the browser's zone. */
+export function fromDateTimeInput(value: string): number {
+  const asUtc = Date.parse(`${value}:00Z`) / 1000
+  const offset = Date.parse(`${toDateTimeInput(asUtc)}:00Z`) / 1000 - asUtc
+  return asUtc - offset
+}
+
 /** A share the API sends as 0..100, e.g. "42,5 %" / "42.5%"; kk formats as ru (see formatNumber). */
 export function formatPercent(value: number, locale: string = getLocale()): string {
   const format = new Intl.NumberFormat(locale === 'kk' ? 'ru' : locale, { style: 'percent', maximumFractionDigits: 1 })

@@ -26,7 +26,8 @@
       "./messages/{locale}/player.json",
       "./messages/{locale}/analytics.json",
       "./messages/{locale}/studio.json",
-      "./messages/{locale}/inbox.json"
+      "./messages/{locale}/inbox.json",
+      "./messages/{locale}/submission.json"
     ]
   }
 }

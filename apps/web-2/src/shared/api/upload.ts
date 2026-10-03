@@ -30,16 +30,35 @@ const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly st
 
 export type UploadProblem = { kind: 'too-large'; maxBytes: number } | { kind: 'wrong-type'; mimes: readonly string[] }
 
+/**
+ * Narrower rules of the resource the file is for (a file-submission task's types and size): an empty or absent
+ * `mimes` keeps the purpose's list, `maxBytes` only lowers the purpose's cap.
+ */
+export type UploadLimits = { mimes?: readonly string[]; maxBytes?: number | null }
+
+const policyOf = (purpose: UploadPurpose, limits: UploadLimits) => {
+  const policy = uploadPolicy[purpose]
+  return {
+    maxBytes: Math.min(policy.maxBytes, limits.maxBytes ?? Infinity),
+    mimes: limits.mimes?.length ? limits.mimes : policy.mimes,
+  }
+}
+
 /** Why this file cannot be uploaded for this purpose, or null. Show it before any request (DESIGN 10 tone). */
-export function checkUpload(file: { size: number; type: string }, purpose: UploadPurpose): UploadProblem | null {
-  const { maxBytes, mimes } = uploadPolicy[purpose]
+export function checkUpload(
+  file: { size: number; type: string },
+  purpose: UploadPurpose,
+  limits: UploadLimits = {},
+): UploadProblem | null {
+  const { maxBytes, mimes } = policyOf(purpose, limits)
   if (file.size > maxBytes) return { kind: 'too-large', maxBytes }
   if (mimes.length > 0 && !mimes.includes(file.type)) return { kind: 'wrong-type', mimes }
   return null
 }
 
 /** The `accept` attribute of a file picker for this purpose ("" = any type). */
-export const uploadAccept = (purpose: UploadPurpose): string => uploadPolicy[purpose].mimes.join(',')
+export const uploadAccept = (purpose: UploadPurpose, limits: UploadLimits = {}): string =>
+  policyOf(purpose, limits).mimes.join(',')
 
 /** The image of a paste (a screenshot, a copied picture), or null when the clipboard holds none. */
 export function clipboardImage(clipboard: DataTransfer | null): File | null {

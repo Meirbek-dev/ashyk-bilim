@@ -44,8 +44,13 @@ function expected(leaf: Leaf, role: Role, seed: Seed): Outcome {
   if (leaf.id === '/_authed/collections/$collectionId/edit') {
     return seed.collectionActions[role].includes('update') ? 'renders' : 'forbidden'
   }
-  // The player and the course summary: the enrolled learner only (the loader reads the learner state).
-  if (leaf.id === '/_authed/learn/$courseId/$activityId' || leaf.id === '/_authed/learn/$courseId/complete') {
+  // The player, the course summary and the file hand-in: the enrolled learner only (the loader reads the learner state).
+  const learnerOnly = [
+    '/_authed/learn/$courseId/$activityId',
+    '/_authed/learn/$courseId/complete',
+    '/_authed/learn/$courseId/$activityId_/submission',
+  ]
+  if (learnerOnly.includes(leaf.id)) {
     return seed.enrolled[role] ? 'renders' : 'forbidden'
   }
   const held = seed.accounts[role].session.capabilities
