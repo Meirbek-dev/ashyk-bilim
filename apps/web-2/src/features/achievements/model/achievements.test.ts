@@ -20,6 +20,11 @@ const profile = (patch: Partial<Profile>): Profile => ({
   longest_learning_streak: 0,
   longest_login_streak: 0,
   preferences: {},
+  settings: {
+    display: { animated_effects: null, compact_mode: null },
+    notifications: { xp_gain: null },
+    privacy: { show_on_leaderboard: null },
+  },
   total_activities_completed: 0,
   total_courses_completed: 0,
   total_xp: 375,

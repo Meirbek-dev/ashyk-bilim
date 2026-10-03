@@ -14,6 +14,7 @@ const PROFILE = {
   bio: '',
   avatar_key: SLOT.key,
   locale: 'ru-RU',
+  language: 'ru',
   organization: 'School',
   profile: { sections: [] },
   theme: null,

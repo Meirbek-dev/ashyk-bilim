@@ -10,7 +10,7 @@ import {
   getActivityFileSubmissionQueryKey,
   getAttemptQueryKey,
   getSubmissionQueryKey,
-  getTrailQueryKey,
+  listEnrollmentsQueryKey,
   gradebookQueryKey,
   gradingHistoryQueryKey,
   itemAnalyticsQueryKey,
@@ -65,7 +65,7 @@ export const eventInvalidations = {
   // The learner's own work: progress, the trail, "Today", the task, its attempt state (quiz, exam, code) and submissions.
   'submission.updated': ({ course_id, activity_id, submission_id, attempt_id }) => [
     learnerCourseStateQueryKey({ path: { course_id } }),
-    getTrailQueryKey(),
+    listEnrollmentsQueryKey(),
     agendaQueryKey(),
     workQueueInfiniteQueryKey(),
     getActivityAssessmentQueryKey({ path: { activity_id } }),

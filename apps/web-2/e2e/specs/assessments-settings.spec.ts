@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import {
-  addCourse,
+  enroll,
   getAccess,
   getActivityAssessment,
   lifecycle,
@@ -110,7 +110,7 @@ test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the
 
 test('B-ASM-21 a learner gets an exception, it is changed and removed', async ({ page, studio, seed }) => {
   const { courseId, assessment } = await makeAssessment(studio, seed, { published: true })
-  await addCourse({
+  await enroll({
     client: studio.api,
     path: { course_id: courseId },
     headers: cookieOf(seed, 'student'),

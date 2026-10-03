@@ -7,7 +7,7 @@ import { vSetAccessRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { toast } from '#/shared/ui/toast'
 
-import { assessmentOptions, setAccessOptions } from '../queries'
+import { accessOptions, setAccessOptions } from '../queries'
 import { isStale } from './use-version'
 
 /** Restricted with nobody chosen locks every learner out (UX-057): saving that asks first. */
@@ -15,7 +15,7 @@ const locksOut = (body: SetAccessRequest) =>
   body.mode === 'restricted' && !body.user_ids?.length && !body.usergroup_ids?.length
 
 /**
- * The access form: `PUT .../access` with `If-Match` = the assessment's `policy_version` (the access ETag, UX-154).
+ * The access form: `PUT .../access` with `If-Match` = the access view's `version` (its ETag, UX-154).
  * A 412 opens the conflict dialog; "reload and retry" reads the new version and saves the same choice over it.
  */
 export function useAccessForm(activityId: string, assessment: AssessmentDetail, view: AccessView) {
@@ -28,10 +28,10 @@ export function useAccessForm(activityId: string, assessment: AssessmentDetail, 
     user_ids: view.users.map(user => user.id),
     usergroup_ids: view.usergroups.map(group => group.id),
   }))
-  const version = () => queryClient.getQueryData(assessmentOptions(activityId).queryKey)?.policy_version
+  const version = () => queryClient.getQueryData(accessOptions(assessment.id).queryKey)?.version ?? view.version
   const send = (body: SetAccessRequest) =>
     save.mutateAsync(
-      { path: { assessment_id: assessment.id }, body, headers: { 'If-Match': version() ?? assessment.policy_version } },
+      { path: { assessment_id: assessment.id }, body, headers: { 'If-Match': version() } },
       {
         onSuccess: () => {
           setConflict(false)
@@ -46,7 +46,7 @@ export function useAccessForm(activityId: string, assessment: AssessmentDetail, 
     onSubmit: body => (locksOut(body) && !confirming ? setConfirming(true) : send(body)),
   })
   const reloadAndRetry = async () => {
-    await queryClient.fetchQuery({ ...assessmentOptions(activityId), staleTime: 0 })
+    await queryClient.fetchQuery({ ...accessOptions(assessment.id), staleTime: 0 })
     await send(form.state.values).catch(() => undefined)
   }
   return { form, save, conflict, setConflict, confirming, setConfirming, send, reloadAndRetry }

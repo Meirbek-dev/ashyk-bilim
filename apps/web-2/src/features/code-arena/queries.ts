@@ -162,7 +162,11 @@ export const updateCodeOptions = (queryClient: QueryClient, activityId: Activity
     queryClient.setQueryData<AssessmentDetail | null>(
       assessmentKey(activityId),
       assessment =>
-        assessment && { ...assessment, items: assessment.items.map(row => (row.id === item.id ? item : row)) },
+        assessment && {
+          ...assessment,
+          items: assessment.items.map(row => (row.id === item.id ? item : row)),
+          version: item.assessment_version,
+        },
     ),
 })
 

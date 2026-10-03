@@ -23,7 +23,7 @@ import {
   updateAssessmentMutation,
   updateItemMutation,
   updateOverrideMutation,
-  usergroupsForCourseOptions,
+  groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type {
   AccessView,
@@ -45,7 +45,7 @@ export const accessOptions = (id: string) => getAccessOptions(byId(id))
 export const overridesOptions = (id: string) => listOverridesOptions(byId(id))
 export const assessmentReadinessOptions = (id: string) => readinessOptions(byId(id))
 /** Groups linked to the course: the only ones an access list may name. */
-export const courseGroupsOptions = (courseId: string) => usergroupsForCourseOptions({ path: { course_id: courseId } })
+export const courseGroupsOptions = (courseId: string) => groupsForCourseOptions({ path: { course_id: courseId } })
 export const auditOptions = (id: string) => auditTrailOptions({ ...byId(id), query: { limit: 50 } })
 
 // ponytail: the first 100 learners (one keyset page); a searchable picker when courses outgrow it.
@@ -69,10 +69,13 @@ const patchAssessment = (
     assessment => assessment && change(assessment),
   )
 
-const withItems = (change: (items: AssessmentItem[]) => AssessmentItem[]) => (assessment: AssessmentDetail) => ({
-  ...assessment,
-  items: change(assessment.items),
-})
+/** An item write answers `assessment_version`: the next `If-Match` of any assessment write takes it. */
+const withItems =
+  (change: (items: AssessmentItem[]) => AssessmentItem[], version?: number) => (assessment: AssessmentDetail) => ({
+    ...assessment,
+    items: change(assessment.items),
+    version: version ?? assessment.version,
+  })
 
 const renumber = (items: AssessmentItem[]) => items.map((item, at) => ({ ...item, position: at + 1 }))
 
@@ -111,7 +114,7 @@ export const createItemOptions = (queryClient: QueryClient, activityId: string, 
     patchAssessment(
       queryClient,
       activityId,
-      withItems(items => [...items, item]),
+      withItems(items => [...items, item], item.assessment_version),
     ),
   meta: { invalidates: [readiness(id)] },
 })
@@ -122,19 +125,22 @@ export const updateItemOptions = (queryClient: QueryClient, activityId: string, 
     patchAssessment(
       queryClient,
       activityId,
-      withItems(items => items.map(row => (row.id === item.id ? item : row))),
+      withItems(items => items.map(row => (row.id === item.id ? item : row)), item.assessment_version),
     ),
   meta: { invalidates: [readiness(id)] },
 })
 
+/** Sent with `Prefer: return=representation`: the answer is the assessment after the delete (renumbered, new version). */
 export const deleteItemOptions = (queryClient: QueryClient, activityId: string, id: string) => ({
   ...deleteItemMutation(),
-  onSuccess: (_: unknown, { path }: { path: { item_id: string } }) =>
-    patchAssessment(
-      queryClient,
-      activityId,
-      withItems(items => renumber(items.filter(item => item.id !== path.item_id))),
-    ),
+  onSuccess: (assessment: AssessmentDetail | void, { path }: { path: { item_id: string } }) =>
+    assessment
+      ? putAssessment(queryClient, activityId)(assessment)
+      : patchAssessment(
+          queryClient,
+          activityId,
+          withItems(items => renumber(items.filter(item => item.id !== path.item_id))),
+        ),
   meta: { invalidates: [readiness(id)] },
 })
 
@@ -148,12 +154,17 @@ export const placeItems = (queryClient: QueryClient, activityId: string, items: 
 
 export const reorderItemsOptions = (queryClient: QueryClient, activityId: string) => ({
   ...reorderItemsMutation(),
-  onSuccess: (items: AssessmentItem[]) => placeItems(queryClient, activityId, items),
+  onSuccess: (items: AssessmentItem[]) =>
+    patchAssessment(
+      queryClient,
+      activityId,
+      withItems(() => items, items[0]?.assessment_version),
+    ),
 })
 
 /**
- * Every access save bumps `policy_version` (server, UX-154) and, as a row change, `version` (S-04 trigger): the next
- * `If-Match` of access and of the rules take the bumped ones.
+ * The answer carries the access `version` (the next `If-Match` of access). The save also bumps the assessment's
+ * `policy_version` (UX-154) and, as a row change, `version` (S-04 trigger): the rules' next `If-Match` take them.
  */
 export const setAccessOptions = (queryClient: QueryClient, activityId: string, id: string) => ({
   ...setAccessMutation(),

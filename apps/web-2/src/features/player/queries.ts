@@ -3,12 +3,12 @@ import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
-  addActivityMutation,
+  completeActivityMutation,
   getActivityOptions,
-  getTrailQueryKey,
+  listEnrollmentsQueryKey,
   learnerCourseStateOptions,
   myCertificatesQueryKey,
-  removeActivityMutation,
+  uncompleteActivityMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { ActivityId, CourseId, Trail } from '#/shared/api/gen/types.gen'
 
@@ -25,14 +25,14 @@ const progress = (queryClient: QueryClient, courseId: CourseId) => ({
   onSuccess: ({ learner_state: state }: Trail) => {
     if (state) queryClient.setQueryData(learnerStateOptions(courseId).queryKey, state)
   },
-  meta: { invalidates: [getTrailQueryKey(), myCertificatesQueryKey()] },
+  meta: { invalidates: [listEnrollmentsQueryKey(), myCertificatesQueryKey()] },
 })
 export const markOptions = (queryClient: QueryClient, courseId: CourseId) => ({
-  ...addActivityMutation(withState),
+  ...completeActivityMutation(withState),
   ...progress(queryClient, courseId),
 })
 export const unmarkOptions = (queryClient: QueryClient, courseId: CourseId) => ({
-  ...removeActivityMutation(withState),
+  ...uncompleteActivityMutation(withState),
   ...progress(queryClient, courseId),
 })
 

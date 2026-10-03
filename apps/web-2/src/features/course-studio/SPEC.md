@@ -1,6 +1,6 @@
 # course-studio
 
-Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, usergroupsForCourse, listUsergroups, addUsergroupCourses, removeUsergroupCourses, listContributors, addContributor, updateContributor, removeContributor, listCourseUpdates, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification
+Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, listContributors, addContributor, updateContributor, removeContributor, listCourseUpdates, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification
 
 Рабочее место курса `/teach/courses/$courseId/{overview,content,learners,team,settings,publish}` и студия
 активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}` (5.3, 5.4). Вкладки `gradebook`,
@@ -103,10 +103,10 @@
 - `Idempotency-Key` у `POST /courses`, `/courses/{id}/chapters`, `/chapters/{id}/activities`, `/assessments`,
   `/file-submissions`, `/courses/{id}/updates`, `/courses/{id}/contributors`, `/certifications`.
 - Список учащихся курса с прогрессом и «Исключить учащегося»: нет `GET /courses/{id}/learners` и операции
-  отчисления (есть только `DELETE /trail/courses/{id}` самого учащегося).
+  отчисления (есть только `DELETE /enrollments/{id}` самого учащегося).
 - Предпросмотр PDF сертификата: `GET /certificates/{code}/pdf` требует выданный код, предпросмотра настройки нет.
 - `Contributor` без `allowed_actions`, `role`/`status` - строки; у `CourseUpdate` нет автора и `allowed_actions`;
   `ReadinessItem.code` - строка, а не перечисление.
-- `moveChapter`, `moveActivity`, `addUsergroupCourses`, `removeUsergroupCourses` отвечают 204 без тела: кэш
+- `moveChapter`, `moveActivity`, `addGroupCourses`, `removeGroupCourses` отвечают 204 без тела: кэш
   правится на клиенте.
 - Срок у самой активности (`Activity`): поля нет. `settings.required` в контракте есть, студия его пока не правит.

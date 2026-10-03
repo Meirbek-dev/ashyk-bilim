@@ -1,6 +1,6 @@
 # analytics
 
-Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, listSavedViews, saveView, deleteView, getUsergroup, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
+Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, listSavedViews, saveView, deleteView, getGroup, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
 
 ## Поведение
 

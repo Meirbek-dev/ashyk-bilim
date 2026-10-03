@@ -83,7 +83,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
             total={items.length}
             answer={draft.answers[shown.id]}
             onChange={answer => draft.change(shown.id, answer)}
-            disabled={draft.closed || expired || submit.pending}
+            disabled={draft.closed !== null || expired || submit.pending}
           />
         ) : null}
         <ItemPager current={current} total={items.length} />

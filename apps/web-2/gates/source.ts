@@ -2,7 +2,18 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { allowlist, appDir, type Finding, matches, read, repoDir, sdkOperations, usesOperation, walk } from './lib.ts'
+import {
+  allowlist,
+  appDir,
+  type Finding,
+  deprecatedOperations,
+  matches,
+  read,
+  repoDir,
+  sdkOperations,
+  usesOperation,
+  walk,
+} from './lib.ts'
 
 const CODE = /\.(ts|tsx)$/
 
@@ -10,14 +21,16 @@ export function apiCoverage(phaseOverride?: number): { findings: Finding[]; enfo
   const policy = allowlist().apiCoverage
   const service = new Set(policy.serviceOperations.map(entry => entry.operation))
   const sources = walk('src', CODE).map(read).join('\n')
-  const unused = sdkOperations().filter(operation => !service.has(operation) && !usesOperation(sources, operation))
+  const deprecated = deprecatedOperations()
+  const operations = sdkOperations().filter(operation => !deprecated.has(operation))
+  const unused = operations.filter(operation => !service.has(operation) && !usesOperation(sources, operation))
   const phase = phaseOverride ?? policy.phase
   const findings = unused.map(operation => ({
     file: 'src/shared/api/gen/sdk.gen.ts',
     rule: 'api-coverage',
     fix: `no consumer for ${operation}(): build its UI or delete the operation from the server`,
   }))
-  const summary = `api-coverage: ${unused.length} of ${sdkOperations().length} operations without a consumer (phase ${phase}, enforced from ${policy.enforceFromPhase})`
+  const summary = `api-coverage: ${unused.length} of ${operations.length} operations without a consumer (phase ${phase}, enforced from ${policy.enforceFromPhase}; ${deprecated.size} deprecated skipped)`
   return { findings, enforced: phase >= policy.enforceFromPhase, summary }
 }
 

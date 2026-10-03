@@ -1,5 +1,12 @@
 import { ApiError } from '#/shared/api/errors'
-import type { AssessmentItem, AttemptState, DisabledReason, ItemAnswer, Policy } from '#/shared/api/gen/types.gen'
+import type {
+  AssessmentItem,
+  AttemptState,
+  DisabledReason,
+  ErrorCode,
+  ItemAnswer,
+  Policy,
+} from '#/shared/api/gen/types.gen'
 
 export type EntryAction =
   | { kind: 'continue'; draftId: string }
@@ -75,6 +82,12 @@ export function saveOutcome(error: unknown): SaveOutcome {
   if (error.status === 404) return 'gone'
   return 'failed'
 }
+
+const GATE_CODES: readonly ErrorCode[] = ['attempt-time-expired', 'attempt-past-due', 'remediation-required']
+
+/** Why the gate shut, when a 403 names it (`attempt-time-expired`...); a plain `forbidden` names nothing. */
+export const gateCode = (error: unknown): ErrorCode | null =>
+  error instanceof ApiError && error.status === 403 && GATE_CODES.includes(error.code) ? error.code : null
 
 /** The one save indicator has exactly three states (B-ATT-09): no network wins, then anything still queued. */
 export type SaveStatus = 'saved' | 'saving' | 'offline'

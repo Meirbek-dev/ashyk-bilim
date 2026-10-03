@@ -1,6 +1,6 @@
 # admin
 
-Операции: listUsers, createUser, assignRole, unassignRole, setUserStatus, listRoles, createRole, updateRole, deleteRole, setRolePermissions, getPlatform, updatePlatform, getConfig, updateConfig, adminAward, search, listUsergroups, getUsergroup, createUsergroup, updateUsergroup, deleteUsergroup, listUsergroupMembers, addUsergroupMembers, removeUsergroupMembers
+Операции: listUsers, createUser, assignRole, unassignRole, setUserStatus, listRoles, createRole, updateRole, deleteRole, setRolePermissions, getPlatform, updatePlatform, getConfig, updateConfig, adminAward, search, listGroups, getGroup, createGroup, updateGroup, deleteGroup, listGroupMembers, addGroupMembers, removeGroupMembers
 
 ## Поведение
 
@@ -35,14 +35,14 @@
 
 ## Не переносится
 
-- Привязка групп к курсам (`listUsergroupCourses`, `addUsergroupCourses`, `removeUsergroupCourses`, `usergroupsForCourse`) - вкладка `learners` рабочего места курса (срез `course-studio`).
+- Привязка групп к курсам (`listGroupCourses`, `addGroupCourses`, `removeGroupCourses`, `groupsForCourse`) - вкладка `learners` рабочего места курса (срез `course-studio`).
 
 ## Ждёт сервера
 
 - Сортировка и фильтры списка пользователей (статус, роль): у `GET /users` есть только `q`, `cursor`, `limit`; сортировать загруженную страницу в браузере нельзя.
 - `GET /users/{user_id}` для администратора: панель находит пользователя через `GET /users?q=<имя пользователя>` с точным совпадением.
 - Группы пользователя (`GET /users/{user_id}/groups`): панель только добавляет в группу, состав групп виден на их страницах.
-- `Idempotency-Key` у `POST /users`, `POST /rbac/roles`, `POST /usergroups` (S-04): повтор после обрыва создаст дубль или ответит 409.
+- `Idempotency-Key` у `POST /users`, `POST /rbac/roles`, `POST /groups` (S-04): повтор после обрыва создаст дубль или ответит 409.
 - Право создавать пользователей и роли (`platform:manage`, `role:manage`) не приходит ни в `capabilities`, ни в `allowed_actions`: кнопки видны всем с `admin.users` / `admin.roles`, отказ - 403 в диалоге.
 - `GET /rbac/roles/{slug}`: страница роли читает весь список.
 - Значения платформы по умолчанию для `GamificationConfig` не в контракте: пустое поле подписано «по умолчанию» без числа.

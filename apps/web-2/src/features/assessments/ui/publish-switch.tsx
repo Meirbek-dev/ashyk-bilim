@@ -10,6 +10,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { Switch } from '#/shared/ui/switch'
 import { toast } from '#/shared/ui/toast'
 
+import { canMove } from '../model/publishing'
 import { can } from '../model/route'
 import { assessmentOptions, lifecycleOptions } from '../queries'
 
@@ -18,14 +19,16 @@ const notReady = (error: unknown) => error instanceof ApiError && error.code ===
 
 /**
  * "Published" in the studio header for an assessment: on publishes it (the server flips the activity with it), off
- * asks first and returns it to draft (UX-200). Archived: off and locked; scheduling and archive live in `settings`.
+ * asks first and returns it to draft (UX-200). Locked when `allowed_transitions` lacks the move (archived);
+ * scheduling and archive live in `settings`.
  */
 export function AssessmentPublishSwitch({ activity }: { activity: ActivityDetail }) {
   const labelId = useId()
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activity.id))
   const transition = useMutation(lifecycleOptions(useQueryClient(), activity.id, activity.course_id, assessment.id))
   const [confirming, setConfirming] = useState(false)
-  const allowed = can(assessment, 'transition') && assessment.lifecycle !== 'archived'
+  const published = assessment.lifecycle === 'published'
+  const allowed = can(assessment, 'transition') && canMove(assessment, published ? 'draft' : 'published')
   const set = (to: Lifecycle) =>
     transition.mutate(
       { path: { assessment_id: assessment.id }, body: { to } },
@@ -43,7 +46,7 @@ export function AssessmentPublishSwitch({ activity }: { activity: ActivityDetail
       </span>
       <Switch
         aria-labelledby={labelId}
-        checked={assessment.lifecycle === 'published'}
+        checked={published}
         disabled={!allowed || transition.isPending}
         onCheckedChange={next => (next ? set('published') : setConfirming(true))}
       />

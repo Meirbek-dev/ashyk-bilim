@@ -1,6 +1,6 @@
 # player
 
-Операции: learnerCourseState, getActivity, addActivity, removeActivity
+Операции: learnerCourseState, getActivity, completeActivity, uncompleteActivity
 
 Плеер `/learn/$courseId/$activityId` и итоги курса `/learn/$courseId/complete` (5.3, 5.4): фокус-режим, слева
 оглавление, в середине активность, справа слот панели AI (срез 6.3). Оглавление, отметки, блокировки, прогресс и
@@ -59,8 +59,8 @@
 ## Ждёт сервера
 
 - В `ActivityState.allowed_actions` нет действий «отметить» и «снять отметку»: ручная отметка выводится из типа
-  (сервер принимает `POST /trail/activities/{id}` только для страницы, видео, документа и другой; 409 для прочих).
-- У отметки (`POST /trail/activities/{id}`) нет `Idempotency-Key`.
+  (сервер принимает `POST /progress/activities/{id}` только для страницы, видео, документа и другой; 409 для прочих).
+- У отметки (`POST /progress/activities/{id}`) нет `Idempotency-Key`.
 - Число попыток и их предел не входят в `ActivityState`: карточка входа их не показывает (они в
   `GET /activities/{id}/assessment` и `/file-submission`, это экраны срезов 5.2-5.4).
 - `content` активности - нетипизированный JSON: форма видео (`uri`, `filename`) и документа (`filename`) взята из

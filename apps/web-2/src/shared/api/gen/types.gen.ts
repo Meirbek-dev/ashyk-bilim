@@ -30,6 +30,10 @@ export type AccessView = {
      * Only meaningful while `mode` is `restricted`.
      */
     users: Array<AccessUser>;
+    /**
+     * The `If-Match` of `PUT .../access` (also the `ETag`).
+     */
+    version: number;
 };
 
 export type ActionId = 'enroll' | 'start' | 'continue' | 'revise' | 'view_feedback' | 'wait_for_grade' | 'view_certificate' | 'review_completion' | 'none';
@@ -571,12 +575,18 @@ export type Assessment = {
      * What the caller may do to this assessment now.
      */
     allowed_actions: Array<AssessmentAction>;
+    /**
+     * The lifecycle targets `POST .../lifecycle` accepts from here (empty
+     * without `transition`).
+     */
+    allowed_transitions: Array<Lifecycle>;
     archived_at_unix: UnixTime | null;
     content_version: number;
     course_id: CourseId;
     created_at_unix: UnixTime;
     creator_id: UserId | null;
     description: string;
+    edit_lock: EditLock | null;
     grading_type: GradingType;
     id: AssessmentId;
     kind: AssessmentKind;
@@ -598,7 +608,7 @@ export type Assessment = {
 /**
  * What the caller may do to an assessment (`Assessment.allowed_actions`).
  */
-export type AssessmentAction = 'update' | 'transition' | 'duplicate' | 'grade';
+export type AssessmentAction = 'update' | 'transition' | 'duplicate' | 'grade' | 'edit';
 
 export type AssessmentAuditEventRow = {
     action: string;
@@ -654,6 +664,11 @@ export type AssessmentDiagnosticsSnapshot = {
 export type AssessmentId = string;
 
 export type AssessmentItem = {
+    /**
+     * The assessment's `version` after this read or write - the next
+     * `If-Match` of an item or assessment write.
+     */
+    assessment_version: number;
     body: ItemBody;
     id: AssessmentItemId;
     kind: ItemKind;
@@ -900,11 +915,21 @@ export type AttemptState = {
 
 export type AuditEvent = {
     actor_id: UserId | null;
+    /**
+     * The actor's display name (`null`: the scheduler, or a deleted user).
+     */
+    actor_name: string | null;
     created_at_unix: UnixTime;
-    event: string;
+    event: AuditEventKind;
     id: string;
     payload: AuditPayload;
 };
+
+/**
+ * `assessment_audit_events.event`: what an audit row records (the writers
+ * take this type, so the wire set is closed).
+ */
+export type AuditEventKind = 'lifecycle-transition' | 'auto-publish-skipped' | 'duplicated-from' | 'access-changed' | 'override-created' | 'override-updated' | 'override-deleted' | 'deadline-extended' | 'deadline-extension-requested' | 'grade-saved' | 'grades-published' | 'submission-submitted';
 
 /**
  * `assessment_audit_events.payload`.
@@ -1986,6 +2011,11 @@ export type CreateDiscussionRequest = {
      * Reply to this post (one level).
      */
     parent_id?: DiscussionId;
+    /**
+     * Finalized `discussion-image` uploads the content shows: claimed by
+     * the post (unclaimed uploads are reaped after a day).
+     */
+    upload_ids?: Array<string>;
 };
 
 export type CreateFileSubmissionRequest = {
@@ -2244,6 +2274,11 @@ export type DisplayPreferences = {
     compactMode?: boolean;
 };
 
+export type DisplaySettings = {
+    animated_effects: boolean | null;
+    compact_mode: boolean | null;
+};
+
 /**
  * The draft's complete file list (replaces what was attached before).
  */
@@ -2312,6 +2347,16 @@ export type DrillThroughResponse = {
  */
 export type DrillThroughRow = DrillProgressRow | DrillBacklogRow | DrillPassRateRow;
 
+/**
+ * `POST /courses/{id}/duplicate`.
+ */
+export type DuplicateCourseRequest = {
+    /**
+     * Defaults to `"<name> (copy)"`.
+     */
+    name?: string;
+};
+
 export type DuplicateRequest = {
     /**
      * Target chapter in the same course; defaults to the source's chapter.
@@ -2327,6 +2372,12 @@ export type EditCourseUpdateRequest = {
     content?: string;
     title?: string;
 };
+
+/**
+ * Why details, policy and items are read-only right now (the
+ * [`ensure_editable`] rules; `Assessment.edit_lock`).
+ */
+export type EditLock = 'archived' | 'scheduled' | 'has_submissions';
 
 /**
  * The rich-text editor document (Tiptap / ProseMirror JSON). The node tree
@@ -2365,7 +2416,7 @@ export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -2442,6 +2493,11 @@ export type FeatureSetting = {
     key: string;
     source: string;
 };
+
+/**
+ * The auto-grader's verdict codes (`GradedItem.feedback_code`).
+ */
+export type FeedbackCode = 'no-answer' | 'no-correct-answer' | 'correct' | 'partially-correct-no-credit' | 'partially-correct' | 'incorrect' | 'pairs-matched' | 'tests-passed';
 
 /**
  * A single field-level validation failure. `code` is a stable machine key the
@@ -2676,6 +2732,16 @@ export type GamificationSectionSettings = {
     showXp?: boolean;
 };
 
+/**
+ * S-10 `Profile.settings`: the preferences with snake_case keys; a value
+ * never set is `null`.
+ */
+export type GamificationSettings = {
+    display: DisplaySettings;
+    notifications: XpNotificationSettings;
+    privacy: PrivacySettings;
+};
+
 export type GradeAction = 'save' | 'publish' | 'return';
 
 export type GradePublishedPayload = {
@@ -2794,7 +2860,7 @@ export type GradedItem = {
      * Auto-grader verdict for the client to localize (`no-answer`,
      * `correct`, `partially-correct`, …); `None` for teacher prose.
      */
-    feedback_code?: string;
+    feedback_code?: FeedbackCode;
     /**
      * Placeholders for `feedback_code` (`{correct, total}`, …).
      */
@@ -3265,6 +3331,11 @@ export type LinksSection = {
 export type Locale = 'ru-RU' | 'kk-KZ' | 'en-US';
 
 /**
+ * A locale on input: the short tag (stored) or the legacy region tag.
+ */
+export type LocaleInput = 'ru' | 'kk' | 'en' | 'ru-RU' | 'kk-KZ' | 'en-US';
+
+/**
  * Password login. No `Debug` derive - the password must never format.
  */
 export type LoginRequest = {
@@ -3637,8 +3708,10 @@ export type Policy = {
 
 /**
  * `PATCH /gamification/preferences`: the sections the settings form owns.
+ *
  * A section absent from the patch is kept, `null` removes it, an object
- * replaces it. Keys are camelCase; anything else is 422.
+ * replaces it. Keys are camelCase or (S-10) snake_case; anything else is
+ * 422.
  */
 export type PreferencesPatch = {
     display?: DisplayPreferences | null;
@@ -3651,6 +3724,13 @@ export type PrivacyPreferences = {
      * `false` hides the profile from the leaderboard (and its rank is `null`).
      */
     showOnLeaderboard?: boolean;
+};
+
+export type PrivacySettings = {
+    /**
+     * `false` hides the profile from the leaderboard.
+     */
+    show_on_leaderboard: boolean | null;
 };
 
 /**
@@ -3740,7 +3820,14 @@ export type Profile = {
     login_streak: number;
     longest_learning_streak: number;
     longest_login_streak: number;
+    /**
+     * Stored camelCase document (old web); removed in phase 9.
+     */
     preferences: GamificationPreferences;
+    /**
+     * S-10: the same preferences with snake_case keys.
+     */
+    settings: GamificationSettings;
     total_activities_completed: number;
     total_courses_completed: number;
     total_xp: number;
@@ -4059,7 +4146,7 @@ export type ReadinessIssue = {
     /**
      * Stable machine key, e.g. `choice.options_missing`.
      */
-    code: string;
+    code: ReadinessIssueCode;
     item_id: AssessmentItemId | null;
     message: string;
     /**
@@ -4067,6 +4154,12 @@ export type ReadinessIssue = {
      */
     severity: ReadinessSeverity;
 };
+
+/**
+ * [`ReadinessIssue::code`] values (schema only; `readiness_codes_pinned`
+ * keeps the list in step with the rules).
+ */
+export type ReadinessIssueCode = 'assessment.title_missing' | 'assessment.empty' | 'schedule.after_due_at' | 'policy.due_at_past' | 'policy.cutoff_before_due' | 'policy.penalty_without_late' | 'item.kind_forbidden' | 'item.title_missing' | 'item.max_score_invalid' | 'choice.correct_missing' | 'choice.option_duplicate' | 'choice.option_id_duplicate' | 'choice.option_text_missing' | 'choice.options_missing' | 'choice.prompt_missing' | 'choice.too_many_correct' | 'code.languages_missing' | 'code.prompt_missing' | 'code.test_io_missing' | 'code.test_weight_invalid' | 'code.tests_missing' | 'form.field_id_duplicate' | 'form.field_label_missing' | 'form.fields_missing' | 'form.prompt_missing' | 'matching.left_duplicate' | 'matching.pair_value_missing' | 'matching.pairs_missing' | 'matching.prompt_missing' | 'matching.right_duplicate' | 'open_text.min_words_invalid' | 'open_text.prompt_missing';
 
 /**
  * One readiness blocker.
@@ -4318,6 +4411,11 @@ export type Role = {
      */
     display_name_key: string;
     is_system: boolean;
+    /**
+     * Grants `resource:action[:scope]`. Assessment rights are the
+     * `assessment` resource; `quiz` / `exam` are legacy names kept as
+     * stored on migrated roles and grant nothing (S-10).
+     */
     permissions: Array<string>;
     priority: number;
     slug: string;
@@ -4717,6 +4815,13 @@ export type SessionUser = {
     display_name: string;
     email: string;
     id: UserId;
+    /**
+     * D-03: the UI language (`ru`, `kk`, `en`).
+     */
+    language: UiLanguage;
+    /**
+     * Legacy region tag (`ru-RU`, …); removed in phase 9.
+     */
     locale: Locale;
     /**
      * UI theme slug; `null` = the web default.
@@ -4740,7 +4845,9 @@ export type SetAccessRequest = {
 export type SetRolePermissionsRequest = {
     /**
      * Full replacement grant set; every entry must parse against the
-     * permission registry (`resource:action[:scope]`).
+     * permission registry (`resource:action[:scope]`). Assessment rights
+     * are the `assessment` resource (`quiz` / `exam` still parse but grant
+     * nothing).
      */
     permissions: Array<string>;
 };
@@ -4806,10 +4913,15 @@ export type StudentOverride = {
     due_at_override_unix: UnixTime | null;
     expires_at_unix: UnixTime | null;
     granted_by: UserId | null;
+    granted_by_name: string | null;
     id: string;
     max_attempts_override: number | null;
     note: string;
     updated_at_unix: UnixTime;
+    /**
+     * Display names of the learner and the granter.
+     */
+    user_display_name: string | null;
     user_id: UserId;
     waive_late_penalty: boolean;
 };
@@ -5286,6 +5398,12 @@ export type Transaction = {
 };
 
 /**
+ * `?lang=` on CSV exports and certificate PDFs (a link cannot set
+ * `Accept-Language`); `middleware::lang_query` turns it into that header.
+ */
+export type UiLanguage = 'ru' | 'kk' | 'en';
+
+/**
  * Unix time: whole seconds since 1970-01-01T00:00:00Z.
  */
 export type UnixTime = number;
@@ -5375,6 +5493,10 @@ export type UpdateCourseRequest = {
 export type UpdateDiscussionRequest = {
     content?: string;
     status?: DiscussionStatus;
+    /**
+     * Images added by this edit (see `CreateDiscussionRequest.upload_ids`).
+     */
+    upload_ids?: Array<string>;
 };
 
 export type UpdateGamificationConfigRequest = {
@@ -5431,9 +5553,10 @@ export type UpdateProfileRequest = {
     bio?: string;
     display_name?: string;
     /**
-     * One of the platform locales.
+     * A platform locale, short (`ru`, `kk`, `en`) or the legacy region tag;
+     * stored short (D-03).
      */
-    locale?: Locale;
+    locale?: LocaleInput;
     /**
      * School / university / company; a blank value is 422 `required`.
      */
@@ -5465,7 +5588,7 @@ export type UpdateUsergroupRequest = {
 /**
  * What an upload is for: decides bucket, size cap and allowed MIME types.
  */
-export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover';
+export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover' | 'discussion-image';
 
 /**
  * Platform usage against the monthly budget (legacy `AIUsageSummary`)
@@ -5508,6 +5631,13 @@ export type UserProfile = {
      */
     has_password: boolean;
     id: UserId;
+    /**
+     * D-03: the UI language (`ru`, `kk`, `en`).
+     */
+    language: UiLanguage;
+    /**
+     * Legacy region tag (`ru-RU`, …) whatever is stored; removed in phase 9.
+     */
     locale: Locale;
     /**
      * TOTP enrolled on the account (`false` where no session is involved,
@@ -5808,6 +5938,10 @@ export type XpAwarded = {
      */
     total_xp: number;
     transaction_id: XpTransactionId;
+};
+
+export type XpNotificationSettings = {
+    xp_gain: boolean | null;
 };
 
 /**
@@ -7517,7 +7651,7 @@ export type ExportAssessmentOutcomesData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/analytics/teacher/exports/assessment-outcomes.csv';
 };
@@ -7589,7 +7723,7 @@ export type ExportAtRiskData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/analytics/teacher/exports/at-risk.csv';
 };
@@ -7661,7 +7795,7 @@ export type ExportCourseProgressData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/analytics/teacher/exports/course-progress.csv';
 };
@@ -7733,7 +7867,7 @@ export type ExportGradingBacklogData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/analytics/teacher/exports/grading-backlog.csv';
 };
@@ -8230,6 +8364,16 @@ export type DeleteViewResponse = DeleteViewResponses[keyof DeleteViewResponses];
 
 export type DeleteItemData = {
     body?: never;
+    headers?: {
+        /**
+         * Assessment `version`; stale → 412 (without it nothing changes)
+         */
+        'If-Match'?: number | null;
+        /**
+         * `return=representation`: answer 200 with the assessment after the delete instead of 204
+         */
+        Prefer?: string | null;
+    };
     path: {
         /**
          * Item id
@@ -8245,11 +8389,19 @@ export type DeleteItemErrors = {
      * Content locked, or the last item of a live assessment
      */
     409: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteItemError = DeleteItemErrors[keyof DeleteItemErrors];
 
 export type DeleteItemResponses = {
+    /**
+     * Deleted; the assessment (with `Prefer: return=representation`)
+     */
+    200: AssessmentDetail;
     /**
      * Deleted
      */
@@ -8260,6 +8412,12 @@ export type DeleteItemResponse = DeleteItemResponses[keyof DeleteItemResponses];
 
 export type UpdateItemData = {
     body: UpdateItemRequest;
+    headers?: {
+        /**
+         * Assessment `version`; stale → 412 (without it nothing changes)
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Item id
@@ -8275,6 +8433,10 @@ export type UpdateItemErrors = {
      * Content locked
      */
     409: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type UpdateItemError = UpdateItemErrors[keyof UpdateItemErrors];
@@ -8649,6 +8811,12 @@ export type ItemAnalyticsResponse = ItemAnalyticsResponses[keyof ItemAnalyticsRe
 
 export type CreateItemData = {
     body: CreateItemRequest;
+    headers?: {
+        /**
+         * Assessment `version`; stale → 412 (without it nothing changes)
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Assessment id
@@ -8660,6 +8828,10 @@ export type CreateItemData = {
 };
 
 export type CreateItemErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
     /**
      * Kind unsupported / limit / bad body
      */
@@ -8679,6 +8851,12 @@ export type CreateItemResponse = CreateItemResponses[keyof CreateItemResponses];
 
 export type ReorderItemsData = {
     body: ReorderItemsRequest;
+    headers?: {
+        /**
+         * Assessment `version`; stale → 412 (without it nothing changes)
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Assessment id
@@ -8691,6 +8869,10 @@ export type ReorderItemsData = {
 
 export type ReorderItemsErrors = {
     /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+    /**
      * Unknown item ids
      */
     422: Problem;
@@ -8700,7 +8882,7 @@ export type ReorderItemsError = ReorderItemsErrors[keyof ReorderItemsErrors];
 
 export type ReorderItemsResponses = {
     /**
-     * Reordered
+     * Reordered (order is presentation: the version stays)
      */
     200: Array<AssessmentItem>;
 };
@@ -9112,7 +9294,7 @@ export type ExportAssessmentSubmissionsCsvData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/assessments/{assessment_id}/submissions/export';
 };
@@ -9737,7 +9919,7 @@ export type CertificatePdfData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/certificates/{code}/pdf';
 };
@@ -9887,7 +10069,7 @@ export type CertificationPreviewPdfData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/certifications/{certification_id}/preview.pdf';
 };
@@ -11012,6 +11194,46 @@ export type CreateDiscussionResponses = {
 
 export type CreateDiscussionResponse = CreateDiscussionResponses[keyof CreateDiscussionResponses];
 
+export type DuplicateCourseData = {
+    body: DuplicateCourseRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Source course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/duplicate';
+};
+
+export type DuplicateCourseErrors = {
+    /**
+     * No create right or no write access to the source
+     */
+    403: Problem;
+    /**
+     * Unknown or invisible course
+     */
+    404: Problem;
+};
+
+export type DuplicateCourseError = DuplicateCourseErrors[keyof DuplicateCourseErrors];
+
+export type DuplicateCourseResponses = {
+    /**
+     * The copy
+     */
+    201: Course;
+};
+
+export type DuplicateCourseResponse = DuplicateCourseResponses[keyof DuplicateCourseResponses];
+
 export type GradebookData = {
     body?: never;
     path: {
@@ -11060,7 +11282,7 @@ export type ExportGradebookCsvData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/courses/{course_id}/gradebook/export';
 };
@@ -11126,6 +11348,27 @@ export type CourseGradingEventsResponses = {
 };
 
 export type CourseGradingEventsResponse = CourseGradingEventsResponses[keyof CourseGradingEventsResponses];
+
+export type GroupsForCourseData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/groups';
+};
+
+export type GroupsForCourseResponses = {
+    /**
+     * Groups
+     */
+    200: Array<Usergroup>;
+};
+
+export type GroupsForCourseResponse = GroupsForCourseResponses[keyof GroupsForCourseResponses];
 
 export type LearnerCourseStateData = {
     body?: never;
@@ -11597,6 +11840,139 @@ export type ListRepliesResponses = {
 
 export type ListRepliesResponse = ListRepliesResponses[keyof ListRepliesResponses];
 
+export type ListEnrollmentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * `next_cursor` of the previous page
+         */
+        cursor?: string;
+        /**
+         * Runs per page, 1..=100 (default: all; 20 with `cursor`)
+         */
+        limit?: number;
+    };
+    url: '/api/v2/enrollments';
+};
+
+export type ListEnrollmentsResponses = {
+    /**
+     * Trail
+     */
+    200: Trail;
+};
+
+export type ListEnrollmentsResponse = ListEnrollmentsResponses[keyof ListEnrollmentsResponses];
+
+export type LeaveCourseData = {
+    body?: never;
+    headers?: {
+        /**
+         * `return=representation`: also answer the course's `learner_state`
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/enrollments/{course_id}';
+};
+
+export type LeaveCourseErrors = {
+    /**
+     * Not signed in
+     */
+    401: Problem;
+    /**
+     * No trail access
+     */
+    403: Problem;
+    /**
+     * Unknown course or no run in it
+     */
+    404: Problem;
+    /**
+     * The trail lock is busy
+     */
+    409: Problem;
+    /**
+     * Malformed id
+     */
+    422: Problem;
+};
+
+export type LeaveCourseError = LeaveCourseErrors[keyof LeaveCourseErrors];
+
+export type LeaveCourseResponses = {
+    /**
+     * Trail
+     */
+    200: Trail;
+};
+
+export type LeaveCourseResponse = LeaveCourseResponses[keyof LeaveCourseResponses];
+
+export type EnrollData = {
+    body?: never;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+        /**
+         * `return=representation`: also answer the course's `learner_state`
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/enrollments/{course_id}';
+};
+
+export type EnrollErrors = {
+    /**
+     * Not signed in
+     */
+    401: Problem;
+    /**
+     * No course access
+     */
+    403: Problem;
+    /**
+     * Unknown or invisible course
+     */
+    404: Problem;
+    /**
+     * Course staff never enrol, or the trail lock is busy
+     */
+    409: Problem;
+    /**
+     * Malformed id
+     */
+    422: Problem;
+};
+
+export type EnrollError = EnrollErrors[keyof EnrollErrors];
+
+export type EnrollResponses = {
+    /**
+     * Trail
+     */
+    200: Trail;
+};
+
+export type EnrollResponse = EnrollResponses[keyof EnrollResponses];
+
 export type GetAttemptData = {
     body?: never;
     path: {
@@ -11955,7 +12331,7 @@ export type ExportFileSubmissionCsvData = {
         /**
          * Overrides `Accept-Language` (for links)
          */
-        lang?: unknown;
+        lang?: UiLanguage;
     };
     url: '/api/v2/file-submissions/{file_submission_id}/submissions/export';
 };
@@ -12186,6 +12562,332 @@ export type AdminAwardResponses = {
 };
 
 export type AdminAwardResponse = AdminAwardResponses[keyof AdminAwardResponses];
+
+export type ListGroupsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * next_cursor from the previous page
+         */
+        cursor?: UsergroupId;
+        /**
+         * Page size, 1..=100 (default 20)
+         */
+        limit?: number;
+    };
+    url: '/api/v2/groups';
+};
+
+export type ListGroupsResponses = {
+    /**
+     * Page of usergroups
+     */
+    200: UsergroupPage;
+};
+
+export type ListGroupsResponse = ListGroupsResponses[keyof ListGroupsResponses];
+
+export type CreateGroupData = {
+    body: CreateUsergroupRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v2/groups';
+};
+
+export type CreateGroupErrors = {
+    /**
+     * Missing permission
+     */
+    403: Problem;
+};
+
+export type CreateGroupError = CreateGroupErrors[keyof CreateGroupErrors];
+
+export type CreateGroupResponses = {
+    /**
+     * Created
+     */
+    201: Usergroup;
+};
+
+export type CreateGroupResponse = CreateGroupResponses[keyof CreateGroupResponses];
+
+export type DeleteGroupData = {
+    body?: never;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}';
+};
+
+export type DeleteGroupErrors = {
+    /**
+     * No write access
+     */
+    403: Problem;
+};
+
+export type DeleteGroupError = DeleteGroupErrors[keyof DeleteGroupErrors];
+
+export type DeleteGroupResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteGroupResponse = DeleteGroupResponses[keyof DeleteGroupResponses];
+
+export type GetGroupData = {
+    body?: never;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}';
+};
+
+export type GetGroupErrors = {
+    /**
+     * Unknown
+     */
+    404: Problem;
+};
+
+export type GetGroupError = GetGroupErrors[keyof GetGroupErrors];
+
+export type GetGroupResponses = {
+    /**
+     * Usergroup
+     */
+    200: Usergroup;
+};
+
+export type GetGroupResponse = GetGroupResponses[keyof GetGroupResponses];
+
+export type UpdateGroupData = {
+    body: UpdateUsergroupRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}';
+};
+
+export type UpdateGroupErrors = {
+    /**
+     * No write access
+     */
+    403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateGroupError = UpdateGroupErrors[keyof UpdateGroupErrors];
+
+export type UpdateGroupResponses = {
+    /**
+     * Updated
+     */
+    200: Usergroup;
+};
+
+export type UpdateGroupResponse = UpdateGroupResponses[keyof UpdateGroupResponses];
+
+export type RemoveGroupCoursesData = {
+    body: UsergroupCoursesRequest;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/courses';
+};
+
+export type RemoveGroupCoursesResponses = {
+    /**
+     * Unlinked
+     */
+    204: void;
+};
+
+export type RemoveGroupCoursesResponse = RemoveGroupCoursesResponses[keyof RemoveGroupCoursesResponses];
+
+export type ListGroupCoursesData = {
+    body?: never;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/courses';
+};
+
+export type ListGroupCoursesResponses = {
+    /**
+     * Linked course ids
+     */
+    200: Array<CourseId>;
+};
+
+export type ListGroupCoursesResponse = ListGroupCoursesResponses[keyof ListGroupCoursesResponses];
+
+export type AddGroupCoursesData = {
+    body: UsergroupCoursesRequest;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/courses';
+};
+
+export type AddGroupCoursesResponses = {
+    /**
+     * Linked
+     */
+    204: void;
+};
+
+export type AddGroupCoursesResponse = AddGroupCoursesResponses[keyof AddGroupCoursesResponses];
+
+export type RemoveGroupMembersData = {
+    body: UsergroupMembersRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/members';
+};
+
+export type RemoveGroupMembersResponses = {
+    /**
+     * Removed (`Prefer: return=representation`): the group
+     */
+    200: Usergroup;
+    /**
+     * Removed
+     */
+    204: void;
+};
+
+export type RemoveGroupMembersResponse = RemoveGroupMembersResponses[keyof RemoveGroupMembersResponses];
+
+export type ListGroupMembersData = {
+    body?: never;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/members';
+};
+
+export type ListGroupMembersResponses = {
+    /**
+     * Members
+     */
+    200: Array<UsergroupMember>;
+};
+
+export type ListGroupMembersResponse = ListGroupMembersResponses[keyof ListGroupMembersResponses];
+
+export type AddGroupMembersData = {
+    body: UsergroupMembersRequest;
+    headers?: {
+        /**
+         * `return=representation`: answer 200 with the updated resource instead of 204
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: never;
+    url: '/api/v2/groups/{group_id}/members';
+};
+
+export type AddGroupMembersResponses = {
+    /**
+     * Added (`Prefer: return=representation`): the group
+     */
+    200: Usergroup;
+    /**
+     * Added
+     */
+    204: void;
+};
+
+export type AddGroupMembersResponse = AddGroupMembersResponses[keyof AddGroupMembersResponses];
+
+export type ListGroupMembersPageData = {
+    body?: never;
+    path: {
+        /**
+         * Group id
+         */
+        group_id: UsergroupId;
+    };
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/api/v2/groups/{group_id}/members/page';
+};
+
+export type ListGroupMembersPageResponses = {
+    /**
+     * Page of members
+     */
+    200: UsergroupMemberPage;
+};
+
+export type ListGroupMembersPageResponse = ListGroupMembersPageResponses[keyof ListGroupMembersPageResponses];
 
 export type LiveData = {
     body?: never;
@@ -12562,6 +13264,60 @@ export type UpdatePlatformResponses = {
 };
 
 export type UpdatePlatformResponse = UpdatePlatformResponses[keyof UpdatePlatformResponses];
+
+export type UncompleteActivityData = {
+    body?: never;
+    headers?: {
+        /**
+         * `return=representation`: also answer the course's `learner_state`
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/progress/activities/{activity_id}';
+};
+
+export type UncompleteActivityResponses = {
+    /**
+     * Trail
+     */
+    200: Trail;
+};
+
+export type UncompleteActivityResponse = UncompleteActivityResponses[keyof UncompleteActivityResponses];
+
+export type CompleteActivityData = {
+    body?: never;
+    headers?: {
+        /**
+         * `return=representation`: also answer the course's `learner_state`
+         */
+        Prefer?: string | null;
+    };
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/progress/activities/{activity_id}';
+};
+
+export type CompleteActivityResponses = {
+    /**
+     * Trail
+     */
+    200: Trail;
+};
+
+export type CompleteActivityResponse = CompleteActivityResponses[keyof CompleteActivityResponses];
 
 export type ListRolesData = {
     body?: never;

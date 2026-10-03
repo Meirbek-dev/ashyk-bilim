@@ -41,6 +41,7 @@ const item = (languages: number[]): AssessmentItem => ({
   id: 'i1',
   kind: 'code',
   title: 'Sum',
+  assessment_version: 1,
   position: 1,
   max_score: 100,
   metadata: { difficulty: null, estimated_minutes: null, section_label: null },

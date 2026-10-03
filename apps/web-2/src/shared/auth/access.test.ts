@@ -23,6 +23,7 @@ const sessionWith = (capabilities: Capability[]): SessionInfo => ({
     display_name: 'Teacher',
     email: 'teacher@e2e.test',
     locale: 'ru-RU',
+    language: 'ru',
     avatar_key: null,
     theme: null,
   },

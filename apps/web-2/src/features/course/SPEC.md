@@ -1,6 +1,6 @@
 # course
 
-Операции: getCourse, getCurriculum, learnerCourseState, listContributors, addCourse, removeCourse, applyContributor, removeContributor, listCourseUpdates
+Операции: getCourse, getCurriculum, learnerCourseState, listContributors, enroll, leaveCourse, applyContributor, removeContributor, listCourseUpdates
 
 Страница курса `/courses/$courseId/{about,updates,discussions}` (5.3, 5.4): шапка `DetailPage` с одним главным
 действием, вкладки - дочерние маршруты. Обсуждения - фича `discussions`.
@@ -56,7 +56,7 @@
 
 ## Ждёт сервера
 
-- Сервер готов, веб ещё не перешёл (S-04): `Idempotency-Key` у записи на курс (`POST /trail/courses/{id}`), автор
+- Сервер готов, веб ещё не перешёл (S-04): `Idempotency-Key` у записи на курс (`POST /enrollments/{id}`), автор
   объявления (`CourseUpdate.author`), чтение гостем `learner-state`.
 - `ActivityState.activity_type` (план учащегося) - строка, а не enum `ActivityType`; тип `custom` есть на сервере, но
   не в таблице DESIGN 3.

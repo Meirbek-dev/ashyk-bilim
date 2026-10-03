@@ -141,14 +141,17 @@ test('B-ASM-09 a code challenge is edited by the code arena, not the question bu
   await expect(page.getByRole('button', { name: m.assessments_item_add({}, ru) })).toHaveCount(0)
 })
 
-test('B-ASM-11 a save the server refuses (scheduled) shows why and keeps the input', async ({ page, studio, seed }) => {
+test('B-ASM-11 a locked assessment (scheduled) shows why and its questions are read-only', async ({
+  page,
+  studio,
+  seed,
+}) => {
   const { courseId, assessment, headers } = await makeAssessment(studio, seed, { items: [readyChoice('Готов')] })
   const body = { to: 'scheduled' as const, scheduled_at_unix: Math.floor(Date.now() / 1000) + 86_400 }
   const path = { assessment_id: assessment.id }
   await lifecycle({ client: studio.api, path, body, headers, throwOnError: true })
   await page.goto(studioUrl(courseId, assessment.activity_id))
-  await page.getByLabel(m.assessments_field_title({}, ru)).fill('Новое название')
-  await expect(page.getByText(m.errors_assessment_read_only({}, ru))).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByText(m.studio_save_failed({}, ru), { exact: true })).toBeVisible()
-  await expect(page.getByLabel(m.assessments_field_title({}, ru))).toHaveValue('Новое название')
+  await expect(page.getByText(m.assessments_lock_scheduled({}, ru))).toBeVisible()
+  await expect(page.getByLabel(m.assessments_field_title({}, ru))).toBeDisabled()
+  await expect(page.getByRole('button', { name: m.assessments_item_add({}, ru) })).toHaveCount(0)
 })

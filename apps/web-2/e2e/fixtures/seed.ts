@@ -2,12 +2,12 @@ import { createClient, createConfig } from '#/shared/api/gen/client'
 import type { Client } from '#/shared/api/gen/client'
 import {
   createCollection,
-  createUsergroup,
+  createGroup,
   getCollection,
   getCurriculum,
   learnerCourseState,
   listCourses,
-  listUsergroups,
+  listGroups,
   login,
   search,
 } from '#/shared/api/gen/sdk.gen'
@@ -82,10 +82,10 @@ async function seedCollection(client: Client, teacher: Account, courseId: Course
 // A group the role matrix can open (/teach/groups/$groupId): the teacher's, found by name, created once per stand.
 const SEED_GROUP = 'E2E seed group'
 async function seedGroup(client: Client, teacher: Account): Promise<string> {
-  const groups = await listUsergroups({ client, query: { limit: 100 }, headers: cookieOf(teacher), throwOnError: true })
+  const groups = await listGroups({ client, query: { limit: 100 }, headers: cookieOf(teacher), throwOnError: true })
   const existing = groups.data.items.find(group => group.name === SEED_GROUP)
   if (existing) return existing.id
-  const created = await createUsergroup({
+  const created = await createGroup({
     client,
     body: { name: SEED_GROUP },
     headers: cookieOf(teacher),

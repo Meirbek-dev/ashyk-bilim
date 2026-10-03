@@ -13,6 +13,7 @@ import { can } from '../model/route'
 import { placeItems, reorderItemsOptions } from '../queries'
 import { AddItemMenu } from './add-item-menu'
 import { ItemRow } from './item-row'
+import { useVersion } from './use-version'
 
 type ItemListProps = { courseId: string; activityId: string; assessment: AssessmentDetail; openId: string | undefined }
 
@@ -23,7 +24,8 @@ type ItemListProps = { courseId: string; activityId: string; assessment: Assessm
 export function ItemList({ courseId, activityId, assessment, openId }: ItemListProps) {
   const queryClient = useQueryClient()
   const reorder = useMutation(reorderItemsOptions(queryClient, activityId))
-  const editable = can(assessment, 'update')
+  const editable = can(assessment, 'edit')
+  const version = useVersion(activityId)
   const { items } = assessment
   const drop = (event: DragEndEvent) => {
     if (event.canceled) return
@@ -32,7 +34,7 @@ export function ItemList({ courseId, activityId, assessment, openId }: ItemListP
     if (after.every((id, at) => id === before[at])) return
     placeItems(queryClient, activityId, inOrder(items, after))
     reorder.mutate(
-      { path: { assessment_id: assessment.id }, body: { items: after } },
+      { path: { assessment_id: assessment.id }, body: { items: after }, headers: version.headers() },
       { onError: () => placeItems(queryClient, activityId, items) },
     )
   }

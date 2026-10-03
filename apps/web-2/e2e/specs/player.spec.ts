@@ -26,8 +26,8 @@ const YOUTUBE = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 type Extra = { name: string; type: ActivityType; subType: ActivitySubType; content?: ActivityContent }
 
 // A made course (pages) plus activities of other types, added to its chapter by the teacher through the SDK.
-const test = base.extend<{ addActivity: (course: MadeCourse, extra: Extra) => Promise<ActivityId> }>({
-  addActivity: async ({ api, seed }, use) => {
+const test = base.extend<{ completeActivity: (course: MadeCourse, extra: Extra) => Promise<ActivityId> }>({
+  completeActivity: async ({ api, seed }, use) => {
     const { name: cookieName, value } = seed.accounts.teacher.cookie
     const headers = { cookie: `${cookieName}=${value}` }
     await use(async (course, { name, type, subType, content }) => {
@@ -112,7 +112,7 @@ test('B-PLY-03 B-PLY-05 B-PLY-06 B-PLY-07 B-PLY-08 a learner reads, marks a page
   page,
   learner,
   makeCourse,
-  addActivity,
+  completeActivity,
 }) => {
   // Publishing needs a published page: the empty "Page 1" comes first, the page with text second.
   const course = await makeCourse({ activities: 1 })
@@ -120,7 +120,7 @@ test('B-PLY-03 B-PLY-05 B-PLY-06 B-PLY-07 B-PLY-08 a learner reads, marks a page
     type: 'doc',
     content: [{ type: 'paragraph', content: [{ type: 'text', text: PAGE_TEXT }] }],
   }
-  await addActivity(course, { name: 'Вторая', type: 'dynamic', subType: 'dynamic_page', content: text })
+  await completeActivity(course, { name: 'Вторая', type: 'dynamic', subType: 'dynamic_page', content: text })
   await learner.enroll(course)
   await learner.signIn()
   await page.goto(play(course, 1))
@@ -195,14 +195,14 @@ test('B-PLY-09 B-PLY-10 a YouTube video embeds without cookies; a document witho
   page,
   learner,
   makeCourse,
-  addActivity,
+  completeActivity,
 }) => {
   await page.route('https://www.youtube-nocookie.com/**', route =>
     route.fulfill({ body: '<!doctype html><title>video</title>' }),
   )
   const course = await makeCourse({ activities: 1 })
-  await addActivity(course, { name: 'Видео', type: 'video', subType: 'video_youtube', content: { uri: YOUTUBE } })
-  await addActivity(course, { name: 'Документ', type: 'document', subType: 'document_pdf', content: {} })
+  await completeActivity(course, { name: 'Видео', type: 'video', subType: 'video_youtube', content: { uri: YOUTUBE } })
+  await completeActivity(course, { name: 'Документ', type: 'document', subType: 'document_pdf', content: {} })
   await learner.enroll(course)
   await learner.signIn()
   await page.goto(play(course, 1))
@@ -221,11 +221,11 @@ test('B-PLY-11 graded work shows an entry card whose action opens its own addres
   page,
   learner,
   makeCourse,
-  addActivity,
+  completeActivity,
 }) => {
   const course = await makeCourse({ activities: 1 })
   const work: Extra = { name: 'Эссе', type: 'file_submission', subType: 'file_submission_standard' }
-  await addActivity(course, work)
+  await completeActivity(course, work)
   await learner.enroll(course)
   await learner.signIn()
   await page.goto(play(course, 1))

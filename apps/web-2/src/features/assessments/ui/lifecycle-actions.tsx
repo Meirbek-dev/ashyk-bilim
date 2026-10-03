@@ -89,7 +89,7 @@ export function LifecycleActions({ activityId, title, assessment }: LifecycleAct
             {m.assessments_restore()}
           </Button>
         ) : null}
-        {canMove(from, 'archived') ? (
+        {canMove(assessment, 'archived') ? (
           <ConfirmDialog
             open={archiving}
             onOpenChange={next => {

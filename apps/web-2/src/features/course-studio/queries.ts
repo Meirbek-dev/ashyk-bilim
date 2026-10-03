@@ -19,14 +19,14 @@ import {
   listCourseCertificationsOptions,
   listCourseUpdatesOptions,
   listCoursesInfiniteQueryKey,
-  listUsergroupsOptions,
+  listGroupsOptions,
   removeContributorMutation,
   updateCertificationMutation,
   updateContributorMutation,
   updateCourseMutation,
-  usergroupsForCourseOptions,
+  groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { addContributor, addUsergroupCourses, listCourses, removeUsergroupCourses } from '#/shared/api/gen/sdk.gen'
+import { addContributor, addGroupCourses, listCourses, removeGroupCourses } from '#/shared/api/gen/sdk.gen'
 import type {
   Certification,
   Contributor,
@@ -72,7 +72,7 @@ export const courseOptions = (id: CourseId) => getCourseOptions(byId(id))
 export const readinessOptions = (id: CourseId) => courseReadinessOptions(byId(id))
 export const archivePreviewOptions = (id: CourseId) => courseArchivePreviewOptions(byId(id))
 export const contributorsOptions = (id: CourseId) => listContributorsOptions(byId(id))
-export const courseGroupsOptions = (id: CourseId) => usergroupsForCourseOptions(byId(id))
+export const courseGroupsOptions = (id: CourseId) => groupsForCourseOptions(byId(id))
 export const updatesOptions = (id: CourseId) => listCourseUpdatesOptions(byId(id))
 export const certificationsOptions = (id: CourseId) => listCourseCertificationsOptions(byId(id))
 
@@ -130,7 +130,7 @@ export const lifecycleOptions = (queryClient: QueryClient, id: CourseId) => ({
 // ponytail: the first 100 groups only (the API's page cap); a searchable picker when platforms outgrow it.
 /** Groups the caller may link courses to. */
 export const linkableGroupsOptions = () => ({
-  ...listUsergroupsOptions({ query: { limit: 100 } }),
+  ...listGroupsOptions({ query: { limit: 100 } }),
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_courses')),
 })
 
@@ -141,7 +141,7 @@ export const linkGroupsOptions = (queryClient: QueryClient, id: CourseId) => ({
   mutationFn: (groups: Usergroup[]) =>
     Promise.all(
       groups.map(group =>
-        addUsergroupCourses({ path: { usergroup_id: group.id }, body: { course_ids: [id] }, throwOnError: true }),
+        addGroupCourses({ path: { group_id: group.id }, body: { course_ids: [id] }, throwOnError: true }),
       ),
     ),
   onSuccess: (_: unknown, linked: Usergroup[]) =>
@@ -153,7 +153,7 @@ export const linkGroupsOptions = (queryClient: QueryClient, id: CourseId) => ({
 
 export const unlinkGroupOptions = (queryClient: QueryClient, id: CourseId) => ({
   mutationFn: (group: Usergroup) =>
-    removeUsergroupCourses({ path: { usergroup_id: group.id }, body: { course_ids: [id] }, throwOnError: true }),
+    removeGroupCourses({ path: { group_id: group.id }, body: { course_ids: [id] }, throwOnError: true }),
   onSuccess: (_: unknown, gone: Usergroup) =>
     setGroups(queryClient, id, groups => groups.filter(g => g.id !== gone.id)),
 })

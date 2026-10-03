@@ -26,6 +26,7 @@ const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly st
   'platform-logo': { maxBytes: 10 * MB, mimes: IMAGES },
   'platform-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
   'collection-cover': { maxBytes: 10 * MB, mimes: IMAGES },
+  'discussion-image': { maxBytes: 5 * MB, mimes: IMAGES },
 }
 
 export type UploadProblem = { kind: 'too-large'; maxBytes: number } | { kind: 'wrong-type'; mimes: readonly string[] }

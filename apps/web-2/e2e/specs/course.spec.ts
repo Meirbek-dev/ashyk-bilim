@@ -5,8 +5,8 @@ import type { Locator } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
-  addActivity,
-  addCourse,
+  completeActivity,
+  enroll,
   courseLifecycle,
   createActivity,
   createChapter,
@@ -143,7 +143,7 @@ test("B-CRS-05 an enrolled learner continues at the server's next activity", asy
 }) => {
   const made = await course()
   const path = { course_id: made.course.id }
-  await addCourse({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
+  await enroll({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toHaveAttribute(
@@ -173,7 +173,7 @@ test('B-CRS-07 leaving asks with the course name, starts on Cancel, then offers 
 }) => {
   const made = await course()
   const path = { course_id: made.course.id }
-  await addCourse({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
+  await enroll({ client: api, path, headers: cookie(seed, 'student'), throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   const confirm = page.getByRole('alertdialog', { name: m.course_leave_title({ name: made.course.name }, ru) })
@@ -214,9 +214,9 @@ test('B-CRS-09 the syllabus lists chapters and typed activities, or says there a
 test('B-CRS-10 progress and done marks come from the server', async ({ page, signInAs, course, api, seed }) => {
   const made = await course()
   const student = cookie(seed, 'student')
-  await addCourse({ client: api, path: { course_id: made.course.id }, headers: student, throwOnError: true })
+  await enroll({ client: api, path: { course_id: made.course.id }, headers: student, throwOnError: true })
   const path = { activity_id: made.activity?.id ?? '' }
-  await addActivity({ client: api, path, headers: student, throwOnError: true })
+  await completeActivity({ client: api, path, headers: student, throwOnError: true })
   await signInAs('student')
   await page.goto(about(made))
   await expect(page.getByText(m.course_progress_count({ done: 1, total: 1 }, ru))).toBeVisible()

@@ -6,7 +6,6 @@ import type { AssessmentDetail, CourseLearner } from '#/shared/api/gen/types.gen
 import { Button } from '#/shared/ui/button'
 
 import { can } from '../model/route'
-import { learnerName } from '../model/overrides'
 import { overridesOptions } from '../queries'
 import { OverrideDialog } from './override-dialog'
 import { OverrideRow } from './override-row'
@@ -35,7 +34,7 @@ export function OverridesSection({ assessment, learners }: OverridesSectionProps
               key={row.user_id}
               assessmentId={assessment.id}
               row={row}
-              name={learnerName(learners, row.user_id) ?? m.assessments_learner_unknown()}
+              name={row.user_display_name ?? m.assessments_learner_unknown()}
               editable={editable}
             />
           ))}

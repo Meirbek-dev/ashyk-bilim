@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { createClient, createConfig, type Client } from '#/shared/api/gen/client'
 import {
-  addCourse,
+  enroll,
   courseLifecycle,
   createAssessment,
   createChapter,
@@ -121,7 +121,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       const handIn = async (display: string, option: string): Promise<Learner> => {
         const learner = await learnerSession(api, String(baseURL), display)
         const asLearner = { client: api, headers: learner.headers, throwOnError: true } as const
-        await addCourse({ ...asLearner, path: { course_id: courseId } })
+        await enroll({ ...asLearner, path: { course_id: courseId } })
         const draft = await startSubmission({ ...asLearner, path })
         const answers = {
           [choice.data.id]: { kind: 'choice' as const, selected: [option] },
@@ -165,7 +165,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       await courseLifecycle({ ...call, path: { course_id: courseId }, body: { action: 'publish' } })
       const learner = await learnerSession(api, String(baseURL), 'dana')
       const asLearner = { client: api, headers: learner.headers, throwOnError: true } as const
-      await addCourse({ ...asLearner, path: { course_id: courseId } })
+      await enroll({ ...asLearner, path: { course_id: courseId } })
       const pdf = Buffer.from('%PDF-1.4\n%e2e\n')
       const slot = await createUpload({
         ...asLearner,

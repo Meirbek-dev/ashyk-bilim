@@ -1,13 +1,13 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { AuditEvent, Policy, StudentOverride } from '#/shared/api/gen/types.gen'
+import type { AuditEvent, Policy, ReadinessIssueCode, StudentOverride } from '#/shared/api/gen/types.gen'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
 import { detailsBody, detailsFormSchema } from './details'
 import { overrideBody, overrideForm, overrideFormSchema } from './overrides'
 import { policyBody, policyForm, policyFormSchema } from './policy'
-import { auditActor, auditEvent, canMove, issueCode, lifecycleOf, sortedIssues } from './publishing'
+import { auditActor, canMove, lifecycleOf, sortedIssues } from './publishing'
 
 // 2026-02-01 14:30 in Almaty (UTC+5) is 09:30 UTC.
 const FEB_1_1430 = Date.UTC(2026, 1, 1, 9, 30) / 1000
@@ -81,11 +81,12 @@ describe('rules', () => {
   })
 })
 
-const issue = (code: string, severity: 'blocker' | 'warning') =>
+const issue = (code: ReadinessIssueCode, severity: 'blocker' | 'warning') =>
   ({ area: 'questions', code, item_id: null, message: '', severity }) as const
 
 const event = (actor: string | null, by?: string): AuditEvent => ({
   actor_id: actor,
+  actor_name: null,
   created_at_unix: 0,
   event: 'lifecycle-transition',
   id: 'e',
@@ -100,6 +101,8 @@ describe('exceptions and publishing', () => {
       due_at_override_unix: FEB_1_1430,
       expires_at_unix: FEB_1_1430 + 86_400,
       granted_by: null,
+      granted_by_name: null,
+      user_display_name: null,
       id: 'o',
       max_attempts_override: null,
       note: 'n',
@@ -118,23 +121,17 @@ describe('exceptions and publishing', () => {
     expect(v.is(overrideFormSchema, { ...form, user_id: '' })).toBe(false)
   })
 
-  test('B-ASM-22 readiness: known codes are localized, unknown ones are generic; blockers come first', () => {
-    expect(issueCode('choice.correct_missing')).toBe('choice.correct_missing')
-    expect(issueCode('something.new')).toBeNull()
+  test('B-ASM-22 readiness: blockers come first', () => {
     const sorted = sortedIssues([issue('policy.due_at_past', 'warning'), issue('assessment.empty', 'blocker')])
     expect(sorted.map(row => row.code)).toEqual(['assessment.empty', 'policy.due_at_past'])
   })
 
-  test('B-ASM-23 the transitions the buttons offer follow the server table', () => {
-    expect(canMove('draft', 'scheduled') && canMove('draft', 'archived')).toBe(true)
-    expect(canMove('scheduled', 'draft') && canMove('published', 'archived')).toBe(true)
-    expect(canMove('archived', 'published')).toBe(false)
-    expect(canMove('published', 'scheduled')).toBe(false)
+  test('B-ASM-23 the transitions the buttons offer are the server allowed_transitions', () => {
+    expect(canMove({ allowed_transitions: ['draft', 'archived'] }, 'archived')).toBe(true)
+    expect(canMove({ allowed_transitions: ['draft'] }, 'published')).toBe(false)
   })
 
   test('B-ASM-26 the log names events, transitions and who: you, the scheduler or someone else', () => {
-    expect(auditEvent('override-created')).toBe('override-created')
-    expect(auditEvent('unheard-of')).toBeNull()
     expect(lifecycleOf('published')).toBe('published')
     expect(lifecycleOf('weird')).toBeNull()
     expect(auditActor(event('me'), 'me')).toBe('you')

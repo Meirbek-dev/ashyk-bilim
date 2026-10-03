@@ -275,7 +275,8 @@ export const vAssessmentAction = v.picklist([
     'update',
     'transition',
     'duplicate',
-    'grade'
+    'grade',
+    'edit'
 ]);
 
 export const vAssessmentDiagnosticsSnapshot = v.object({
@@ -315,6 +316,25 @@ export const vAssignRoleRequest = v.strictObject({
  * `AtRiskLearnerRow.allowed_actions`.
  */
 export const vAtRiskAction = v.picklist(['record_intervention']);
+
+/**
+ * `assessment_audit_events.event`: what an audit row records (the writers
+ * take this type, so the wire set is closed).
+ */
+export const vAuditEventKind = v.picklist([
+    'lifecycle-transition',
+    'auto-publish-skipped',
+    'duplicated-from',
+    'access-changed',
+    'override-created',
+    'override-updated',
+    'override-deleted',
+    'deadline-extended',
+    'deadline-extension-requested',
+    'grade-saved',
+    'grades-published',
+    'submission-submitted'
+]);
 
 /**
  * `assessment_audit_events.payload`.
@@ -556,7 +576,7 @@ export const vActivityDropoffRow = v.object({
 export const vChoiceOption = v.object({
     id: v.string(),
     is_correct: v.optional(v.boolean()),
-    text: v.optional(v.string())
+    text: v.optional(v.pipe(v.string(), v.maxLength(20000)))
 });
 
 export const vChoiceVariant = v.picklist([
@@ -566,10 +586,10 @@ export const vChoiceVariant = v.picklist([
 ]);
 
 export const vChoiceBody = v.object({
-    explanation: v.nullable(v.string()),
+    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
     multiple: v.optional(v.boolean()),
-    options: v.optional(v.array(vChoiceOption)),
-    prompt: v.optional(v.string()),
+    options: v.optional(v.pipe(v.array(vChoiceOption), v.maxLength(200))),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     variant: v.nullable(vChoiceVariant)
 });
 
@@ -1023,7 +1043,8 @@ export const vDiscussionId = v.pipe(v.string(), v.uuid());
 
 export const vCreateDiscussionRequest = v.strictObject({
     content: v.pipe(v.string(), v.minLength(1), v.maxLength(20000)),
-    parent_id: v.optional(vDiscussionId)
+    parent_id: v.optional(vDiscussionId),
+    upload_ids: v.optional(v.pipe(v.array(v.pipe(v.string(), v.uuid())), v.maxLength(10)))
 });
 
 /**
@@ -1044,12 +1065,24 @@ export const vDisplayPreferences = v.strictObject({
     compactMode: v.optional(v.boolean())
 });
 
+export const vDisplaySettings = v.object({
+    animated_effects: v.nullable(v.boolean()),
+    compact_mode: v.nullable(v.boolean())
+});
+
 export const vDrillMetric = v.picklist([
     'active_learners',
     'completion_rate',
     'pass_rate',
     'backlog'
 ]);
+
+/**
+ * `POST /courses/{id}/duplicate`.
+ */
+export const vDuplicateCourseRequest = v.strictObject({
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500)))
+});
 
 export const vDuplicateRequest = v.strictObject({
     chapter_id: v.optional(vChapterId),
@@ -1060,6 +1093,16 @@ export const vEditCourseUpdateRequest = v.strictObject({
     content: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(50000))),
     title: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500)))
 });
+
+/**
+ * Why details, policy and items are read-only right now (the
+ * [`ensure_editable`] rules; `Assessment.edit_lock`).
+ */
+export const vEditLock = v.picklist([
+    'archived',
+    'scheduled',
+    'has_submissions'
+]);
 
 /**
  * The rich-text editor document (Tiptap / ProseMirror JSON). The node tree
@@ -1116,6 +1159,9 @@ export const vErrorCode = v.picklist([
     'compile-error',
     'language-not-allowed',
     'assessment-read-only',
+    'attempt-time-expired',
+    'attempt-past-due',
+    'remediation-required',
     'grade-not-released',
     'grade-own-attempt',
     'ai-disabled',
@@ -1171,6 +1217,20 @@ export const vAdminSettings = v.object({
     monthly_token_budget: v.pipe(v.number(), v.integer()),
     provider_ready: v.boolean()
 });
+
+/**
+ * The auto-grader's verdict codes (`GradedItem.feedback_code`).
+ */
+export const vFeedbackCode = v.picklist([
+    'no-answer',
+    'no-correct-answer',
+    'correct',
+    'partially-correct-no-credit',
+    'partially-correct',
+    'incorrect',
+    'pairs-matched',
+    'tests-passed'
+]);
 
 /**
  * A single field-level validation failure. `code` is a stable machine key the
@@ -1269,13 +1329,13 @@ export const vFormFieldType = v.picklist([
 export const vFormField = v.object({
     field_type: v.optional(vFormFieldType),
     id: v.string(),
-    label: v.optional(v.string()),
+    label: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     required: v.optional(v.boolean())
 });
 
 export const vFormBody = v.object({
-    fields: v.optional(v.array(vFormField)),
-    prompt: v.optional(v.string())
+    fields: v.optional(v.pipe(v.array(vFormField), v.maxLength(200))),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000)))
 });
 
 export const vFunnelStep = v.object({
@@ -1596,6 +1656,18 @@ export const vLocale = v.picklist([
 ]);
 
 /**
+ * A locale on input: the short tag (stored) or the legacy region tag.
+ */
+export const vLocaleInput = v.picklist([
+    'ru',
+    'kk',
+    'en',
+    'ru-RU',
+    'kk-KZ',
+    'en-US'
+]);
+
+/**
  * Password login. No `Debug` derive - the password must never format.
  */
 export const vLoginRequest = v.strictObject({
@@ -1613,10 +1685,10 @@ export const vMatchMode = v.picklist([
 ]);
 
 export const vCodeTestCase = v.object({
-    description: v.nullable(v.string()),
-    expected_output: v.optional(v.string()),
+    description: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
+    expected_output: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     id: v.string(),
-    input: v.optional(v.string()),
+    input: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     is_visible: v.optional(v.boolean()),
     match_mode: v.optional(vMatchMode),
     weight: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
@@ -1673,8 +1745,8 @@ export const vMatchingLearnerBody = v.object({
 });
 
 export const vMatchingPair = v.object({
-    left: v.string(),
-    right: v.string()
+    left: v.pipe(v.string(), v.maxLength(20000)),
+    right: v.pipe(v.string(), v.maxLength(20000))
 });
 
 /**
@@ -1684,9 +1756,9 @@ export const vMatchingPair = v.object({
 export const vCorrectAnswer = v.union([v.array(v.string()), v.array(vMatchingPair)]);
 
 export const vMatchingBody = v.object({
-    explanation: v.nullable(v.string()),
-    pairs: v.array(vMatchingPair),
-    prompt: v.optional(v.string())
+    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
+    pairs: v.pipe(v.array(vMatchingPair), v.maxLength(200)),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000)))
 });
 
 /**
@@ -1797,8 +1869,8 @@ export const vNotificationType = v.picklist([
 
 export const vOpenTextBody = v.object({
     min_words: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    prompt: v.optional(v.string()),
-    rubric: v.nullable(v.string())
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    rubric: v.nullable(v.pipe(v.string(), v.maxLength(20000)))
 });
 
 /**
@@ -1851,13 +1923,19 @@ export const vGamificationPreferences = v.object({
 
 /**
  * `PATCH /gamification/preferences`: the sections the settings form owns.
+ *
  * A section absent from the patch is kept, `null` removes it, an object
- * replaces it. Keys are camelCase; anything else is 422.
+ * replaces it. Keys are camelCase or (S-10) snake_case; anything else is
+ * 422.
  */
 export const vPreferencesPatch = v.strictObject({
     display: v.nullish(vDisplayPreferences),
     notifications: v.nullish(vNotificationPreferences),
     privacy: v.nullish(vPrivacyPreferences)
+});
+
+export const vPrivacySettings = v.object({
+    show_on_leaderboard: v.nullable(v.boolean())
 });
 
 export const vProfileAffiliation = v.strictObject({
@@ -2034,6 +2112,45 @@ export const vReadinessCode = v.picklist([
 ]);
 
 /**
+ * [`ReadinessIssue::code`] values (schema only; `readiness_codes_pinned`
+ * keeps the list in step with the rules).
+ */
+export const vReadinessIssueCode = v.picklist([
+    'assessment.title_missing',
+    'assessment.empty',
+    'schedule.after_due_at',
+    'policy.due_at_past',
+    'policy.cutoff_before_due',
+    'policy.penalty_without_late',
+    'item.kind_forbidden',
+    'item.title_missing',
+    'item.max_score_invalid',
+    'choice.correct_missing',
+    'choice.option_duplicate',
+    'choice.option_id_duplicate',
+    'choice.option_text_missing',
+    'choice.options_missing',
+    'choice.prompt_missing',
+    'choice.too_many_correct',
+    'code.languages_missing',
+    'code.prompt_missing',
+    'code.test_io_missing',
+    'code.test_weight_invalid',
+    'code.tests_missing',
+    'form.field_id_duplicate',
+    'form.field_label_missing',
+    'form.fields_missing',
+    'form.prompt_missing',
+    'matching.left_duplicate',
+    'matching.pair_value_missing',
+    'matching.pairs_missing',
+    'matching.prompt_missing',
+    'matching.right_duplicate',
+    'open_text.min_words_invalid',
+    'open_text.prompt_missing'
+]);
+
+/**
  * One readiness blocker.
  *
  * `code` ∈ `no-live-activity | assessment-not-ready |
@@ -2108,7 +2225,7 @@ export const vReadinessSeverity = v.picklist([
  */
 export const vReadinessIssue = v.object({
     area: vReadinessArea,
-    code: v.string(),
+    code: vReadinessIssueCode,
     item_id: v.nullable(vAssessmentItemId),
     message: v.string(),
     severity: vReadinessSeverity
@@ -2464,7 +2581,7 @@ export const vGradedItem = v.object({
     correct: v.nullable(v.boolean()),
     correct_answer: v.nullable(vCorrectAnswer),
     feedback: v.optional(v.string()),
-    feedback_code: v.optional(v.string()),
+    feedback_code: v.optional(vFeedbackCode),
     feedback_params: v.optional(vMessageParams),
     item_id: vAssessmentItemId,
     item_text: v.optional(v.string()),
@@ -2521,16 +2638,16 @@ export const vScoringStrategy = v.picklist([
 
 export const vCodeBody = v.object({
     constraints: v.optional(v.array(v.string())),
-    input_spec: v.optional(v.string()),
+    input_spec: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     languages: v.optional(v.array(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))),
     max_output_kb: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     memory_limit_mb: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    output_spec: v.optional(v.string()),
-    prompt: v.optional(v.string()),
+    output_spec: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     reference_solutions: v.optional(v.record(v.string(), v.string())),
     scoring_strategy: v.optional(vScoringStrategy),
     starter_code: v.optional(v.record(v.string(), v.string())),
-    tests: v.optional(v.array(vCodeTestCase)),
+    tests: v.optional(v.pipe(v.array(vCodeTestCase), v.maxLength(200))),
     time_limit_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
@@ -2563,6 +2680,7 @@ export const vItemBody = v.union([
 ]);
 
 export const vAssessmentItem = v.object({
+    assessment_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     body: vItemBody,
     id: vAssessmentItemId,
     kind: vItemKind,
@@ -3122,6 +3240,16 @@ export const vTrailRunStatus = v.picklist([
 export const vTrailStepId = v.pipe(v.string(), v.uuid());
 
 /**
+ * `?lang=` on CSV exports and certificate PDFs (a link cannot set
+ * `Accept-Language`); `middleware::lang_query` turns it into that header.
+ */
+export const vUiLanguage = v.picklist([
+    'ru',
+    'kk',
+    'en'
+]);
+
+/**
  * Unix time: whole seconds since 1970-01-01T00:00:00Z.
  */
 export const vUnixTime = v.pipe(v.number(), v.integer());
@@ -3390,8 +3518,8 @@ export const vLatePolicy = v.union([
     }),
     v.object({
         kind: v.picklist(['penalty']),
-        max_days: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-        percent_per_day: v.number()
+        max_days: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+        percent_per_day: v.pipe(v.number(), v.minValue(0), v.maxValue(100))
     }),
     v.object({
         cutoff_at_unix: vUnixTime,
@@ -3473,7 +3601,7 @@ export const vLifecycleRequest = v.strictObject({
 export const vOverrideRequest = v.strictObject({
     due_at_override_unix: v.optional(vUnixTime),
     expires_at_unix: v.optional(vUnixTime),
-    max_attempts_override: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    max_attempts_override: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10))),
     note: v.optional(v.pipe(v.string(), v.maxLength(1000))),
     waive_late_penalty: v.optional(v.boolean())
 });
@@ -3485,28 +3613,28 @@ export const vOverrideRequest = v.strictObject({
  */
 export const vPolicy = v.strictObject({
     allow_late: v.boolean(),
-    attempt_penalty_percent: v.number(),
+    attempt_penalty_percent: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
     completion_rule: vCompletionRule,
     copy_paste_protection: v.boolean(),
     devtools_detection: v.boolean(),
     due_at_unix: v.nullable(vUnixTime),
     fullscreen_required: v.boolean(),
-    grace_period_minutes: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    grace_period_minutes: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     grade_release_mode: vGradeReleaseMode,
     grading_mode: vGradingMode,
     late_policy: vLatePolicy,
-    max_attempts: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    negative_marking_percent: v.number(),
+    max_attempts: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10))),
+    negative_marking_percent: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
     partial_credit: v.boolean(),
-    passing_score: v.number(),
+    passing_score: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
     randomize_options: v.boolean(),
     randomize_questions: v.boolean(),
     required: v.boolean(),
     review_visibility: vReviewVisibility,
     right_click_disabled: v.boolean(),
     tab_switch_detection: v.boolean(),
-    time_limit_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    violation_threshold: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+    time_limit_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    violation_threshold: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vCreateAssessmentRequest = v.strictObject({
@@ -3784,7 +3912,8 @@ export const vUpdateCourseRequest = v.strictObject({
 
 export const vUpdateDiscussionRequest = v.strictObject({
     content: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(20000))),
-    status: v.optional(vDiscussionStatus)
+    status: v.optional(vDiscussionStatus),
+    upload_ids: v.optional(v.pipe(v.array(v.pipe(v.string(), v.uuid())), v.maxLength(10)))
 });
 
 export const vUpdateGamificationConfigRequest = v.strictObject({
@@ -3816,7 +3945,7 @@ export const vUpdateProfileRequest = v.strictObject({
     avatar_upload_id: v.nullish(v.pipe(v.string(), v.uuid())),
     bio: v.optional(v.pipe(v.string(), v.maxLength(2000))),
     display_name: v.optional(v.pipe(v.string(), v.maxLength(120))),
-    locale: v.optional(vLocale),
+    locale: v.optional(vLocaleInput),
     organization: v.optional(v.pipe(v.string(), v.maxLength(200))),
     profile: v.optional(vProfileSections),
     theme: v.nullish(v.string())
@@ -3845,7 +3974,8 @@ export const vUploadPurpose = v.picklist([
     'platform-logo',
     'platform-thumbnail',
     'file-submission',
-    'collection-cover'
+    'collection-cover',
+    'discussion-image'
 ]);
 
 export const vCreateUploadRequest = v.strictObject({
@@ -3905,12 +4035,14 @@ export const vAssessment = v.object({
     access_mode: vAccessMode,
     activity_id: vActivityId,
     allowed_actions: v.array(vAssessmentAction),
+    allowed_transitions: v.array(vLifecycle),
     archived_at_unix: v.nullable(vUnixTime),
     content_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     course_id: vCourseId,
     created_at_unix: vUnixTime,
     creator_id: v.nullable(vUserId),
     description: v.string(),
+    edit_lock: v.nullable(vEditLock),
     grading_type: vGradingType,
     id: vAssessmentId,
     kind: vAssessmentKind,
@@ -3997,8 +4129,9 @@ export const vAtRiskLearnersResponse = v.object({
 
 export const vAuditEvent = v.object({
     actor_id: v.nullable(vUserId),
+    actor_name: v.nullable(v.string()),
     created_at_unix: vUnixTime,
-    event: v.string(),
+    event: vAuditEventKind,
     id: v.pipe(v.string(), v.uuid()),
     payload: vAuditPayload
 });
@@ -4508,28 +4641,6 @@ export const vNotificationPage = v.object({
     next_cursor: v.nullable(v.string())
 });
 
-export const vProfile = v.object({
-    created_at_unix: vUnixTime,
-    daily_xp_earned: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    last_learning_at_unix: v.nullable(vUnixTime),
-    last_login_at_unix: v.nullable(vUnixTime),
-    last_xp_award_at_unix: v.nullable(vUnixTime),
-    learning_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    level_progress_percent: v.number(),
-    login_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    longest_learning_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    longest_login_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    preferences: vGamificationPreferences,
-    total_activities_completed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    total_courses_completed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    total_xp: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    updated_at_unix: vUnixTime,
-    user_id: vUserId,
-    xp_in_current_level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    xp_to_next_level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
-});
-
 /**
  * `GET /users/{username}`: the public card plus the bio (no email -
  * FINDINGS #16). Search keeps the lean `UserHit`.
@@ -4600,6 +4711,7 @@ export const vSessionUser = v.object({
     display_name: v.string(),
     email: v.string(),
     id: vUserId,
+    language: vUiLanguage,
     locale: vLocale,
     theme: v.nullable(v.string()),
     username: v.string()
@@ -4623,10 +4735,12 @@ export const vStudentOverride = v.object({
     due_at_override_unix: v.nullable(vUnixTime),
     expires_at_unix: v.nullable(vUnixTime),
     granted_by: v.nullable(vUserId),
+    granted_by_name: v.nullable(v.string()),
     id: v.pipe(v.string(), v.uuid()),
     max_attempts_override: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     note: v.string(),
     updated_at_unix: vUnixTime,
+    user_display_name: v.nullable(v.string()),
     user_id: vUserId,
     waive_late_penalty: v.boolean()
 });
@@ -4698,6 +4812,7 @@ export const vUserProfile = v.object({
     google_linked: v.boolean(),
     has_password: v.boolean(),
     id: vUserId,
+    language: vUiLanguage,
     locale: vLocale,
     mfa_enabled: v.boolean(),
     organization: v.string(),
@@ -4896,7 +5011,8 @@ export const vAccessView = v.object({
     effective_user_count: v.pipe(v.number(), v.integer()),
     mode: vAccessMode,
     usergroups: v.array(vAccessGroup),
-    users: v.array(vAccessUser)
+    users: v.array(vAccessUser),
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vAdminCohortRow = v.object({
@@ -5235,6 +5351,43 @@ export const vTeacherOverviewResponse = v.object({
     trends: vTeacherOverviewTrends,
     window: vWindow,
     workload: vTeacherWorkloadSummary
+});
+
+export const vXpNotificationSettings = v.object({
+    xp_gain: v.nullable(v.boolean())
+});
+
+/**
+ * S-10 `Profile.settings`: the preferences with snake_case keys; a value
+ * never set is `null`.
+ */
+export const vGamificationSettings = v.object({
+    display: vDisplaySettings,
+    notifications: vXpNotificationSettings,
+    privacy: vPrivacySettings
+});
+
+export const vProfile = v.object({
+    created_at_unix: vUnixTime,
+    daily_xp_earned: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    last_learning_at_unix: v.nullable(vUnixTime),
+    last_login_at_unix: v.nullable(vUnixTime),
+    last_xp_award_at_unix: v.nullable(vUnixTime),
+    learning_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    level_progress_percent: v.number(),
+    login_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    longest_learning_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    longest_login_streak: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    preferences: vGamificationPreferences,
+    settings: vGamificationSettings,
+    total_activities_completed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    total_courses_completed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    total_xp: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    updated_at_unix: vUnixTime,
+    user_id: vUserId,
+    xp_in_current_level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    xp_to_next_level: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 /**
@@ -5933,7 +6086,7 @@ export const vExportAssessmentOutcomesQuery = v.object({
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
     sort_order: v.optional(vSortOrder),
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -5958,7 +6111,7 @@ export const vExportAtRiskQuery = v.object({
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
     sort_order: v.optional(vSortOrder),
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -5983,7 +6136,7 @@ export const vExportCourseProgressQuery = v.object({
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
     sort_order: v.optional(vSortOrder),
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -6008,7 +6161,7 @@ export const vExportGradingBacklogQuery = v.object({
     page_size: v.optional(v.pipe(v.number(), v.integer())),
     sort_by: v.optional(v.string()),
     sort_order: v.optional(vSortOrder),
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -6166,16 +6319,22 @@ export const vDeleteViewQuery = v.object({
  */
 export const vDeleteViewResponse = v.void();
 
+export const vDeleteItemHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    Prefer: v.nullish(v.string())
+});
+
 export const vDeleteItemPath = v.object({
     item_id: vAssessmentItemId
 });
 
-/**
- * Deleted
- */
-export const vDeleteItemResponse = v.void();
+export const vDeleteItemResponse = v.union([vAssessmentDetail, v.void()]);
 
 export const vUpdateItemBody = vUpdateItemRequest;
+
+export const vUpdateItemHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vUpdateItemPath = v.object({
     item_id: vAssessmentItemId
@@ -6315,6 +6474,10 @@ export const vItemAnalyticsResponse = v.array(vItemAnalytics);
 
 export const vCreateItemBody = vCreateItemRequest;
 
+export const vCreateItemHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vCreateItemPath = v.object({
     assessment_id: vAssessmentId
 });
@@ -6326,12 +6489,16 @@ export const vCreateItemResponse = vAssessmentItem;
 
 export const vReorderItemsBody = vReorderItemsRequest;
 
+export const vReorderItemsHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vReorderItemsPath = v.object({
     assessment_id: vAssessmentId
 });
 
 /**
- * Reordered
+ * Reordered (order is presentation: the version stays)
  */
 export const vReorderItemsResponse = v.array(vAssessmentItem);
 
@@ -6481,7 +6648,7 @@ export const vExportAssessmentSubmissionsCsvPath = v.object({
 });
 
 export const vExportAssessmentSubmissionsCsvQuery = v.object({
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -6655,7 +6822,7 @@ export const vCertificatePdfPath = v.object({
 });
 
 export const vCertificatePdfQuery = v.object({
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -6716,7 +6883,7 @@ export const vCertificationPreviewPdfPath = v.object({
 });
 
 export const vCertificationPreviewPdfQuery = v.object({
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -7093,6 +7260,21 @@ export const vCreateDiscussionPath = v.object({
  */
 export const vCreateDiscussionResponse = vDiscussion;
 
+export const vDuplicateCourseBody = vDuplicateCourseRequest;
+
+export const vDuplicateCourseHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
+export const vDuplicateCoursePath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The copy
+ */
+export const vDuplicateCourseResponse = vCourse;
+
 export const vGradebookPath = v.object({
     course_id: vCourseId
 });
@@ -7116,7 +7298,7 @@ export const vExportGradebookCsvPath = v.object({
 });
 
 export const vExportGradebookCsvQuery = v.object({
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -7136,6 +7318,15 @@ export const vCourseGradingEventsPath = v.object({
  * Event stream: each message's `data` is one event
  */
 export const vCourseGradingEventsResponse = vCourseGradingStreamEvent;
+
+export const vGroupsForCoursePath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Groups
+ */
+export const vGroupsForCourseResponse = v.array(vUsergroup);
 
 export const vLearnerCourseStatePath = v.object({
     course_id: vCourseId
@@ -7302,6 +7493,43 @@ export const vListRepliesQuery = v.object({
  */
 export const vListRepliesResponse = vDiscussionPage;
 
+export const vListEnrollmentsQuery = v.object({
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Trail
+ */
+export const vListEnrollmentsResponse = vTrail;
+
+export const vLeaveCourseHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
+export const vLeaveCoursePath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Trail
+ */
+export const vLeaveCourseResponse = vTrail;
+
+export const vEnrollHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string()),
+    Prefer: v.nullish(v.string())
+});
+
+export const vEnrollPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Trail
+ */
+export const vEnrollResponse = vTrail;
+
 export const vGetAttemptPath = v.object({
     attempt_id: vFileAttemptId
 });
@@ -7438,7 +7666,7 @@ export const vExportFileSubmissionCsvPath = v.object({
 });
 
 export const vExportFileSubmissionCsvQuery = v.object({
-    lang: v.optional(v.unknown())
+    lang: v.optional(vUiLanguage)
 });
 
 /**
@@ -7517,6 +7745,138 @@ export const vAdminAwardBody = vAdminAwardRequest;
  * Awarded (or the earlier identical award)
  */
 export const vAdminAwardResponse = vAwardResponse;
+
+export const vListGroupsQuery = v.object({
+    cursor: v.optional(vUsergroupId),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Page of usergroups
+ */
+export const vListGroupsResponse = vUsergroupPage;
+
+export const vCreateGroupBody = vCreateUsergroupRequest;
+
+export const vCreateGroupHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
+/**
+ * Created
+ */
+export const vCreateGroupResponse = vUsergroup;
+
+export const vDeleteGroupPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Deleted
+ */
+export const vDeleteGroupResponse = v.void();
+
+export const vGetGroupPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Usergroup
+ */
+export const vGetGroupResponse = vUsergroup;
+
+export const vUpdateGroupBody = vUpdateUsergroupRequest;
+
+export const vUpdateGroupHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
+export const vUpdateGroupPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Updated
+ */
+export const vUpdateGroupResponse = vUsergroup;
+
+export const vRemoveGroupCoursesBody = vUsergroupCoursesRequest;
+
+export const vRemoveGroupCoursesPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Unlinked
+ */
+export const vRemoveGroupCoursesResponse = v.void();
+
+export const vListGroupCoursesPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Linked course ids
+ */
+export const vListGroupCoursesResponse = v.array(vCourseId);
+
+export const vAddGroupCoursesBody = vUsergroupCoursesRequest;
+
+export const vAddGroupCoursesPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Linked
+ */
+export const vAddGroupCoursesResponse = v.void();
+
+export const vRemoveGroupMembersBody = vUsergroupMembersRequest;
+
+export const vRemoveGroupMembersHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
+export const vRemoveGroupMembersPath = v.object({
+    group_id: vUsergroupId
+});
+
+export const vRemoveGroupMembersResponse = v.union([vUsergroup, v.void()]);
+
+export const vListGroupMembersPath = v.object({
+    group_id: vUsergroupId
+});
+
+/**
+ * Members
+ */
+export const vListGroupMembersResponse = v.array(vUsergroupMember);
+
+export const vAddGroupMembersBody = vUsergroupMembersRequest;
+
+export const vAddGroupMembersHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
+export const vAddGroupMembersPath = v.object({
+    group_id: vUsergroupId
+});
+
+export const vAddGroupMembersResponse = v.union([vUsergroup, v.void()]);
+
+export const vListGroupMembersPagePath = v.object({
+    group_id: vUsergroupId
+});
+
+export const vListGroupMembersPageQuery = v.object({
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Page of members
+ */
+export const vListGroupMembersPageResponse = vUsergroupMemberPage;
 
 /**
  * Process is alive
@@ -7618,6 +7978,32 @@ export const vUpdatePlatformHeaders = v.object({
  * Updated
  */
 export const vUpdatePlatformResponse = vPlatform;
+
+export const vUncompleteActivityHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
+export const vUncompleteActivityPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * Trail
+ */
+export const vUncompleteActivityResponse = vTrail;
+
+export const vCompleteActivityHeaders = v.object({
+    Prefer: v.nullish(v.string())
+});
+
+export const vCompleteActivityPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * Trail
+ */
+export const vCompleteActivityResponse = vTrail;
 
 /**
  * Roles

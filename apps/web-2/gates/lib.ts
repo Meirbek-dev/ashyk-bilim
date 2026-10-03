@@ -60,6 +60,14 @@ export const sdkOperations = (): string[] =>
     match.text.replace(/^export const /, '').replace(/ = <$/, ''),
   )
 
+/** Operations the contract marks `deprecated: true` (JSDoc `@deprecated`): replaced, never a coverage target. */
+export const deprecatedOperations = (): Set<string> =>
+  new Set(
+    [...read('src/shared/api/gen/sdk.gen.ts').matchAll(/@deprecated\s*\*\/\s*export const (\w+) = </g)].map(
+      match => match[1] ?? '',
+    ),
+  )
+
 /** True when `source` calls the operation directly or through its generated Query helpers. */
 export const usesOperation = (source: string, operation: string): boolean =>
   new RegExp(`\\b${operation}(Options|InfiniteOptions|Mutation)?\\b`).test(source)

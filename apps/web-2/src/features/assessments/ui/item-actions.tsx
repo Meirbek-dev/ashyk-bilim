@@ -11,6 +11,7 @@ import { toast } from '#/shared/ui/toast'
 
 import { copyItem } from '../model/items'
 import { createItemOptions, deleteItemOptions } from '../queries'
+import { useVersion } from './use-version'
 
 type ItemActionsProps = { activityId: string; assessmentId: string; item: AssessmentItem }
 
@@ -20,6 +21,7 @@ export function ItemActions({ activityId, assessmentId, item }: ItemActionsProps
   const navigate = useNavigate()
   const duplicate = useMutation(createItemOptions(queryClient, activityId, assessmentId))
   const remove = useMutation(deleteItemOptions(queryClient, activityId, assessmentId))
+  const version = useVersion(activityId)
   const [confirming, setConfirming] = useState(false)
   const title = item.title || m.assessments_item_untitled()
   const open = (id: string | undefined) =>
@@ -27,7 +29,11 @@ export function ItemActions({ activityId, assessmentId, item }: ItemActionsProps
 
   const copy = () =>
     duplicate.mutate(
-      { path: { assessment_id: assessmentId }, body: copyItem(item, m.assessments_item_copy_title({ title })) },
+      {
+        path: { assessment_id: assessmentId },
+        body: copyItem(item, m.assessments_item_copy_title({ title })),
+        headers: version.headers(),
+      },
       {
         onSuccess: created => {
           toast.add({ title: m.assessments_item_duplicated() })
@@ -37,7 +43,7 @@ export function ItemActions({ activityId, assessmentId, item }: ItemActionsProps
     )
   const confirm = () =>
     remove.mutate(
-      { path: { item_id: item.id } },
+      { path: { item_id: item.id }, headers: { ...version.headers(), Prefer: 'return=representation' } },
       {
         onSuccess: () => {
           setConfirming(false)

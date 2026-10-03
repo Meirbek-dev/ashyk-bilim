@@ -18,7 +18,7 @@ export type CodeFormApi = ReturnType<typeof useCodeForm>
 type Ids = { activityId: string; challenge: AssessmentDetail; code: CodeItem }
 
 /**
- * The code item's form: saved as a whole with "Save" (B-COD-18; no `If-Match` in the contract), the answer replaces
+ * The code item's form: saved as a whole with "Save" (B-COD-18, `If-Match` = the challenge version), the answer replaces
  * the item in the cached assessment. "Check reference" saves unsaved changes first, because the server runs the
  * stored solutions (B-COD-19, UX-281).
  */
@@ -34,6 +34,8 @@ export function useCodeItemForm({ activityId, challenge, code }: Ids) {
         path: { item_id: code.item.id },
         // The item is named after the challenge (the server's readiness needs a title; UX-283).
         body: { body: { ...codeBodyOf(values, code.body), kind: 'code' }, title: challenge.title },
+        // A 412 (someone else saved the challenge) shows as the save's error text.
+        headers: { 'If-Match': queryClient.getQueryData(challengeOptions(activityId).queryKey)?.version },
       },
       { onSuccess: () => toast.add({ title: m.code_saved() }) },
     ),
@@ -58,6 +60,6 @@ export function useCodeItemForm({ activityId, challenge, code }: Ids) {
     checkReference,
     /** Whether "Save" has something to send (B-COD-18). */
     unsaved: (values: CodeForm) => unsaved(values, code),
-    editable: challenge.allowed_actions.includes('update'),
+    editable: challenge.allowed_actions.includes('edit'),
   }
 }

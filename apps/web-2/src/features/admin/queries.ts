@@ -7,21 +7,21 @@ import {
   assignRoleMutation,
   createRoleMutation,
   createUserMutation,
-  createUsergroupMutation,
+  createGroupMutation,
   deleteRoleMutation,
-  deleteUsergroupMutation,
+  deleteGroupMutation,
   getConfigOptions,
   getConfigQueryKey,
   getPlatformOptions,
   getPlatformQueryKey,
-  getUsergroupOptions,
-  getUsergroupQueryKey,
+  getGroupOptions,
+  getGroupQueryKey,
   listRolesOptions,
   listRolesQueryKey,
-  listUsergroupMembersOptions,
-  listUsergroupMembersQueryKey,
-  listUsergroupsInfiniteQueryKey,
-  listUsergroupsOptions,
+  listGroupMembersOptions,
+  listGroupMembersQueryKey,
+  listGroupsInfiniteQueryKey,
+  listGroupsOptions,
   listUsersInfiniteQueryKey,
   listUsersOptions,
   listUsersQueryKey,
@@ -32,9 +32,9 @@ import {
   updateConfigMutation,
   updatePlatformMutation,
   updateRoleMutation,
-  updateUsergroupMutation,
+  updateGroupMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { addUsergroupMembers, listUsergroups, listUsers, removeUsergroupMembers } from '#/shared/api/gen/sdk.gen'
+import { addGroupMembers, listGroups, listUsers, removeGroupMembers } from '#/shared/api/gen/sdk.gen'
 import type {
   AdminUser,
   AdminUserPage,
@@ -205,13 +205,13 @@ export const groupsListOptions = () => {
     UsergroupPage,
     ApiError,
     InfiniteData<UsergroupPage>,
-    ReturnType<typeof listUsergroupsInfiniteQueryKey>,
+    ReturnType<typeof listGroupsInfiniteQueryKey>,
     UsergroupId | undefined
   >({
-    queryKey: listUsergroupsInfiniteQueryKey({ query }),
+    queryKey: listGroupsInfiniteQueryKey({ query }),
     queryFn: async ({ pageParam, signal }) => {
       const cursor = pageParam ? { cursor: pageParam } : {}
-      const { data } = await listUsergroups({ query: { ...query, ...cursor }, signal, throwOnError: true })
+      const { data } = await listGroups({ query: { ...query, ...cursor }, signal, throwOnError: true })
       return data
     },
     initialPageParam: undefined,
@@ -222,12 +222,12 @@ export const groupsListOptions = () => {
 // ponytail: the first 100 groups only (the API's page cap); a group picker with search when platforms outgrow it.
 /** The groups the user panel can add someone to: those the caller may change the members of. */
 export const groupChoicesOptions = () => ({
-  ...listUsergroupsOptions({ query: { limit: 100 } }),
+  ...listGroupsOptions({ query: { limit: 100 } }),
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_members')),
 })
 
-export const groupOptions = (id: UsergroupId) => getUsergroupOptions({ path: { usergroup_id: id } })
-export const membersOptions = (id: UsergroupId) => listUsergroupMembersOptions({ path: { usergroup_id: id } })
+export const groupOptions = (id: UsergroupId) => getGroupOptions({ path: { group_id: id } })
+export const membersOptions = (id: UsergroupId) => listGroupMembersOptions({ path: { group_id: id } })
 
 /** Route loader of a group page: an unknown or malformed id is "not found". */
 export const ensureGroup = (queryClient: QueryClient, id: UsergroupId) =>
@@ -236,18 +236,17 @@ export const ensureGroup = (queryClient: QueryClient, id: UsergroupId) =>
   )
 
 // The infinite group lists only: the panel's group choices stay as loaded (a refetch there repeats its GET).
-const groupLists = () => listUsergroupsInfiniteQueryKey()
+const groupLists = () => listGroupsInfiniteQueryKey()
 
-export const createGroupOptions = () => ({ ...createUsergroupMutation(), meta: { invalidates: [groupLists()] } })
+export const createGroupOptions = () => ({ ...createGroupMutation(), meta: { invalidates: [groupLists()] } })
 
 export const updateGroupOptions = (queryClient: QueryClient, id: UsergroupId) => ({
-  ...updateUsergroupMutation(),
-  onSuccess: (group: Usergroup) =>
-    queryClient.setQueryData(getUsergroupQueryKey({ path: { usergroup_id: id } }), group),
+  ...updateGroupMutation(),
+  onSuccess: (group: Usergroup) => queryClient.setQueryData(getGroupQueryKey({ path: { group_id: id } }), group),
   meta: { invalidates: [groupLists()] },
 })
 
-export const deleteGroupOptions = () => ({ ...deleteUsergroupMutation(), meta: { invalidates: [groupLists()] } })
+export const deleteGroupOptions = () => ({ ...deleteGroupMutation(), meta: { invalidates: [groupLists()] } })
 
 type Membership = { group: UsergroupId; members: UsergroupMember[] }
 const ids = (members: UsergroupMember[]) => ({ user_ids: members.map(member => member.id) })
@@ -263,12 +262,12 @@ function putMembership(
   change: (list: UsergroupMember[]) => UsergroupMember[],
 ) {
   queryClient.setQueryData(
-    listUsergroupMembersQueryKey({ path: { usergroup_id: id } }),
+    listGroupMembersQueryKey({ path: { group_id: id } }),
     (list: UsergroupMember[] | undefined) => list && change(list),
   )
   if (!next) return
   const page = (one: UsergroupPage) => ({ ...one, items: one.items.map(row => (row.id === next.id ? next : row)) })
-  queryClient.setQueryData(getUsergroupQueryKey({ path: { usergroup_id: id } }), next)
+  queryClient.setQueryData(getGroupQueryKey({ path: { group_id: id } }), next)
   queryClient.setQueriesData<InfiniteData<UsergroupPage>>(
     { queryKey: groupLists() },
     data => data && { ...data, pages: data.pages.map(page) },
@@ -276,14 +275,14 @@ function putMembership(
 }
 
 const membership = ({ group, members }: Membership) => ({
-  path: { usergroup_id: group },
+  path: { group_id: group },
   body: ids(members),
   throwOnError: true,
   ...representation,
 })
 
 export const addMembersOptions = (queryClient: QueryClient) => ({
-  mutationFn: async (change: Membership) => (await addUsergroupMembers(membership(change))).data,
+  mutationFn: async (change: Membership) => (await addGroupMembers(membership(change))).data,
   onSuccess: (next: Usergroup | void, { group, members }: Membership) =>
     putMembership(queryClient, group, next, list => [
       ...list,
@@ -292,7 +291,7 @@ export const addMembersOptions = (queryClient: QueryClient) => ({
 })
 
 export const removeMembersOptions = (queryClient: QueryClient) => ({
-  mutationFn: async (change: Membership) => (await removeUsergroupMembers(membership(change))).data,
+  mutationFn: async (change: Membership) => (await removeGroupMembers(membership(change))).data,
   onSuccess: (next: Usergroup | void, { group, members }: Membership) =>
     putMembership(queryClient, group, next, list =>
       list.filter(member => !members.some(gone => gone.id === member.id)),

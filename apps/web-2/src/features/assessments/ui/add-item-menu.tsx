@@ -13,6 +13,7 @@ import { Spinner } from '#/shared/ui/spinner'
 import { newItem, newItemKinds, type NewItemKind } from '../model/items'
 import { createItemOptions } from '../queries'
 import { kindLabels } from './labels'
+import { useVersion } from './use-version'
 
 type AddItemMenuProps = { activityId: string; assessment: AssessmentDetail }
 
@@ -20,11 +21,13 @@ type AddItemMenuProps = { activityId: string; assessment: AssessmentDetail }
 export function AddItemMenu({ activityId, assessment }: AddItemMenuProps) {
   const navigate = useNavigate()
   const create = useMutation(createItemOptions(useQueryClient(), activityId, assessment.id))
+  const version = useVersion(activityId)
   const add = (kind: NewItemKind) =>
     create.mutate(
       {
         path: { assessment_id: assessment.id },
         body: newItem(kind, m.assessments_item_new_title({ number: assessment.items.length + 1 })),
+        headers: version.headers(),
       },
       { onSuccess: item => void navigate({ to: '.', search: previous => ({ ...previous, item: item.id }) }) },
     )

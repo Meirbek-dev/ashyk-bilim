@@ -26,6 +26,7 @@ const item = (id: string, body: ItemBody, extra: Partial<AssessmentItem> = {}): 
   metadata,
   position: 1,
   title: `Q ${id}`,
+  assessment_version: 1,
   ...extra,
 })
 const choice = (variant: Choice['variant'], correct: boolean[]): Choice => ({

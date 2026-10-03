@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import type { Client } from '#/shared/api/gen/client'
 import {
-  addActivity,
-  addCourse,
+  completeActivity,
+  enroll,
   courseLifecycle,
   createActivity,
   createCertification,
@@ -131,9 +131,9 @@ export const test = base.extend<{
       displayName: data.user.display_name,
       signIn: () => context.addCookies([{ ...cookie, url: String(baseURL) }]),
       enroll: async (course, done = 0) => {
-        await addCourse({ client: api, path: { course_id: course.id }, headers, throwOnError: true })
+        await enroll({ client: api, path: { course_id: course.id }, headers, throwOnError: true })
         for (const id of course.activityIds.slice(0, done)) {
-          await addActivity({ client: api, path: { activity_id: id }, headers, throwOnError: true })
+          await completeActivity({ client: api, path: { activity_id: id }, headers, throwOnError: true })
         }
       },
       certificateCode: async course => {

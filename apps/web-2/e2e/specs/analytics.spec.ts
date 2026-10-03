@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { createUsergroup, deleteUsergroup, deleteView, listSavedViews } from '#/shared/api/gen/sdk.gen'
+import { createGroup, deleteGroup, deleteView, listSavedViews } from '#/shared/api/gen/sdk.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
 
@@ -191,7 +191,7 @@ test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is dele
 })
 
 test('B-ANL-19 a filter nobody matches: "no matches" and a reset', async ({ page, api, seed }) => {
-  const { data: group } = await createUsergroup({
+  const { data: group } = await createGroup({
     client: api,
     body: { name: `E2E пустая группа ${randomUUID().slice(0, 8)}` },
     headers: cookie(seed, 'teacher'),
@@ -206,7 +206,7 @@ test('B-ANL-19 a filter nobody matches: "no matches" and a reset', async ({ page
       .click()
     await expect(page).not.toHaveURL(/cohort=/)
   } finally {
-    await deleteUsergroup({ client: api, path: { usergroup_id: group.id }, headers: cookie(seed, 'teacher') })
+    await deleteGroup({ client: api, path: { group_id: group.id }, headers: cookie(seed, 'teacher') })
   }
 })
 

@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { getTrailOptions, myCertificatesOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { listEnrollmentsOptions, myCertificatesOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 
-export const trailOptions = () => getTrailOptions()
+export const trailOptions = () => listEnrollmentsOptions()
 export const certificatesOptions = () => myCertificatesOptions()
 
 /** Route loader of /learning: the caller's courses and certificates, side by side. */

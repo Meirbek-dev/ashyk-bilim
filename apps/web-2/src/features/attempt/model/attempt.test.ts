@@ -9,6 +9,7 @@ import { answerText, correctText } from './answer-text'
 import {
   clock,
   entryAction,
+  gateCode,
   isBlank,
   needsRemediation,
   protections,
@@ -64,6 +65,7 @@ const item = (id: string, body: ItemBody = choice): AssessmentItem => ({
   metadata: { difficulty: null, estimated_minutes: null, section_label: null },
   position: 1,
   title: id,
+  assessment_version: 1,
 })
 
 describe('attempt model', () => {
@@ -123,6 +125,8 @@ describe('attempt answers and outcomes', () => {
     expect(saveOutcome(apiError(409, 'conflict'))).toBe('conflict')
     expect(saveOutcome(apiError(429, 'rate-limited', 3))).toBe('throttled')
     expect(saveOutcome(apiError(403, 'forbidden'))).toBe('closed')
+    expect(gateCode(apiError(403, 'attempt-past-due'))).toBe('attempt-past-due')
+    expect(gateCode(apiError(403, 'forbidden'))).toBeNull()
     expect(saveOutcome(apiError(404, 'not-found'))).toBe('gone')
     expect(retryDelayMs(apiError(429, 'rate-limited', 3))).toBe(3_000)
     expect(retryDelayMs(new TypeError('offline'))).toBe(5_500)

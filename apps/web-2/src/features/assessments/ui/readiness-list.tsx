@@ -1,19 +1,14 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentDetail, ReadinessIssue } from '#/shared/api/gen/types.gen'
+import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
-import { issueCode, sortedIssues } from '../model/publishing'
+import { sortedIssues } from '../model/publishing'
 import { assessmentReadinessOptions } from '../queries'
 import { issueLabels } from './labels'
 
 type ReadinessListProps = { courseId: string; activityId: string; assessment: AssessmentDetail }
-
-const issueText = (issue: ReadinessIssue) => {
-  const code = issueCode(issue.code)
-  return code ? issueLabels[code]() : m.assessments_issue_unknown()
-}
 
 /** What the server says blocks publishing (and what is worth a look), each question's issue linking to it. */
 export function ReadinessList({ courseId, activityId, assessment }: ReadinessListProps) {
@@ -28,7 +23,8 @@ export function ReadinessList({ courseId, activityId, assessment }: ReadinessLis
       {sortedIssues(readiness.issues).map((issue, at) => (
         <li key={`${issue.code}-${issue.item_id ?? at}`} className="flex flex-col gap-0.5 text-sm">
           <span className={issue.severity === 'blocker' ? 'text-destructive' : 'text-warning'}>
-            {issue.severity === 'blocker' ? m.assessments_blockers() : m.assessments_warnings()}: {issueText(issue)}
+            {issue.severity === 'blocker' ? m.assessments_blockers() : m.assessments_warnings()}:{' '}
+            {issueLabels[issue.code]()}
           </span>
           {issue.item_id ? (
             <Link

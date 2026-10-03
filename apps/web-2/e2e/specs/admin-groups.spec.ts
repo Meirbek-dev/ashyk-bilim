@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { addUsergroupMembers, createUsergroup, deleteUsergroup, listUsergroups } from '#/shared/api/gen/sdk.gen'
+import { addGroupMembers, createGroup, deleteGroup, listGroups } from '#/shared/api/gen/sdk.gen'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
@@ -21,7 +21,7 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; group: (owner?:
     const made: [string, Owner][] = []
     await use(async (owner = 'teacher') => {
       const name = `E2E группа ${randomUUID().slice(0, 8)}`
-      const { data } = await createUsergroup({
+      const { data } = await createGroup({
         client: api,
         body: { name },
         headers: cookie(seed, owner),
@@ -31,7 +31,7 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; group: (owner?:
       return data
     })
     for (const [id, owner] of made)
-      await deleteUsergroup({ client: api, path: { usergroup_id: id }, headers: cookie(seed, owner) })
+      await deleteGroup({ client: api, path: { group_id: id }, headers: cookie(seed, owner) })
   },
 })
 
@@ -51,9 +51,9 @@ test('B-ADM-17 a teacher lists groups and makes one in the dialog', async ({ pag
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(page.getByText(m.admin_group_created({}, ru))).toBeVisible()
   const id = new URL(page.url()).pathname.split('/').at(-1) ?? ''
-  await deleteUsergroup({
+  await deleteGroup({
     client: api,
-    path: { usergroup_id: id },
+    path: { group_id: id },
     headers: cookie(seed, 'teacher'),
     throwOnError: true,
   })
@@ -102,9 +102,9 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   // Someone else's group: the teacher reads it, the API lists no actions for them.
   const others = await group('admin')
   const student = seed.accounts.student.session.user_id
-  await addUsergroupMembers({
+  await addGroupMembers({
     client: api,
-    path: { usergroup_id: others.id },
+    path: { group_id: others.id },
     body: { user_ids: [student] },
     headers: cookie(seed, 'admin'),
   })
@@ -130,6 +130,6 @@ test('B-ADM-20 deleting a group asks with its name, then returns to the list', a
   await confirm.getByRole('button', { name: m.admin_delete({}, ru) }).click()
   await expect(page.getByText(m.admin_group_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/groups$/)
-  const left = await listUsergroups({ client: api, query: { limit: 100 }, headers: cookie(seed, 'teacher') })
+  const left = await listGroups({ client: api, query: { limit: 100 }, headers: cookie(seed, 'teacher') })
   expect(left.data?.items.some(item => item.id === own.id)).toBe(false)
 })

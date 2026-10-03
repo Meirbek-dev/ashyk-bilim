@@ -20,6 +20,7 @@ const item = (id: string, max: number): AssessmentItem => ({
   metadata: { difficulty: null, estimated_minutes: null, section_label: null },
   position: 1,
   title: id,
+  assessment_version: 1,
 })
 
 const submission = (extra: Partial<TeacherSubmission> = {}): TeacherSubmission => ({

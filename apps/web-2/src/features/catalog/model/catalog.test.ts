@@ -26,6 +26,7 @@ const session = (capabilities: Capability[]): SessionInfo => ({
     display_name: 'U',
     email: 'u@e.test',
     locale: 'ru-RU',
+    language: 'ru',
     avatar_key: null,
     theme: null,
   },

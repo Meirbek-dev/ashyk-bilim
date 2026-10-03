@@ -8,7 +8,7 @@ import {
   attemptStateQueryKey,
   dashboardQueryKey,
   getSubmissionQueryKey,
-  getTrailInfiniteQueryKey,
+  listEnrollmentsInfiniteQueryKey,
   gradebookInfiniteQueryKey,
   learnerCourseStateQueryKey,
   myAttemptsQueryKey,
@@ -59,7 +59,7 @@ test('B-NOT-12 a grading change refreshes the queues, that course gradebook and 
 test("B-NOT-12 the learner's own submission refreshes progress, the trail, Today and the task's attempts", () => {
   const keys = invalidationsFor('submission.updated', { ...work, submission_id: null, attempt_id: ATTEMPT })
   expect(hits(keys, learnerCourseStateQueryKey({ path: { course_id: COURSE } }))).toBe(true)
-  expect(hits(keys, getTrailInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
+  expect(hits(keys, listEnrollmentsInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
   expect(hits(keys, agendaQueryKey({ query: { days: 14 } }))).toBe(true)
   expect(hits(keys, myAttemptsQueryKey({ path: { file_submission_id: 'any' } }))).toBe(true)
   expect(hits(keys, attemptStateQueryKey({ path: { assessment_id: 'any' } }))).toBe(true)

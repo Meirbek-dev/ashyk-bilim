@@ -19,7 +19,7 @@ export function GroupEditSection({ group }: { group: Usergroup }) {
     defaultValues,
     onSubmit: body =>
       update.mutateAsync(
-        { path: { usergroup_id: group.id }, body },
+        { path: { group_id: group.id }, body },
         { onSuccess: () => toast.add({ title: m.admin_saved() }) },
       ),
   })

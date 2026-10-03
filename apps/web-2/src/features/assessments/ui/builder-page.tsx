@@ -8,6 +8,7 @@ import { can } from '../model/route'
 import { assessmentOptions } from '../queries'
 import { ItemEditor } from './item-editor'
 import { ItemList } from './item-list'
+import { lockLabels } from './labels'
 
 const EDIT = '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
 
@@ -19,7 +20,13 @@ export function AssessmentEditPage() {
   const open = openItem(assessment.items, itemId)
   return (
     <div className="@container flex flex-col gap-gutter">
-      {can(assessment, 'update') ? null : <p className="text-sm text-muted-foreground">{m.assessments_readonly()}</p>}
+      {can(assessment, 'edit') ? null : (
+        <p className="text-sm text-muted-foreground">
+          {assessment.edit_lock && can(assessment, 'update')
+            ? lockLabels[assessment.edit_lock]()
+            : m.assessments_readonly()}
+        </p>
+      )}
       <div className="grid gap-gutter @3xl:grid-cols-3">
         <ItemList courseId={courseId} activityId={activityId} assessment={assessment} openId={open?.id} />
         <div className="min-w-0 @3xl:col-span-2">

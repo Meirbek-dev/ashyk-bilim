@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, AssessmentItem } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { presentError } from '#/shared/i18n/errors'
 import { FieldError } from '#/shared/ui/field'
 
@@ -20,7 +21,7 @@ type ItemEditorProps = { activityId: string; assessment: AssessmentDetail; item:
  * autosaved after a pause; an invalid one shows under its field and is not sent. Keyed by the question.
  */
 export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
-  const editable = can(assessment, 'update')
+  const editable = can(assessment, 'edit')
   const autosave = useItemAutosave(activityId, assessment.id, item.id)
   // Captured once: saving puts the answer into the cache, which must not reset what the author is typing.
   const [defaultValues] = useState(() => itemForm(item))
@@ -58,27 +59,30 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
         className="flex flex-col gap-4"
         onSubmit={event => event.preventDefault()}
       >
-        <div className="flex flex-wrap gap-4">
-          <div className="min-w-60 flex-1">
-            <form.AppField name="title">
-              {field => <field.TextField label={m.assessments_field_title()} />}
-            </form.AppField>
+        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-60 flex-1">
+              <form.AppField name="title">
+                {field => <field.TextField label={m.assessments_field_title()} />}
+              </form.AppField>
+            </div>
+            <div className="w-32">
+              <form.AppField name="points">
+                {field => <field.TextField label={m.assessments_field_points()} inputMode="decimal" />}
+              </form.AppField>
+            </div>
           </div>
-          <div className="w-32">
-            <form.AppField name="points">
-              {field => <field.TextField label={m.assessments_field_points()} inputMode="decimal" />}
-            </form.AppField>
-          </div>
-        </div>
-        <form.Field name="body">
-          {field => (
-            <>
-              <BodyFields body={field.state.value} onChange={field.handleChange} editable={editable} />
-              {field.state.meta.errors.length > 0 ? <FieldError>{m.validation_invalid()}</FieldError> : null}
-            </>
-          )}
-        </form.Field>
+          <form.Field name="body">
+            {field => (
+              <>
+                <BodyFields body={field.state.value} onChange={field.handleChange} editable={editable} />
+                {field.state.meta.errors.length > 0 ? <FieldError>{m.validation_invalid()}</FieldError> : null}
+              </>
+            )}
+          </form.Field>
+        </fieldset>
       </form>
+      <ConflictDialog {...autosave.conflict} />
     </section>
   )
 }

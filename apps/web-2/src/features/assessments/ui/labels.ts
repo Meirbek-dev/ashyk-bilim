@@ -1,17 +1,19 @@
 import { m } from '#/paraglide/messages'
 import type {
   AccessMode,
+  AuditEventKind,
+  EditLock,
   FormFieldType,
   GradeReleaseMode,
   GradingType,
   Lifecycle,
+  ReadinessIssueCode,
   ReviewVisibility,
 } from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
 
 import type { NewItemKind } from '../model/items'
 import type { LateKind } from '../model/policy'
-import type { AuditEventName, IssueCode } from '../model/publishing'
 
 export const kindLabels: Record<NewItemKind, () => string> = {
   single_choice: m.assessments_kind_single_choice,
@@ -68,7 +70,7 @@ export const accessLabels: Record<AccessMode, () => string> = {
 export const optionsOf = <T extends string>(labels: Record<T, () => string>) =>
   Object.entries<() => string>(labels).map(([value, label]) => ({ value, label: label() }))
 
-export const eventLabels: Record<AuditEventName, () => string> = {
+export const eventLabels: Record<AuditEventKind, () => string> = {
   'lifecycle-transition': m.assessments_event_lifecycle_transition,
   'auto-publish-skipped': m.assessments_event_auto_publish_skipped,
   'access-changed': m.assessments_event_access_changed,
@@ -83,7 +85,7 @@ export const eventLabels: Record<AuditEventName, () => string> = {
   'grades-published': m.assessments_event_grades_published,
 }
 
-export const issueLabels: Record<IssueCode, () => string> = {
+export const issueLabels: Record<ReadinessIssueCode, () => string> = {
   'assessment.title_missing': m.assessments_issue_assessment_title_missing,
   'assessment.empty': m.assessments_issue_assessment_empty,
   'schedule.after_due_at': m.assessments_issue_schedule_after_due_at,
@@ -116,4 +118,11 @@ export const issueLabels: Record<IssueCode, () => string> = {
   'matching.pair_value_missing': m.assessments_issue_matching_pair_value_missing,
   'matching.left_duplicate': m.assessments_issue_matching_left_duplicate,
   'matching.right_duplicate': m.assessments_issue_matching_right_duplicate,
+}
+
+/** Why the questions are read-only for an author (`edit_lock`). */
+export const lockLabels: Record<EditLock, () => string> = {
+  archived: m.assessments_lock_archived,
+  scheduled: m.assessments_lock_scheduled,
+  has_submissions: m.assessments_lock_has_submissions,
 }

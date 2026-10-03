@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
-  addCourse,
+  enroll,
   courseLifecycle,
   createAssessment,
   createChapter,
@@ -70,7 +70,7 @@ const test = base.extend<{ handedIn: HandedIn }>({
       })
       const learner = { cookie: /^[^;]+/.exec(signedIn.response.headers.get('set-cookie') ?? '')?.[0] ?? '' }
       const asLearner = { client: api, headers: learner, throwOnError: true } as const
-      await addCourse({ ...asLearner, path: { course_id: course.id } })
+      await enroll({ ...asLearner, path: { course_id: course.id } })
       const draft = await startSubmission({ ...asLearner, path: { assessment_id: assessment.data.id } })
       await submitSubmission({
         ...asLearner,

@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { createUsergroup, deleteUsergroup, listUsergroupMembers, listUsers } from '#/shared/api/gen/sdk.gen'
+import { createGroup, deleteGroup, listGroupMembers, listUsers } from '#/shared/api/gen/sdk.gen'
 
 import { type NewAccount, registerAccount } from '../fixtures/accounts'
 import { expect, type Seed, test as base } from '../fixtures/seed'
@@ -103,20 +103,20 @@ test('B-ADM-05 disable asks first, enable does not', async ({ page, account, api
 
 test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, account, api, seed }) => {
   const name = `E2E group ${randomUUID().slice(0, 8)}`
-  const group = await createUsergroup({ client: api, body: { name }, headers: cookie(seed), throwOnError: true })
+  const group = await createGroup({ client: api, body: { name }, headers: cookie(seed), throwOnError: true })
   try {
     const sheet = await openPanel(page, account.username)
     await sheet.getByLabel(m.admin_user_group_field({}, ru)).selectOption({ label: name })
     await sheet.getByRole('button', { name: m.admin_user_group_add({}, ru) }).click()
     await expect(page.getByText(m.admin_user_group_added({}, ru))).toBeVisible()
-    const members = await listUsergroupMembers({
+    const members = await listGroupMembers({
       client: api,
-      path: { usergroup_id: group.data.id },
+      path: { group_id: group.data.id },
       headers: cookie(seed),
     })
     expect(members.data?.map(member => member.username)).toEqual([account.username])
   } finally {
-    await deleteUsergroup({ client: api, path: { usergroup_id: group.data.id }, headers: cookie(seed) })
+    await deleteGroup({ client: api, path: { group_id: group.data.id }, headers: cookie(seed) })
   }
 })
 

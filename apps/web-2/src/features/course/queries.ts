@@ -3,16 +3,16 @@ import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
-  addCourseMutation,
+  enrollMutation,
   applyContributorMutation,
   getCourseOptions,
   getCurriculumOptions,
-  getTrailQueryKey,
+  listEnrollmentsQueryKey,
   learnerCourseStateOptions,
   listContributorsOptions,
   listCourseUpdatesOptions,
   removeContributorMutation,
-  removeCourseMutation,
+  leaveCourseMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { Contributor, CourseId, SessionInfo, Trail, UserId } from '#/shared/api/gen/types.gen'
 
@@ -31,14 +31,14 @@ const enrolment = (queryClient: QueryClient, id: CourseId) => ({
   onSuccess: ({ learner_state: state }: Trail) => {
     if (state) queryClient.setQueryData(learnerStateOptions(id).queryKey, state)
   },
-  meta: { invalidates: [getTrailQueryKey()] },
+  meta: { invalidates: [listEnrollmentsQueryKey()] },
 })
 export const enrollOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...addCourseMutation(withState),
+  ...enrollMutation(withState),
   ...enrolment(queryClient, id),
 })
 export const leaveOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...removeCourseMutation(withState),
+  ...leaveCourseMutation(withState),
   ...enrolment(queryClient, id),
 })
 

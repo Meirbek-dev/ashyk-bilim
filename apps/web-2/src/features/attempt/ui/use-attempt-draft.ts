@@ -33,7 +33,7 @@ export function useAttemptDraft(attempt: StudentSubmission) {
   const queue = useSelector(draftStore, state => state[id] ?? EMPTY)
   const online = useOnline()
   const save = useMutation(saveOptions())
-  const [problem, setProblem] = useState<SaveOutcome | null>(null)
+  const [failure, setFailure] = useState<{ outcome: SaveOutcome; error: unknown } | null>(null)
   const [conflict, setConflict] = useState(false)
   const sending = useRef(false)
   // Saving stops on a closed gate (for good) or a conflict (until the learner decides or answers again).
@@ -46,7 +46,7 @@ export function useAttemptDraft(attempt: StudentSubmission) {
   async function failed(error: unknown) {
     sending.current = false
     const outcome = saveOutcome(error)
-    setProblem(outcome)
+    setFailure({ outcome, error })
     if (outcome === 'network' || outcome === 'throttled') {
       waitMs.current = retryDelayMs(error)
       retry.maybeExecute()
@@ -72,7 +72,7 @@ export function useAttemptDraft(attempt: StudentSubmission) {
           // A hand-in that overtook this save keeps its result in the cache.
           queryClient.setQueryData(key, old => (old?.status === 'draft' ? fresh : old))
           updateQueue(id, current => ack(current, ids))
-          setProblem(null)
+          setFailure(null)
           if (queueOf(id).length) paced.maybeExecute()
         },
         onError: error => void failed(error),
@@ -99,8 +99,8 @@ export function useAttemptDraft(attempt: StudentSubmission) {
   return {
     answers: overlay(attempt.answers, queue),
     change,
-    status: saveStatus(online, problem, queue.length),
-    closed: problem === 'closed',
+    status: saveStatus(online, failure?.outcome ?? null, queue.length),
+    closed: failure?.outcome === 'closed' ? failure.error : null, // the 403 that shut saving: its code says why
     conflict,
     setConflict,
     reloadAndRetry,
