@@ -1,0 +1,12 @@
+{
+  "certificates_valid": "Valid",
+  "certificates_invalid": "Not valid",
+  "certificates_not_found": "Certificate not found",
+  "certificates_not_found_hint": "Code {code} matches no issued certificate. Compare it with the code on the document.",
+  "certificates_holder": "Holder",
+  "certificates_instructor": "Teacher",
+  "certificates_code": "Certificate code",
+  "certificates_download_pdf": "Download PDF",
+  "certificates_og_title": "Certificate: {holder}, {course}",
+  "certificates_summary": "Authentic certificate issued on {date}."
+}

@@ -1,0 +1,31 @@
+{
+  "learning_title": "My courses",
+  "learning_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} course",
+        "countPlural=other": "{count} courses"
+      }
+    }
+  ],
+  "learning_empty": "You have not started any course yet.",
+  "learning_catalog": "Browse the catalog",
+  "learning_filter_label": "Course state",
+  "learning_filter_all": "All",
+  "learning_state_in_progress": "In progress",
+  "learning_state_not_started": "Not started",
+  "learning_state_completed": "Completed",
+  "learning_action_continue": "Continue",
+  "learning_action_start": "Start",
+  "learning_action_open": "Open course",
+  "learning_progress": "{percent}% done",
+  "learning_no_activities": "This course has no published activities yet.",
+  "learning_archived": "Archived",
+  "learning_certificates_title": "My certificates",
+  "learning_certificates_empty": "Certificates of completed courses will appear here.",
+  "learning_certificate_meta": "Issued {date} · code {code}",
+  "learning_certificate_instructor": "Teacher: {name}",
+  "learning_certificate_verify": "Authenticity"
+}

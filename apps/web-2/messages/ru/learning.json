@@ -1,0 +1,33 @@
+{
+  "learning_title": "Мои курсы",
+  "learning_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} курс",
+        "countPlural=few": "{count} курса",
+        "countPlural=many": "{count} курсов",
+        "countPlural=other": "{count} курса"
+      }
+    }
+  ],
+  "learning_empty": "Вы пока не начали ни одного курса.",
+  "learning_catalog": "Перейти в каталог",
+  "learning_filter_label": "Состояние курса",
+  "learning_filter_all": "Все",
+  "learning_state_in_progress": "В процессе",
+  "learning_state_not_started": "Не начат",
+  "learning_state_completed": "Завершён",
+  "learning_action_continue": "Продолжить",
+  "learning_action_start": "Начать",
+  "learning_action_open": "Открыть курс",
+  "learning_progress": "Пройдено {percent}%",
+  "learning_no_activities": "В курсе пока нет опубликованных активностей.",
+  "learning_archived": "В архиве",
+  "learning_certificates_title": "Мои сертификаты",
+  "learning_certificates_empty": "Здесь появятся сертификаты завершённых курсов.",
+  "learning_certificate_meta": "Выдан {date} · код {code}",
+  "learning_certificate_instructor": "Преподаватель: {name}",
+  "learning_certificate_verify": "Подлинность"
+}
