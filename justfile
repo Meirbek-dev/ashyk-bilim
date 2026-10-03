@@ -46,9 +46,12 @@ web2-stand-up:
     STACK=web2 bash infra/scripts/bootstrap.sh
     {{ lib }} && use_web2 && compose up -d --wait
 
+# Verified pool accounts e2e-learner-NNN the suite takes instead of self-registering (capped per hour).
+e2e_learners := env("E2E_LEARNERS", "250")
+
 # seed-e2e (S-03) in the server container; password: E2E_PASSWORD, else tmp/web2/e2e-password.
 web2-seed:
-    {{ lib }} && use_web2 && compose exec -T -e AB__ENVIRONMENT=development -e E2E_PASSWORD server ashyq admin seed-e2e
+    {{ lib }} && use_web2 && compose exec -T -e AB__ENVIRONMENT=development -e E2E_PASSWORD server ashyq admin seed-e2e --learners {{ e2e_learners }}
 
 # Playwright against the stand (args: playwright's, e.g. e2e/specs/auth.spec.ts). The host must
 # resolve ashyq.test to 127.0.0.1; WEB2_E2E_IN_NETWORK=1 runs it in a container on the stand network.
@@ -59,17 +62,20 @@ web2-e2e *args:
     # E2E_API_LOG: without a mailer the API logs verification codes while the suite runs.
     compose logs -f --no-color server >tmp/web2/server.log 2>&1 &
     trap "kill $! 2>/dev/null" EXIT
-    e2e_env=(E2E_BASE_URL=https://ashyq.test E2E_INSECURE=1 E2E_PASSWORD="$E2E_PASSWORD")
+    # Taken pool accounts are files in tmp/web2/learners (gone with the stand).
+    mkdir -p tmp/web2/learners
+    e2e_env=(E2E_BASE_URL=https://ashyq.test E2E_INSECURE=1 E2E_PASSWORD="$E2E_PASSWORD" E2E_LEARNERS={{ e2e_learners }})
     if [[ -z ${WEB2_E2E_IN_NETWORK:-} ]]; then
         cd apps/web-2
-        env "${e2e_env[@]}" E2E_API_LOG=../../tmp/web2/server.log \
+        env "${e2e_env[@]}" E2E_API_LOG=../../tmp/web2/server.log E2E_LEARNERS_DIR=../../tmp/web2/learners \
             NODE_EXTRA_CA_CERTS=../../tmp/smoke/certs/cert.pem bun run e2e {{ args }}
     else
         root=$(pwd -W 2>/dev/null || pwd)
         pw=$(sed -n 's/.*"@playwright\/test": "\(.*\)".*/\1/p' apps/web-2/package.json)
-        e2e_env+=(E2E_API_LOG=/stand/web2/server.log NODE_EXTRA_CA_CERTS=/stand/smoke/certs/cert.pem)
+        e2e_env+=(E2E_API_LOG=/stand/web2/server.log E2E_LEARNERS_DIR=/learners
+            NODE_EXTRA_CA_CERTS=/stand/smoke/certs/cert.pem)
         "$CTR" run --rm --network "${COMPOSE_PROJECT_NAME}_edge-net" --ipc host \
-            -v "$root/apps/web-2:/app" -v "$root/tmp:/stand:ro" -w /app \
+            -v "$root/apps/web-2:/app" -v "$root/tmp:/stand:ro" -v "$root/tmp/web2/learners:/learners" -w /app \
             $(printf -- '-e %s ' "${e2e_env[@]}") \
             "mcr.microsoft.com/playwright:v$pw-noble" \
             node node_modules/@playwright/test/cli.js test -c e2e/playwright.config.ts {{ args }}

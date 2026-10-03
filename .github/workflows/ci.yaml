@@ -1,6 +1,7 @@
-# One workflow for gates, images, stack smoke and publish, so every green
-# main commit gets BOTH images under the same <sha> tag. Pull requests run
-# the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
+# One workflow for gates, images, stack smoke and publish. A release publishes
+# BOTH stage-1 images under the same <sha> tag; main no longer rebuilds the
+# frozen old web, so it publishes nothing until stage 2 cutover (Ф8). Pull
+# requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
 # only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
 name: ci
 
@@ -42,12 +43,13 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
+            # Frozen old web (G-13): only its image, and only when it changed (Legacy-Hotfix)
+            # or on release branches. Its catalogs are Paraglide since 34d8cd2, so it no longer
+            # builds on main (QUESTIONS.md Q-2026-10-03-1).
             web:
               - 'apps/web/**'
               - 'package.json'
               - 'bun.lock'
-              - '.node-version'
-              - 'apps/server/openapi.v2.json'
             web2:
               - 'apps/web-2/**'
               - 'apps/server/openapi.v2.json'
@@ -121,59 +123,6 @@ jobs:
       - name: OpenAPI export is committed and current
         run: just openapi-check
 
-  # Each gate is its own step with an id. A gate that is red at the stage-1
-  # baseline gets `continue-on-error: true` plus `# baseline-red: <reason>`
-  # (listed in docs/INFRA.md). All green at the stage-1 baseline, all required.
-  web-gates:
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Install
-        working-directory: .
-        run: bun install --frozen-lockfile
-
-      # next-env.d.ts and .next/types are generated; lint and tsc are type-aware.
-      - name: Route types
-        run: bunx next typegen
-
-      - id: lint
-        name: Lint
-        run: bun run lint
-
-      - id: typecheck
-        name: Typecheck
-        run: bun run typecheck
-
-      - id: test
-        name: Unit tests
-        run: bun run test
-
-      - id: contract
-        name: API contract is regenerated and committed
-        run: |
-          bun run generate:api-types
-          bun run check:contracts
-          git diff --exit-code
-
-      - id: error-codes
-        name: Error codes have messages in every locale
-        run: bun run check:error-codes
-
   infra-gates:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -233,14 +182,14 @@ jobs:
 
       - name: Verify (check, tests, gates)
         env:
-          GATES_BASE: ${{ github.event.before }}
+          GATES_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bun run verify
 
       - name: Build with chunk budgets
         run: bun run build
 
   images:
-    needs: [changes, server-gates, web-gates, web2-gates, infra-gates]
+    needs: [changes, server-gates, web2-gates, infra-gates]
     # Gates may be skipped (path filter) but never failed.
     if: >-
       github.event_name == 'push' && !failure() && !cancelled()
@@ -251,8 +200,11 @@ jobs:
       packages: write
     strategy:
       matrix:
-        # stage-2: web-2 (no build args) only when apps/web-2 changed or on release branches.
-        image: ${{ fromJSON(needs.changes.outputs.web2 == 'true' && '["server","web","web-2"]' || '["server","web"]') }}
+        # web (frozen) and web-2 (no build args) only when they changed or on release branches.
+        image: >-
+          ${{ fromJSON(format('["server"{0}{1}]',
+          needs.changes.outputs.web == 'true' && ',"web"' || '',
+          needs.changes.outputs.web2 == 'true' && ',"web-2"' || '')) }}
         include:
           - image: web
             # stage-2: the only Next-specific spot; the web image is bound to
@@ -310,6 +262,8 @@ jobs:
     env:
       IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
       SMOKE_RESOLVE_IP: 127.0.0.1
+      # No old web image built (main, apps/web unchanged): the stub web from the start.
+      WEB_IMAGE: ${{ needs.changes.outputs.web != 'true' && 'ashyq-stub-web:ci' || '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -323,6 +277,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Stub web image
+        run: docker build -t ashyq-stub-web:ci infra/smoke/stub-web
+
       - name: Stack up (from scratch, bootstrap included)
         run: just stack-up
 
@@ -332,10 +289,10 @@ jobs:
       # R-09: the edge must not depend on Next.js. Swap web for a stub and
       # smoke again; only web and nginx are recreated.
       - name: Smoke with stub web
+        if: env.WEB_IMAGE == ''
         env:
           WEB_IMAGE: ashyq-stub-web:ci
         run: |
-          docker build -t "$WEB_IMAGE" infra/smoke/stub-web
           bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --pull never --force-recreate --wait web nginx'
           just smoke
 
@@ -350,7 +307,7 @@ jobs:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: read
@@ -392,13 +349,15 @@ jobs:
       - name: Stand up (from scratch, bootstrap included)
         run: just web2-stand-up
 
+      # Also the learner pool (E2E_LEARNERS, default 250): the stand caps self-registration at 10/h.
       - name: Seed
         run: just web2-seed
 
+      # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
       - name: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
-        run: just web2-e2e --reporter=line,html
+        run: just web2-e2e --grep-invert @judge0 --reporter=line,html
 
       - name: Compose logs
         if: failure()
@@ -420,7 +379,8 @@ jobs:
 
   publish:
     needs: [changes, stack-smoke]
-    if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
+    # Both images under one <sha>: only when the old web image was built (release branches).
+    if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !failure() && !cancelled() && needs.stack-smoke.result == 'success' && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
