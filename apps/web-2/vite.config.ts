@@ -29,7 +29,7 @@ const plugins = lazyPlugins(() => [
   tailwindcss(),
   tanstackStart({ router: { codeSplittingOptions: { defaultBehavior: ROUTE_SPLIT } } }),
   viteReact(),
-  babel({ presets: [reactCompilerPreset()] }),
+  babel({ presets: [reactCompilerPreset()], exclude: [/[/\\](node_modules|paraglide|gen)[/\\]/] }),
   stripResponseValidators,
   initialModules(),
 ])

@@ -112,16 +112,20 @@
 
 ## Ждёт сервера
 
-- `If-Match` у `DELETE /chapters/{id}` (S-04 его не добавил). Строка соавтора и жизненный цикл курса заголовок
-  принимают, веб его пока не шлёт.
-- `Idempotency-Key` у `POST /courses`, `/courses/{id}/chapters`, `/chapters/{id}/activities`, `/assessments`,
-  `/file-submissions`, `/courses/{id}/updates`, `/courses/{id}/contributors`, `/certifications`.
+- `If-Match` у `DELETE /chapters/{id}` (S-04 его не добавил).
+- `Idempotency-Key` у `POST /file-submissions`.
 - Списки соавторов, объявлений и учащихся пагинируются, а правки отвечают одной строкой (или 204): загруженные
   страницы кэша правятся на клиенте, новая строка встаёт в первую (объявление) или последнюю (соавтор) страницу.
-- `Contributor` без `allowed_actions`, `role`/`status` - строки; у `CourseUpdate` нет автора и `allowed_actions`;
-  `ReadinessItem.code` - строка, а не перечисление.
 - `moveChapter`, `moveActivity`, `addGroupCourses`, `removeGroupCourses` отвечают 204 без тела: кэш
   правится на клиенте.
 - `PATCH /activities/{id}` закрепляет загрузки блоков (`sync_block_claims`) только у `dynamic`: правка документа
   `custom` потеряла бы их, поэтому редактора у `custom` нет.
-- Срок у самой активности (`Activity`): поля нет. `settings.required` в контракте есть, студия его пока не правит.
+- Срок у самой активности (`Activity`): поля нет.
+
+## Не перенесено (контракт есть)
+
+- `If-Match` у строки соавтора (`updateContributor`) и жизненного цикла курса (`courseLifecycle`): веб его не шлёт.
+- `Idempotency-Key` у создания курса, главы, активности, оценивания, объявления, соавтора и сертификата (шлёт
+  только копия курса).
+- `Contributor.allowed_actions`, `CourseUpdate.allowed_actions` и `CourseUpdate.author` не читаются.
+- `settings.required` активности студия не правит.

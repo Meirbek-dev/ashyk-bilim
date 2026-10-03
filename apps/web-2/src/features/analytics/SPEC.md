@@ -45,10 +45,13 @@
 
 ## Ждёт сервера
 
-- `allowed_actions` у строк зоны риска: право записать вмешательство сейчас равно праву читать курс, кнопка есть у каждой строки списка (`POST /analytics/teacher/interventions`).
-- `DrillThroughResponse.items` - `object[]` без схемы (`GET /analytics/teacher/drill-through/{metric}`): поля читаются локальной схемой Valibot, нужен tagged union по `metric`.
-- `SavedView.query` и `SaveViewRequest.query` - свободный object, `view_type` - строка: храним объект фильтров и разбираем схемой фильтров (`/analytics/teacher/saved-views`).
+- `SavedView.query` и `SaveViewRequest.query` - словарь скаляров без схемы фильтров, `view_type` - строка: разбираем схемой фильтров (`/analytics/teacher/saved-views`).
 - `CreateInterventionRequest.outcome`, `Intervention.outcome`, `AtRiskLearnerRow.last_intervention_outcome` - строки, нужен enum (сейчас не показываются).
 - `params` (`MessageParams`) - словарь `string | number` без схемы по `code`: имена параметров читаются по описанию `AnalyticsCode`, нужен tagged union. `missing_event_sources` шлёт `sources` массивом вопреки схеме, поэтому блок качества данных не показывается.
-- CSV берёт язык только из `Accept-Language`, ссылка не может его задать: нужен query-параметр языка (`GET /analytics/teacher/exports/*.csv`).
 - Правка и закрытие вмешательства: операции нет.
+
+## Не перенесено (контракт есть)
+
+- Кнопка вмешательства по `AtRiskLearnerRow.allowed_actions` (`record_intervention`): сейчас есть у каждой строки.
+- Drill-through: строки читаются локальной схемой, а не сгенерированным `DrillThroughRow`.
+- CSV без `lang`: ссылки экспорта не передают язык интерфейса (`?lang=`).

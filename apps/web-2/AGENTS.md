@@ -79,9 +79,11 @@ listed in `gates/allowlist.json` with a reason (G-12).
   `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment). Tabs live
   in the layout route file; its `index.tsx` redirects to the first tab. A 403 thrown in `beforeLoad` renders in place
   (`ErrorView` -> `ForbiddenView`) and SSR answers with the ApiError's status (`shared/lib/ssr-status.ts`).
-- A stub route has `component: UnderConstruction`. To build it: in that route file only, replace the component with
-  the feature's (add `validateSearch`, `loader`, `head`), keep `staticData.title`. `bun gates/gates.ts
-under-construction` lists what is left; report-only until phase 7 (`gates/allowlist.json` `underConstruction`).
+- No stub routes (gate `under-construction`). Each OpenAPI operation has a consumer in `src/`, is a service operation
+  (`allowlist.json`) or is in `gates/server-removals.json` with a reason (G-07; a stale entry is an error).
+- Live data: `GET /me/events` -> `shared/api/event-invalidations.ts` (event -> keys). An event skips a read that
+  landed after it (`server-clock.ts`: stream-id time, offsets from arrivals and `Date`) and task-keyed reads of
+  another activity. e2e: `expectReread(page, path)` when a test changes data behind an open page on purpose.
 - Before hydration (/login: ~140 ms, ~540 ms at 4x CPU) clicks do nothing: React cannot replay them until Start has
   loaded the route's chunks and hydrated the root. An SSR page works natively until then: navigation is a `Link`
   (a real `<a>`), a form keeps its fieldset disabled until `useHydrated()` (`features/auth/ui/auth-form.tsx`), and
@@ -100,8 +102,8 @@ under-construction` lists what is left; report-only until phase 7 (`gates/allowl
 
 API on `http://127.0.0.1:8000` (`vp dev` proxies `/api/v2`, else `API_PROXY_TARGET`; buckets and `/content`: storage
 `STORAGE_PROXY_TARGET`, `localhost:9002`), seeded by `ashyq admin seed-e2e`. Run `E2E_PASSWORD=<seed password> vp run
-e2e [--grep x]`: it reuses or starts `vp dev` and warms every route first (`e2e/global-setup.ts`). Never write the
-password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API logs email verification codes, and
+e2e [--grep x]`: it reuses or starts `vp dev` and warms every route first (`e2e/global-setup.ts`); runs sharing a tree
+pass `--output=<own dir>`. Never write the password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API logs email verification codes, and
 `auth.spec.ts` reads them there. `e2e/fixtures/seed.ts` gives `seed` (accounts and route params, read with the SDK),
 `test.use({ as: role })` (one API sign-in per worker and role, as storage state), `signInAs(role)` to switch.
 
@@ -110,11 +112,9 @@ password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API l
 1. Write `src/features/<name>/SPEC.md` first: `Операции:` line, `B-<FEAT>-NN` behaviors, "Изменено",
    "Не переносится" (<= 150 lines). Reference: `src/features/collections/`.
 2. Add `messages/{ru,kk,en}/<name>.json` and list the file in `project.inlang/settings.json`.
-3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`, then bind it in `src/routes/`.
-4. Every behavior id appears in a test title (`test('B-COL-02 ...')`), unit or e2e (G-10).
-5. `vp run verify` and `bun run build` green. A gate you cannot satisfy is a question for the orchestrator.
+3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`; bind it in `src/routes/`. Each `B-` id is in a test title (G-10).
+4. `vp run verify` and `bun run build` green. A gate you cannot satisfy is a question for the orchestrator.
 
-Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator;
-ask for a missing primitive or operation instead of writing your own. Output budgets: gates print `file:line rule -
-what to do`, at most 30 lines per gate; Playwright uses the `line` reporter and prints the trace path on failure. Do
-not paste generated files into context: search `sdk.gen.ts`.
+Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator; ask
+for a missing primitive or operation. Gates print `file:line rule - what to do` (<= 30 lines each); Playwright uses
+the `line` reporter. Search `sdk.gen.ts`, never paste generated files into context.

@@ -60,12 +60,14 @@
 
 ## Ждёт сервера
 
-- В `ActivityState.allowed_actions` нет действий «отметить» и «снять отметку»: ручная отметка выводится из типа
-  (сервер принимает `POST /progress/activities/{id}` только для страницы, видео, документа и другой; 409 для прочих).
+- `ActivityState.allowed_actions` - `string[]`, а не enum.
 - У отметки (`POST /progress/activities/{id}`) нет `Idempotency-Key`.
 - Число попыток и их предел не входят в `ActivityState`: карточка входа их не показывает (они в
   `GET /activities/{id}/assessment` и `/file-submission`, это экраны срезов 5.2-5.4).
-- `content` активности - нетипизированный JSON: форма видео (`uri`, `filename`) и документа (`filename`) взята из
-  старых данных.
 - Следующего курса в контракте нет: итоги ведут в «Мои курсы» и каталог. Геймификация конца курса в ответе
   отметки не приходит.
+
+## Не перенесено (контракт есть)
+
+- Ручная отметка по `ActivityState.allowed_actions` (`mark_complete`, `unmark_complete`), а не по типу активности.
+- Видео и документ читаются из `content` локально (`model/lesson.ts`), а не типом `MediaContent`.

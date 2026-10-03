@@ -188,8 +188,8 @@ Every data region renders exactly one of the kit's four states:
 - Buttons: a short verb in sentence case, no "please", no "!": «Сохранить» / «Сақтау» / "Save". The toast repeats
   it in the past tense: «Сохранено» / «Сақталды» / "Saved".
 - Errors say what happened and what to do next, never apologize or blame: «Файл больше 50 МБ. Выберите файл поменьше.»
-- Formal «вы» (ru, lowercase) and «сіз» (kk). Confirmations name the object and the consequence; empty states invite
-  one action. Terms only from the 7.9 glossary; dates and numbers only from the format module.
+- Formal «вы» (ru, lowercase) and «сіз» (kk); en: American spelling, curly quotes. Confirmations name the object and
+  the consequence; empty states invite one action. Terms: `messages/glossary.json` (G-03); dates, numbers: format module.
 
 ## 12. Never
 

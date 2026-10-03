@@ -22,8 +22,8 @@
 - Настройка и предпросмотр сертификата курса - студия курса (срез 4.1, `settings`, B-CST-21, B-CST-37); здесь только
   адрес предпросмотра (`certificationPreviewHref`), рядом с адресом PDF.
 
-## Ждёт сервера
+## Не перенесено (контракт есть)
 
-- Ссылка в PDF: сервер печатает `{/ru|/kz|/en}/certificates/{code}/verify` (`Language::web_prefix`, UX-039); веб принимает её псевдонимом (B-CRT-06), менять сервер не обязательно.
-- Название и тип сертификата лежат только в непрозрачном `Certification.config` (документ дизайнера); у `VerifiedCertificate` нет поля названия - страница называет курс.
-- Язык PDF берётся из `Accept-Language` браузера, а не из выбранного языка интерфейса: у `GET /certificates/{code}/pdf` нет параметра языка.
+- Название и тип сертификата: `Certification.config` типизирован (`certification_name`, `certification_type`), страница
+  называет курс.
+- Язык PDF: ссылка «Скачать PDF» не передаёт `?lang=` (`certificatePdf`), язык берётся из `Accept-Language`.

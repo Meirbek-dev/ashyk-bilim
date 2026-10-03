@@ -69,16 +69,17 @@
 
 ## Ждёт сервера
 
-- У `FileSubmission` и `Attempt` учащегося нет `allowed_actions` (начать, сдать, исправить): действия выводятся из
-  статуса попытки, `disabled_reasons` и `max_attempts` (B-FSB-07, B-FSB-08).
+- У `FileSubmission` нет `allowed_actions`, а у `Attempt` они только проверяющего (`save`, `publish`, `return`):
+  начать, сдать, исправить выводятся из статуса попытки, `disabled_reasons` и `max_attempts` (B-FSB-07, B-FSB-08).
 - Тело `POST /file-submissions/{id}/submit` в контракте - схема теста `SubmitRequest` (`answers`,
   `violation_count`): имя совпало со схемой сервера `{files?}`. Веб шлёт `{}`.
 - `PATCH /file-submissions/{id}` без `version` и `If-Match` (S-04): последняя запись побеждает. Ответ
   `POST .../publish` не несёт новой `version` активности: веб поднимает её в кэше сам.
 - Диапазоны полей (файлов 1-25, МБ 1-500, попыток 1-50, процент 0-100, дней от 1) и правило загрузки
   `file-submission` (100 МБ, любые типы) не объявлены в контракте: ошибки приходят 422 от сервера.
-- Коды причин отказа записи (PAST_DUE...) есть только в тексте 403: веб перечитывает задание.
-- Живое обновление после проверки - поток S-06 в вебе (`shared/api/events.ts`) ещё не подключён.
-- `getFileSubmission` и `getDraft` повторяют `GET /activities/{id}/file-submission` (`current_attempt`): потребителя
-  нет. `getAttempt`, `gradeAttempt`, очередь и CSV - срез 6.1.
 - Снять задание с публикации (вернуть `lifecycle` в черновик) нечем: переключатель шапки только прячет активность.
+
+## Не перенесено (контракт есть)
+
+- Отказ записи (403) несёт код (`attempt-past-due`, `remediation-required`) и `details.reasons`: веб не различает их и
+  перечитывает задание.

@@ -77,12 +77,12 @@
 
 - Балл работы над ошибками считает клиент и присылает сам (`RemediationCompletionRequest.score`): сервер верит
   самооценке учащегося; вопрос владельцу - проверять ответы на сервере. Поведение контракта сохранено.
-- Вердикты по рекомендациям не читаются: `CourseQualityReport` не объявляет `finding_reviews`, у `Recommendation`
-  нет `id` (клиент шлёт позиционный `finding-{index}`); отметка видна только сообщением.
 - `ScopeCapabilities.modes` и `FeatureCapability.key` - строки, а не enum; `StudyCompanionAnswer.flashcards` -
-  `JsonValue[]`; поля AG-UI (`RUN_FINISHED.result`, `CUSTOM.value`, `TOOL_CALL_RESULT.content`) не описаны схемами.
-- `AdminSettings` только читается: операции включения функций нет.
-- Синхронные варианты (`studyAsk`, `analyzeCourse`, `analyzeSubmission`, `generateRemediation`,
-  `critiqueLecture`), `getAiRun`, `runEvents` (журнал есть в `adminRunDetail`) и `remediationSession` (сессии
-  учащегося приходят списком `studentRemediation`) без потребителя - кандидаты на
-  удаление (G-07).
+  `JsonValue[]`; `TOOL_CALL_RESULT.content` - JSON внутри строки.
+- `AdminSettings` только читается: операции включения функций нет (L-6 отложил: нужен дизайн).
+
+## Не перенесено (контракт есть)
+
+- Вердикты по рекомендациям: `CourseQualityReport.finding_reviews` (ключ `finding-{index}`) не читается, отметка
+  видна только сообщением.
+- Поля AG-UI читаются локальными схемами (`model/chat.ts`, `model/follow.ts`), а не `vQaRunResult` / `vRunCustomValue`.
