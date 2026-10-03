@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query'
+import type { InvalidateQueryFilters, Query, QueryClient } from '@tanstack/react-query'
 import { AsyncRetryer } from '@tanstack/react-pacer'
 import * as v from 'valibot'
 
@@ -7,6 +7,7 @@ import { sessionOptions } from '#/shared/auth/session'
 import { invalidationsFor, type UserEvent } from './event-invalidations'
 import type { MyEventsData, UserStreamEvent } from './gen/types.gen'
 import { vUserStreamEvent } from './gen/valibot.gen'
+import { eventServerTime, noteServerDate, readMayPredate, serverOffset } from './server-clock'
 
 // The one live connection of a tab (spec 7.7): the `myEvents` operation, `GET /me/events`. The generated SSE client
 // cannot be steered (no pause, no Last-Event-ID on our terms, its own retry timers), so the stream is read here.
@@ -89,6 +90,7 @@ export function createEventStream(options: EventStreamOptions): EventStream {
   async function connect(signal: AbortSignal | null): Promise<'ended' | 'dropped'> {
     const headers: Record<string, string> = lastEventId ? { 'Last-Event-ID': lastEventId } : {}
     const response = await options.fetch(EVENTS_URL, { headers, signal, cache: 'no-store' })
+    noteServerDate(response.headers.get('date'))
     if (response.status === 401) return end()
     if (!response.ok || !response.body) throw new Error(`event stream answered ${response.status}`)
     let opened: number | undefined
@@ -154,21 +156,12 @@ export function createEventStream(options: EventStreamOptions): EventStream {
  * The tab's stream (mounted once by the authed shell): each event invalidates its table keys and goes to `onEvent`;
  * a hidden tab closes the connection and a visible one resumes it. Returns the stop function.
  */
-/** A read that landed this recently already reflects an event that arrives now. */
-const FRESH_MS = 2000
-
 export function startEventStream(queryClient: QueryClient, onEvent: (event: UserEvent) => void): () => void {
-  // An event never cancels a read already in flight, nor repeats one that landed after it or just before it: those
-  // already show the change. A write of this tab still in flight goes first: its own invalidation refetches, and the
-  // event (often its echo, sent before the write answers) then skips what that refetch brought.
-  // ponytail: receipt-time window, not server time (client clocks skew); a colleague's change racing a read that
-  // landed in the last FRESH_MS stays stale until the next event or focus.
-  const invalidate = (queryKey?: readonly unknown[], before = Date.now() - FRESH_MS) => {
-    const run = () =>
-      void queryClient.invalidateQueries(
-        { ...(queryKey ? { queryKey } : {}), predicate: query => query.state.dataUpdatedAt < before },
-        { cancelRefetch: false },
-      )
+  // An event never cancels a read already in flight, nor repeats one that landed after the event happened (by the
+  // server's clock, `server-clock.ts`): that read already shows the change. A write of this tab still in flight
+  // goes first: its own invalidation refetches, and the event (often its echo) then skips what that refetch brought.
+  const invalidate = (filters: InvalidateQueryFilters) => {
+    const run = () => void queryClient.invalidateQueries(filters, { cancelRefetch: false })
     if (queryClient.isMutating() === 0) {
       run()
       return
@@ -182,13 +175,15 @@ export function startEventStream(queryClient: QueryClient, onEvent: (event: User
   const stream = createEventStream({
     fetch: (url, init) => fetch(url, init),
     onEvent: event => {
-      for (const queryKey of invalidationsFor(event.event, event.payload)) invalidate(queryKey)
+      const at = eventServerTime(event)
+      const predicate = (query: Query) => readMayPredate(query.state.dataUpdatedAt, at, serverOffset())
+      for (const queryKey of invalidationsFor(event.event, event.payload)) invalidate({ queryKey, predicate })
       onEvent(event)
     },
     // Only reads older than the drop: one that landed during the gap (a navigation meanwhile) is current.
-    onResync: since => invalidate(undefined, since),
+    onResync: since => invalidate({ predicate: query => query.state.dataUpdatedAt < since }),
     // The session read decides: a lost session clears it, which re-runs the guards and unmounts the stream.
-    onSessionLost: () => invalidate(sessionOptions().queryKey),
+    onSessionLost: () => invalidate({ queryKey: sessionOptions().queryKey }),
   })
   const onVisibility = () => (document.hidden ? stream.pause() : stream.resume())
   document.addEventListener('visibilitychange', onVisibility)

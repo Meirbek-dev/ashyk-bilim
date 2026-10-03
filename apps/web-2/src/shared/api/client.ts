@@ -8,6 +8,7 @@ import { ApiError } from './errors'
 import type { CreateClientConfig } from './gen/client.gen'
 import { vProblem } from './gen/valibot.gen'
 import { KEY_ORIGIN } from './key-origin'
+import { noteServerDate } from './server-clock'
 
 // The one seam between the app and the generated SDK (spec 7.4). Wired in by openapi-ts.config.ts
 // `runtimeConfigPath`, so every SDK call goes through apiFetch.
@@ -56,6 +57,8 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
     forwarded.forEach((value, name) => request.headers.set(name, value))
   }
   const response = await fetch(request)
+  // The event stream compares event times with read times through this offset (`events.ts`).
+  if (!forwarded) noteServerDate(response.headers.get('date'))
   if (!response.ok) throw await problemError(response)
   return response
 }
