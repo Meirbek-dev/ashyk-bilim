@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type DragEvent } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
-import { uploadAccept, type UploadPurpose } from '#/shared/api/upload'
+import { uploadAccept, type UploadLimits, type UploadPurpose } from '#/shared/api/upload'
 import { useUpload } from '#/shared/hooks/use-upload'
 import { cn } from '#/shared/lib/utils'
 import { buttonVariants } from '#/shared/ui/button'
@@ -15,6 +15,8 @@ type FileInputProps = {
   description?: string | undefined
   /** Accepted types and the size cap come from the purpose's upload policy (`shared/api/upload.ts`). */
   purpose: UploadPurpose
+  /** Narrower rules of the resource (a task's types and size) on top of the purpose's. */
+  limits?: UploadLimits | undefined
   /** The finalized upload: its `id` is what the resource claims (`thumbnail_upload_id`...). */
   onUploaded: (upload: FinalizedUpload, file: File) => void
   /** A file handed over from outside (pasted or dropped onto an editor): uploaded once, on mount. */
@@ -38,9 +40,10 @@ function useHandedFile(file: File | undefined, take: (file: File) => Promise<voi
  * Pick or drop one file; it uploads at once (create -> PUT -> finalize) with progress, and limit or API errors
  * show under the zone. The native input stays the one focusable control; the visible button is its label.
  */
-export function FileInput({ label, description, purpose, onUploaded, file, error, disabled = false }: FileInputProps) {
+export function FileInput(props: FileInputProps) {
+  const { label, description, purpose, limits = {}, onUploaded, file, error, disabled = false } = props
   const id = useId()
-  const { start, progress, error: uploadError, pending } = useUpload(purpose)
+  const { start, progress, error: uploadError, pending } = useUpload(purpose, limits)
   const [dragging, setDragging] = useState(false)
   const [uploaded, setUploaded] = useState<string | null>(null)
   const shownError = uploadError ?? error
@@ -72,12 +75,12 @@ export function FileInput({ label, description, purpose, onUploaded, file, error
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={drop}
-        className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground transition-colors duration-150 data-dragging:border-ring data-dragging:bg-accent"
+        className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground transition-colors duration-150 data-dragging:border-ring data-dragging:bg-accent"
       >
         <Input
           id={id}
           type="file"
-          accept={uploadAccept(purpose)}
+          accept={uploadAccept(purpose, limits)}
           disabled={inactive}
           aria-labelledby={`${id}-label`}
           aria-describedby={`${id}-status`}
