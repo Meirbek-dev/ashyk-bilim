@@ -76,19 +76,21 @@ final run link and list of own runs; `feedback_code/params` untyped; reference-c
 `/code/languages` 503 without Judge0; AI: streaming endpoints typed as strings, feature switches read-only, quality
 report has no teacher verdict field, 8 AI operations without a consumer (delete per G-07); register-then-login 401 race.
 
-## Resume notes (session cut by the usage limit, 2026-10-03 late evening)
+Orchestration (owner, 2026-10-04): at most 2 subagents at a time - one web (main tree), one server.
+W-1 done (1e3cfb7..3927410): client matches a05c210, L-5/L-6 adopted, storage-state logins; e2e 507/524 (`reports/W-1.md`).
+W-2 (wip, main tree): apply T-1 translation fixes (165), event dedup by `sent_at`, skipped UI adoptions, G-07 and
+under-construction gates enforcing, hardening checks. C-2 (wip): CI - old web job to image build only, learner pool for
+the e2e stand, first push of main, make every CI job green.
 
-- All feature slices of the URL map are built. Integration agent I-2 was merging 5.1, 5.2, 6.3, 5.3, 6.1, 3.8, 3.1 into
-  main (see `git log` for `merge: slice ...` commits and `<scratchpad>/reports/I-2.md`); it was running the full e2e
-  suite when the orchestrator stopped. Any `worktree-agent-*` branch still listed by `git branch` is NOT merged yet -
-  merge it with the recipe (union `project.inlang/settings.json`, regenerate, `route.ts` convention, verify, build).
-- Server L-5 (gaps from 5.1/5.2, S-11 link scheme, S-10 renames, D-01..D-03 commands, copy course) was running in the
-  main tree `apps/server` (uncommitted); report `reports/L-5.md`. After it: commit server, restart API + worker from
-  the new binary (`migrate` first), `bun run codegen` in web-2, fix fallout.
-- Then: L-6 (server gaps listed above), phase 7 hardening - flip `apiCoverage` and `underConstruction` to enforcing in
-  `gates/allowlist.json`, fix the red e2e list, replace `networkidle` waits, e2e one login per worker, G-14 corpus and
-  G-15 re-run, translation back-check, first push + CI (`web2-gates`, `web2-e2e` never ran on GitHub).
-- Nothing pushed.
+## Resume notes (session cut by the usage limit, 2026-10-04)
+
+- `main` has been pushed by C-2; in its latest run server-gates and the web-2 image were green, the server image,
+  stack-smoke and `web2-e2e` were still running. Check `gh run list -L 5` and `<scratchpad>/reports/C-2.md`.
+- W-2 (web hardening, main tree) was still running: T-1 translation fixes, event dedup by `sent_at`, skipped UI
+  adoptions, G-07/under-construction enforcing. It commits at green checkpoints; report `reports/W-2.md`.
+- Then: finish phase 7 (acceptance list of spec section 13), write the phase 8 cutover runbook entry (server
+  `AB__SERVER__WEB_LINKS=v2`, `ashyq admin migrate-*` commands, `WEB_IMAGE` switch), phase 9 list is
+  `apps/server/docs/phase9-removals.md`. Phases 8-9 need the owner.
 
 ## Server lane (sequential)
 
@@ -98,7 +100,8 @@ report has no teacher verdict field, 8 AI operations without a consumer (delete 
 | L-2  | S-01 contract hygiene (wire-compatible), gate at 0 | done  |
 | L-3  | S-04, S-05, slice gaps, configurable auth limits (copy-course and cohort_ids 422 not done) | done |
 | L-4  | S-08 password reset; S-06 user event stream; S-07 notifications; S-09 agenda; S-13 XP event | done |
-| L-5  | gaps from 5.1/5.2; S-11 link scheme; S-10 renames (expand); D-01..D-03 admin commands; copy course | wip |
+| L-5  | gaps from 5.1/5.2; S-11 link scheme (`AB__SERVER__WEB_LINKS`); S-10 renames (expand); D-01..D-03 admin commands; copy course | done |
+| L-6  | gaps from 5.3/6.1/6.3/3.8/4.3; same-origin downloads; phase-9 removal list (`apps/server/docs/phase9-removals.md`) | done |
 
 ## Web phases
 
@@ -116,24 +119,24 @@ report has no teacher verdict field, 8 AI operations without a consumer (delete 
 | 1.6 | reference slice: auth + collections (reset-password waits L-5)    | done   |
 | 1.7 | AGENTS.md final                                                   | todo   |
 | 2   | editor + markdown core, insert/paste/slash, video, PDF, discussions (in 3.3) | done |
-| 3.1 | home (+ reset-password and resend-code pages in auth)             | wip    |
+| 3.1 | home (+ reset-password and resend-code pages in auth) | done |
 | 3.2 | catalog, landing, search, command palette                         | done   |
 | 3.3 | course page + discussions                                         | done   |
 | 3.4 | learning, certificates (+ locale-prefixed verify alias)           | done   |
 | 3.5 | player (child route stubs for 5.2/5.3/5.4)                        | done   |
 | 3.6 | settings, public profile (profile builder e2e waits ProfileSection fix) | done |
 | 3.7 | achievements                                                      | done   |
-| 3.8 | notifications + shared/api/events.ts + event invalidation table   | wip    |
+| 3.8 | notifications + shared/api/events.ts + event invalidation table | done |
 | 4.1 | course studio                                                     | done   |
 | 4.2 | admin: users, roles, groups, platform, gamification config        | done   |
 | 4.3 | analytics (e2e red until the server enum casing fix lands)        | done   |
-| 5.1 | assessment studio                                                 | done (merge in progress, I-2) |
-| 5.2 | attempt                                                           | done (merge in progress, I-2) |
-| 5.3 | code arena (CodeMirror)                                           | done (merge in progress, I-2) |
+| 5.1 | assessment studio | done |
+| 5.2 | attempt | done |
+| 5.3 | code arena (CodeMirror) | done |
 | 5.4 | file submissions                                                  | done   |
-| 6.1 | grading, results, gradebook                                       | done (merge in progress, I-2) |
+| 6.1 | grading, results, gradebook | done |
 | 6.2 | teach inbox                                                       | done   |
-| 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI)        | done (merge in progress, I-2) |
-| 7   | hardening                                                         | todo   |
+| 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI) | done |
+| 7   | hardening (W-2, C-2 in progress; G-14 corpus 148/148 + 1051/1051 on 2026-10-04) | wip    |
 | 8   | cutover (needs owner: prod access, exam-free window)              | todo   |
 | 9   | legacy removal (after the 7-day observation window)               | todo   |
