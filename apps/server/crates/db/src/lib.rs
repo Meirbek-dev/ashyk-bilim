@@ -15,6 +15,7 @@ pub mod discussions;
 pub mod file_submissions;
 pub mod gamification;
 pub mod identity;
+pub mod notifications;
 pub mod platform;
 pub mod progress;
 pub mod queue;

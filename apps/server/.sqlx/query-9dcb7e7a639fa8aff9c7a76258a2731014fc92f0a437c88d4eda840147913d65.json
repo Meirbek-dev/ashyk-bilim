@@ -1,0 +1,109 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id AS \"course_id: CourseId\", c.name AS course_name,\n                  a.id AS \"activity_id: ActivityId\", a.name AS activity_name,\n                  p.state AS \"state: ActivityProgressState\", p.score,\n                  p.latest_submission_id AS \"submission_id: ab_core::id::SubmissionId\",\n                  (extract(epoch FROM CASE WHEN p.state = 'returned' THEN p.updated_at\n                                           ELSE COALESCE(p.graded_at, p.updated_at) END\n                  ))::bigint AS \"at!\"\n           FROM activity_progress p\n           JOIN activities a ON a.id = p.activity_id AND a.published\n           JOIN courses c ON c.id = p.course_id AND c.archived_at IS NULL\n           WHERE p.user_id = $1\n             AND p.state IN ('passed', 'failed', 'returned')\n             AND CASE WHEN p.state = 'returned' THEN p.updated_at\n                      ELSE COALESCE(p.graded_at, p.updated_at) END >= to_timestamp($2::bigint)\n             AND EXISTS (SELECT 1 FROM trail_runs r\n                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id\n                           AND NOT is_course_staff(r.course_id, r.user_id))\n           ORDER BY \"at!\" DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "state: ActivityProgressState",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "submission_id: ab_core::id::SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "latest_submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "9dcb7e7a639fa8aff9c7a76258a2731014fc92f0a437c88d4eda840147913d65"
+}

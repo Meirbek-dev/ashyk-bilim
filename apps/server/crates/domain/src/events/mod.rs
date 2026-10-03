@@ -11,9 +11,11 @@
 //! set (member = lease id, score = its expiry).
 //!
 //! [`ai::AiEvents`] is the sibling for AI run streams (`sse:ai:{run}`) and
-//! shares the per-user connection slots.
+//! shares the per-user connection slots; [`user`] is the per-user stream
+//! (`sse:user:{user}`, S-06) read through the same [`Subscriber`].
 
 pub mod ai;
+pub mod user;
 
 use std::time::Duration;
 
@@ -42,6 +44,8 @@ const STREAM_TTL_SECS: i64 = 7 * 24 * 3600;
 pub enum Stream {
     Submission(SubmissionId),
     Course(CourseId),
+    /// Everything addressed to one user ([`user`]).
+    User(UserId),
 }
 
 impl From<SubmissionId> for Stream {
@@ -61,13 +65,14 @@ impl Stream {
         match self {
             Self::Submission(id) => format!("sse:grading:{id}"),
             Self::Course(id) => format!("sse:grading:course:{id}"),
+            Self::User(id) => format!("sse:user:{id}"),
         }
     }
 
     const fn submission_id(self) -> Option<SubmissionId> {
         match self {
             Self::Submission(id) => Some(id),
-            Self::Course(_) => None,
+            Self::Course(_) | Self::User(_) => None,
         }
     }
 }

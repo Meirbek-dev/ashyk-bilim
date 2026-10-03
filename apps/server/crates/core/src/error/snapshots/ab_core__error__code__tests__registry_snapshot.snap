@@ -135,6 +135,10 @@ expression: registry
     429,
     "Too many requests"
   ],
+  "reset-code-invalid": [
+    422,
+    "Password reset code is invalid or expired"
+  ],
   "role-slug-taken": [
     409,
     "Role slug is already taken"

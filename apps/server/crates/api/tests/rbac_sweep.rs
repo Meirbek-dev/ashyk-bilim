@@ -16,6 +16,9 @@ const PUBLIC: &[(&str, &str)] = &[
     ("POST", "/api/v2/auth/login"),
     ("POST", "/api/v2/auth/register"),
     ("POST", "/api/v2/auth/verify-email"),
+    ("POST", "/api/v2/auth/verify-email/resend"),
+    ("POST", "/api/v2/auth/password-reset"),
+    ("POST", "/api/v2/auth/password-reset/confirm"),
 ];
 
 /// Requires a live session, but no specific permission (self-service).
@@ -33,6 +36,10 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     ("PATCH", "/api/v2/gamification/preferences"),
     // Any signed-in user may apply on an open course (visibility → 404).
     ("POST", "/api/v2/courses/{course_id}/contributors/apply"),
+    // Notifications: the caller's own rows only (others' ids are 404).
+    ("POST", "/api/v2/me/notifications/{notification_id}/read"),
+    ("POST", "/api/v2/me/notifications/read-all"),
+    ("PUT", "/api/v2/me/notification-preferences"),
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.

@@ -571,9 +571,28 @@ impl CoursesService {
         let update_id =
             ab_db::catalog::insert_course_update(&self.pool, id, title, content, actor.user_id)
                 .await?;
-        ab_db::catalog::get_course_update(&self.pool, update_id)
+        let update = ab_db::catalog::get_course_update(&self.pool, update_id)
             .await?
-            .ok_or_else(|| Error::not_found("course update"))
+            .ok_or_else(|| Error::not_found("course update"))?;
+        // S-07: every enrolled learner (staff never enrol).
+        match ab_db::notifications::course_learners(&self.pool, id).await {
+            Ok(learners) => {
+                crate::notifications::notify(
+                    &self.pool,
+                    &learners,
+                    &crate::notifications::NotificationPayload::CourseUpdate {
+                        course_id: id,
+                        course_name: course.name.clone(),
+                        update_id,
+                        title: update.title.clone(),
+                    },
+                    None,
+                )
+                .await;
+            }
+            Err(err) => tracing::warn!(%err, "course update: learners not resolved"),
+        }
+        Ok(update)
     }
 
     /// Write access follows the parent course.

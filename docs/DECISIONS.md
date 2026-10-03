@@ -2045,3 +2045,43 @@ request valid today changed. The dual paths are listed for phase 9.
   utoipa's `serde(rename)` parser wrapped in an invisible group and the schema
   listed the Rust names. A test pins every `code_enum!` schema to serde.
 
+
+## Password reset, the per-user event stream, notifications, agenda (2026-10-03, stage 2 S-06..S-09, S-13, L-4)
+
+Additive only: the two grading streams, their event names and every existing
+response stay as they are (removed in phase 9).
+
+- **Password reset (S-08)** uses Zitadel's own codes:
+  `POST /v2/users/{id}/password_reset` and `/email/resend` with `returnCode`,
+  mailed by us like the verification code (logged when Resend is unset - the
+  web e2e reads the API log); `POST /v2/users/{id}/password` with
+  `verificationCode` sets the password. `POST /auth/password-reset` and
+  `/auth/verify-email/resend` always answer 202 and do the lookup, the Zitadel
+  call and the mail on a spawned task, so known and unknown logins take the
+  same time. Throttles are config: `PASSWORD_RESET_IP` (requests +
+  confirmations per IP per hour, 429) and `EMAIL_PER_ACCOUNT` (code mails per
+  account per hour, silent). A wrong/expired code is the new
+  `reset-code-invalid` (422, same answer for an unknown login); success
+  revokes every session of the account.
+- **One process-wide publisher** for the user streams
+  (`events::user::install(redis::Client)` at API and worker boot) instead of a
+  handle threaded through services: XP is granted from static hooks and the
+  progress projector, which are built from a pool in ~30 places. Each publish
+  batch opens its own connection (a connection manager is bound to the
+  runtime that made it); `ponytail:` note on the upgrade path.
+- **Fan-out decides access**: `grading.updated` goes to the course's creator
+  and active writing co-authors (the `:own` graders). Platform-wide graders
+  (admins) are not fanned out to - they keep the course stream. The owner's
+  `submission.updated` carries `final_score` only once `published`.
+- **Notifications are written after the fact commits**, best effort (logged),
+  not in its transaction and not through the job queue: the producers sit in
+  services without the queue in reach and a lost notification is not lost
+  data. One `INSERT … SELECT unnest` per fan-out applies the opt-outs and the
+  `dedup_key`.
+- **Preferences** are one row per user with the disabled types (`text[]` with
+  a CHECK); the API shows one boolean per type. In-app only.
+- **Agenda (S-09)** reuses the trail for "continue learning" (its
+  `next_activity_id`) and one deadline query shared with the reminder job
+  (effective due date with the override applied as `EffectivePolicy` does,
+  assessment reach as `effective_access_count`). File submissions have no
+  per-learner override, so their due date is the activity's.

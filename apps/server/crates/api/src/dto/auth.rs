@@ -71,6 +71,42 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
+/// Ask for a password reset code (S-08).
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PasswordResetRequest {
+    /// Username or email.
+    #[garde(length(min = 1, max = 320))]
+    #[schema(min_length = 1, max_length = 320)]
+    pub login: String,
+}
+
+/// Set a new password with the emailed reset code. No `Debug` - carries a
+/// password.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PasswordResetConfirmRequest {
+    /// The username or email the code was requested for.
+    #[garde(length(min = 1, max = 320))]
+    #[schema(min_length = 1, max_length = 320)]
+    pub login: String,
+    #[garde(length(min = 1, max = 32))]
+    #[schema(min_length = 1, max_length = 32)]
+    pub code: String,
+    #[garde(custom(super::new_password))]
+    #[schema(min_length = 8, max_length = 72)]
+    pub new_password: String,
+}
+
+/// Ask for a fresh email verification code.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ResendVerificationRequest {
+    #[garde(email, length(max = 320))]
+    #[schema(max_length = 320)]
+    pub email: String,
+}
+
 /// TOTP enrollment secrets - shown to the user exactly once.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TotpEnrollment {

@@ -376,6 +376,7 @@ async fn worker(config: Config) -> anyhow::Result<()> {
                 secrecy::ExposeSecret::expose_secret(url),
             )
             .await?;
+            ab_domain::events::user::install(sessions.client());
             (
                 Some(ab_domain::events::GradingEvents::new(
                     sessions.client(),
@@ -441,6 +442,20 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     .await?;
     ab_db::schedule::upsert(
         &pool,
+        ab_jobs::handlers::notifications::REMIND_KIND,
+        std::time::Duration::from_mins(15),
+        serde_json::json!({}),
+    )
+    .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::notifications::PRUNE_KIND,
+        std::time::Duration::from_hours(24),
+        serde_json::json!({}),
+    )
+    .await?;
+    ab_db::schedule::upsert(
+        &pool,
         ab_jobs::handlers::analytics::KIND,
         std::time::Duration::from_hours(6),
         serde_json::json!({}),
@@ -463,6 +478,12 @@ async fn worker(config: Config) -> anyhow::Result<()> {
             pool.clone(),
         ))?
         .register(ab_jobs::handlers::analytics::AnalyticsRollup::new(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::notifications::DeadlineReminders::new(
+            pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::notifications::NotificationPruner::new(
             pool.clone(),
         ))?
         .register(ab_jobs::handlers::progress::ProgressJob::staff_change(

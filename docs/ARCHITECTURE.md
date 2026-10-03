@@ -284,7 +284,14 @@ pub enum Error {
   **Redis Streams** (`XADD` with `MAXLEN ~ 1024`), `Last-Event-ID` resumes via
   `XRANGE` — replay is native, no custom event-log code like the legacy version.
   25s keepalive comments; per-user concurrent-connection cap (Redis counter,
-  limit 5) as today. Streams: grading feedback per submission, AI run events per run.
+  limit 5) as today. Streams: grading feedback per submission, AI run events per run,
+  and (stage 2, S-06) one per user - `GET /me/events` carries every event
+  addressed to the user (`grading.updated`, `submission.updated`,
+  `notification.created`, `notification.read`, `xp.awarded`; a closed enum with a
+  typed payload each). Fan-out and authorization happen at publish time
+  (`ab_domain::events::user`): the producer names the recipients, the reader
+  only ever reads its own stream. The per-submission and per-course streams
+  stay until phase 9.
 - **Uploads**: direct-to-RustFS via presigned multipart URLs (§11). The API never
   proxies file bytes except avatars/thumbnails (< 1 MB direct multipart).
 - Middleware stack (order matters): request-id → trace → timeout(30s) →
@@ -459,6 +466,11 @@ CREATE TABLE jobs (
   disabled per Q4).
 - Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight,
   heartbeat until done (compose `stop_grace_period` sized accordingly).
+- Notifications (stage 2, S-07): `notifications:deadline-reminders` (every
+  15 min) sends one `deadline_approaching` per (learner, activity, due date)
+  for unsubmitted work due within 24 h (`dedup_key`, so ticks and restarts never
+  repeat it; an extension reminds again); `notifications:prune` (daily)
+  deletes notifications older than **90 days**.
 - Analytics retention (DECISIONS "Analytics retention (b)"): `analytics:rollup`
   (every 6 h) ends by pruning `analytics_events` older than **400 days** and
   the five `daily_*` rollup tables plus `learner_risk_snapshots` older than
@@ -471,7 +483,8 @@ CREATE TABLE jobs (
 | Use | Structure | Notes |
 |---|---|---|
 | Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset + `user_epoch:{uid}` counter | as legacy, simplified record; the touch only `EXPIRE`s the record and writes the stamp (BUG-191); every session-ending mutation `INCR`s the epoch first and `create` is a Lua CAS on it, so a login in flight cannot outlive a disable / password change / TOTP activation / grant change (BUG-203) |
-| SSE event logs | Redis Streams `sse:grading:{submission}` / `sse:ai:{run}` | `MAXLEN ~1024`, replay via `XRANGE` |
+| SSE event logs | Redis Streams `sse:grading:{submission}` / `sse:grading:course:{course}` / `sse:ai:{run}` | `MAXLEN ~1024`, replay via `XRANGE` |
+| Per-user event stream | Redis Stream `sse:user:{user}` | `MAXLEN ~500`, 7-day TTL refreshed on publish; written by a process-wide publisher (`events::user::install` at boot) |
 | SSE connection caps | `INCR`/`DECR` counters with TTL | limit 5/user |
 | Rate limits | sliding-window counters | tower_governor covers IP; Redis covers per-user/per-feature (AI hourly caps) |
 | Hot caches (L2) | plain keys, short TTL | only where multi-process coherence matters; else moka |

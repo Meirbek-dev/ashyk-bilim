@@ -19,6 +19,7 @@ pub mod file_submissions;
 pub mod gamification;
 pub mod grading;
 pub mod health;
+pub mod me;
 pub mod platform;
 pub mod progress;
 pub mod rbac;

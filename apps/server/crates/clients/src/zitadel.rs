@@ -682,6 +682,128 @@ impl ZitadelClient {
         ))
     }
 
+    /// `POST /v2/users/{id}/password_reset` with `returnCode`: Zitadel mints
+    /// a reset code and hands it back (we mail it ourselves, like the email
+    /// verification code).
+    pub async fn request_password_reset(&self, user_id: &str) -> Result<String> {
+        self.return_code(
+            &format!("/v2/users/{user_id}/password_reset"),
+            "password reset",
+        )
+        .await
+    }
+
+    /// `POST /v2/users/{id}/email/resend` with `returnCode`: a fresh email
+    /// verification code. An already verified address is a precondition
+    /// failure there - `Ok(None)`.
+    pub async fn resend_email_code(&self, user_id: &str) -> Result<Option<String>> {
+        match self
+            .return_code(
+                &format!("/v2/users/{user_id}/email/resend"),
+                "resend email code",
+            )
+            .await
+        {
+            Ok(code) => Ok(Some(code)),
+            Err(err) if err.code() == ErrorCode::Conflict => Ok(None),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// POST `{"returnCode": {}}`, answer `verificationCode`. A gRPC
+    /// failed-precondition (9) is `Conflict`.
+    async fn return_code(&self, path: &str, what: &'static str) -> Result<String> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Answer {
+            verification_code: Option<String>,
+        }
+        let response = self
+            .auth(self.http.post(self.url(path)))
+            .json(&serde_json::json!({ "returnCode": {} }))
+            .send()
+            .await
+            .map_err(unavailable(what))?;
+        if response.status().is_success() {
+            let answer: Answer = response
+                .json()
+                .await
+                .map_err(|e| Error::internal("zitadel return-code response shape", e))?;
+            return answer.verification_code.ok_or_else(|| {
+                Error::internal(
+                    "zitadel returned no code",
+                    std::io::Error::other(what.to_owned()),
+                )
+            });
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        let code = if err.code == 9 {
+            ErrorCode::Conflict
+        } else {
+            ErrorCode::ServiceUnavailable
+        };
+        Err(Error::app(
+            code,
+            format!("zitadel {what} failed: {} ({})", err.message, err.code),
+        ))
+    }
+
+    /// `POST /v2/users/{id}/password` with a reset code as the check. A
+    /// wrong, expired or missing code is `reset-code-invalid` (Zitadel's
+    /// `CODE-*` ids, or failed-precondition when no code was requested); any
+    /// other invalid argument is the password policy. Captured live
+    /// 2026-10-03: wrong code → 3 `CODE-woT0xc`; used code → 9
+    /// `COMMAND-2M9fs`; weak password → 3 `DOMAIN-HuJf6`; `email/resend` on a
+    /// verified address → 9.
+    pub async fn set_password_with_code(
+        &self,
+        user_id: &str,
+        code: &str,
+        new: &SecretString,
+    ) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/password"))),
+            )
+            .json(&serde_json::json!({
+                "newPassword": { "password": new.expose_secret(), "changeRequired": false },
+                "verificationCode": code,
+            }))
+            .send()
+            .await
+            .map_err(unavailable("reset password"))?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        let err: ZitadelErrorBody = response
+            .json()
+            .await
+            .map_err(|e| Error::internal("zitadel error response shape", e))?;
+        let code_error = err.code == 9
+            || err.detail_ids().any(|id| id.starts_with("CODE-"))
+            || err.message.contains("Code");
+        if (err.code == 3 || err.code == 9) && code_error {
+            return Err(Error::app(
+                ErrorCode::ResetCodeInvalid,
+                "password reset code is invalid or expired",
+            ));
+        }
+        if err.code == 3 {
+            return Err(password_policy_error("new_password", &err.message));
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!(
+                "zitadel reset password failed: {} ({})",
+                err.message, err.code
+            ),
+        ))
+    }
+
     /// `DELETE /v2/users/{id}` — compensation when our side of an account
     /// creation fails after Zitadel's succeeded. Idempotent.
     pub async fn delete_user(&self, user_id: &str) -> Result<()> {

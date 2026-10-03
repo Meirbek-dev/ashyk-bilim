@@ -71,6 +71,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "analytics", description = "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"),
         (name = "ai", description = "AI agents, runs and event streams; admin operations views"),
         (name = "utils", description = "Authoring utilities: link previews"),
+        (name = "me", description = "The signed-in user's event stream, notifications and agenda"),
     )
 )]
 struct ApiDoc;
@@ -90,7 +91,22 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(gamification_routes())
         .merge(work_queue_routes())
         .merge(analytics_routes())
+        .merge(me_routes())
         .routes(routes!(routes::utils::link_preview))
+}
+
+fn me_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::sse::my_events))
+        .routes(routes!(routes::me::list_notifications))
+        .routes(routes!(routes::me::unread_count))
+        .routes(routes!(routes::me::mark_notification_read))
+        .routes(routes!(routes::me::mark_all_notifications_read))
+        .routes(routes!(
+            routes::me::get_notification_preferences,
+            routes::me::put_notification_preferences
+        ))
+        .routes(routes!(routes::me::agenda))
 }
 
 fn analytics_routes() -> OpenApiRouter<AppState> {
@@ -260,6 +276,9 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::auth::login))
         .routes(routes!(routes::auth::register))
         .routes(routes!(routes::auth::verify_email))
+        .routes(routes!(routes::auth::resend_verification))
+        .routes(routes!(routes::auth::request_password_reset))
+        .routes(routes!(routes::auth::confirm_password_reset))
         .routes(routes!(routes::auth::change_password))
         .routes(routes!(routes::auth::logout))
         .routes(routes!(routes::auth::current_session))

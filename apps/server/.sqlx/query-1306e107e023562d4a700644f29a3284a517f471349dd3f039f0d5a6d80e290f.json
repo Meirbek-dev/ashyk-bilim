@@ -1,0 +1,73 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id AS \"id: ab_core::id::CourseUpdateId\", c.id AS \"course_id: CourseId\",\n                  c.name AS course_name, u.title,\n                  (extract(epoch FROM u.created_at))::bigint AS \"created_at!\"\n           FROM course_updates u\n           JOIN courses c ON c.id = u.course_id AND c.archived_at IS NULL\n           WHERE u.created_at >= to_timestamp($2::bigint)\n             AND EXISTS (SELECT 1 FROM trail_runs r\n                         WHERE r.course_id = u.course_id AND r.user_id = $1\n                           AND NOT is_course_staff(r.course_id, r.user_id))\n           ORDER BY u.created_at DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ab_core::id::CourseUpdateId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_updates",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "course_updates",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "1306e107e023562d4a700644f29a3284a517f471349dd3f039f0d5a6d80e290f"
+}

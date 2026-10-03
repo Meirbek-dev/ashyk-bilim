@@ -12,8 +12,8 @@ use serde::Deserialize;
 
 use crate::detach::detached;
 use crate::dto::auth::{
-    ChangePasswordRequest, LoginRequest, RegisterRequest, SessionInfo, SessionSummary,
-    VerifyEmailRequest,
+    ChangePasswordRequest, LoginRequest, PasswordResetConfirmRequest, PasswordResetRequest,
+    RegisterRequest, ResendVerificationRequest, SessionInfo, SessionSummary, VerifyEmailRequest,
 };
 use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
@@ -202,6 +202,118 @@ pub async fn verify_email(
         Ok(StatusCode::NO_CONTENT)
     })
     .await
+}
+
+fn accept_language(headers: &HeaderMap) -> Option<Language> {
+    Language::from_accept_language(
+        headers
+            .get(header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok()),
+    )
+}
+
+/// Ask for a password reset code by email (public, S-08).
+///
+/// Always 202, whether or not the login names an account (no enumeration);
+/// a known active account gets the code by email (the link opens the web
+/// app under the `Accept-Language` locale). Throttled per IP (429) and per
+/// account (silently).
+#[utoipa::path(
+    post,
+    path = "/auth/password-reset",
+    tag = "auth",
+    params(
+        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en - the locale of the reset link"),
+    ),
+    request_body = PasswordResetRequest,
+    responses(
+        (status = 202, description = "Accepted; a code is mailed if the account exists"),
+        (status = 422, description = "Validation failed", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn request_password_reset(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ClientIp(ip): ClientIp,
+    ValidJson(request): ValidJson<PasswordResetRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .identity
+        .request_password_reset(&request.login, ip.as_deref(), accept_language(&headers))
+        .await?;
+    Ok(StatusCode::ACCEPTED)
+}
+
+/// Set a new password with the emailed reset code (public, S-08). Every
+/// session of the account is revoked; the client logs in next.
+#[utoipa::path(
+    post,
+    path = "/auth/password-reset/confirm",
+    tag = "auth",
+    request_body = PasswordResetConfirmRequest,
+    responses(
+        (status = 204, description = "Password set; all sessions revoked"),
+        (status = 409, description = "A password change is already in progress", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "`reset-code-invalid` (unknown login, wrong or expired code), or the new password fails the policy (`field_errors[].field == \"new_password\"`)",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn confirm_password_reset(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    ValidJson(request): ValidJson<PasswordResetConfirmRequest>,
+) -> ApiResult<StatusCode> {
+    // Zitadel set → revoke → audit outlive the connection.
+    detached(async move {
+        state
+            .identity
+            .confirm_password_reset(
+                &request.login,
+                &request.code,
+                &SecretString::from(request.new_password),
+                ip.as_deref(),
+            )
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Mail a fresh email verification code (public, S-08). Always 202 (no
+/// enumeration); throttled per IP (429) and per account (silently).
+#[utoipa::path(
+    post,
+    path = "/auth/verify-email/resend",
+    tag = "auth",
+    params(
+        ("Accept-Language" = Option<String>, Header, description = "ru, kk or en - the locale of the verification link"),
+    ),
+    request_body = ResendVerificationRequest,
+    responses(
+        (status = 202, description = "Accepted; a code is mailed if the address awaits verification"),
+        (status = 422, description = "Validation failed", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn resend_verification(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ClientIp(ip): ClientIp,
+    ValidJson(request): ValidJson<ResendVerificationRequest>,
+) -> ApiResult<StatusCode> {
+    state
+        .identity
+        .resend_verification(&request.email, ip.as_deref(), accept_language(&headers))
+        .await?;
+    Ok(StatusCode::ACCEPTED)
 }
 
 /// Change the caller's password (current password checked by Zitadel).

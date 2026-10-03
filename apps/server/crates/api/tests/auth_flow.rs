@@ -2457,3 +2457,280 @@ async fn logout_dropped_mid_flight_still_revokes_the_session(pool: PgPool) {
         .await;
     }
 }
+
+// ── S-08: password reset + verification resend ─────────────────────────────
+
+fn post_from(ip: &str, uri: &str, body: &serde_json::Value) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("x-forwarded-for", ip)
+        .body(Body::from(body.to_string()))
+        .unwrap()
+}
+
+async fn requests_to(server: &MockServer, suffix: &str) -> usize {
+    server
+        .received_requests()
+        .await
+        .unwrap()
+        .iter()
+        .filter(|r| r.url.path().ends_with(suffix))
+        .count()
+}
+
+/// Behaviours: unknown login → 202 and nothing happens (no enumeration);
+/// known login → 202, Zitadel mints a code, the code is mailed; a wrong code
+/// → 422 `reset-code-invalid`, the right one → 204 and every session of the
+/// account is revoked; an unknown login on confirm answers like a wrong code.
+#[sqlx::test(migrations = "../../migrations")]
+async fn password_reset_mails_a_code_and_the_code_sets_the_password(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("forgetful", "forgetful@example.com", &["user"])
+        .await;
+    let session = app.mint_session_for(user, &[]).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-forgetful/password_reset"))
+        .and(wiremock::matchers::body_json(
+            serde_json::json!({ "returnCode": {} }),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {}, "verificationCode": "RST123"
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .and(wiremock::matchers::body_string_contains("RST123"))
+        .and(wiremock::matchers::body_string_contains(
+            "forgetful@example.com",
+        ))
+        .and(wiremock::matchers::body_string_contains(
+            "/auth/reset-password",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-1" })))
+        .expect(1)
+        .mount(&app.resend)
+        .await;
+
+    let ghost = app
+        .post_json(
+            "/api/v2/auth/password-reset",
+            &serde_json::json!({ "login": "nobody@example.com" }),
+        )
+        .await;
+    assert_eq!(ghost.status, StatusCode::ACCEPTED, "{}", ghost.text());
+    let res = app
+        .post_json(
+            "/api/v2/auth/password-reset",
+            &serde_json::json!({ "login": "Forgetful@Example.com" }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::ACCEPTED, "{}", res.text());
+    wait_until("reset mail sent", async || {
+        requests_to(&app.resend, "/emails").await == 1
+    })
+    .await;
+
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-forgetful/password"))
+        .and(wiremock::matchers::body_partial_json(
+            serde_json::json!({ "verificationCode": "WRONG1" }),
+        ))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Code is invalid (CODE-woT0xc)",
+            "details": [{ "id": "CODE-woT0xc", "message": "Code is invalid" }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-forgetful/password"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "verificationCode": "RST123",
+            "newPassword": { "password": "brand new horse", "changeRequired": false }
+        })))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    let confirm = |login: &str, code: &str| serde_json::json!({ "login": login, "code": code, "new_password": "brand new horse" });
+    let wrong = app
+        .post_json(
+            "/api/v2/auth/password-reset/confirm",
+            &confirm("forgetful", "WRONG1"),
+        )
+        .await;
+    assert_eq!(wrong.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(wrong.json()["code"], "reset-code-invalid");
+    let unknown = app
+        .post_json(
+            "/api/v2/auth/password-reset/confirm",
+            &confirm("nobody", "RST123"),
+        )
+        .await;
+    assert_eq!(unknown.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(unknown.json()["code"], "reset-code-invalid");
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.status,
+        StatusCode::OK
+    );
+    let ok = app
+        .post_json(
+            "/api/v2/auth/password-reset/confirm",
+            // Typed in lowercase: still the mailed code.
+            &confirm("forgetful@example.com", "rst123"),
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT, "{}", ok.text());
+    assert_eq!(
+        app.get_as(&session, "/api/v2/auth/session").await.status,
+        StatusCode::UNAUTHORIZED,
+        "every session is revoked"
+    );
+    let events: Vec<String> =
+        sqlx::query_scalar("SELECT event FROM auth_audit_log ORDER BY created_at")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(events, vec!["password-reset-requested", "password-reset"]);
+}
+
+/// Requests and confirmations count per IP (429 past the limit); mails per
+/// account are capped silently (still 202).
+#[sqlx::test(migrations = "../../migrations")]
+async fn password_reset_is_throttled_per_ip_and_per_account(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |c| {
+        c.auth.limits.password_reset_ip = 3;
+        c.auth.limits.email_per_account = 1;
+    })
+    .await;
+    let busy = app.create_user("busy", "busy@example.com", &["user"]).await;
+    // Redis outlives the test database: a per-run address keeps the IP
+    // window fresh across runs.
+    let octets = busy.0.as_bytes();
+    let ip = format!("10.{}.{}.{}", octets[13], octets[14], octets[15]);
+    let other_ip = format!("10.{}.{}.{}", octets[13], octets[14], octets[15] ^ 1);
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-busy/password_reset"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {}, "verificationCode": "RST999"
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-busy/password"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 9, "message": "Code not found (COMMAND-2M9fs)", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    let body = serde_json::json!({ "login": "busy" });
+    for _ in 0..2 {
+        let res = app
+            .send(post_from(&ip, "/api/v2/auth/password-reset", &body))
+            .await;
+        assert_eq!(res.status, StatusCode::ACCEPTED, "{}", res.text());
+    }
+    wait_until("first code requested", async || {
+        requests_to(&app.zitadel, "/password_reset").await == 1
+    })
+    .await;
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    assert_eq!(
+        requests_to(&app.zitadel, "/password_reset").await,
+        1,
+        "the second mail is capped"
+    );
+    let confirm = app
+        .send(post_from(
+            &ip,
+            "/api/v2/auth/password-reset/confirm",
+            &serde_json::json!({ "login": "busy", "code": "X", "new_password": "brand new horse" }),
+        ))
+        .await;
+    assert_eq!(confirm.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(confirm.json()["code"], "reset-code-invalid");
+    let limited = app
+        .send(post_from(&ip, "/api/v2/auth/password-reset", &body))
+        .await;
+    assert_eq!(limited.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(limited.json()["code"], "rate-limited");
+    let elsewhere = app
+        .send(post_from(&other_ip, "/api/v2/auth/password-reset", &body))
+        .await;
+    assert_eq!(elsewhere.status, StatusCode::ACCEPTED);
+}
+
+/// Resend: an unverified account gets a fresh code by mail; a verified one
+/// (Zitadel: failed precondition) and an unknown address get nothing - all
+/// three answer 202.
+#[sqlx::test(migrations = "../../migrations")]
+async fn verification_code_can_be_resent(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    app.create_user("pending", "pending@example.com", &["user"])
+        .await;
+    app.create_user("done", "done@example.com", &["user"]).await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-pending/email/resend"))
+        .and(wiremock::matchers::body_json(
+            serde_json::json!({ "returnCode": {} }),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "details": {}, "verificationCode": "NEW777"
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-done/email/resend"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 9, "message": "Email is already verified (COMMAND-3M9ds)", "details": []
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .and(wiremock::matchers::body_string_contains("NEW777"))
+        .and(wiremock::matchers::body_string_contains(
+            "/auth/verify-email",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-2" })))
+        .expect(1)
+        .mount(&app.resend)
+        .await;
+    for email in [
+        "pending@example.com",
+        "done@example.com",
+        "ghost@example.com",
+    ] {
+        let res = app
+            .post_json(
+                "/api/v2/auth/verify-email/resend",
+                &serde_json::json!({ "email": email }),
+            )
+            .await;
+        assert_eq!(res.status, StatusCode::ACCEPTED, "{}", res.text());
+    }
+    wait_until("both resends reached zitadel", async || {
+        requests_to(&app.zitadel, "/email/resend").await == 2
+    })
+    .await;
+    wait_until("one mail sent", async || {
+        requests_to(&app.resend, "/emails").await == 1
+    })
+    .await;
+    let bad = app
+        .post_json(
+            "/api/v2/auth/verify-email/resend",
+            &serde_json::json!({ "email": "not-an-email" }),
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+}

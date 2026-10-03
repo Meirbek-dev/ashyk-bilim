@@ -59,6 +59,8 @@ pub struct AppState {
     pub certifications: CertificationsService,
     pub gamification: GamificationService,
     pub work_queue: WorkQueueService,
+    pub notifications: ab_domain::notifications::NotificationsService,
+    pub agenda: ab_domain::progress::AgendaService,
     pub analytics: AnalyticsService,
     pub link_preview: LinkPreviewService,
     pub ai: AiService,
@@ -80,6 +82,7 @@ impl AppState {
         judge0: Option<Arc<Judge0Client>>,
     ) -> ab_core::Result<Self> {
         let sessions = identity.sessions().clone();
+        ab_domain::events::user::install(sessions.client());
         let llm = LlmClient::from_ai_config(&config.ai)?.map(Arc::new);
         let ai_events = AiEvents::new(sessions.client(), sessions.redis());
         let ai = AiService::new(
@@ -124,6 +127,11 @@ impl AppState {
             )
             .with_events(Some(events.clone())),
             trail: TrailService::new(pool.clone(), courses.clone(), assessments.clone()),
+            agenda: ab_domain::progress::AgendaService::new(
+                pool.clone(),
+                TrailService::new(pool.clone(), courses.clone(), assessments.clone()),
+            ),
+            notifications: ab_domain::notifications::NotificationsService::new(pool.clone()),
             learner_state: LearnerStateService::new(
                 pool.clone(),
                 courses.clone(),

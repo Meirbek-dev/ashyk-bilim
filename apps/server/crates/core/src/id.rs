@@ -86,6 +86,7 @@ typed_id!(CertificationId);
 typed_id!(CertificateId);
 typed_id!(GamificationProfileId);
 typed_id!(XpTransactionId);
+typed_id!(NotificationId);
 typed_id!(JobId);
 typed_id!(AnalyticsEventId);
 typed_id!(InterventionId);

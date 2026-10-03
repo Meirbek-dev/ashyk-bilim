@@ -241,8 +241,31 @@ impl CoursesService {
         {
             return Err(Error::conflict("you already have a role on this course"));
         }
-        ab_db::catalog::get_contributor(&self.pool, course_id, actor.user_id)
+        let applied = ab_db::catalog::get_contributor(&self.pool, course_id, actor.user_id)
             .await?
-            .ok_or_else(|| Error::not_found("contributor"))
+            .ok_or_else(|| Error::not_found("contributor"))?;
+        // S-07: the roster managers decide on it.
+        match ab_db::notifications::course_owners(&self.pool, course_id).await {
+            Ok(owners) => {
+                let applicant_name = ab_db::identity::get_profile(&self.pool, actor.user_id)
+                    .await?
+                    .map(|p| p.display_name)
+                    .unwrap_or_default();
+                crate::notifications::notify(
+                    &self.pool,
+                    &owners,
+                    &crate::notifications::NotificationPayload::ContributorApplication {
+                        course_id,
+                        course_name: course.name.clone(),
+                        applicant_id: actor.user_id,
+                        applicant_name,
+                    },
+                    None,
+                )
+                .await;
+            }
+            Err(err) => tracing::warn!(%err, "contributor application: owners not resolved"),
+        }
+        Ok(applied)
     }
 }

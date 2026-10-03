@@ -1,8 +1,9 @@
-//! Server-sent events: the grading feedback stream of one submission and
-//! the course-wide grading stream for graders.
+//! Server-sent events: the grading feedback stream of one submission, the
+//! course-wide grading stream for graders, and the per-user stream (S-06).
 //!
 //! `GET /submissions/{id}/events` for the owner or a grader;
-//! `GET /courses/{id}/grading/events` for graders. `Last-Event-ID` replays
+//! `GET /courses/{id}/grading/events` for graders; `GET /me/events` for
+//! everyone signed in (their own stream only). `Last-Event-ID` replays
 //! what was missed (Redis stream ids), then a `connected` event, then live
 //! events; axum's keep-alive comments every 25s hold proxies open. Each
 //! user may hold five streams at once (429 beyond that). Access is
@@ -61,6 +62,9 @@ async fn access(
     match stream {
         Stream::Submission(id) => grading.stream_access(actor, id).await,
         Stream::Course(id) => grading.course_stream_access(actor, id).await,
+        // Fan-out decided who may read what; a user reads only their own.
+        Stream::User(id) if id == actor.user_id && !actor.is_anonymous() => Ok(()),
+        Stream::User(_) => Err(Error::not_found("event stream")),
     }
 }
 
@@ -219,6 +223,46 @@ pub async fn course_grading_events(
         Stream::Course(id),
         &headers,
         serde_json::json!({ "course_id": id }),
+    )
+    .await
+}
+
+/// Everything addressed to the caller as `text/event-stream` (S-06): one
+/// stream per session replaces polling.
+///
+/// Event names: `connected`, then the closed set of user events -
+/// `grading.updated` (courses the caller grades), `submission.updated`
+/// (the caller's own work), `notification.created`, `notification.read`,
+/// `xp.awarded` - and `closed` (session gone; the stream ends). `data` is
+/// `{event_id, event, payload, sent_at}`; `id` is the stream id to send
+/// back as `Last-Event-ID` on reconnect (the stream keeps the last ~500
+/// events for 7 days). Comment heartbeats every 25 s.
+#[utoipa::path(
+    get, path = "/me/events", tag = "me",
+    params(
+        ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
+    ),
+    responses(
+        (status = 200, description = "Event stream: each message's `data` is one event",
+         content_type = "text/event-stream", body = crate::dto::me::UserStreamEvent),
+        (status = 401, description = "No live session", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many open streams for this user", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn my_events(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    headers: HeaderMap,
+) -> ApiResult<EventStream> {
+    let user_id = actor.user_id;
+    open_stream(
+        &state,
+        actor,
+        Stream::User(user_id),
+        &headers,
+        serde_json::json!({ "user_id": user_id }),
     )
     .await
 }

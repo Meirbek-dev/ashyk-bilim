@@ -75,6 +75,12 @@ local dev raise them:
 | `AB__AUTH__LIMITS__REGISTER_IP` | 10 | accounts created per IP / hour |
 | `AB__AUTH__LIMITS__REGISTER_ATTEMPT_IP` | 60 | register + verify attempts per IP / hour |
 | `AB__AUTH__LIMITS__SESSIONS_PER_USER` | 10 | live sessions per user (oldest evicted) |
+| `AB__AUTH__LIMITS__PASSWORD_RESET_IP` | 20 | password-reset requests + confirmations per IP / hour |
+| `AB__AUTH__LIMITS__EMAIL_PER_ACCOUNT` | 3 | reset / verification-resend mails per account / hour (silent cap) |
+
+Without Resend (`AB__RESEND__*` unset) the verification and password-reset
+codes are logged (`resend not configured: … code not delivered`, field
+`code`) - the web e2e reads them from the API log.
 
 From the repo root the same recipes run as `just server <recipe>` (e.g.
 `just server test`; it also sets `TEST_REDIS_URL` from `infra/env/dev.env`).

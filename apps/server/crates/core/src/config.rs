@@ -83,6 +83,10 @@ pub struct AuthLimits {
     pub register_attempt_ip: u32,
     /// Live sessions per user (the oldest is evicted past it).
     pub sessions_per_user: u32,
+    /// Password-reset requests + confirmations per IP per hour.
+    pub password_reset_ip: u32,
+    /// Reset (and verification-code resend) emails per account per hour.
+    pub email_per_account: u32,
 }
 
 impl Default for AuthLimits {
@@ -94,6 +98,8 @@ impl Default for AuthLimits {
             register_ip: 10,
             register_attempt_ip: 60,
             sessions_per_user: 10,
+            password_reset_ip: 20,
+            email_per_account: 3,
         }
     }
 }
@@ -115,6 +121,14 @@ impl AuthLimits {
             (
                 "SESSIONS_PER_USER",
                 self.sessions_per_user > d.sessions_per_user,
+            ),
+            (
+                "PASSWORD_RESET_IP",
+                self.password_reset_ip > d.password_reset_ip,
+            ),
+            (
+                "EMAIL_PER_ACCOUNT",
+                self.email_per_account > d.email_per_account,
             ),
         ]
         .into_iter()

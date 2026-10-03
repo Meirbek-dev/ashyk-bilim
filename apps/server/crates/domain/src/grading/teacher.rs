@@ -705,6 +705,33 @@ impl GradingService {
                 )
                 .await;
         }
+        crate::events::user::grading(
+            &self.pool,
+            crate::events::user::GradingUpdated {
+                course_id: row.course_id,
+                activity_id,
+                user_id: row.user_id,
+                submission_id: Some(row.id),
+                attempt_id: None,
+                status: target,
+                final_score: Some(final_score),
+            },
+        )
+        .await;
+        if matches!(
+            target,
+            SubmissionStatus::Published | SubmissionStatus::Returned
+        ) {
+            crate::notifications::grade_changed(
+                &self.pool,
+                row.user_id,
+                activity_id,
+                (Some(row.id), None),
+                target,
+                Some(final_score),
+            )
+            .await;
+        }
     }
 
     /// Who may follow a course's grading stream: its graders (404 for an

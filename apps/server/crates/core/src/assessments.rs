@@ -339,6 +339,19 @@ text_enum!(
 );
 
 text_enum!(
+    /// In-app notification types (S-07; `notifications.kind`).
+    NotificationType {
+        GradePublished => "grade_published",
+        SubmissionReturned => "submission_returned",
+        DeadlineExtended => "deadline_extended",
+        DeadlineApproaching => "deadline_approaching",
+        CourseUpdate => "course_update",
+        DiscussionReply => "discussion_reply",
+        ContributorApplication => "contributor_application",
+    }
+);
+
+text_enum!(
     /// Streak kinds (legacy `StreakType`).
     StreakKind {
         Login => "login",

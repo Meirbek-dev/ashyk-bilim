@@ -231,8 +231,22 @@ impl GamificationService {
         .await?;
         let fresh = match recorded {
             Recorded::New(transaction) => {
+                let profile = ab_db::gamification::ensure_profile(&self.pool, req.user_id).await?;
+                // S-13: every grant reaches the user's event stream.
+                crate::events::user::publish(vec![(
+                    req.user_id,
+                    crate::events::user::UserEvent::XpAwarded(crate::events::user::XpAwarded {
+                        transaction_id: transaction.id,
+                        amount: transaction.amount,
+                        source: transaction.source,
+                        reason: transaction.reason.clone(),
+                        total_xp: profile.total_xp,
+                        level: profile.level,
+                    }),
+                )])
+                .await;
                 return Ok(Award {
-                    profile: ab_db::gamification::ensure_profile(&self.pool, req.user_id).await?,
+                    profile,
                     transaction,
                     is_new: true,
                 });

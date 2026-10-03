@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH target AS (SELECT id, read_at IS NULL AS unread FROM notifications\n                           WHERE id = $1 AND user_id = $2 FOR UPDATE),\n                upd AS (UPDATE notifications n SET read_at = now()\n                        FROM target t WHERE n.id = t.id AND t.unread RETURNING n.id)\n           SELECT unread AS \"unread!\" FROM target",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "unread!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a106dc18f42f5215cb4bd8356a43ad05ec9cb68cc75baba9c2f262f9d8c4f7fe"
+}

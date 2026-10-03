@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notification_preferences (user_id, disabled) VALUES ($1, $2::text[])\n           ON CONFLICT (user_id) DO UPDATE SET disabled = EXCLUDED.disabled",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c1980bce5d0132a3edb7c4f90dea0b94118a90df459961da20b8de73fdde619"
+}

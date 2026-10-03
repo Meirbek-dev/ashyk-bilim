@@ -7,7 +7,7 @@
 //! `discussion:moderate` (platform, or `own` on courses they created).
 
 use ab_core::assessments::{DiscussionStatus, ReactionKind};
-use ab_core::id::{CourseId, DiscussionId};
+use ab_core::id::{CourseId, DiscussionId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, FieldError, Result};
 use ab_db::discussions::DiscussionRow;
@@ -410,6 +410,9 @@ impl DiscussionsService {
         let row = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;
+        if let Some(parent_id) = parent_id {
+            Self::notify_reply(&self.pool, &course, parent_id, &row).await;
+        }
         let mut created = Abilities::of(actor, &course).resolve(actor, row, Vec::new());
         if let Some(parent_id) = parent_id {
             created.parent_replies_count =
@@ -418,6 +421,49 @@ impl DiscussionsService {
                     .map(|p| p.replies_count);
         }
         Ok(created)
+    }
+
+    /// S-07: the thread's author and its other repliers hear of a reply
+    /// (never the replier).
+    async fn notify_reply(
+        pool: &PgPool,
+        course: &Course,
+        thread: DiscussionId,
+        reply: &ab_db::discussions::DiscussionRow,
+    ) {
+        let participants = match ab_db::notifications::thread_participants(pool, thread).await {
+            Ok(ids) => ids,
+            Err(err) => {
+                tracing::warn!(%err, "discussion reply: participants not resolved");
+                return;
+            }
+        };
+        let Some(author_id) = reply.user_id else {
+            return;
+        };
+        let recipients: Vec<UserId> = participants
+            .into_iter()
+            .filter(|u| *u != author_id)
+            .collect();
+        crate::notifications::notify(
+            pool,
+            &recipients,
+            &crate::notifications::NotificationPayload::DiscussionReply {
+                course_id: course.id,
+                course_name: course.name.clone(),
+                discussion_id: thread,
+                reply_id: reply.id,
+                author_id,
+                author_name: reply
+                    .display_name
+                    .clone()
+                    .filter(|n| !n.trim().is_empty())
+                    .or_else(|| reply.username.clone())
+                    .unwrap_or_default(),
+            },
+            None,
+        )
+        .await;
     }
 
     /// Owner or moderator edits content; only a moderator changes status

@@ -1048,6 +1048,33 @@ impl SubmissionsService {
                 )
                 .await;
         }
+        crate::events::user::grading(
+            pool,
+            crate::events::user::GradingUpdated {
+                course_id: fresh.course_id,
+                activity_id: assessment.activity_id,
+                user_id: fresh.user_id,
+                submission_id: Some(fresh.id),
+                attempt_id: None,
+                status: fresh.status,
+                final_score: fresh.final_score,
+            },
+        )
+        .await;
+        // The owner's own copy (an auto-submit by the worker, an immediate
+        // release); the score only once released.
+        crate::events::user::submission(
+            fresh.user_id,
+            crate::events::user::SubmissionUpdated {
+                course_id: fresh.course_id,
+                activity_id: assessment.activity_id,
+                submission_id: Some(fresh.id),
+                attempt_id: None,
+                status: fresh.status,
+                final_score: fresh.final_score,
+            },
+        )
+        .await;
         Ok(Some((fresh, effective, items.len())))
     }
 

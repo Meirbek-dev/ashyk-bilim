@@ -52,6 +52,57 @@ const REGISTER_IP_WINDOW: Duration = Duration::from_hours(1);
 /// tight enough to throttle username/email enumeration.
 const REGISTER_ATTEMPT_IP_WINDOW: Duration = Duration::from_hours(1);
 
+/// Password-reset throttle per IP, and code mails (reset + verification
+/// resend) per account.
+const CODE_MAIL_WINDOW: Duration = Duration::from_hours(1);
+
+/// Which code an email carries (subject, copy, web route).
+#[derive(Debug, Clone, Copy)]
+enum CodeMail {
+    Verification,
+    PasswordReset,
+}
+
+impl CodeMail {
+    const fn what(self) -> &'static str {
+        match self {
+            Self::Verification => "verification",
+            Self::PasswordReset => "password reset",
+        }
+    }
+
+    const fn path(self) -> &'static str {
+        match self {
+            Self::Verification => "/auth/verify-email",
+            Self::PasswordReset => "/auth/reset-password",
+        }
+    }
+
+    /// (subject, code line, link text, ignore line).
+    const fn copy(self) -> (&'static str, &'static str, &'static str, &'static str) {
+        match self {
+            Self::Verification => (
+                "Подтвердите адрес электронной почты - Ashyq Bilim",
+                "Код подтверждения адреса электронной почты",
+                "Подтвердить адрес",
+                "Если вы не регистрировались на Ashyq Bilim, просто проигнорируйте это письмо.",
+            ),
+            Self::PasswordReset => (
+                "Восстановление пароля - Ashyq Bilim",
+                "Код для восстановления пароля",
+                "Задать новый пароль",
+                "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.",
+            ),
+        }
+    }
+}
+
+struct Recipient<'a> {
+    id: UserId,
+    email: &'a str,
+    name: &'a str,
+}
+
 /// Authenticator-app issuer when the platform singleton has no name yet.
 const DEFAULT_PLATFORM_NAME: &str = "Ashyq Bilim";
 
@@ -776,12 +827,36 @@ impl IdentityService {
         code: &str,
         language: Option<Language>,
     ) {
+        self.deliver_code(
+            CodeMail::Verification,
+            Recipient {
+                id: profile.id,
+                email: &profile.email,
+                name: &profile.display_name,
+            },
+            code,
+            language,
+        )
+        .await;
+    }
+
+    /// Mail a Zitadel code with its web link. Without a mailer the code is
+    /// logged (dev; the web e2e reads it from the API log) and the flow
+    /// goes on; a send failure is logged too, never surfaced.
+    async fn deliver_code(
+        &self,
+        mail: CodeMail,
+        to: Recipient<'_>,
+        code: &str,
+        language: Option<Language>,
+    ) {
         let Some(mailer) = &self.mailer else {
             tracing::warn!(
-                user_id = %profile.id,
-                email = %profile.email,
+                user_id = %to.id,
+                email = %to.email,
                 code,
-                "resend not configured: verification code not delivered"
+                "resend not configured: {} code not delivered",
+                mail.what()
             );
             return;
         };
@@ -791,28 +866,214 @@ impl IdentityService {
             .map(|b| b.trim_end_matches('/'))
             .unwrap_or_default();
         let link = format!(
-            "{base}{prefix}/auth/verify-email?email={}&code={code}",
-            query_encode(&profile.email),
+            "{base}{prefix}{path}?email={}&code={code}",
+            query_encode(to.email),
             prefix = language.map_or("", Language::web_prefix),
+            path = mail.path(),
         );
+        let (subject, code_line, action, ignore) = mail.copy();
         let html = format!(
             "<p>Здравствуйте, {name}!</p>\
-             <p>Код подтверждения адреса электронной почты: <strong>{code}</strong></p>\
-             <p><a href=\"{link}\">Подтвердить адрес</a></p>\
-             <p>Если вы не регистрировались на Ashyq Bilim, просто проигнорируйте это письмо.</p>",
-            name = html_escape(&profile.display_name),
+             <p>{code_line}: <strong>{code}</strong></p>\
+             <p><a href=\"{link}\">{action}</a></p>\
+             <p>{ignore}</p>",
+            name = html_escape(to.name),
             link = html_escape(&link),
         );
-        if let Err(err) = mailer
-            .send(
-                &profile.email,
-                "Подтвердите адрес электронной почты - Ashyq Bilim",
-                &html,
+        if let Err(err) = mailer.send(to.email, subject, &html).await {
+            tracing::warn!(%err, user_id = %to.id, "{} email not sent", mail.what());
+        }
+    }
+
+    /// `POST /auth/password-reset` (S-08): always accepted - the caller
+    /// learns nothing about the account. Past the per-IP throttle the lookup,
+    /// the Zitadel code and the mail run on a spawned task, so the answer
+    /// takes the same time for known and unknown logins. A known, active
+    /// account gets at most `email_per_account` mails an hour (silently
+    /// capped).
+    pub async fn request_password_reset(
+        &self,
+        login: &str,
+        ip: Option<&str>,
+        language: Option<Language>,
+    ) -> Result<()> {
+        self.enforce_reset_ip_limit(ip).await?;
+        let this = self.clone();
+        let login = login.trim().to_owned();
+        tokio::spawn(async move {
+            if let Err(err) = this.send_reset_code(&login, language).await {
+                tracing::warn!(%err, "password reset code not sent");
+            }
+        });
+        Ok(())
+    }
+
+    async fn enforce_reset_ip_limit(&self, ip: Option<&str>) -> Result<()> {
+        match ip {
+            Some(ip) => {
+                self.enforce(
+                    &format!("rl:password-reset:ip:{ip}"),
+                    (self.limits.password_reset_ip, CODE_MAIL_WINDOW),
+                    "password reset",
+                )
+                .await
+            }
+            None => Ok(()),
+        }
+    }
+
+    /// Whether another code mail may go to `user` this hour.
+    async fn code_mail_allowed(&self, user: UserId) -> Result<bool> {
+        self.limiter
+            .check(
+                &format!("rl:code-mail:user:{user}"),
+                self.limits.email_per_account,
+                CODE_MAIL_WINDOW,
             )
             .await
-        {
-            tracing::warn!(%err, user_id = %profile.id, "verification email not sent");
+    }
+
+    async fn send_reset_code(&self, login: &str, language: Option<Language>) -> Result<()> {
+        let Some(user) = ab_db::identity::find_user_for_login(&self.pool, login).await? else {
+            return Ok(());
+        };
+        if user.status != "active" || !self.code_mail_allowed(user.id).await? {
+            return Ok(());
         }
+        let code = self
+            .zitadel
+            .request_password_reset(&user.zitadel_user_id)
+            .await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user.id),
+            "password-reset-requested",
+            None,
+            None,
+            serde_json::json!({}),
+        )
+        .await?;
+        self.deliver_code(
+            CodeMail::PasswordReset,
+            Recipient {
+                id: user.id,
+                email: &user.email,
+                name: &user.display_name,
+            },
+            &code,
+            language.or_else(|| Language::from_locale(&user.locale)),
+        )
+        .await;
+        Ok(())
+    }
+
+    /// `POST /auth/password-reset/confirm`: the emailed code + a new
+    /// password. Throttled per IP (with the requests); an unknown login and
+    /// a wrong code answer the same `reset-code-invalid`. Success revokes
+    /// every session of the account (the caller has none - this is the
+    /// signed-out door).
+    pub async fn confirm_password_reset(
+        &self,
+        login: &str,
+        code: &str,
+        new: &SecretString,
+        ip: Option<&str>,
+    ) -> Result<()> {
+        self.enforce_reset_ip_limit(ip).await?;
+        let invalid = || {
+            Error::app(
+                ErrorCode::ResetCodeInvalid,
+                "password reset code is invalid or expired",
+            )
+        };
+        let code = code.trim().to_uppercase();
+        if code.is_empty() {
+            return Err(invalid());
+        }
+        let Some(user) = ab_db::identity::find_user_for_login(&self.pool, login.trim()).await?
+        else {
+            return Err(invalid());
+        };
+        if user.status != "active" {
+            return Err(invalid());
+        }
+        let lock = format!("lock:password:user:{}", user.id);
+        if !self.try_lock(&lock).await? {
+            return Err(Error::conflict("a password change is already in progress"));
+        }
+        let set = self
+            .zitadel
+            .set_password_with_code(&user.zitadel_user_id, &code, new)
+            .await;
+        self.unlock(&lock).await?;
+        set?;
+        self.sessions.revoke_all(user.id).await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user.id),
+            "password-reset",
+            ip,
+            None,
+            serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// `POST /auth/verify-email/resend`: a fresh verification code for an
+    /// unverified account. Always accepted (no enumeration); throttled per
+    /// IP with the registration attempts and per account with the code
+    /// mails. Runs on a spawned task like [`Self::request_password_reset`].
+    pub async fn resend_verification(
+        &self,
+        email: &str,
+        ip: Option<&str>,
+        language: Option<Language>,
+    ) -> Result<()> {
+        self.enforce_register_limit(
+            ip,
+            "attempt",
+            (self.limits.register_attempt_ip, REGISTER_ATTEMPT_IP_WINDOW),
+        )
+        .await?;
+        let this = self.clone();
+        let email = email.trim().to_owned();
+        tokio::spawn(async move {
+            if let Err(err) = this.send_verification_again(&email, language).await {
+                tracing::warn!(%err, "verification code not resent");
+            }
+        });
+        Ok(())
+    }
+
+    async fn send_verification_again(&self, email: &str, language: Option<Language>) -> Result<()> {
+        let Some(id) = ab_db::identity::find_user_id_by_email(&self.pool, email).await? else {
+            return Ok(());
+        };
+        let Some(user) = ab_db::identity::find_auth_user(&self.pool, id).await? else {
+            return Ok(());
+        };
+        if user.status != "active" || !self.code_mail_allowed(user.id).await? {
+            return Ok(());
+        }
+        let Some(code) = self
+            .zitadel
+            .resend_email_code(&user.zitadel_user_id)
+            .await?
+        else {
+            return Ok(()); // already verified
+        };
+        self.deliver_code(
+            CodeMail::Verification,
+            Recipient {
+                id: user.id,
+                email: &user.email,
+                name: &user.display_name,
+            },
+            &code,
+            language.or_else(|| Language::from_locale(&user.locale)),
+        )
+        .await;
+        Ok(())
     }
 
     /// Confirm the address with the emailed code. Public: the caller proves

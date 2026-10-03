@@ -338,9 +338,6 @@ impl FileSubmissionsService {
     /// (`submission.submitted`, `grade.saved`, `grade.published`,
     /// `submission.returned`).
     async fn emit_course(&self, row: &FileSubmissionRow, attempt: &AttemptRow) {
-        let Some(events) = &self.events else {
-            return;
-        };
         let status = match attempt.status {
             FileAttemptStatus::Submitted => SubmissionStatus::Pending,
             FileAttemptStatus::Graded => SubmissionStatus::Graded,
@@ -348,17 +345,46 @@ impl FileSubmissionsService {
             FileAttemptStatus::Returned => SubmissionStatus::Returned,
             FileAttemptStatus::Draft => return,
         };
-        events
-            .publish_best_effort(
-                row.course_id,
-                course_event_name(status),
-                serde_json::json!({
-                    "attempt_id": attempt.id, "activity_id": row.activity_id,
-                    "user_id": attempt.user_id, "status": status,
-                    "final_score": attempt.final_score,
-                }),
+        if let Some(events) = &self.events {
+            events
+                .publish_best_effort(
+                    row.course_id,
+                    course_event_name(status),
+                    serde_json::json!({
+                        "attempt_id": attempt.id, "activity_id": row.activity_id,
+                        "user_id": attempt.user_id, "status": status,
+                        "final_score": attempt.final_score,
+                    }),
+                )
+                .await;
+        }
+        crate::events::user::grading(
+            &self.pool,
+            crate::events::user::GradingUpdated {
+                course_id: row.course_id,
+                activity_id: row.activity_id,
+                user_id: attempt.user_id,
+                submission_id: None,
+                attempt_id: Some(attempt.id),
+                status,
+                final_score: attempt.final_score,
+            },
+        )
+        .await;
+        if matches!(
+            status,
+            SubmissionStatus::Published | SubmissionStatus::Returned
+        ) {
+            crate::notifications::grade_changed(
+                &self.pool,
+                attempt.user_id,
+                row.activity_id,
+                (None, Some(attempt.id)),
+                status,
+                attempt.final_score,
             )
             .await;
+        }
     }
 
     // ── Loading + gates ─────────────────────────────────────────────────

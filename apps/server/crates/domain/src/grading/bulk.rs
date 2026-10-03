@@ -512,6 +512,24 @@ async fn run_deadline_extension(
                 )
                 .await;
         }
+        if let Some((course_id, course_name, activity_name)) =
+            crate::notifications::activity_names(pool, assessment.activity_id).await
+        {
+            crate::notifications::notify(
+                pool,
+                &[user_id],
+                &crate::notifications::NotificationPayload::DeadlineExtended {
+                    course_id,
+                    course_name,
+                    activity_id: assessment.activity_id,
+                    activity_name,
+                    assessment_id: assessment.id,
+                    due_at_unix: new_due_at,
+                },
+                None,
+            )
+            .await;
+        }
         affected += 1;
     }
     ab_db::assessments::insert_audit_event(
