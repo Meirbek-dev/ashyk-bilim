@@ -165,7 +165,7 @@ pub struct AlertItem {
     pub kind: &'static str,
     pub severity: Severity,
     pub code: AnalyticsCode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::MessageParams)]
     pub params: serde_json::Value,
     pub href: Option<String>,
     pub course_id: Option<CourseId>,
@@ -256,7 +256,7 @@ pub struct InsightFeedItem {
     pub severity: Severity,
     pub priority: i64,
     pub code: AnalyticsCode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::MessageParams)]
     pub params: serde_json::Value,
     pub course_id: Option<CourseId>,
     pub activity_id: Option<ActivityId>,
@@ -272,7 +272,7 @@ pub struct SavedView {
     pub teacher_user_id: UserId,
     pub name: String,
     pub view_type: String,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::SavedQuery)]
     pub query: serde_json::Value,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -308,7 +308,7 @@ pub struct DataQualityIssue {
     pub id: &'static str,
     pub severity: Severity,
     pub code: AnalyticsCode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::MessageParams)]
     pub params: serde_json::Value,
     pub course_id: Option<CourseId>,
     pub source: Option<&'static str>,
@@ -344,7 +344,7 @@ pub struct ForecastItem {
     pub kind: &'static str,
     pub severity: Severity,
     pub code: AnalyticsCode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::MessageParams)]
     pub params: serde_json::Value,
     pub confidence_level: Confidence,
     pub course_id: Option<CourseId>,
@@ -365,7 +365,7 @@ pub struct AnomalyItem {
     pub kind: &'static str,
     pub severity: Severity,
     pub code: AnalyticsCode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::MessageParams)]
     pub params: serde_json::Value,
     pub observed_value: Option<f64>,
     pub baseline_value: Option<f64>,
@@ -435,7 +435,9 @@ pub struct Intervention {
     pub teacher_user_id: UserId,
     pub user_id: UserId,
     pub course_id: CourseId,
+    #[schema(value_type = crate::analytics::InterventionType)]
     pub intervention_type: String,
+    #[schema(value_type = crate::analytics::InterventionStatus)]
     pub status: String,
     pub outcome: Option<String>,
     pub notes: Option<String>,

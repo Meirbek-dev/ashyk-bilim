@@ -68,8 +68,8 @@ pub async fn create_file_submission(
 /// The activity with the caller's attempts (authors always; learners once
 /// published).
 #[utoipa::path(
-    get, path = "/file-submissions/{id}", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    get, path = "/file-submissions/{file_submission_id}", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     responses((status = 200, description = "File submission", body = FileSubmission)),
 )]
 pub async fn get_file_submission(
@@ -82,8 +82,8 @@ pub async fn get_file_submission(
 
 /// The file submission behind an activity.
 #[utoipa::path(
-    get, path = "/activities/{id}/file-submission", tag = "file-submissions",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    get, path = "/activities/{activity_id}/file-submission", tag = "file-submissions",
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses((status = 200, description = "File submission", body = FileSubmission)),
 )]
 pub async fn get_activity_file_submission(
@@ -102,8 +102,8 @@ pub async fn get_activity_file_submission(
 
 /// Partial update of title and configuration (authors; archived = read-only).
 #[utoipa::path(
-    patch, path = "/file-submissions/{id}", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    patch, path = "/file-submissions/{file_submission_id}", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     request_body = ConfigPatch,
     responses((status = 200, description = "Updated", body = FileSubmission)),
 )]
@@ -134,8 +134,8 @@ pub async fn update_file_submission(
 
 /// Publish (title and instructions required); the activity goes live.
 #[utoipa::path(
-    post, path = "/file-submissions/{id}/publish", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    post, path = "/file-submissions/{file_submission_id}/publish", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     responses(
         (status = 200, description = "Published", body = FileSubmission),
         (status = 422, description = "Missing title or instructions", body = Problem,
@@ -158,8 +158,8 @@ pub async fn publish_file_submission(
 
 /// The caller's open attempt (draft or returned), 404 when none.
 #[utoipa::path(
-    get, path = "/file-submissions/{id}/draft", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    get, path = "/file-submissions/{file_submission_id}/draft", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     responses(
         (status = 200, description = "Open attempt", body = Attempt),
         (status = 404, description = "No open attempt", body = Problem,
@@ -181,8 +181,8 @@ pub async fn get_draft(
 
 /// Open a draft attempt (201) or return the open one (200).
 #[utoipa::path(
-    post, path = "/file-submissions/{id}/draft", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    post, path = "/file-submissions/{file_submission_id}/draft", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     responses(
         (status = 201, description = "Draft opened", body = Attempt),
         (status = 200, description = "Existing open attempt", body = Attempt),
@@ -213,9 +213,10 @@ pub async fn start_draft(
 /// Uploads must be the caller's own finalized `file-submission` uploads.
 /// `If-Match` is optional; a stale version is 412.
 #[utoipa::path(
-    patch, path = "/file-submissions/{id}/draft", tag = "file-submissions",
+    operation_id = "save_file_submission_draft",
+    patch, path = "/file-submissions/{file_submission_id}/draft", tag = "file-submissions",
     params(
-        ("id" = FileSubmissionId, Path, description = "File submission id"),
+        ("file_submission_id" = FileSubmissionId, Path, description = "File submission id"),
         ("If-Match" = Option<i64>, Header, description = "Attempt version (optional)"),
     ),
     request_body = DraftRequest,
@@ -262,9 +263,9 @@ pub async fn save_draft(
 /// response for 24h instead of opening a new attempt; the same key with a
 /// different body is 422.
 #[utoipa::path(
-    post, path = "/file-submissions/{id}/submit", tag = "file-submissions",
+    post, path = "/file-submissions/{file_submission_id}/submit", tag = "file-submissions",
     params(
-        ("id" = FileSubmissionId, Path, description = "File submission id"),
+        ("file_submission_id" = FileSubmissionId, Path, description = "File submission id"),
         ("If-Match" = Option<i64>, Header, description = "Attempt version (optional)"),
         ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),
@@ -315,8 +316,8 @@ pub async fn submit(
 
 /// Every attempt the caller made, newest first.
 #[utoipa::path(
-    get, path = "/file-submissions/{id}/me", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id")),
+    get, path = "/file-submissions/{file_submission_id}/me", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
     responses((status = 200, description = "Attempts", body = [Attempt])),
 )]
 pub async fn my_attempts(
@@ -330,8 +331,9 @@ pub async fn my_attempts(
 
 /// Submitted attempts for grading, newest first (keyset).
 #[utoipa::path(
-    get, path = "/file-submissions/{id}/submissions", tag = "file-submissions",
-    params(("id" = FileSubmissionId, Path, description = "File submission id"), FileReviewQuery),
+    operation_id = "file_submission_review_queue",
+    get, path = "/file-submissions/{file_submission_id}/submissions", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id"), FileReviewQuery),
     responses((status = 200, description = "Review page", body = FileReviewPage)),
 )]
 pub async fn review_queue(
@@ -359,9 +361,10 @@ pub async fn review_queue(
 /// Every attempt as CSV (graders). Header and status words follow
 /// `Accept-Language` (ru / kk / en, Russian by default); UTF-8 with BOM.
 #[utoipa::path(
-    get, path = "/file-submissions/{id}/submissions/export", tag = "file-submissions",
+    operation_id = "export_file_submission_csv",
+    get, path = "/file-submissions/{file_submission_id}/submissions/export", tag = "file-submissions",
     params(
-        ("id" = FileSubmissionId, Path, description = "File submission id"),
+        ("file_submission_id" = FileSubmissionId, Path, description = "File submission id"),
         ("Accept-Language" = Option<String>, Header, description = "ru / kk / en (default ru)"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
@@ -393,8 +396,8 @@ pub async fn export_csv(
 
 /// One attempt: its owner (grade redacted until released) or a grader.
 #[utoipa::path(
-    get, path = "/file-submission-attempts/{id}", tag = "file-submissions",
-    params(("id" = FileAttemptId, Path, description = "Attempt id")),
+    get, path = "/file-submission-attempts/{attempt_id}", tag = "file-submissions",
+    params(("attempt_id" = FileAttemptId, Path, description = "Attempt id")),
     responses((status = 200, description = "Attempt", body = Attempt)),
 )]
 pub async fn get_attempt(
@@ -409,9 +412,9 @@ pub async fn get_attempt(
 
 /// Save, publish or return a grade (graders). Requires `If-Match`.
 #[utoipa::path(
-    patch, path = "/file-submission-attempts/{id}/grade", tag = "file-submissions",
+    patch, path = "/file-submission-attempts/{attempt_id}/grade", tag = "file-submissions",
     params(
-        ("id" = FileAttemptId, Path, description = "Attempt id"),
+        ("attempt_id" = FileAttemptId, Path, description = "Attempt id"),
         ("If-Match" = i64, Header, description = "Current version"),
     ),
     request_body = FileGradeRequest,
@@ -468,8 +471,8 @@ pub async fn grade_attempt(
 
 /// A short-lived download URL for an attached file (owner or grader).
 #[utoipa::path(
-    get, path = "/file-submission-files/{id}/url", tag = "file-submissions",
-    params(("id" = FileAttemptFileId, Path, description = "Attached file id")),
+    get, path = "/file-submission-files/{file_id}/url", tag = "file-submissions",
+    params(("file_id" = FileAttemptFileId, Path, description = "Attached file id")),
     responses((status = 200, description = "Signed URL (1h)", body = SignedDownload)),
 )]
 pub async fn file_url(

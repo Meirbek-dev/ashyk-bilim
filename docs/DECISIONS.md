@@ -1759,8 +1759,8 @@ Deviations decided during implementation:
   `extra_hosts: host-gateway`.** Inside the stack the domain resolves to nginx
   on edge-net: same effect (signed S3 URLs keep the public host, no NAT
   loopback) without depending on the host's routing.
-- **TLS files stay configurable (`TLS_CERT_FILE`/`TLS_KEY_FILE`, default
-  `./certs/{cert,key}.pem`) instead of mounting `/etc/letsencrypt`.** The host
+- **TLS files stay configurable (`TLS_DIR`, default `./certs` with
+  `cert.pem`/`key.pem`) instead of mounting `/etc/letsencrypt`.** The host
   layout is unverified (the inventory had not run), and the legacy `./certs`
   layout keeps working unchanged. `renew-certificate.sh` copies in place and
   reloads, or recreates nginx when the path is a symlink.
@@ -1899,3 +1899,54 @@ then deviations from the spec.
   apps/web). G-07 is report-only until phase 7 (`gates/allowlist.json`). The login form is disabled
   until hydration: text typed earlier never reached TanStack Form state. The Dockerfile does not
   copy `openapi.v2.json`: the generated client is committed and the build never reads the contract.
+
+## Generator-friendly contract (2026-10-03, stage 2 S-01)
+
+`openapi.v2.json` is now described so a client generator needs no hand edits
+(web gate G-08, `apps/web-2/gates/contract.ts`). Nothing changed on the wire:
+same URLs, status codes, bodies and accepted requests.
+
+- **Export-time pass** `ab-api/src/openapi.rs::finalize` runs on the utoipa
+  document for both `GET /api/v2/openapi.json` and `ashyq openapi`
+  (`openapi_doc()` now returns `serde_json::Value`, keys sorted). Rules it owns:
+  - every `*_unix` property or parameter is `$ref: UnixTime` (integer seconds);
+    `format: int64` is dropped everywhere. **Invariant:** every integer on the
+    wire is within ±(2^53 - 1) (timestamps ≤ `EPOCH_MAX`, counters and byte
+    sizes far below), so `number` is exact in JS;
+  - CSV and PDF responses are `{type: string, format: binary}`;
+  - a nullable property of a schema reachable from any response is `required`
+    (serde always writes the `null`). Fields serde omits
+    (`skip_serializing_if`) are declared `#[schema(nullable = false)]`: absent
+    by design, never `null`. Shared request/response shapes follow the response
+    rule (a request may still omit them);
+  - in request-only schemas `null` equals absent, so optional fields are
+    non-nullable, except the three-state patch fields deserialized with
+    `double_option` (`NULL_CLEARS`, emitted with `x-null-clears: true`,
+    pinned by a unit test). G-08 allows optional+nullable only there.
+- **operationIds** (C-01): `get_ai_run`, `get_code_run`,
+  `assessment_review_queue`, `file_submission_review_queue`,
+  `export_assessment_submissions_csv`, `export_file_submission_csv`,
+  `save_submission_draft`, `save_file_submission_draft`.
+- **Path parameters** are named after their resource (`{course_id}`,
+  `{assessment_id}`, `{run_id}`, ...). Two positions stay mixed because the
+  URLs are: `/users/{username}` vs `/users/{user_id}/...`, and
+  `/ai/course-analysis/{course_id}/...` vs `/ai/course-analysis/{analysis_id}/...`.
+- **Enums** (C-04) are schema-only (`ab-api/src/dto/enums.rs`, plus
+  `InterventionType/Status`, `ReadinessSeverity/Area` in the domain): the
+  handlers keep string fields and validators; unit tests pin the sets to the
+  server's lists. `sort` / `preset` on `GET /courses` and the analytics
+  `window/compare/bucket/sort_order` are enums too; unknown `sort` / `preset`
+  values keep their lenient fallback (no new 422).
+- **Free-form JSON** (C-03) is typed by schema-only types in
+  `ab-domain/src/wire.rs` (fields stay `serde_json::Value`): `EditorDocument`
+  (the one open object), `ActivityContent` (editor document or media
+  reference), `ActivityDetails` (video player settings), `MessageParams`,
+  `SavedQuery`, `CorrectAnswer`, `AiEvidence`, `RemediationTest`,
+  `FileRubric`, `RubricScores`, `ViolationEvent`, AG-UI `Tool/Context/MessagePart`;
+  AI artifacts reference the structured-output types (`SubmissionAnalysisReport`,
+  `CourseQualityReport`, `LectureReviewReport`, `RemediationBundle`,
+  `StudyCompanionAnswer`); `Problem.details` is `ProblemDetails` (keys by
+  code). `JsonValue` (any JSON) is reserved for values opaque by protocol (AG-UI
+  `state`, `forwardedProps`, `resume`, tool parameter schemas, message
+  metadata; LLM flashcards). Caveat: these describe what the current server and
+  web write; rows ETL'd from legacy keep whatever shape they had.

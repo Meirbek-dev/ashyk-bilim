@@ -11,6 +11,7 @@ pub mod dto;
 pub mod error;
 pub mod extract;
 pub mod middleware;
+mod openapi;
 pub mod routes;
 pub mod seed;
 pub mod state;

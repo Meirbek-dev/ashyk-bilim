@@ -56,6 +56,27 @@ pub const INTERVENTION_TYPES: &[&str] = &[
     "learner_recovered",
 ];
 pub const INTERVENTION_STATUSES: &[&str] = &["planned", "completed", "resolved"];
+
+/// [`INTERVENTION_TYPES`] as a contract enum (schema only; the wire stays a
+/// validated string).
+#[derive(serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InterventionType {
+    MessageSent,
+    SubmissionGraded,
+    ExtensionGranted,
+    MeetingScheduled,
+    LearnerRecovered,
+}
+
+/// [`INTERVENTION_STATUSES`] as a contract enum (schema only).
+#[derive(serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InterventionStatus {
+    Planned,
+    Completed,
+    Resolved,
+}
 /// "Latest" cut-off for rollup lookups.
 const FAR_FUTURE: &str = "9999-12-31";
 

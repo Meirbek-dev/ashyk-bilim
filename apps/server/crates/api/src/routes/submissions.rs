@@ -68,8 +68,8 @@ fn with_etag(status: StatusCode, body: StudentSubmission) -> Response {
 /// 201 when this call opened it, 200 when a draft already existed. Refused
 /// (403) with the blocking reasons when the attempt state disallows it.
 #[utoipa::path(
-    post, path = "/assessments/{id}/submissions", tag = "submissions",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/submissions", tag = "submissions",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
         (status = 201, description = "Draft opened", body = StudentSubmission,
          headers(("ETag" = String, description = "Quoted draft_version"))),
@@ -99,8 +99,8 @@ pub async fn start_submission(
 
 /// The caller's open draft for this assessment (404 when none).
 #[utoipa::path(
-    get, path = "/assessments/{id}/submissions/draft", tag = "submissions",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/submissions/draft", tag = "submissions",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
         (status = 200, description = "Open draft", body = StudentSubmission,
          headers(("ETag" = String, description = "Quoted draft_version"))),
@@ -123,8 +123,8 @@ pub async fn current_draft(
 
 /// Every attempt the caller made on this assessment, newest first.
 #[utoipa::path(
-    get, path = "/assessments/{id}/submissions/me", tag = "submissions",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/submissions/me", tag = "submissions",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Attempts", body = [StudentSubmission])),
 )]
 pub async fn my_submissions(
@@ -138,8 +138,8 @@ pub async fn my_submissions(
 
 /// One attempt the caller owns (404 for anyone else's).
 #[utoipa::path(
-    get, path = "/submissions/{id}", tag = "submissions",
-    params(("id" = SubmissionId, Path, description = "Submission id")),
+    get, path = "/submissions/{submission_id}", tag = "submissions",
+    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
     responses(
         (status = 200, description = "Submission", body = StudentSubmission),
         (status = 404, description = "Unknown or not yours", body = Problem,
@@ -162,9 +162,10 @@ pub async fn get_submission(
 /// `{expected, actual}` when someone (another tab) saved in between.
 /// Throttled to one save per 5 seconds per draft (429).
 #[utoipa::path(
-    patch, path = "/submissions/{id}/draft", tag = "submissions",
+    operation_id = "save_submission_draft",
+    patch, path = "/submissions/{submission_id}/draft", tag = "submissions",
     params(
-        ("id" = SubmissionId, Path, description = "Submission id"),
+        ("submission_id" = SubmissionId, Path, description = "Submission id"),
         ("If-Match" = i64, Header, description = "Current draft_version"),
     ),
     request_body = SaveDraftRequest,
@@ -211,8 +212,8 @@ pub async fn save_draft(
 /// Returns the server-side count and whether submitting now zeroes the
 /// attempt (a detector is on and the threshold is reached).
 #[utoipa::path(
-    post, path = "/submissions/{id}/violations", tag = "submissions",
-    params(("id" = SubmissionId, Path, description = "Submission id")),
+    post, path = "/submissions/{submission_id}/violations", tag = "submissions",
+    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
     request_body = ViolationRequest,
     responses(
         (status = 200, description = "Recorded", body = ViolationState),
@@ -244,9 +245,9 @@ pub async fn report_violation(
 /// the original response for 24h; the same key with a different body is
 /// 422. Limited to 3 submits per 10 seconds per learner.
 #[utoipa::path(
-    post, path = "/submissions/{id}/submit", tag = "submissions",
+    post, path = "/submissions/{submission_id}/submit", tag = "submissions",
     params(
-        ("id" = SubmissionId, Path, description = "Submission id"),
+        ("submission_id" = SubmissionId, Path, description = "Submission id"),
         ("If-Match" = Option<i64>, Header, description = "Draft version guard (optional)"),
         ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),

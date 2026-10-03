@@ -19,8 +19,8 @@ const DEFAULT_PAGE: i64 = 50;
 
 /// Newest posts first (keyset), optionally with replies embedded.
 #[utoipa::path(
-    get, path = "/courses/{id}/discussions", tag = "discussions",
-    params(("id" = CourseId, Path, description = "Course id"), DiscussionListQuery),
+    get, path = "/courses/{course_id}/discussions", tag = "discussions",
+    params(("course_id" = CourseId, Path, description = "Course id"), DiscussionListQuery),
     responses(
         (status = 200, description = "Posts", body = DiscussionPage),
         (status = 404, description = "Unknown or inaccessible course", body = Problem,
@@ -50,9 +50,9 @@ pub async fn list_discussions(
 /// retry with the same body replays the created post instead of posting
 /// twice; the same key with a different body is 422.
 #[utoipa::path(
-    post, path = "/courses/{id}/discussions", tag = "discussions",
+    post, path = "/courses/{course_id}/discussions", tag = "discussions",
     params(
-        ("id" = CourseId, Path, description = "Course id"),
+        ("course_id" = CourseId, Path, description = "Course id"),
         ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),
     request_body = CreateDiscussionRequest,
@@ -92,8 +92,8 @@ pub async fn create_discussion(
 /// Edit content (owner, or a moderator); only a moderator may change
 /// `status`.
 #[utoipa::path(
-    patch, path = "/discussions/{id}", tag = "discussions",
-    params(("id" = DiscussionId, Path, description = "Discussion id")),
+    patch, path = "/discussions/{discussion_id}", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
     request_body = UpdateDiscussionRequest,
     responses(
         (status = 200, description = "Updated", body = Discussion),
@@ -119,8 +119,8 @@ pub async fn update_discussion(
 
 /// Remove a post with its replies and reactions (owner, or a moderator).
 #[utoipa::path(
-    delete, path = "/discussions/{id}", tag = "discussions",
-    params(("id" = DiscussionId, Path, description = "Discussion id")),
+    delete, path = "/discussions/{discussion_id}", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "Not yours and not a moderator", body = Problem,
@@ -138,8 +138,8 @@ pub async fn delete_discussion(
 
 /// Toggle a like (a standing dislike is replaced).
 #[utoipa::path(
-    put, path = "/discussions/{id}/like", tag = "discussions",
-    params(("id" = DiscussionId, Path, description = "Discussion id")),
+    put, path = "/discussions/{discussion_id}/like", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
     responses((status = 200, description = "Reaction state", body = ReactionState)),
 )]
 pub async fn toggle_like(
@@ -158,8 +158,8 @@ pub async fn toggle_like(
 
 /// Toggle a dislike (a standing like is replaced).
 #[utoipa::path(
-    put, path = "/discussions/{id}/dislike", tag = "discussions",
-    params(("id" = DiscussionId, Path, description = "Discussion id")),
+    put, path = "/discussions/{discussion_id}/dislike", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
     responses((status = 200, description = "Reaction state", body = ReactionState)),
 )]
 pub async fn toggle_dislike(
@@ -178,8 +178,8 @@ pub async fn toggle_dislike(
 
 /// Replies under a post, oldest first (keyset).
 #[utoipa::path(
-    get, path = "/discussions/{id}/replies", tag = "discussions",
-    params(("id" = DiscussionId, Path, description = "Discussion id"), RepliesQuery),
+    get, path = "/discussions/{discussion_id}/replies", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id"), RepliesQuery),
     responses((status = 200, description = "Replies", body = DiscussionPage)),
 )]
 pub async fn list_replies(

@@ -22,9 +22,9 @@ use crate::state::AppState;
 /// and language replays the finished run (200); a different payload under
 /// the same key is 409. Limited to 20 runs per minute per user.
 #[utoipa::path(
-    post, path = "/assessment-items/{id}/runs", tag = "code",
+    post, path = "/assessment-items/{item_id}/runs", tag = "code",
     params(
-        ("id" = AssessmentItemId, Path, description = "Code item id"),
+        ("item_id" = AssessmentItemId, Path, description = "Code item id"),
         ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),
     request_body = RunRequest,
@@ -91,8 +91,9 @@ pub async fn run_item(
 
 /// A run by id: its owner (hidden tests masked) or an assessment author.
 #[utoipa::path(
-    get, path = "/code-runs/{id}", tag = "code",
-    params(("id" = CodeRunId, Path, description = "Code run id")),
+    operation_id = "get_code_run",
+    get, path = "/code-runs/{run_id}", tag = "code",
+    params(("run_id" = CodeRunId, Path, description = "Code run id")),
     responses(
         (status = 200, description = "Run", body = CodeRun),
         (status = 404, description = "Unknown or not yours", body = Problem,
@@ -112,8 +113,8 @@ pub async fn get_run(
 /// One entry per language the item allows; `missing_solution` when no
 /// reference is stored for it.
 #[utoipa::path(
-    post, path = "/assessments/{id}/reference-check", tag = "code",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/reference-check", tag = "code",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
         (status = 200, description = "Per-language verdicts", body = ReferenceCheckResponse),
         (status = 403, description = "No authoring access", body = Problem,

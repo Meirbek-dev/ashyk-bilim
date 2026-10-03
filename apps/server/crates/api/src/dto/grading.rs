@@ -176,7 +176,7 @@ pub struct TeacherSubmission {
     pub is_late: bool,
     pub late_penalty_pct: f64,
     pub violation_count: i32,
-    #[schema(value_type = Vec<Object>)]
+    #[schema(value_type = Vec<ab_domain::wire::ViolationEvent>)]
     pub violations: serde_json::Value,
     pub auto_submit_reason: Option<AutoSubmitReason>,
     pub duration_seconds: Option<i32>,

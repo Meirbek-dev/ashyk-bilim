@@ -181,6 +181,7 @@ pub struct CoursePage {
     pub next_cursor: Option<CourseId>,
     /// Present only when the request had `mine=true`.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub summary: Option<CourseSummary>,
 }
 
@@ -228,6 +229,7 @@ pub struct CourseLifecycleRequest {
     /// `archive` | `restore` (creator, active maintainer or
     /// `course:manage:platform`).
     #[garde(custom(valid_action))]
+    #[schema(value_type = crate::dto::enums::CourseLifecycleAction)]
     pub action: String,
 }
 
@@ -261,12 +263,14 @@ pub struct CourseListQuery {
     /// `updated` (default, newest update first), `name` (A→Z) or `progress`
     /// (the caller's in-progress courses first by `progress_pct`, then
     /// newest update - UX-274).
+    #[schema(value_type = Option<crate::dto::enums::CourseListSort>)]
     pub sort: Option<String>,
     /// `all` (default) | `drafts` (unpublished) | `published` | `recent`
     /// (updated in the last 7 days) | `attention` - published with no live
     /// activity, or a draft created more than 30 days ago | `archived`
     /// (only with `mine=true`, else 422). Archived courses are excluded
     /// from every other preset.
+    #[schema(value_type = Option<crate::dto::enums::CourseListPreset>)]
     pub preset: Option<String>,
 }
 

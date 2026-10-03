@@ -49,9 +49,9 @@ fn with_etag(body: ActivityDetail) -> Response {
 /// activities are listed for course editors only.
 #[utoipa::path(
     get,
-    path = "/courses/{id}/curriculum",
+    path = "/courses/{course_id}/curriculum",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Ordered chapters + activities", body = Curriculum),
         (status = 404, description = "Unknown or inaccessible course", body = Problem,
@@ -72,9 +72,9 @@ pub async fn get_curriculum(
 /// Append a chapter to a course (course write access).
 #[utoipa::path(
     post,
-    path = "/courses/{id}/chapters",
+    path = "/courses/{course_id}/chapters",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = CreateChapterRequest,
     responses(
         (status = 201, description = "Created (appended last)", body = Chapter),
@@ -107,9 +107,9 @@ pub async fn create_chapter(
 /// Rename/redescribe a chapter.
 #[utoipa::path(
     patch,
-    path = "/chapters/{id}",
+    path = "/chapters/{chapter_id}",
     tag = "courses",
-    params(("id" = ChapterId, Path, description = "Chapter id")),
+    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
     request_body = UpdateChapterRequest,
     responses(
         (status = 200, description = "Updated", body = Chapter),
@@ -142,9 +142,9 @@ pub async fn update_chapter(
 /// Delete a chapter and its activities; siblings renumber to stay contiguous.
 #[utoipa::path(
     delete,
-    path = "/chapters/{id}",
+    path = "/chapters/{chapter_id}",
     tag = "courses",
-    params(("id" = ChapterId, Path, description = "Chapter id")),
+    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
@@ -167,9 +167,9 @@ pub async fn delete_chapter(
 /// Move a chapter to a new position (clamped; siblings renumber).
 #[utoipa::path(
     post,
-    path = "/chapters/{id}/move",
+    path = "/chapters/{chapter_id}/move",
     tag = "courses",
-    params(("id" = ChapterId, Path, description = "Chapter id")),
+    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
     request_body = MoveChapterRequest,
     responses(
         (status = 204, description = "Moved"),
@@ -196,9 +196,9 @@ pub async fn move_chapter(
 /// Append an activity to a chapter (type/subtype pair must be valid).
 #[utoipa::path(
     post,
-    path = "/chapters/{id}/activities",
+    path = "/chapters/{chapter_id}/activities",
     tag = "courses",
-    params(("id" = ChapterId, Path, description = "Chapter id")),
+    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
     request_body = CreateActivityRequest,
     responses(
         (status = 201, description = "Created (appended last)", body = Activity),
@@ -235,9 +235,9 @@ pub async fn create_activity(
 /// activities exist for course editors only (404 otherwise).
 #[utoipa::path(
     get,
-    path = "/activities/{id}",
+    path = "/activities/{activity_id}",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses(
         (status = 200, description = "Activity detail", body = ActivityDetail,
          headers(("ETag" = String, description = "Quoted version"))),
@@ -264,10 +264,10 @@ pub async fn get_activity(
 /// overwrite of another tab's save.
 #[utoipa::path(
     patch,
-    path = "/activities/{id}",
+    path = "/activities/{activity_id}",
     tag = "courses",
     params(
-        ("id" = ActivityId, Path, description = "Activity id"),
+        ("activity_id" = ActivityId, Path, description = "Activity id"),
         ("If-Match" = Option<i32>, Header, description = "Current version (required with `content`)"),
     ),
     request_body = UpdateActivityRequest,
@@ -335,10 +335,10 @@ pub async fn update_activity(
 /// Delete an activity; chapter siblings renumber to stay contiguous.
 #[utoipa::path(
     delete,
-    path = "/activities/{id}",
+    path = "/activities/{activity_id}",
     tag = "courses",
     params(
-        ("id" = ActivityId, Path, description = "Activity id"),
+        ("activity_id" = ActivityId, Path, description = "Activity id"),
         ("If-Match" = Option<i32>, Header, description = "Current version; stale → 412"),
     ),
     responses(
@@ -372,9 +372,9 @@ pub async fn delete_activity(
 /// course via `chapter_id`.
 #[utoipa::path(
     post,
-    path = "/activities/{id}/move",
+    path = "/activities/{activity_id}/move",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     request_body = MoveActivityRequest,
     responses(
         (status = 204, description = "Moved"),
@@ -409,9 +409,9 @@ pub async fn move_activity(
 /// purpose matches the block type (`image`→`block-image`, etc.).
 #[utoipa::path(
     post,
-    path = "/activities/{id}/blocks",
+    path = "/activities/{activity_id}/blocks",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     request_body = CreateBlockRequest,
     responses(
         (status = 201, description = "Created", body = Block),
@@ -451,9 +451,9 @@ pub async fn create_block(
 /// Blocks attached to an activity.
 #[utoipa::path(
     get,
-    path = "/activities/{id}/blocks",
+    path = "/activities/{activity_id}/blocks",
     tag = "courses",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses(
         (status = 200, description = "Blocks", body = [Block]),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -472,9 +472,9 @@ pub async fn list_blocks(
 /// One block (visibility follows the course).
 #[utoipa::path(
     get,
-    path = "/blocks/{id}",
+    path = "/blocks/{block_id}",
     tag = "courses",
-    params(("id" = BlockId, Path, description = "Block id")),
+    params(("block_id" = BlockId, Path, description = "Block id")),
     responses(
         (status = 200, description = "Block", body = Block),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -492,9 +492,9 @@ pub async fn get_block(
 /// Delete a block and release its stored file for reaping.
 #[utoipa::path(
     delete,
-    path = "/blocks/{id}",
+    path = "/blocks/{block_id}",
     tag = "courses",
-    params(("id" = BlockId, Path, description = "Block id")),
+    params(("block_id" = BlockId, Path, description = "Block id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,

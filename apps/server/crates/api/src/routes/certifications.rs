@@ -50,8 +50,8 @@ pub async fn create_certification(
 
 /// One template (course-scoped `certificate:read`).
 #[utoipa::path(
-    get, path = "/certifications/{id}", tag = "certifications",
-    params(("id" = CertificationId, Path, description = "Certification id")),
+    get, path = "/certifications/{certification_id}", tag = "certifications",
+    params(("certification_id" = CertificationId, Path, description = "Certification id")),
     responses((status = 200, description = "Certification", body = Certification)),
 )]
 pub async fn get_certification(
@@ -69,8 +69,8 @@ pub async fn get_certification(
 
 /// Replace the template document.
 #[utoipa::path(
-    patch, path = "/certifications/{id}", tag = "certifications",
-    params(("id" = CertificationId, Path, description = "Certification id")),
+    patch, path = "/certifications/{certification_id}", tag = "certifications",
+    params(("certification_id" = CertificationId, Path, description = "Certification id")),
     request_body = UpdateCertificationRequest,
     responses((status = 200, description = "Updated", body = Certification)),
 )]
@@ -96,8 +96,8 @@ pub async fn update_certification(
 
 /// Remove the template and every certificate issued from it.
 #[utoipa::path(
-    delete, path = "/certifications/{id}", tag = "certifications",
-    params(("id" = CertificationId, Path, description = "Certification id")),
+    delete, path = "/certifications/{certification_id}", tag = "certifications",
+    params(("certification_id" = CertificationId, Path, description = "Certification id")),
     responses((status = 204, description = "Deleted")),
 )]
 pub async fn delete_certification(
@@ -111,8 +111,8 @@ pub async fn delete_certification(
 
 /// The course's templates (course-scoped `certificate:read`).
 #[utoipa::path(
-    get, path = "/courses/{id}/certifications", tag = "certifications",
-    params(("id" = CourseId, Path, description = "Course id")),
+    get, path = "/courses/{course_id}/certifications", tag = "certifications",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses((status = 200, description = "Certifications", body = [Certification])),
 )]
 pub async fn list_course_certifications(
@@ -132,8 +132,8 @@ pub async fn list_course_certifications(
 /// The caller's certificates for a course; a completed course issues on
 /// the spot.
 #[utoipa::path(
-    get, path = "/courses/{id}/certificates/me", tag = "certifications",
-    params(("id" = CourseId, Path, description = "Course id")),
+    get, path = "/courses/{course_id}/certificates/me", tag = "certifications",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses((status = 200, description = "Certificates", body = [IssuedCertificate])),
 )]
 pub async fn my_course_certificates(

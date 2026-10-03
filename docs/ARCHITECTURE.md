@@ -244,9 +244,12 @@ pub enum Error {
 - `ashyq openapi > openapi.v2.json` is the contract artifact. The web app's Orval
   pipeline points at it (client regen is a build step, §15). CI snapshots the doc
   with `insta` — every contract change is visible in the diff — and runs `oasdiff`
-  to label breaking changes.
+  to label breaking changes. The document passes through one export-time pass
+  (`ab-api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract")
+  before it is served or exported.
 - Resources: plural kebab-case paths, UUIDv7 ids, flat where possible
-  (`/courses/{id}`, `/assessments/{id}/items`, `/submissions/{id}`).
+  (`/courses/{course_id}`, `/assessments/{assessment_id}/items`,
+  `/submissions/{submission_id}`): a path parameter is named after its resource.
 - **Inputs**: `#[serde(deny_unknown_fields)]` DTOs + `garde` rules, enforced by a
   `Valid<Json<T>>` extractor that emits `Validation` errors with per-field codes.
 - **Outputs**: dedicated response DTOs (`ToSchema`), never DB rows directly.

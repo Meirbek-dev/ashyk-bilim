@@ -78,8 +78,8 @@ pub async fn create_assessment(
 /// Full assessment with items and policy. Authors always; learners only
 /// once published (404 otherwise - no existence leak).
 #[utoipa::path(
-    get, path = "/assessments/{id}", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
         (status = 200, description = "Assessment", body = AssessmentDetail),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -97,8 +97,8 @@ pub async fn get_assessment(
 
 /// The assessment behind an activity (same access rules as by id).
 #[utoipa::path(
-    get, path = "/activities/{id}/assessment", tag = "assessments",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    get, path = "/activities/{activity_id}/assessment", tag = "assessments",
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses(
         (status = 200, description = "Assessment", body = AssessmentDetail),
         (status = 404, description = "No assessment or inaccessible", body = Problem,
@@ -116,8 +116,8 @@ pub async fn get_activity_assessment(
 
 /// Course overview: authors see every assessment, others only published.
 #[utoipa::path(
-    get, path = "/courses/{id}/assessments", tag = "assessments",
-    params(("id" = CourseId, Path, description = "Course id")),
+    get, path = "/courses/{course_id}/assessments", tag = "assessments",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses((status = 200, description = "Assessments", body = [Assessment])),
 )]
 pub async fn list_course_assessments(
@@ -137,8 +137,8 @@ pub async fn list_course_assessments(
 /// Title/description/weight/grading type. Archived assessments are
 /// read-only; a published one with submissions must be unpublished first.
 #[utoipa::path(
-    patch, path = "/assessments/{id}", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    patch, path = "/assessments/{assessment_id}", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = UpdateAssessmentRequest,
     responses(
         (status = 200, description = "Updated", body = AssessmentDetail),
@@ -173,8 +173,8 @@ pub async fn update_assessment(
 
 /// Replace the whole policy block (bumps `policy_version`).
 #[utoipa::path(
-    put, path = "/assessments/{id}/policy", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    put, path = "/assessments/{assessment_id}/policy", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = Policy,
     responses(
         (status = 200, description = "Updated", body = AssessmentDetail),
@@ -209,8 +209,8 @@ pub async fn set_policy(
 /// archived→draft. Scheduling and publishing require readiness (422 with
 /// the issues as field errors); scheduling needs a future time.
 #[utoipa::path(
-    post, path = "/assessments/{id}/lifecycle", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/lifecycle", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = LifecycleRequest,
     responses(
         (status = 200, description = "Transitioned", body = AssessmentDetail),
@@ -251,8 +251,8 @@ pub async fn lifecycle(
 /// per-student overrides), appended to the same or a given chapter of the
 /// same course.
 #[utoipa::path(
-    post, path = "/assessments/{id}/duplicate", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Source assessment id")),
+    post, path = "/assessments/{assessment_id}/duplicate", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Source assessment id")),
     request_body = DuplicateRequest,
     responses(
         (status = 201, description = "The copy", body = AssessmentDetail),
@@ -281,8 +281,8 @@ pub async fn duplicate_assessment(
 
 /// What blocks publication right now.
 #[utoipa::path(
-    get, path = "/assessments/{id}/readiness", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/readiness", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Readiness report", body = Readiness)),
 )]
 pub async fn readiness(
@@ -295,9 +295,9 @@ pub async fn readiness(
 
 /// Lifecycle transitions and override changes, newest first.
 #[utoipa::path(
-    get, path = "/assessments/{id}/audit", tag = "assessments",
+    get, path = "/assessments/{assessment_id}/audit", tag = "assessments",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("limit" = Option<i64>, Query, description = "1..=200 (default 50)"),
     ),
     responses((status = 200, description = "Audit events", body = [AuditEvent])),
@@ -317,8 +317,8 @@ pub async fn audit_trail(
 
 /// Append an item (kind must suit the assessment; at most 200 items).
 #[utoipa::path(
-    post, path = "/assessments/{id}/items", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/items", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = CreateItemRequest,
     responses(
         (status = 201, description = "Created (appended last)", body = AssessmentItem),
@@ -352,8 +352,8 @@ pub async fn create_item(
 /// Partial item update. Body/max-score changes are refused (409) once a
 /// published assessment has graded submissions.
 #[utoipa::path(
-    patch, path = "/assessment-items/{id}", tag = "assessments",
-    params(("id" = AssessmentItemId, Path, description = "Item id")),
+    patch, path = "/assessment-items/{item_id}", tag = "assessments",
+    params(("item_id" = AssessmentItemId, Path, description = "Item id")),
     request_body = UpdateItemRequest,
     responses(
         (status = 200, description = "Updated", body = AssessmentItem),
@@ -391,8 +391,8 @@ pub async fn update_item(
 
 /// Delete an item; siblings renumber.
 #[utoipa::path(
-    delete, path = "/assessment-items/{id}", tag = "assessments",
-    params(("id" = AssessmentItemId, Path, description = "Item id")),
+    delete, path = "/assessment-items/{item_id}", tag = "assessments",
+    params(("item_id" = AssessmentItemId, Path, description = "Item id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 409, description = "Content locked, or the last item of a live assessment", body = Problem,
@@ -410,8 +410,8 @@ pub async fn delete_item(
 
 /// Reorder items; returns the full list in the new order.
 #[utoipa::path(
-    post, path = "/assessments/{id}/items/reorder", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/items/reorder", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = ReorderItemsRequest,
     responses(
         (status = 200, description = "Reordered", body = [AssessmentItem]),
@@ -439,8 +439,8 @@ pub async fn reorder_items(
 
 /// Who may take the assessment (authors only).
 #[utoipa::path(
-    get, path = "/assessments/{id}/access", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/access", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Access policy", body = crate::dto::assessments::AccessView,
                headers(("ETag" = String, description = "Quoted version")))),
 )]
@@ -462,9 +462,9 @@ pub async fn get_access(
 /// is 412 `precondition-failed` with `details {expected, actual}` instead
 /// of a silent overwrite (UX-154).
 #[utoipa::path(
-    put, path = "/assessments/{id}/access", tag = "assessments",
+    put, path = "/assessments/{assessment_id}/access", tag = "assessments",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("If-Match" = Option<i32>, Header, description = "Version from the last read's ETag"),
     ),
     request_body = crate::dto::assessments::SetAccessRequest,
@@ -510,8 +510,8 @@ pub async fn set_access(
 
 /// Every per-student override on the assessment.
 #[utoipa::path(
-    get, path = "/assessments/{id}/overrides", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/overrides", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Overrides", body = [crate::dto::assessments::StudentOverride])),
 )]
 pub async fn list_overrides(
@@ -525,9 +525,9 @@ pub async fn list_overrides(
 
 /// Grant a student more attempts / a later due date / a late-penalty waiver.
 #[utoipa::path(
-    post, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    post, path = "/assessments/{assessment_id}/overrides/{user_id}", tag = "assessments",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("user_id" = ab_core::id::UserId, Path, description = "Student"),
     ),
     request_body = crate::dto::assessments::OverrideRequest,
@@ -561,9 +561,9 @@ pub async fn create_override(
 
 /// Replace a student's override.
 #[utoipa::path(
-    put, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    put, path = "/assessments/{assessment_id}/overrides/{user_id}", tag = "assessments",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("user_id" = ab_core::id::UserId, Path, description = "Student"),
     ),
     request_body = crate::dto::assessments::OverrideRequest,
@@ -591,9 +591,9 @@ pub async fn update_override(
 
 /// Remove a student's override.
 #[utoipa::path(
-    delete, path = "/assessments/{id}/overrides/{user_id}", tag = "assessments",
+    delete, path = "/assessments/{assessment_id}/overrides/{user_id}", tag = "assessments",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("user_id" = ab_core::id::UserId, Path, description = "Student"),
     ),
     responses((status = 204, description = "Deleted")),
@@ -623,8 +623,8 @@ pub async fn delete_override(
 /// (authors preview freely); off a restricted access list it answers with
 /// `ACCESS_RESTRICTED` (UX-227) - starting and submitting still 403.
 #[utoipa::path(
-    get, path = "/assessments/{id}/attempt-state", tag = "assessments",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/attempt-state", tag = "assessments",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses(
         (status = 200, description = "Attempt state", body = crate::dto::assessments::AttemptState),
         (status = 403, description = "No access", body = Problem,

@@ -12,6 +12,7 @@ pub struct UserProfile {
     pub display_name: String,
     pub bio: String,
     pub avatar_key: Option<String>,
+    #[schema(value_type = crate::dto::enums::Locale)]
     pub locale: String,
     /// School / university / company; `""` = not given yet (the dashboard
     /// asks for it).
@@ -125,6 +126,7 @@ pub struct UpdateProfileRequest {
     pub bio: Option<String>,
     /// One of the platform locales.
     #[garde(custom(valid_locale))]
+    #[schema(value_type = Option<crate::dto::enums::Locale>)]
     pub locale: Option<String>,
     /// School / university / company; a blank value is 422 `required`.
     #[garde(length(chars, max = 200))]
@@ -158,6 +160,7 @@ pub struct AdminUser {
     /// `""` = not given yet.
     pub organization: String,
     /// `active` or `disabled`.
+    #[schema(value_type = crate::dto::enums::UserStatus)]
     pub status: String,
     pub roles: Vec<String>,
     pub created_at_unix: i64,

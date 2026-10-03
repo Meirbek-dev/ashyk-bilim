@@ -28,10 +28,13 @@ pub use ab_domain::analytics::types::{
 #[into_params(parameter_in = Query)]
 pub struct AnalyticsQuery {
     /// `7d`, `28d` (default) or `90d`.
+    #[param(value_type = Option<ab_domain::analytics::filters::Window>)]
     pub window: Option<String>,
     /// `previous_period` (default) or `none`.
+    #[param(value_type = Option<ab_domain::analytics::filters::Compare>)]
     pub compare: Option<String>,
     /// `day` (default) or `week`.
+    #[param(value_type = Option<ab_domain::analytics::filters::Bucket>)]
     pub bucket: Option<String>,
     /// Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
     pub bucket_start: Option<String>,
@@ -49,6 +52,7 @@ pub struct AnalyticsQuery {
     pub page_size: Option<i64>,
     pub sort_by: Option<String>,
     /// `asc` or `desc` (default).
+    #[param(value_type = Option<ab_domain::analytics::filters::SortOrder>)]
     pub sort_order: Option<String>,
 }
 
@@ -109,9 +113,11 @@ pub struct CreateInterventionRequest {
     /// `message_sent`, `submission_graded`, `extension_granted`,
     /// `meeting_scheduled` or `learner_recovered`.
     #[garde(length(min = 1, max = 50))]
+    #[schema(value_type = ab_domain::analytics::InterventionType)]
     pub intervention_type: String,
     /// `planned`, `completed` or `resolved`.
     #[serde(default = "default_status")]
+    #[schema(value_type = ab_domain::analytics::InterventionStatus)]
     #[garde(length(min = 1, max = 20))]
     pub status: String,
     #[garde(length(chars, max = 2_000))]
@@ -143,7 +149,7 @@ pub struct SaveViewRequest {
     /// The saved filter state (an object of at most 16 KiB serialized, UX-148).
     #[serde(default = "empty_object")]
     #[garde(custom(json_object_16k))]
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::SavedQuery)]
     pub query: serde_json::Value,
 }
 

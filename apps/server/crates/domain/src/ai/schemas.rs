@@ -50,6 +50,7 @@ pub struct Citation {
     pub label: String,
     pub source_type: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub source_uuid: Option<String>,
     #[serde(default)]
     pub excerpt: String,
@@ -156,7 +157,7 @@ pub struct StudyCompanionAnswer {
     #[serde(default)]
     pub practice_items: Vec<RemediationQuestion>,
     #[serde(default)]
-    #[schema(value_type = Vec<Object>)]
+    #[schema(value_type = Vec<crate::wire::JsonValue>)]
     pub flashcards: Vec<serde_json::Value>,
     #[serde(default)]
     pub follow_up_suggestions: Vec<String>,
@@ -175,6 +176,7 @@ pub struct LectureSuggestion {
     #[serde(default)]
     pub rationale: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub replacement_markdown: Option<String>,
     #[serde(default)]
     pub priority: Level,

@@ -64,8 +64,8 @@ pub async fn create_course(
         ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
         ("mine" = Option<bool>, Query, description = "Only courses the caller may edit (adds `summary`)"),
         ("q" = Option<String>, Query, description = "Substring filter over name/description"),
-        ("sort" = Option<String>, Query, description = "`updated` (default), `name`, or `progress` (caller's in-progress courses first)"),
-        ("preset" = Option<String>, Query, description = "`all` | `drafts` | `published` | `recent` | `attention` | `archived` (with `mine=true`)"),
+        ("sort" = Option<crate::dto::enums::CourseListSort>, Query, description = "`progress`: the caller's in-progress courses first; default `updated`"),
+        ("preset" = Option<crate::dto::enums::CourseListPreset>, Query, description = "Default `all`; `archived` needs `mine=true`"),
     ),
     responses(
         (status = 200, description = "Page of courses", body = CoursePage),
@@ -108,9 +108,9 @@ pub async fn list_courses(
 /// access; 404 for invisible courses).
 #[utoipa::path(
     get,
-    path = "/courses/{id}/readiness",
+    path = "/courses/{course_id}/readiness",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Readiness", body = CourseReadiness),
         (status = 403, description = "No write access", body = Problem,
@@ -134,9 +134,9 @@ pub async fn course_readiness(
 /// anonymous visitors see active authors only.
 #[utoipa::path(
     get,
-    path = "/courses/{id}/contributors",
+    path = "/courses/{course_id}/contributors",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Roster", body = [Contributor]),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -157,9 +157,9 @@ pub async fn list_contributors(
 /// is already on the roster (or is the creator).
 #[utoipa::path(
     post,
-    path = "/courses/{id}/contributors",
+    path = "/courses/{course_id}/contributors",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = AddContributorRequest,
     responses(
         (status = 201, description = "Added", body = Contributor),
@@ -212,10 +212,10 @@ pub async fn add_contributor(
 /// pending application; the creator cannot be changed → 409).
 #[utoipa::path(
     patch,
-    path = "/courses/{id}/contributors/{user_id}",
+    path = "/courses/{course_id}/contributors/{user_id}",
     tag = "courses",
     params(
-        ("id" = CourseId, Path, description = "Course id"),
+        ("course_id" = CourseId, Path, description = "Course id"),
         ("user_id" = UserId, Path, description = "Contributor user id"),
     ),
     request_body = UpdateContributorRequest,
@@ -257,10 +257,10 @@ pub async fn update_contributor(
 /// withdraw one's own pending application.
 #[utoipa::path(
     delete,
-    path = "/courses/{id}/contributors/{user_id}",
+    path = "/courses/{course_id}/contributors/{user_id}",
     tag = "courses",
     params(
-        ("id" = CourseId, Path, description = "Course id"),
+        ("course_id" = CourseId, Path, description = "Course id"),
         ("user_id" = UserId, Path, description = "Contributor user id"),
     ),
     responses(
@@ -291,9 +291,9 @@ pub async fn remove_contributor(
 /// course is closed or the caller already has a role.
 #[utoipa::path(
     post,
-    path = "/courses/{id}/contributors/apply",
+    path = "/courses/{course_id}/contributors/apply",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 201, description = "Application recorded", body = Contributor),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -314,9 +314,9 @@ pub async fn apply_contributor(
 /// One course (404 for private courses the caller cannot see).
 #[utoipa::path(
     get,
-    path = "/courses/{id}",
+    path = "/courses/{course_id}",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Course", body = Course),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -337,9 +337,9 @@ pub async fn get_course(
 /// Partial update (creator with `course:update:own` or platform updaters).
 #[utoipa::path(
     patch,
-    path = "/courses/{id}",
+    path = "/courses/{course_id}",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = UpdateCourseRequest,
     responses(
         (status = 200, description = "Updated", body = Course),
@@ -387,9 +387,9 @@ pub async fn update_course(
 /// one. 409 `course-archived`: `publish` / `unpublish` on an archived one.
 #[utoipa::path(
     post,
-    path = "/courses/{id}/lifecycle",
+    path = "/courses/{course_id}/lifecycle",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = CourseLifecycleRequest,
     responses(
         (status = 200, description = "Lifecycle changed", body = Course),
@@ -433,9 +433,9 @@ pub async fn course_lifecycle(
 /// `course:manage:platform`; warnings, never blockers).
 #[utoipa::path(
     get,
-    path = "/courses/{id}/archive-preview",
+    path = "/courses/{course_id}/archive-preview",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Archive preview", body = CourseArchivePreview),
         (status = 403, description = "No roster access", body = Problem,
@@ -457,9 +457,9 @@ pub async fn course_archive_preview(
 /// Delete a course and everything under it (cascades).
 #[utoipa::path(
     delete,
-    path = "/courses/{id}",
+    path = "/courses/{course_id}",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No delete access", body = Problem,
@@ -483,9 +483,9 @@ pub async fn delete_course(
 /// Course announcements, newest first (read follows course visibility).
 #[utoipa::path(
     get,
-    path = "/courses/{id}/updates",
+    path = "/courses/{course_id}/updates",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Announcements", body = [CourseUpdate]),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
@@ -504,9 +504,9 @@ pub async fn list_course_updates(
 /// Post an announcement (course write access).
 #[utoipa::path(
     post,
-    path = "/courses/{id}/updates",
+    path = "/courses/{course_id}/updates",
     tag = "courses",
-    params(("id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = CreateCourseUpdateRequest,
     responses(
         (status = 201, description = "Created", body = CourseUpdate),
@@ -533,9 +533,9 @@ pub async fn create_course_update(
 /// Edit an announcement (course write access).
 #[utoipa::path(
     patch,
-    path = "/course-updates/{id}",
+    path = "/course-updates/{update_id}",
     tag = "courses",
-    params(("id" = CourseUpdateId, Path, description = "Course update id")),
+    params(("update_id" = CourseUpdateId, Path, description = "Course update id")),
     request_body = EditCourseUpdateRequest,
     responses(
         (status = 200, description = "Updated", body = CourseUpdate),
@@ -567,9 +567,9 @@ pub async fn edit_course_update(
 /// Delete an announcement (course write access).
 #[utoipa::path(
     delete,
-    path = "/course-updates/{id}",
+    path = "/course-updates/{update_id}",
     tag = "courses",
-    params(("id" = CourseUpdateId, Path, description = "Course update id")),
+    params(("update_id" = CourseUpdateId, Path, description = "Course update id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,

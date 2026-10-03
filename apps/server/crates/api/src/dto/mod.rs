@@ -14,6 +14,7 @@ pub mod collections;
 pub mod courses;
 pub mod curriculum;
 pub mod discussions;
+pub mod enums;
 pub mod file_submissions;
 pub mod gamification;
 pub mod grading;

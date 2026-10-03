@@ -42,8 +42,9 @@ fn now_unix() -> i64 {
 }
 
 #[utoipa::path(
-    get, path = "/ai/runs/{id}", tag = "ai",
-    params(("id" = AiRunId, Path, description = "Run id")),
+    operation_id = "get_ai_run",
+    get, path = "/ai/runs/{run_id}", tag = "ai",
+    params(("run_id" = AiRunId, Path, description = "Run id")),
     responses(
         (status = 200, description = "Run status", body = RunStatus),
         (status = 404, description = "Unknown run", body = Problem,
@@ -59,8 +60,8 @@ pub async fn get_run(
 }
 
 #[utoipa::path(
-    get, path = "/ai/runs/{id}/events", tag = "ai",
-    params(("id" = AiRunId, Path, description = "Run id")),
+    get, path = "/ai/runs/{run_id}/events", tag = "ai",
+    params(("run_id" = AiRunId, Path, description = "Run id")),
     responses((status = 200, description = "Journaled events, in order", body = Vec<RunEvent>)),
 )]
 pub async fn run_events(
@@ -73,8 +74,8 @@ pub async fn run_events(
 }
 
 #[utoipa::path(
-    get, path = "/ai/runs/{id}/artifacts", tag = "ai",
-    params(("id" = AiRunId, Path, description = "Run id")),
+    get, path = "/ai/runs/{run_id}/artifacts", tag = "ai",
+    params(("run_id" = AiRunId, Path, description = "Run id")),
     responses((status = 200, description = "Artifacts, newest first", body = Vec<RunArtifact>)),
 )]
 pub async fn run_artifacts(
@@ -88,8 +89,8 @@ pub async fn run_artifacts(
 
 /// Abort a queued or running run; a finished one is returned unchanged.
 #[utoipa::path(
-    post, path = "/ai/runs/{id}/cancel", tag = "ai",
-    params(("id" = AiRunId, Path, description = "Run id")),
+    post, path = "/ai/runs/{run_id}/cancel", tag = "ai",
+    params(("run_id" = AiRunId, Path, description = "Run id")),
     responses((status = 200, description = "Run status after the cancel", body = RunStatus)),
 )]
 pub async fn cancel_run(
@@ -185,9 +186,9 @@ fn stored_sse(stored: &AiStoredEvent) -> Event {
 /// payload}}` per run event, then `RUN_FINISHED` or `RUN_ERROR {code}`.
 /// `id:` is the Redis stream id to resume from with `Last-Event-ID`.
 #[utoipa::path(
-    post, path = "/ai/runs/{id}/stream", tag = "ai",
+    post, path = "/ai/runs/{run_id}/stream", tag = "ai",
     params(
-        ("id" = AiRunId, Path, description = "Run id"),
+        ("run_id" = AiRunId, Path, description = "Run id"),
         ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
     ),
     request_body = RunStreamRequest,
@@ -372,8 +373,8 @@ pub async fn admin_runs(
 }
 
 #[utoipa::path(
-    get, path = "/ai/admin/runs/{id}", tag = "ai",
-    params(("id" = AiRunId, Path, description = "Run id")),
+    get, path = "/ai/admin/runs/{run_id}", tag = "ai",
+    params(("run_id" = AiRunId, Path, description = "Run id")),
     responses(
         (status = 200, description = "Run with events, artifacts and evidence", body = AdminRunDetail),
         (status = 404, description = "Unknown run", body = Problem,

@@ -42,6 +42,12 @@ const VIDEOS: &[&str] = &[
     "video/x-flv",
 ];
 
+/// A purpose the upload pipeline accepts (pins the contract's `UploadPurpose`).
+#[must_use]
+pub fn is_purpose(purpose: &str) -> bool {
+    policy(purpose).is_some()
+}
+
 /// (bucket, max bytes, allowed content types - exact match; empty = any).
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {

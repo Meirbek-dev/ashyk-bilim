@@ -51,10 +51,10 @@ pub async fn create_upload(
 /// instead of the "already finalized" 409.
 #[utoipa::path(
     post,
-    path = "/uploads/{id}/finalize",
+    path = "/uploads/{upload_id}/finalize",
     tag = "uploads",
     params(
-        ("id" = Uuid, Path, description = "Upload id"),
+        ("upload_id" = Uuid, Path, description = "Upload id"),
         ("Idempotency-Key" = Option<String>, Header, description = "Client retry token (optional)"),
     ),
     responses(
@@ -94,9 +94,9 @@ pub async fn finalize_upload(
 /// Redirect to a short-lived presigned download URL.
 #[utoipa::path(
     get,
-    path = "/uploads/{id}/download",
+    path = "/uploads/{upload_id}/download",
     tag = "uploads",
-    params(("id" = Uuid, Path, description = "Upload id")),
+    params(("upload_id" = Uuid, Path, description = "Upload id")),
     responses(
         (status = 303, description = "Redirect to the presigned URL"),
         (status = 404, description = "Unknown upload", body = Problem,

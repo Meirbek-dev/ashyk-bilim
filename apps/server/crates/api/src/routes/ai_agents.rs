@@ -240,7 +240,7 @@ pub async fn delete_qa_thread(
     params(("course_id" = CourseId, Path, description = "Course id")),
     request_body = StudyRequest,
     responses(
-        (status = 200, description = "The answer artifact", body = Object),
+        (status = 200, description = "The answer artifact", body = ab_domain::ai::schemas::StudyCompanionAnswer),
         (status = 503, description = "AI disabled or budget exhausted", body = Problem,
          content_type = "application/problem+json"),
     )

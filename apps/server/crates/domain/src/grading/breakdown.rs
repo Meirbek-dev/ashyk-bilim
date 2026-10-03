@@ -21,15 +21,19 @@ pub struct GradedItem {
     /// Auto-grader verdict for the client to localize (`no-answer`,
     /// `correct`, `partially-correct`, …); `None` for teacher prose.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub feedback_code: Option<String>,
     /// Placeholders for `feedback_code` (`{correct, total}`, …).
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<crate::wire::MessageParams>, nullable = false)]
     pub feedback_params: Option<serde_json::Value>,
     #[serde(default)]
     pub needs_manual_review: bool,
     #[serde(default)]
+    #[schema(value_type = Option<crate::grading::answers::ItemAnswer>)]
     pub user_answer: serde_json::Value,
     #[serde(default)]
+    #[schema(value_type = Option<crate::wire::CorrectAnswer>)]
     pub correct_answer: serde_json::Value,
 }
 
@@ -47,6 +51,7 @@ pub struct GradingBreakdown {
     /// BUG-205: the teacher's explicit raw override - the score of record
     /// regardless of whether it equals the item-derived one. `None` = derived.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub score_override: Option<f64>,
 }
 

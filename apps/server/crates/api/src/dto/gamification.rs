@@ -29,7 +29,7 @@ pub struct Profile {
     pub last_xp_award_at_unix: Option<i64>,
     pub last_login_at_unix: Option<i64>,
     pub last_learning_at_unix: Option<i64>,
-    #[schema(value_type = Object)]
+    #[schema(value_type = GamificationPreferences)]
     pub preferences: serde_json::Value,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -233,7 +233,7 @@ pub struct GamificationConfig {
     /// `null` = platform default (500).
     pub daily_xp_limit: Option<i32>,
     /// Source → XP overrides; unknown sources are ignored.
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::BTreeMap<String, i32>)]
     pub rewards: serde_json::Value,
     pub updated_at_unix: i64,
 }
@@ -255,7 +255,7 @@ pub struct UpdateGamificationConfigRequest {
     pub daily_xp_limit: Option<i32>,
     #[garde(skip)]
     #[serde(default = "empty_object")]
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::BTreeMap<String, i32>)]
     pub rewards: serde_json::Value,
 }
 
@@ -270,6 +270,18 @@ where
     D: serde::Deserializer<'de>,
 {
     bool::deserialize(deserializer).map(Some)
+}
+
+/// Stored gamification preferences: the sections the user has set (a
+/// section never set is absent).
+#[derive(ToSchema)]
+pub struct GamificationPreferences {
+    #[schema(nullable = false)]
+    pub privacy: Option<PrivacyPreferences>,
+    #[schema(nullable = false)]
+    pub notifications: Option<NotificationPreferences>,
+    #[schema(nullable = false)]
+    pub display: Option<DisplayPreferences>,
 }
 
 /// `PATCH /gamification/preferences`: the sections the settings form owns.
@@ -313,6 +325,7 @@ pub struct PrivacyPreferences {
         deserialize_with = "bool_not_null",
         skip_serializing_if = "Option::is_none"
     )]
+    #[schema(nullable = false)]
     pub show_on_leaderboard: Option<bool>,
 }
 
@@ -324,6 +337,7 @@ pub struct NotificationPreferences {
         deserialize_with = "bool_not_null",
         skip_serializing_if = "Option::is_none"
     )]
+    #[schema(nullable = false)]
     pub xp_gain: Option<bool>,
 }
 
@@ -335,11 +349,13 @@ pub struct DisplayPreferences {
         deserialize_with = "bool_not_null",
         skip_serializing_if = "Option::is_none"
     )]
+    #[schema(nullable = false)]
     pub animated_effects: Option<bool>,
     #[serde(
         default,
         deserialize_with = "bool_not_null",
         skip_serializing_if = "Option::is_none"
     )]
+    #[schema(nullable = false)]
     pub compact_mode: Option<bool>,
 }

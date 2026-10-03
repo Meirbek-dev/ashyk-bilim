@@ -8,6 +8,7 @@ pub struct CreateUploadRequest {
     /// One of: avatar, course-thumbnail, block-image, block-pdf, block-video,
     /// file-submission.
     #[garde(length(min = 1, max = 64))]
+    #[schema(value_type = crate::dto::enums::UploadPurpose)]
     pub purpose: String,
     #[garde(length(min = 1, max = 255))]
     pub mime: String,

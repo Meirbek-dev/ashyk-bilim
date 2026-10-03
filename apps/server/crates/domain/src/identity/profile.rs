@@ -209,6 +209,7 @@ pub struct GamificationSectionSettings {
 pub struct ProfileImage {
     pub url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub caption: Option<String>,
 }
 
@@ -218,6 +219,7 @@ pub struct ProfileLink {
     pub title: String,
     pub url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub icon: Option<String>,
 }
 
@@ -235,8 +237,10 @@ pub enum SkillLevel {
 pub struct ProfileSkill {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub level: Option<SkillLevel>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub category: Option<String>,
 }
 
@@ -248,6 +252,7 @@ pub struct ProfileExperience {
     /// `YYYY-MM-DD` as the builder's date picker writes it.
     pub start_date: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub end_date: Option<String>,
     pub current: bool,
     pub description: String,
@@ -261,9 +266,11 @@ pub struct ProfileEducation {
     pub field: String,
     pub start_date: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub end_date: Option<String>,
     pub current: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub description: Option<String>,
 }
 

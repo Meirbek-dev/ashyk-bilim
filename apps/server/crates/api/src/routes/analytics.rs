@@ -106,8 +106,8 @@ pub async fn course_list(
 
 /// 404 for a course outside the caller's scope.
 #[utoipa::path(
-    get, path = "/analytics/teacher/courses/{id}", tag = "analytics",
-    params(("id" = CourseId, Path, description = "Course id"), AnalyticsQuery),
+    get, path = "/analytics/teacher/courses/{course_id}", tag = "analytics",
+    params(("course_id" = CourseId, Path, description = "Course id"), AnalyticsQuery),
     responses(
         (status = 200, description = "Course detail", body = TeacherCourseDetailResponse),
         (status = 404, description = "Not in scope", body = Problem,

@@ -36,7 +36,9 @@ pub struct Activity {
     pub chapter_id: ChapterId,
     pub course_id: CourseId,
     pub name: String,
+    #[schema(value_type = crate::dto::enums::ActivityType)]
     pub activity_type: String,
+    #[schema(value_type = crate::dto::enums::ActivitySubType)]
     pub activity_sub_type: String,
     pub published: bool,
     /// 1-based, contiguous within the chapter.
@@ -126,9 +128,11 @@ pub struct CreateActivityRequest {
     pub name: String,
     /// One of the closed activity-type set (e.g. `video`, `exam`).
     #[garde(length(min = 1, max = 64))]
+    #[schema(value_type = crate::dto::enums::ActivityType)]
     pub activity_type: String,
     /// Must pair with `activity_type` (e.g. `video_youtube`).
     #[garde(length(min = 1, max = 64))]
+    #[schema(value_type = crate::dto::enums::ActivitySubType)]
     pub activity_sub_type: String,
 }
 
@@ -138,7 +142,9 @@ pub struct ActivityDetail {
     #[serde(flatten)]
     pub activity: Activity,
     /// Editor content (dynamic pages) or type-specific payload.
+    #[schema(value_type = ab_domain::wire::ActivityContent)]
     pub content: serde_json::Value,
+    #[schema(value_type = ab_domain::wire::ActivityDetails)]
     pub details: serde_json::Value,
     pub settings: serde_json::Value,
 }
@@ -172,12 +178,16 @@ pub struct UpdateActivityRequest {
     pub published: Option<bool>,
     /// Change together with `activity_sub_type` (both or neither).
     #[garde(inner(length(min = 1, max = 64)))]
+    #[schema(value_type = Option<crate::dto::enums::ActivityType>)]
     pub activity_type: Option<String>,
     #[garde(inner(length(min = 1, max = 64)))]
+    #[schema(value_type = Option<crate::dto::enums::ActivitySubType>)]
     pub activity_sub_type: Option<String>,
     #[garde(custom(json_object))]
+    #[schema(value_type = Option<ab_domain::wire::ActivityContent>)]
     pub content: Option<serde_json::Value>,
     #[garde(custom(json_object))]
+    #[schema(value_type = Option<ab_domain::wire::ActivityDetails>)]
     pub details: Option<serde_json::Value>,
     #[garde(custom(json_object))]
     pub settings: Option<serde_json::Value>,
@@ -211,6 +221,7 @@ impl From<ab_domain::catalog::curriculum::Block> for Block {
 pub struct CreateBlockRequest {
     /// `image`, `pdf`, or `video`.
     #[garde(length(min = 1, max = 32))]
+    #[schema(value_type = crate::dto::enums::BlockType)]
     pub block_type: String,
     /// A finalized upload (purpose must match the block type).
     #[garde(skip)]

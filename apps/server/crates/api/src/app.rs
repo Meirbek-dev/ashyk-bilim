@@ -40,7 +40,12 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         crate::dto::grading::ReviewStatus,
         crate::dto::grading::ReviewSort,
         crate::dto::grading::SortOrder,
-        ab_core::id::AiSubjectId
+        ab_core::id::AiSubjectId,
+        ab_domain::analytics::filters::Window,
+        ab_domain::analytics::filters::Compare,
+        ab_domain::analytics::filters::Bucket,
+        crate::dto::enums::CourseListSort,
+        crate::dto::enums::CourseListPreset,
     )),
     tags(
         (name = "health", description = "Liveness and readiness probes"),
@@ -403,13 +408,14 @@ fn assemble() -> (Router<AppState>, utoipa::openapi::OpenApi) {
 /// The OpenAPI document alone — used by `ashyq openapi` and the contract
 /// snapshot test. Needs no state, config, or database.
 #[must_use]
-pub fn openapi_doc() -> utoipa::openapi::OpenApi {
-    assemble().1
+pub fn openapi_doc() -> serde_json::Value {
+    crate::openapi::finalize(&assemble().1)
 }
 
 /// Build the full application router with the middleware stack applied.
 pub fn build_router(state: AppState) -> Result<Router> {
     let (router, api) = assemble();
+    let api = crate::openapi::finalize(&api);
 
     let cors = cors_layer(&state.config)?;
     let serve_docs = !state.config.environment.is_production();

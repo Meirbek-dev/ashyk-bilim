@@ -26,3 +26,4 @@ pub mod grading;
 pub mod identity;
 pub mod link_preview;
 pub mod progress;
+pub mod wire;

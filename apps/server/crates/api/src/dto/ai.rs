@@ -177,26 +177,26 @@ pub struct RunStreamRequest {
     pub run_id: String,
     /// AG-UI protocol fields the client always sends; accepted and ignored.
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::AgUiTool>>)]
     pub tools: Option<Vec<serde_json::Value>>,
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::AgUiContext>>)]
     pub context: Option<Vec<serde_json::Value>>,
     #[garde(skip)]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub state: Option<serde_json::Value>,
     #[garde(length(max = 200))]
     pub parent_run_id: Option<String>,
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<QaWireMessage>>)]
     pub messages: Option<Vec<serde_json::Value>>,
     #[garde(skip)]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub forwarded_props: Option<serde_json::Value>,
     #[garde(length(max = 32))]
     pub protocol_version: Option<String>,
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::JsonValue>>)]
     pub resume: Option<Vec<serde_json::Value>>,
 }
 
@@ -214,7 +214,7 @@ pub struct QaWireMessage {
     pub content: Option<String>,
     /// `[{type: "text", content: "…"}, …]` - an alternative to `content`.
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::AgUiMessagePart>>)]
     pub parts: Option<Vec<serde_json::Value>>,
     /// AG-UI 1.0 message members; accepted and ignored.
     #[garde(skip)]
@@ -222,7 +222,7 @@ pub struct QaWireMessage {
     #[garde(skip)]
     pub encrypted_value: Option<String>,
     #[garde(skip)]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub metadata: Option<serde_json::Value>,
     #[garde(skip)]
     pub subagent_run_id: Option<String>,
@@ -261,13 +261,13 @@ pub struct QaChatRequest {
     pub forwarded_props: QaForwardedProps,
     /// AG-UI protocol fields the client always sends; accepted and ignored.
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::AgUiTool>>)]
     pub tools: Option<Vec<serde_json::Value>>,
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::AgUiContext>>)]
     pub context: Option<Vec<serde_json::Value>>,
     #[garde(skip)]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub state: Option<serde_json::Value>,
     #[garde(length(max = 200))]
     pub parent_run_id: Option<String>,
@@ -276,7 +276,7 @@ pub struct QaChatRequest {
     pub protocol_version: Option<String>,
     /// AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.
     #[garde(skip)]
-    #[schema(value_type = Option<Vec<Object>>)]
+    #[schema(value_type = Option<Vec<ab_domain::wire::JsonValue>>)]
     pub resume: Option<Vec<serde_json::Value>>,
 }
 
@@ -345,7 +345,7 @@ pub struct QaMessage {
     pub client_turn_id: Option<String>,
     pub content: String,
     pub confidence: Option<String>,
-    #[schema(value_type = Object)]
+    #[schema(value_type = Vec<ab_domain::ai::schemas::Citation>)]
     pub citations: serde_json::Value,
     #[schema(value_type = Object)]
     pub metadata: serde_json::Value,
@@ -461,9 +461,9 @@ pub struct SubmissionAnalysis {
     pub status: String,
     pub language: String,
     pub gap_count: i32,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::ai::schemas::SubmissionAnalysisReport)]
     pub analysis: serde_json::Value,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::AiEvidence)]
     pub evidence: serde_json::Value,
     pub model_name: Option<String>,
     pub created_at_unix: i64,
@@ -498,9 +498,9 @@ pub struct CourseAnalysis {
     pub status: CourseAnalysisStatus,
     pub language: String,
     pub public_score: i32,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::ai::schemas::CourseQualityReport)]
     pub report: serde_json::Value,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::AiEvidence)]
     pub evidence: serde_json::Value,
     pub model_name: Option<String>,
     pub content_hash: Option<String>,
@@ -551,7 +551,7 @@ pub struct LectureReview {
     pub triggered_by: Option<UserId>,
     pub status: LectureReviewStatus,
     pub language: String,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::ai::schemas::LectureReviewReport)]
     pub suggestions: serde_json::Value,
     pub dismissed_suggestion_ids: Vec<String>,
     pub created_at_unix: i64,
@@ -591,9 +591,9 @@ pub struct RemediationSession {
     pub status: RemediationStatus,
     pub gate_mode: bool,
     pub language: String,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::ai::schemas::RemediationBundle)]
     pub lecture: serde_json::Value,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::RemediationTest)]
     pub test: serde_json::Value,
     pub score: Option<i32>,
     pub passed_at_unix: Option<i64>,
@@ -667,6 +667,7 @@ pub struct ScopeCapabilities {
     pub role: AiThreadRole,
     pub surface: domain::Surface,
     /// `student` or `teacher`.
+    #[schema(value_type = crate::dto::enums::ContextVisibility)]
     pub context_visibility: String,
     pub restricted: bool,
     pub reason: Option<String>,

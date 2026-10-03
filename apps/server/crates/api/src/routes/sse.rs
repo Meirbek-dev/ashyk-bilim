@@ -150,9 +150,9 @@ async fn open_stream(
 /// (`{event_id, event, submission_id, payload, sent_at}`); `id` is the
 /// stream id to send back as `Last-Event-ID` on reconnect.
 #[utoipa::path(
-    get, path = "/submissions/{id}/events", tag = "submissions",
+    get, path = "/submissions/{submission_id}/events", tag = "submissions",
     params(
-        ("id" = SubmissionId, Path, description = "Submission id"),
+        ("submission_id" = SubmissionId, Path, description = "Submission id"),
         ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
     ),
     responses(
@@ -191,9 +191,9 @@ pub async fn submission_events(
 /// `submission_id` (assessment) or `attempt_id` (file submission);
 /// `id` is the stream id to send back as `Last-Event-ID` on reconnect.
 #[utoipa::path(
-    get, path = "/courses/{id}/grading/events", tag = "grading",
+    get, path = "/courses/{course_id}/grading/events", tag = "grading",
     params(
-        ("id" = CourseId, Path, description = "Course id"),
+        ("course_id" = CourseId, Path, description = "Course id"),
         ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
     ),
     responses(

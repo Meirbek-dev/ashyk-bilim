@@ -96,9 +96,9 @@ pub async fn list_collections(
 /// One collection with its member courses (404 when invisible).
 #[utoipa::path(
     get,
-    path = "/collections/{id}",
+    path = "/collections/{collection_id}",
     tag = "collections",
-    params(("id" = CollectionId, Path, description = "Collection id")),
+    params(("collection_id" = CollectionId, Path, description = "Collection id")),
     responses(
         (status = 200, description = "Collection", body = Collection,
          headers(("ETag" = String, description = "Quoted version"))),
@@ -128,10 +128,10 @@ fn with_etag(collection: Collection) -> Response {
 /// Partial update; `courses` replaces the whole membership when present.
 #[utoipa::path(
     patch,
-    path = "/collections/{id}",
+    path = "/collections/{collection_id}",
     tag = "collections",
     params(
-        ("id" = CollectionId, Path, description = "Collection id"),
+        ("collection_id" = CollectionId, Path, description = "Collection id"),
         ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
     ),
     request_body = UpdateCollectionRequest,
@@ -177,10 +177,10 @@ pub async fn update_collection(
 /// Delete a collection (membership rows cascade; courses stay).
 #[utoipa::path(
     delete,
-    path = "/collections/{id}",
+    path = "/collections/{collection_id}",
     tag = "collections",
     params(
-        ("id" = CollectionId, Path, description = "Collection id"),
+        ("collection_id" = CollectionId, Path, description = "Collection id"),
         ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
     ),
     responses(

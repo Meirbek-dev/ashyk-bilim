@@ -27,7 +27,7 @@ pub struct ConfigPatch {
     /// A JSON object of at most 4 KiB serialized (UX-154; same rule as the
     /// grade route's `rubric_scores`).
     #[garde(custom(rubric_object))]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::FileRubric>)]
     pub rubric: Option<serde_json::Value>,
     #[garde(skip)]
     pub allowed_mime_types: Option<Vec<String>>,
@@ -107,7 +107,7 @@ pub struct FileSubmission {
     pub late_policy: LatePolicy,
     pub max_attempts: Option<i32>,
     pub grade_release_mode: GradeReleaseMode,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::FileRubric)]
     pub rubric: serde_json::Value,
     #[schema(value_type = Object)]
     pub settings: serde_json::Value,
@@ -171,7 +171,7 @@ pub struct Attempt {
     pub raw_score: Option<f64>,
     pub final_score: Option<f64>,
     pub feedback: Option<String>,
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::RubricScores>)]
     pub rubric_scores: Option<serde_json::Value>,
     /// Optimistic lock - send back as `If-Match`.
     pub version: i64,
@@ -273,7 +273,7 @@ pub struct FileGradeRequest {
     /// Omit to keep the stored rubric scores. An object of at most 4 KiB
     /// serialized (UX-141).
     #[garde(custom(rubric_object))]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::RubricScores>)]
     pub rubric_scores: Option<serde_json::Value>,
 }
 

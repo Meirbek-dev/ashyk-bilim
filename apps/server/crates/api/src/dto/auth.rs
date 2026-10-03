@@ -102,6 +102,7 @@ pub struct SessionUser {
     pub email: String,
     pub display_name: String,
     pub avatar_key: Option<String>,
+    #[schema(value_type = crate::dto::enums::Locale)]
     pub locale: String,
     /// UI theme slug; `null` = the web default.
     pub theme: Option<String>,

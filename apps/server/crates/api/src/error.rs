@@ -27,6 +27,54 @@ impl<E: Into<Error>> From<E> for ApiError {
     }
 }
 
+/// `Problem.details`: machine-readable context; which keys appear depends
+/// on `code` (all optional).
+#[derive(ToSchema)]
+pub struct ProblemDetails {
+    /// Optimistic lock (412 / 409): the version the client sent / the current one.
+    #[schema(nullable = false)]
+    pub expected: Option<i64>,
+    #[schema(nullable = false)]
+    pub actual: Option<i64>,
+    /// Concurrency or rate limit that was hit.
+    #[schema(nullable = false)]
+    pub limit: Option<i64>,
+    #[schema(nullable = false)]
+    pub window_seconds: Option<i64>,
+    /// Why the resource is read-only / not ready.
+    #[schema(nullable = false)]
+    pub reason: Option<String>,
+    /// Assessment readiness blocker codes.
+    #[schema(nullable = false)]
+    pub readiness: Option<Vec<String>>,
+    /// Course readiness blockers.
+    #[schema(nullable = false)]
+    pub blockers: Option<Vec<crate::dto::courses::ReadinessItem>>,
+    /// AI feature that is disabled.
+    #[schema(nullable = false)]
+    pub feature: Option<String>,
+    /// Analytics filter the caller may not use.
+    #[schema(nullable = false)]
+    pub filter: Option<String>,
+    #[schema(nullable = false)]
+    pub run_id: Option<uuid::Uuid>,
+    #[schema(nullable = false)]
+    pub is_retryable: Option<bool>,
+    /// Existing remediation session.
+    #[schema(nullable = false)]
+    pub session_id: Option<uuid::Uuid>,
+    #[schema(nullable = false)]
+    pub max_source_bytes: Option<i64>,
+    #[schema(nullable = false)]
+    pub estimated_tokens: Option<i64>,
+    #[schema(nullable = false)]
+    pub max_tokens_per_request: Option<i64>,
+    #[schema(nullable = false)]
+    pub used_tokens: Option<i64>,
+    #[schema(nullable = false)]
+    pub monthly_token_budget: Option<i64>,
+}
+
 /// The wire shape of every error response.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Problem {
@@ -38,16 +86,18 @@ pub struct Problem {
     pub code: ErrorCode,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub detail: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub field_errors: Vec<FieldError>,
     /// Machine-readable context for some codes (e.g. `{expected, actual}`
     /// on an optimistic-lock 409).
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<Object>)]
+    #[schema(nullable = false, value_type = Option<ProblemDetails>)]
     pub details: Option<serde_json::Value>,
     /// Correlation id; also present as the `x-request-id` response header.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub request_id: Option<String>,
 }
 

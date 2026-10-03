@@ -350,15 +350,36 @@ impl ItemBody {
     }
 }
 
+/// [`ReadinessIssue::severity`] values (schema only).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadinessSeverity {
+    Blocker,
+    Warning,
+    Advice,
+}
+
+/// [`ReadinessIssue::area`] values (schema only).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadinessArea {
+    Details,
+    Questions,
+    Policy,
+    Audience,
+    Publish,
+}
+
 /// One thing blocking (or advising against) publication.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct ReadinessIssue {
     /// Stable machine key, e.g. `choice.options_missing`.
     pub code: String,
     pub message: String,
-    /// `blocker` | `warning` | `advice` - every current rule is a blocker.
+    /// Every current rule is a blocker.
+    #[schema(value_type = ReadinessSeverity)]
     pub severity: &'static str,
-    /// `details` | `questions` | `policy` | `audience` | `publish`.
+    #[schema(value_type = ReadinessArea)]
     pub area: &'static str,
     pub item_id: Option<ab_core::id::AssessmentItemId>,
 }

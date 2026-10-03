@@ -73,8 +73,8 @@ pub async fn list_usergroups(
 
 /// One usergroup.
 #[utoipa::path(
-    get, path = "/usergroups/{id}", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    get, path = "/usergroups/{usergroup_id}", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     responses(
         (status = 200, description = "Usergroup", body = Usergroup),
         (status = 404, description = "Unknown", body = Problem,
@@ -92,8 +92,8 @@ pub async fn get_usergroup(
 
 /// Rename/redescribe (creator or `usergroup:manage:platform`).
 #[utoipa::path(
-    patch, path = "/usergroups/{id}", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    patch, path = "/usergroups/{usergroup_id}", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     request_body = UpdateUsergroupRequest,
     responses(
         (status = 200, description = "Updated", body = Usergroup),
@@ -124,8 +124,8 @@ pub async fn update_usergroup(
 
 /// Delete a usergroup (membership/course links cascade).
 #[utoipa::path(
-    delete, path = "/usergroups/{id}", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    delete, path = "/usergroups/{usergroup_id}", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
@@ -145,8 +145,8 @@ pub async fn delete_usergroup(
 
 /// Member profiles.
 #[utoipa::path(
-    get, path = "/usergroups/{id}/members", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    get, path = "/usergroups/{usergroup_id}/members", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     responses((status = 200, description = "Members", body = [UsergroupMember])),
 )]
 pub async fn list_usergroup_members(
@@ -160,8 +160,8 @@ pub async fn list_usergroup_members(
 
 /// Batch-add members (duplicates ignored; unknown users 404 via FK).
 #[utoipa::path(
-    post, path = "/usergroups/{id}/members", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    post, path = "/usergroups/{usergroup_id}/members", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     request_body = UsergroupMembersRequest,
     responses((status = 204, description = "Added")),
 )]
@@ -186,8 +186,8 @@ pub async fn add_usergroup_members(
 
 /// Batch-remove members.
 #[utoipa::path(
-    delete, path = "/usergroups/{id}/members", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    delete, path = "/usergroups/{usergroup_id}/members", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     request_body = UsergroupMembersRequest,
     responses((status = 204, description = "Removed")),
 )]
@@ -212,8 +212,8 @@ pub async fn remove_usergroup_members(
 
 /// Linked course ids.
 #[utoipa::path(
-    get, path = "/usergroups/{id}/courses", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    get, path = "/usergroups/{usergroup_id}/courses", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     responses((status = 200, description = "Linked course ids", body = [CourseId])),
 )]
 pub async fn list_usergroup_courses(
@@ -226,8 +226,8 @@ pub async fn list_usergroup_courses(
 
 /// Link courses to the group.
 #[utoipa::path(
-    post, path = "/usergroups/{id}/courses", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    post, path = "/usergroups/{usergroup_id}/courses", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     request_body = UsergroupCoursesRequest,
     responses((status = 204, description = "Linked")),
 )]
@@ -249,8 +249,8 @@ pub async fn add_usergroup_courses(
 
 /// Unlink courses from the group.
 #[utoipa::path(
-    delete, path = "/usergroups/{id}/courses", tag = "usergroups",
-    params(("id" = UsergroupId, Path, description = "Usergroup id")),
+    delete, path = "/usergroups/{usergroup_id}/courses", tag = "usergroups",
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
     request_body = UsergroupCoursesRequest,
     responses((status = 204, description = "Unlinked")),
 )]
@@ -272,8 +272,8 @@ pub async fn remove_usergroup_courses(
 
 /// Groups linked to a course (course-settings view).
 #[utoipa::path(
-    get, path = "/courses/{id}/usergroups", tag = "usergroups",
-    params(("id" = CourseId, Path, description = "Course id")),
+    get, path = "/courses/{course_id}/usergroups", tag = "usergroups",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses((status = 200, description = "Groups", body = [Usergroup])),
 )]
 pub async fn usergroups_for_course(

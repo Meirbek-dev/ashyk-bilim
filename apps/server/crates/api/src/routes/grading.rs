@@ -56,8 +56,9 @@ pub(crate) fn if_match(headers: &HeaderMap) -> ApiResult<Option<i64>> {
 /// Needs `assessment:grade` on the course. `status=needs_grading` is the
 /// pending queue. Keyset-paged: pass `next_cursor` back as `cursor`.
 #[utoipa::path(
-    get, path = "/assessments/{id}/submissions", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id"), ReviewQuery),
+    operation_id = "assessment_review_queue",
+    get, path = "/assessments/{assessment_id}/submissions", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id"), ReviewQuery),
     responses(
         (status = 200, description = "Review page", body = ReviewPage),
         (status = 403, description = "No grading access", body = Problem,
@@ -91,8 +92,8 @@ pub async fn review_queue(
 
 /// Counts, average, pass rate and a ten-bucket score distribution.
 #[utoipa::path(
-    get, path = "/assessments/{id}/submissions/stats", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/submissions/stats", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Stats", body = Stats)),
 )]
 pub async fn stats(
@@ -105,8 +106,8 @@ pub async fn stats(
 
 /// Per-item response counts, average score, correctness and discrimination.
 #[utoipa::path(
-    get, path = "/assessments/{id}/item-analytics", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    get, path = "/assessments/{assessment_id}/item-analytics", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Per-item analytics", body = [ItemAnalytics])),
 )]
 pub async fn item_analytics(
@@ -122,9 +123,10 @@ pub async fn item_analytics(
 /// The header and status words follow `Accept-Language` (`ru` default,
 /// `kk`, `en`), like the gradebook CSV.
 #[utoipa::path(
-    get, path = "/assessments/{id}/submissions/export", tag = "grading",
+    operation_id = "export_assessment_submissions_csv",
+    get, path = "/assessments/{assessment_id}/submissions/export", tag = "grading",
     params(
-        ("id" = AssessmentId, Path, description = "Assessment id"),
+        ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
     ),
     responses((status = 200, description = "CSV", content_type = "text/csv", body = String)),
@@ -152,8 +154,8 @@ pub async fn export_csv(
 
 /// A submission with answers, breakdown, versions and feedback (graders).
 #[utoipa::path(
-    get, path = "/submissions/{id}/review", tag = "grading",
-    params(("id" = SubmissionId, Path, description = "Submission id")),
+    get, path = "/submissions/{submission_id}/review", tag = "grading",
+    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
     responses(
         (status = 200, description = "Submission", body = TeacherSubmission),
         (status = 403, description = "No grading access", body = Problem,
@@ -179,9 +181,9 @@ pub async fn review_submission(
 /// ledger commit must not skip the SSE events, the progress projection
 /// and the analytics hook.
 #[utoipa::path(
-    patch, path = "/submissions/{id}/grade", tag = "grading",
+    patch, path = "/submissions/{submission_id}/grade", tag = "grading",
     params(
-        ("id" = SubmissionId, Path, description = "Submission id"),
+        ("submission_id" = SubmissionId, Path, description = "Submission id"),
         ("If-Match" = i64, Header, description = "Current version"),
     ),
     request_body = GradeRequest,
@@ -231,8 +233,8 @@ pub async fn save_grade(
 
 /// The append-only grading ledger of a submission, newest first.
 #[utoipa::path(
-    get, path = "/submissions/{id}/grading-history", tag = "grading",
-    params(("id" = SubmissionId, Path, description = "Submission id")),
+    get, path = "/submissions/{submission_id}/grading-history", tag = "grading",
+    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
     responses((status = 200, description = "Entries", body = [GradingEntry])),
 )]
 pub async fn grading_history(
@@ -246,8 +248,8 @@ pub async fn grading_history(
 
 /// Released item feedback on one of the caller's own submissions.
 #[utoipa::path(
-    get, path = "/submissions/{id}/feedback", tag = "submissions",
-    params(("id" = SubmissionId, Path, description = "Submission id")),
+    get, path = "/submissions/{submission_id}/feedback", tag = "submissions",
+    params(("submission_id" = SubmissionId, Path, description = "Submission id")),
     responses((status = 200, description = "Feedback", body = [ItemFeedbackView])),
 )]
 pub async fn my_feedback(
@@ -263,8 +265,8 @@ pub async fn my_feedback(
 /// Runs `detached()` (BUG-227): each row's release and its projection
 /// outlive a client that hangs up mid-batch.
 #[utoipa::path(
-    post, path = "/assessments/{id}/publish-grades", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/publish-grades", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     responses((status = 200, description = "Release counts", body = PublishSummary)),
 )]
 pub async fn publish_grades(
@@ -281,8 +283,8 @@ pub async fn publish_grades(
 /// `GET /bulk-actions/{id}` for the outcome. Retry-safe with
 /// `Idempotency-Key`: a replay returns the stored 202 (BUG-206).
 #[utoipa::path(
-    post, path = "/assessments/{id}/deadline-extensions", tag = "grading",
-    params(("id" = AssessmentId, Path, description = "Assessment id")),
+    post, path = "/assessments/{assessment_id}/deadline-extensions", tag = "grading",
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
     request_body = DeadlineExtensionRequest,
     responses(
         (status = 202, description = "Queued", body = BulkAction),
@@ -327,8 +329,8 @@ pub async fn extend_deadline(
 
 /// A bulk action's status.
 #[utoipa::path(
-    get, path = "/bulk-actions/{id}", tag = "grading",
-    params(("id" = BulkActionId, Path, description = "Bulk action id")),
+    get, path = "/bulk-actions/{bulk_action_id}", tag = "grading",
+    params(("bulk_action_id" = BulkActionId, Path, description = "Bulk action id")),
     responses((status = 200, description = "Bulk action", body = BulkAction)),
 )]
 pub async fn get_bulk_action(
@@ -345,9 +347,9 @@ pub async fn get_bulk_action(
 /// (`ru` default, `kk`, `en`); one column per assessment and file
 /// submission, a scored cell is its number.
 #[utoipa::path(
-    get, path = "/courses/{id}/gradebook/export", tag = "grading",
+    get, path = "/courses/{course_id}/gradebook/export", tag = "grading",
     params(
-        ("id" = CourseId, Path, description = "Course id"),
+        ("course_id" = CourseId, Path, description = "Course id"),
         ("Accept-Language" = Option<String>, Header, description = "ru (default), kk or en"),
     ),
     responses(
@@ -383,8 +385,8 @@ pub async fn export_gradebook_csv(
 /// scored file attempt) - assessment submissions and file-submission
 /// attempts alike.
 #[utoipa::path(
-    get, path = "/courses/{id}/gradebook", tag = "grading",
-    params(("id" = CourseId, Path, description = "Course id"), GradebookQuery),
+    get, path = "/courses/{course_id}/gradebook", tag = "grading",
+    params(("course_id" = CourseId, Path, description = "Course id"), GradebookQuery),
     responses((status = 200, description = "Gradebook page", body = GradebookPage)),
 )]
 pub async fn gradebook(

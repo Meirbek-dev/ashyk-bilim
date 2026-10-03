@@ -28,8 +28,8 @@ pub async fn get_trail(
 
 /// Start (or keep) a run for a course the caller can access.
 #[utoipa::path(
-    post, path = "/trail/courses/{id}", tag = "progress",
-    params(("id" = CourseId, Path, description = "Course id")),
+    post, path = "/trail/courses/{course_id}", tag = "progress",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Trail", body = Trail),
         (status = 401, description = "Not signed in", body = Problem,
@@ -63,8 +63,8 @@ pub async fn add_course(
 /// Trail mutations run `detached()` (BUG-221): a client that hangs up
 /// mid-request must not leave the step without its projection.
 #[utoipa::path(
-    delete, path = "/trail/courses/{id}", tag = "progress",
-    params(("id" = CourseId, Path, description = "Course id")),
+    delete, path = "/trail/courses/{course_id}", tag = "progress",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Trail", body = Trail),
         (status = 401, description = "Not signed in", body = Problem,
@@ -96,8 +96,8 @@ pub async fn remove_course(
 /// Mark an activity done (lesson-type activities also complete in the
 /// canonical progress; assessments are projected by their own pipeline).
 #[utoipa::path(
-    post, path = "/trail/activities/{id}", tag = "progress",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    post, path = "/trail/activities/{activity_id}", tag = "progress",
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses((status = 200, description = "Trail", body = Trail)),
 )]
 pub async fn add_activity(
@@ -116,8 +116,8 @@ pub async fn add_activity(
 
 /// Un-mark an activity.
 #[utoipa::path(
-    delete, path = "/trail/activities/{id}", tag = "progress",
-    params(("id" = ActivityId, Path, description = "Activity id")),
+    delete, path = "/trail/activities/{activity_id}", tag = "progress",
+    params(("activity_id" = ActivityId, Path, description = "Activity id")),
     responses((status = 200, description = "Trail", body = Trail)),
 )]
 pub async fn remove_activity(
@@ -137,8 +137,8 @@ pub async fn remove_activity(
 /// The learner-facing course state: outline with per-activity work state,
 /// canonical progress, certificate block and the single next action.
 #[utoipa::path(
-    get, path = "/courses/{id}/learner-state", tag = "progress",
-    params(("id" = CourseId, Path, description = "Course id")),
+    get, path = "/courses/{course_id}/learner-state", tag = "progress",
+    params(("course_id" = CourseId, Path, description = "Course id")),
     responses(
         (status = 200, description = "Learner course state", body = LearnerCourseState),
         (status = 403, description = "No course access", body = Problem,
