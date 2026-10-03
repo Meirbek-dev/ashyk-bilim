@@ -291,13 +291,14 @@ cancelled mid-run):
 
 | Job | When | What |
 | --- | --- | --- |
-| changes | always | path filters `server`, `web`, `infra`; `sha` = first 8 chars of the commit |
+| changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all true on `release/**`; `sha` = first 8 chars of the commit |
 | server-gates | server or infra changed | `just dev-up`, then `apps/server` recipes: `fmt-check`, `migrate`, `clippy`, `sqlx-check`, `test`, `deny`, `machete`, `cov`, `openapi-check` |
-| web-gates | web changed | `bun install --frozen-lockfile`; `lint`, `typecheck`, `test`, contract (regenerate + `check:contracts` + `git diff --exit-code`), `check:error-codes` |
+| web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
-| images | push to main, no gate failed (skipped gates are fine) | build and push `ashyq-server` and `ashyq-web` as `ci-<sha>`; web build args from the repo variable `PROD_DOMAIN` (required) |
-| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again |
-| publish | after stack-smoke | `imagetools create`: `ci-<sha>` retagged `<sha>` and `latest`, no rebuild |
+| images | push, no gate failed (skipped gates are fine) | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |
+| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start |
+| web2-e2e | after images, web2 changed | the Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0` |
+| publish | after stack-smoke, only when `ashyq-web` was built (release branches) | `imagetools create`: `ci-<sha>` retagged `<sha>` and `latest`, no rebuild |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
 `latest` = newest green `main`. GHCR packages are public: the host pulls
@@ -374,7 +375,7 @@ Recorded 2026-10-02 (HEAD `e1117fe` plus the stage 1 tree), Windows 11, bun
 1.4.2, Rust 1.98.1. Every gate below is required in CI; none carries
 `continue-on-error`.
 
-Web (`apps/web`):
+Web (`apps/web`, until 2026-10-04; since then frozen and only its image is built, see Build and release):
 
 | Gate | Command | Status |
 | --- | --- | --- |
@@ -452,9 +453,19 @@ smoke stack. `STACK=web2` (`lib.sh use_web2`) = the smoke files plus
 | Recipe | Does |
 | --- | --- |
 | `web2-stand-up` | cert, `bootstrap.sh`, `up -d --wait` |
-| `web2-seed` | `ashyq admin seed-e2e` in the server container |
-| `web2-e2e [playwright args]` | follows the server log into `tmp/web2/server.log` (`E2E_API_LOG`), runs `bun run e2e` with `E2E_BASE_URL=https://ashyq.test`, `E2E_INSECURE=1` (browser `ignoreHTTPSErrors`), `NODE_EXTRA_CA_CERTS` (fixtures' fetch) |
+| `web2-seed` | `ashyq admin seed-e2e --learners $E2E_LEARNERS` (default 250) in the server container |
+| `web2-e2e [playwright args]` | follows the server log into `tmp/web2/server.log` (`E2E_API_LOG`), runs `bun run e2e` with `E2E_LEARNERS` + `E2E_LEARNERS_DIR=tmp/web2/learners`, `E2E_BASE_URL=https://ashyq.test`, `E2E_INSECURE=1` (browser `ignoreHTTPSErrors`), `NODE_EXTRA_CA_CERTS` (fixtures' fetch) |
 | `web2-stand-down` | `down -v`, removes `tmp/web2` |
+
+Learner pool: nginx sets the client address, so the stand allows 10
+self-registrations per hour in total. `seed-e2e --learners N` creates verified
+`e2e-learner-001..N` (`learner-NNN@e2e.test`, "E2E Account", `E2E_PASSWORD`);
+the fixture `registerAccount` takes the next untaken one (a file per taken
+account in `tmp/web2/learners`, so reruns on the same stand never reuse one).
+Only the email-verification specs still register for real.
+
+Run it locally: `just web2-stand-up && just web2-seed && just web2-e2e
+--grep-invert @judge0`, then `just web2-stand-down`.
 
 The host must resolve `ashyq.test` to 127.0.0.1 (CI appends it to
 `/etc/hosts`). Without that, or where published ports misbehave (podman on
@@ -466,7 +477,7 @@ server; OCI format drops `HEALTHCHECK` and `up --wait` fails), then
 `IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
 
 CI job `web2-e2e` (after `images`, only when `apps/web-2` changed; `images`
-builds `ashyq-web-2:ci-<sha>` under the same condition): the four recipes; on
+builds `ashyq-web-2:ci-<sha>` under the same condition, 60 min): the four recipes; on
 failure the HTML report, traces and server log as an artifact. Not gating `publish`.
 
 ## Verified in CI (2026-10-03)
@@ -486,10 +497,10 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
   The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
   First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
   on it: 160 s, row counts match prod (RTO target 2 h met with margin).
-- **No release is published yet.** `main` is red since 34d8cd2 (message catalogs
-  moved to the Paraglide format while `apps/web` still reads them through
-  next-intl: web typecheck fails), so `publish` has never run and there is no
-  `<sha>` tag to deploy. See `QUESTIONS.md` Q-2026-10-03-1.
+- **`main` publishes nothing until Ф8.** The old web no longer builds on `main`
+  (34d8cd2 moved its catalogs to Paraglide; `apps/web` is frozen), so `main`
+  skips the `ashyq-web` image and `publish`; releases come from `release/**`
+  (`release/stage1`). See `QUESTIONS.md` Q-2026-10-03-1.
 - **Judge0 in CI smoke is off** (privileged). Verified on prod at the cutover:
   healthy, 401 without token, `judge0-tune` applied.
 - **No external monitoring** (owner decision 2026-10-02: no external
