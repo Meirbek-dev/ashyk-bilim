@@ -1,10 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { UnderConstruction } from '#/features/platform'
+import { AttemptPage, ensureAttempt } from '#/features/attempt'
+import { attemptSearchSchema } from '#/features/attempt/route'
+import { PlayerError, PlayerNotFound } from '#/features/player'
 import { m } from '#/paraglide/messages'
 
-// The player's entry card links here; slice 5.2 (quiz and exam attempt) replaces the stub.
+// A quiz or exam attempt (spec 5.4, R-08): the entry, an open draft or a handed-in result, picked by `?attempt`.
 export const Route = createFileRoute('/_authed/learn/$courseId/$activityId_/attempt')({
+  validateSearch: attemptSearchSchema,
+  loaderDeps: ({ search }) => ({ attempt: search.attempt }),
+  loader: ({ context, params, deps }) => ensureAttempt(context.queryClient, { ...params, attemptId: deps.attempt }),
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.title }] : [] }),
   staticData: { title: m.player_page_attempt, layout: 'focus' },
-  component: UnderConstruction,
+  component: AttemptPage,
+  errorComponent: PlayerError,
+  notFoundComponent: PlayerNotFound,
 })

@@ -234,7 +234,7 @@ test('B-PLY-11 graded work shows an entry card whose action opens its own addres
   await expect(page.getByRole('button', { name: m.player_mark({}, ru) })).toHaveCount(0)
   await page.getByRole('link', { name: m.player_entry_start({}, ru) }).click()
   await expect(page).toHaveURL(`${play(course, 1)}/submission`)
-  await expect(page.getByRole('heading', { level: 1, name: m.player_page_submission({}, ru) })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Эссе' })).toBeVisible()
 })
 
 test('B-PLY-04 B-PLY-13 shortcuts move between activities, mark one done and open the contents', async ({
