@@ -37,7 +37,28 @@ print the prefixless URL; the web serves the prefixed form as a canonical alias 
 no pagination; `GET /me/certificates` no pagination; certificate name only inside `Certification.config`; PDF
 language only via Accept-Language.
 
+Course/discussions gaps: no course `version`/`If-Match` (S-04); enrol has no Idempotency-Key; `CourseUpdate` has no
+author; `next_action.href` old URL + English-only label; no `GET /discussions/{id}` (deep links beyond page 1);
+server "visible text" check counts JSON chars (empty doc passes); `GET /learner-state` and discussions list 401 for guests.
+
 Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Base UI `combobox.tsx` - pick one in phase 7; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
+
+## Resume notes (session cut by the usage limit, 2026-10-03 ~04:00 local)
+
+Subagents were still running when the orchestrator stopped; their work is uncommitted on disk:
+- Server L-2 (S-01 contract hygiene) in the MAIN tree, `apps/server/**`; report expected at `<scratchpad>/reports/L-2.md`.
+  When it lands: commit server, `cd apps/web-2 && bun run codegen`, fix type fallout, remove `contractReportOnly` from
+  `gates/allowlist.json`, re-run verify, commit.
+- Worktrees (commit inside with `git -c core.hooksPath=/dev/null commit`, then `git merge --no-ff --no-commit <branch>`
+  into main, resolve `project.inlang/settings.json` / `package.json` conflicts by union, `bun install && bun run codegen`,
+  `vp run verify`, commit, `git worktree remove -f -f`, delete branch):
+  - `agent-a991875825fc64c67` -> slice 3.7 achievements (report `S-3.7.md`)
+  - `agent-aebfa260169ed08cf` -> slice 4.2 admin + groups (report `S-4.2.md`)
+  - `agent-ad126c97791c4aaa0` -> E-2 editor insert/paste/slash (report `E-2.md`)
+- Local API runs detached from `E:\dev-cachesshyq-api-runshyq.exe` (:8000); restart it from a fresh copy after L-2.
+- Nothing has been pushed yet (12 local commits on main); push at the next phase boundary when CI is worth a run.
+- Next slices to spawn (SLICE-BRIEF.md in the scratchpad is the generic brief): 3.5 player, 3.1 home (needs S-09),
+  3.8 notifications (needs S-06/S-07), 4.1 course studio, 4.3 analytics, then phase 5 and 6.
 
 ## Server lane (sequential)
 
@@ -71,14 +92,14 @@ Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Bas
 | 2   | editor + markdown core merged; E-2 insert/paste/slash (wip); discussions in 3.3 | wip |
 | 3.1 | home                                                              | todo   |
 | 3.2 | catalog, landing, search, command palette                         | done   |
-| 3.3 | course page + discussions                                         | wip    |
-| 3.4 | learning, certificates                                            | wip    |
+| 3.3 | course page + discussions                                         | done   |
+| 3.4 | learning, certificates (+ locale-prefixed verify alias)           | done   |
 | 3.5 | player                                                            | todo   |
 | 3.6 | settings, public profile (profile builder e2e waits ProfileSection fix) | done |
-| 3.7 | achievements                                                      | wip    |
+| 3.7 | achievements                                                      | wip (worktree, uncommitted) |
 | 3.8 | notifications                                                     | todo   |
 | 4.1 | course studio                                                     | todo   |
-| 4.2 | admin: users, roles, groups, platform, gamification config        | wip    |
+| 4.2 | admin: users, roles, groups, platform, gamification config        | wip (worktree, uncommitted) |
 | 4.3 | analytics                                                         | todo   |
 | 5.1 | assessment studio                                                 | todo   |
 | 5.2 | attempt                                                           | todo   |
