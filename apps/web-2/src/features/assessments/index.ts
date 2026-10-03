@@ -1,6 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-export { builderSearchSchema } from './model/route'
 export { assessmentPublishControl } from './ui/publish-control'
 export { AssessmentEditPage } from './ui/builder-page'
 export { AssessmentSettingsPage } from './ui/settings-page'

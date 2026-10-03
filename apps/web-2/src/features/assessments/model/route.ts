@@ -1,12 +1,6 @@
-import * as v from 'valibot'
-
 import type { ActivityType, AssessmentAction, AssessmentDetail, AssessmentKind } from '#/shared/api/gen/types.gen'
 
-// What the route files need before a tab's code loads (loader, search): kept apart from the builder's model so the
-// initial bundle carries only this.
-
-/** `edit?item=`: the open question (unknown or absent: the first). */
-export const builderSearchSchema = v.object({ item: v.optional(v.string()) })
+// Shared by the loaders and the tabs: kept apart from the builder's model so a loader chunk carries only this.
 
 const ASSESSMENT_TYPES = ['quiz', 'exam', 'code_challenge'] as const satisfies readonly ActivityType[]
 
