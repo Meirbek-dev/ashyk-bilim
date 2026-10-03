@@ -296,8 +296,7 @@ Legacy images (`ashyq-server:$LEGACY_TAG`, `ashyq-web:$LEGACY_TAG`,
 
 - Certbot hook: the legacy root-owned hook (`openu-prod.sh`) keeps working: it writes
   into `./certs` (a directory mount now) and reloads `openu-prod-nginx-1`. Replace it
-  with 3.7 only when the project name or checkout path changes. (Old note: it uses `install`
-  (new inode), which the new single-file bind mounts would not see.
+  with 3.7 only when the project name or checkout path changes.
 - Within the week, when the host has spare RAM: `just restore-drill` (3.5).
 - Repo: legacy files deleted and FINDINGS #1, #2, #8, #10, #11 closed (done
   2026-10-03, after the cutover).
