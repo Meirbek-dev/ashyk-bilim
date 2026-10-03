@@ -68,6 +68,7 @@ import { Route as AuthedTeachCoursesCourseIdOverviewRouteImport } from './routes
 import { Route as AuthedTeachCoursesCourseIdPublishRouteImport } from './routes/_authed/teach/courses/$courseId/publish'
 import { Route as AuthedTeachCoursesCourseIdSettingsRouteImport } from './routes/_authed/teach/courses/$courseId/settings'
 import { Route as AuthedTeachCoursesCourseIdTeamRouteImport } from './routes/_authed/teach/courses/$courseId/team'
+import { Route as PublicLocaleCertificatesCertificateIdVerifyRouteImport } from './routes/_public/$locale/certificates/$certificateId/verify'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/index'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdEditRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/edit'
@@ -393,6 +394,12 @@ const AuthedTeachCoursesCourseIdTeamRoute =
     path: '/team',
     getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
   } as any)
+const PublicLocaleCertificatesCertificateIdVerifyRoute =
+  PublicLocaleCertificatesCertificateIdVerifyRouteImport.update({
+    id: '/$locale/certificates/$certificateId/verify',
+    path: '/$locale/certificates/$certificateId/verify',
+    getParentRoute: () => PublicRoute,
+  } as any)
 const AuthedTeachCoursesCourseIdActivitiesActivityIdRoute =
   AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport.update({
     id: '/courses/$courseId_/activities/$activityId',
@@ -494,6 +501,7 @@ export interface FileRoutesByFullPath {
   '/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
   '/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
   '/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
   '/teach/courses/$courseId/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
   '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
@@ -553,6 +561,7 @@ export interface FileRoutesByTo {
   '/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
   '/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
   '/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdIndexRoute
   '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
   '/teach/courses/$courseId/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
@@ -621,6 +630,7 @@ export interface FileRoutesById {
   '/_authed/teach/courses/$courseId/publish': typeof AuthedTeachCoursesCourseIdPublishRoute
   '/_authed/teach/courses/$courseId/settings': typeof AuthedTeachCoursesCourseIdSettingsRoute
   '/_authed/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
+  '/_public/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/_authed/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
   '/_authed/teach/courses/$courseId_/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
   '/_authed/teach/courses/$courseId_/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
@@ -688,6 +698,7 @@ export interface FileRouteTypes {
     | '/teach/courses/$courseId/publish'
     | '/teach/courses/$courseId/settings'
     | '/teach/courses/$courseId/team'
+    | '/$locale/certificates/$certificateId/verify'
     | '/teach/courses/$courseId/'
     | '/teach/courses/$courseId/activities/$activityId'
     | '/teach/courses/$courseId/activities/$activityId/edit'
@@ -747,6 +758,7 @@ export interface FileRouteTypes {
     | '/teach/courses/$courseId/publish'
     | '/teach/courses/$courseId/settings'
     | '/teach/courses/$courseId/team'
+    | '/$locale/certificates/$certificateId/verify'
     | '/teach/courses/$courseId'
     | '/teach/courses/$courseId/activities/$activityId/edit'
     | '/teach/courses/$courseId/activities/$activityId/results'
@@ -814,6 +826,7 @@ export interface FileRouteTypes {
     | '/_authed/teach/courses/$courseId/publish'
     | '/_authed/teach/courses/$courseId/settings'
     | '/_authed/teach/courses/$courseId/team'
+    | '/_public/$locale/certificates/$certificateId/verify'
     | '/_authed/teach/courses/$courseId/'
     | '/_authed/teach/courses/$courseId_/activities/$activityId'
     | '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
@@ -1245,6 +1258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTeachCoursesCourseIdTeamRouteImport
       parentRoute: typeof AuthedTeachCoursesCourseIdRoute
     }
+    '/_public/$locale/certificates/$certificateId/verify': {
+      id: '/_public/$locale/certificates/$certificateId/verify'
+      path: '/$locale/certificates/$certificateId/verify'
+      fullPath: '/$locale/certificates/$certificateId/verify'
+      preLoaderRoute: typeof PublicLocaleCertificatesCertificateIdVerifyRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_authed/teach/courses/$courseId_/activities/$activityId': {
       id: '/_authed/teach/courses/$courseId_/activities/$activityId'
       path: '/courses/$courseId/activities/$activityId'
@@ -1522,6 +1542,7 @@ interface PublicRouteChildren {
   PublicCollectionsIndexRoute: typeof PublicCollectionsIndexRoute
   PublicCoursesIndexRoute: typeof PublicCoursesIndexRoute
   PublicCertificatesCertificateIdVerifyRoute: typeof PublicCertificatesCertificateIdVerifyRoute
+  PublicLocaleCertificatesCertificateIdVerifyRoute: typeof PublicLocaleCertificatesCertificateIdVerifyRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -1533,6 +1554,8 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicCoursesIndexRoute: PublicCoursesIndexRoute,
   PublicCertificatesCertificateIdVerifyRoute:
     PublicCertificatesCertificateIdVerifyRoute,
+  PublicLocaleCertificatesCertificateIdVerifyRoute:
+    PublicLocaleCertificatesCertificateIdVerifyRoute,
 }
 
 const PublicRouteWithChildren =

@@ -1,0 +1,31 @@
+{
+  "learning_title": "Менің курстарым",
+  "learning_course_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} курс",
+        "countPlural=other": "{count} курс"
+      }
+    }
+  ],
+  "learning_empty": "Сіз әлі бірде-бір курсты бастаған жоқсыз.",
+  "learning_catalog": "Каталогқа өту",
+  "learning_filter_label": "Курс күйі",
+  "learning_filter_all": "Барлығы",
+  "learning_state_in_progress": "Оқу барысында",
+  "learning_state_not_started": "Басталмаған",
+  "learning_state_completed": "Аяқталған",
+  "learning_action_continue": "Жалғастыру",
+  "learning_action_start": "Бастау",
+  "learning_action_open": "Курсты ашу",
+  "learning_progress": "{percent}% өтілді",
+  "learning_no_activities": "Курста әзірге жарияланған белсенділіктер жоқ.",
+  "learning_archived": "Мұрағатта",
+  "learning_certificates_title": "Менің сертификаттарым",
+  "learning_certificates_empty": "Аяқталған курстардың сертификаттары осында пайда болады.",
+  "learning_certificate_meta": "{date} берілген · коды {code}",
+  "learning_certificate_instructor": "Мұғалім: {name}",
+  "learning_certificate_verify": "Түпнұсқалығы"
+}

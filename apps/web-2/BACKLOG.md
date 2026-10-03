@@ -31,7 +31,13 @@ validation). `UserProfile` has no `version` (ETag only). `locale` accepts only `
 Dev storage: presigned `put_url` is `http://localhost:9002` -> blocked by CSP `connect-src 'self'` in `vp dev`;
 the API must presign against the web origin (vite proxies `/ab-public`, `/ab-private`).
 
-Kit follow-ups: vitest browser server uses a fixed port (63315) -> parallel worktree runs collide, make it dynamic; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
+Certificates: server prints `/{ru|kz|en}/certificates/{code}/verify` into PDFs (`Language::web_prefix`) -> S-11 must
+print the prefixless URL; the web serves the prefixed form as a canonical alias for already printed QR codes.
+`GET /trail`: no next-activity pointer (`next_action.href` is the old `/course/...` URL), status always `in_progress`,
+no pagination; `GET /me/certificates` no pagination; certificate name only inside `Certification.config`; PDF
+language only via Accept-Language.
+
+Kit follow-ups: `shared/ui/command.tsx` (cmdk, catalog palette) overlaps the Base UI `combobox.tsx` - pick one in phase 7; `Dialog` initial focus lands on Close and its tooltip eats the first Escape.
 
 ## Server lane (sequential)
 
@@ -62,17 +68,17 @@ Kit follow-ups: vitest browser server uses a fixed port (63315) -> parallel work
 | 1.5 | request chain: CSP, request id, healthz, client-error             | done   |
 | 1.6 | reference slice: auth + collections (reset-password waits L-5)    | done   |
 | 1.7 | AGENTS.md final                                                   | todo   |
-| 2   | editor + markdown (wip, worktree); video, PDF, discussions (todo) | wip    |
+| 2   | editor + markdown core merged; E-2 insert/paste/slash (wip); discussions in 3.3 | wip |
 | 3.1 | home                                                              | todo   |
-| 3.2 | catalog, landing, search, command palette                         | done (worktree, merge pending K-2) |
-| 3.3 | course page                                                       | todo   |
-| 3.4 | learning, certificates                                            | todo   |
+| 3.2 | catalog, landing, search, command palette                         | done   |
+| 3.3 | course page + discussions                                         | wip    |
+| 3.4 | learning, certificates                                            | wip    |
 | 3.5 | player                                                            | todo   |
-| 3.6 | settings, public profile                                          | done (worktree, merge pending K-2) |
-| 3.7 | achievements                                                      | todo   |
+| 3.6 | settings, public profile (profile builder e2e waits ProfileSection fix) | done |
+| 3.7 | achievements                                                      | wip    |
 | 3.8 | notifications                                                     | todo   |
 | 4.1 | course studio                                                     | todo   |
-| 4.2 | admin: users, roles, groups, platform                             | todo   |
+| 4.2 | admin: users, roles, groups, platform, gamification config        | wip    |
 | 4.3 | analytics                                                         | todo   |
 | 5.1 | assessment studio                                                 | todo   |
 | 5.2 | attempt                                                           | todo   |

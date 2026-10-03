@@ -1,0 +1,12 @@
+{
+  "certificates_valid": "Жарамды",
+  "certificates_invalid": "Жарамсыз",
+  "certificates_not_found": "Сертификат табылмады",
+  "certificates_not_found_hint": "{code} коды берілген сертификаттардың ешқайсысына сәйкес келмейді. Оны құжаттағы кодпен салыстырыңыз.",
+  "certificates_holder": "Иесі",
+  "certificates_instructor": "Мұғалім",
+  "certificates_code": "Сертификат коды",
+  "certificates_download_pdf": "PDF жүктеу",
+  "certificates_og_title": "{holder} сертификаты: {course}",
+  "certificates_summary": "Түпнұсқа сертификат, {date} берілген."
+}
