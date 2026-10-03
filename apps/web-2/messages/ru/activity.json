@@ -1,0 +1,10 @@
+{
+  "activity_type_dynamic": "Страница",
+  "activity_type_video": "Видео",
+  "activity_type_document": "Документ",
+  "activity_type_file_submission": "Отправка файла",
+  "activity_type_quiz": "Тест",
+  "activity_type_exam": "Экзамен",
+  "activity_type_code_challenge": "Задача с кодом",
+  "activity_type_custom": "Другая активность"
+}

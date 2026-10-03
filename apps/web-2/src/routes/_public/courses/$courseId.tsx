@@ -1,17 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { DetailLayout } from '#/features/platform'
+import { CourseNotFound, CoursePage, ensureCoursePage } from '#/features/course'
 import { m } from '#/paraglide/messages'
 
-// The course page (spec 5.4): tabs are child routes.
+// The course page (spec 5.4): header with one primary action; tabs are child routes.
 export const Route = createFileRoute('/_public/courses/$courseId')({
-  staticData: {
-    title: m.platform_page_course,
-    tabs: [
-      { to: '/courses/$courseId/about', label: m.platform_tab_about },
-      { to: '/courses/$courseId/updates', label: m.platform_tab_updates },
-      { to: '/courses/$courseId/discussions', label: m.platform_tab_discussions },
-    ],
-  },
-  component: DetailLayout,
+  loader: ({ context, params }) => ensureCoursePage(context.queryClient, params.courseId, context.session),
+  staticData: { title: m.platform_page_course },
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
+  component: CoursePage,
+  notFoundComponent: CourseNotFound,
 })

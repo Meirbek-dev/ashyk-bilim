@@ -1,0 +1,5 @@
+export { curriculumOptions, ensureCoursePage, updatesOptions } from './queries'
+export { AboutPage } from './ui/about-page'
+export { CourseNotFound } from './ui/course-not-found'
+export { CoursePage } from './ui/course-page'
+export { UpdatesPage } from './ui/updates-page'

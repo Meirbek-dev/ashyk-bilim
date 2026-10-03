@@ -1,0 +1,10 @@
+{
+  "activity_type_dynamic": "Page",
+  "activity_type_video": "Video",
+  "activity_type_document": "Document",
+  "activity_type_file_submission": "File submission",
+  "activity_type_quiz": "Quiz",
+  "activity_type_exam": "Exam",
+  "activity_type_code_challenge": "Code challenge",
+  "activity_type_custom": "Other activity"
+}
