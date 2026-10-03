@@ -9,6 +9,7 @@
       "./messages/{locale}/auth.json",
       "./messages/{locale}/home.json",
       "./messages/{locale}/collections.json",
+      "./messages/{locale}/settings.json",
       "./messages/{locale}/ui.json",
       "./messages/{locale}/errors.json",
       "./messages/{locale}/validation.json"
