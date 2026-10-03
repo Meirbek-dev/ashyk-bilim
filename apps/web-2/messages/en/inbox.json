@@ -1,0 +1,29 @@
+{
+  "inbox_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} submission",
+        "countPlural=other": "{count} submissions"
+      }
+    }
+  ],
+  "inbox_empty": "Nothing is waiting for you.",
+  "inbox_table": "Submissions waiting for you",
+  "inbox_state": "State",
+  "inbox_filter_all": "All",
+  "inbox_course_all": "All courses",
+  "inbox_course_selected": "Selected course",
+  "inbox_kind_sla_breach": "Review overdue",
+  "inbox_kind_needs_grading": "Awaiting review",
+  "inbox_kind_awaiting_release": "Awaiting release",
+  "inbox_kind_other": "Needs attention",
+  "inbox_col_activity": "Activity",
+  "inbox_col_course": "Course",
+  "inbox_col_since": "Waiting since",
+  "inbox_col_due": "Deadline",
+  "inbox_col_action": "Action",
+  "inbox_action_grade": "Grade",
+  "inbox_action_review": "Open grade"
+}
