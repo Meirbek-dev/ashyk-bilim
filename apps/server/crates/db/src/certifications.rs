@@ -11,6 +11,7 @@ pub struct CertificationRow {
     pub course_id: CourseId,
     /// Opaque template payload (the client's PDF designer document).
     pub config: serde_json::Value,
+    pub version: i32,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -37,7 +38,7 @@ pub async fn get_certification(
 ) -> Result<Option<CertificationRow>> {
     let row = sqlx::query_as!(
         CertificationRow,
-        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config,
+        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM certifications WHERE id = $1"#,
@@ -54,7 +55,7 @@ pub async fn list_course_certifications<'e>(
 ) -> Result<Vec<CertificationRow>> {
     let rows = sqlx::query_as!(
         CertificationRow,
-        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config,
+        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM certifications WHERE course_id = $1 ORDER BY id"#,

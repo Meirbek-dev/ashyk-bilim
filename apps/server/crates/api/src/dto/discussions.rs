@@ -42,6 +42,9 @@ pub struct Discussion {
     pub can_moderate: bool,
     /// What the caller may do to this post now (supersedes the `can_*` flags).
     pub allowed_actions: Vec<domain::DiscussionAction>,
+    /// On a reply-create response only: the parent's `replies_count` after
+    /// this reply (no list re-read needed); `null` everywhere else.
+    pub parent_replies_count: Option<i32>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
 }
@@ -72,6 +75,7 @@ impl From<domain::Discussion> for Discussion {
             can_delete: d.can_delete,
             can_moderate: d.can_moderate,
             allowed_actions: d.allowed_actions,
+            parent_replies_count: d.parent_replies_count,
             created_at_unix: r.created_at,
             updated_at_unix: r.updated_at,
         }

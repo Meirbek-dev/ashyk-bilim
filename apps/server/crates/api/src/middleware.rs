@@ -92,3 +92,52 @@ pub async fn request_id_scope(request: Request, next: Next) -> Response {
 pub fn current_request_id() -> Option<String> {
     REQUEST_ID.try_with(Clone::clone).ok()
 }
+
+/// `?lang=ru|kk|en` becomes the request's `Accept-Language`.
+///
+/// A link -
+/// a CSV export, a certificate PDF - cannot set a header) and is removed
+/// from the query, so strict query DTOs never see it. Any other value is
+/// dropped and the real header stays the fallback.
+pub async fn lang_query(mut request: Request, next: Next) -> Response {
+    let Some(query) = request.uri().query() else {
+        return next.run(request).await;
+    };
+    if !query
+        .split('&')
+        .any(|pair| pair.split('=').next() == Some("lang"))
+    {
+        return next.run(request).await;
+    }
+    let mut lang = None;
+    let rest: Vec<&str> = query
+        .split('&')
+        .filter(|pair| match pair.split_once('=') {
+            Some(("lang", value)) => {
+                lang = ab_core::language::Language::from_locale(value)
+                    .map(ab_core::language::Language::locale);
+                false
+            }
+            _ => *pair != "lang",
+        })
+        .collect();
+    let path_and_query = if rest.is_empty() {
+        request.uri().path().to_owned()
+    } else {
+        format!("{}?{}", request.uri().path(), rest.join("&"))
+    };
+    let mut parts = request.uri().clone().into_parts();
+    if let Ok(pq) = path_and_query.parse() {
+        parts.path_and_query = Some(pq);
+        if let Ok(uri) = axum::http::Uri::from_parts(parts) {
+            *request.uri_mut() = uri;
+        }
+    }
+    if let Some(lang) = lang {
+        request.headers_mut().insert(
+            axum::http::header::ACCEPT_LANGUAGE,
+            axum::http::HeaderValue::from_static(lang),
+        );
+    }
+    next.run(request).await
+}

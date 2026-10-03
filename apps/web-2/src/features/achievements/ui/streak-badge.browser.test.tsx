@@ -34,7 +34,7 @@ function render(learning_streak: number, last_learning_at_unix: number) {
       xp_to_next_level: 100,
     },
     recent_transactions: [],
-    leaderboard: { entries: [], total_participants: 0 },
+    leaderboard: { entries: [], total_participants: 0, next_cursor: null },
     user_rank: null,
   }
   client.setQueryData(dashboardQueryKey(), dashboard)

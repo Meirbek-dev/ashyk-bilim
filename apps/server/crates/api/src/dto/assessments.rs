@@ -197,6 +197,9 @@ pub struct Assessment {
     pub grading_type: GradingType,
     pub content_version: i32,
     pub policy_version: i32,
+    /// Optimistic lock over the whole assessment (any change bumps it):
+    /// `If-Match` on `PATCH`, the policy `PUT` and lifecycle; the `ETag` of `GET`.
+    pub version: i32,
     pub policy: Policy,
     pub access_mode: AccessMode,
     pub creator_id: Option<UserId>,
@@ -225,6 +228,7 @@ impl Assessment {
             grading_type: a.grading_type,
             content_version: a.content_version,
             policy_version: a.policy_version,
+            version: a.version,
             policy,
             access_mode: a.access_mode,
             creator_id: a.creator_id,

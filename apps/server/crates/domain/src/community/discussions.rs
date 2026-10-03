@@ -39,6 +39,9 @@ pub struct Discussion {
     pub can_delete: bool,
     pub can_moderate: bool,
     pub allowed_actions: Vec<DiscussionAction>,
+    /// The parent post's `replies_count` after this reply was created
+    /// (create responses only).
+    pub parent_replies_count: Option<i32>,
 }
 
 /// What the caller may do to a post or reply (`Discussion.allowed_actions`):
@@ -130,6 +133,7 @@ impl Abilities {
             allowed_actions,
             row,
             replies,
+            parent_replies_count: None,
         }
     }
 }
@@ -139,8 +143,15 @@ fn may_post(actor: &Actor) -> bool {
     actor.has(perm(Action::Create, Scope::Platform)) || actor.has(perm(Action::Create, Scope::Own))
 }
 
-/// Text left after dropping `<...>` tags and whitespace.
+/// Visible characters of a post: the text nodes of an editor document
+/// (`{"type": "doc", ...}` JSON - its punctuation is not text), else what is
+/// left of HTML after dropping `<...>` tags; whitespace never counts.
 fn visible_text_len(content: &str) -> usize {
+    if let Ok(doc @ serde_json::Value::Object(_)) = serde_json::from_str(content)
+        && doc.get("type").is_some()
+    {
+        return editor_text_len(&doc);
+    }
     let mut in_tag = false;
     let mut count = 0;
     for ch in content.chars() {
@@ -152,6 +163,29 @@ fn visible_text_len(content: &str) -> usize {
         }
     }
     count
+}
+
+/// Non-whitespace characters in the `text` leaves of an editor document.
+/// A non-text node with `attrs` (an image, an embed) counts as content.
+fn editor_text_len(node: &serde_json::Value) -> usize {
+    let text = node
+        .get("text")
+        .and_then(serde_json::Value::as_str)
+        .map_or(0, |t| t.chars().filter(|c| !c.is_whitespace()).count());
+    let leaf = usize::from(
+        node.get("content").is_none()
+            && node.get("text").is_none()
+            && node.get("attrs").is_some_and(|a| {
+                ["src", "url", "uri", "href", "id"]
+                    .iter()
+                    .any(|k| a.get(k).is_some_and(|v| !v.is_null()))
+            }),
+    );
+    text + leaf
+        + node
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .map_or(0, |children| children.iter().map(editor_text_len).sum())
 }
 
 fn validate_content(content: &str) -> Result<()> {
@@ -229,7 +263,31 @@ impl DiscussionsService {
         Ok((row, course))
     }
 
+    /// One post (with its active replies) or one reply. Hidden / deleted
+    /// ones are for their author and moderators only (404 otherwise).
+    pub async fn get(&self, actor: &Actor, id: DiscussionId) -> Result<Discussion> {
+        let (row, course) = self.load(actor, id).await?;
+        let abilities = Abilities::of(actor, &course);
+        if row.status != DiscussionStatus::Active
+            && !abilities.moderate
+            && row.user_id != Some(actor.user_id)
+        {
+            return Err(Error::not_found("discussion"));
+        }
+        let replies = if row.parent_id.is_none() {
+            ab_db::discussions::list_replies_for(&self.pool, &[row.id], actor.user_id)
+                .await?
+                .into_iter()
+                .map(|r| abilities.resolve(actor, r, Vec::new()))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        Ok(abilities.resolve(actor, row, replies))
+    }
+
     /// Newest posts first, optionally with every active reply embedded.
+    /// Guests get an empty page of a visible course (no discussion data).
     pub async fn list(
         &self,
         actor: &Actor,
@@ -238,6 +296,13 @@ impl DiscussionsService {
         cursor: Option<DiscussionId>,
         limit: i64,
     ) -> Result<DiscussionPage> {
+        if actor.is_anonymous() {
+            self.courses.get(actor, course_id).await?;
+            return Ok(DiscussionPage {
+                items: Vec::new(),
+                next_cursor: None,
+            });
+        }
         let course = self.readable_course(actor, course_id).await?;
         let abilities = Abilities::of(actor, &course);
         let limit = ab_core::page_limit(limit, MAX_PAGE)?;
@@ -345,7 +410,14 @@ impl DiscussionsService {
         let row = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;
-        Ok(Abilities::of(actor, &course).resolve(actor, row, Vec::new()))
+        let mut created = Abilities::of(actor, &course).resolve(actor, row, Vec::new());
+        if let Some(parent_id) = parent_id {
+            created.parent_replies_count =
+                ab_db::discussions::get_discussion(&self.pool, parent_id, actor.user_id)
+                    .await?
+                    .map(|p| p.replies_count);
+        }
+        Ok(created)
     }
 
     /// Owner or moderator edits content; only a moderator changes status
@@ -429,5 +501,18 @@ mod tests {
         assert!(validate_content("<p><br/></p>  ").is_err());
         assert!(validate_content("<p>hi</p>").is_ok());
         assert!(validate_content("plain").is_ok());
+    }
+
+    /// An editor document counts its text nodes, not its JSON punctuation.
+    #[test]
+    fn empty_editor_document_is_rejected() {
+        let empty = r#"{"type":"doc","content":[{"type":"paragraph"},{"type":"paragraph","content":[{"type":"text","text":"  "}]}]}"#;
+        assert!(validate_content(empty).is_err());
+        let text = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"hi"}]}]}"#;
+        assert!(validate_content(text).is_ok());
+        let image = r#"{"type":"doc","content":[{"type":"image","attrs":{"src":"k"}}]}"#;
+        assert!(validate_content(image).is_ok());
+        // JSON that is not a document is plain text.
+        assert!(validate_content("[1]").is_ok());
     }
 }

@@ -7,11 +7,11 @@ import type { AssessmentDetail, Lifecycle } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
-import { fromDateTimeInput } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
+import { momentOf } from '../model/moment'
 import { canMove } from '../model/publishing'
 import { lifecycleOptions } from '../queries'
 
@@ -22,7 +22,7 @@ const scheduleSchema = v.object({
   scheduled_at: v.pipe(
     v.string(),
     v.nonEmpty(),
-    v.check(value => fromDateTimeInput(value) !== null),
+    v.check(value => momentOf(value) !== null),
   ),
 })
 
@@ -55,7 +55,7 @@ export function LifecycleActions({ activityId, title, assessment }: LifecycleAct
     )
   const form = useAppForm(scheduleSchema, {
     defaultValues: { scheduled_at: '' },
-    onSubmit: ({ scheduled_at }) => move('scheduled', fromDateTimeInput(scheduled_at) ?? 0),
+    onSubmit: ({ scheduled_at }) => move('scheduled', momentOf(scheduled_at) ?? 0),
   })
   const run = (to: Lifecycle) => void move(to).catch(() => undefined)
   return (

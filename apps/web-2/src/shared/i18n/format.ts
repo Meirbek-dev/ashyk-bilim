@@ -65,40 +65,38 @@ export function formatDayMonth(unixSeconds: number, locale: string = getLocale()
   )
 }
 
-/** A moment: date and time in the platform zone, e.g. "1 февраля 2026 г., 14:30". kk: the date table plus the time. */
-export function formatDateTime(unixSeconds: number, locale: string = getLocale()): string {
-  const epochMs = unixSeconds * 1000
-  const time = new Intl.DateTimeFormat('ru', { timeStyle: 'short', timeZone: PLATFORM_TIME_ZONE }).format(epochMs)
-  if (locale === 'kk') return `${kkDate(epochMs)}, ${time}`
-  const format = { dateStyle: 'long', timeStyle: 'short', timeZone: PLATFORM_TIME_ZONE } as const
-  return new Intl.DateTimeFormat(locale, format).format(epochMs)
-}
-
-/** Wall-clock parts of a moment in the platform zone. */
-function zoneParts(epochMs: number) {
-  const parts = new Intl.DateTimeFormat('en', {
-    hourCycle: 'h23',
+/** Wall-clock parts of an instant in the platform zone, zero-padded, 24 h. */
+function platformParts(epochMs: number) {
+  const parts = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     timeZone: PLATFORM_TIME_ZONE,
   }).formatToParts(epochMs)
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value ?? '00'
-  return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value ?? ''
+  return { year: part('year'), month: part('month'), day: part('day'), hour: part('hour'), minute: part('minute') }
 }
 
-/** The value of an `<input type="datetime-local">` showing a moment in the platform zone ("2026-02-01T14:30"). */
-export const toDateTimeInput = (unixSeconds: number): string => zoneParts(unixSeconds * 1000)
+/** A date with its time of day (deadlines, hand-ins), e.g. "1 февраля 2026 г., 01:30" / "2026 ж. 1 ақпан, 01:30". */
+export function formatDateTime(unixSeconds: number, locale: string = getLocale()): string {
+  const { hour, minute } = platformParts(unixSeconds * 1000)
+  return `${formatDate(unixSeconds, locale)}, ${hour}:${minute}`
+}
 
-/** Unix seconds of a `datetime-local` value read as platform-zone wall time; null when blank or malformed. */
-export function fromDateTimeInput(value: string): number | null {
-  const asUtc = Date.parse(`${value}:00Z`)
-  if (!value || Number.isNaN(asUtc)) return null
-  // The zone's offset at that moment: the wall time it shows for the UTC reading, minus the reading.
-  const offset = Date.parse(`${zoneParts(asUtc)}:00Z`) - asUtc
-  return (asUtc - offset) / 1000
+/** The `<input type="datetime-local">` value of an instant, as the platform zone reads it. */
+export function toDateTimeInput(unixSeconds: number): string {
+  const { year, month, day, hour, minute } = platformParts(unixSeconds * 1000)
+  return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
+/** The instant (unix seconds) a `datetime-local` value names in the platform zone, whatever the browser's zone. */
+export function fromDateTimeInput(value: string): number {
+  const asUtc = Date.parse(`${value}:00Z`) / 1000
+  const offset = Date.parse(`${toDateTimeInput(asUtc)}:00Z`) / 1000 - asUtc
+  return asUtc - offset
 }
 
 /** A share the API sends as 0..100, e.g. "42,5 %" / "42.5%"; kk formats as ru (see formatNumber). */

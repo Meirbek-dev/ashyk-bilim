@@ -43,6 +43,36 @@ test('B-CST-19 details save with their own button; an empty name stays on the fi
   expect(data.description).toContain('Подробное описание')
 })
 
+test('B-CST-32 a details save over someone else’s opens the conflict dialog; retry keeps the input', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const { course } = await studio.course()
+  await page.goto(tab(course.id, 'settings'))
+  const section = page.getByRole('form', { name: m.studio_details_title({}, ru) })
+  const about = section.getByRole('textbox', { name: m.studio_field_about({}, ru) })
+  await expect(about).toBeEnabled()
+  const headers = cookieOf(seed, 'teacher')
+  const path = { course_id: course.id }
+  await updateCourse({
+    client: studio.api,
+    path,
+    body: { name: `${course.name} (чужое)` },
+    headers: { ...headers, 'If-Match': course.version },
+    throwOnError: true,
+  })
+  await about.fill('Моя правка')
+  await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  const dialog = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await dialog.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
+  await expect(dialog).toBeHidden()
+  const { data } = await getCourse({ client: studio.api, path, headers, throwOnError: true })
+  expect(data.about).toBe('Моя правка')
+  expect(data.version).toBeGreaterThan(course.version + 1)
+})
+
 test('B-CST-20 the cover is shown and can be removed', async ({ page, studio, seed }) => {
   const { course } = await studio.course()
   const headers = cookieOf(seed, 'teacher')

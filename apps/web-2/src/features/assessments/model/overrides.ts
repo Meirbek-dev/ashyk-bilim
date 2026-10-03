@@ -2,7 +2,9 @@ import * as v from 'valibot'
 
 import type { OverrideRequest, StudentOverride, UserSummary } from '#/shared/api/gen/types.gen'
 import { vOverrideRequest } from '#/shared/api/gen/valibot.gen'
-import { fromDateTimeInput, toDateTimeInput } from '#/shared/i18n/format'
+import { toDateTimeInput } from '#/shared/i18n/format'
+
+import { momentOf } from './moment'
 
 // A learner's exception: attempts, a personal deadline, no late penalty, a note. Create and update share the block;
 // the update replaces it, so an expiry set elsewhere goes back as it was (BUG-317).
@@ -14,7 +16,7 @@ export const overrideFormSchema = v.object({
   attempts: v.pipe(v.string(), v.trim(), v.regex(/^\d*$/u)),
   due_at: v.pipe(
     v.string(),
-    v.check(value => value === '' || fromDateTimeInput(value) !== null),
+    v.check(value => value === '' || momentOf(value) !== null),
   ),
   waive: v.boolean(),
   note: vOverrideRequest.entries.note.wrapped,
@@ -31,7 +33,7 @@ export const overrideForm = (row: StudentOverride): OverrideForm => ({
 })
 
 export function overrideBody(form: OverrideForm, stored?: StudentOverride): OverrideRequest {
-  const due = fromDateTimeInput(form.due_at)
+  const due = momentOf(form.due_at)
   return {
     ...(form.attempts.trim() ? { max_attempts_override: Number(form.attempts) } : {}),
     ...(due === null ? {} : { due_at_override_unix: due }),

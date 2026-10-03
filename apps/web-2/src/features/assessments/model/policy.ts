@@ -1,7 +1,9 @@
 import * as v from 'valibot'
 
 import type { AssessmentKind, GradeReleaseMode, LatePolicy, Policy, ReviewVisibility } from '#/shared/api/gen/types.gen'
-import { fromDateTimeInput, toDateTimeInput } from '#/shared/i18n/format'
+import { toDateTimeInput } from '#/shared/i18n/format'
+
+import { momentOf } from './moment'
 
 // The "Rules" form: the policy block as typed text (numbers, minutes, platform-zone dates) and back. The PUT replaces
 // the whole block, so what the form does not show goes back as it was. Ranges are the server's (422 per field).
@@ -75,7 +77,7 @@ const optionalNumber = (value: string): number | null => (value.trim() === '' ? 
 function latePolicy(form: PolicyForm): LatePolicy {
   if (form.late_kind === 'penalty')
     return { kind: 'penalty', percent_per_day: decimal(form.percent_per_day), max_days: decimal(form.max_days) }
-  if (form.late_kind === 'cutoff') return { kind: 'cutoff', cutoff_at_unix: fromDateTimeInput(form.cutoff_at) ?? 0 }
+  if (form.late_kind === 'cutoff') return { kind: 'cutoff', cutoff_at_unix: momentOf(form.cutoff_at) ?? 0 }
   return { kind: 'none' }
 }
 
@@ -96,7 +98,7 @@ export function policyBody(form: PolicyForm, stored: Policy, kind: AssessmentKin
     ...stored,
     max_attempts: optionalNumber(form.max_attempts),
     time_limit_seconds: minutes === null ? null : Math.round(minutes * 60),
-    due_at_unix: fromDateTimeInput(form.due_at),
+    due_at_unix: momentOf(form.due_at),
     allow_late: form.allow_late,
     late_policy: latePolicy(form),
     grace_period_minutes: decimal(form.grace_period_minutes),
@@ -119,7 +121,7 @@ const number = v.pipe(v.string(), v.trim(), v.regex(/^\d+([.,]\d+)?$/u))
 const optionalNumberText = v.pipe(v.string(), v.trim(), v.regex(/^(\d+([.,]\d+)?)?$/u))
 const moment = v.pipe(
   v.string(),
-  v.check(value => value === '' || fromDateTimeInput(value) !== null),
+  v.check(value => value === '' || momentOf(value) !== null),
 )
 
 /** The form's schema; a late policy needs its own fields filled. */

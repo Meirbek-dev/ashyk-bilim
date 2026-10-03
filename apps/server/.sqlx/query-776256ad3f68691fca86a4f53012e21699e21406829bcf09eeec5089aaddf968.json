@@ -1,0 +1,111 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tr.id AS \"run_id: TrailRunId\", u.id AS \"user_id: UserId\", u.username,\n                  u.display_name, u.avatar_key,\n                  cp.progress_pct AS \"progress_pct?\",\n                  (extract(epoch FROM cp.completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM cp.last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM tr.created_at))::bigint AS \"enrolled_at!\"\n           FROM trail_runs tr\n           JOIN users u ON u.id = tr.user_id\n           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id\n           WHERE tr.course_id = $1 AND ($2::uuid IS NULL OR tr.id < $2)\n           ORDER BY tr.id DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "run_id: TrailRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_runs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "avatar_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar_key"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "progress_pct?",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "course_progress",
+            "name": "progress_pct"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "completed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "last_activity_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "enrolled_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "776256ad3f68691fca86a4f53012e21699e21406829bcf09eeec5089aaddf968"
+}

@@ -102,6 +102,11 @@ export async function ensureCourseSettings(queryClient: QueryClient, id: CourseI
 
 // ---- Course ----
 
+// "Reload and retry" after a 412 (`useIfMatch`): the object's current `version`, read again into the cache. A row
+// gone meanwhile keeps its old version: the write then answers 404.
+export const courseVersion = async (queryClient: QueryClient, id: CourseId) =>
+  (await queryClient.fetchQuery({ ...courseOptions(id), staleTime: 0 })).version
+
 const putCourse = (queryClient: QueryClient) => (course: Course) =>
   queryClient.setQueryData(getCourseQueryKey(byId(course.id)), course)
 
@@ -201,6 +206,10 @@ export const createUpdateOptions = (queryClient: QueryClient, id: CourseId) => (
   onSuccess: (row: CourseUpdate) => setUpdates(queryClient, id, rows => [row, ...rows]),
 })
 
+export const updateVersion = async (queryClient: QueryClient, id: CourseId, update: CourseUpdate) =>
+  (await queryClient.fetchQuery({ ...updatesOptions(id), staleTime: 0 })).find(row => row.id === update.id)?.version ??
+  update.version
+
 export const editUpdateOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...editCourseUpdateMutation(),
   onSuccess: (row: CourseUpdate) =>
@@ -225,6 +234,10 @@ export const createCertificationOptions = (queryClient: QueryClient, id: CourseI
   onSuccess: (row: Certification) => setCertifications(queryClient, id, [row]),
   meta: certificateMeta(id),
 })
+
+export const certificationVersion = async (queryClient: QueryClient, id: CourseId, row: Certification) =>
+  (await queryClient.fetchQuery({ ...certificationsOptions(id), staleTime: 0 })).find(old => old.id === row.id)
+    ?.version ?? row.version
 
 export const updateCertificationOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...updateCertificationMutation(),

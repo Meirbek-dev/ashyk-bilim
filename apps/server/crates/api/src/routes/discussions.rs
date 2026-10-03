@@ -12,12 +12,13 @@ use crate::dto::discussions::{
     RepliesQuery, UpdateDiscussionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
+use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent};
 use crate::state::AppState;
 
 const DEFAULT_PAGE: i64 = 50;
 
-/// Newest posts first (keyset), optionally with replies embedded.
+/// Newest posts first (keyset), optionally with replies embedded. A guest
+/// gets an empty page for a public course (sign in to read).
 #[utoipa::path(
     get, path = "/courses/{course_id}/discussions", tag = "discussions",
     params(("course_id" = CourseId, Path, description = "Course id"), DiscussionListQuery),
@@ -29,7 +30,7 @@ const DEFAULT_PAGE: i64 = 50;
 )]
 pub async fn list_discussions(
     State(state): State<AppState>,
-    CurrentActor(actor): CurrentActor,
+    MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
     Query(query): Query<DiscussionListQuery>,
 ) -> ApiResult<Json<DiscussionPage>> {
@@ -87,6 +88,24 @@ pub async fn create_discussion(
         },
     )
     .await
+}
+
+/// One post with its active replies, or one reply (deep links).
+#[utoipa::path(
+    get, path = "/discussions/{discussion_id}", tag = "discussions",
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
+    responses(
+        (status = 200, description = "The post (replies embedded) or the reply", body = Discussion),
+        (status = 404, description = "Unknown, inaccessible or hidden", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn get_discussion(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<DiscussionId>,
+) -> ApiResult<Json<Discussion>> {
+    Ok(Json(state.discussions.get(&actor, id).await?.into()))
 }
 
 /// Edit content (owner, or a moderator); only a moderator may change

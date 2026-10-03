@@ -52,6 +52,26 @@ pub enum UploadPurpose {
     CollectionCover,
 }
 
+/// `GET /users` order.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AdminUserSort {
+    /// Newest account first (default).
+    Newest,
+    /// Display name A-Z.
+    Name,
+}
+
+/// `?lang=` on CSV exports and certificate PDFs (a link cannot set
+/// `Accept-Language`); `middleware::lang_query` turns it into that header.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum UiLanguage {
+    Ru,
+    Kk,
+    En,
+}
+
 /// A stored UI locale.
 #[derive(Serialize, ToSchema)]
 pub enum Locale {

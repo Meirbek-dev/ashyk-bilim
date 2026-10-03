@@ -14,7 +14,7 @@ import { setUserStatusOptions } from '../queries'
 
 /**
  * Disable (after a confirmation) or enable. The right comes from `allowed_actions` (`disable` / `enable`); which of
- * the two to offer follows `status`, which the cache takes at once (the write answers 204, SPEC).
+ * the two to offer follows `status`; the answered user (with its new `allowed_actions`) replaces the cached one.
  */
 export function UserStatus({ user }: { user: AdminUser }) {
   const [confirming, setConfirming] = useState(false)

@@ -1,5 +1,5 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { shortcuts } from '#/features/catalog'
@@ -34,8 +34,9 @@ const childRoutes = {
  */
 export function PlayerAction({ state, entry }: { state: LearnerCourseState; entry: ActivityState }) {
   const courseId = state.course_id
-  const mark = useMutation(markOptions(courseId))
-  const unmark = useMutation(unmarkOptions(courseId))
+  const queryClient = useQueryClient()
+  const mark = useMutation(markOptions(queryClient, courseId))
+  const unmark = useMutation(unmarkOptions(queryClient, courseId))
   const action = playerAction(state, entry)
   const path = { path: { activity_id: entry.id } }
   const pending = mark.isPending || unmark.isPending

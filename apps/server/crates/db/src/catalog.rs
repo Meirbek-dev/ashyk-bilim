@@ -26,6 +26,8 @@ pub struct CourseRow {
     /// docs/COURSE_ARCHIVING.md). Orthogonal to `public`.
     pub archived_at: Option<i64>,
     pub archived_by: Option<UserId>,
+    /// Optimistic lock (`If-Match`), bumped by a trigger on every change.
+    pub version: i32,
     /// Active `resource_authors` rows that write (maintainer / contributor);
     /// reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
@@ -106,6 +108,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
+                  version,
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -202,6 +205,7 @@ pub async fn list_courses(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
+                  version,
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -321,6 +325,7 @@ pub async fn list_user_courses(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
+                  version,
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -381,6 +386,7 @@ pub async fn update_course<'e>(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
+                  version,
                   ARRAY(SELECT ra.user_id FROM resource_authors ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
@@ -696,6 +702,7 @@ pub struct ChapterRow {
     pub name: String,
     pub description: String,
     pub position: i32,
+    pub version: i32,
 }
 
 pub async fn insert_chapter(
@@ -724,7 +731,7 @@ pub async fn get_chapter(pool: &PgPool, id: ChapterId) -> Result<Option<ChapterR
     let row = sqlx::query_as!(
         ChapterRow,
         r#"SELECT id AS "id: ChapterId", course_id AS "course_id: CourseId",
-                  name, description, position
+                  name, description, position, version
            FROM chapters WHERE id = $1"#,
         id.0
     )
@@ -737,7 +744,7 @@ pub async fn list_chapters(pool: &PgPool, course_id: CourseId) -> Result<Vec<Cha
     let rows = sqlx::query_as!(
         ChapterRow,
         r#"SELECT id AS "id: ChapterId", course_id AS "course_id: CourseId",
-                  name, description, position
+                  name, description, position, version
            FROM chapters WHERE course_id = $1 ORDER BY position, id"#,
         course_id.0
     )
@@ -1117,6 +1124,10 @@ pub struct CourseUpdateRow {
     pub course_id: CourseId,
     pub title: String,
     pub content: String,
+    pub version: i32,
+    /// `None` for announcements older than the column, or a deleted author.
+    pub author_id: Option<UserId>,
+    pub author_name: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -1126,14 +1137,16 @@ pub async fn insert_course_update(
     course_id: CourseId,
     title: &str,
     content: &str,
+    author_id: UserId,
 ) -> Result<CourseUpdateId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO course_updates (course_id, title, content)
-           VALUES ($1, $2, $3)
+        r#"INSERT INTO course_updates (course_id, title, content, author_id)
+           VALUES ($1, $2, $3, $4)
            RETURNING id"#,
         course_id.0,
         title,
-        content
+        content,
+        author_id.0
     )
     .fetch_one(pool)
     .await?;
@@ -1146,11 +1159,13 @@ pub async fn get_course_update(
 ) -> Result<Option<CourseUpdateRow>> {
     let row = sqlx::query_as!(
         CourseUpdateRow,
-        r#"SELECT id AS "id: CourseUpdateId", course_id AS "course_id: CourseId",
-                  title, content,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM course_updates WHERE id = $1"#,
+        r#"SELECT cu.id AS "id: CourseUpdateId", cu.course_id AS "course_id: CourseId",
+                  cu.title, cu.content, cu.version,
+                  cu.author_id AS "author_id?: UserId",
+                  u.display_name AS "author_name?",
+                  (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
+           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -1165,12 +1180,14 @@ pub async fn list_course_updates(
 ) -> Result<Vec<CourseUpdateRow>> {
     let rows = sqlx::query_as!(
         CourseUpdateRow,
-        r#"SELECT id AS "id: CourseUpdateId", course_id AS "course_id: CourseId",
-                  title, content,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM course_updates WHERE course_id = $1
-           ORDER BY id DESC"#,
+        r#"SELECT cu.id AS "id: CourseUpdateId", cu.course_id AS "course_id: CourseId",
+                  cu.title, cu.content, cu.version,
+                  cu.author_id AS "author_id?: UserId",
+                  u.display_name AS "author_name?",
+                  (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
+           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.course_id = $1
+           ORDER BY cu.id DESC"#,
         course_id.0
     )
     .fetch_all(pool)
@@ -1217,6 +1234,7 @@ pub struct ContributorRow {
     pub avatar_key: Option<String>,
     pub role: String,
     pub status: String,
+    pub version: i32,
     pub created_at: i64,
 }
 
@@ -1224,7 +1242,7 @@ pub async fn list_contributors(pool: &PgPool, course_id: CourseId) -> Result<Vec
     let rows = sqlx::query_as!(
         ContributorRow,
         r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
-                  ra.authorship AS role, ra.status,
+                  ra.authorship AS role, ra.status, ra.version,
                   (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
            FROM resource_authors ra JOIN users u ON u.id = ra.user_id
            WHERE ra.course_id = $1 AND ra.authorship <> 'creator'
@@ -1242,7 +1260,7 @@ pub async fn creator_row(pool: &PgPool, course_id: CourseId) -> Result<Option<Co
     let row = sqlx::query_as!(
         ContributorRow,
         r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
-                  'creator' AS "role!", 'active' AS "status!",
+                  'creator' AS "role!", 'active' AS "status!", 1 AS "version!",
                   (extract(epoch FROM c.created_at))::bigint AS "created_at!"
            FROM courses c JOIN users u ON u.id = c.creator_id
            WHERE c.id = $1"#,
@@ -1261,7 +1279,7 @@ pub async fn get_contributor(
     let row = sqlx::query_as!(
         ContributorRow,
         r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
-                  ra.authorship AS role, ra.status,
+                  ra.authorship AS role, ra.status, ra.version,
                   (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
            FROM resource_authors ra JOIN users u ON u.id = ra.user_id
            WHERE ra.course_id = $1 AND ra.user_id = $2"#,

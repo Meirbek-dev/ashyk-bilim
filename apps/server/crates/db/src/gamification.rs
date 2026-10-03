@@ -316,19 +316,55 @@ pub struct LeaderboardRow {
     pub username: String,
     pub display_name: String,
     pub avatar_key: Option<String>,
+    /// The board order's tie-break (`total_xp DESC, profile_id`) - the
+    /// keyset cursor's second half.
+    pub profile_id: uuid::Uuid,
 }
 
 pub async fn leaderboard(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<LeaderboardRow>> {
     let rows = sqlx::query_as!(
         LeaderboardRow,
         r#"SELECT rank() OVER (ORDER BY p.total_xp DESC) AS "rank!", p.user_id AS "user_id: UserId",
-                  p.total_xp, p.level, u.username, u.display_name, u.avatar_key
+                  p.total_xp, p.level, u.username, u.display_name, u.avatar_key,
+                  p.id AS profile_id
            FROM gamification_profiles p JOIN users u ON u.id = p.user_id
            WHERE p.preferences #> '{privacy,showOnLeaderboard}' IS DISTINCT FROM 'false'::jsonb
            ORDER BY p.total_xp DESC, p.id
            LIMIT $1 OFFSET $2"#,
         limit,
         offset
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// S-05 keyset page of the board: the rows after `(total_xp, profile_id)`
+/// in board order (`None` = from the top). Ranks are over the whole board.
+pub async fn leaderboard_after(
+    pool: &PgPool,
+    limit: i64,
+    after: Option<(i32, uuid::Uuid)>,
+) -> Result<Vec<LeaderboardRow>> {
+    let rows = sqlx::query_as!(
+        LeaderboardRow,
+        r#"SELECT b.rank AS "rank!", b.user_id AS "user_id!: UserId", b.total_xp AS "total_xp!",
+                  b.level AS "level!", b.username AS "username!",
+                  b.display_name AS "display_name!", b.avatar_key,
+                  b.profile_id AS "profile_id!"
+           FROM (SELECT rank() OVER (ORDER BY p.total_xp DESC) AS rank, p.user_id,
+                        p.total_xp, p.level, u.username, u.display_name, u.avatar_key,
+                        p.id AS profile_id
+                 FROM gamification_profiles p JOIN users u ON u.id = p.user_id
+                 WHERE p.preferences #> '{privacy,showOnLeaderboard}'
+                       IS DISTINCT FROM 'false'::jsonb) b
+           WHERE $2::int IS NULL
+              OR b.total_xp < $2 OR (b.total_xp = $2 AND b.profile_id > $3)
+           ORDER BY b.total_xp DESC, b.profile_id
+           LIMIT $1"#,
+        limit,
+        after.map(|a| a.0),
+        after.map(|a| a.1)
     )
     .fetch_all(pool)
     .await?;

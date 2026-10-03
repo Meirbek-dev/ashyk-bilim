@@ -7,11 +7,10 @@ import {
   getActivityOptions,
   getTrailQueryKey,
   learnerCourseStateOptions,
-  learnerCourseStateQueryKey,
   myCertificatesQueryKey,
   removeActivityMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import type { ActivityId, CourseId } from '#/shared/api/gen/types.gen'
+import type { ActivityId, CourseId, Trail } from '#/shared/api/gen/types.gen'
 
 import { activityKind, locate } from './model/player'
 
@@ -19,17 +18,23 @@ import { activityKind, locate } from './model/player'
 export const learnerStateOptions = (id: CourseId) => learnerCourseStateOptions({ path: { course_id: id } })
 export const activityOptions = (id: ActivityId) => getActivityOptions({ path: { activity_id: id } })
 
-// Marks answer a Trail, not the learner state: the state, "my courses" and certificates (a finished course
-// issues one on the spot) are read again.
-const progress = (courseId: CourseId) => ({
-  invalidates: [
-    learnerCourseStateQueryKey({ path: { course_id: courseId } }),
-    getTrailQueryKey(),
-    myCertificatesQueryKey(),
-  ],
+// Marks with `Prefer: return=representation` answer the Trail with the course's `learner_state`: the cache takes
+// it; "my courses" and certificates (a finished course issues one on the spot) are read again.
+const withState = { headers: { Prefer: 'return=representation' } }
+const progress = (queryClient: QueryClient, courseId: CourseId) => ({
+  onSuccess: ({ learner_state: state }: Trail) => {
+    if (state) queryClient.setQueryData(learnerStateOptions(courseId).queryKey, state)
+  },
+  meta: { invalidates: [getTrailQueryKey(), myCertificatesQueryKey()] },
 })
-export const markOptions = (courseId: CourseId) => ({ ...addActivityMutation(), meta: progress(courseId) })
-export const unmarkOptions = (courseId: CourseId) => ({ ...removeActivityMutation(), meta: progress(courseId) })
+export const markOptions = (queryClient: QueryClient, courseId: CourseId) => ({
+  ...addActivityMutation(withState),
+  ...progress(queryClient, courseId),
+})
+export const unmarkOptions = (queryClient: QueryClient, courseId: CourseId) => ({
+  ...removeActivityMutation(withState),
+  ...progress(queryClient, courseId),
+})
 
 const forbidden = () =>
   new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })

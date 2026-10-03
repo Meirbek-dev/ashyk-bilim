@@ -166,6 +166,17 @@ test('B-DSC-04 a thread opens under its post and lives in the URL', async ({ pag
   await expect(article(page, 'Первый ответ.')).toHaveCount(0)
 })
 
+test('B-DSC-12 a thread link past the first page opens its post alone', async ({ page, signInAs, course, post }) => {
+  const made = await course()
+  const old = await post(made, 'Старый вопрос.')
+  for (let index = 1; index <= 20; index += 1) await post(made, `Новый пост ${index}.`)
+  await signInAs('student')
+  await page.goto(tab(made, old.id))
+  await expect(page.getByRole('region', { name: m.discussions_replies({ count: 0 }, ru) })).toBeVisible()
+  await page.goto(tab(made, randomUUID()))
+  await expect(page.locator('main article')).toHaveCount(20)
+})
+
 test('B-DSC-05 a reply goes to the end of the open thread', async ({ page, signInAs, course, post }) => {
   const made = await course()
   const question = await post(made, 'Вопрос без ответа.', 'teacher')

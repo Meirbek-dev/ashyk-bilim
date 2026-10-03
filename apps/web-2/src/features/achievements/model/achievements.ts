@@ -1,4 +1,4 @@
-import type { Leaderboard, LeaderboardEntry, Profile } from '#/shared/api/gen/types.gen'
+import type { Profile } from '#/shared/api/gen/types.gen'
 
 /** Leaderboard rows per "Show more" (the API allows 1..=100). */
 export const LEADERBOARD_PAGE = 20
@@ -29,22 +29,4 @@ export function activeStreak(count: number, lastUnix: number | null | undefined,
 export function homeStreak(profile: Profile, nowUnix: number): number | null {
   const days = activeStreak(profile.learning_streak, profile.last_learning_at_unix, nowUnix)
   return days > 0 ? days : null
-}
-
-/** Offset paging: the next page starts after every row loaded so far, until all participants are loaded. */
-export function nextLeaderboardOffset(lastPage: Leaderboard, pages: readonly Leaderboard[]): number | undefined {
-  const loaded = pages.reduce((sum, page) => sum + page.entries.length, 0)
-  return lastPage.entries.length > 0 && loaded < lastPage.total_participants ? loaded : undefined
-}
-
-/** Rows of all pages; a row that slid into the next page between requests (offset paging, S-05) appears once. */
-export function leaderboardRows(pages: readonly Leaderboard[]): LeaderboardEntry[] {
-  const seen = new Set<string>()
-  return pages
-    .flatMap(page => page.entries)
-    .filter(entry => {
-      if (seen.has(entry.user_id)) return false
-      seen.add(entry.user_id)
-      return true
-    })
 }

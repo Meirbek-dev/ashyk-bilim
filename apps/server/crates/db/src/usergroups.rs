@@ -10,6 +10,7 @@ pub struct UsergroupRow {
     pub description: String,
     pub creator_id: Option<UserId>,
     pub member_count: i64,
+    pub version: i32,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -39,6 +40,7 @@ pub async fn get_usergroup(pool: &PgPool, id: UsergroupId) -> Result<Option<User
                   g.creator_id AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
+                  g.version,
                   (extract(epoch FROM g.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM g.updated_at))::bigint AS "updated_at!"
            FROM usergroups g WHERE g.id = $1"#,
@@ -62,6 +64,7 @@ pub async fn list_usergroups(
                   g.creator_id AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
+                  g.version,
                   (extract(epoch FROM g.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM g.updated_at))::bigint AS "updated_at!"
            FROM usergroups g
@@ -227,6 +230,7 @@ pub async fn list_for_course(pool: &PgPool, course_id: CourseId) -> Result<Vec<U
                   g.creator_id AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
+                  g.version,
                   (extract(epoch FROM g.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM g.updated_at))::bigint AS "updated_at!"
            FROM usergroup_courses gc

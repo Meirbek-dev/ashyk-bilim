@@ -474,6 +474,7 @@ mod tests {
                 name: "C".into(),
                 creator_id: Some(teacher),
                 updated_at: NOW,
+                archived: false,
             },
         );
         ctx.chapters.push(ChapterInfoRow {

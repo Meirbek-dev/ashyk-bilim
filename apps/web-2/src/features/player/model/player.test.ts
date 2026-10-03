@@ -28,7 +28,16 @@ function course(activities: ActivityState[][], next: Partial<NextAction> | null 
     enrolled: true,
     enrollment_state: 'in_progress',
     public: true,
-    next_action: next && { id: 'start', label: '', reason: '', enabled: true, activity_id: null, href: null, ...next },
+    next_action: next && {
+      id: 'start',
+      label: '',
+      reason: '',
+      enabled: true,
+      activity_id: null,
+      course_id: 'c',
+      href: null,
+      ...next,
+    },
     outline: activities.map((list, index) => ({
       id: `ch${index}`,
       title: `Chapter ${index}`,

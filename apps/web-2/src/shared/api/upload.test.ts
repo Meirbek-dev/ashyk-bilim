@@ -24,4 +24,19 @@ describe('upload pre-check', () => {
     expect(checkUpload({ size: 1, type: 'application/zip' }, 'file-submission')).toBeNull()
     expect(checkUpload({ size: 1, type: '' }, 'file-submission')).toBeNull()
   })
+
+  test('a resource narrows the purpose: its types and a lower cap, never a higher one', () => {
+    const limits = { mimes: ['application/pdf'], maxBytes: 5 * MB }
+    expect(checkUpload({ size: 1, type: 'application/pdf' }, 'file-submission', limits)).toBeNull()
+    expect(checkUpload({ size: 1, type: 'image/png' }, 'file-submission', limits)).toMatchObject({ kind: 'wrong-type' })
+    expect(checkUpload({ size: 6 * MB, type: 'application/pdf' }, 'file-submission', limits)).toEqual({
+      kind: 'too-large',
+      maxBytes: 5 * MB,
+    })
+    expect(checkUpload({ size: 101 * MB, type: 'x/y' }, 'file-submission', { maxBytes: 500 * MB })).toEqual({
+      kind: 'too-large',
+      maxBytes: 100 * MB,
+    })
+    expect(checkUpload({ size: 1, type: 'x/y' }, 'file-submission', { mimes: [], maxBytes: null })).toBeNull()
+  })
 })

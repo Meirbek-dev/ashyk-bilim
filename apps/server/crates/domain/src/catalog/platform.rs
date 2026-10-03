@@ -22,6 +22,14 @@ const UPDATE: Permission = Permission {
     scope: Some(Scope::Platform),
 };
 
+/// What the caller may do to the platform settings (`Platform.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PlatformAction {
+    /// `PATCH /platform`.
+    Update,
+}
+
 /// Text fields of a platform update (branding claims travel separately).
 #[derive(Debug, Default)]
 pub struct PlatformChanges<'a> {
@@ -48,6 +56,15 @@ impl PlatformService {
     /// UX-311: the write handlers check it before reading the body.
     pub fn require_update(actor: &Actor) -> Result<()> {
         actor.require(UPDATE)
+    }
+
+    #[must_use]
+    pub fn allowed_actions(actor: &Actor) -> Vec<PlatformAction> {
+        if Self::require_update(actor).is_ok() {
+            vec![PlatformAction::Update]
+        } else {
+            Vec::new()
+        }
     }
 
     /// The singleton row (seeded by migration - absence is a deploy bug).

@@ -2,7 +2,16 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { Discussion } from '#/shared/api/gen/types.gen'
 
-import { applyReaction, appendItem, hasText, prependItem, removeItem, replaceItem } from './discussions'
+import {
+  applyReaction,
+  appendItem,
+  changePost,
+  hasText,
+  prependItem,
+  removeItem,
+  replaceItem,
+  setRepliesCount,
+} from './discussions'
 
 const post = (id: string, patch: Partial<Discussion> = {}): Discussion => ({
   id,
@@ -11,6 +20,7 @@ const post = (id: string, patch: Partial<Discussion> = {}): Discussion => ({
   allowed_actions: [],
   author: null,
   parent_id: null,
+  parent_replies_count: null,
   can_delete: false,
   can_moderate: false,
   can_update: false,
@@ -58,6 +68,13 @@ describe('cache updates from mutation answers', () => {
     expect(ids(appendItem(pages([post('r1')]), post('r2')))).toEqual([['r1', 'r2']])
     const partial = { pageParams: [undefined], pages: [{ items: [post('r1')], next_cursor: 'more' }] }
     expect(ids(appendItem(partial, post('r2')))).toEqual([['r1']])
+  })
+
+  test('B-DSC-10 a reply answer sets the post replies_count; a linked post takes the same changes', () => {
+    const data = pages([post('a', { replies_count: 1 }), post('b')])
+    expect(setRepliesCount(data, 'a', 2)?.pages[0]?.items.map(item => item.replies_count)).toEqual([2, 0])
+    expect(changePost(post('a'), next => replaceItem(next, post('a', { content: 'new' })))?.content).toBe('new')
+    expect(changePost(post('a'), next => removeItem(next, 'a'))).toBeNull()
   })
 
   test('B-DSC-09 a reaction takes the counts and pressed state from the answer', () => {

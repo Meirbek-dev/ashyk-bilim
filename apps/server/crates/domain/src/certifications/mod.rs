@@ -262,23 +262,34 @@ impl CertificationsService {
         certification: CertificationRow,
         course: Course,
     ) -> Result<IssuedCertificate> {
-        let instructor_name = match config_text(&certification.config, "certificate_instructor") {
-            Some(name) => Some(name),
-            None => match course.creator_id {
-                Some(creator) => ab_db::identity::list_user_summaries(&self.pool, &[creator])
-                    .await?
-                    .into_iter()
-                    .next()
-                    .map(|u| u.display_name),
-                None => None,
-            },
-        };
+        let instructor_name = self
+            .instructor_name(&certification.config, course.creator_id)
+            .await?;
         Ok(IssuedCertificate {
             certificate,
             certification,
             course,
             instructor_name,
         })
+    }
+
+    /// `config.certificate_instructor`, else the course creator's name.
+    async fn instructor_name(
+        &self,
+        config: &serde_json::Value,
+        creator_id: Option<ab_core::id::UserId>,
+    ) -> Result<Option<String>> {
+        if let Some(name) = config_text(config, "certificate_instructor") {
+            return Ok(Some(name));
+        }
+        let Some(creator) = creator_id else {
+            return Ok(None);
+        };
+        Ok(ab_db::identity::list_user_summaries(&self.pool, &[creator])
+            .await?
+            .into_iter()
+            .next()
+            .map(|u| u.display_name))
     }
 
     fn require_object(config: &serde_json::Value) -> Result<()> {
@@ -460,6 +471,44 @@ impl CertificationsService {
             teacher_name,
         })?;
         Ok((code, bytes))
+    }
+
+    /// A sample PDF of a template before anything is issued from it
+    /// (certificate readers of the course): the caller as the holder, today
+    /// as the issue date, `PREVIEW` as the code.
+    pub async fn preview_pdf(
+        &self,
+        actor: &Actor,
+        id: CertificationId,
+        language: Option<Language>,
+        verify_url: impl FnOnce(Language, &str) -> String,
+    ) -> Result<Vec<u8>> {
+        let certification = self.get(actor, id).await?;
+        let course = ab_db::catalog::get_course(&self.pool, certification.course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?;
+        let holder = ab_db::identity::get_profile(&self.pool, actor.user_id).await?;
+        let language = language
+            .or_else(|| {
+                holder
+                    .as_ref()
+                    .and_then(|h| Language::from_locale(&h.locale))
+            })
+            .unwrap_or(Language::Ru);
+        let config = &certification.config;
+        let text = |key: &str| config_text(config, key);
+        let code = "PREVIEW";
+        pdf::render(&pdf::CertificatePdf {
+            language,
+            holder_name: holder.map(|h| h.display_name).unwrap_or_default(),
+            certificate_name: text("certification_name").unwrap_or_else(|| course.name.clone()),
+            certificate_type: text("certification_type").unwrap_or_default(),
+            teacher_name: self.instructor_name(config, course.creator_id).await?,
+            course_name: course.name,
+            issued_at_unix: jiff::Timestamp::now().as_second(),
+            verify_url: verify_url(language, code),
+            verify_code: code.to_owned(),
+        })
     }
 }
 
