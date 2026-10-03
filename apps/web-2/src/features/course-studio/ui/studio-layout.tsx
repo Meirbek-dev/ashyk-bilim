@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
@@ -19,8 +19,8 @@ const saveLabels: Record<SaveState, () => string> = {
   failed: m.studio_save_failed,
 }
 
-/** The activity studio (spec 5.4): focus layout, its 4 route tabs, autosave status and the published switch. */
-export function CourseStudioLayout() {
+/** The activity studio (spec 5.4): focus layout, its 4 route tabs, autosave status, the published switch; `aside` is the AI panel the route mounts. */
+export function CourseStudioLayout({ aside }: { aside?: { label: string; content: ReactNode } }) {
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
@@ -42,6 +42,7 @@ export function CourseStudioLayout() {
       title={activity.name}
       saveStatus={state ? <output>{saveLabels[state]()}</output> : null}
       actions={<PublishSwitch courseId={courseId} activity={activity} />}
+      aside={aside}
       wide
     >
       <div className="flex flex-col gap-gutter">

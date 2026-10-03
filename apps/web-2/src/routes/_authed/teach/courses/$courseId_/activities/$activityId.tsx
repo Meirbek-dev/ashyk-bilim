@@ -1,11 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { AiPanel, aiSearchSchema, prefetchPanel } from '#/features/ai'
 import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 
-// The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab.
+// The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab. The AI
+// panel (slice 6.3: Q&A, lecture critique) is its right slot.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activities/$activityId')({
-  loader: ({ context, params }) => ensureStudio(context.queryClient, params.courseId, params.activityId),
+  validateSearch: aiSearchSchema,
+  loader: async ({ context, params }) => {
+    const activity = await ensureStudio(context.queryClient, params.courseId, params.activityId)
+    await prefetchPanel(context.queryClient, { ...params, surface: 'teacher-studio' })
+    return activity
+  },
   staticData: {
     title: m.platform_page_studio,
     layout: 'focus',
@@ -17,6 +24,10 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
     ],
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
-  component: CourseStudioLayout,
+  component: function Studio() {
+    const params = Route.useParams()
+    const panel = <AiPanel {...params} surface="teacher-studio" />
+    return <CourseStudioLayout aside={{ label: m.ai_panel_title(), content: panel }} />
+  },
   notFoundComponent: ActivityNotFound,
 })

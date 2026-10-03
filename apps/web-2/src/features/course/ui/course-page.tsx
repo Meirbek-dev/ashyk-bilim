@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useParams, Link as RouterLink } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
@@ -19,8 +20,11 @@ const TABS = [
   { to: '/courses/$courseId/discussions', label: m.platform_tab_discussions },
 ] as const
 
-/** The course page (spec 5.4): title, authors, one primary action, then the about / updates / discussions tabs. */
-export function CoursePage() {
+/**
+ * The course page (spec 5.4): title, authors, one primary action, then the about / updates / discussions tabs.
+ * `ai` is the AI side-sheet button the route mounts next to the action (slice 6.3).
+ */
+export function CoursePage({ ai }: { ai?: ReactNode }) {
   const { courseId } = useParams({ from: '/_public/courses/$courseId' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
   const { data: roster } = useSuspenseQuery(contributorsOptions(courseId))
@@ -36,14 +40,17 @@ export function CoursePage() {
       meta={meta.filter(Boolean).join(' · ')}
       status={course.archived_at_unix ? <StatusBadge tone="warning">{m.course_archived()}</StatusBadge> : null}
       primaryAction={
-        session ? (
-          <LearnerAction course={course} />
-        ) : (
-          // A guest's "Enrol" signs in first and comes back here (UX-021).
-          <RouterLink to="/login" search={{ redirect: `/courses/${courseId}/about` }} className={buttonVariants()}>
-            {m.course_enroll()}
-          </RouterLink>
-        )
+        <div className="flex flex-wrap gap-2">
+          {session ? (
+            <LearnerAction course={course} />
+          ) : (
+            // A guest's "Enrol" signs in first and comes back here (UX-021).
+            <RouterLink to="/login" search={{ redirect: `/courses/${courseId}/about` }} className={buttonVariants()}>
+              {m.course_enroll()}
+            </RouterLink>
+          )}
+          {ai}
+        </div>
       }
       tabs={TABS.map(tab => (
         <Link key={tab.to} variant="tab" to={tab.to} params={{ courseId }}>
