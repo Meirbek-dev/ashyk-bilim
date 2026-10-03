@@ -61,17 +61,37 @@ K-3 done (9069df9, dc7d159): the kit is stock shadcn `base-nova` in `shared/ui` 
 Local e2e: `sh <scratchpad>/clear-rate-limits.sh` clears API login throttles. Local API restart recipe: copy the debug
 binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`, then `serve` (see notes above).
 
+## Resume notes (session cut by the usage limit, 2026-10-03 ~17:30 local)
+
+- main = 6fcb110 (web adopted the L-3 contract; client regenerated and committed). Nothing pushed.
+- Running when cut (results stay on disk, uncommitted unless noted): server L-4 (S-08, S-06, S-07, S-09, S-13) in the
+  MAIN tree `apps/server`; worktree slices 5.1 assessment studio (`agent-a086fc3e54ce3f5a5`), 5.2 attempt
+  (`agent-a022fc42b40546119`), 5.4 file submissions (`agent-afd3931c0795451c4`), 6.3 AI (`agent-ab757a87d2543d0f7`).
+  Reports: `<scratchpad>/reports/{L-4,S-5.1,S-5.2,S-5.4,S-6.3}.md`.
+- Committed worktree waiting for merge: 6.2 teach inbox (`agent-a38c2ddff9adb459c`, 2e4ca0a).
+- Merge recipe: commit inside the worktree, `git merge --no-ff --no-commit <branch>` in main, union-resolve
+  `project.inlang/settings.json` (`<scratchpad>/resolve-inlang.py`), `bun install && bun run codegen`, fix type fallout,
+  `vp run verify`, `bun run build`, commit. If conflicts are in code, hand the merge to an integration agent.
+- After L-4 lands: commit server, copy the debug binary to `E:\dev-caches\ashyq-api-run\`, `ashyq.exe migrate`,
+  restart `serve` (dot-source `<scratchpad>/api-env.ps1`, it now sets relaxed auth limits), regenerate the client.
+- Next: slices 5.3 code arena, 6.1 grading + gradebook, 3.1 home (needs S-09), 3.8 notifications + `events.ts`
+  (needs S-06/S-07), reset-password page (S-08), `/admin/ai` (in 6.3); server L-5 (S-10 renames, S-11 link scheme +
+  prefixless certificate URL, copy course) and D-01..D-03; phase 7.
+- Known red e2e to fix in phase 7 (from `reports/F-2.md`): analytics table container axe "scrollable-region-focusable";
+  `FileField` 32px overflow at 390px; B-ADM-07 expects an empty password to reach the server (schema now min 8);
+  B-ACH-01/02 5s timeouts on a cold `vp dev`.
+- The e2e stand cannot relax auth limits (it runs as production and config-check refuses) - e2e must use one login
+  per worker (storage state) or the stand needs a dedicated non-production environment name.
+
 ## Server lane (sequential)
 
 | #    | Item                                              | Status |
 | ---- | ------------------------------------------------- | ------ |
 | L-1  | S-02 session + capabilities + allowed_actions; S-03 seed-e2e | done |
 | L-2  | S-01 contract hygiene (wire-compatible), gate at 0 | done  |
-| L-3  | S-04 concurrency + idempotency; S-05 pagination; slice gaps; configurable auth limits; analytics enum casing bug | wip |
-| L-4  | S-06 user event stream                            | todo   |
-| L-5  | S-08 password reset, resend code                  | todo   |
-| L-6  | S-07 notifications                                | todo   |
-| L-7  | S-09 agenda; S-10 renames (expand)                | todo   |
+| L-3  | S-04, S-05, slice gaps, configurable auth limits (copy-course and cohort_ids 422 not done) | done |
+| L-4  | S-08 password reset; S-06 user event stream; S-07 notifications; S-09 agenda; S-13 XP event | wip |
+| L-5  | S-10 renames (expand); S-11 link scheme + prefixless certificate URL; copy course | todo   |
 | L-8  | D-01..D-03 data migrations                        | todo   |
 | L-9  | S-11 link scheme switch                           | todo   |
 
