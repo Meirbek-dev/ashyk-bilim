@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 
 import { sanitize } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
+import { clipboardImage } from '#/shared/api/upload'
 
 import { isDocument, stripEmptyFileBlocks, type EditorDocument } from '../model/document'
 import { normalizeDocument } from '../model/normalize'
@@ -21,6 +22,8 @@ type Options = {
   onChange?: ((doc: EditorDocument) => void) | undefined
   /** "/" in an empty paragraph: open the insert menu there. */
   onSlash?: (anchor: MenuAnchor) => void
+  /** A pasted image (discussions: uploaded and inserted by the caller); absent = the editor's own handling. */
+  onPasteImage?: (file: File) => void
 }
 
 /**
@@ -28,7 +31,7 @@ type Options = {
  * become canonical), external content changes are applied without an update event, and `onChange` gets the
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
-export function useDocumentEditor({ preset, content, onChange, onSlash }: Options) {
+export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteImage }: Options) {
   // What this editor last emitted: a parent that passes it back as `content` must not reset the cursor.
   const emitted = useRef<unknown>(undefined)
   const editor = useEditor({
@@ -37,6 +40,11 @@ export function useDocumentEditor({ preset, content, onChange, onSlash }: Option
     editable: preset !== 'view',
     immediatelyRender: false,
     editorProps: {
+      handlePaste: (_view, event) => {
+        const image = onPasteImage ? clipboardImage(event.clipboardData) : null
+        if (image) onPasteImage?.(image)
+        return image !== null
+      },
       handleKeyDown: (view, event) => {
         const anchor = onSlash ? slashAnchor(view, event) : null
         if (anchor) onSlash?.(anchor)

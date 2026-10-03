@@ -53,6 +53,23 @@ test('B-CST-03 a new course: the name is required, then its overview opens', asy
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()
 })
 
+test('B-CST-33 a new course copied from one of mine opens the copy', async ({ page, studio }) => {
+  const { course } = await studio.course()
+  await page.goto('/teach/courses')
+  await page.getByRole('button', { name: m.studio_new_course({}, ru) }).click()
+  const dialog = page.getByRole('dialog', { name: m.studio_new_course({}, ru) })
+  const name = `E2E copy ${randomUUID().slice(0, 8)}`
+  await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill(name)
+  await dialog.getByRole('combobox', { name: m.studio_field_source({}, ru) }).selectOption(course.id)
+  await expect(dialog.getByRole('textbox', { name: m.studio_field_about({}, ru) })).toHaveCount(0)
+  await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
+  await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/overview$/)
+  const copyId = new URL(page.url()).pathname.split('/')[3] ?? ''
+  studio.track(copyId)
+  expect(copyId).not.toBe(course.id)
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+})
+
 test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacher’s course is no access', async ({
   page,
   studio,

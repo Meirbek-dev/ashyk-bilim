@@ -32,9 +32,9 @@ export function PostItem({ item, open = false }: PostItemProps) {
   const can = (action: DiscussionAction) => item.allowed_actions.includes(action)
   const author = item.author?.display_name ?? m.discussions_unknown_author()
   const hidden = item.status === 'hidden'
-  const save = (content: string) =>
+  const save = (content: string, uploadIds: string[]) =>
     update.mutateAsync(
-      { path: { discussion_id: item.id }, body: { content } },
+      { path: { discussion_id: item.id }, body: { content, upload_ids: uploadIds } },
       { onSuccess: () => (setEditing(false), toast.add({ title: m.discussions_saved() })) },
     )
   // A moderator's status change only (BUG-115): the owner's content is not sent back.

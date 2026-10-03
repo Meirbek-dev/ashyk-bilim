@@ -51,10 +51,10 @@ export const updateProfileOptions = (queryClient: QueryClient) => ({
   },
   onSuccess: (profile: UserProfile) => {
     queryClient.setQueryData(myProfileQueryKey(), profile)
-    const { display_name, avatar_key, locale, theme } = profile
+    const { display_name, avatar_key, locale, language, theme } = profile
     updateSession(queryClient, session => ({
       ...session,
-      user: { ...session.user, display_name, avatar_key, locale, theme },
+      user: { ...session.user, display_name, avatar_key, locale, language, theme },
     }))
   },
 })

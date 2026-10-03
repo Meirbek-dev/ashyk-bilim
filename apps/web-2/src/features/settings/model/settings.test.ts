@@ -1,10 +1,19 @@
+import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { locales } from '#/paraglide/runtime'
 import type { SessionSummary } from '#/shared/api/gen/types.gen'
+import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 
-import { avatarProblem, deviceLabel, orderSessions, profileLocale, readSwitches, startTheme } from './settings'
+import { avatarProblem, deviceLabel, orderSessions, readSwitches, startTheme } from './settings'
 
 const MB = 1024 * 1024
+
+const settings = (xp_gain: boolean | null, show_on_leaderboard: boolean | null) => ({
+  display: { animated_effects: null, compact_mode: null },
+  notifications: { xp_gain },
+  privacy: { show_on_leaderboard },
+})
 
 const session = (handle: string, current: boolean, seen: number): SessionSummary => ({
   handle,
@@ -52,21 +61,12 @@ describe('settings model', () => {
     expect(startTheme(null, 't3-chat', slugs)).toBe('t3-chat')
   })
 
-  test('B-SET-12 the interface language is saved as the profile locale tag', () => {
-    expect(profileLocale('ru')).toBe('ru-RU')
-    expect(profileLocale('kk')).toBe('kk-KZ')
-    expect(profileLocale('en')).toBe('en-US')
+  test('B-SET-12 the interface language is saved as is: the profile takes ru / kk / en', () => {
+    for (const locale of locales) expect(v.is(vUpdateProfileRequest, { locale })).toBe(true)
   })
 
   test('B-SET-13 the switches read the stored preferences and are on when unset', () => {
-    expect(readSwitches({})).toEqual({ xpGain: true, showOnLeaderboard: true })
-    expect(readSwitches({ notifications: { xpGain: false }, privacy: { showOnLeaderboard: false } })).toEqual({
-      xpGain: false,
-      showOnLeaderboard: false,
-    })
-    expect(readSwitches({ notifications: { xpGain: null }, privacy: 'garbage' })).toEqual({
-      xpGain: true,
-      showOnLeaderboard: true,
-    })
+    expect(readSwitches(settings(null, null))).toEqual({ xpGain: true, showOnLeaderboard: true })
+    expect(readSwitches(settings(false, false))).toEqual({ xpGain: false, showOnLeaderboard: false })
   })
 })

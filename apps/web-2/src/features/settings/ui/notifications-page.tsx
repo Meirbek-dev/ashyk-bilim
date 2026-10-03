@@ -16,7 +16,7 @@ const vSwitches = v.object({ xpGain: v.boolean(), showOnLeaderboard: v.boolean()
 export function NotificationsPage() {
   const { data } = useSuspenseQuery(gamificationOptions())
   const update = useMutation(updatePreferencesOptions(useQueryClient()))
-  const [defaultValues] = useState<GamificationSwitches>(() => readSwitches(data.profile.preferences))
+  const [defaultValues] = useState<GamificationSwitches>(() => readSwitches(data.profile.settings))
   const form = useAppForm(vSwitches, {
     defaultValues,
     onSubmit: ({ xpGain, showOnLeaderboard }) =>

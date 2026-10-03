@@ -8,7 +8,7 @@ import { FakeStorage, json, SLOT } from '#/shared/api/testing'
 import { renderInRouter } from '#/shared/components/testing'
 
 import type { EditorDocument, EditorNode } from '../model/document'
-import { BlockEditor } from '../index'
+import { BlockEditor, DiscussionEditor } from '../index'
 
 const ACTIVITY = '0190a5d2-0000-7000-8000-0000000000a1'
 const BLOCK = '0190a5d2-0000-7000-8000-0000000000b1'
@@ -153,5 +153,31 @@ describe('paste and drop', () => {
 
     await expect.element(screen.getByRole('img', { name: m.editor_image_alt() })).toBeVisible()
     expect(document.querySelectorAll('.ProseMirror img, .ProseMirror input[type=file]')).toHaveLength(1)
+  })
+})
+
+describe('discussion images', () => {
+  test('B-EDT-20 a pasted image in a post uploads as discussion-image and is inserted with its key', async () => {
+    const { release, api } = stubNetwork()
+    const onImage = vi.fn<(image: { id: string; key: string }) => void>()
+    const onChange = vi.fn<(doc: EditorDocument) => void>()
+    const screen = await renderInRouter(
+      <QueryClientProvider client={new QueryClient()}>
+        <Suspense>
+          <DiscussionEditor content={null} onChange={onChange} onImage={onImage} />
+        </Suspense>
+      </QueryClientProvider>,
+    )
+    const textbox = screen.getByRole('textbox', { name: m.editor_label() })
+    await userEvent.click(textbox)
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['png'], 'shot.png', { type: 'image/png' }))
+    textbox
+      .element()
+      .dispatchEvent(new ClipboardEvent('paste', { clipboardData: clipboard, bubbles: true, cancelable: true }))
+    release()
+    await expect.poll(() => onImage.mock.lastCall?.[0]).toEqual({ id: SLOT.id, key: SLOT.key, size_bytes: 4 })
+    expect(find(last(onChange), 'image')?.attrs?.['src']).toBe(`/content/${SLOT.key}`)
+    expect(await api.mock.calls[0]?.[0].json()).toMatchObject({ purpose: 'discussion-image' })
   })
 })

@@ -18,11 +18,11 @@ export function NewPost({ courseId, parentId }: { courseId: CourseId; parentId?:
     parentId ? createReplyOptions(queryClient, courseId) : createPostOptions(queryClient, courseId),
   )
   const idempotency = useIdempotencyKey()
-  const submit = (content: string) =>
+  const submit = (content: string, uploadIds: string[]) =>
     create.mutateAsync(
       {
         path: { course_id: courseId },
-        body: { content, parent_id: parentId },
+        body: { content, parent_id: parentId, upload_ids: uploadIds },
         headers: { 'Idempotency-Key': idempotency.key },
       },
       {

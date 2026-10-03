@@ -90,7 +90,9 @@ describe('authoring', () => {
 
   test('B-EDT-14 a legacy HTML post is sanitized and edited as rich text, without the block menu', async () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
-    const screen = await render(<DiscussionEditor content={LEGACY_POST} onChange={onChange} />)
+    const screen = await render(
+      <DiscussionEditor content={LEGACY_POST} onChange={onChange} onImage={() => undefined} />,
+    )
     await expect.element(screen.getByText('21')).toBeVisible()
     expect(document.querySelector('.ProseMirror [onerror], .ProseMirror script')).toBeNull()
     await expect.element(screen.getByRole('button', { name: m.editor_insert() })).not.toBeInTheDocument()

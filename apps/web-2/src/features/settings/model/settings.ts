@@ -1,12 +1,11 @@
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
-import { locales, type Locale } from '#/paraglide/runtime'
+import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
 import { checkUpload } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
-import type { Locale as ProfileLocale, Profile, SessionSummary } from '#/shared/api/gen/types.gen'
-import { vNotificationPreferences, vPrivacyPreferences } from '#/shared/api/gen/valibot.gen'
+import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
 
 /** Public storage keys (`avatar_key`...) are served anonymously at /content/<key>. */
 export const contentUrl = (key: string) => `/content/${key}`
@@ -23,10 +22,6 @@ export function avatarProblem(file: { size: number; type: string }): string | nu
     : m.settings_avatar_wrong_type()
 }
 
-/** `UserProfile.locale` takes region tags (D-03 makes it the `ru` / `kk` / `en` enum). */
-const profileLocales: Record<Locale, ProfileLocale> = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' }
-export const profileLocale = (locale: Locale): ProfileLocale => profileLocales[locale]
-
 /** The appearance form: theme slug, mode and interface language. */
 export const vAppearance = v.object({ theme: v.string(), mode: v.picklist(MODES), locale: v.picklist(locales) })
 
@@ -40,18 +35,11 @@ export const startTheme = (profileTheme: string | null | undefined, shown: strin
 /** The two switches of the notifications page. An unset preference is on (the server's default). */
 export type GamificationSwitches = { xpGain: boolean; showOnLeaderboard: boolean }
 
-/**
- * The server passes stored `Profile.preferences` through as JSON (legacy rows may hold anything): read its sections
- * with the generated section schemas.
- */
-export function readSwitches(preferences: { [K in keyof Profile['preferences']]?: unknown }): GamificationSwitches {
-  const notifications = v.safeParse(vNotificationPreferences, preferences['notifications'])
-  const privacy = v.safeParse(vPrivacyPreferences, preferences['privacy'])
-  return {
-    xpGain: (notifications.success ? notifications.output.xpGain : null) ?? true,
-    showOnLeaderboard: (privacy.success ? privacy.output.showOnLeaderboard : null) ?? true,
-  }
-}
+/** The switches from the typed `Profile.settings` (null = never set). */
+export const readSwitches = ({ notifications, privacy }: GamificationSettings): GamificationSwitches => ({
+  xpGain: notifications.xp_gain ?? true,
+  showOnLeaderboard: privacy.show_on_leaderboard ?? true,
+})
 
 /** This device first, then the most recently seen. */
 export const orderSessions = (sessions: readonly SessionSummary[]): SessionSummary[] =>

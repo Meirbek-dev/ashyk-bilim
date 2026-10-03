@@ -12,7 +12,7 @@ import { applyCreated, applyRead } from './queries'
 async function xpToastsOn(queryClient: QueryClient): Promise<boolean> {
   try {
     const { profile } = await queryClient.ensureQueryData(dashboardOptions())
-    return profile.preferences.notifications?.xpGain !== false
+    return profile.settings.notifications.xp_gain !== false
   } catch {
     return true
   }

@@ -12,6 +12,7 @@ import {
   createCourseUpdateMutation,
   deleteCertificationMutation,
   deleteCourseUpdateMutation,
+  duplicateCourseMutation,
   editCourseUpdateMutation,
   getCourseOptions,
   getCourseQueryKey,
@@ -19,6 +20,7 @@ import {
   listCourseCertificationsOptions,
   listCourseUpdatesOptions,
   listCoursesInfiniteQueryKey,
+  listCoursesOptions,
   listGroupsOptions,
   removeContributorMutation,
   updateCertificationMutation,
@@ -111,6 +113,13 @@ const putCourse = (queryClient: QueryClient) => (course: Course) =>
   queryClient.setQueryData(getCourseQueryKey(byId(course.id)), course)
 
 export const createCourseOptions = () => ({ ...createCourseMutation(), meta: { invalidates: [lists()] } })
+
+// ponytail: the 100 most recently changed editable courses; a searchable picker when authors outgrow it.
+/** Courses a new one may be copied from: the caller's editable ones (the copy needs write access to the source). */
+export const copySourcesOptions = () => listCoursesOptions({ query: { mine: true, limit: 100 } })
+
+/** A copy of a course (chapters, activities, assessments as drafts; no learners); retried with one `Idempotency-Key`. */
+export const duplicateCourseOptions = () => ({ ...duplicateCourseMutation(), meta: { invalidates: [lists()] } })
 
 // The answer is the course: it replaces the cached one; readiness (thumbnail) is read again where shown.
 export const updateCourseOptions = (queryClient: QueryClient, id: CourseId) => ({

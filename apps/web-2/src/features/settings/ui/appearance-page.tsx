@@ -10,7 +10,7 @@ import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { MODES, readAppearance, saveMode, saveTheme, type Mode } from '#/shared/lib/appearance'
 import { toast } from '#/shared/ui/toast'
 
-import { profileLocale, startTheme, vAppearance } from '../model/settings'
+import { startTheme, vAppearance } from '../model/settings'
 import { profileOptions, updateProfileOptions } from '../queries'
 import { ThemePicker } from './theme-picker'
 
@@ -32,7 +32,7 @@ export function AppearancePage() {
   const form = useAppForm(vAppearance, {
     defaultValues,
     onSubmit: async ({ theme, mode, locale }) => {
-      await update.mutateAsync({ body: { theme, locale: profileLocale(locale) } })
+      await update.mutateAsync({ body: { theme, locale } })
       saveTheme(theme)
       saveMode(mode)
       // Paraglide stores the new language and reloads the page in it.

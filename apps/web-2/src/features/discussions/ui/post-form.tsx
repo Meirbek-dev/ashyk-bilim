@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent } from 'react'
+import { Suspense, useRef, type FormEvent } from 'react'
 import * as v from 'valibot'
 
 import { DiscussionEditor } from '#/features/editor'
@@ -25,8 +25,11 @@ type PostFormProps = {
   /** Stored content to edit (editor JSON or legacy HTML); empty for a new post. */
   initial?: string
   submitLabel: string
-  /** Gets the editor document as a JSON string; resolves when the server has answered. */
-  onSubmit: (content: string) => Promise<unknown>
+  /**
+   * Gets the editor document as a JSON string and the images it still shows (`upload_ids`); resolves when the server
+   * has answered.
+   */
+  onSubmit: (content: string, uploadIds: string[]) => Promise<unknown>
   pending: boolean
   error: unknown
   onCancel?: () => void
@@ -34,10 +37,16 @@ type PostFormProps = {
 
 /** A post, reply or edit: the `discussion` editor preset, its error under it, and the form's actions. */
 export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, onCancel }: PostFormProps) {
+  // Images uploaded while writing; one removed again before saving is not claimed (the server reaps it).
+  const images = useRef<{ id: string; key: string }[]>([])
   const form = useAppForm(schema, {
     defaultValues: { content: initial },
     onSubmit: async ({ content }) => {
-      await onSubmit(content)
+      await onSubmit(
+        content,
+        images.current.filter(image => content.includes(image.key)).map(image => image.id),
+      )
+      images.current = []
       form.reset()
     },
   })
@@ -51,7 +60,11 @@ export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, 
         {field => (
           <>
             <Suspense fallback={<Skeleton className="h-row w-full" />}>
-              <DiscussionEditor content={field.state.value} onChange={doc => field.handleChange(JSON.stringify(doc))} />
+              <DiscussionEditor
+                content={field.state.value}
+                onChange={doc => field.handleChange(JSON.stringify(doc))}
+                onImage={image => images.current.push(image)}
+              />
             </Suspense>
             {errorText(field.state.meta.errors) ? (
               <p className="text-sm text-destructive">{errorText(field.state.meta.errors)}</p>
