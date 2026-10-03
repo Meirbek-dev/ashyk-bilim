@@ -1,3 +1,5 @@
+import { Agent } from 'node:http'
+
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
@@ -10,12 +12,13 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 import { paraglideOptions } from './gates/codegen.ts'
 import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
-// Dev is same-origin like prod: the API stack (`just dev-up`) sits behind the dev server's proxy.
+// Dev is same-origin like prod: the API (`just dev-up`) and storage sit behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
-// Storage as nginx serves it in prod (buckets, `/content/<key>`) on this origin: uploads work on any port, no CORS.
-const storage = { target: process.env['STORAGE_PROXY_TARGET'] ?? 'http://localhost:9002', changeOrigin: true }
+// Storage as nginx serves it (buckets, `/content/<key>`); kept-alive sockets (one per request exhausted ports in e2e).
+const agent = new Agent({ keepAlive: true })
+const storage = { target: process.env['STORAGE_PROXY_TARGET'] ?? 'http://localhost:9002', changeOrigin: true, agent }
 const proxy = {
-  '/api/v2': { target: apiTarget, changeOrigin: true },
+  '/api/v2': { target: apiTarget, changeOrigin: true, agent },
   '/ab-public': storage,
   '/ab-private': storage,
   '/content': { ...storage, rewrite: (path: string) => path.replace(/^\/content\//, '/ab-public/') },
@@ -42,10 +45,9 @@ const chromium = {
   provider: playwright(),
   instances: [{ browser: 'chromium' as const }],
 }
-// 30 s: the first test of a file loads lazy chunks (Tiptap, shiki) through the dev server while other
-// worktrees run their own verify; 15 s timed out under that load.
+// 30 s: a file's first test loads lazy chunks (Tiptap, shiki) while other worktrees verify; 15 s timed out.
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
-// G-15 is a phase gate (spec 9), not part of `vp test run`: `bun run g15` sets G15 and runs only this project.
+// G-15 (spec 9) is a phase gate, not part of `vp test run`: `bun run g15` sets G15.
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
 
 // ---- Lint (G-01, spec 7.2-7.3). Every rule is an error; each message names the one allowed way. ----
@@ -251,14 +253,12 @@ const formatStaged = (files: readonly string[]) => {
 export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
-  // 127.0.0.1, not `localhost`: Node took ::1, browsers 127.0.0.1 too (refused loads in e2e).
   server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy },
   build: {
     manifest: true,
-    // Spec 7.4: response schemas leave the production bundle. With the validators stripped, an unused
-    // `v.object(...)` in valibot.gen.ts is dead code, but a bundler cannot know that valibot calls are pure.
-    // Every `v.<fn>()` result is now droppable when unused: call a valibot side effect by its named import
-    // (`setGlobalMessage` in shared/ui/form/use-app-form.ts), never as `v.<fn>()`.
+    // Spec 7.4: response schemas leave the production bundle, so an unused `v.object(...)` is dead code, but a bundler
+    // cannot know valibot calls are pure. Every `v.<fn>()` result is now droppable: call a valibot side effect by its
+    // named import (`setGlobalMessage` in shared/ui/form/use-app-form.ts), never as `v.<fn>()`.
     rolldownOptions: { treeshake: { manualPureFunctions: ['v'] } },
   },
   test: {
