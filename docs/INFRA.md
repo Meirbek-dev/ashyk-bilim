@@ -444,6 +444,8 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
   `release/stage1`), downtime 91 s, smoke green, real client addresses in the
   nginx log (proxy `192.168.1.46/32`), Judge0 healthy on its own db/redis.
   The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
+  First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
+  on it: 160 s, row counts match prod (RTO target 2 h met with margin).
 - **No release is published yet.** `main` is red since 34d8cd2 (message catalogs
   moved to the Paraglide format while `apps/web` still reads them through
   next-intl: web typecheck fails), so `publish` has never run and there is no
