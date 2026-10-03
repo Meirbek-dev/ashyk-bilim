@@ -13,7 +13,10 @@
       "./messages/{locale}/errors.json",
       "./messages/{locale}/validation.json",
       "./messages/{locale}/editor.json",
-      "./messages/{locale}/markdown.json"
+      "./messages/{locale}/markdown.json",
+      "./messages/{locale}/activity.json",
+      "./messages/{locale}/course.json",
+      "./messages/{locale}/discussions.json"
     ]
   }
 }

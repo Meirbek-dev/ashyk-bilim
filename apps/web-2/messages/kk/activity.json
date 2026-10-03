@@ -1,0 +1,10 @@
+{
+  "activity_type_dynamic": "Бет",
+  "activity_type_video": "Бейне",
+  "activity_type_document": "Құжат",
+  "activity_type_file_submission": "Файл жіберу",
+  "activity_type_quiz": "Тест тапсырмасы",
+  "activity_type_exam": "Емтихан",
+  "activity_type_code_challenge": "Код есебі",
+  "activity_type_custom": "Басқа белсенділік"
+}
