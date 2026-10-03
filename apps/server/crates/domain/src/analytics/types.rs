@@ -19,6 +19,121 @@ use utoipa::ToSchema;
 
 use super::filters::{Compare, Window};
 
+/// A closed set of stable codes: the variant's literal is both its wire
+/// value and `as_str()`.
+macro_rules! code_enum {
+    ($(#[$doc:meta])* $name:ident { $($variant:ident => $s:literal),+ $(,)? }) => {
+        $(#[$doc])*
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+        pub enum $name {
+            $(#[serde(rename = $s)] $variant),+
+        }
+
+        impl $name {
+            #[must_use]
+            pub const fn as_str(self) -> &'static str {
+                match self { $(Self::$variant => $s),+ }
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+    };
+}
+
+/// Why a learner is at risk (`risk::reason_codes`; a test pins the set).
+#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RiskReasonCode {
+    #[serde(rename = "inactive_7d")]
+    Inactive7d,
+    LowProgress,
+    RepeatedFailures,
+    MissingRequiredAssessments,
+    GradingBlock,
+}
+
+code_enum!(AlertKind {
+    RiskSpike => "risk_spike",
+    EngagementDrop => "engagement_drop",
+    GradingBacklog => "grading_backlog",
+    GradingSlo => "grading_slo",
+    AssessmentOutlier => "assessment_outlier",
+    ContentStale => "content_stale",
+});
+
+code_enum!(ContentBottleneckSignal {
+    HighTimeLowCompletion => "high_time_low_completion",
+    ExitAfterOpen => "exit_after_open",
+    RepeatedAssessmentFailures => "repeated_assessment_failures",
+    StaleLowPerformance => "stale_low_performance",
+});
+
+code_enum!(InsightCategory {
+    Risk => "risk",
+    Assessment => "assessment",
+    Content => "content",
+    Workload => "workload",
+    Completion => "completion",
+    Intervention => "intervention",
+});
+
+code_enum!(
+    /// Where the analytics read came from.
+    DataMode {
+        Live => "live",
+        Rollup => "rollup",
+    }
+);
+
+code_enum!(ForecastKind {
+    CompletionTargetMiss => "completion_target_miss",
+    GradingBacklog7d => "grading_backlog_7d",
+    CourseCompletionDeadline => "course_completion_deadline",
+    AssessmentFailureRisk => "assessment_failure_risk",
+});
+
+code_enum!(AnomalyKind {
+    EngagementDrop => "engagement_drop",
+    SubmissionSpike => "submission_spike",
+    FastQuizCompletion => "fast_quiz_completion",
+    ScoreDistributionShift => "score_distribution_shift",
+});
+
+code_enum!(ContentHealthSignal {
+    ContentFreshness => "content_freshness",
+    AverageProgress => "average_progress",
+    GradingBacklog => "grading_backlog",
+});
+
+code_enum!(SuspiciousFlag {
+    TooEasy => "too_easy",
+    TooHard => "too_hard",
+    LowDiscrimination => "low_discrimination",
+    LowVariance => "low_variance",
+});
+
+code_enum!(AuditSource {
+    GradingEntry => "grading_entry",
+    BulkAction => "bulk_action",
+});
+
+code_enum!(SupportAlertCode {
+    GradingSloBreached => "grading_slo_breached",
+    GradingSloWarning => "grading_slo_warning",
+    SuspiciousAttempts => "suspicious_attempts",
+    MissingScores => "missing_scores",
+});
+
+code_enum!(ItemType {
+    Workflow => "workflow",
+    Question => "question",
+    Test => "test",
+});
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
@@ -160,9 +275,7 @@ pub enum AnalyticsCode {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AlertItem {
     pub id: String,
-    /// `risk_spike` | `engagement_drop` | `grading_backlog` | `grading_slo` |
-    /// `assessment_outlier` | `content_stale`.
-    pub kind: &'static str,
+    pub kind: AlertKind,
     pub severity: Severity,
     pub code: AnalyticsCode,
     #[schema(value_type = crate::wire::MessageParams)]
@@ -203,9 +316,7 @@ pub struct ContentBottleneckRow {
     pub activity_id: ActivityId,
     pub activity_name: String,
     pub activity_type: String,
-    /// `high_time_low_completion` | `exit_after_open` |
-    /// `repeated_assessment_failures` | `stale_low_performance`.
-    pub signal: &'static str,
+    pub signal: ContentBottleneckSignal,
     pub severity: Severity,
     pub completion_rate: Option<f64>,
     pub started_learners: i64,
@@ -251,8 +362,7 @@ pub struct TeacherWorkloadSummary {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct InsightFeedItem {
     pub id: String,
-    /// `risk` | `assessment` | `content` | `workload` | `completion` | `intervention`.
-    pub category: &'static str,
+    pub category: InsightCategory,
     pub severity: Severity,
     pub priority: i64,
     pub code: AnalyticsCode,
@@ -299,7 +409,7 @@ pub struct DrillThroughResponse {
     pub generated_at_unix: i64,
     pub metric: DrillMetric,
     pub total: i64,
-    #[schema(value_type = Vec<Object>)]
+    #[schema(value_type = Vec<crate::wire::DrillThroughRow>)]
     pub items: Vec<serde_json::Value>,
 }
 
@@ -324,8 +434,7 @@ pub struct CourseDataGap {
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AnalyticsDataQuality {
-    /// `live` | `rollup`.
-    pub mode: &'static str,
+    pub mode: DataMode,
     pub last_rollup_time_unix: Option<i64>,
     pub freshness_seconds: i64,
     pub confidence_level: Confidence,
@@ -339,9 +448,7 @@ pub struct AnalyticsDataQuality {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ForecastItem {
     pub id: String,
-    /// `completion_target_miss` | `grading_backlog_7d` |
-    /// `course_completion_deadline` | `assessment_failure_risk`.
-    pub kind: &'static str,
+    pub kind: ForecastKind,
     pub severity: Severity,
     pub code: AnalyticsCode,
     #[schema(value_type = crate::wire::MessageParams)]
@@ -360,9 +467,7 @@ pub struct ForecastItem {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AnomalyItem {
     pub id: String,
-    /// `engagement_drop` | `submission_spike` | `fast_quiz_completion` |
-    /// `score_distribution_shift`.
-    pub kind: &'static str,
+    pub kind: AnomalyKind,
     pub severity: Severity,
     pub code: AnalyticsCode,
     #[schema(value_type = crate::wire::MessageParams)]
@@ -443,7 +548,7 @@ pub struct Intervention {
     pub notes: Option<String>,
     pub risk_score_before: Option<f64>,
     pub risk_score_after: Option<f64>,
-    #[schema(value_type = Object)]
+    #[schema(value_type = crate::wire::InterventionPayload)]
     pub payload: serde_json::Value,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -509,6 +614,7 @@ pub struct AtRiskLearnerRow {
     pub risk_score: f64,
     pub risk_level: RiskLevel,
     pub risk_components: BTreeMap<&'static str, f64>,
+    #[schema(value_type = Vec<RiskReasonCode>)]
     pub reason_codes: Vec<&'static str>,
     pub risk_trend: RiskTrend,
     pub previous_risk_score: Option<f64>,
@@ -636,8 +742,7 @@ pub struct ActivityDropoffRow {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ContentHealthRow {
     pub course_id: CourseId,
-    /// `content_freshness` | `average_progress` | `grading_backlog`.
-    pub signal: &'static str,
+    pub signal: ContentHealthSignal,
     pub severity: Severity,
     pub value: Option<f64>,
     pub note: &'static str,
@@ -662,8 +767,7 @@ pub struct AssessmentOutlierRow {
     pub score_variance: Option<f64>,
     pub reliability_score: Option<f64>,
     pub discrimination_index: Option<f64>,
-    /// `too_easy` | `too_hard` | `low_discrimination` | `low_variance`.
-    pub suspicious_flag: Option<&'static str>,
+    pub suspicious_flag: Option<SuspiciousFlag>,
     pub outlier_reason_codes: Vec<&'static str>,
 }
 
@@ -770,8 +874,7 @@ pub struct AssessmentDiagnosticsSnapshot {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AssessmentAuditEventRow {
     pub id: String,
-    /// `grading_entry` | `bulk_action`.
-    pub source: &'static str,
+    pub source: AuditSource,
     pub action: String,
     pub actor_user_id: Option<UserId>,
     pub actor_display_name: Option<String>,
@@ -807,8 +910,7 @@ pub struct AssessmentSloSnapshot {
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AssessmentSupportAlertRow {
-    /// `grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.
-    pub code: &'static str,
+    pub code: SupportAlertCode,
     pub severity: Severity,
     pub summary: &'static str,
 }
@@ -836,8 +938,7 @@ pub enum ItemSignal {
 pub struct AssessmentItemAnalyticsRow {
     pub item_key: String,
     pub item_label: String,
-    /// `workflow` | `question` | `test`.
-    pub item_type: &'static str,
+    pub item_type: ItemType,
     pub population_count: i64,
     pub impacted_count: i64,
     pub impact_rate: Option<f64>,

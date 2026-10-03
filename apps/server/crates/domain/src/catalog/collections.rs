@@ -8,11 +8,14 @@ use ab_core::id::{CollectionId, CourseId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, ErrorCode, Result};
 use sqlx::PgPool;
+use uuid::Uuid;
 
+pub use ab_db::collections::CollectionFilter;
 pub use ab_db::collections::CollectionRow as Collection;
 
 use crate::catalog::courses::{Course, CoursesService};
 use crate::catalog::sees_private;
+use crate::files::uploads::{UNREFERENCED_GRACE, claim_upload};
 use crate::identity::Actor;
 
 const fn perm(action: Action, scope: Scope) -> Permission {
@@ -30,6 +33,9 @@ pub struct CollectionChanges<'a> {
     pub description: Option<&'a str>,
     pub public: Option<bool>,
     pub course_ids: Option<Vec<CourseId>>,
+    /// `Some(Some(id))`: claim that finalized `collection-cover` upload;
+    /// `Some(None)`: remove the cover; `None`: keep it.
+    pub cover_upload_id: Option<Option<Uuid>>,
     pub expected_version: Option<i32>,
 }
 
@@ -163,13 +169,15 @@ impl CollectionsService {
         description: &str,
         public: bool,
         course_ids: Vec<CourseId>,
+        cover_upload_id: Option<Uuid>,
     ) -> Result<CollectionWithCourses> {
         actor.require(perm(Action::Create, Scope::Platform))?;
         // BUG-168: names are trimmed and never blank (shared rule, UX-106).
         let name = ab_core::required_str("name", name)?;
         self.check_courses_readable(actor, &course_ids, &[]).await?;
+        let mut tx = self.pool.begin().await?;
         let id = ab_db::collections::insert_collection(
-            &self.pool,
+            &mut tx,
             name,
             description,
             public,
@@ -177,6 +185,18 @@ impl CollectionsService {
             &course_ids,
         )
         .await?;
+        if let Some(upload_id) = cover_upload_id {
+            let key = claim_upload(
+                &mut tx,
+                actor,
+                upload_id,
+                "collection-cover",
+                "cover_upload_id",
+            )
+            .await?;
+            ab_db::collections::set_collection_cover(&mut *tx, id, Some(&key)).await?;
+        }
+        tx.commit().await?;
         self.get(actor, id).await
     }
 
@@ -215,10 +235,11 @@ impl CollectionsService {
         })
     }
 
-    /// Newest-first page; returns (collections, next cursor).
+    /// One page by `filter`; returns (collections, next cursor).
     pub async fn list(
         &self,
         actor: &Actor,
+        filter: &CollectionFilter<'_>,
         cursor: Option<CollectionId>,
         limit: i64,
     ) -> Result<(Vec<CollectionWithCourses>, Option<CollectionId>)> {
@@ -229,6 +250,7 @@ impl CollectionsService {
             Some(actor.user_id),
             see_all,
             sees_private(actor, ResourceType::Course),
+            filter,
             cursor,
             limit + 1,
         )
@@ -276,8 +298,9 @@ impl CollectionsService {
             self.check_courses_readable(actor, course_ids, &kept)
                 .await?;
         }
+        let mut tx = self.pool.begin().await?;
         let updated = ab_db::collections::update_collection(
-            &self.pool,
+            &mut tx,
             id,
             name,
             changes.description,
@@ -298,6 +321,35 @@ impl CollectionsService {
                 serde_json::json!({ "expected": expected, "actual": collection.version }),
             ));
         }
+        // The UPDATE above locked the row; claims and releases follow
+        // (collection, then uploads - the order a delete takes). The key the
+        // swap replaced is released, as for course thumbnails (UX-143).
+        if let Some(cover) = changes.cover_upload_id {
+            let key = match cover {
+                Some(upload_id) => Some(
+                    claim_upload(
+                        &mut tx,
+                        actor,
+                        upload_id,
+                        "collection-cover",
+                        "cover_upload_id",
+                    )
+                    .await?,
+                ),
+                None => None,
+            };
+            if let Some(old) =
+                ab_db::collections::set_collection_cover(&mut *tx, id, key.as_deref()).await?
+            {
+                ab_db::uploads::release_reference_by_key(
+                    &mut *tx,
+                    &old,
+                    UNREFERENCED_GRACE.as_secs_f64(),
+                )
+                .await?;
+            }
+        }
+        tx.commit().await?;
         self.get(actor, id).await
     }
 
@@ -313,7 +365,14 @@ impl CollectionsService {
         if !Self::can_delete(actor, &collection) {
             return Err(Error::forbidden("no delete access to this collection"));
         }
-        if ab_db::collections::delete_collection(&self.pool, id, expected_version).await? {
+        if ab_db::collections::delete_collection(
+            &self.pool,
+            id,
+            expected_version,
+            UNREFERENCED_GRACE.as_secs_f64(),
+        )
+        .await?
+        {
             return Ok(());
         }
         // UX-317: nothing deleted - a concurrent delete won (404), or the

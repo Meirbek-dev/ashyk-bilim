@@ -31,6 +31,9 @@ pub struct UserProfile {
     /// A Google identity is linked; Google sign-in never asks for the TOTP
     /// code.
     pub google_linked: bool,
+    /// Optimistic-lock version of the profile (the `ETag` of
+    /// `GET /users/me`): echo it as `If-Match` on `PATCH /users/me`.
+    pub version: i32,
 }
 
 impl UserProfile {
@@ -61,6 +64,7 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             organization: p.organization,
             profile: p.profile,
             theme: p.theme,
+            version: p.profile_version,
             mfa_enabled: false,
             has_password: false,
             google_linked: false,
@@ -102,17 +106,23 @@ impl From<ab_db::identity::PublicProfileRow> for PublicProfile {
 #[serde(deny_unknown_fields)]
 pub struct CreateUserRequest {
     #[garde(length(min = 3, max = 48), pattern(r"^[A-Za-z0-9._-]+$"))]
+    #[schema(min_length = 3, max_length = 48, pattern = r"^[A-Za-z0-9._-]+$")]
     pub username: String,
     #[garde(email, length(max = 320))]
+    #[schema(max_length = 320)]
     pub email: String,
     #[garde(inner(custom(super::new_password)))]
+    #[schema(min_length = 8, max_length = 72)]
     pub password: Option<String>,
     #[garde(length(chars, min = 1, max = 100))]
+    #[schema(min_length = 1, max_length = 100)]
     pub first_name: String,
     #[garde(length(chars, min = 1, max = 100))]
+    #[schema(min_length = 1, max_length = 100)]
     pub last_name: String,
     /// Extra role slugs on top of the default `user`.
     #[garde(inner(length(max = 10)))]
+    #[schema(max_items = 10)]
     pub roles: Option<Vec<String>>,
 }
 
@@ -121,8 +131,10 @@ pub struct CreateUserRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateProfileRequest {
     #[garde(length(chars, max = 120))]
+    #[schema(max_length = 120)]
     pub display_name: Option<String>,
     #[garde(length(chars, max = 2000))]
+    #[schema(max_length = 2000)]
     pub bio: Option<String>,
     /// One of the platform locales.
     #[garde(custom(valid_locale))]
@@ -130,6 +142,7 @@ pub struct UpdateProfileRequest {
     pub locale: Option<String>,
     /// School / university / company; a blank value is 422 `required`.
     #[garde(length(chars, max = 200))]
+    #[schema(max_length = 200)]
     pub organization: Option<String>,
     /// Finalized `avatar` upload to claim as the new avatar; `null`
     /// removes the current one.

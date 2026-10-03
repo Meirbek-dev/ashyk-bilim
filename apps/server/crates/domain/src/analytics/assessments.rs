@@ -25,6 +25,7 @@ use super::types::{
     ItemSignal, QuestionDifficultyRow, Severity, SloStatus, TeacherAssessmentDetailResponse,
     TeacherAssessmentDetailSummary,
 };
+use super::types::{AuditSource, ItemType, SupportAlertCode, SuspiciousFlag};
 
 pub const GRADING_SLA_HOURS: f64 = 72.0;
 
@@ -137,15 +138,15 @@ pub fn suspicious_flag(
     pass_rate: Option<f64>,
     variance: Option<f64>,
     discrimination: Option<f64>,
-) -> Option<&'static str> {
+) -> Option<SuspiciousFlag> {
     if pass_rate.is_some_and(|p| p >= 95.0) {
-        Some("too_easy")
+        Some(SuspiciousFlag::TooEasy)
     } else if pass_rate.is_some_and(|p| p <= 20.0) {
-        Some("too_hard")
+        Some(SuspiciousFlag::TooHard)
     } else if discrimination.is_some_and(|d| d < 0.15) {
-        Some("low_discrimination")
+        Some(SuspiciousFlag::LowDiscrimination)
     } else if variance.is_some_and(|v| v < 25.0) {
-        Some("low_variance")
+        Some(SuspiciousFlag::LowVariance)
     } else {
         None
     }
@@ -592,7 +593,7 @@ pub fn build_workflow_items(d: &AssessmentDiagnosticsSnapshot) -> Vec<Assessment
             |(key, label, impacted, signal, note)| AssessmentItemAnalyticsRow {
                 item_key: key.to_owned(),
                 item_label: label.to_owned(),
-                item_type: "workflow",
+                item_type: ItemType::Workflow,
                 population_count: total,
                 impacted_count: impacted,
                 impact_rate: safe_pct(
@@ -869,12 +870,12 @@ pub fn build_support(
     let mut alerts = Vec::new();
     match slo.status {
         SloStatus::Breached => alerts.push(AssessmentSupportAlertRow {
-            code: "grading_slo_breached",
+            code: SupportAlertCode::GradingSloBreached,
             severity: Severity::Critical,
             summary: "grading_latency_past_service_target",
         }),
         SloStatus::Warning => alerts.push(AssessmentSupportAlertRow {
-            code: "grading_slo_warning",
+            code: SupportAlertCode::GradingSloWarning,
             severity: Severity::Warning,
             summary: "grading_latency_approaching_service_target",
         }),
@@ -882,14 +883,14 @@ pub fn build_support(
     }
     if diagnostics.suspicious_attempts > 0 {
         alerts.push(AssessmentSupportAlertRow {
-            code: "suspicious_attempts",
+            code: SupportAlertCode::SuspiciousAttempts,
             severity: Severity::Warning,
             summary: "integrity_signals_in_scope",
         });
     }
     if diagnostics.missing_scores > 0 {
         alerts.push(AssessmentSupportAlertRow {
-            code: "missing_scores",
+            code: SupportAlertCode::MissingScores,
             severity: Severity::Critical,
             summary: "attempts_without_score_in_scope",
         });
@@ -926,7 +927,7 @@ pub fn build_audit_history(
             occurred,
             AssessmentAuditEventRow {
                 id: format!("grading-entry-{}", e.id),
-                source: "grading_entry",
+                source: AuditSource::GradingEntry,
                 action: if published {
                     "publish_grade"
                 } else {
@@ -964,7 +965,7 @@ pub fn build_audit_history(
             occurred,
             AssessmentAuditEventRow {
                 id: format!("bulk-action-{}", a.id),
-                source: "bulk_action",
+                source: AuditSource::BulkAction,
                 action: a.action_type.clone(),
                 actor_user_id: a.performed_by,
                 actor_display_name: a.performed_by.map(|u| ctx.display_name(u)),
@@ -1155,9 +1156,9 @@ pub fn build_detail(
             item_key: q.question_id.clone(),
             item_label: q.question_label.clone(),
             item_type: if a.kind == AssessmentKind::CodeChallenge {
-                "test"
+                ItemType::Test
             } else {
-                "question"
+                ItemType::Question
             },
             population_count: population,
             impacted_count: impacted,
@@ -1241,10 +1242,13 @@ mod tests {
             .collect();
         // 27% of 10 → 3: strong mean 80, weak mean 10 → 0.7
         assert_eq!(discrimination_index(&scores), Some(0.7));
-        assert_eq!(suspicious_flag(Some(96.0), None, None), Some("too_easy"));
+        assert_eq!(
+            suspicious_flag(Some(96.0), None, None),
+            Some(SuspiciousFlag::TooEasy)
+        );
         assert_eq!(
             suspicious_flag(Some(50.0), Some(10.0), Some(0.5)),
-            Some("low_variance")
+            Some(SuspiciousFlag::LowVariance)
         );
         assert_eq!(suspicious_flag(Some(50.0), Some(300.0), Some(0.5)), None);
         assert_eq!(group_size(4), 1);

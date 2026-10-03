@@ -25,10 +25,23 @@ use crate::assessments::AssessmentsService;
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 
+/// Stable readiness code the web localizes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReadinessCode {
+    NoLiveActivity,
+    AssessmentNotReady,
+    CodeChallengeUnconfigured,
+    FileSubmissionUnpublished,
+    FileSubmissionNotReady,
+    ActivityUnpublished,
+    ThumbnailMissing,
+    CertificateNotConfigured,
+}
+
 #[derive(Debug, Clone)]
 pub struct ReadinessItem {
-    /// Stable code the web localizes (see the module doc for the list).
-    pub code: &'static str,
+    pub code: ReadinessCode,
     /// Set when the item points at one activity.
     pub activity_id: Option<ActivityId>,
     /// That activity's name, for the link label.
@@ -42,7 +55,7 @@ pub struct CourseReadiness {
     pub warnings: Vec<ReadinessItem>,
 }
 
-fn item(code: &'static str, activity: Option<&ab_db::catalog::ActivityRow>) -> ReadinessItem {
+fn item(code: ReadinessCode, activity: Option<&ab_db::catalog::ActivityRow>) -> ReadinessItem {
     ReadinessItem {
         code,
         activity_id: activity.map(|a| a.id),
@@ -65,11 +78,11 @@ pub async fn course_readiness(
     let mut warnings = Vec::new();
 
     if !activities.iter().any(|a| a.published) {
-        blockers.push(item("no-live-activity", None));
+        blockers.push(item(ReadinessCode::NoLiveActivity, None));
     }
     for activity in &activities {
         if !activity.published {
-            warnings.push(item("activity-unpublished", Some(activity)));
+            warnings.push(item(ReadinessCode::ActivityUnpublished, Some(activity)));
             continue;
         }
         match activity.activity_type.as_str() {
@@ -78,14 +91,17 @@ pub async fn course_readiness(
                     ab_db::assessments::get_assessment_by_activity(pool, activity.id).await?;
                 match assessment {
                     None if activity.activity_type == "code_challenge" => {
-                        blockers.push(item("code-challenge-unconfigured", Some(activity)));
+                        blockers.push(item(
+                            ReadinessCode::CodeChallengeUnconfigured,
+                            Some(activity),
+                        ));
                     }
-                    None => blockers.push(item("assessment-not-ready", Some(activity))),
+                    None => blockers.push(item(ReadinessCode::AssessmentNotReady, Some(activity))),
                     Some(assessment) => {
                         let ok = assessment.lifecycle == Lifecycle::Published
                             && assessments.readiness_of(assessment.id).await?.ok;
                         if !ok {
-                            blockers.push(item("assessment-not-ready", Some(activity)));
+                            blockers.push(item(ReadinessCode::AssessmentNotReady, Some(activity)));
                         }
                     }
                 }
@@ -97,23 +113,27 @@ pub async fn course_readiness(
                 match config {
                     Some(c) if c.lifecycle == FileSubmissionLifecycle::Published => {
                         if c.instructions.trim().is_empty() {
-                            blockers.push(item("file-submission-not-ready", Some(activity)));
+                            blockers
+                                .push(item(ReadinessCode::FileSubmissionNotReady, Some(activity)));
                         }
                     }
-                    _ => blockers.push(item("file-submission-unpublished", Some(activity))),
+                    _ => blockers.push(item(
+                        ReadinessCode::FileSubmissionUnpublished,
+                        Some(activity),
+                    )),
                 }
             }
             _ => {}
         }
     }
     if course.thumbnail_key.is_none() {
-        warnings.push(item("thumbnail-missing", None));
+        warnings.push(item(ReadinessCode::ThumbnailMissing, None));
     }
     if ab_db::certifications::list_course_certifications(pool, course_id)
         .await?
         .is_empty()
     {
-        warnings.push(item("certificate-not-configured", None));
+        warnings.push(item(ReadinessCode::CertificateNotConfigured, None));
     }
     Ok(CourseReadiness {
         ready: blockers.is_empty(),

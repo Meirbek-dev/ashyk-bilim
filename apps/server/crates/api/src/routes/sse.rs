@@ -156,8 +156,8 @@ async fn open_stream(
         ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
     ),
     responses(
-        (status = 200, description = "Event stream", content_type = "text/event-stream",
-         body = String),
+        (status = 200, description = "Event stream: each message's `data` is one event",
+         content_type = "text/event-stream", body = crate::dto::grading::SubmissionStreamEvent),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
         (status = 429, description = "Too many open streams for this user", body = Problem,
@@ -197,8 +197,8 @@ pub async fn submission_events(
         ("Last-Event-ID" = Option<String>, Header, description = "Resume after this event id"),
     ),
     responses(
-        (status = 200, description = "Event stream", content_type = "text/event-stream",
-         body = String),
+        (status = 200, description = "Event stream: each message's `data` is one event",
+         content_type = "text/event-stream", body = crate::dto::grading::CourseGradingStreamEvent),
         (status = 403, description = "No grading access", body = Problem,
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible course", body = Problem,

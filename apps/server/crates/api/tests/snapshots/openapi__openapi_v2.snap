@@ -191,7 +191,9 @@ expression: json
               "details": {
                 "$ref": "#/components/schemas/ActivityDetails"
               },
-              "settings": {}
+              "settings": {
+                "$ref": "#/components/schemas/ActivitySettings"
+              }
             },
             "required": [
               "content",
@@ -265,10 +267,23 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "ActivitySettings": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "description": "`activities.settings`.\n\nThe server reads `required` (progress: `false` makes the activity\noptional). Migrated legacy rows keep the legacy\nassessment settings they had (exam / code-challenge keys such as\n`time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.",
+        "properties": {
+          "required": {
+            "description": "Absent = required.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "ActivityState": {
         "properties": {
           "activity_type": {
-            "type": "string"
+            "$ref": "#/components/schemas/ActivityType"
           },
           "allowed_actions": {
             "items": {
@@ -380,13 +395,15 @@ expression: json
         "description": "Add someone to the roster by id or username (exactly one).",
         "properties": {
           "role": {
-            "description": "`maintainer | contributor | reporter` (default `contributor`).",
-            "type": "string"
+            "$ref": "#/components/schemas/ContributorRole",
+            "description": "`maintainer | contributor | reporter` (default `contributor`)."
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
           },
           "username": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -444,12 +461,16 @@ expression: json
         "properties": {
           "amount": {
             "format": "int32",
+            "maximum": 100000,
+            "minimum": 1,
             "type": "integer"
           },
           "idempotency_key": {
+            "maxLength": 200,
             "type": "string"
           },
           "reason": {
+            "maxLength": 500,
             "type": "string"
           },
           "user_id": {
@@ -603,8 +624,8 @@ expression: json
             ]
           },
           "context": {
-            "description": "The allow-listed part of the run metadata.",
-            "type": "object"
+            "$ref": "#/components/schemas/RunContext",
+            "description": "The allow-listed part of the run metadata."
           },
           "cost_estimate": {
             "format": "double",
@@ -757,8 +778,8 @@ expression: json
             "type": "boolean"
           },
           "effective": {
-            "description": "The whole `AB__AI__*` section with secrets redacted.",
-            "type": "object"
+            "$ref": "#/components/schemas/AiEffectiveConfig",
+            "description": "The whole `AB__AI__*` section with secrets redacted."
           },
           "features": {
             "items": {
@@ -1009,6 +1030,121 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "AiEffectiveConfig": {
+        "description": "The `AB__AI__*` section the server runs with, secrets replaced by\n`\"[redacted]\"` (`AiConfig::redacted`; a test pins the keys).",
+        "properties": {
+          "ai_draft_mode_enabled": {
+            "type": "boolean"
+          },
+          "ai_enabled": {
+            "type": "boolean"
+          },
+          "analysis_requests_per_hour_per_user": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "course_analysis_enabled": {
+            "type": "boolean"
+          },
+          "course_qa_enabled": {
+            "type": "boolean"
+          },
+          "lecture_authoring_enabled": {
+            "type": "boolean"
+          },
+          "max_output_tokens": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "max_tokens_per_request": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "monthly_token_budget": {
+            "type": "integer"
+          },
+          "openai_api_key": {
+            "description": "`\"[redacted]\"` when set.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "openai_base_url": {
+            "type": "string"
+          },
+          "openai_model": {
+            "type": "string"
+          },
+          "openai_timeout_secs": {
+            "format": "double",
+            "type": "number"
+          },
+          "openrouter_api_key": {
+            "description": "`\"[redacted]\"` when set.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "openrouter_base_url": {
+            "type": "string"
+          },
+          "openrouter_model": {
+            "type": "string"
+          },
+          "openrouter_timeout_secs": {
+            "format": "double",
+            "type": "number"
+          },
+          "remediation_enabled": {
+            "type": "boolean"
+          },
+          "remediation_requests_per_hour_per_user": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "semantic_memory_enabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "description": "`enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.",
+            "type": "string"
+          },
+          "study_companion_enabled": {
+            "type": "boolean"
+          },
+          "submission_analysis_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "openai_model",
+          "openai_base_url",
+          "openrouter_model",
+          "openrouter_base_url",
+          "openai_timeout_secs",
+          "openrouter_timeout_secs",
+          "max_tokens_per_request",
+          "max_output_tokens",
+          "monthly_token_budget",
+          "ai_enabled",
+          "course_analysis_enabled",
+          "submission_analysis_enabled",
+          "remediation_enabled",
+          "course_qa_enabled",
+          "study_companion_enabled",
+          "lecture_authoring_enabled",
+          "ai_draft_mode_enabled",
+          "semantic_memory_enabled",
+          "analysis_requests_per_hour_per_user",
+          "remediation_requests_per_hour_per_user",
+          "openai_api_key",
+          "openrouter_api_key"
+        ],
+        "type": "object"
+      },
       "AiEvalResultId": {
         "format": "uuid",
         "type": "string"
@@ -1018,7 +1154,7 @@ expression: json
         "type": "string"
       },
       "AiEvidence": {
-        "description": "What an AI result was grounded on.",
+        "description": "What an AI result was grounded on: `{citations: [...]}`, or `{}` (the\ncolumn default; Q&A questions).",
         "properties": {
           "citations": {
             "items": {
@@ -1027,9 +1163,6 @@ expression: json
             "type": "array"
           }
         },
-        "required": [
-          "citations"
-        ],
         "type": "object"
       },
       "AiEvidenceId": {
@@ -1143,8 +1276,7 @@ expression: json
             "type": "string"
           },
           "kind": {
-            "description": "`risk_spike` | `engagement_drop` | `grading_backlog` | `grading_slo` |\n`assessment_outlier` | `content_stale`.",
-            "type": "string"
+            "$ref": "#/components/schemas/AlertKind"
           },
           "learner_count": {
             "type": [
@@ -1172,6 +1304,17 @@ expression: json
           "learner_count"
         ],
         "type": "object"
+      },
+      "AlertKind": {
+        "enum": [
+          "RiskSpike",
+          "EngagementDrop",
+          "GradingBacklog",
+          "GradingSlo",
+          "AssessmentOutlier",
+          "ContentStale"
+        ],
+        "type": "string"
       },
       "AnalyticsCode": {
         "description": "Every server-composed analytics message. The client localises the code\nwith the item's `params` (DECISIONS \"Pass-6 contract gaps\": codes +\nparams on the wire, no prose). Param names per code:\n\n- alerts: `grading_backlog {count}`, `engagement_dropped {delta_pct}`,\n  `content_stale {days}`, `risk_spike {count}`, `grading_slo_breached`\n  / `grading_slo_watch {assessment_title, course_name, breaches,\n  awaiting, oldest_hours?, target_hours}`;\n- forecasts: `completion_target_miss {course_name, count}`,\n  `course_completion_deadline {course_name, expected_pct}`,\n  `grading_backlog_7d {count}`, `assessment_failure_risk\n  {assessment_title, expected_pct}`;\n- anomalies: `sharp_engagement_drop` / `submission_spike {course_name}`,\n  `fast_quiz_completion` / `score_distribution_shift {assessment_title}`;\n- insights: `new_at_risk_learners {course_name, count}`, `low_pass_rate`\n  / `low_pass_rate_with_diagnostics {assessment_title, pass_rate}`,\n  `content_bottleneck {activity_name, signal}`, `workload_backlog {count,\n  breaches, forecast_7d, target_hours}`, `completion_improved\n  {course_name, delta_pts}`;\n- data quality: `missing_event_sources {sources[]}`, `thin_course_data\n  {count}`, `stale_rollup {}`.",
@@ -1245,8 +1388,7 @@ expression: json
             "type": "array"
           },
           "mode": {
-            "description": "`live` | `rollup`.",
-            "type": "string"
+            "$ref": "#/components/schemas/DataMode"
           }
         },
         "required": [
@@ -1324,8 +1466,7 @@ expression: json
             "type": "string"
           },
           "kind": {
-            "description": "`engagement_drop` | `submission_spike` | `fast_quiz_completion` |\n`score_distribution_shift`.",
-            "type": "string"
+            "$ref": "#/components/schemas/AnomalyKind"
           },
           "observed_value": {
             "format": "double",
@@ -1356,6 +1497,15 @@ expression: json
           "observed_value"
         ],
         "type": "object"
+      },
+      "AnomalyKind": {
+        "enum": [
+          "EngagementDrop",
+          "SubmissionSpike",
+          "FastQuizCompletion",
+          "ScoreDistributionShift"
+        ],
+        "type": "string"
       },
       "Assessment": {
         "properties": {
@@ -1551,8 +1701,7 @@ expression: json
             "$ref": "#/components/schemas/UnixTime"
           },
           "source": {
-            "description": "`grading_entry` | `bulk_action`.",
-            "type": "string"
+            "$ref": "#/components/schemas/AuditSource"
           },
           "status": {
             "type": [
@@ -1801,8 +1950,7 @@ expression: json
             "type": "string"
           },
           "item_type": {
-            "description": "`workflow` | `question` | `test`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ItemType"
           },
           "note": {
             "description": "Stable code for workflow rows (`manual_review_pending`, …); questions\nand tests carry `accuracy_pct` instead.",
@@ -2026,10 +2174,13 @@ expression: json
             ]
           },
           "suspicious_flag": {
-            "description": "`too_easy` | `too_hard` | `low_discrimination` | `low_variance`.",
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SuspiciousFlag"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "title": {
@@ -2109,8 +2260,7 @@ expression: json
       "AssessmentSupportAlertRow": {
         "properties": {
           "code": {
-            "description": "`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.",
-            "type": "string"
+            "$ref": "#/components/schemas/SupportAlertCode"
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
@@ -2169,6 +2319,8 @@ expression: json
         "properties": {
           "role": {
             "description": "Role slug, e.g. `instructor`.",
+            "maxLength": 64,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -2247,7 +2399,7 @@ expression: json
           },
           "reason_codes": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/RiskReasonCode"
             },
             "type": "array"
           },
@@ -2652,7 +2804,9 @@ expression: json
             "format": "uuid",
             "type": "string"
           },
-          "payload": {}
+          "payload": {
+            "$ref": "#/components/schemas/AuditPayload"
+          }
         },
         "required": [
           "id",
@@ -2662,6 +2816,131 @@ expression: json
           "actor_id"
         ],
         "type": "object"
+      },
+      "AuditPayload": {
+        "description": "`assessment_audit_events.payload`.\n\nThe keys depend on `event`: `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),\n`auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,\n`users`, `usergroups`), `override-created|updated|deleted` (`user_id`),\n`duplicated-from` (`source`), `deadline-extension-requested` /\n`deadline-extended` (`action_id`, `learners`, `new_due_at`),\n`submission-submitted` (`submission_id`, `attempt`, `status`,\n`auto_submit_reason`), `grade-saved` (`submission_id`, `learner_id`,\n`status`, `raw_score`, `final_score`, `audit_note`), `grades-published`\n(`published`, `already_published`).",
+        "properties": {
+          "action_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "already_published": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "attempt": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "audit_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auto_submit_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "by": {
+            "description": "`scheduler` for automatic transitions.",
+            "type": "string"
+          },
+          "final_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "from": {
+            "type": "string"
+          },
+          "learner_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "learners": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "new_due_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "published": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "raw_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "readiness": {
+            "description": "Readiness codes that blocked an automatic publish.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scheduled_at": {
+            "description": "Unix seconds.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "source": {
+            "description": "The assessment this one was duplicated from.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "submission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "usergroups": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "users": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-stored-json": true
+      },
+      "AuditSource": {
+        "enum": [
+          "GradingEntry",
+          "BulkAction"
+        ],
+        "type": "string"
       },
       "AutoSubmitReason": {
         "enum": [
@@ -2708,7 +2987,7 @@ expression: json
             "type": "string"
           },
           "content": {
-            "description": "`{upload_id, file_key, file_name, file_size, file_type}`."
+            "$ref": "#/components/schemas/BlockContent"
           },
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
@@ -2723,6 +3002,45 @@ expression: json
           "block_type",
           "content",
           "created_at_unix"
+        ],
+        "type": "object"
+      },
+      "BlockContent": {
+        "description": "`blocks.content`: the uploaded file a content block shows. Legacy rows\ncarry `file_id` / `file_format` / `activity_uuid` instead of `upload_id`.",
+        "properties": {
+          "activity_uuid": {
+            "type": "string"
+          },
+          "file_format": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "file_key": {
+            "description": "Storage key, served at `/content/<key>`.",
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_size": {
+            "type": "integer"
+          },
+          "file_type": {
+            "description": "MIME type.",
+            "type": "string"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_key",
+          "file_name",
+          "file_size",
+          "file_type"
         ],
         "type": "object"
       },
@@ -2779,7 +3097,7 @@ expression: json
             "$ref": "#/components/schemas/BulkActionId"
           },
           "params": {
-            "type": "object"
+            "$ref": "#/components/schemas/BulkActionParams"
           },
           "performed_by": {
             "oneOf": [
@@ -2819,6 +3137,23 @@ expression: json
       "BulkActionId": {
         "format": "uuid",
         "type": "string"
+      },
+      "BulkActionParams": {
+        "description": "`bulk_actions.params` of a deadline extension.",
+        "properties": {
+          "new_due_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_due_at",
+          "reason"
+        ],
+        "type": "object"
       },
       "BulkActionStatus": {
         "enum": [
@@ -3009,6 +3344,22 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "CertificatePattern": {
+        "description": "The certificate's background design.",
+        "enum": [
+          "royal",
+          "tech",
+          "nature",
+          "geometric",
+          "vintage",
+          "waves",
+          "minimal",
+          "professional",
+          "academic",
+          "modern"
+        ],
+        "type": "string"
+      },
       "CertificateState": {
         "properties": {
           "configured": {
@@ -3053,8 +3404,7 @@ expression: json
             "type": "array"
           },
           "config": {
-            "description": "The client's PDF designer document (opaque to the server).",
-            "type": "object"
+            "$ref": "#/components/schemas/CertificationConfig"
           },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
@@ -3087,8 +3437,44 @@ expression: json
         ],
         "type": "string"
       },
+      "CertificationConfig": {
+        "description": "`certifications.config`: what the certificate editor stores. The server\nreads `certification_name`, `certification_type` and\n`certificate_instructor`; the rest is the web's.",
+        "properties": {
+          "certificate_instructor": {
+            "description": "The name signed on the certificate; blank = the course's teachers.",
+            "type": "string"
+          },
+          "certificate_pattern": {
+            "$ref": "#/components/schemas/CertificatePattern"
+          },
+          "certification_description": {
+            "type": "string"
+          },
+          "certification_name": {
+            "type": "string"
+          },
+          "certification_type": {
+            "$ref": "#/components/schemas/CertificationType"
+          }
+        },
+        "type": "object"
+      },
       "CertificationId": {
         "format": "uuid",
+        "type": "string"
+      },
+      "CertificationType": {
+        "enum": [
+          "completion",
+          "achievement",
+          "assessment",
+          "participation",
+          "mastery",
+          "professional",
+          "continuing",
+          "workshop",
+          "specialization"
+        ],
         "type": "string"
       },
       "ChangePasswordRequest": {
@@ -3096,9 +3482,13 @@ expression: json
         "description": "Password change; the current password is checked by Zitadel.",
         "properties": {
           "current_password": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "new_password": {
+            "maxLength": 72,
+            "minLength": 8,
             "type": "string"
           }
         },
@@ -3276,6 +3666,36 @@ expression: json
           "label",
           "source_type"
         ],
+        "type": "object"
+      },
+      "CitationValidation": {
+        "description": "How many of the model's citations named a supplied source; just\n`{validation: \"not_applicable\"}` for runs without context sources.",
+        "properties": {
+          "invalid_citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "invalid_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "source_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "valid_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "validation": {
+            "enum": [
+              "not_applicable"
+            ],
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "CodeBody": {
@@ -3545,6 +3965,13 @@ expression: json
             },
             "type": "array"
           },
+          "cover_key": {
+            "description": "Storage key of the cover image, served at `/content/<key>`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
           },
@@ -3590,6 +4017,7 @@ expression: json
           "allowed_actions",
           "created_at_unix",
           "updated_at_unix",
+          "cover_key",
           "creator_id"
         ],
         "type": "object"
@@ -3714,6 +4142,8 @@ expression: json
             "type": "array"
           },
           "due_at_unix": {
+            "maximum": 253402300799,
+            "minimum": 0,
             "oneOf": [
               {
                 "$ref": "#/components/schemas/UnixTime"
@@ -3728,6 +4158,7 @@ expression: json
             "$ref": "#/components/schemas/GradeReleaseMode"
           },
           "instructions": {
+            "maxLength": 50000,
             "type": "string"
           },
           "late_policy": {
@@ -3759,9 +4190,10 @@ expression: json
             "description": "A JSON object of at most 4 KiB serialized (UX-154; same rule as the\ngrade route's `rubric_scores`)."
           },
           "settings": {
-            "type": "object"
+            "$ref": "#/components/schemas/FileSubmissionSettings"
           },
           "title": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -3814,8 +4246,7 @@ expression: json
             "$ref": "#/components/schemas/Severity"
           },
           "signal": {
-            "description": "`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ContentBottleneckSignal"
           },
           "stale_days": {
             "type": [
@@ -3846,6 +4277,15 @@ expression: json
         ],
         "type": "object"
       },
+      "ContentBottleneckSignal": {
+        "enum": [
+          "HighTimeLowCompletion",
+          "ExitAfterOpen",
+          "RepeatedAssessmentFailures",
+          "StaleLowPerformance"
+        ],
+        "type": "string"
+      },
       "ContentHealthRow": {
         "properties": {
           "course_id": {
@@ -3858,8 +4298,7 @@ expression: json
             "$ref": "#/components/schemas/Severity"
           },
           "signal": {
-            "description": "`content_freshness` | `average_progress` | `grading_backlog`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ContentHealthSignal"
           },
           "value": {
             "format": "double",
@@ -3877,6 +4316,14 @@ expression: json
           "value"
         ],
         "type": "object"
+      },
+      "ContentHealthSignal": {
+        "enum": [
+          "ContentFreshness",
+          "AverageProgress",
+          "GradingBacklog"
+        ],
+        "type": "string"
       },
       "ContextSummary": {
         "properties": {
@@ -3936,10 +4383,10 @@ expression: json
             "type": "string"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RosterRole"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/ContributorStatus"
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
@@ -3958,6 +4405,23 @@ expression: json
           "avatar_key"
         ],
         "type": "object"
+      },
+      "ContributorRole": {
+        "description": "A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).",
+        "enum": [
+          "maintainer",
+          "contributor",
+          "reporter"
+        ],
+        "type": "string"
+      },
+      "ContributorStatus": {
+        "enum": [
+          "pending",
+          "active",
+          "inactive"
+        ],
+        "type": "string"
       },
       "CorrectAnswer": {
         "description": "The answer key shown after grading: correct option ids (choice) or the\nexpected pairs (matching); `null` for kinds without a key.",
@@ -4255,6 +4719,25 @@ expression: json
         ],
         "type": "object"
       },
+      "CourseAuthor": {
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "username",
+          "display_name"
+        ],
+        "type": "object"
+      },
       "CourseDataGap": {
         "properties": {
           "course_id": {
@@ -4277,6 +4760,187 @@ expression: json
           "reason"
         ],
         "type": "object"
+      },
+      "CourseGradingPayload": {
+        "description": "A grade change or hand-in: `submission_id` (assessments) or\n`attempt_id` (file submissions).",
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/FileAttemptId"
+          },
+          "final_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubmissionStatus"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/SubmissionId"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "activity_id",
+          "user_id",
+          "status",
+          "final_score"
+        ],
+        "type": "object"
+      },
+      "CourseGradingStored": {
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/CourseGradingPayload"
+          },
+          "sent_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "event_id",
+          "payload",
+          "sent_at"
+        ],
+        "type": "object"
+      },
+      "CourseGradingStreamEvent": {
+        "description": "`GET /courses/{course_id}/grading/events`: one message's `data`.",
+        "oneOf": [
+          {
+            "description": "Sent once, after any replay.",
+            "properties": {
+              "course_id": {
+                "$ref": "#/components/schemas/CourseId"
+              },
+              "event": {
+                "enum": [
+                  "connected"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "course_id",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CourseGradingStored"
+              },
+              {
+                "properties": {
+                  "event": {
+                    "enum": [
+                      "submission.submitted"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CourseGradingStored"
+              },
+              {
+                "properties": {
+                  "event": {
+                    "enum": [
+                      "grade.saved"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CourseGradingStored"
+              },
+              {
+                "properties": {
+                  "event": {
+                    "enum": [
+                      "grade.published"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CourseGradingStored"
+              },
+              {
+                "properties": {
+                  "event": {
+                    "enum": [
+                      "submission.returned"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          {
+            "description": "Grading access lost; the stream ends.",
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "event": {
+                "enum": [
+                  "closed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "event"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "CourseId": {
         "format": "uuid",
@@ -4327,6 +4991,41 @@ expression: json
         ],
         "type": "object"
       },
+      "CourseListItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Course"
+          },
+          {
+            "properties": {
+              "authors": {
+                "description": "The creator first, then the active contributors (`contributor_ids`\norder); deleted accounts are left out.",
+                "items": {
+                  "$ref": "#/components/schemas/CourseAuthor"
+                },
+                "type": "array"
+              },
+              "progress": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CourseListProgress",
+                    "description": "The signed-in caller's progress; `null` when not enrolled (or\nanonymous, or staff of the course)."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "authors",
+              "progress"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "A `GET /courses` item: the course plus who wrote it and how far the\ncaller got."
+      },
       "CourseListPreset": {
         "description": "`GET /courses?preset=`; `archived` needs `mine=true`.",
         "enum": [
@@ -4338,6 +5037,30 @@ expression: json
           "archived"
         ],
         "type": "string"
+      },
+      "CourseListProgress": {
+        "properties": {
+          "completed_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress_pct": {
+            "description": "0..=100.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "progress_pct",
+          "completed_at_unix"
+        ],
+        "type": "object"
       },
       "CourseListSort": {
         "description": "`GET /courses?sort=`: `updated` (default), `name`, `progress`.",
@@ -4353,7 +5076,7 @@ expression: json
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Course"
+              "$ref": "#/components/schemas/CourseListItem"
             },
             "type": "array"
           },
@@ -4401,6 +5124,35 @@ expression: json
           "can_access",
           "can_enroll",
           "denial_reason"
+        ],
+        "type": "object"
+      },
+      "CourseQaAnswer": {
+        "properties": {
+          "answer_markdown": {
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Level"
+          },
+          "follow_up_suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "out_of_scope": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer_markdown"
         ],
         "type": "object"
       },
@@ -4588,6 +5340,7 @@ expression: json
             "description": "One of the closed activity-type set (e.g. `video`, `exam`)."
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -4606,6 +5359,7 @@ expression: json
             "description": "The activity is appended to this chapter."
           },
           "description": {
+            "maxLength": 20000,
             "type": "string"
           },
           "grading_type": {
@@ -4619,11 +5373,15 @@ expression: json
             "description": "Omit to start from the kind's preset."
           },
           "title": {
+            "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "weight": {
             "description": "BUG-208: 0–100 - an unbounded weight overflows the course average.",
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           }
         },
@@ -4643,6 +5401,7 @@ expression: json
           },
           "file_name": {
             "description": "Original client-side file name, for display.",
+            "maxLength": 500,
             "type": "string"
           },
           "upload_id": {
@@ -4661,8 +5420,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "config": {
-            "description": "The designer document: an object of at most 16 KiB serialized.",
-            "type": "object"
+            "$ref": "#/components/schemas/CertificationConfig",
+            "description": "An object of at most 16 KiB serialized."
           },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
@@ -4677,9 +5436,11 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -4696,12 +5457,20 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/CourseId"
             },
+            "maxItems": 100,
             "type": "array"
           },
+          "cover_upload_id": {
+            "description": "A finalized `collection-cover` upload of the caller.",
+            "format": "uuid",
+            "type": "string"
+          },
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           },
           "public": {
@@ -4717,18 +5486,22 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "about": {
+            "maxLength": 20000,
             "type": "string"
           },
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           },
           "tags": {
             "items": {
               "type": "string"
             },
+            "maxItems": 20,
             "type": "array"
           }
         },
@@ -4741,9 +5514,13 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "content": {
+            "maxLength": 50000,
+            "minLength": 1,
             "type": "string"
           },
           "title": {
+            "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -4758,6 +5535,8 @@ expression: json
         "properties": {
           "content": {
             "description": "HTML or text; must contain visible text.",
+            "maxLength": 20000,
+            "minLength": 1,
             "type": "string"
           },
           "parent_id": {
@@ -4771,26 +5550,82 @@ expression: json
         "type": "object"
       },
       "CreateFileSubmissionRequest": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ConfigPatch"
+        "additionalProperties": false,
+        "properties": {
+          "allow_late": {
+            "type": "boolean"
           },
-          {
-            "properties": {
-              "chapter_id": {
-                "$ref": "#/components/schemas/ChapterId"
-              },
-              "title": {
-                "type": "string"
-              }
+          "allowed_mime_types": {
+            "items": {
+              "type": "string"
             },
-            "required": [
-              "chapter_id",
-              "title"
+            "type": "array"
+          },
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId"
+          },
+          "due_at_unix": {
+            "maximum": 253402300799,
+            "minimum": 0,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "type": "object"
+            "x-null-clears": true
+          },
+          "grade_release_mode": {
+            "$ref": "#/components/schemas/GradeReleaseMode"
+          },
+          "instructions": {
+            "maxLength": 50000,
+            "type": "string"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_attempts": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "max_file_size_mb": {
+            "description": "`null` clears the limit.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "max_files": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "rubric": {
+            "$ref": "#/components/schemas/FileRubric",
+            "description": "A JSON object of at most 4 KiB serialized (UX-154; same rule as the\ngrade route's `rubric_scores`)."
+          },
+          "settings": {
+            "$ref": "#/components/schemas/FileSubmissionSettings"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
           }
-        ]
+        },
+        "required": [
+          "chapter_id",
+          "title"
+        ],
+        "type": "object"
       },
       "CreateInterventionRequest": {
         "additionalProperties": false,
@@ -4804,14 +5639,16 @@ expression: json
             "description": "`message_sent`, `submission_graded`, `extension_granted`,\n`meeting_scheduled` or `learner_recovered`."
           },
           "notes": {
+            "maxLength": 4000,
             "type": "string"
           },
           "outcome": {
+            "maxLength": 2000,
             "type": "string"
           },
           "payload": {
-            "description": "Free-form details (an object of at most 16 KiB serialized, UX-148).",
-            "type": "object"
+            "$ref": "#/components/schemas/InterventionPayload",
+            "description": "An object of at most 16 KiB serialized (UX-148)."
           },
           "status": {
             "$ref": "#/components/schemas/InterventionStatus",
@@ -4838,12 +5675,15 @@ expression: json
           "max_score": {
             "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares.",
             "format": "double",
+            "maximum": 10000,
+            "minimum": 0,
             "type": "number"
           },
           "metadata": {
             "$ref": "#/components/schemas/ItemMetadata"
           },
           "title": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -4856,19 +5696,26 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 1000,
             "type": "string"
           },
           "display_name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
+            "maxLength": 200,
             "type": "string"
           },
           "priority": {
             "description": "Ordering weight (system roles: guest 0 … admin 100).",
             "format": "int32",
+            "maximum": 99,
+            "minimum": 0,
             "type": "integer"
           },
           "slug": {
             "description": "Kebab-case slug, e.g. `teaching-assistant`.",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
             "type": "string"
           }
         },
@@ -4883,6 +5730,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "mime": {
+            "maxLength": 255,
+            "minLength": 1,
             "type": "string"
           },
           "purpose": {
@@ -4890,6 +5739,7 @@ expression: json
             "description": "One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission."
           },
           "size_bytes": {
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -4905,15 +5755,22 @@ expression: json
         "description": "Admin account creation (`POST /users`). No `Debug` - may carry a\npassword. Without one the account is IdP-only (Google sign-in).",
         "properties": {
           "email": {
+            "maxLength": 320,
             "type": "string"
           },
           "first_name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "last_name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "maxLength": 72,
+            "minLength": 8,
             "type": "string"
           },
           "roles": {
@@ -4921,9 +5778,13 @@ expression: json
             "items": {
               "type": "string"
             },
+            "maxItems": 10,
             "type": "array"
           },
           "username": {
+            "maxLength": 48,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9._-]+$",
             "type": "string"
           }
         },
@@ -4939,10 +5800,12 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -5038,6 +5901,14 @@ expression: json
         ],
         "type": "object"
       },
+      "DataMode": {
+        "description": "Where the analytics read came from.",
+        "enum": [
+          "Live",
+          "Rollup"
+        ],
+        "type": "string"
+      },
       "DataQualityIssue": {
         "properties": {
           "code": {
@@ -5079,20 +5950,41 @@ expression: json
         ],
         "type": "object"
       },
+      "DeadlineExtendedPayload": {
+        "properties": {
+          "new_due_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_due_at",
+          "reason"
+        ],
+        "type": "object"
+      },
       "DeadlineExtensionRequest": {
         "additionalProperties": false,
         "properties": {
           "new_due_at_unix": {
             "$ref": "#/components/schemas/UnixTime",
-            "description": "Unix seconds, at most 9999-12-31 (the timestamp range)."
+            "description": "Unix seconds, at most 9999-12-31 (the timestamp range).",
+            "maximum": 253402300799,
+            "minimum": 0
           },
           "reason": {
+            "maxLength": 500,
             "type": "string"
           },
           "user_ids": {
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
+            "maxItems": 500,
+            "minItems": 1,
             "type": "array"
           }
         },
@@ -5322,6 +6214,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "suggestion_id": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -5355,6 +6249,66 @@ expression: json
         },
         "type": "object"
       },
+      "DrillBacklogRow": {
+        "properties": {
+          "age_hours": {
+            "format": "double",
+            "type": "number"
+          },
+          "assessment_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "assessment_title": {
+            "type": "string"
+          },
+          "assessment_type": {
+            "$ref": "#/components/schemas/AssessmentKind"
+          },
+          "course_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "sla_breached": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "submission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "submitted_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "user_display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "submission_id",
+          "assessment_id",
+          "assessment_type",
+          "assessment_title",
+          "course_id",
+          "course_name",
+          "user_id",
+          "user_display_name",
+          "status",
+          "submitted_at_unix",
+          "age_hours",
+          "sla_breached"
+        ],
+        "type": "object"
+      },
       "DrillMetric": {
         "enum": [
           "active_learners",
@@ -5364,6 +6318,142 @@ expression: json
         ],
         "type": "string"
       },
+      "DrillPassRateRow": {
+        "properties": {
+          "attempts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "best_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "graded_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "user_display_name",
+          "attempts",
+          "passed",
+          "best_score",
+          "graded_at_unix",
+          "last_score",
+          "status",
+          "submitted_at_unix"
+        ],
+        "type": "object"
+      },
+      "DrillProgressRow": {
+        "properties": {
+          "active_in_window": {
+            "description": "`true`, on `active_learners` rows only.",
+            "type": "boolean"
+          },
+          "cohorts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "completed_steps": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "course_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "is_completed": {
+            "type": "boolean"
+          },
+          "last_activity_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress_pct": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_steps": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "user_display_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "user_display_name",
+          "course_id",
+          "course_name",
+          "progress_pct",
+          "completed_steps",
+          "total_steps",
+          "is_completed",
+          "cohorts",
+          "last_activity_at_unix"
+        ],
+        "type": "object"
+      },
       "DrillThroughResponse": {
         "properties": {
           "generated_at_unix": {
@@ -5371,7 +6461,7 @@ expression: json
           },
           "items": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/DrillThroughRow"
             },
             "type": "array"
           },
@@ -5390,6 +6480,20 @@ expression: json
         ],
         "type": "object"
       },
+      "DrillThroughRow": {
+        "description": "One drill-through row.\n\nThe shape depends on the response's `metric`: learner progress (`active_learners`, `completion_rate`), a submission\nawaiting review (`backlog`), a learner's assessment result (`pass_rate`).",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DrillProgressRow"
+          },
+          {
+            "$ref": "#/components/schemas/DrillBacklogRow"
+          },
+          {
+            "$ref": "#/components/schemas/DrillPassRateRow"
+          }
+        ]
+      },
       "DuplicateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5399,6 +6503,8 @@ expression: json
           },
           "title": {
             "description": "Defaults to `\"<title> (copy)\"`.",
+            "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -5408,9 +6514,13 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "content": {
+            "maxLength": 50000,
+            "minLength": 1,
             "type": "string"
           },
           "title": {
+            "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -5594,6 +6704,27 @@ expression: json
         ],
         "type": "object"
       },
+      "EvalDetails": {
+        "description": "`ai_eval_results.details` of the provider smoke eval.",
+        "properties": {
+          "error": {
+            "description": "The provider call failed.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "The provider is not configured.",
+            "type": "string"
+          },
+          "repaired": {
+            "description": "The structured reply needed a repair pass.",
+            "type": "boolean"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/EvalUsage"
+          }
+        },
+        "type": "object"
+      },
       "EvalResult": {
         "properties": {
           "created_at_unix": {
@@ -5603,7 +6734,7 @@ expression: json
             "type": "string"
           },
           "details": {
-            "type": "object"
+            "$ref": "#/components/schemas/EvalDetails"
           },
           "evaluator": {
             "type": "string"
@@ -5671,6 +6802,29 @@ expression: json
           "passed",
           "failed",
           "average_score"
+        ],
+        "type": "object"
+      },
+      "EvalUsage": {
+        "properties": {
+          "input_tokens": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "output_tokens": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens"
         ],
         "type": "object"
       },
@@ -5800,11 +6954,14 @@ expression: json
           },
           "feedback": {
             "description": "Omit to keep the stored feedback (UX-113; same rule as quiz grades).",
+            "maxLength": 10000,
             "type": "string"
           },
           "final_score": {
             "description": "Required for save/publish; 0..=100.",
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           },
           "rubric_scores": {
@@ -5821,6 +6978,7 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "display_name": {
+            "maxLength": 255,
             "type": "string"
           },
           "upload_id": {
@@ -6054,7 +7212,7 @@ expression: json
             "$ref": "#/components/schemas/FileRubric"
           },
           "settings": {
-            "type": "object"
+            "$ref": "#/components/schemas/FileSubmissionSettings"
           },
           "title": {
             "type": "string"
@@ -6103,6 +7261,16 @@ expression: json
           "archived"
         ],
         "type": "string"
+      },
+      "FileSubmissionSettings": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "description": "`file_submissions.settings`: reserved, no keys are defined (`{}` on\nevery row); stored and returned as sent.",
+        "propertyNames": {
+          "type": "string"
+        },
+        "type": "object"
       },
       "FilterOption": {
         "properties": {
@@ -6155,9 +7323,12 @@ expression: json
             "$ref": "#/components/schemas/FindingReviewAction"
           },
           "finding_id": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "note": {
+            "maxLength": 1000,
             "type": "string"
           }
         },
@@ -6232,8 +7403,7 @@ expression: json
             "type": "string"
           },
           "kind": {
-            "description": "`completion_target_miss` | `grading_backlog_7d` |\n`course_completion_deadline` | `assessment_failure_risk`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ForecastKind"
           },
           "learner_count": {
             "type": [
@@ -6272,6 +7442,15 @@ expression: json
           "target_value"
         ],
         "type": "object"
+      },
+      "ForecastKind": {
+        "enum": [
+          "CompletionTargetMiss",
+          "GradingBacklog7d",
+          "CourseCompletionDeadline",
+          "AssessmentFailureRisk"
+        ],
+        "type": "string"
       },
       "FormBody": {
         "properties": {
@@ -6453,6 +7632,23 @@ expression: json
         ],
         "type": "string"
       },
+      "GradePublishedPayload": {
+        "properties": {
+          "final_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "published_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "final_score",
+          "published_at"
+        ],
+        "type": "object"
+      },
       "GradeReleaseMode": {
         "enum": [
           "immediate",
@@ -6468,15 +7664,19 @@ expression: json
           },
           "audit_note": {
             "description": "Grader's note for the audit trail; never shown to the learner.",
+            "maxLength": 1000,
             "type": "string"
           },
           "feedback": {
             "description": "Overall feedback shown to the learner; omitted = keep the stored one.",
+            "maxLength": 10000,
             "type": "string"
           },
           "final_score": {
             "description": "Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).",
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": [
               "number",
               "null"
@@ -7041,6 +8241,17 @@ expression: json
         ],
         "type": "object"
       },
+      "InsightCategory": {
+        "enum": [
+          "Risk",
+          "Assessment",
+          "Content",
+          "Workload",
+          "Completion",
+          "Intervention"
+        ],
+        "type": "string"
+      },
       "InsightFeedItem": {
         "properties": {
           "activity_id": {
@@ -7074,8 +8285,7 @@ expression: json
             ]
           },
           "category": {
-            "description": "`risk` | `assessment` | `content` | `workload` | `completion` | `intervention`.",
-            "type": "string"
+            "$ref": "#/components/schemas/InsightCategory"
           },
           "code": {
             "$ref": "#/components/schemas/AnalyticsCode"
@@ -7158,7 +8368,7 @@ expression: json
             ]
           },
           "payload": {
-            "type": "object"
+            "$ref": "#/components/schemas/InterventionPayload"
           },
           "resolved_at_unix": {
             "oneOf": [
@@ -7247,6 +8457,25 @@ expression: json
           "page_size",
           "items"
         ],
+        "type": "object"
+      },
+      "InterventionPayload": {
+        "description": "`teacher_interventions.payload`: what the at-risk table attaches to an\nextension / remediation draft.",
+        "properties": {
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "remediation_draft": {
+            "type": "string"
+          },
+          "risk_score": {
+            "format": "double",
+            "type": "number"
+          }
+        },
         "type": "object"
       },
       "InterventionStatus": {
@@ -7666,6 +8895,7 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "feedback": {
+            "maxLength": 5000,
             "type": "string"
           },
           "item_id": {
@@ -7674,6 +8904,7 @@ expression: json
           "score": {
             "description": "Points for this item (its `max_score` scale).",
             "format": "double",
+            "minimum": 0,
             "type": "number"
           }
         },
@@ -7743,6 +8974,14 @@ expression: json
           "healthy",
           "watch",
           "critical"
+        ],
+        "type": "string"
+      },
+      "ItemType": {
+        "enum": [
+          "Workflow",
+          "Question",
+          "Test"
         ],
         "type": "string"
       },
@@ -7983,9 +9222,11 @@ expression: json
         "description": "One \"What you'll learn\" entry on write; omit `id` for a new one.",
         "properties": {
           "emoji": {
+            "maxLength": 16,
             "type": "string"
           },
           "id": {
+            "maxLength": 64,
             "type": "string"
           },
           "text": {
@@ -8175,11 +9416,14 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "note": {
+            "maxLength": 1000,
             "type": "string"
           },
           "scheduled_at_unix": {
             "$ref": "#/components/schemas/UnixTime",
-            "description": "Required when `to` is `scheduled`; must be in the future."
+            "description": "Required when `to` is `scheduled`; must be in the future.",
+            "maximum": 253402300799,
+            "minimum": 0
           },
           "to": {
             "$ref": "#/components/schemas/Lifecycle"
@@ -8270,13 +9514,19 @@ expression: json
         "properties": {
           "login": {
             "description": "Username or email.",
+            "maxLength": 320,
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "totp_code": {
             "description": "Second factor - resubmit after a 401 `mfa-required`.",
+            "maxLength": 8,
+            "minLength": 6,
             "type": "string"
           }
         },
@@ -8497,6 +9747,7 @@ expression: json
           "position": {
             "description": "1-based target position (in the destination chapter).",
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -8512,6 +9763,7 @@ expression: json
           "position": {
             "description": "1-based target position.",
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -8600,11 +9852,15 @@ expression: json
         "description": "Full override block (create and update share it).",
         "properties": {
           "due_at_override_unix": {
-            "$ref": "#/components/schemas/UnixTime"
+            "$ref": "#/components/schemas/UnixTime",
+            "maximum": 253402300799,
+            "minimum": 0
           },
           "expires_at_unix": {
             "$ref": "#/components/schemas/UnixTime",
-            "description": "After this the override is ignored."
+            "description": "After this the override is ignored.",
+            "maximum": 253402300799,
+            "minimum": 0
           },
           "max_attempts_override": {
             "description": "1..=10; `null` keeps the assessment's limit.",
@@ -8612,6 +9868,7 @@ expression: json
             "type": "integer"
           },
           "note": {
+            "maxLength": 1000,
             "type": "string"
           },
           "waive_late_penalty": {
@@ -9198,193 +10455,260 @@ expression: json
         "description": "One builder section, tagged by `type` (legacy kebab-case kinds).",
         "oneOf": [
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ImageGallerySection"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "image-gallery"
-                    ],
-                    "type": "string"
-                  }
+              "images": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileImage"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "image-gallery"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "images",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TextSection"
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "text"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type"
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "text"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "content",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LinksSection"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "links"
-                    ],
-                    "type": "string"
-                  }
+              "links": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileLink"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "links"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "links",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/SkillsSection"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "skills"
-                    ],
-                    "type": "string"
-                  }
+              "skills": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileSkill"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "skills"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "skills",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ExperienceSection"
-              },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "experience"
-                    ],
-                    "type": "string"
-                  }
+            "additionalProperties": false,
+            "properties": {
+              "experiences": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileExperience"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "experience"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "experiences",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EducationSection"
-              },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "education"
-                    ],
-                    "type": "string"
-                  }
+            "additionalProperties": false,
+            "properties": {
+              "education": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileEducation"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "education"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "education",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AffiliationSection"
-              },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "affiliation"
-                    ],
-                    "type": "string"
-                  }
+            "additionalProperties": false,
+            "properties": {
+              "affiliations": {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileAffiliation"
                 },
-                "required": [
-                  "type"
+                "type": "array"
+              },
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "affiliation"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "affiliations",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CoursesSection"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "courses"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type"
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "courses"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "type"
+            ],
+            "type": "object"
           },
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GamificationSection"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "gamification"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type"
+              "settings": {
+                "$ref": "#/components/schemas/GamificationSectionSettings"
+              },
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "gamification"
                 ],
-                "type": "object"
+                "type": "string"
               }
-            ]
+            },
+            "required": [
+              "id",
+              "title",
+              "type"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -9579,10 +10903,12 @@ expression: json
             "type": "array"
           },
           "parentRunId": {
+            "maxLength": 200,
             "type": "string"
           },
           "protocolVersion": {
             "description": "AG-UI 1.0 (`\"1.0\"`); absent from pre-1.0 clients.",
+            "maxLength": 32,
             "type": "string"
           },
           "resume": {
@@ -9593,12 +10919,16 @@ expression: json
             "type": "array"
           },
           "runId": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "state": {
             "$ref": "#/components/schemas/JsonValue"
           },
           "threadId": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "tools": {
@@ -9625,6 +10955,8 @@ expression: json
           },
           "client_turn_id": {
             "description": "Client turn id: a retry with the same id replays the stored answer.",
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "language": {
@@ -9640,10 +10972,7 @@ expression: json
       "QaMessage": {
         "properties": {
           "citations": {
-            "items": {
-              "$ref": "#/components/schemas/Citation"
-            },
-            "type": "array"
+            "$ref": "#/components/schemas/AiEvidence"
           },
           "client_turn_id": {
             "type": [
@@ -9670,7 +10999,7 @@ expression: json
             "$ref": "#/components/schemas/AiMessageId"
           },
           "metadata": {
-            "type": "object"
+            "$ref": "#/components/schemas/QaMessageMetadata"
           },
           "role": {
             "$ref": "#/components/schemas/QaMessageRole"
@@ -9702,6 +11031,25 @@ expression: json
           "confidence",
           "user_id"
         ],
+        "type": "object"
+      },
+      "QaMessageMetadata": {
+        "description": "`ai_qa_messages.metadata`: `{}` on questions; answers carry the model\nand the question they reply to; `incomplete` marks a partial answer\nsaved when the stream was cut.",
+        "properties": {
+          "incomplete": {
+            "type": "boolean"
+          },
+          "model_name": {
+            "type": "string"
+          },
+          "out_of_scope": {
+            "type": "boolean"
+          },
+          "reply_to_message_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "QaMessageRole": {
@@ -9747,12 +11095,14 @@ expression: json
         "description": "One message of the AG-UI conversation the client sends back.",
         "properties": {
           "content": {
+            "maxLength": 20000,
             "type": "string"
           },
           "encryptedValue": {
             "type": "string"
           },
           "id": {
+            "maxLength": 200,
             "type": "string"
           },
           "metadata": {
@@ -9770,6 +11120,8 @@ expression: json
             "type": "array"
           },
           "role": {
+            "maxLength": 32,
+            "minLength": 1,
             "type": "string"
           },
           "subagentRunId": {
@@ -9902,6 +11254,20 @@ expression: json
         ],
         "type": "string"
       },
+      "ReadinessCode": {
+        "description": "Stable readiness code the web localizes.",
+        "enum": [
+          "no-live-activity",
+          "assessment-not-ready",
+          "code-challenge-unconfigured",
+          "file-submission-unpublished",
+          "file-submission-not-ready",
+          "activity-unpublished",
+          "thumbnail-missing",
+          "certificate-not-configured"
+        ],
+        "type": "string"
+      },
       "ReadinessIssue": {
         "description": "One thing blocking (or advising against) publication.",
         "properties": {
@@ -9953,7 +11319,7 @@ expression: json
             ]
           },
           "code": {
-            "type": "string"
+            "$ref": "#/components/schemas/ReadinessCode"
           },
           "title": {
             "type": [
@@ -10079,23 +11445,35 @@ expression: json
         "description": "Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].",
         "properties": {
           "email": {
+            "maxLength": 320,
             "type": "string"
           },
           "first_name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "last_name": {
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string"
           },
           "organization": {
             "description": "School, university or company the user comes from.",
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "maxLength": 72,
+            "minLength": 8,
             "type": "string"
           },
           "username": {
             "description": "3–48 characters: letters, digits, `.`, `_`, `-`.",
+            "maxLength": 48,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9._-]+$",
             "type": "string"
           }
         },
@@ -10164,6 +11542,8 @@ expression: json
         "properties": {
           "score": {
             "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -10352,6 +11732,8 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/AssessmentItemId"
             },
+            "maxItems": 200,
+            "minItems": 1,
             "type": "array"
           }
         },
@@ -10523,6 +11905,17 @@ expression: json
         ],
         "type": "string"
       },
+      "RiskReasonCode": {
+        "description": "Why a learner is at risk (`risk::reason_codes`; a test pins the set).",
+        "enum": [
+          "inactive_7d",
+          "low_progress",
+          "repeated_failures",
+          "missing_required_assessments",
+          "grading_block"
+        ],
+        "type": "string"
+      },
       "RiskTrend": {
         "enum": [
           "newly_at_risk",
@@ -10599,6 +11992,16 @@ expression: json
           "update",
           "delete",
           "set_permissions"
+        ],
+        "type": "string"
+      },
+      "RosterRole": {
+        "description": "A roster entry's role: the granted roles plus the course `creator`.",
+        "enum": [
+          "creator",
+          "maintainer",
+          "contributor",
+          "reporter"
         ],
         "type": "string"
       },
@@ -10717,31 +12120,197 @@ expression: json
         "type": "object"
       },
       "RunArtifact": {
-        "properties": {
-          "content": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RunArtifactBody",
+            "description": "`kind` + `content`: the agent's output by kind."
+          },
+          {
+            "properties": {
+              "created_at_unix": {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              "final": {
+                "type": "boolean"
+              },
+              "id": {
+                "$ref": "#/components/schemas/AiArtifactId"
+              }
+            },
+            "required": [
+              "id",
+              "final",
+              "created_at_unix"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "RunArtifactBody": {
+        "description": "An AI artifact by kind: the agent's structured output.",
+        "oneOf": [
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/CourseQualityReport"
+              },
+              "kind": {
+                "enum": [
+                  "course_analysis"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
             "type": "object"
           },
-          "created_at_unix": {
-            "$ref": "#/components/schemas/UnixTime"
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/SubmissionAnalysisReport"
+              },
+              "kind": {
+                "enum": [
+                  "submission_analysis"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
+            "type": "object"
           },
-          "final": {
-            "type": "boolean"
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/RemediationBundle"
+              },
+              "kind": {
+                "enum": [
+                  "remediation"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
+            "type": "object"
           },
-          "id": {
-            "$ref": "#/components/schemas/AiArtifactId"
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/StudyCompanionAnswer"
+              },
+              "kind": {
+                "enum": [
+                  "study_companion"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/LectureReviewReport"
+              },
+              "kind": {
+                "enum": [
+                  "lecture_review"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/CourseQaAnswer"
+              },
+              "kind": {
+                "enum": [
+                  "course_qa"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "content",
+              "kind"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "RunContext": {
+        "description": "The admin view's allow-listed part of [`RunMetadata`]\n(`ai::runs::SAFE_CONTEXT_KEYS`).",
+        "properties": {
+          "activity_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "citation_validation": {
+            "$ref": "#/components/schemas/CitationValidation"
+          },
+          "context_source_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "course_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "file_submission_attempt_id": {
+            "format": "uuid",
+            "type": "string"
           },
           "kind": {
+            "$ref": "#/components/schemas/AiRunKind"
+          },
+          "language": {
             "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StudyMode"
+          },
+          "retry_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "submission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "thread_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "time_to_first_text_ms": {
+            "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "kind",
-          "content",
-          "final",
-          "created_at_unix"
-        ],
-        "type": "object"
+        "type": "object",
+        "x-stored-json": true
       },
       "RunEvent": {
         "properties": {
@@ -10755,7 +12324,7 @@ expression: json
             "$ref": "#/components/schemas/AiEventId"
           },
           "payload": {
-            "type": "object"
+            "$ref": "#/components/schemas/RunEventPayload"
           },
           "sequence": {
             "format": "int32",
@@ -10770,6 +12339,57 @@ expression: json
           "created_at_unix"
         ],
         "type": "object"
+      },
+      "RunEventPayload": {
+        "description": "`ai_events.payload`.\n\n`state` is always set; the rest by event type:\n`collecting_context` -> `source_count`; `budget_checked` ->\n`input_tokens`; `finished` -> model, tokens and citation counts;\n`failed` / `cancelled` -> `error_code`.",
+        "properties": {
+          "citations_invalid": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "citations_valid": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "error_code": {
+            "type": "string"
+          },
+          "input_tokens": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "model_name": {
+            "type": "string"
+          },
+          "output_tokens": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "source_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/RunEventState"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "RunEventState": {
+        "description": "Progress state an AI run event reports.",
+        "enum": [
+          "queued",
+          "running",
+          "collecting_context",
+          "checking_evidence",
+          "complete",
+          "failed",
+          "cancelled"
+        ],
+        "type": "string"
       },
       "RunEvidence": {
         "properties": {
@@ -10828,6 +12448,100 @@ expression: json
         ],
         "type": "object"
       },
+      "RunMetadata": {
+        "description": "`ai_runs.metadata`: what the run was started for, merged as it runs.\nEvery key is optional; which ones appear depends on `kind`.",
+        "properties": {
+          "activity_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assessment_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "citation_validation": {
+            "$ref": "#/components/schemas/CitationValidation",
+            "description": "Set when the run finished."
+          },
+          "client_turn_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "context_source_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "course_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "file_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "file_submission_attempt_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "file_submission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "gate_mode": {
+            "description": "Remediation: the result blocks the learner's next attempt.",
+            "type": "boolean"
+          },
+          "item_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AiRunKind"
+          },
+          "language": {
+            "description": "Requested answer language (`auto`, `ru`, `kk`, `en`).",
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/StudyMode"
+          },
+          "parent_run_id": {
+            "description": "The run whose analysis a remediation was generated from.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "question": {
+            "description": "The learner's question (Q&A, study companion).",
+            "type": "string"
+          },
+          "retry_count": {
+            "description": "1 when a Q&A turn was replayed for the same `client_turn_id`.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "submission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "thread_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "time_to_first_text_ms": {
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "x-stored-json": true
+      },
       "RunRequest": {
         "additionalProperties": false,
         "description": "Run source against an item's visible tests, or against one custom input.",
@@ -10839,6 +12553,7 @@ expression: json
           "language_id": {
             "description": "Judge0 language id.",
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           },
           "source": {
@@ -10891,7 +12606,7 @@ expression: json
             "$ref": "#/components/schemas/AiRunKind"
           },
           "metadata": {
-            "type": "object"
+            "$ref": "#/components/schemas/RunMetadata"
           },
           "model_name": {
             "type": [
@@ -10952,9 +12667,11 @@ expression: json
             "type": "array"
           },
           "parentRunId": {
+            "maxLength": 200,
             "type": "string"
           },
           "protocolVersion": {
+            "maxLength": 32,
             "type": "string"
           },
           "resume": {
@@ -10964,12 +12681,16 @@ expression: json
             "type": "array"
           },
           "runId": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "state": {
             "$ref": "#/components/schemas/JsonValue"
           },
           "threadId": {
+            "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "tools": {
@@ -11012,6 +12733,7 @@ expression: json
         "properties": {
           "name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
+            "maxLength": 200,
             "type": "string"
           },
           "query": {
@@ -11020,6 +12742,7 @@ expression: json
           },
           "view_type": {
             "description": "Defaults to `overview`.",
+            "maxLength": 50,
             "type": "string"
           }
         },
@@ -11220,6 +12943,13 @@ expression: json
             },
             "type": "array"
           },
+          "next_cursor": {
+            "description": "Set while any section has more hits: pass it back as `cursor` for\nthe next page of every section.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "users": {
             "description": "Empty for anonymous callers.",
             "items": {
@@ -11231,7 +12961,8 @@ expression: json
         "required": [
           "courses",
           "collections",
-          "users"
+          "users",
+          "next_cursor"
         ],
         "type": "object"
       },
@@ -11372,6 +13103,7 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
+            "maxItems": 500,
             "type": "array"
           },
           "usergroup_ids": {
@@ -11379,6 +13111,7 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/UsergroupId"
             },
+            "maxItems": 100,
             "type": "array"
           }
         },
@@ -11395,6 +13128,7 @@ expression: json
             "items": {
               "type": "string"
             },
+            "maxItems": 200,
             "type": "array"
           }
         },
@@ -11876,6 +13610,8 @@ expression: json
             "$ref": "#/components/schemas/StudyMode"
           },
           "question": {
+            "maxLength": 4000,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -12009,6 +13745,22 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "SubmissionReturnedPayload": {
+        "properties": {
+          "feedback": {
+            "type": "string"
+          },
+          "returned_at": {
+            "description": "Unix seconds.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "feedback",
+          "returned_at"
+        ],
+        "type": "object"
+      },
       "SubmissionStatus": {
         "enum": [
           "draft",
@@ -12018,6 +13770,142 @@ expression: json
           "returned"
         ],
         "type": "string"
+      },
+      "SubmissionStreamEvent": {
+        "description": "`GET /submissions/{submission_id}/events`: one message's `data`.",
+        "oneOf": [
+          {
+            "description": "Sent once, after any replay.",
+            "properties": {
+              "event": {
+                "enum": [
+                  "connected"
+                ],
+                "type": "string"
+              },
+              "submission_id": {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            },
+            "required": [
+              "submission_id",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "grade.published"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/GradePublishedPayload"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              },
+              "submission_id": {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            },
+            "required": [
+              "event_id",
+              "submission_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "submission.returned"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/SubmissionReturnedPayload"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              },
+              "submission_id": {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            },
+            "required": [
+              "event_id",
+              "submission_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "deadline.extended"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/DeadlineExtendedPayload"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              },
+              "submission_id": {
+                "$ref": "#/components/schemas/SubmissionId"
+              }
+            },
+            "required": [
+              "event_id",
+              "submission_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "Access lost; the stream ends.",
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "event": {
+                "enum": [
+                  "closed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "event"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "SubmitRequest": {
         "additionalProperties": false,
@@ -12036,10 +13924,20 @@ expression: json
           "violation_count": {
             "description": "The client's anti-cheat count; the server's own count wins when higher.",
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           }
         },
         "type": "object"
+      },
+      "SupportAlertCode": {
+        "enum": [
+          "GradingSloBreached",
+          "GradingSloWarning",
+          "SuspiciousAttempts",
+          "MissingScores"
+        ],
+        "type": "string"
       },
       "Surface": {
         "description": "Which client screen is asking (legacy `AISurface`).",
@@ -12049,6 +13947,15 @@ expression: json
           "teacher-review",
           "course-page",
           "admin"
+        ],
+        "type": "string"
+      },
+      "SuspiciousFlag": {
+        "enum": [
+          "TooEasy",
+          "TooHard",
+          "LowDiscrimination",
+          "LowVariance"
         ],
         "type": "string"
       },
@@ -13020,6 +14927,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "code": {
+            "maxLength": 8,
+            "minLength": 6,
             "type": "string"
           }
         },
@@ -13270,12 +15179,15 @@ expression: json
             "$ref": "#/components/schemas/ActivityDetails"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           },
           "published": {
             "type": "boolean"
           },
-          "settings": {}
+          "settings": {
+            "$ref": "#/components/schemas/ActivitySettings"
+          }
         },
         "type": "object"
       },
@@ -13283,17 +15195,22 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 20000,
             "type": "string"
           },
           "grading_type": {
             "$ref": "#/components/schemas/GradingType"
           },
           "title": {
+            "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "weight": {
             "description": "BUG-208: 0–100 - an unbounded weight overflows the course average.",
             "format": "double",
+            "maximum": 100,
+            "minimum": 0,
             "type": "number"
           }
         },
@@ -13303,8 +15220,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "config": {
-            "description": "The designer document: an object of at most 16 KiB serialized.",
-            "type": "object"
+            "$ref": "#/components/schemas/CertificationConfig",
+            "description": "An object of at most 16 KiB serialized."
           }
         },
         "required": [
@@ -13316,9 +15233,11 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -13332,12 +15251,24 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/CourseId"
             },
+            "maxItems": 100,
             "type": "array"
           },
+          "cover_upload_id": {
+            "description": "A finalized `collection-cover` upload of the caller; `null` removes\nthe cover.",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-null-clears": true
+          },
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           },
           "public": {
@@ -13350,12 +15281,12 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "role": {
-            "description": "`maintainer | contributor | reporter`.",
-            "type": "string"
+            "$ref": "#/components/schemas/ContributorRole",
+            "description": "`maintainer | contributor | reporter`."
           },
           "status": {
-            "description": "`pending | active | inactive` (`active` approves an application).",
-            "type": "string"
+            "$ref": "#/components/schemas/ContributorStatus",
+            "description": "`pending | active | inactive` (`active` approves an application)."
           }
         },
         "type": "object"
@@ -13364,9 +15295,11 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "about": {
+            "maxLength": 20000,
             "type": "string"
           },
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "learnings": {
@@ -13374,9 +15307,11 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/LearningInput"
             },
+            "maxItems": 30,
             "type": "array"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           },
           "open_to_contributors": {
@@ -13386,6 +15321,7 @@ expression: json
             "items": {
               "type": "string"
             },
+            "maxItems": 20,
             "type": "array"
           },
           "thumbnail_upload_id": {
@@ -13404,6 +15340,8 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "content": {
+            "maxLength": 20000,
+            "minLength": 1,
             "type": "string"
           },
           "status": {
@@ -13417,6 +15355,8 @@ expression: json
         "properties": {
           "daily_xp_limit": {
             "format": "int32",
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "integer"
           },
           "rewards": {
@@ -13441,6 +15381,8 @@ expression: json
           "max_score": {
             "description": "BUG-208: at most 10 000 - an unbounded score overflows the grade shares.",
             "format": "double",
+            "maximum": 10000,
+            "minimum": 0,
             "type": "number"
           },
           "metadata": {
@@ -13448,6 +15390,7 @@ expression: json
             "description": "Replaces the whole metadata block when present."
           },
           "title": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -13457,16 +15400,20 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "about": {
+            "maxLength": 20000,
             "type": "string"
           },
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "email": {
+            "maxLength": 320,
             "type": "string"
           },
           "label": {
             "description": "`null` clears the label; blank is stored as cleared too (UX-135).",
+            "maxLength": 500,
             "type": [
               "string",
               "null"
@@ -13480,6 +15427,7 @@ expression: json
           },
           "name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
+            "maxLength": 500,
             "type": "string"
           },
           "thumbnail_upload_id": {
@@ -13504,9 +15452,11 @@ expression: json
             "x-null-clears": true
           },
           "bio": {
+            "maxLength": 2000,
             "type": "string"
           },
           "display_name": {
+            "maxLength": 120,
             "type": "string"
           },
           "locale": {
@@ -13515,6 +15465,7 @@ expression: json
           },
           "organization": {
             "description": "School / university / company; a blank value is 422 `required`.",
+            "maxLength": 200,
             "type": "string"
           },
           "profile": {
@@ -13536,13 +15487,17 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 1000,
             "type": "string"
           },
           "display_name": {
+            "maxLength": 200,
             "type": "string"
           },
           "priority": {
             "format": "int32",
+            "maximum": 99,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -13552,9 +15507,11 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "description": {
+            "maxLength": 5000,
             "type": "string"
           },
           "name": {
+            "maxLength": 500,
             "type": "string"
           }
         },
@@ -13570,7 +15527,8 @@ expression: json
           "block-video",
           "platform-logo",
           "platform-thumbnail",
-          "file-submission"
+          "file-submission",
+          "collection-cover"
         ],
         "type": "string"
       },
@@ -13692,6 +15650,11 @@ expression: json
           },
           "username": {
             "type": "string"
+          },
+          "version": {
+            "description": "Optimistic-lock version of the profile (the `ETag` of\n`GET /users/me`): echo it as `If-Match` on `PATCH /users/me`.",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -13706,6 +15669,7 @@ expression: json
           "mfa_enabled",
           "has_password",
           "google_linked",
+          "version",
           "avatar_key",
           "theme"
         ],
@@ -13861,6 +15825,8 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/CourseId"
             },
+            "maxItems": 100,
+            "minItems": 1,
             "type": "array"
           }
         },
@@ -13906,6 +15872,8 @@ expression: json
             "items": {
               "$ref": "#/components/schemas/UserId"
             },
+            "maxItems": 500,
+            "minItems": 1,
             "type": "array"
           }
         },
@@ -13977,9 +15945,12 @@ expression: json
         "description": "Confirm the emailed verification code.",
         "properties": {
           "code": {
+            "maxLength": 32,
+            "minLength": 1,
             "type": "string"
           },
           "email": {
+            "maxLength": 320,
             "type": "string"
           }
         },
@@ -14018,10 +15989,13 @@ expression: json
         "additionalProperties": false,
         "properties": {
           "detail": {
+            "maxLength": 500,
             "type": "string"
           },
           "kind": {
             "description": "e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.",
+            "maxLength": 64,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -21510,6 +23484,24 @@ expression: json
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "description": "Words matched like `/search` over name and description",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`newest` (default), `name` (A-Z) or `updated`",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CollectionListSort"
+            }
           }
         ],
         "responses": {
@@ -21524,7 +23516,7 @@ expression: json
             "description": "Page of collections"
           }
         },
-        "summary": "Newest-first collection listing: public plus the caller's own.",
+        "summary": "Collection listing (newest first by default): public plus the caller's own.",
         "tags": [
           "collections"
         ]
@@ -22976,11 +24968,11 @@ expression: json
             "content": {
               "text/event-stream": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/CourseGradingStreamEvent"
                 }
               }
             },
-            "description": "Event stream"
+            "description": "Event stream: each message's `data` is one event"
           },
           "403": {
             "content": {
@@ -24867,6 +26859,15 @@ expression: json
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "description": "next_cursor from the previous page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -24879,6 +26880,16 @@ expression: json
               }
             },
             "description": "Grouped results"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Malformed `cursor`"
           }
         },
         "summary": "Platform search over courses, collections, and people. Anonymous callers\nsee public content only and no people section.",
@@ -25071,11 +27082,11 @@ expression: json
             "content": {
               "text/event-stream": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/SubmissionStreamEvent"
                 }
               }
             },
-            "description": "Event stream"
+            "description": "Event stream: each message's `data` is one event"
           },
           "404": {
             "content": {

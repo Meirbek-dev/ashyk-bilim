@@ -15,6 +15,7 @@ pub use ab_domain::code::{LanguageInfo, ReferenceCheck};
 pub struct RunRequest {
     /// Judge0 language id.
     #[garde(range(min = 1))]
+    #[schema(minimum = 1)]
     pub language_id: i32,
     #[garde(skip)]
     pub source: String,

@@ -28,6 +28,9 @@ pub struct SearchResults {
     pub collections: Vec<CollectionHit>,
     /// Empty for anonymous callers.
     pub users: Vec<UserHit>,
+    /// Set while any section has more hits: pass it back as `cursor` for
+    /// the next page of every section.
+    pub next_cursor: Option<String>,
 }
 
 impl SearchResults {
@@ -52,6 +55,7 @@ impl SearchResults {
                 })
                 .collect(),
             users: r.users.into_iter().map(Into::into).collect(),
+            next_cursor: r.next_cursor,
         }
     }
 }
@@ -73,4 +77,6 @@ pub struct SearchQuery {
     pub q: String,
     /// Per-section cap, 1..=50 (default 10).
     pub limit: Option<i64>,
+    /// `next_cursor` from the previous page.
+    pub cursor: Option<String>,
 }

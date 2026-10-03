@@ -64,6 +64,34 @@ impl Course {
     }
 }
 
+/// A `GET /courses` item: the course plus who wrote it and how far the
+/// caller got.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseListItem {
+    #[serde(flatten)]
+    pub course: Course,
+    /// The creator first, then the active contributors (`contributor_ids`
+    /// order); deleted accounts are left out.
+    pub authors: Vec<CourseAuthor>,
+    /// The signed-in caller's progress; `null` when not enrolled (or
+    /// anonymous, or staff of the course).
+    pub progress: Option<CourseListProgress>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseAuthor {
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseListProgress {
+    /// 0..=100.
+    pub progress_pct: f64,
+    pub completed_at_unix: Option<i64>,
+}
+
 /// What archiving the course would freeze (`GET /courses/{id}/archive-preview`,
 /// roster managers). Warnings for the confirmation dialog, never blockers.
 #[derive(Debug, Serialize, ToSchema)]
@@ -118,11 +146,13 @@ impl From<ab_domain::catalog::courses::Learning> for CourseLearning {
 #[serde(deny_unknown_fields)]
 pub struct LearningInput {
     #[garde(inner(length(chars, max = 64)))]
+    #[schema(max_length = 64)]
     pub id: Option<String>,
     /// 1..=300 characters after trimming.
     #[garde(custom(valid_learning_text))]
     pub text: String,
     #[garde(inner(length(chars, max = 16)))]
+    #[schema(max_length = 16)]
     pub emoji: Option<String>,
 }
 
@@ -177,7 +207,7 @@ impl From<ab_domain::catalog::courses::CourseSummary> for CourseSummary {
 /// Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CoursePage {
-    pub items: Vec<Course>,
+    pub items: Vec<CourseListItem>,
     pub next_cursor: Option<CourseId>,
     /// Present only when the request had `mine=true`.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -189,12 +219,16 @@ pub struct CoursePage {
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseRequest {
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
     #[garde(length(chars, max = 20_000))]
+    #[schema(max_length = 20_000)]
     pub about: Option<String>,
     #[garde(inner(inner(length(min = 1, max = 64))), inner(length(max = 20)))]
+    #[schema(max_items = 20)]
     pub tags: Option<Vec<String>>,
 }
 
@@ -202,12 +236,16 @@ pub struct CreateCourseRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateCourseRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
     #[garde(inner(length(max = 20_000)))]
+    #[schema(max_length = 20_000)]
     pub about: Option<String>,
     #[garde(inner(inner(length(min = 1, max = 64))), inner(length(max = 20)))]
+    #[schema(max_items = 20)]
     pub tags: Option<Vec<String>>,
     #[garde(skip)]
     pub open_to_contributors: Option<bool>,
@@ -219,6 +257,7 @@ pub struct UpdateCourseRequest {
     pub thumbnail_upload_id: Option<Option<uuid::Uuid>>,
     /// Replaces the whole "What you'll learn" list (≤ 30 entries).
     #[garde(dive, length(max = 30))]
+    #[schema(max_items = 30)]
     pub learnings: Option<Vec<LearningInput>>,
 }
 
@@ -285,7 +324,9 @@ pub struct Contributor {
     pub username: String,
     pub display_name: String,
     pub avatar_key: Option<String>,
+    #[schema(value_type = crate::dto::enums::RosterRole)]
     pub role: String,
+    #[schema(value_type = crate::dto::enums::ContributorStatus)]
     pub status: String,
     pub created_at_unix: i64,
 }
@@ -334,9 +375,11 @@ pub struct AddContributorRequest {
     #[garde(skip)]
     pub user_id: Option<UserId>,
     #[garde(inner(length(min = 1, max = 100)))]
+    #[schema(min_length = 1, max_length = 100)]
     pub username: Option<String>,
     /// `maintainer | contributor | reporter` (default `contributor`).
     #[garde(inner(custom(valid_role)))]
+    #[schema(value_type = Option<crate::dto::enums::ContributorRole>)]
     pub role: Option<String>,
 }
 
@@ -345,9 +388,11 @@ pub struct AddContributorRequest {
 pub struct UpdateContributorRequest {
     /// `maintainer | contributor | reporter`.
     #[garde(inner(custom(valid_role)))]
+    #[schema(value_type = Option<crate::dto::enums::ContributorRole>)]
     pub role: Option<String>,
     /// `pending | active | inactive` (`active` approves an application).
     #[garde(inner(custom(valid_status)))]
+    #[schema(value_type = Option<crate::dto::enums::ContributorStatus>)]
     pub status: Option<String>,
 }
 
@@ -367,7 +412,7 @@ pub struct CourseReadiness {
 /// file-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ReadinessItem {
-    pub code: String,
+    pub code: ab_domain::catalog::readiness::ReadinessCode,
     pub activity_id: Option<ab_core::id::ActivityId>,
     pub title: Option<String>,
 }
@@ -378,7 +423,7 @@ impl From<ab_domain::catalog::readiness::CourseReadiness> for CourseReadiness {
             items
                 .into_iter()
                 .map(|i| ReadinessItem {
-                    code: i.code.to_owned(),
+                    code: i.code,
                     activity_id: i.activity_id,
                     title: i.title,
                 })
@@ -420,8 +465,10 @@ impl From<ab_domain::catalog::courses::CourseUpdate> for CourseUpdate {
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseUpdateRequest {
     #[garde(length(chars, min = 1, max = 500))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: String,
     #[garde(length(chars, min = 1, max = 50_000))]
+    #[schema(min_length = 1, max_length = 50_000)]
     pub content: String,
 }
 
@@ -429,7 +476,9 @@ pub struct CreateCourseUpdateRequest {
 #[serde(deny_unknown_fields)]
 pub struct EditCourseUpdateRequest {
     #[garde(inner(length(min = 1, max = 500)))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: Option<String>,
     #[garde(inner(length(min = 1, max = 50_000)))]
+    #[schema(min_length = 1, max_length = 50_000)]
     pub content: Option<String>,
 }

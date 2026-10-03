@@ -7,10 +7,10 @@ use axum::http::StatusCode;
 
 use crate::detach::detached;
 use crate::dto::courses::{
-    AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseLifecycleRequest,
-    CourseListQuery, CoursePage, CourseReadiness, CourseUpdate, CreateCourseRequest,
-    CreateCourseUpdateRequest, EditCourseUpdateRequest, UpdateContributorRequest,
-    UpdateCourseRequest,
+    AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseAuthor,
+    CourseLifecycleRequest, CourseListItem, CourseListProgress, CourseListQuery, CoursePage,
+    CourseReadiness, CourseUpdate, CreateCourseRequest, CreateCourseUpdateRequest,
+    EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson};
@@ -94,14 +94,49 @@ pub async fn list_courses(
     } else {
         None
     };
+    let items = list_items(&state, &actor, courses).await?;
     Ok(Json(CoursePage {
-        items: courses
-            .into_iter()
-            .map(|c| Course::for_actor(c, &actor))
-            .collect(),
+        items,
         next_cursor,
         summary,
     }))
+}
+
+/// Authors' names and the caller's progress for a page.
+pub(crate) async fn list_items(
+    state: &AppState,
+    actor: &ab_domain::identity::Actor,
+    courses: Vec<ab_domain::catalog::courses::Course>,
+) -> ApiResult<Vec<CourseListItem>> {
+    let mut extras = state.courses.list_extras(actor, &courses).await?;
+    Ok(courses
+        .into_iter()
+        .map(|c| {
+            let mut ids: Vec<UserId> = c.creator_id.into_iter().collect();
+            ids.extend(
+                c.contributor_ids
+                    .iter()
+                    .filter(|id| Some(**id) != c.creator_id),
+            );
+            let authors = ids
+                .iter()
+                .filter_map(|id| extras.users.get(id))
+                .map(|u| CourseAuthor {
+                    user_id: u.id,
+                    username: u.username.clone(),
+                    display_name: u.display_name.clone(),
+                })
+                .collect();
+            CourseListItem {
+                progress: extras.progress.remove(&c.id).map(|p| CourseListProgress {
+                    progress_pct: p.progress_pct,
+                    completed_at_unix: p.completed_at,
+                }),
+                authors,
+                course: Course::for_actor(c, actor),
+            }
+        })
+        .collect())
 }
 
 /// Publish readiness: blockers and warnings with stable codes (course write

@@ -329,10 +329,7 @@ pub async fn user_courses(
         .list_by_user(&actor, user, query.cursor, query.limit.unwrap_or(20))
         .await?;
     Ok(Json(CoursePage {
-        items: courses
-            .into_iter()
-            .map(|c| crate::dto::courses::Course::for_actor(c, &actor))
-            .collect(),
+        items: crate::routes::courses::list_items(&state, &actor, courses).await?,
         next_cursor,
         summary: None,
     }))

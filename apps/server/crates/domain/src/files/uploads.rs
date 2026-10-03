@@ -52,9 +52,8 @@ pub fn is_purpose(purpose: &str) -> bool {
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {
         "avatar" => Some((Bucket::Public, 5 * MB, IMAGES)),
-        "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail" => {
-            Some((Bucket::Public, 10 * MB, IMAGES))
-        }
+        "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail"
+        | "collection-cover" => Some((Bucket::Public, 10 * MB, IMAGES)),
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
         "block-video" => Some((Bucket::Public, 500 * MB, VIDEOS)),
         "file-submission" => Some((Bucket::Private, 100 * MB, &[])),
@@ -83,6 +82,20 @@ fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
         "course-thumbnail" | "block-image" | "block-pdf" | "block-video" => {
             actor.has(course_update(Scope::Own)) || actor.has(course_update(Scope::Platform))
         }
+        // Whoever may make or edit a collection may give it a cover.
+        "collection-cover" => [
+            (Action::Create, Scope::Platform),
+            (Action::Update, Scope::Own),
+            (Action::Update, Scope::Platform),
+        ]
+        .into_iter()
+        .any(|(action, scope)| {
+            actor.has(Permission {
+                resource: ResourceType::Collection,
+                action,
+                scope: Some(scope),
+            })
+        }),
         _ => true,
     };
     if granted {

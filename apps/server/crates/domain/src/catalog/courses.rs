@@ -15,6 +15,8 @@
 //! inside the shared gates, which author reads go through too). Archive and
 //! restore take the roster-manager gate (`contributors.rs`).
 
+use std::collections::HashMap;
+
 use ab_core::id::{CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
@@ -128,6 +130,13 @@ fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
             Ok(Learning { id, text, emoji })
         })
         .collect()
+}
+
+/// [`CoursesService::list_extras`]: author summaries by id, the caller's
+/// progress by course.
+pub struct ListExtras {
+    pub users: HashMap<UserId, ab_db::identity::UserSummaryRow>,
+    pub progress: HashMap<CourseId, ab_db::progress::MemberProgressRow>,
 }
 
 /// `GET /courses` filters (see `ab_db::catalog::CourseFilter`).
@@ -565,6 +574,31 @@ impl CoursesService {
         self.writable_update(actor, id).await?;
         ab_db::catalog::delete_course_update(&self.pool, id).await?;
         Ok(())
+    }
+
+    /// What a `GET /courses` page shows beside each course: its authors'
+    /// names and the caller's progress where they are a member.
+    pub async fn list_extras(&self, actor: &Actor, courses: &[Course]) -> Result<ListExtras> {
+        let author_ids: Vec<UserId> = courses
+            .iter()
+            .flat_map(|c| c.creator_id.iter().chain(&c.contributor_ids).copied())
+            .collect();
+        let users = ab_db::identity::list_user_summaries(&self.pool, &author_ids)
+            .await?
+            .into_iter()
+            .map(|u| (u.id, u))
+            .collect();
+        let progress = if actor.is_anonymous() {
+            HashMap::new()
+        } else {
+            let ids: Vec<CourseId> = courses.iter().map(|c| c.id).collect();
+            ab_db::progress::member_progress(&self.pool, actor.user_id, &ids)
+                .await?
+                .into_iter()
+                .map(|p| (p.course_id, p))
+                .collect()
+        };
+        Ok(ListExtras { users, progress })
     }
 
     pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {

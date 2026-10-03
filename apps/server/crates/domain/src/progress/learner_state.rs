@@ -111,6 +111,7 @@ pub struct NextAction {
 pub struct ActivityState {
     pub id: ActivityId,
     pub title: String,
+    #[schema(value_type = crate::wire::ActivityType)]
     pub activity_type: String,
     pub required: bool,
     pub state: WorkState,

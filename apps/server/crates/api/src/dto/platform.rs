@@ -32,17 +32,22 @@ impl From<ab_domain::catalog::platform::Platform> for Platform {
 pub struct UpdatePlatformRequest {
     /// Blank → 422 `required` (trimmed in the service).
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
     #[garde(inner(length(max = 20_000)))]
+    #[schema(max_length = 20_000)]
     pub about: Option<String>,
     #[garde(inner(email, length(max = 320)))]
+    #[schema(max_length = 320)]
     pub email: Option<String>,
     /// `null` clears the label; blank is stored as cleared too (UX-135).
     #[garde(inner(inner(length(max = 500))))]
     #[serde(default, deserialize_with = "super::double_option")]
     #[schema(value_type = Option<String>)]
+    #[schema(max_length = 500)]
     pub label: Option<Option<String>>,
     /// Finalized `platform-logo` upload to claim as the new logo.
     #[garde(skip)]

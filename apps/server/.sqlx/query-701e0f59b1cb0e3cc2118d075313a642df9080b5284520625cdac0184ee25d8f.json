@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections WHERE id = $1",
+  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\", version, cover_key,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -71,12 +71,23 @@
       },
       {
         "ordinal": 6,
+        "name": "cover_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "collections",
+            "name": "cover_key"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -94,9 +105,10 @@
       false,
       true,
       false,
+      true,
       null,
       null
     ]
   },
-  "hash": "6df5548bba9966f098c573bc6ced1c55c3ef430bfd8ab46d5e841f30894cb47a"
+  "hash": "701e0f59b1cb0e3cc2118d075313a642df9080b5284520625cdac0184ee25d8f"
 }

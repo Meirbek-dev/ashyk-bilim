@@ -11,8 +11,10 @@ pub struct CreateUploadRequest {
     #[schema(value_type = crate::dto::enums::UploadPurpose)]
     pub purpose: String,
     #[garde(length(min = 1, max = 255))]
+    #[schema(min_length = 1, max_length = 255)]
     pub mime: String,
     #[garde(range(min = 1))]
+    #[schema(minimum = 1)]
     pub size_bytes: i64,
 }
 

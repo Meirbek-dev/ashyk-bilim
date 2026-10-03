@@ -22,6 +22,7 @@ const UNIX_TIME: &str = "#/components/schemas/UnixTime";
 /// patch fields deserialized with `dto::double_option`), as (schema, property).
 const NULL_CLEARS: &[(&str, &str)] = &[
     ("UpdateCourseRequest", "thumbnail_upload_id"),
+    ("UpdateCollectionRequest", "cover_upload_id"),
     ("ConfigPatch", "max_file_size_mb"),
     ("ConfigPatch", "due_at_unix"),
     ("ConfigPatch", "max_attempts"),
@@ -34,6 +35,12 @@ const NULL_CLEARS: &[(&str, &str)] = &[
     ("UpdateProfileRequest", "theme"),
 ];
 
+/// Schemas of stored JSON documents (`ab_domain::wire`) whose keys
+/// accumulated over time: a key may be absent or hold `null`, so a nullable
+/// key stays optional. Marked `x-stored-json: true`; G-08 allows
+/// optional+nullable only there and in [`NULL_CLEARS`].
+const STORED_JSON: &[&str] = &["RunMetadata", "RunContext", "AuditPayload"];
+
 /// The finished document: what `ashyq openapi` exports and the API serves.
 pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
     // An `OpenApi` has string keys only: serializing it cannot fail.
@@ -41,6 +48,7 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
     integers(&mut doc);
     binary_downloads(&mut doc);
     nullability(&mut doc);
+    close_all_of(&mut doc);
     if let Some(schemas) = doc
         .pointer_mut("/components/schemas")
         .and_then(Value::as_object_mut)
@@ -54,6 +62,72 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
         );
     }
     doc
+}
+
+/// An `allOf` of object schemas where one is closed
+/// (`additionalProperties: false`, a `deny_unknown_fields` struct) accepts
+/// nothing: the closed member rejects the others' keys (a serde tag, a
+/// flattened block). Merge such an `allOf` into the one closed object
+/// serde actually accepts.
+fn close_all_of(doc: &mut Value) {
+    let schemas = doc
+        .pointer("/components/schemas")
+        .cloned()
+        .unwrap_or_default();
+    merge_closed(doc, &schemas);
+}
+
+fn merge_closed(node: &mut Value, schemas: &Value) {
+    match node {
+        Value::Object(map) => {
+            map.values_mut().for_each(|v| merge_closed(v, schemas));
+            let Some(Value::Array(members)) = map.get("allOf") else {
+                return;
+            };
+            let resolved: Vec<&Value> = members
+                .iter()
+                .map(|m| {
+                    m.get("$ref")
+                        .and_then(Value::as_str)
+                        .and_then(|r| r.strip_prefix("#/components/schemas/"))
+                        .and_then(|name| schemas.get(name))
+                        .unwrap_or(m)
+                })
+                .collect();
+            let objects = resolved
+                .iter()
+                .all(|m| m.get("properties").is_some_and(Value::is_object));
+            let closed = resolved
+                .iter()
+                .any(|m| m.get("additionalProperties") == Some(&Value::Bool(false)));
+            if !objects || !closed {
+                return;
+            }
+            let (mut properties, mut required) = (Map::new(), Vec::new());
+            for member in resolved {
+                if let Some(Value::Object(props)) = member.get("properties") {
+                    properties.extend(props.clone());
+                }
+                for name in member
+                    .get("required")
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                {
+                    if !required.contains(name) {
+                        required.push(name.clone());
+                    }
+                }
+            }
+            map.remove("allOf");
+            map.insert("type".into(), json!("object"));
+            map.insert("properties".into(), Value::Object(properties));
+            map.insert("required".into(), Value::Array(required));
+            map.insert("additionalProperties".into(), json!(false));
+        }
+        Value::Array(items) => items.iter_mut().for_each(|v| merge_closed(v, schemas)),
+        _ => {}
+    }
 }
 
 /// `*_unix` → `UnixTime`; then drop `format: int64` everywhere. Every
@@ -180,6 +254,10 @@ fn nullability(doc: &mut Value) {
         .and_then(Value::as_object_mut)
     {
         for (name, schema) in schemas.iter_mut() {
+            if STORED_JSON.contains(&name.as_str()) {
+                schema["x-stored-json"] = json!(true);
+                continue;
+            }
             // Shared shapes are described as responses see them: a request
             // may still omit a nullable field (serde defaults it).
             let side = if requests.contains(name) && !responses.contains(name) {
@@ -304,5 +382,55 @@ mod tests {
             assert_eq!(field["x-null-clears"], json!(true), "{schema}.{prop}");
             assert!(is_nullable(field), "{schema}.{prop}");
         }
+    }
+
+    /// A closed (`deny_unknown_fields`) member makes an `allOf` reject
+    /// everything; the pass merges it into the object serde accepts: the
+    /// profile sections keep their `type` tag, the file-submission create
+    /// its flattened config.
+    #[test]
+    fn closed_all_of_is_merged() {
+        let doc = crate::openapi_doc();
+        for variant in doc["components"]["schemas"]["ProfileSection"]["oneOf"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+        {
+            assert!(variant.get("allOf").is_none(), "{variant}");
+            assert!(
+                variant["properties"]["type"]["enum"].is_array(),
+                "{variant}"
+            );
+            assert!(variant["properties"]["id"].is_object(), "{variant}");
+        }
+        let create = &doc["components"]["schemas"]["CreateFileSubmissionRequest"];
+        assert!(create["properties"]["chapter_id"].is_object());
+        assert!(create["properties"]["max_files"].is_object());
+        for name in STORED_JSON {
+            assert_eq!(
+                doc["components"]["schemas"][name]["x-stored-json"],
+                json!(true),
+                "{name}"
+            );
+        }
+    }
+
+    /// `AiEffectiveConfig` names exactly the keys `AiConfig::redacted` writes.
+    #[test]
+    fn ai_effective_config_matches_redacted() {
+        use utoipa::PartialSchema;
+        let schema =
+            serde_json::to_value(ab_domain::wire::AiEffectiveConfig::schema()).unwrap_or_default();
+        let mut declared: Vec<&String> = schema["properties"]
+            .as_object()
+            .map(|m| m.keys().collect())
+            .unwrap_or_default();
+        let redacted = ab_core::config::AiConfig::default().redacted();
+        let mut written: Vec<&String> = redacted
+            .as_object()
+            .map(|m| m.keys().collect())
+            .unwrap_or_default();
+        declared.sort();
+        written.sort();
+        assert_eq!(declared, written);
     }
 }

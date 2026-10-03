@@ -68,7 +68,7 @@ pub struct RunStatus {
     pub input_tokens: Option<i32>,
     pub output_tokens: Option<i32>,
     pub duration_ms: Option<i32>,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::RunMetadata)]
     pub metadata: serde_json::Value,
     pub started_at_unix: i64,
     pub completed_at_unix: Option<i64>,
@@ -98,7 +98,7 @@ pub struct RunEvent {
     pub id: AiEventId,
     pub sequence: i32,
     pub event_type: String,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::RunEventPayload)]
     pub payload: serde_json::Value,
     pub created_at_unix: i64,
 }
@@ -118,20 +118,29 @@ impl From<ab_db::ai::EventRow> for RunEvent {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct RunArtifact {
     pub id: AiArtifactId,
-    pub kind: String,
-    #[schema(value_type = Object)]
-    pub content: serde_json::Value,
+    /// `kind` + `content`: the agent's output by kind.
+    #[serde(flatten)]
+    #[schema(value_type = ab_domain::wire::RunArtifactBody)]
+    pub body: ArtifactBody,
     #[serde(rename = "final")]
     pub is_final: bool,
     pub created_at_unix: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ArtifactBody {
+    pub kind: String,
+    pub content: serde_json::Value,
 }
 
 impl From<ab_db::ai::ArtifactRow> for RunArtifact {
     fn from(a: ab_db::ai::ArtifactRow) -> Self {
         Self {
             id: a.id,
-            kind: a.kind,
-            content: a.content,
+            body: ArtifactBody {
+                kind: a.kind,
+                content: a.content,
+            },
             is_final: a.final_,
             created_at_unix: a.created_at,
         }
@@ -172,8 +181,10 @@ impl From<ab_db::ai::EvidenceRow> for RunEvidence {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct RunStreamRequest {
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub thread_id: String,
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub run_id: String,
     /// AG-UI protocol fields the client always sends; accepted and ignored.
     #[garde(skip)]
@@ -186,6 +197,7 @@ pub struct RunStreamRequest {
     #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub state: Option<serde_json::Value>,
     #[garde(length(max = 200))]
+    #[schema(max_length = 200)]
     pub parent_run_id: Option<String>,
     #[garde(skip)]
     #[schema(value_type = Option<Vec<QaWireMessage>>)]
@@ -194,6 +206,7 @@ pub struct RunStreamRequest {
     #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub forwarded_props: Option<serde_json::Value>,
     #[garde(length(max = 32))]
+    #[schema(max_length = 32)]
     pub protocol_version: Option<String>,
     #[garde(skip)]
     #[schema(value_type = Option<Vec<ab_domain::wire::JsonValue>>)]
@@ -207,10 +220,13 @@ pub struct RunStreamRequest {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct QaWireMessage {
     #[garde(length(max = 200))]
+    #[schema(max_length = 200)]
     pub id: Option<String>,
     #[garde(length(min = 1, max = 32))]
+    #[schema(min_length = 1, max_length = 32)]
     pub role: String,
     #[garde(length(chars, max = 20_000))]
+    #[schema(max_length = 20_000)]
     pub content: Option<String>,
     /// `[{type: "text", content: "…"}, …]` - an alternative to `content`.
     #[garde(skip)]
@@ -242,6 +258,7 @@ pub struct QaForwardedProps {
     pub activity_id: Option<ActivityId>,
     /// Client turn id: a retry with the same id replays the stored answer.
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub client_turn_id: Option<String>,
 }
 
@@ -250,8 +267,10 @@ pub struct QaForwardedProps {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct QaChatRequest {
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub thread_id: String,
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub run_id: String,
     #[garde(dive)]
     #[serde(default)]
@@ -270,9 +289,11 @@ pub struct QaChatRequest {
     #[schema(value_type = Option<ab_domain::wire::JsonValue>)]
     pub state: Option<serde_json::Value>,
     #[garde(length(max = 200))]
+    #[schema(max_length = 200)]
     pub parent_run_id: Option<String>,
     /// AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.
     #[garde(length(max = 32))]
+    #[schema(max_length = 32)]
     pub protocol_version: Option<String>,
     /// AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.
     #[garde(skip)]
@@ -345,9 +366,9 @@ pub struct QaMessage {
     pub client_turn_id: Option<String>,
     pub content: String,
     pub confidence: Option<String>,
-    #[schema(value_type = Vec<ab_domain::ai::schemas::Citation>)]
+    #[schema(value_type = ab_domain::wire::AiEvidence)]
     pub citations: serde_json::Value,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::QaMessageMetadata)]
     pub metadata: serde_json::Value,
     pub created_at_unix: i64,
 }
@@ -385,10 +406,12 @@ pub struct LanguageRequest {
 #[serde(deny_unknown_fields)]
 pub struct FindingReviewRequest {
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub finding_id: String,
     #[garde(skip)]
     pub action: FindingReviewAction,
     #[garde(length(chars, max = 1000))]
+    #[schema(max_length = 1000)]
     pub note: Option<String>,
 }
 
@@ -406,6 +429,7 @@ pub struct LectureReviewRequest {
 #[serde(deny_unknown_fields)]
 pub struct DismissSuggestionRequest {
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub suggestion_id: String,
 }
 
@@ -424,6 +448,7 @@ pub struct RemediationRequest {
 #[serde(deny_unknown_fields)]
 pub struct RemediationCompletionRequest {
     #[garde(range(min = 0, max = 100))]
+    #[schema(minimum = 0, maximum = 100)]
     pub score: i32,
 }
 
@@ -431,6 +456,7 @@ pub struct RemediationCompletionRequest {
 #[serde(deny_unknown_fields)]
 pub struct StudyRequest {
     #[garde(length(chars, min = 1, max = 4000))]
+    #[schema(min_length = 1, max_length = 4000)]
     pub question: String,
     #[garde(skip)]
     #[serde(default = "StudyRequest::default_mode")]
@@ -728,7 +754,7 @@ pub struct AdminSettings {
     pub draft_mode_enabled: bool,
     pub features: Vec<FeatureSetting>,
     /// The whole `AB__AI__*` section with secrets redacted.
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::AiEffectiveConfig)]
     pub effective: serde_json::Value,
 }
 
@@ -793,7 +819,7 @@ pub struct AdminRun {
     /// Queued or running for over ten minutes.
     pub stuck: bool,
     /// The allow-listed part of the run metadata.
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::RunContext)]
     pub context: serde_json::Value,
 }
 
@@ -869,7 +895,7 @@ pub struct EvalResult {
     pub evaluator: String,
     pub score: Option<f64>,
     pub passed: Option<bool>,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::EvalDetails)]
     pub details: serde_json::Value,
     pub created_at_unix: i64,
 }

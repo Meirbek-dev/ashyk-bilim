@@ -345,3 +345,40 @@ async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool)
         .collect();
     assert_eq!(people, ["c.dev"]);
 }
+
+/// `cursor` pages every section by the same offset; `next_cursor` is set
+/// while any section has more; a malformed cursor is 422.
+#[sqlx::test(migrations = "../../migrations")]
+async fn search_pages_by_cursor(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    for n in 1..=3 {
+        course(&app, &teacher, &format!("Paging course {n}"), true).await;
+    }
+    let first = app
+        .get_as(&teacher, "/api/v2/search?q=paging&limit=2")
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(first.json()["courses"].as_array().unwrap().len(), 2);
+    let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
+    let second = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/search?q=paging&limit=2&cursor={cursor}"),
+        )
+        .await;
+    assert_eq!(second.json()["courses"].as_array().unwrap().len(), 1);
+    assert!(second.json()["next_cursor"].is_null());
+    let mut ids: Vec<String> = [&first, &second]
+        .iter()
+        .flat_map(|r| r.json()["courses"].as_array().unwrap().clone())
+        .map(|c| c["id"].as_str().unwrap().to_owned())
+        .collect();
+    ids.sort();
+    ids.dedup();
+    assert_eq!(ids.len(), 3, "no hit repeated or skipped");
+    let bad = app
+        .get_as(&teacher, "/api/v2/search?q=paging&cursor=x")
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+}

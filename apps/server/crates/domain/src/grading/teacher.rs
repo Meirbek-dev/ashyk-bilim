@@ -1771,7 +1771,7 @@ impl GradingService {
 }
 
 /// Course-stream event name for a grade landing in `target`.
-pub(crate) const fn course_event_name(target: SubmissionStatus) -> &'static str {
+pub const fn course_event_name(target: SubmissionStatus) -> &'static str {
     match target {
         SubmissionStatus::Published => "grade.published",
         SubmissionStatus::Returned => "submission.returned",

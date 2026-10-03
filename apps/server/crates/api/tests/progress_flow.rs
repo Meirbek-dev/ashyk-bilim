@@ -2308,3 +2308,49 @@ async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool)
     assert_eq!(anon.status, StatusCode::OK, "{}", anon.text());
     assert_eq!(anon.json()["items"][0]["id"], newer.as_str());
 }
+
+/// `GET /courses` items name their authors and carry the caller's
+/// progress once enrolled (`null` before, and for anonymous callers).
+#[sqlx::test(migrations = "../../migrations")]
+async fn course_list_items_carry_authors_and_progress(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/courses",
+            &serde_json::json!({ "name": "Listed" }),
+        )
+        .await;
+    let course_id = created.json()["id"].as_str().unwrap().to_owned();
+    app.publish_course(&course_id).await;
+
+    let item = |res: &ab_testkit::TestResponse| {
+        res.json()["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["id"] == course_id.as_str())
+            .cloned()
+            .unwrap()
+    };
+    let before = item(&app.get_as(&alice, "/api/v2/courses").await);
+    assert_eq!(before["authors"][0]["username"], "teacher");
+    assert!(before["authors"][0]["display_name"].is_string());
+    assert!(before["progress"].is_null());
+
+    let added = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    let after = item(&app.get_as(&alice, "/api/v2/courses").await);
+    assert_eq!(after["progress"]["progress_pct"], 0.0);
+    assert!(after["progress"]["completed_at_unix"].is_null());
+    let anonymous = item(&app.get("/api/v2/courses").await);
+    assert!(anonymous["progress"].is_null());
+}

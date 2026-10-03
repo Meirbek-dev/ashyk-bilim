@@ -41,6 +41,7 @@ impl Role {
 pub struct AssignRoleRequest {
     /// Role slug, e.g. `instructor`.
     #[garde(length(min = 1, max = 64))]
+    #[schema(min_length = 1, max_length = 64)]
     pub role: String,
 }
 
@@ -64,14 +65,22 @@ fn kebab_slug(value: &str, _ctx: &()) -> garde::Result {
 pub struct CreateRoleRequest {
     /// Kebab-case slug, e.g. `teaching-assistant`.
     #[garde(length(min = 1, max = 64), custom(kebab_slug))]
+    #[schema(
+        min_length = 1,
+        max_length = 64,
+        pattern = r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+    )]
     pub slug: String,
     /// Blank → 422 `required` (trimmed in the service).
     #[garde(length(chars, max = 200))]
+    #[schema(max_length = 200)]
     pub display_name: String,
     #[garde(length(chars, max = 1000))]
+    #[schema(max_length = 1000)]
     pub description: Option<String>,
     /// Ordering weight (system roles: guest 0 … admin 100).
     #[garde(range(min = 0, max = 99))]
+    #[schema(minimum = 0, maximum = 99)]
     pub priority: i32,
 }
 
@@ -79,10 +88,13 @@ pub struct CreateRoleRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateRoleRequest {
     #[garde(inner(length(max = 200)))]
+    #[schema(max_length = 200)]
     pub display_name: Option<String>,
     #[garde(inner(length(max = 1000)))]
+    #[schema(max_length = 1000)]
     pub description: Option<String>,
     #[garde(inner(range(min = 0, max = 99)))]
+    #[schema(minimum = 0, maximum = 99)]
     pub priority: Option<i32>,
 }
 
@@ -92,5 +104,6 @@ pub struct SetRolePermissionsRequest {
     /// Full replacement grant set; every entry must parse against the
     /// permission registry (`resource:action[:scope]`).
     #[garde(length(max = 200), inner(length(min = 1, max = 128)))]
+    #[schema(max_items = 200)]
     pub permissions: Vec<String>,
 }

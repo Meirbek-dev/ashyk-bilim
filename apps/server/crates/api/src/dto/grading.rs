@@ -262,9 +262,11 @@ pub struct ItemGradeRequest {
     pub item_id: AssessmentItemId,
     /// Points for this item (its `max_score` scale).
     #[garde(range(min = 0.0))]
+    #[schema(minimum = 0.0)]
     pub score: Option<f64>,
     #[garde(length(chars, max = 5000))]
     #[serde(default)]
+    #[schema(max_length = 5000)]
     pub feedback: String,
 }
 
@@ -280,15 +282,18 @@ pub struct GradeRequest {
     #[garde(range(min = 0.0, max = 100.0))]
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<f64>)]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub final_score: Option<Option<f64>>,
     /// Overall feedback shown to the learner; omitted = keep the stored one.
     #[garde(length(chars, max = 10_000))]
+    #[schema(max_length = 10_000)]
     pub feedback: Option<String>,
     #[garde(dive)]
     #[serde(default)]
     pub item_grades: Vec<ItemGradeRequest>,
     /// Grader's note for the audit trail; never shown to the learner.
     #[garde(length(chars, max = 1000))]
+    #[schema(max_length = 1000)]
     pub audit_note: Option<String>,
 }
 
@@ -325,12 +330,15 @@ impl From<domain::GradingEntry> for GradingEntry {
 #[serde(deny_unknown_fields)]
 pub struct DeadlineExtensionRequest {
     #[garde(length(min = 1, max = 500))]
+    #[schema(min_items = 1, max_items = 500)]
     pub user_ids: Vec<UserId>,
     /// Unix seconds, at most 9999-12-31 (the timestamp range).
     #[garde(range(min = 0, max = super::EPOCH_MAX))]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub new_due_at_unix: i64,
     #[garde(length(chars, max = 500))]
     #[serde(default)]
+    #[schema(max_length = 500)]
     pub reason: String,
 }
 
@@ -341,7 +349,7 @@ pub struct BulkAction {
     pub performed_by: Option<UserId>,
     pub action_type: BulkActionType,
     pub status: BulkActionStatus,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::BulkActionParams)]
     pub params: serde_json::Value,
     pub target_user_ids: Vec<UserId>,
     pub affected_count: i32,
@@ -494,5 +502,155 @@ impl From<domain::GradebookPage> for GradebookPage {
                 .collect(),
             next_cursor: p.next_cursor,
         }
+    }
+}
+
+// ── Event streams (schema-only, S-01 item 9) ────────────────────────────────
+//
+// What one SSE message's `data:` holds on the grading streams
+// (`routes::sse`); the SSE `event:` name equals the `event` member. Stored
+// events also carry the stream id as `event_id` (the SSE `id:`).
+
+/// `GET /submissions/{submission_id}/events`: one message's `data`.
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "event")]
+pub enum SubmissionStreamEvent {
+    /// Sent once, after any replay.
+    #[serde(rename = "connected")]
+    Connected { submission_id: SubmissionId },
+    #[serde(rename = "grade.published")]
+    GradePublished {
+        event_id: String,
+        submission_id: SubmissionId,
+        payload: GradePublishedPayload,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "submission.returned")]
+    SubmissionReturned {
+        event_id: String,
+        submission_id: SubmissionId,
+        payload: SubmissionReturnedPayload,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "deadline.extended")]
+    DeadlineExtended {
+        event_id: String,
+        submission_id: SubmissionId,
+        payload: DeadlineExtendedPayload,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    /// Access lost; the stream ends.
+    #[serde(rename = "closed")]
+    Closed { code: ab_core::ErrorCode },
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct GradePublishedPayload {
+    pub final_score: f64,
+    /// Unix seconds.
+    pub published_at: i64,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct SubmissionReturnedPayload {
+    pub feedback: String,
+    /// Unix seconds.
+    pub returned_at: i64,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct DeadlineExtendedPayload {
+    /// Unix seconds.
+    pub new_due_at: i64,
+    pub reason: String,
+}
+
+/// `GET /courses/{course_id}/grading/events`: one message's `data`.
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "event")]
+pub enum CourseGradingStreamEvent {
+    /// Sent once, after any replay.
+    #[serde(rename = "connected")]
+    Connected { course_id: ab_core::id::CourseId },
+    #[serde(rename = "submission.submitted")]
+    SubmissionSubmitted(CourseGradingStored),
+    #[serde(rename = "grade.saved")]
+    GradeSaved(CourseGradingStored),
+    #[serde(rename = "grade.published")]
+    GradePublished(CourseGradingStored),
+    #[serde(rename = "submission.returned")]
+    SubmissionReturned(CourseGradingStored),
+    /// Grading access lost; the stream ends.
+    #[serde(rename = "closed")]
+    Closed { code: ab_core::ErrorCode },
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct CourseGradingStored {
+    pub event_id: String,
+    pub payload: CourseGradingPayload,
+    /// Unix seconds.
+    pub sent_at: i64,
+}
+
+/// A grade change or hand-in: `submission_id` (assessments) or
+/// `attempt_id` (file submissions).
+#[derive(Serialize, ToSchema)]
+pub struct CourseGradingPayload {
+    #[schema(nullable = false)]
+    pub submission_id: Option<SubmissionId>,
+    #[schema(nullable = false)]
+    pub attempt_id: Option<FileAttemptId>,
+    pub activity_id: ActivityId,
+    pub user_id: UserId,
+    pub status: SubmissionStatus,
+    pub final_score: Option<f64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utoipa::PartialSchema;
+
+    /// The `event` tags a tagged-union schema declares.
+    fn event_names<T: PartialSchema>() -> Vec<String> {
+        let schema = serde_json::to_value(T::schema()).unwrap_or_default();
+        let mut names: Vec<String> = schema["oneOf"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .flat_map(|variant| {
+                let direct = variant["properties"]["event"]["enum"].clone();
+                let nested = variant["allOf"][1]["properties"]["event"]["enum"].clone();
+                [direct, nested]
+            })
+            .filter_map(|e| e[0].as_str().map(String::from))
+            .collect();
+        names.sort();
+        names
+    }
+
+    /// The stream schemas name every event the server publishes.
+    #[test]
+    fn stream_events_match_the_server() {
+        let course = event_names::<CourseGradingStreamEvent>();
+        for status in SubmissionStatus::ALL {
+            let name = ab_domain::grading::teacher::course_event_name(*status);
+            assert!(course.contains(&name.to_owned()), "{name}");
+        }
+        assert_eq!(course.len(), 6, "{course:?}");
+        assert_eq!(
+            event_names::<SubmissionStreamEvent>(),
+            [
+                "closed",
+                "connected",
+                "deadline.extended",
+                "grade.published",
+                "submission.returned"
+            ]
+        );
     }
 }

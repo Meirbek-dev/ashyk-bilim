@@ -1,5 +1,5 @@
 use ab_core::id::CollectionId;
-use ab_domain::catalog::collections::CollectionChanges;
+use ab_domain::catalog::collections::{CollectionChanges, CollectionFilter};
 use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -53,6 +53,7 @@ pub async fn create_collection(
                     request.description.as_deref().unwrap_or(""),
                     request.public.unwrap_or(false),
                     request.courses.unwrap_or_default(),
+                    request.cover_upload_id,
                 )
                 .await?;
             Ok((
@@ -64,7 +65,7 @@ pub async fn create_collection(
     .await
 }
 
-/// Newest-first collection listing: public plus the caller's own.
+/// Collection listing (newest first by default): public plus the caller's own.
 #[utoipa::path(
     get,
     path = "/collections",
@@ -72,6 +73,8 @@ pub async fn create_collection(
     params(
         ("cursor" = Option<CollectionId>, Query, description = "next_cursor from the previous page"),
         ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
+        ("q" = Option<String>, Query, description = "Words matched like `/search` over name and description"),
+        ("sort" = Option<crate::dto::enums::CollectionListSort>, Query, description = "`newest` (default), `name` (A-Z) or `updated`"),
     ),
     responses((status = 200, description = "Page of collections", body = CollectionPage)),
 )]
@@ -82,7 +85,15 @@ pub async fn list_collections(
 ) -> ApiResult<Json<CollectionPage>> {
     let (collections, next_cursor) = state
         .collections
-        .list(&actor, query.cursor, query.limit.unwrap_or(20))
+        .list(
+            &actor,
+            &CollectionFilter {
+                q: query.q.as_deref(),
+                sort: query.sort.as_deref().unwrap_or("newest"),
+            },
+            query.cursor,
+            query.limit.unwrap_or(20),
+        )
         .await?;
     Ok(Json(CollectionPage {
         items: collections
@@ -167,6 +178,7 @@ pub async fn update_collection(
                 description: request.description.as_deref(),
                 public: request.public,
                 course_ids: request.courses,
+                cover_upload_id: request.cover_upload_id,
                 expected_version,
             },
         )

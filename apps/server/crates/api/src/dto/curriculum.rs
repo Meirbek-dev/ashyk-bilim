@@ -98,8 +98,10 @@ pub struct Curriculum {
 #[serde(deny_unknown_fields)]
 pub struct CreateChapterRequest {
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
 }
 
@@ -107,8 +109,10 @@ pub struct CreateChapterRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateChapterRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
 }
 
@@ -118,6 +122,7 @@ pub struct UpdateChapterRequest {
 pub struct MoveChapterRequest {
     /// 1-based target position.
     #[garde(range(min = 1))]
+    #[schema(minimum = 1)]
     pub position: i32,
 }
 
@@ -125,6 +130,7 @@ pub struct MoveChapterRequest {
 #[serde(deny_unknown_fields)]
 pub struct CreateActivityRequest {
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub name: String,
     /// One of the closed activity-type set (e.g. `video`, `exam`).
     #[garde(length(min = 1, max = 64))]
@@ -146,6 +152,7 @@ pub struct ActivityDetail {
     pub content: serde_json::Value,
     #[schema(value_type = ab_domain::wire::ActivityDetails)]
     pub details: serde_json::Value,
+    #[schema(value_type = ab_domain::wire::ActivitySettings)]
     pub settings: serde_json::Value,
 }
 
@@ -173,6 +180,7 @@ fn json_object(value: &Option<serde_json::Value>, _ctx: &()) -> garde::Result {
 #[serde(deny_unknown_fields)]
 pub struct UpdateActivityRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub name: Option<String>,
     #[garde(skip)]
     pub published: Option<bool>,
@@ -190,6 +198,7 @@ pub struct UpdateActivityRequest {
     #[schema(value_type = Option<ab_domain::wire::ActivityDetails>)]
     pub details: Option<serde_json::Value>,
     #[garde(custom(json_object))]
+    #[schema(value_type = Option<ab_domain::wire::ActivitySettings>)]
     pub settings: Option<serde_json::Value>,
 }
 
@@ -199,7 +208,7 @@ pub struct Block {
     pub activity_id: ActivityId,
     /// `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
     pub block_type: String,
-    /// `{upload_id, file_key, file_name, file_size, file_type}`.
+    #[schema(value_type = ab_domain::wire::BlockContent)]
     pub content: serde_json::Value,
     pub created_at_unix: i64,
 }
@@ -228,6 +237,7 @@ pub struct CreateBlockRequest {
     pub upload_id: uuid::Uuid,
     /// Original client-side file name, for display.
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub file_name: Option<String>,
 }
 
@@ -238,6 +248,7 @@ pub struct CreateBlockRequest {
 pub struct MoveActivityRequest {
     /// 1-based target position (in the destination chapter).
     #[garde(range(min = 1))]
+    #[schema(minimum = 1)]
     pub position: i32,
     #[garde(skip)]
     pub chapter_id: Option<ChapterId>,

@@ -1077,11 +1077,13 @@ async fn profile_document_write_is_version_checked(pool: PgPool) {
 
     let me = app.get_as(&session, "/api/v2/users/me").await;
     assert_eq!(me.headers[axum::http::header::ETAG], "\"0\"");
+    assert_eq!(me.json()["version"], 0, "the body carries the ETag version");
 
     // Tab 1 saves at the version both tabs loaded.
     let first = patch(doc("Вкладка-1"), Some(0)).await;
     assert_eq!(first.status, StatusCode::OK, "{}", first.text());
     assert_eq!(first.headers[axum::http::header::ETAG], "\"1\"");
+    assert_eq!(first.json()["version"], 1);
 
     // A theme change in between does not move the document version.
     let theme = patch(serde_json::json!({ "theme": "cyberpunk" }), None).await;

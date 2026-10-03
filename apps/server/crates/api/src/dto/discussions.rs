@@ -116,6 +116,7 @@ pub struct RepliesQuery {
 pub struct CreateDiscussionRequest {
     /// HTML or text; must contain visible text.
     #[garde(length(chars, min = 1, max = 20_000))]
+    #[schema(min_length = 1, max_length = 20_000)]
     pub content: String,
     /// Reply to this post (one level).
     #[garde(skip)]
@@ -126,6 +127,7 @@ pub struct CreateDiscussionRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateDiscussionRequest {
     #[garde(length(chars, min = 1, max = 20_000))]
+    #[schema(min_length = 1, max_length = 20_000)]
     pub content: Option<String>,
     #[garde(skip)]
     pub status: Option<DiscussionStatus>,

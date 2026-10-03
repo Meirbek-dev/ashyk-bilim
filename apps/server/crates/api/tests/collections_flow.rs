@@ -20,6 +20,7 @@ async fn curator(app: &TestApp, name: &str) -> MintedSession {
             "collection:update:own",
             "collection:delete:own",
             "usergroup:create:platform",
+            "file:create:own",
         ],
     )
     .await
@@ -598,4 +599,186 @@ async fn foreign_patch_is_refused_before_the_body(pool: PgPool) {
         .await;
     assert_eq!(res.status, StatusCode::FORBIDDEN, "{}", res.text());
     assert!(!res.text().contains("expected one of"), "{}", res.text());
+}
+
+async fn finalized_upload(
+    app: &TestApp,
+    session: &MintedSession,
+    purpose: &str,
+) -> (String, String) {
+    let payload = b"cover bytes".to_vec();
+    let created = app
+        .post_as(
+            session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": purpose, "mime": "image/png",
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put_url = created.json()["put_url"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(&put_url)
+        .header("content-type", "image/png")
+        .header("if-none-match", "*")
+        .body(payload)
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success());
+    let finalized = app
+        .post_as(
+            session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK);
+    (id, finalized.json()["key"].as_str().unwrap().to_owned())
+}
+
+async fn released(app: &TestApp, upload: &str) -> bool {
+    sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+}
+
+/// Cover image: claimed on create, swapped and removed on PATCH (the old
+/// upload released), released on delete; a wrong purpose is 422.
+#[sqlx::test(migrations = "../../migrations")]
+async fn cover_travels_the_upload_pipeline(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let shown = course(&app, &owner, "Shown", true).await;
+
+    let (avatar, _) = finalized_upload(&app, &owner, "avatar").await;
+    let refused = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Wrong", "courses": [shown], "cover_upload_id": avatar }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let listed = app.get_as(&owner, "/api/v2/collections").await;
+    assert_eq!(
+        listed.json()["items"].as_array().unwrap().len(),
+        0,
+        "nothing half-written"
+    );
+
+    let (first, first_key) = finalized_upload(&app, &owner, "collection-cover").await;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/collections",
+            &serde_json::json!({ "name": "Covered", "courses": [shown], "cover_upload_id": first }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(created.json()["cover_key"], first_key);
+    let path = format!(
+        "/api/v2/collections/{}",
+        created.json()["id"].as_str().unwrap()
+    );
+
+    let (second, second_key) = finalized_upload(&app, &owner, "collection-cover").await;
+    let swapped = app
+        .patch_as(
+            &owner,
+            &path,
+            &serde_json::json!({ "cover_upload_id": second }),
+        )
+        .await;
+    assert_eq!(swapped.status, StatusCode::OK, "{}", swapped.text());
+    assert_eq!(swapped.json()["cover_key"], second_key);
+    assert!(released(&app, &first).await);
+
+    let renamed = app
+        .patch_as(&owner, &path, &serde_json::json!({ "name": "Covered 2" }))
+        .await;
+    assert_eq!(
+        renamed.json()["cover_key"],
+        second_key,
+        "absent keeps the cover"
+    );
+
+    let removed = app
+        .patch_as(
+            &owner,
+            &path,
+            &serde_json::json!({ "cover_upload_id": null }),
+        )
+        .await;
+    assert!(removed.json()["cover_key"].is_null());
+    assert!(released(&app, &second).await);
+
+    let (third, _) = finalized_upload(&app, &owner, "collection-cover").await;
+    app.patch_as(
+        &owner,
+        &path,
+        &serde_json::json!({ "cover_upload_id": third }),
+    )
+    .await;
+    assert!(!released(&app, &third).await);
+    let deleted = app.delete_as(&owner, &path).await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    assert!(
+        released(&app, &third).await,
+        "a deleted collection releases its cover"
+    );
+}
+
+/// `q` filters by name/description words; `sort=name` pages A-Z by cursor;
+/// an unknown sort falls back to newest.
+#[sqlx::test(migrations = "../../migrations")]
+async fn list_filters_and_sorts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let owner = curator(&app, "owner").await;
+    let shown = course(&app, &owner, "Shown", true).await;
+    for name in ["Beta tools", "Alpha basics", "Gamma tools"] {
+        let res = app
+            .post_as(
+                &owner,
+                "/api/v2/collections",
+                &serde_json::json!({ "name": name, "public": true, "courses": [shown] }),
+            )
+            .await;
+        assert_eq!(res.status, StatusCode::CREATED);
+    }
+    let names = |res: &ab_testkit::TestResponse| -> Vec<String> {
+        res.json()["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+
+    let tools = app
+        .get_as(&owner, "/api/v2/collections?q=tools&sort=name")
+        .await;
+    assert_eq!(names(&tools), ["Beta tools", "Gamma tools"]);
+
+    let first = app
+        .get_as(&owner, "/api/v2/collections?sort=name&limit=2")
+        .await;
+    assert_eq!(names(&first), ["Alpha basics", "Beta tools"]);
+    let cursor = first.json()["next_cursor"].as_str().unwrap().to_owned();
+    let second = app
+        .get_as(
+            &owner,
+            &format!("/api/v2/collections?sort=name&limit=2&cursor={cursor}"),
+        )
+        .await;
+    assert_eq!(names(&second), ["Gamma tools"]);
+
+    let newest = app.get_as(&owner, "/api/v2/collections?sort=bogus").await;
+    assert_eq!(
+        names(&newest),
+        ["Gamma tools", "Alpha basics", "Beta tools"]
+    );
 }

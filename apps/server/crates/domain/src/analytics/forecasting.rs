@@ -9,6 +9,7 @@ use super::context::{
     safe_pct_counts,
 };
 use super::filters::{AnalyticsFilters, DAY_SECS};
+use super::types::ForecastKind;
 use super::types::{
     AnalyticsCode, AssessmentOutlierRow, AtRiskLearnerRow, Confidence, ForecastItem, Severity,
     TeacherCourseRow, TeacherWorkloadSummary,
@@ -55,7 +56,7 @@ pub fn build_forecasts(
         if unlikely > 0 {
             forecasts.push(ForecastItem {
                 id: format!("completion-target-miss-{}", course.course_id),
-                kind: "completion_target_miss",
+                kind: ForecastKind::CompletionTargetMiss,
                 severity: if unlikely >= 10 {
                     Severity::Critical
                 } else {
@@ -97,7 +98,7 @@ pub fn build_forecasts(
             let target = course.completion_rate.max(60.0);
             forecasts.push(ForecastItem {
                 id: format!("course-completion-deadline-{}", course.course_id),
-                kind: "course_completion_deadline",
+                kind: ForecastKind::CourseCompletionDeadline,
                 severity: if expected < target {
                     Severity::Warning
                 } else {
@@ -124,7 +125,7 @@ pub fn build_forecasts(
 
     forecasts.push(ForecastItem {
         id: "grading-backlog-7d".to_owned(),
-        kind: "grading_backlog_7d",
+        kind: ForecastKind::GradingBacklog7d,
         severity: if workload.forecast_backlog_7d >= 25 {
             Severity::Critical
         } else if workload.forecast_backlog_7d > workload.backlog_total {
@@ -158,7 +159,7 @@ pub fn build_forecasts(
                 "assessment-failure-risk-{}-{}",
                 a.assessment_type, a.assessment_id
             ),
-            kind: "assessment_failure_risk",
+            kind: ForecastKind::AssessmentFailureRisk,
             severity: if pass_rate < 50.0 {
                 Severity::Critical
             } else {

@@ -95,6 +95,7 @@ pub async fn search_courses(
     viewer: Option<UserId>,
     see_all: bool,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<CourseRow>> {
     let patterns = word_patterns(query);
     let rows = sqlx::query_as!(
@@ -119,14 +120,15 @@ pub async fn search_courses(
              AND course_visible(courses, $3, $2)
              AND archived_at IS NULL
            ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
-           LIMIT $4"#,
+           LIMIT $4 OFFSET $8"#,
         prefix_tsquery(query),
         see_all,
         viewer.map(|v| v.0),
         limit,
         &patterns.words,
         &patterns.letters,
-        &patterns.excluded
+        &patterns.excluded,
+        offset
     )
     .fetch_all(pool)
     .await?;
@@ -142,12 +144,13 @@ pub async fn search_collections(
     see_all: bool,
     see_all_courses: bool,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<CollectionRow>> {
     let patterns = word_patterns(query);
     let rows = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version,
+                  creator_id AS "creator_id: UserId", version, cover_key,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections
@@ -155,7 +158,7 @@ pub async fn search_collections(
              AND (public OR $2 OR creator_id = $3)
              AND collection_listable(id, $3, $5)
            ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
-           LIMIT $4"#,
+           LIMIT $4 OFFSET $9"#,
         prefix_tsquery(query),
         see_all,
         viewer.map(|v| v.0),
@@ -163,7 +166,8 @@ pub async fn search_collections(
         see_all_courses,
         &patterns.words,
         &patterns.letters,
-        &patterns.excluded
+        &patterns.excluded,
+        offset
     )
     .fetch_all(pool)
     .await?;
@@ -183,7 +187,12 @@ pub struct UserHitRow {
 /// (Privacy upgrade over legacy: email is NOT searchable - FINDINGS #16.)
 /// A one-character word matches only a whole word of the username or
 /// display name, as in course search (UX-238: `c` is not every «…c…»).
-pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<UserHitRow>> {
+pub async fn search_users(
+    pool: &PgPool,
+    query: &str,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<UserHitRow>> {
     let letters = word_patterns(query).letters;
     let literal = crate::like_escape(query);
     let substring = format!("%{literal}%");
@@ -195,12 +204,13 @@ pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<
            WHERE status = 'active'
              AND (username ILIKE $1 ESCAPE '\' OR display_name ILIKE $1 ESCAPE '\')
              AND search_matches(username || ' ' || display_name, ARRAY[]::text[], $4, ARRAY[]::text[])
-           ORDER BY (username ILIKE $2 ESCAPE '\' OR display_name ILIKE $2 ESCAPE '\') DESC, username
-           LIMIT $3"#,
+           ORDER BY (username ILIKE $2 ESCAPE '\' OR display_name ILIKE $2 ESCAPE '\') DESC, username, id
+           LIMIT $3 OFFSET $5"#,
         substring,
         prefix,
         limit,
-        &letters
+        &letters,
+        offset
     )
     .fetch_all(pool)
     .await?;

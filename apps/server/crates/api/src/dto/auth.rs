@@ -8,11 +8,14 @@ use utoipa::ToSchema;
 pub struct LoginRequest {
     /// Username or email.
     #[garde(length(min = 1, max = 320))]
+    #[schema(min_length = 1, max_length = 320)]
     pub login: String,
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub password: String,
     /// Second factor - resubmit after a 401 `mfa-required`.
     #[garde(inner(length(min = 6, max = 8)))]
+    #[schema(min_length = 6, max_length = 8)]
     pub totp_code: Option<String>,
 }
 
@@ -24,17 +27,23 @@ pub struct LoginRequest {
 pub struct RegisterRequest {
     /// 3–48 characters: letters, digits, `.`, `_`, `-`.
     #[garde(length(min = 3, max = 48), pattern(r"^[A-Za-z0-9._-]+$"))]
+    #[schema(min_length = 3, max_length = 48, pattern = r"^[A-Za-z0-9._-]+$")]
     pub username: String,
     #[garde(email, length(max = 320))]
+    #[schema(max_length = 320)]
     pub email: String,
     #[garde(custom(super::new_password))]
+    #[schema(min_length = 8, max_length = 72)]
     pub password: String,
     #[garde(length(chars, min = 1, max = 100))]
+    #[schema(min_length = 1, max_length = 100)]
     pub first_name: String,
     #[garde(length(chars, min = 1, max = 100))]
+    #[schema(min_length = 1, max_length = 100)]
     pub last_name: String,
     /// School, university or company the user comes from.
     #[garde(length(chars, min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub organization: String,
 }
 
@@ -43,8 +52,10 @@ pub struct RegisterRequest {
 #[serde(deny_unknown_fields)]
 pub struct VerifyEmailRequest {
     #[garde(email, length(max = 320))]
+    #[schema(max_length = 320)]
     pub email: String,
     #[garde(length(min = 1, max = 32))]
+    #[schema(min_length = 1, max_length = 32)]
     pub code: String,
 }
 
@@ -53,8 +64,10 @@ pub struct VerifyEmailRequest {
 #[serde(deny_unknown_fields)]
 pub struct ChangePasswordRequest {
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_length = 1, max_length = 200)]
     pub current_password: String,
     #[garde(custom(super::new_password))]
+    #[schema(min_length = 8, max_length = 72)]
     pub new_password: String,
 }
 
@@ -71,6 +84,7 @@ pub struct TotpEnrollment {
 #[serde(deny_unknown_fields)]
 pub struct TotpVerifyRequest {
     #[garde(length(min = 6, max = 8))]
+    #[schema(min_length = 6, max_length = 8)]
     pub code: String,
 }
 

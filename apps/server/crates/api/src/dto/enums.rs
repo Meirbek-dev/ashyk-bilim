@@ -7,19 +7,7 @@
 use serde::Serialize;
 use utoipa::ToSchema;
 
-/// Activity kind (`custom` exists only on migrated legacy rows).
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ActivityType {
-    Dynamic,
-    Video,
-    Document,
-    Quiz,
-    Exam,
-    CodeChallenge,
-    FileSubmission,
-    Custom,
-}
+pub use ab_domain::wire::ActivityType;
 
 /// Activity sub-kind; must pair with its [`ActivityType`].
 #[derive(Serialize, ToSchema)]
@@ -61,6 +49,7 @@ pub enum UploadPurpose {
     PlatformLogo,
     PlatformThumbnail,
     FileSubmission,
+    CollectionCover,
 }
 
 /// A stored UI locale.
@@ -109,6 +98,43 @@ pub enum CourseListPreset {
 pub enum UserStatus {
     Active,
     Disabled,
+}
+
+/// `GET /collections?sort=`: `newest` (default), `name` (A-Z) or
+/// `updated` (newest update first).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CollectionListSort {
+    Newest,
+    Name,
+    Updated,
+}
+
+/// A contributor role one can grant (`ab_domain::catalog::contributors::ROLES`).
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ContributorRole {
+    Maintainer,
+    Contributor,
+    Reporter,
+}
+
+/// A roster entry's role: the granted roles plus the course `creator`.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RosterRole {
+    Creator,
+    Maintainer,
+    Contributor,
+    Reporter,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ContributorStatus {
+    Pending,
+    Active,
+    Inactive,
 }
 
 /// Whose context an AI scope exposes.
@@ -165,6 +191,29 @@ mod tests {
         assert_eq!(
             statuses,
             sorted(ab_domain::analytics::INTERVENTION_STATUSES.iter().copied())
+        );
+        let mut roles = values::<ContributorRole>();
+        roles.sort();
+        assert_eq!(
+            roles,
+            sorted(ab_domain::catalog::contributors::ROLES.iter().copied())
+        );
+        let mut roster = values::<RosterRole>();
+        roster.sort();
+        assert_eq!(
+            roster,
+            sorted(
+                ab_domain::catalog::contributors::ROLES
+                    .iter()
+                    .copied()
+                    .chain(["creator"])
+            )
+        );
+        let mut statuses = values::<ContributorStatus>();
+        statuses.sort();
+        assert_eq!(
+            statuses,
+            sorted(ab_domain::catalog::contributors::STATUSES.iter().copied())
         );
         for purpose in values::<UploadPurpose>() {
             assert!(ab_domain::files::uploads::is_purpose(&purpose), "{purpose}");

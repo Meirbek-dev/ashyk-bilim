@@ -6,6 +6,7 @@ use ab_db::analytics::{ExcludedAttempts, TeacherMetricsRow};
 use super::context::{AnalyticsContext, count_i64, progress_snapshots};
 use super::filters::AnalyticsFilters;
 use super::scope::TeacherScope;
+use super::types::DataMode;
 use super::types::{
     AnalyticsCode, AnalyticsDataQuality, Confidence, CourseDataGap, DataQualityIssue, Severity,
 };
@@ -105,7 +106,11 @@ pub fn build_data_quality(
     gaps.truncate(20);
 
     AnalyticsDataQuality {
-        mode: if rollup.is_some() { "rollup" } else { "live" },
+        mode: if rollup.is_some() {
+            DataMode::Rollup
+        } else {
+            DataMode::Live
+        },
         last_rollup_time_unix: rollup.map(|r| r.generated_at),
         freshness_seconds,
         confidence_level: confidence,

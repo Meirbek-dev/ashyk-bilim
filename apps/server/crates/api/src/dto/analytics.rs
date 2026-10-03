@@ -121,13 +121,15 @@ pub struct CreateInterventionRequest {
     #[garde(length(min = 1, max = 20))]
     pub status: String,
     #[garde(length(chars, max = 2_000))]
+    #[schema(max_length = 2_000)]
     pub outcome: Option<String>,
     #[garde(length(chars, max = 4_000))]
+    #[schema(max_length = 4_000)]
     pub notes: Option<String>,
-    /// Free-form details (an object of at most 16 KiB serialized, UX-148).
+    /// An object of at most 16 KiB serialized (UX-148).
     #[serde(default = "empty_object")]
     #[garde(custom(json_object_16k))]
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::InterventionPayload)]
     pub payload: serde_json::Value,
 }
 
@@ -141,10 +143,12 @@ fn default_view_type() -> String {
 pub struct SaveViewRequest {
     /// Blank → 422 `required` (trimmed in the service).
     #[garde(length(chars, max = 200))]
+    #[schema(max_length = 200)]
     pub name: String,
     /// Defaults to `overview`.
     #[serde(default = "default_view_type")]
     #[garde(length(max = 50))]
+    #[schema(max_length = 50)]
     pub view_type: String,
     /// The saved filter state (an object of at most 16 KiB serialized, UX-148).
     #[serde(default = "empty_object")]

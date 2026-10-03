@@ -200,10 +200,13 @@ pub struct AdminAwardRequest {
     #[garde(skip)]
     pub user_id: UserId,
     #[garde(range(min = 1, max = 100_000))]
+    #[schema(minimum = 1, maximum = 100_000)]
     pub amount: i32,
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub reason: Option<String>,
     #[garde(length(max = 200))]
+    #[schema(max_length = 200)]
     pub idempotency_key: Option<String>,
 }
 
@@ -252,6 +255,7 @@ impl From<ab_db::gamification::ConfigRow> for GamificationConfig {
 #[serde(deny_unknown_fields)]
 pub struct UpdateGamificationConfigRequest {
     #[garde(range(min = 0, max = 1_000_000))]
+    #[schema(minimum = 0, maximum = 1_000_000)]
     pub daily_xp_limit: Option<i32>,
     #[garde(skip)]
     #[serde(default = "empty_object")]

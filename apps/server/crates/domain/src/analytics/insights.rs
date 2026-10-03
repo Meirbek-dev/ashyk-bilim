@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use ab_core::id::CourseId;
 
 use super::context::count_i64;
+use super::types::InsightCategory;
 use super::types::{
     AnalyticsCode, AssessmentOutlierRow, AtRiskLearnerRow, ContentBottleneckRow, InsightFeedItem,
     RiskTrend, Severity, TeacherCourseRow, TeacherWorkloadSummary,
@@ -43,7 +44,7 @@ pub fn build_insight_feed(
         let n = learners.len();
         items.push(InsightFeedItem {
             id: format!("risk-new-{course_id}"),
-            category: "risk",
+            category: InsightCategory::Risk,
             severity: if n >= 10 {
                 Severity::Critical
             } else {
@@ -67,7 +68,7 @@ pub fn build_insight_feed(
         };
         items.push(InsightFeedItem {
             id: format!("assessment-{}-{}", a.assessment_type, a.assessment_id),
-            category: "assessment",
+            category: InsightCategory::Assessment,
             severity: if pass_rate < 45.0 {
                 Severity::Critical
             } else {
@@ -95,7 +96,7 @@ pub fn build_insight_feed(
     for b in bottlenecks.iter().take(4) {
         items.push(InsightFeedItem {
             id: format!("content-{}-{}", b.signal, b.activity_id),
-            category: "content",
+            category: InsightCategory::Content,
             severity: b.severity,
             priority: 70
                 + if b.severity == Severity::Critical {
@@ -121,7 +122,7 @@ pub fn build_insight_feed(
     if workload.backlog_total > 0 {
         items.push(InsightFeedItem {
             id: "workload-backlog".to_owned(),
-            category: "workload",
+            category: InsightCategory::Workload,
             severity: if workload.sla_breaches > 0 {
                 Severity::Critical
             } else {
@@ -152,7 +153,7 @@ pub fn build_insight_feed(
         let delta = row.historical_completion_delta_pct.unwrap_or(0.0);
         items.push(InsightFeedItem {
             id: format!("completion-improved-{}", row.course_id),
-            category: "completion",
+            category: InsightCategory::Completion,
             severity: Severity::Info,
             priority: 45 + as_i64(delta),
             code: AnalyticsCode::CompletionImproved,

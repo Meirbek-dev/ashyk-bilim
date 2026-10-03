@@ -740,6 +740,38 @@ pub async fn course_progress_pcts(
     Ok(rows)
 }
 
+/// The user's progress in each listed course they are a member of
+/// ([`has_trail_run`]'s rule: a run, not staff); `0` before the first
+/// projection lands.
+pub struct MemberProgressRow {
+    pub course_id: CourseId,
+    pub progress_pct: f64,
+    pub completed_at: Option<i64>,
+}
+
+pub async fn member_progress(
+    pool: &PgPool,
+    user_id: UserId,
+    course_ids: &[CourseId],
+) -> Result<Vec<MemberProgressRow>> {
+    let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
+    let rows = sqlx::query_as!(
+        MemberProgressRow,
+        r#"SELECT tr.course_id AS "course_id!: CourseId",
+                  coalesce(cp.progress_pct, 0) AS "progress_pct!",
+                  (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?"
+           FROM trail_runs tr
+           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
+           WHERE tr.user_id = $1 AND tr.course_id = ANY($2)
+             AND NOT is_course_staff(tr.course_id, tr.user_id)"#,
+        user_id.0,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// Published-activity counts per course (trail `course_total_steps`).
 pub struct CourseStepCountRow {
     pub course_id: CourseId,

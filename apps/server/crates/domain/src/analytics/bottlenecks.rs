@@ -15,6 +15,7 @@ use super::context::{
     safe_pct_counts,
 };
 use super::filters::AnalyticsFilters;
+use super::types::ContentBottleneckSignal;
 use super::types::{AssessmentOutlierRow, ContentBottleneckRow, Severity};
 
 const MAX_TIME_SECS: f64 = 6.0 * 3600.0;
@@ -98,8 +99,8 @@ pub fn build_content_bottlenecks(
         let exit_rate = (started_n > 0)
             .then(|| safe_pct_counts(exit_count, started_n))
             .flatten();
-        let base =
-            |signal: &'static str, severity: Severity, note: &'static str| ContentBottleneckRow {
+        let base = |signal: ContentBottleneckSignal, severity: Severity, note: &'static str| {
+            ContentBottleneckRow {
                 course_id: course.id,
                 course_name: course.name.clone(),
                 activity_id: *activity_id,
@@ -115,14 +116,15 @@ pub fn build_content_bottlenecks(
                 failed_assessments: 0,
                 stale_days: None,
                 note,
-            };
+            }
+        };
 
         if started_n >= 3
             && completion_rate.is_some_and(|c| c < 60.0)
             && avg_time.is_some_and(|t| t >= 900.0)
         {
             rows.push(base(
-                "high_time_low_completion",
+                ContentBottleneckSignal::HighTimeLowCompletion,
                 if completion_rate.unwrap_or(100.0) < 40.0 {
                     Severity::Critical
                 } else {
@@ -133,7 +135,7 @@ pub fn build_content_bottlenecks(
         }
         if started_n >= 3 && exit_rate.is_some_and(|r| r >= 35.0) {
             rows.push(base(
-                "exit_after_open",
+                ContentBottleneckSignal::ExitAfterOpen,
                 if exit_rate.unwrap_or(0.0) >= 60.0 {
                     Severity::Critical
                 } else {
@@ -168,7 +170,7 @@ pub fn build_content_bottlenecks(
                 .map(|r| r.pass_rate.unwrap_or(100.0))
                 .fold(100.0_f64, f64::min);
             let mut row = base(
-                "repeated_assessment_failures",
+                ContentBottleneckSignal::RepeatedAssessmentFailures,
                 if min_pass < 40.0 {
                     Severity::Critical
                 } else {
@@ -190,7 +192,7 @@ pub fn build_content_bottlenecks(
             && (completion_rate.is_some_and(|c| c < 65.0) || weak_any)
         {
             let mut row = base(
-                "stale_low_performance",
+                ContentBottleneckSignal::StaleLowPerformance,
                 if days >= 90 {
                     Severity::Critical
                 } else {

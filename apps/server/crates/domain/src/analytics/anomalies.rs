@@ -10,6 +10,7 @@ use super::context::{
     submitted_at,
 };
 use super::filters::AnalyticsFilters;
+use super::types::AnomalyKind;
 use super::types::{AnalyticsCode, AnomalyItem, AssessmentOutlierRow, Severity, TeacherCourseRow};
 
 /// Legacy `build_anomalies`, top 12 by severity then observed value.
@@ -48,7 +49,7 @@ pub fn build_anomalies(
         if !previous.is_empty() && count(current.len()) <= (count(previous.len()) * 0.55).max(1.0) {
             anomalies.push(AnomalyItem {
                 id: format!("engagement-drop-{}", row.course_id),
-                kind: "engagement_drop",
+                kind: AnomalyKind::EngagementDrop,
                 severity: if count(current.len()) <= count(previous.len()) * 0.35 {
                     Severity::Critical
                 } else {
@@ -88,7 +89,7 @@ pub fn build_anomalies(
             let name = names.get(&course_id).copied().unwrap_or("Course");
             anomalies.push(AnomalyItem {
                 id: format!("submission-spike-{course_id}"),
-                kind: "submission_spike",
+                kind: AnomalyKind::SubmissionSpike,
                 severity: Severity::Warning,
                 code: AnalyticsCode::SubmissionSpike,
                 params: serde_json::json!({ "course_name": name }),
@@ -137,7 +138,7 @@ pub fn build_anomalies(
             };
             anomalies.push(AnomalyItem {
                 id: format!("fast-quiz-{}", a.id),
-                kind: "fast_quiz_completion",
+                kind: AnomalyKind::FastQuizCompletion,
                 severity: Severity::Warning,
                 code: AnalyticsCode::FastQuizCompletion,
                 params: serde_json::json!({ "assessment_title": a.title }),
@@ -181,7 +182,7 @@ pub fn build_anomalies(
             if (after_avg - before_avg).abs() >= 20.0 {
                 anomalies.push(AnomalyItem {
                     id: format!("score-shift-{}-{}", row.assessment_type, row.assessment_id),
-                    kind: "score_distribution_shift",
+                    kind: AnomalyKind::ScoreDistributionShift,
                     severity: Severity::Warning,
                     code: AnalyticsCode::ScoreDistributionShift,
                     params: serde_json::json!({ "assessment_title": row.title }),

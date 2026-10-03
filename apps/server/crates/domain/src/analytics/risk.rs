@@ -521,4 +521,21 @@ mod tests {
             RiskTrend::Stable
         );
     }
+
+    /// The contract's `RiskReasonCode` names every code the ladder emits.
+    #[test]
+    fn reason_code_schema_matches() {
+        use utoipa::PartialSchema;
+        let schema = serde_json::to_value(super::super::types::RiskReasonCode::schema()).unwrap();
+        let mut declared: Vec<&str> = schema["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+        let mut emitted = reason_codes(Some(7), 0.0, 1, 1, 1);
+        declared.sort_unstable();
+        emitted.sort_unstable();
+        assert_eq!(declared, emitted);
+    }
 }

@@ -1950,3 +1950,43 @@ same URLs, status codes, bodies and accepted requests.
   `state`, `forwardedProps`, `resume`, tool parameter schemas, message
   metadata; LLM flashcards). Caveat: these describe what the current server and
   web write; rows ETL'd from legacy keep whatever shape they had.
+
+## Generator-friendly contract, part 2 (2026-10-03, stage 2 S-01)
+
+Finishes S-01; G-08 is at 0. Additive only: no field removed or renamed, no
+status code changed (one new 422: a malformed `GET /search` `cursor`).
+
+- **Stored JSON** is typed by schema-only types in `ab-domain/src/wire.rs`,
+  checked against real rows of the restored production DB: AI run
+  metadata / admin context / event payload, artifacts as a union tagged by
+  `kind` (`RunArtifactBody`), Q&A message metadata and citations (`{}` or
+  `{citations}` - part 1 had them as an array), eval details, the effective
+  AI config (keys pinned to `AiConfig::redacted`), certification config,
+  activity settings (`required` + legacy keys kept), file-submission
+  settings (reserved map), intervention payload, bulk-action params, audit
+  payload, block content, drill-through rows. Schemas whose real rows hold a
+  key both absent and `null` are listed in `openapi.rs::STORED_JSON`, marked
+  `x-stored-json: true`, and G-08 allows optional+nullable there.
+- **Closed `allOf`**: an `allOf` with a `deny_unknown_fields` member
+  accepted nothing (the profile section's `type` tag, the flattened
+  file-submission config). The export pass merges it into the one closed
+  object serde accepts.
+- **Enums**: analytics kinds/categories/signals/flags/codes are real Rust
+  enums (`code_enum!` in `analytics/types.rs`), `ReadinessCode` likewise;
+  risk reason codes, contributor role/status and `ActivityState.activity_type`
+  are schema-only enums pinned by tests.
+- **Constraints**: the garde rules of request-only DTOs are declared as
+  schema `minLength/maxLength/pattern/minimum/maximum/minItems/maxItems`
+  (byte-counted limits are declared as character limits: never tighter).
+  `email` is not declared as `format: email` (generators' regexes differ
+  from garde's).
+- **SSE**: the grading streams' 200 bodies are `SubmissionStreamEvent` /
+  `CourseGradingStreamEvent`, unions tagged by `event` (the SSE event name)
+  with a payload schema per event; a test pins them to the published names.
+- **New fields/ops**: `Collection.cover_key`, `cover_upload_id` on create /
+  update (`null` removes, released like course thumbnails; migration
+  `collection_cover`, upload purpose `collection-cover`); `GET /collections`
+  `q` + `sort` (`newest|name|updated`); `UserProfile.version`; `GET /courses`
+  and `GET /users/{username}/courses` items carry `authors` and the caller's
+  `progress`; `GET /search` `cursor` / `next_cursor` (an offset shared by the
+  three sections).

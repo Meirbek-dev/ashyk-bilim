@@ -19,6 +19,7 @@ use super::types::{
     ContentHealthRow, FunnelStep, Funnels, RiskLevel, Severity, TeacherCourseDetailSummary,
     TeacherCourseRow, TimeSeriesPoint,
 };
+use super::types::{AlertKind, ContentHealthSignal};
 
 /// Everything the course rows need beyond the context.
 #[derive(Debug, Clone, Default)]
@@ -61,7 +62,7 @@ pub fn course_top_alert(
     if ungraded >= 10 {
         return Some(AlertItem {
             id: format!("grading-backlog-{course_id}"),
-            kind: "grading_backlog",
+            kind: AlertKind::GradingBacklog,
             severity: if ungraded < 25 {
                 Severity::Warning
             } else {
@@ -79,7 +80,7 @@ pub fn course_top_alert(
     if let Some(delta) = engagement_delta_pct.filter(|d| *d < -15.0) {
         return Some(AlertItem {
             id: format!("engagement-drop-{course_id}"),
-            kind: "engagement_drop",
+            kind: AlertKind::EngagementDrop,
             severity: Severity::Warning,
             code: AnalyticsCode::EngagementDropped,
             params: serde_json::json!({ "delta_pct": delta.abs() }),
@@ -93,7 +94,7 @@ pub fn course_top_alert(
     if let Some(days) = days_since_update.filter(|d| *d > 21) {
         return Some(AlertItem {
             id: format!("stale-content-{course_id}"),
-            kind: "content_stale",
+            kind: AlertKind::ContentStale,
             severity: if days <= 35 {
                 Severity::Info
             } else {
@@ -445,7 +446,7 @@ pub fn build_course_detail(
     let content_health = vec![
         ContentHealthRow {
             course_id,
-            signal: "content_freshness",
+            signal: ContentHealthSignal::ContentFreshness,
             severity: match days_since_update {
                 Some(d) if d > 45 => Severity::Critical,
                 Some(d) if d > 21 => Severity::Warning,
@@ -456,7 +457,7 @@ pub fn build_course_detail(
         },
         ContentHealthRow {
             course_id,
-            signal: "average_progress",
+            signal: ContentHealthSignal::AverageProgress,
             severity: if avg < 55.0 {
                 Severity::Warning
             } else {
@@ -467,7 +468,7 @@ pub fn build_course_detail(
         },
         ContentHealthRow {
             course_id,
-            signal: "grading_backlog",
+            signal: ContentHealthSignal::GradingBacklog,
             severity: if ungraded > 25 {
                 Severity::Critical
             } else if ungraded > 0 {
@@ -545,7 +546,7 @@ mod tests {
             course_top_alert(id, 30, Some(-50.0), Some(60))
                 .unwrap()
                 .kind,
-            "grading_backlog"
+            AlertKind::GradingBacklog
         );
         assert_eq!(
             course_top_alert(id, 30, None, None).unwrap().severity,
@@ -553,12 +554,12 @@ mod tests {
         );
         assert_eq!(
             course_top_alert(id, 0, Some(-16.0), Some(60)).unwrap().kind,
-            "engagement_drop"
+            AlertKind::EngagementDrop
         );
         let stale = course_top_alert(id, 0, Some(-5.0), Some(30)).unwrap();
         assert_eq!(
             (stale.kind, stale.severity),
-            ("content_stale", Severity::Info)
+            (AlertKind::ContentStale, Severity::Info)
         );
         assert!(course_top_alert(id, 0, None, Some(21)).is_none());
     }

@@ -245,8 +245,10 @@ pub enum Error {
   pipeline points at it (client regen is a build step, §15). CI snapshots the doc
   with `insta` — every contract change is visible in the diff — and runs `oasdiff`
   to label breaking changes. The document passes through one export-time pass
-  (`ab-api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract")
-  before it is served or exported.
+  (`ab-api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract"
+  and its part 2) before it is served or exported. Request DTOs declare their
+  garde limits as schema constraints; stored JSON is typed in
+  `ab-domain/src/wire.rs`; SSE responses reference an event union.
 - Resources: plural kebab-case paths, UUIDv7 ids, flat where possible
   (`/courses/{course_id}`, `/assessments/{assessment_id}/items`,
   `/submissions/{submission_id}`): a path parameter is named after its resource.

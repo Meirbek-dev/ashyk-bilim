@@ -25,6 +25,7 @@ use super::forecasting::build_forecasts;
 use super::insights::build_insight_feed;
 use super::quality::build_data_quality;
 use super::scope::TeacherScope;
+use super::types::AlertKind;
 use super::types::{
     AdminAnalyticsResponse, AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow,
     AlertItem, AnalyticsCode, AtRiskLearnerRow, Direction, FilterOption, InterventionSummary,
@@ -104,7 +105,7 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
             .into_iter()
             .map(|row| AlertItem {
                 id: format!("grading-slo-{}", row.assessment_id),
-                kind: "grading_slo",
+                kind: AlertKind::GradingSlo,
                 severity: if row.sla_breaches >= 3 {
                     Severity::Critical
                 } else {
@@ -139,7 +140,7 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
     };
     vec![AlertItem {
         id: format!("grading-slo-watch-{}", leading.assessment_id),
-        kind: "grading_slo",
+        kind: AlertKind::GradingSlo,
         severity: Severity::Warning,
         code: AnalyticsCode::GradingSloWatch,
         params: serde_json::json!({
@@ -393,7 +394,7 @@ pub fn build_teacher_overview(
     if at_risk > 0 {
         alerts.push(AlertItem {
             id: "risk-overview".to_owned(),
-            kind: "risk_spike",
+            kind: AlertKind::RiskSpike,
             severity: if at_risk >= 15 {
                 Severity::Critical
             } else {

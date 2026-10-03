@@ -1,0 +1,43 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tr.course_id AS \"course_id!: CourseId\",\n                  coalesce(cp.progress_pct, 0) AS \"progress_pct!\",\n                  (extract(epoch FROM cp.completed_at))::bigint AS \"completed_at?\"\n           FROM trail_runs tr\n           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id\n           WHERE tr.user_id = $1 AND tr.course_id = ANY($2)\n             AND NOT is_course_staff(tr.course_id, tr.user_id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "trail_runs",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "progress_pct!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "21186a6ace34291d57949047e192781b970b544c70499c9b72deb5d030f10a24"
+}

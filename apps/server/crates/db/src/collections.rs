@@ -16,20 +16,21 @@ pub struct CollectionRow {
     pub creator_id: Option<UserId>,
     /// Optimistic-lock version (`If-Match` on update, UX-279).
     pub version: i32,
+    /// Storage key of the cover image (a claimed `collection-cover` upload).
+    pub cover_key: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
-/// Insert the collection and its membership in one transaction.
+/// Insert the collection and its membership on the caller's transaction.
 pub async fn insert_collection(
-    pool: &PgPool,
+    tx: &mut sqlx::PgConnection,
     name: &str,
     description: &str,
     public: bool,
     creator_id: UserId,
     course_ids: &[CourseId],
 ) -> Result<CollectionId> {
-    let mut tx = pool.begin().await?;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO collections (name, description, public, creator_id)
            VALUES ($1, $2, $3, $4)
@@ -42,16 +43,36 @@ pub async fn insert_collection(
     .fetch_one(&mut *tx)
     .await?;
     let id = CollectionId(id);
-    set_collection_courses(&mut tx, id, course_ids).await?;
-    tx.commit().await?;
+    set_collection_courses(tx, id, course_ids).await?;
     Ok(id)
+}
+
+/// Swap the cover key; returns the replaced one (`None`: no such row or no
+/// cover). The row is locked before the caller claims or releases uploads
+/// (collection, then uploads: the order a delete takes).
+pub async fn set_collection_cover<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: CollectionId,
+    key: Option<&str>,
+) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"UPDATE collections c SET cover_key = $2
+           FROM (SELECT id, cover_key FROM collections WHERE id = $1 FOR UPDATE) old
+           WHERE c.id = old.id
+           RETURNING old.cover_key AS "previous?""#,
+        id.0,
+        key
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row.and_then(|r| r.previous))
 }
 
 pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<CollectionRow>> {
     let row = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version,
+                  creator_id AS "creator_id: UserId", version, cover_key,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections WHERE id = $1"#,
@@ -81,7 +102,16 @@ pub async fn collection_listable(
     Ok(listable)
 }
 
-/// Newest-first page of collections visible to `viewer`.
+/// `GET /collections` filters: `q` matches like `/search` over name and
+/// description; `sort` is `newest` (default), `name` (A-Z) or `updated`.
+pub struct CollectionFilter<'a> {
+    pub q: Option<&'a str>,
+    pub sort: &'a str,
+}
+
+/// A page of collections visible to `viewer`. `cursor` is the last row's
+/// id; the keyset (`id`, `(name, id)` or `(updated_at, id)` by `sort`) is
+/// resolved from it.
 ///
 /// A collection with no course visible to the viewer - all invisible
 /// (UX-119) or none attached (UX-127) - is omitted unless the viewer created
@@ -92,26 +122,42 @@ pub async fn list_collections(
     viewer: Option<UserId>,
     see_all: bool,
     see_all_courses: bool,
+    filter: &CollectionFilter<'_>,
     cursor: Option<CollectionId>,
     limit: i64,
 ) -> Result<Vec<CollectionRow>> {
+    let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
     let rows = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version,
+                  creator_id AS "creator_id: UserId", version, cover_key,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections
            WHERE (public OR $1 OR creator_id = $2)
-             AND ($3::uuid IS NULL OR id < $3)
              AND collection_listable(id, $2, $5)
-           ORDER BY id DESC
+             AND search_matches(name || ' ' || description, $6, $7, $8)
+             AND ($3::uuid IS NULL OR CASE $9::text
+                   WHEN 'name'
+                   THEN (name, id) > (SELECT c.name, c.id FROM collections c WHERE c.id = $3)
+                   WHEN 'updated'
+                   THEN (updated_at, id) < (SELECT c.updated_at, c.id FROM collections c WHERE c.id = $3)
+                   ELSE id < $3
+                 END)
+           ORDER BY CASE WHEN $9::text = 'name' THEN name END ASC,
+                    CASE WHEN $9::text = 'name' THEN id END ASC,
+                    CASE WHEN $9::text = 'updated' THEN updated_at END DESC,
+                    id DESC
            LIMIT $4"#,
         see_all,
         viewer.map(|v| v.0),
         cursor.map(|c| c.0),
         limit,
-        see_all_courses
+        see_all_courses,
+        &patterns.words,
+        &patterns.letters,
+        &patterns.excluded,
+        filter.sort
     )
     .fetch_all(pool)
     .await?;
@@ -124,7 +170,7 @@ pub async fn list_collections(
 /// Every write bumps `version`; with `expected_version` it only lands while
 /// the row still carries it (UX-279). `false` = gone or stale (nothing written).
 pub async fn update_collection(
-    pool: &PgPool,
+    tx: &mut sqlx::PgConnection,
     id: CollectionId,
     name: Option<&str>,
     description: Option<&str>,
@@ -132,7 +178,6 @@ pub async fn update_collection(
     course_ids: Option<&[CourseId]>,
     expected_version: Option<i32>,
 ) -> Result<bool> {
-    let mut tx = pool.begin().await?;
     let updated = sqlx::query!(
         r#"UPDATE collections SET
                name = COALESCE($2, name),
@@ -152,27 +197,37 @@ pub async fn update_collection(
         return Ok(false);
     }
     if let Some(course_ids) = course_ids {
-        set_collection_courses(&mut tx, id, course_ids).await?;
+        set_collection_courses(tx, id, course_ids).await?;
     }
-    tx.commit().await?;
     Ok(true)
 }
 
 /// With `expected_version` it only deletes while the row is at that
-/// version (UX-313, the update's `If-Match`).
+/// version (UX-313, the update's `If-Match`). The cover upload the DELETE
+/// returned is released in the same transaction.
 pub async fn delete_collection(
     pool: &PgPool,
     id: CollectionId,
     expected_version: Option<i32>,
+    grace_secs: f64,
 ) -> Result<bool> {
+    let mut tx = pool.begin().await?;
     let deleted = sqlx::query!(
-        "DELETE FROM collections WHERE id = $1 AND ($2::int IS NULL OR version = $2)",
+        r#"DELETE FROM collections WHERE id = $1 AND ($2::int IS NULL OR version = $2)
+           RETURNING cover_key"#,
         id.0,
         expected_version
     )
-    .execute(pool)
+    .fetch_optional(&mut *tx)
     .await?;
-    Ok(deleted.rows_affected() == 1)
+    let Some(row) = deleted else {
+        return Ok(false);
+    };
+    if let Some(key) = row.cover_key {
+        crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
+    }
+    tx.commit().await?;
+    Ok(true)
 }
 
 /// Replace the whole membership (legacy update semantics), positions 1..n.

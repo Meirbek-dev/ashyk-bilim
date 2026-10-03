@@ -323,11 +323,14 @@ pub struct CreateAssessmentRequest {
     #[garde(skip)]
     pub kind: AssessmentKind,
     #[garde(length(chars, min = 1, max = 500))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: String,
     #[garde(length(chars, max = 20_000))]
+    #[schema(max_length = 20_000)]
     pub description: Option<String>,
     /// BUG-208: 0–100 - an unbounded weight overflows the course average.
     #[garde(inner(range(min = 0.0, max = 100.0)))]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub weight: Option<f64>,
     #[garde(skip)]
     pub grading_type: Option<GradingType>,
@@ -340,11 +343,14 @@ pub struct CreateAssessmentRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateAssessmentRequest {
     #[garde(inner(length(min = 1, max = 500)))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: Option<String>,
     #[garde(inner(length(max = 20_000)))]
+    #[schema(max_length = 20_000)]
     pub description: Option<String>,
     /// BUG-208: 0–100 - an unbounded weight overflows the course average.
     #[garde(inner(range(min = 0.0, max = 100.0)))]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub weight: Option<f64>,
     #[garde(skip)]
     pub grading_type: Option<GradingType>,
@@ -357,8 +363,10 @@ pub struct LifecycleRequest {
     pub to: Lifecycle,
     /// Required when `to` is `scheduled`; must be in the future.
     #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub scheduled_at_unix: Option<i64>,
     #[garde(inner(length(max = 1000)))]
+    #[schema(max_length = 1000)]
     pub note: Option<String>,
 }
 
@@ -366,12 +374,14 @@ pub struct LifecycleRequest {
 #[serde(deny_unknown_fields)]
 pub struct CreateItemRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub title: Option<String>,
     /// Tagged on `kind`; must be a kind the assessment allows.
     #[garde(skip)]
     pub body: ItemBody,
     /// BUG-208: at most 10 000 - an unbounded score overflows the grade shares.
     #[garde(inner(range(min = 0.0, max = 10_000.0)))]
+    #[schema(minimum = 0.0, maximum = 10_000.0)]
     pub max_score: Option<f64>,
     #[garde(dive)]
     pub metadata: Option<ItemMetadata>,
@@ -381,11 +391,13 @@ pub struct CreateItemRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateItemRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub title: Option<String>,
     #[garde(skip)]
     pub body: Option<ItemBody>,
     /// BUG-208: at most 10 000 - an unbounded score overflows the grade shares.
     #[garde(inner(range(min = 0.0, max = 10_000.0)))]
+    #[schema(minimum = 0.0, maximum = 10_000.0)]
     pub max_score: Option<f64>,
     /// Replaces the whole metadata block when present.
     #[garde(dive)]
@@ -398,6 +410,7 @@ pub struct ReorderItemsRequest {
     /// Item ids in the desired order; omitted items follow in their
     /// current order.
     #[garde(length(min = 1, max = 200))]
+    #[schema(min_items = 1, max_items = 200)]
     pub items: Vec<AssessmentItemId>,
 }
 
@@ -406,6 +419,7 @@ pub struct AuditEvent {
     pub id: uuid::Uuid,
     pub actor_id: Option<UserId>,
     pub event: String,
+    #[schema(value_type = ab_domain::wire::AuditPayload)]
     pub payload: serde_json::Value,
     pub created_at_unix: i64,
 }
@@ -427,6 +441,7 @@ impl From<service::AuditEvent> for AuditEvent {
 pub struct DuplicateRequest {
     /// Defaults to `"<title> (copy)"`.
     #[garde(inner(length(min = 1, max = 500)))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: Option<String>,
     /// Target chapter in the same course; defaults to the source's chapter.
     #[garde(skip)]
@@ -502,10 +517,12 @@ pub struct SetAccessRequest {
     /// Direct allowlist (restricted mode); each must be a course member (enrolled learner).
     #[garde(length(max = 500))]
     #[serde(default)]
+    #[schema(max_items = 500)]
     pub user_ids: Vec<UserId>,
     /// Group allowlist (restricted mode); each must be linked to the course.
     #[garde(length(max = 100))]
     #[serde(default)]
+    #[schema(max_items = 100)]
     pub usergroup_ids: Vec<ab_core::id::UsergroupId>,
 }
 
@@ -550,15 +567,18 @@ pub struct OverrideRequest {
     #[garde(skip)]
     pub max_attempts_override: Option<i32>,
     #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub due_at_override_unix: Option<i64>,
     #[garde(skip)]
     #[serde(default)]
     pub waive_late_penalty: bool,
     #[garde(length(max = 1000))]
     #[serde(default)]
+    #[schema(max_length = 1000)]
     pub note: String,
     /// After this the override is ignored.
     #[garde(inner(range(min = 0, max = EPOCH_MAX)))]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub expires_at_unix: Option<i64>,
 }
 

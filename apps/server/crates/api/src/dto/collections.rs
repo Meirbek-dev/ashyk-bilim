@@ -11,6 +11,8 @@ pub struct Collection {
     pub description: String,
     pub public: bool,
     pub creator_id: Option<UserId>,
+    /// Storage key of the cover image, served at `/content/<key>`.
+    pub cover_key: Option<String>,
     /// Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).
     pub version: i32,
     /// Member courses visible to the caller, in collection order.
@@ -34,6 +36,7 @@ impl Collection {
             description: c.collection.description,
             public: c.collection.public,
             creator_id: c.collection.creator_id,
+            cover_key: c.collection.cover_key,
             version: c.collection.version,
             courses: c
                 .courses
@@ -59,28 +62,43 @@ pub struct CollectionPage {
 #[serde(deny_unknown_fields)]
 pub struct CreateCollectionRequest {
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
     #[garde(skip)]
     pub public: Option<bool>,
     /// Course membership; every course must be readable by the caller.
     #[garde(inner(length(max = 100)))]
+    #[schema(max_items = 100)]
     pub courses: Option<Vec<CourseId>>,
+    /// A finalized `collection-cover` upload of the caller.
+    #[garde(skip)]
+    pub cover_upload_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateCollectionRequest {
     #[garde(inner(length(max = 500)))]
+    #[schema(max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
     pub description: Option<String>,
     #[garde(skip)]
     pub public: Option<bool>,
     /// Replaces the whole membership when present (legacy semantics).
     #[garde(inner(length(max = 100)))]
+    #[schema(max_items = 100)]
     pub courses: Option<Vec<CourseId>>,
+    /// A finalized `collection-cover` upload of the caller; `null` removes
+    /// the cover.
+    #[garde(skip)]
+    #[serde(default, deserialize_with = "crate::dto::double_option")]
+    #[schema(value_type = Option<uuid::Uuid>)]
+    pub cover_upload_id: Option<Option<uuid::Uuid>>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -89,4 +107,8 @@ pub struct CollectionListQuery {
     pub cursor: Option<CollectionId>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,
+    /// Words matched like `/search` over name and description.
+    pub q: Option<String>,
+    /// `newest` (default), `name` or `updated`; unknown values sort newest.
+    pub sort: Option<String>,
 }

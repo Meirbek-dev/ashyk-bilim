@@ -11,8 +11,7 @@ use crate::dto::courses::Course;
 pub struct Certification {
     pub id: CertificationId,
     pub course_id: CourseId,
-    /// The client's PDF designer document (opaque to the server).
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::CertificationConfig)]
     pub config: serde_json::Value,
     /// What the caller may do to this template now.
     pub allowed_actions: Vec<domain::CertificationAction>,
@@ -41,19 +40,19 @@ impl Certification {
 pub struct CreateCertificationRequest {
     #[garde(skip)]
     pub course_id: CourseId,
-    /// The designer document: an object of at most 16 KiB serialized.
+    /// An object of at most 16 KiB serialized.
     #[garde(custom(crate::dto::analytics::json_object_16k))]
     #[serde(default = "empty_object")]
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::CertificationConfig)]
     pub config: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateCertificationRequest {
-    /// The designer document: an object of at most 16 KiB serialized.
+    /// An object of at most 16 KiB serialized.
     #[garde(custom(crate::dto::analytics::json_object_16k))]
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::CertificationConfig)]
     pub config: serde_json::Value,
 }
 

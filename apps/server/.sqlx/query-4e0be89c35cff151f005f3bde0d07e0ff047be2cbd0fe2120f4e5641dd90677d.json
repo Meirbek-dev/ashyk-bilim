@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE search_matches(name || ' ' || description, $6, $7, $8)\n             AND (public OR $2 OR creator_id = $3)\n             AND collection_listable(id, $3, $5)\n           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC\n           LIMIT $4",
+  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\", version, cover_key,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections\n           WHERE (public OR $1 OR creator_id = $2)\n             AND collection_listable(id, $2, $5)\n             AND search_matches(name || ' ' || description, $6, $7, $8)\n             AND ($3::uuid IS NULL OR CASE $9::text\n                   WHEN 'name'\n                   THEN (name, id) > (SELECT c.name, c.id FROM collections c WHERE c.id = $3)\n                   WHEN 'updated'\n                   THEN (updated_at, id) < (SELECT c.updated_at, c.id FROM collections c WHERE c.id = $3)\n                   ELSE id < $3\n                 END)\n           ORDER BY CASE WHEN $9::text = 'name' THEN name END ASC,\n                    CASE WHEN $9::text = 'name' THEN id END ASC,\n                    CASE WHEN $9::text = 'updated' THEN updated_at END DESC,\n                    id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -71,12 +71,23 @@
       },
       {
         "ordinal": 6,
+        "name": "cover_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "collections",
+            "name": "cover_key"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -84,14 +95,15 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
         "Bool",
+        "Uuid",
         "Uuid",
         "Int8",
         "Bool",
         "TextArray",
         "TextArray",
-        "TextArray"
+        "TextArray",
+        "Text"
       ]
     },
     "nullable": [
@@ -101,9 +113,10 @@
       false,
       true,
       false,
+      true,
       null,
       null
     ]
   },
-  "hash": "71e534ac7c07c5ac0d94ecbb9adfef2763468b832b7eed35202be71029f12b0d"
+  "hash": "4e0be89c35cff151f005f3bde0d07e0ff047be2cbd0fe2120f4e5641dd90677d"
 }

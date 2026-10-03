@@ -87,6 +87,7 @@ pub struct SubmitRequest {
     /// The client's anti-cheat count; the server's own count wins when higher.
     #[garde(range(min = 0))]
     #[serde(default)]
+    #[schema(minimum = 0)]
     pub violation_count: i32,
 }
 
@@ -95,7 +96,9 @@ pub struct SubmitRequest {
 pub struct ViolationRequest {
     /// e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.
     #[garde(length(min = 1, max = 64))]
+    #[schema(min_length = 1, max_length = 64)]
     pub kind: String,
     #[garde(length(max = 500))]
+    #[schema(max_length = 500)]
     pub detail: Option<String>,
 }

@@ -21,8 +21,10 @@ pub use ab_domain::grading::teacher::UserSummary;
 #[serde(deny_unknown_fields)]
 pub struct ConfigPatch {
     #[garde(length(chars, max = 500))]
+    #[schema(max_length = 500)]
     pub title: Option<String>,
     #[garde(length(chars, max = 50_000))]
+    #[schema(max_length = 50_000)]
     pub instructions: Option<String>,
     /// A JSON object of at most 4 KiB serialized (UX-154; same rule as the
     /// grade route's `rubric_scores`).
@@ -41,6 +43,7 @@ pub struct ConfigPatch {
     #[garde(inner(inner(range(min = 0, max = EPOCH_MAX))))]
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<i64>)]
+    #[schema(minimum = 0, maximum = 253_402_300_799_i64)]
     pub due_at_unix: Option<Option<i64>>,
     #[garde(skip)]
     pub allow_late: Option<bool>,
@@ -53,7 +56,7 @@ pub struct ConfigPatch {
     #[garde(skip)]
     pub grade_release_mode: Option<GradeReleaseMode>,
     #[garde(skip)]
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<ab_domain::wire::FileSubmissionSettings>)]
     pub settings: Option<serde_json::Value>,
 }
 
@@ -82,6 +85,7 @@ pub struct CreateFileSubmissionRequest {
     #[garde(skip)]
     pub chapter_id: ChapterId,
     #[garde(length(chars, min = 1, max = 500))]
+    #[schema(min_length = 1, max_length = 500)]
     pub title: String,
     #[garde(dive)]
     #[serde(flatten)]
@@ -109,7 +113,7 @@ pub struct FileSubmission {
     pub grade_release_mode: GradeReleaseMode,
     #[schema(value_type = ab_domain::wire::FileRubric)]
     pub rubric: serde_json::Value,
-    #[schema(value_type = Object)]
+    #[schema(value_type = ab_domain::wire::FileSubmissionSettings)]
     pub settings: serde_json::Value,
     /// The caller's newest attempt (learners).
     pub current_attempt: Option<Attempt>,
@@ -220,6 +224,7 @@ pub struct FileRefRequest {
     #[garde(skip)]
     pub upload_id: uuid::Uuid,
     #[garde(length(chars, max = 255))]
+    #[schema(max_length = 255)]
     pub display_name: Option<String>,
 }
 
@@ -266,9 +271,11 @@ pub struct FileGradeRequest {
     pub action: FileGradeAction,
     /// Required for save/publish; 0..=100.
     #[garde(range(min = 0.0, max = 100.0))]
+    #[schema(minimum = 0.0, maximum = 100.0)]
     pub final_score: Option<f64>,
     /// Omit to keep the stored feedback (UX-113; same rule as quiz grades).
     #[garde(inner(length(max = 10_000)))]
+    #[schema(max_length = 10_000)]
     pub feedback: Option<String>,
     /// Omit to keep the stored rubric scores. An object of at most 4 KiB
     /// serialized (UX-141).
