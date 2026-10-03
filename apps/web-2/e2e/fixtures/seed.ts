@@ -5,6 +5,7 @@ import {
   createUsergroup,
   getCollection,
   getCurriculum,
+  learnerCourseState,
   listCourses,
   listUsergroups,
   login,
@@ -12,6 +13,7 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import type { CollectionAction, CourseId, SessionInfo } from '#/shared/api/gen/types.gen'
 
+import { randomIp } from './accounts'
 import { test as base } from './test'
 
 // The seeded stand (`ashyq admin seed-e2e`, S-03), read through the generated SDK. Logins and ids are fetched once
@@ -36,6 +38,8 @@ export type Seed = {
   accounts: Record<SignedIn, Account>
   /** `allowed_actions` of the seed collection per role: routes guarded by an object's actions (spec 7.5). */
   collectionActions: Record<SignedIn, CollectionAction[]>
+  /** Whether the role is enrolled in the seed course: the player routes (/learn/...) open only to the enrolled. */
+  enrolled: Record<SignedIn, boolean>
   /** Values for the route params of spec 5.3. */
   params: Record<
     'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId' | 'roleSlug' | 'groupId',
@@ -48,6 +52,8 @@ async function signIn(baseUrl: string, loginName: string): Promise<Account> {
   const { data, response } = await login({
     client,
     body: { login: loginName, password: e2ePassword() },
+    // The login limiter counts per client address (20 per 5 min): each worker's sign-ins get their own.
+    headers: { 'x-real-ip': randomIp() },
     throwOnError: true,
   })
   const pair = /^([^=;]+)=([^;]*)/.exec(response.headers.get('set-cookie') ?? '')
@@ -107,6 +113,9 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
   const actionsOf = async (account: Account) =>
     (await getCollection({ client, path: { id: collectionId }, headers: cookieOf(account), throwOnError: true })).data
       .allowed_actions
+  const enrolledOf = async (account: Account) =>
+    (await learnerCourseState({ client, path: { id: course.id }, headers: cookieOf(account), throwOnError: true })).data
+      .enrolled
   // No seeded certificate or submission yet: the routes are stubs, any well-formed id renders them.
   const placeholder = '00000000-0000-4000-8000-000000000000'
   return {
@@ -115,6 +124,11 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
       student: await actionsOf(student),
       teacher: await actionsOf(teacher),
       admin: await actionsOf(admin),
+    },
+    enrolled: {
+      student: await enrolledOf(student),
+      teacher: await enrolledOf(teacher),
+      admin: await enrolledOf(admin),
     },
     params: {
       courseId: course.id,

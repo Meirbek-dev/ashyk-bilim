@@ -18,7 +18,7 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import type { ActivityId, CourseId } from '#/shared/api/gen/types.gen'
 
-import { registerAccount } from './accounts'
+import { randomIp, registerAccount } from './accounts'
 import { test as base } from './seed'
 
 // Learner-side data through the generated SDK: a published course of the teacher's (pages only, so a learner can
@@ -119,6 +119,8 @@ export const test = base.extend<{
     const { data, response } = await login({
       client: api,
       body: { login: account.username, password: account.password },
+      // The login limiter counts per client address, like registration (see accounts.ts): parallel specs share one.
+      headers: { 'x-real-ip': randomIp() },
       throwOnError: true,
     })
     const pair = /^([^=;]+)=([^;]*)/.exec(response.headers.get('set-cookie') ?? '')

@@ -62,6 +62,9 @@ import { Route as PublicCoursesCourseIdIndexRouteImport } from './routes/_public
 import { Route as PublicCoursesCourseIdAboutRouteImport } from './routes/_public/courses/$courseId/about'
 import { Route as PublicCoursesCourseIdDiscussionsRouteImport } from './routes/_public/courses/$courseId/discussions'
 import { Route as PublicCoursesCourseIdUpdatesRouteImport } from './routes/_public/courses/$courseId/updates'
+import { Route as AuthedLearnCourseIdActivityIdAttemptRouteImport } from './routes/_authed/learn/$courseId/$activityId_/attempt'
+import { Route as AuthedLearnCourseIdActivityIdCodeRouteImport } from './routes/_authed/learn/$courseId/$activityId_/code'
+import { Route as AuthedLearnCourseIdActivityIdSubmissionRouteImport } from './routes/_authed/learn/$courseId/$activityId_/submission'
 import { Route as AuthedTeachCoursesCourseIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId/index'
 import { Route as AuthedTeachCoursesCourseIdContentRouteImport } from './routes/_authed/teach/courses/$courseId/content'
 import { Route as AuthedTeachCoursesCourseIdGradebookRouteImport } from './routes/_authed/teach/courses/$courseId/gradebook'
@@ -360,6 +363,24 @@ const PublicCoursesCourseIdUpdatesRoute =
     path: '/updates',
     getParentRoute: () => PublicCoursesCourseIdRoute,
   } as any)
+const AuthedLearnCourseIdActivityIdAttemptRoute =
+  AuthedLearnCourseIdActivityIdAttemptRouteImport.update({
+    id: '/learn/$courseId/$activityId_/attempt',
+    path: '/learn/$courseId/$activityId/attempt',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedLearnCourseIdActivityIdCodeRoute =
+  AuthedLearnCourseIdActivityIdCodeRouteImport.update({
+    id: '/learn/$courseId/$activityId_/code',
+    path: '/learn/$courseId/$activityId/code',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedLearnCourseIdActivityIdSubmissionRoute =
+  AuthedLearnCourseIdActivityIdSubmissionRouteImport.update({
+    id: '/learn/$courseId/$activityId_/submission',
+    path: '/learn/$courseId/$activityId/submission',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedTeachCoursesCourseIdIndexRoute =
   AuthedTeachCoursesCourseIdIndexRouteImport.update({
     id: '/',
@@ -510,6 +531,9 @@ export interface FileRoutesByFullPath {
   '/teach/courses/': typeof AuthedTeachCoursesIndexRoute
   '/teach/groups/': typeof AuthedTeachGroupsIndexRoute
   '/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
+  '/learn/$courseId/$activityId/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
+  '/learn/$courseId/$activityId/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
+  '/learn/$courseId/$activityId/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -572,6 +596,9 @@ export interface FileRoutesByTo {
   '/teach/courses': typeof AuthedTeachCoursesIndexRoute
   '/teach/groups': typeof AuthedTeachGroupsIndexRoute
   '/courses/$courseId': typeof PublicCoursesCourseIdIndexRoute
+  '/learn/$courseId/$activityId/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
+  '/learn/$courseId/$activityId/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
+  '/learn/$courseId/$activityId/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -643,6 +670,9 @@ export interface FileRoutesById {
   '/_authed/teach/courses/': typeof AuthedTeachCoursesIndexRoute
   '/_authed/teach/groups/': typeof AuthedTeachGroupsIndexRoute
   '/_public/courses/$courseId/': typeof PublicCoursesCourseIdIndexRoute
+  '/_authed/learn/$courseId/$activityId_/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
+  '/_authed/learn/$courseId/$activityId_/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
+  '/_authed/learn/$courseId/$activityId_/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
   '/_authed/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/_authed/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/_authed/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -713,6 +743,9 @@ export interface FileRouteTypes {
     | '/teach/courses/'
     | '/teach/groups/'
     | '/courses/$courseId/'
+    | '/learn/$courseId/$activityId/attempt'
+    | '/learn/$courseId/$activityId/code'
+    | '/learn/$courseId/$activityId/submission'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
     | '/teach/courses/$courseId/learners'
@@ -775,6 +808,9 @@ export interface FileRouteTypes {
     | '/teach/courses'
     | '/teach/groups'
     | '/courses/$courseId'
+    | '/learn/$courseId/$activityId/attempt'
+    | '/learn/$courseId/$activityId/code'
+    | '/learn/$courseId/$activityId/submission'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
     | '/teach/courses/$courseId/learners'
@@ -845,6 +881,9 @@ export interface FileRouteTypes {
     | '/_authed/teach/courses/'
     | '/_authed/teach/groups/'
     | '/_public/courses/$courseId/'
+    | '/_authed/learn/$courseId/$activityId_/attempt'
+    | '/_authed/learn/$courseId/$activityId_/code'
+    | '/_authed/learn/$courseId/$activityId_/submission'
     | '/_authed/teach/courses/$courseId/content'
     | '/_authed/teach/courses/$courseId/gradebook'
     | '/_authed/teach/courses/$courseId/learners'
@@ -1242,6 +1281,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicCoursesCourseIdUpdatesRouteImport
       parentRoute: typeof PublicCoursesCourseIdRoute
     }
+    '/_authed/learn/$courseId/$activityId_/attempt': {
+      id: '/_authed/learn/$courseId/$activityId_/attempt'
+      path: '/learn/$courseId/$activityId/attempt'
+      fullPath: '/learn/$courseId/$activityId/attempt'
+      preLoaderRoute: typeof AuthedLearnCourseIdActivityIdAttemptRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/learn/$courseId/$activityId_/code': {
+      id: '/_authed/learn/$courseId/$activityId_/code'
+      path: '/learn/$courseId/$activityId/code'
+      fullPath: '/learn/$courseId/$activityId/code'
+      preLoaderRoute: typeof AuthedLearnCourseIdActivityIdCodeRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/learn/$courseId/$activityId_/submission': {
+      id: '/_authed/learn/$courseId/$activityId_/submission'
+      path: '/learn/$courseId/$activityId/submission'
+      fullPath: '/learn/$courseId/$activityId/submission'
+      preLoaderRoute: typeof AuthedLearnCourseIdActivityIdSubmissionRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/teach/courses/$courseId/': {
       id: '/_authed/teach/courses/$courseId/'
       path: '/'
@@ -1522,6 +1582,9 @@ interface AuthedRouteChildren {
   AuthedCollectionsCollectionIdEditRoute: typeof AuthedCollectionsCollectionIdEditRoute
   AuthedLearnCourseIdActivityIdRoute: typeof AuthedLearnCourseIdActivityIdRoute
   AuthedLearnCourseIdCompleteRoute: typeof AuthedLearnCourseIdCompleteRoute
+  AuthedLearnCourseIdActivityIdAttemptRoute: typeof AuthedLearnCourseIdActivityIdAttemptRoute
+  AuthedLearnCourseIdActivityIdCodeRoute: typeof AuthedLearnCourseIdActivityIdCodeRoute
+  AuthedLearnCourseIdActivityIdSubmissionRoute: typeof AuthedLearnCourseIdActivityIdSubmissionRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -1536,6 +1599,12 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedCollectionsCollectionIdEditRoute,
   AuthedLearnCourseIdActivityIdRoute: AuthedLearnCourseIdActivityIdRoute,
   AuthedLearnCourseIdCompleteRoute: AuthedLearnCourseIdCompleteRoute,
+  AuthedLearnCourseIdActivityIdAttemptRoute:
+    AuthedLearnCourseIdActivityIdAttemptRoute,
+  AuthedLearnCourseIdActivityIdCodeRoute:
+    AuthedLearnCourseIdActivityIdCodeRoute,
+  AuthedLearnCourseIdActivityIdSubmissionRoute:
+    AuthedLearnCourseIdActivityIdSubmissionRoute,
 }
 
 const AuthedRouteWithChildren =
