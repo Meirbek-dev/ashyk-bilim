@@ -1,9 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { UnderConstruction } from '#/features/platform'
+import { CompletionPage, ensureLearner, PlayerError, PlayerNotFound } from '#/features/player'
 import { m } from '#/paraglide/messages'
 
+// The course summary: an enrolled learner only, anyone else gets a 403 in place.
 export const Route = createFileRoute('/_authed/learn/$courseId/complete')({
+  loader: async ({ context, params }) => {
+    await ensureLearner(context.queryClient, params.courseId)
+  },
   staticData: { title: m.platform_page_course_complete, layout: 'focus' },
-  component: UnderConstruction,
+  component: CompletionPage,
+  errorComponent: PlayerError,
+  notFoundComponent: PlayerNotFound,
 })

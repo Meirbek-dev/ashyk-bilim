@@ -15,6 +15,8 @@ type FocusPageProps = {
   actions?: ReactNode
   /** Left panel: the contents (activity list). */
   contents?: ReactNode
+  /** The contents sheet of narrow screens, held by the page (a shortcut opens it, a picked item closes it). */
+  contentsSheet?: { open: boolean; onOpenChange: (open: boolean) => void }
   /** Right panel: AI, rubric. */
   aside?: { label: string; content: ReactNode }
   /** Editors use the full width; reading stays at prose width. */
@@ -29,6 +31,7 @@ export function FocusPage({
   saveStatus,
   actions,
   contents,
+  contentsSheet,
   aside,
   wide = false,
   children,
@@ -42,6 +45,8 @@ export function FocusPage({
             <Sheet
               side="left"
               title={m.ui_contents()}
+              open={contentsSheet?.open}
+              onOpenChange={contentsSheet?.onOpenChange}
               trigger={<IconButton label={m.ui_contents()} icon={<PanelLeft aria-hidden />} />}
             >
               {contents}
