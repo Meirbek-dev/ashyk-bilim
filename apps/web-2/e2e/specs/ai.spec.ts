@@ -6,6 +6,7 @@ import type { QaMessage, RemediationSession, RunArtifact } from '#/shared/api/ge
 import { vQaChatRequest } from '#/shared/api/gen/valibot.gen'
 
 import { expect as baseExpect, type MadeCourse, test } from '../fixtures/learning'
+import { gotoLive } from '../fixtures/test'
 import { caps, fulfillSse, json, mockCapabilities, mockRun, problem, RUN, ru, runStatus, THREAD } from './ai-fixture'
 
 // The learner's AI (slice 6.3) with every model answer replaced by `page.route` (tag @ai: these would need the live
@@ -17,9 +18,8 @@ test.describe.configure({ timeout: 60_000 })
 const panel = (page: Page) => page.getByRole('complementary', { name: m.ai_panel_title({}, ru) })
 
 async function openSecondActivity(page: Page, course: MadeCourse) {
-  await page.goto(`/learn/${course.id}/${course.activityIds[0]}`)
   // A link clicked before hydration navigates natively (an SSR load with the real scope): wait for it.
-  await page.waitForLoadState('networkidle')
+  await gotoLive(page, `/learn/${course.id}/${course.activityIds[0]}`)
   await page
     .getByRole('navigation', { name: m.player_neighbours({}, ru) })
     .getByRole('link', { name: m.player_next({}, ru) })

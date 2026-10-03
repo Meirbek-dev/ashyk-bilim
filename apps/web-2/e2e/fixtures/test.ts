@@ -58,3 +58,13 @@ export const test = base.extend({
 })
 
 export { expect }
+
+/**
+ * Navigates and waits until the signed-in page has hydrated and opened its event stream (`GET /me/events`, spec 7.7).
+ * Use it instead of `waitForLoadState('networkidle')`, which never comes while that stream is open.
+ */
+export async function gotoLive(page: Page, url: string): Promise<void> {
+  const live = page.waitForResponse(response => new URL(response.url()).pathname === '/api/v2/me/events')
+  await page.goto(url)
+  await live
+}

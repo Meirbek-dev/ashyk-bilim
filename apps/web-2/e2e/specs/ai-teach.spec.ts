@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { AdminRun, LectureReview } from '#/shared/api/gen/types.gen'
 
 import { expect as baseExpect, test } from '../fixtures/learning'
+import { gotoLive } from '../fixtures/test'
 import { analysis, caps, json, markNavigation, mockCapabilities, mockRun, RUN, ru } from './ai-fixture'
 
 // The teacher's and the admin's AI (slice 6.3). Model answers are `page.route` fixtures (tag @ai); the admin
@@ -93,9 +94,8 @@ test(
     )
     const run = await mockRun(page, `lecture-authoring/${course.id}/critique/queue`, 'lecture_review')
     // The studio's loader reads the scope: a client navigation lets the browser read the fixture.
-    await page.goto(`/teach/courses/${course.id}/content`)
     // A link clicked before hydration navigates natively (an SSR load with the real scope): wait for it.
-    await page.waitForLoadState('networkidle')
+    await gotoLive(page, `/teach/courses/${course.id}/content`)
     await page.getByRole('link', { name: 'Page 1' }).click()
     await expect(page).toHaveURL(new RegExp(`/activities/${activityId}/edit`))
     const aside = page.getByRole('complementary', { name: m.ai_panel_title({}, ru) })
@@ -136,8 +136,7 @@ const adminRun: AdminRun = {
 }
 
 async function openAdminAi(page: Page) {
-  await page.goto('/admin/users')
-  await page.waitForLoadState('networkidle')
+  await gotoLive(page, '/admin/users')
   await page
     .getByRole('link', { name: m.platform_nav_ai({}, ru) })
     .first()

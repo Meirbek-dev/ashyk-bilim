@@ -6,6 +6,7 @@ import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import type { MadeCourse } from '../fixtures/learning'
+import { gotoLive } from '../fixtures/test'
 import { expect, PDF, ru, test } from './file-submissions-fixture'
 
 // The learner's hand-in (slice 5.4): /learn/$courseId/$activityId/submission.
@@ -50,8 +51,7 @@ test('B-FSB-02 a task the learner cannot read yet is "not set up", without an er
   const task = await tasks.make(course)
   await learner.enroll(course)
   await learner.signIn()
-  await page.goto(`/learn/${course.id}/${task.activity_id}`)
-  await page.waitForLoadState('networkidle')
+  await gotoLive(page, `/learn/${course.id}/${task.activity_id}`)
   // The imported tasks (a draft config behind a live activity) cannot be made through the API: the learner's 404 is
   // answered here, for the client-side navigation from the player's entry card.
   const problem = { type: 'about:blank', title: 'Not Found', status: 404, code: 'not-found' }

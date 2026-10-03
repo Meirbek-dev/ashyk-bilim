@@ -32,7 +32,8 @@
       "./messages/{locale}/attempt.json",
       "./messages/{locale}/ai.json",
       "./messages/{locale}/code.json",
-      "./messages/{locale}/grading.json"
+      "./messages/{locale}/grading.json",
+      "./messages/{locale}/notifications.json"
     ]
   }
 }

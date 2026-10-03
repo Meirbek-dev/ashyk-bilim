@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 
 import { accountWithTotp, newAccount, randomIp, registerAccount, totp, verificationCode } from '../fixtures/accounts'
 import { e2ePassword, expect, test } from '../fixtures/seed'
+import { gotoLive } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 // Not the fixture's e2e-student1: the API keeps at most 10 live sessions per user, and every worker already holds one
@@ -140,11 +141,11 @@ test('B-AUTH-10 a guest on a closed page signs in and returns; guest pages send 
   await signIn(page, STUDENT, e2ePassword())
   await expect(page).toHaveURL(/\/learning$/)
   for (const path of ['/login', '/signup', '/verify-email']) {
-    await page.goto(path)
+    // The last one is settled (hydrated, stream open) before the fixture resizes the page: a view transition still
+    // running would reject (Chromium).
+    await gotoLive(page, path)
     await expect(page).toHaveURL(/\/home$/)
   }
-  // The fixture resizes the page next; a view transition still running would reject (Chromium).
-  await page.waitForLoadState('networkidle')
 })
 
 for (const locale of ['kk', 'en'] as const) {
