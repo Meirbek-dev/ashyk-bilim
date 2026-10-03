@@ -205,22 +205,25 @@ jobs:
           ${{ fromJSON(format('["server"{0}{1}]',
           needs.changes.outputs.web == 'true' && ',"web"' || '',
           needs.changes.outputs.web2 == 'true' && ',"web-2"' || '')) }}
-        include:
-          - image: web
-            # stage-2: the only Next-specific spot; the web image is bound to
-            # the prod domain until it gets runtime config.
-            build-args: |
-              NEXT_PUBLIC_SITE_URL=https://${{ vars.PROD_DOMAIN }}/
-              NEXT_PUBLIC_API_URL=https://${{ vars.PROD_DOMAIN }}/api/v2/
-              NEXT_PUBLIC_MEDIA_URL=https://${{ vars.PROD_DOMAIN }}/
     steps:
       - uses: actions/checkout@v7
 
-      - name: Require PROD_DOMAIN
+      # stage-2: the only Next-specific spot; the old web image is bound to the
+      # prod domain. (Not a matrix `include`: that would add `web` to every run.)
+      - name: Web build args from PROD_DOMAIN
+        id: args
         if: matrix.image == 'web'
         env:
-          PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
-        run: test -n "$PROD_DOMAIN" || { echo "::error::repository variable PROD_DOMAIN is not set"; exit 1; }
+          D: ${{ vars.PROD_DOMAIN }}
+        run: |
+          test -n "$D" || { echo "::error::repository variable PROD_DOMAIN is not set"; exit 1; }
+          {
+            echo 'list<<EOF'
+            echo "NEXT_PUBLIC_SITE_URL=https://$D/"
+            echo "NEXT_PUBLIC_API_URL=https://$D/api/v2/"
+            echo "NEXT_PUBLIC_MEDIA_URL=https://$D/"
+            echo 'EOF'
+          } >>"$GITHUB_OUTPUT"
 
       # The release compile ran out of disk on stock runners (runs #45/#46).
       - name: Free runner disk for the release build
@@ -245,7 +248,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          build-args: ${{ matrix.build-args }}
+          build-args: ${{ steps.args.outputs.list }}
           cache-from: type=gha,scope=${{ matrix.image }}-image
           cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
 
