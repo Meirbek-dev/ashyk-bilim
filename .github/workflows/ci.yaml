@@ -6,8 +6,10 @@ name: ci
 
 on:
   push:
-    # ci/**: run the image build and the stack smoke for a branch (never published).
-    branches: [main, 'ci/**']
+    # ci/**: image build + stack smoke for a branch, never published.
+    # release/**: every gate runs regardless of paths, then publishes (a release
+    # cut from a commit other than main's head, e.g. while main is red).
+    branches: [main, 'ci/**', 'release/**']
   pull_request:
 
 # PRs: a newer push cancels the running one. main: never cancelled while
@@ -27,9 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      server: ${{ steps.filter.outputs.server }}
-      web: ${{ steps.filter.outputs.web }}
-      infra: ${{ steps.filter.outputs.infra }}
+      server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      web2: ${{ steps.filter.outputs.web2 == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
@@ -45,6 +48,10 @@ jobs:
               - 'bun.lock'
               - '.node-version'
               - 'apps/server/openapi.v2.json'
+            web2:
+              - 'apps/web-2/**'
+              - 'apps/server/openapi.v2.json'
+              - '.node-version'
             infra:
               - 'compose*.yaml'
               - 'infra/**'
@@ -192,6 +199,46 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
+  # production build with chunk budgets. The freeze gate (G-13) needs the pushed range and origin/main.
+  web2-gates:
+    needs: changes
+    if: needs.changes.outputs.web2 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/web-2
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: apps/web-2/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Playwright chromium (vitest browser project)
+        run: bunx playwright install --with-deps chromium
+
+      - name: Codegen (paraglide; client and route tree must already be committed)
+        run: bun run codegen
+
+      - name: Verify (check, tests, gates)
+        env:
+          GATES_BASE: ${{ github.event.before }}
+        run: bun run verify
+
+      - name: Build with chunk budgets
+        run: bun run build
+
   images:
     needs: [changes, server-gates, web-gates, infra-gates]
     # Gates may be skipped (path filter) but never failed.
@@ -297,7 +344,7 @@ jobs:
 
   publish:
     needs: [changes, stack-smoke]
-    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
+    if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !failure() && !cancelled() && needs.stack-smoke.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
