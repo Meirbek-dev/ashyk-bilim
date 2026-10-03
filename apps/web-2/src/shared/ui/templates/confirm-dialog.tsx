@@ -10,8 +10,8 @@ import { Dialog } from '../dialog'
 type ConfirmDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** The button that asks: a destructive Button with the verb. */
-  trigger: ReactElement
+  /** The button that asks: a destructive Button with the verb; none when the app opens it (a switch turned off). */
+  trigger?: ReactElement | undefined
   /** Names the object: «Удалить курс «X»?» */
   title: string
   /** The consequence, in one sentence. */
