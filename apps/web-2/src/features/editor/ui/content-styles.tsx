@@ -1,6 +1,6 @@
 import katexCss from 'katex/dist/katex.min.css?url'
 
-import { proseCss } from '#/features/markdown'
+import proseCss from '#/styles/prose.css?url'
 
 /**
  * The stylesheets of document content, linked once next to the editor (React hoists them into <head>).

@@ -72,7 +72,10 @@ describe('FileInput', () => {
     held.resolve(null)
 
     await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'cover.png' }))).toBeVisible()
-    expect(onUploaded).toHaveBeenCalledWith({ id: SLOT.id, key: SLOT.key, size_bytes: 4 })
+    expect(onUploaded).toHaveBeenCalledWith(
+      { id: SLOT.id, key: SLOT.key, size_bytes: 4 },
+      expect.objectContaining({ name: 'cover.png' }),
+    )
     expect(screen.getByRole('progressbar').query()).toBeNull()
   })
 

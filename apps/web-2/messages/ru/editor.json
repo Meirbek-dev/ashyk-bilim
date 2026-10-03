@@ -1,6 +1,6 @@
 {
   "editor_label": "Содержание страницы",
-  "editor_placeholder": "Начните писать или вставьте блок кнопкой «Вставить»",
+  "editor_placeholder": "Начните писать или введите «/», чтобы вставить блок",
   "editor_callout_info": "Заметка",
   "editor_callout_warning": "Внимание",
   "editor_flipcard_show_answer": "Показать ответ",
@@ -51,5 +51,16 @@
   "editor_field_answer": "Ответ",
   "editor_field_latex": "Формула LaTeX",
   "editor_field_user_id": "ID пользователя",
-  "editor_apply": "Применить"
+  "editor_apply": "Применить",
+  "editor_block_image": "Изображение",
+  "editor_block_video": "Видео",
+  "editor_block_pdf": "PDF-документ",
+  "editor_image_hint": "JPEG, PNG, GIF, WebP или AVIF до 10 МБ",
+  "editor_pdf_hint": "PDF до 50 МБ",
+  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI или FLV до 500 МБ",
+  "editor_video_play": "Воспроизвести",
+  "editor_video_pause": "Пауза",
+  "editor_video_position": "Позиция воспроизведения",
+  "editor_video_mute": "Выключить звук",
+  "editor_video_fullscreen": "Во весь экран"
 }

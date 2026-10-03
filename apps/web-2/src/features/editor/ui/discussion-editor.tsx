@@ -13,7 +13,7 @@ export function DiscussionEditor({ content, onChange }: DiscussionEditorProps) {
   return (
     <div className="flex flex-col gap-2">
       <ContentStyles />
-      {editor ? <EditorToolbar editor={editor} blocks={false} /> : null}
+      {editor ? <EditorToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </div>
   )

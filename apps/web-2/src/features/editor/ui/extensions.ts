@@ -7,6 +7,7 @@ import { m } from '#/paraglide/messages'
 
 import { contentSchema, discussionSchema } from '../model/schema'
 import { CodeHighlight } from './code-highlight'
+import { FileDrop } from './file-drop'
 import { BadgeView } from './nodes/badge-view'
 import { ButtonView } from './nodes/button-view'
 import { CalloutView } from './nodes/callout-view'
@@ -49,7 +50,7 @@ const withViews = (extensions: AnyExtension[]): AnyExtension[] =>
 export function presetExtensions(preset: Preset): AnyExtension[] {
   const placeholder = Placeholder.configure({ placeholder: () => m.editor_placeholder() })
   const presets: Record<Preset, () => AnyExtension[]> = {
-    authoring: () => [...withViews(contentSchema()), CodeHighlight, placeholder],
+    authoring: () => [...withViews(contentSchema()), CodeHighlight, FileDrop, placeholder],
     view: () => [...withViews(contentSchema()), CodeHighlight],
     discussion: () => [...withViews(discussionSchema()), CodeHighlight, placeholder],
   }

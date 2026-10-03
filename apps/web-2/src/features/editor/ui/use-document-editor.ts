@@ -7,6 +7,7 @@ import { m } from '#/paraglide/messages'
 import { isDocument, stripEmptyFileBlocks, type EditorDocument } from '../model/document'
 import { normalizeDocument } from '../model/normalize'
 import { presetExtensions, type Preset } from './extensions'
+import { slashAnchor, type MenuAnchor } from './toolbar/insert-items'
 
 /** Stored content as Tiptap takes it: the canonical JSON document, or legacy HTML after sanitize(). */
 const loadable = (content: unknown) => {
@@ -14,14 +15,20 @@ const loadable = (content: unknown) => {
   return typeof doc === 'string' ? sanitize(doc) : doc
 }
 
-type Options = { preset: Preset; content: unknown; onChange?: ((doc: EditorDocument) => void) | undefined }
+type Options = {
+  preset: Preset
+  content: unknown
+  onChange?: ((doc: EditorDocument) => void) | undefined
+  /** "/" in an empty paragraph: open the insert menu there. */
+  onSlash?: (anchor: MenuAnchor) => void
+}
 
 /**
  * The Tiptap instance behind every editor of this feature. Content is normalized on load (legacy shapes
  * become canonical), external content changes are applied without an update event, and `onChange` gets the
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
-export function useDocumentEditor({ preset, content, onChange }: Options) {
+export function useDocumentEditor({ preset, content, onChange, onSlash }: Options) {
   // What this editor last emitted: a parent that passes it back as `content` must not reset the cursor.
   const emitted = useRef<unknown>(undefined)
   const editor = useEditor({
@@ -30,6 +37,11 @@ export function useDocumentEditor({ preset, content, onChange }: Options) {
     editable: preset !== 'view',
     immediatelyRender: false,
     editorProps: {
+      handleKeyDown: (view, event) => {
+        const anchor = onSlash ? slashAnchor(view, event) : null
+        if (anchor) onSlash?.(anchor)
+        return anchor !== null
+      },
       attributes: {
         'aria-label': m.editor_label(),
         class: `ab-prose max-w-none ${preset === 'view' ? '' : 'min-h-40 rounded-md border border-input bg-background p-4'}`,

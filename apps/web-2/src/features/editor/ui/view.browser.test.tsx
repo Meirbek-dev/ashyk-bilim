@@ -129,10 +129,12 @@ describe('B-EDT-09 view preset', () => {
     await expect.element(screen.getByTitle(m.editor_embed_title())).not.toBeInTheDocument()
   })
 
-  test('B-EDT-04 B-EDT-13 code is highlighted by shiki and formulas by KaTeX', async () => {
+  test('B-EDT-04 B-EDT-13 code is highlighted by shiki and formulas by KaTeX', { timeout: 30_000 }, async () => {
     const screen = await render(<BlockViewer content={doc('codeBlock', 'math')} />)
-    await expect.poll(() => document.querySelector('pre span[style*="--shiki-light"]')).not.toBeNull()
-    await expect.poll(() => document.querySelector('.katex')).not.toBeNull()
+    // Grammars and KaTeX load lazily (compiled on first request under a dev server): allow a cold start.
+    const cold = { timeout: 15_000 }
+    await expect.poll(() => document.querySelector('pre span[style*="--shiki-light"]'), cold).not.toBeNull()
+    await expect.poll(() => document.querySelector('.katex'), cold).not.toBeNull()
     await expect.element(screen.getByText(m.editor_math_invalid())).not.toBeInTheDocument()
   })
 
@@ -143,5 +145,23 @@ describe('B-EDT-09 view preset', () => {
     await expect
       .element(screen.getByRole('link', { name: 'Example', exact: true }))
       .toHaveAttribute('href', 'https://example.com')
+  })
+})
+
+describe('B-EDT-19 media', () => {
+  test('B-EDT-19 a hosted video plays with kit controls; a PDF opens in an unsandboxed same-origin frame', async () => {
+    const screen = await render(<BlockViewer content={doc('video', 'pdf')} />)
+    await expect.element(screen.getByRole('button', { name: m.editor_video_play() })).toBeVisible()
+    await expect.element(screen.getByRole('slider', { name: m.editor_video_position() })).toBeInTheDocument()
+    await expect
+      .element(screen.getByRole('button', { name: m.editor_video_mute() }))
+      .toHaveAttribute('aria-pressed', 'false')
+    await expect.element(screen.getByRole('button', { name: m.editor_video_fullscreen() })).toBeVisible()
+    const video = document.querySelector('video')
+    expect(video?.getAttribute('src')).toBe('/content/intro.mp4')
+    expect(video?.hasAttribute('controls')).toBe(false)
+    const pdf = screen.getByTitle(m.editor_pdf_title())
+    await expect.element(pdf).toHaveAttribute('src', '/content/handout.pdf')
+    expect(pdf.element().hasAttribute('sandbox')).toBe(false)
   })
 })

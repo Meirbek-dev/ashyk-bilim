@@ -207,6 +207,8 @@ const lint: OxlintConfig = {
       rules: { 'no-restricted-properties': restrictProperties('invalidateQueries') },
     },
     { files: ['src/shared/ui/**'], rules: { 'react/forbid-elements': 'off' } },
+    // Chromium shows no PDF in a sandboxed frame; the component frames same-origin paths only.
+    { files: ['src/shared/ui/pdf-frame.tsx'], rules: { 'react/iframe-missing-sandbox': 'off' } },
     {
       // Tools that require a default export.
       files: [
@@ -243,7 +245,8 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: unit },
-      { extends: true, test: browser },
+      // The browser project's Vite server inherits `server.strictPort` (the dev server's): free it for parallel runs.
+      { extends: true, server: { strictPort: false }, test: browser },
       ...(process.env['G15'] ? [{ extends: true, test: themes }] : []),
     ],
   },
