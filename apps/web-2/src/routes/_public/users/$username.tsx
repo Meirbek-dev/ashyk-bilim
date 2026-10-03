@@ -1,9 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { UnderConstruction } from '#/features/platform'
+import { PublicProfilePage, UserNotFound, ensurePublicProfile } from '#/features/settings'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_public/users/$username')({
+  loader: ({ context, params }) => ensurePublicProfile(context.queryClient, params.username),
   staticData: { title: m.platform_page_user },
-  component: UnderConstruction,
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.display_name }] : [] }),
+  component: PublicProfilePage,
+  notFoundComponent: UserNotFound,
 })

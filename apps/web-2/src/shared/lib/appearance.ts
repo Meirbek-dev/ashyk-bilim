@@ -22,6 +22,13 @@ export const themeHref = (theme: string) => `/themes/${theme}.css`
 /** `<html data-mode>`: absent for "system", so the media query in tokens.css decides. */
 export const modeAttribute = (mode: Mode) => (mode === 'system' ? undefined : mode)
 
+/** Saves the theme and swaps the open document's theme stylesheet (RootDocument's link) at once. */
+export function saveTheme(theme: string): void {
+  themeCookie.set(theme)
+  document.documentElement.dataset['theme'] = theme
+  document.querySelector('link[href^="/themes/"]')?.setAttribute('href', themeHref(theme))
+}
+
 /** Saves the mode and applies it to the open document at once (SSR applies it on the next load). */
 export function saveMode(mode: Mode): void {
   modeCookie.set(mode)
