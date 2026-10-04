@@ -2,25 +2,37 @@ import { useQueryClient } from '@tanstack/react-query'
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { Link as RouterLink } from '@tanstack/react-router'
 
-import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
 import { linkPreviewOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { Link } from '#/shared/components/link'
 import { buttonVariants } from '#/shared/ui/button'
 
 import { textAttr } from '../../model/document'
+import { linkHref } from '../../model/link'
 import { justify } from './align'
 import { AttrForm } from './attr-form'
 
-const isWeb = (value: string) => /^https?:\/\//i.test(safeUrl(value) ?? '')
+// A preview needs a web page: `example.com` is read as https (B-EDT-23).
+const webUrl = (value: string) => {
+  const href = linkHref(value)
+  return href && /^https?:\/\//i.test(href) ? href : undefined
+}
 
 /** blockWebPreview: a link card (title, description, site) filled from the server's page preview. */
 export function WebPreviewView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
   const queryClient = useQueryClient()
   const url = textAttr(node.attrs['url'])
-  const href = url && isWeb(url) ? url : null
-  const apply = async ({ url: next = '' }: Record<string, string>) => {
-    const preview = await queryClient.fetchQuery(linkPreviewOptions({ query: { url: next } })).catch(() => null)
+  const href = url && webUrl(url) === url ? url : null
+  const apply = async ({ url: typed = '' }: Record<string, string>) => {
+    const next = webUrl(typed) ?? typed
+    // A 422 (a local or private address) goes under the field; any other failure keeps the link without a card.
+    const preview = await queryClient
+      .fetchQuery(linkPreviewOptions({ query: { url: next } }))
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.fieldErrors.length > 0) throw error
+        return null
+      })
     updateAttributes({
       url: next,
       title: preview?.title ?? null,
@@ -57,9 +69,9 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
       ) : null}
       {editor.isEditable && (selected || !href) ? (
         <AttrForm
-          fields={[{ name: 'url', label: m.editor_field_url(), check: isWeb }]}
+          fields={[{ name: 'url', label: m.editor_field_url(), check: value => webUrl(value) !== undefined }]}
           values={{ url: url ?? '' }}
-          onApply={values => void apply(values)}
+          onApply={apply}
         />
       ) : null}
     </NodeViewWrapper>

@@ -63,5 +63,6 @@
   "editor_video_pause": "Пауза",
   "editor_video_position": "Позиция воспроизведения",
   "editor_video_mute": "Выключить звук",
-  "editor_video_fullscreen": "Во весь экран"
+  "editor_video_fullscreen": "Во весь экран",
+  "editor_embed_own_origin": "Страницы этого сайта нельзя встроить. Вставьте адрес внешнего сервиса (YouTube, Google Docs…)."
 }

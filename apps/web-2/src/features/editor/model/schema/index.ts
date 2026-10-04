@@ -5,6 +5,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { StarterKit } from '@tiptap/starter-kit'
 
 import { headingIdUpdates } from '../heading-ids'
+import { linkHref } from '../link'
 import {
   Badge,
   ButtonBlock,
@@ -21,13 +22,8 @@ import {
 } from './blocks'
 import { EmbedBlock } from './embed-block'
 
-const allowedLink = (url: string) => {
-  try {
-    return ['http:', 'https:'].includes(new URL(url, 'https://relative.invalid').protocol)
-  } catch {
-    return false
-  }
-}
+// Only links the server stores (absolute http(s)/mailto, `#anchor`): a pasted relative link loses its mark.
+const allowedLink = (url: string) => linkHref(url) === url.trim()
 
 /** Headings carry a unique `id` (outline and `#anchor` links), kept in sync on every change. */
 const HeadingIds = Extension.create({

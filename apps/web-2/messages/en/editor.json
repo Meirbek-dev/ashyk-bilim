@@ -63,5 +63,6 @@
   "editor_video_pause": "Pause",
   "editor_video_position": "Playback position",
   "editor_video_mute": "Mute",
-  "editor_video_fullscreen": "Full screen"
+  "editor_video_fullscreen": "Full screen",
+  "editor_embed_own_origin": "Pages of this site cannot be embedded. Paste the address of an outside service (YouTube, Google Docs…)."
 }

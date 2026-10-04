@@ -52,5 +52,9 @@ const messages: Record<ErrorCode, () => string> = {
 }
 
 /** The user-facing text of any thrown error: the code's text for an ApiError, "no connection" otherwise. */
-export const presentError = (error: unknown): string =>
-  error instanceof ApiError ? messages[error.code]() : m.errors_network()
+export const presentError = (error: unknown): string => {
+  if (!(error instanceof ApiError)) return m.errors_network()
+  // A saved document's link or embed (REVIEW-1 C1): the field is a node path no form shows, so say which rule.
+  if (error.fieldErrors.some(field => field.code === 'unsafe-url')) return m.errors_unsafe_url()
+  return messages[error.code]()
+}

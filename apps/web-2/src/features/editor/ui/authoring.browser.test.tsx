@@ -130,3 +130,16 @@ describe('the "/" menu', () => {
     expect(JSON.stringify(last(onChange))).toContain('"text":"a/b"')
   })
 })
+
+test('B-EDT-23 an embed of this site is refused in the dialog; a button link is stored with https', async () => {
+  const onChange = vi.fn<(doc: EditorDocument) => void>()
+  const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
+  await insert(screen, m.editor_block_embed())
+  await screen.getByLabelText(m.editor_field_url()).fill(new URL('/content/page.html', document.baseURI).href)
+  await screen.getByRole('button', { name: m.editor_apply() }).click()
+  await expect.element(screen.getByText(m.editor_embed_own_origin())).toBeVisible()
+  await insert(screen, m.editor_block_button())
+  await screen.getByRole('textbox', { name: m.editor_field_link() }).fill('example.com/page')
+  await screen.getByRole('button', { name: m.editor_apply() }).last().click()
+  await expect.poll(() => find(last(onChange), 'button')?.attrs?.['link']).toBe('https://example.com/page')
+})

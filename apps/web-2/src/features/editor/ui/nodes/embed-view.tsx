@@ -3,7 +3,7 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { m } from '#/paraglide/messages'
 
 import { numberAttr, textAttr } from '../../model/document'
-import { embedSandbox, embedSrc, embedTypeForUrl } from '../../model/embed'
+import { embedSandbox, embedSrc, embedTypeForUrl, isOwnSite } from '../../model/embed'
 import { AttrForm } from './attr-form'
 
 /**
@@ -18,7 +18,14 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
   const form = editor.isEditable && (selected || !src) && (
     <AttrForm
       fields={[
-        { name: 'url', label: m.editor_field_url(), check: value => embedSrc(embedTypeForUrl(value), value) !== null },
+        {
+          name: 'url',
+          label: m.editor_field_url(),
+          check: value =>
+            isOwnSite(value, document.baseURI)
+              ? m.editor_embed_own_origin()
+              : embedSrc(embedTypeForUrl(value), value) !== null,
+        },
       ]}
       values={{ url: url ?? '' }}
       onApply={values => updateAttributes({ url: values['url'], type: embedTypeForUrl(values['url'] ?? '') })}

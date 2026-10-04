@@ -44,5 +44,6 @@
   "errors_unauthenticated": "Sign in to continue.",
   "errors_unsupported_media_type": "Files of this type are not accepted here. Choose another file.",
   "errors_username_taken": "This username is taken. Choose another one.",
-  "errors_validation_failed": "Check the highlighted fields and try again."
+  "errors_validation_failed": "Check the highlighted fields and try again.",
+  "errors_unsafe_url": "Changes not saved: the document has a link or embed that is not allowed. A link must be a full address (https://…); an embed must come from an outside service, not from this site."
 }

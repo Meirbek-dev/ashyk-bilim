@@ -10,14 +10,15 @@ export type AttrField = {
   label: string
   /** A textarea instead of a one-line field. */
   multiline?: boolean
-  /** Extra rule on the trimmed value (every field is required); a failure reads "invalid format". */
-  check?: (value: string) => boolean
+  /** Extra rule on the trimmed value (every field is required): `false` reads "invalid", a string is the error text. */
+  check?: (value: string) => boolean | string
 }
 
 type AttrFormProps = {
   fields: readonly AttrField[]
   values: Record<string, string>
-  onApply: (values: Record<string, string>) => void
+  /** A rejected promise with a 422 puts its field errors under the fields of the same name. */
+  onApply: (values: Record<string, string>) => unknown
 }
 
 const fieldSchema = ({ check }: AttrField) =>
@@ -25,7 +26,10 @@ const fieldSchema = ({ check }: AttrField) =>
     v.string(),
     v.trim(),
     v.nonEmpty(),
-    v.check(value => check?.(value) ?? true),
+    v.rawCheck(({ dataset, addIssue }) => {
+      const result = dataset.typed ? (check?.(dataset.value) ?? true) : true
+      if (result !== true) addIssue(typeof result === 'string' ? { message: result } : undefined)
+    }),
   )
 
 /** The authoring form of a block's attributes (URL, formula, question...): validated, applied to the node. */

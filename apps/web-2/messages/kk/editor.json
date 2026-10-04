@@ -63,5 +63,6 @@
   "editor_video_pause": "Кідірту",
   "editor_video_position": "Ойнату орны",
   "editor_video_mute": "Дыбысты өшіру",
-  "editor_video_fullscreen": "Толық экран"
+  "editor_video_fullscreen": "Толық экран",
+  "editor_embed_own_origin": "Осы сайттың беттерін ендіруге болмайды. Сыртқы сервистің мекенжайын қойыңыз (YouTube, Google Docs…)."
 }

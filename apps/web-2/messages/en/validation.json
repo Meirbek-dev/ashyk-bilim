@@ -9,5 +9,6 @@
   "validation_duplicate": "This value already exists.",
   "validation_invalid": "Check this value.",
   "validation_too_long": "The value is too long.",
-  "validation_out_of_range": "The value is out of range."
+  "validation_out_of_range": "The value is out of range.",
+  "validation_unsafe_url": "This address cannot be used: enter a full link (https://…) to an outside site."
 }

@@ -12494,8 +12494,10 @@ export type FileUrlData = {
     };
     query?: {
         /**
-         * `inline` signs `Content-Disposition: inline` (preview in a frame);
-         * default `attachment` (download under the original name).
+         * `inline` signs `Content-Disposition: inline` (preview in a frame)
+         * for raster images, PDF, audio, video and plain text only; every
+         * other type is always `attachment` as `application/octet-stream`.
+         * Default `attachment` (download under the original name).
          */
         disposition?: Disposition | null;
     };

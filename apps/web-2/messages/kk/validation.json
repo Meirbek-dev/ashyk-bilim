@@ -9,5 +9,6 @@
   "validation_duplicate": "Мұндай мән бұрыннан бар.",
   "validation_invalid": "Бұл мәнді тексеріңіз.",
   "validation_too_long": "Мән тым ұзын.",
-  "validation_out_of_range": "Мән рұқсат етілген ауқымнан тыс."
+  "validation_out_of_range": "Мән рұқсат етілген ауқымнан тыс.",
+  "validation_unsafe_url": "Бұл мекенжайды қолдануға болмайды: сыртқы сайтқа толық сілтеме (https://…) керек."
 }

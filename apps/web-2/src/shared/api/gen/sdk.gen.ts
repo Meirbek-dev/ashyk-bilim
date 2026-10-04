@@ -2862,6 +2862,9 @@ export const createUpload = <ThrowOnError extends boolean = false>(options: Opti
 
 /**
  * Redirect to a short-lived presigned download URL.
+ *
+ * Raster images, PDF, audio, video and plain text open inline; every other
+ * type downloads as `application/octet-stream`.
  */
 export const downloadUpload = <ThrowOnError extends boolean = false>(options: Options<DownloadUploadData, ThrowOnError>): RequestResult<unknown, DownloadUploadErrors, ThrowOnError> => (options.client ?? client).get<unknown, DownloadUploadErrors, ThrowOnError>({ url: '/api/v2/uploads/{upload_id}/download', ...options });
 

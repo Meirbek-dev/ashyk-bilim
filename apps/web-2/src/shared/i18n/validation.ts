@@ -44,6 +44,9 @@ const serverCodes: Partial<Record<string, () => string>> = {
   'too-long': m.validation_too_long,
   'out-of-range': m.validation_out_of_range,
   range: m.validation_out_of_range,
+  // A document's link or embed (REVIEW-1 C1); `unsafe`: a link preview of a private or local address.
+  'unsafe-url': m.validation_unsafe_url,
+  unsafe: m.validation_unsafe_url,
 }
 
 export const serverFieldMessage = (code: string): string => (serverCodes[code] ?? m.validation_invalid)()

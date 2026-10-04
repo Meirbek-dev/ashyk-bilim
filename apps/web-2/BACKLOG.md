@@ -78,19 +78,11 @@ report has no teacher verdict field, 8 AI operations without a consumer (delete 
 
 Orchestration (owner, 2026-10-04): at most 2 subagents at a time - one web (main tree), one server.
 W-1 done (1e3cfb7..3927410): client matches a05c210, L-5/L-6 adopted, storage-state logins; e2e 507/524 (`reports/W-1.md`).
-W-2 (wip, main tree): apply T-1 translation fixes (165), event dedup by `sent_at`, skipped UI adoptions, G-07 and
-under-construction gates enforcing, hardening checks. C-2 (wip): CI - old web job to image build only, learner pool for
-the e2e stand, first push of main, make every CI job green.
-
-## Resume notes (session cut by the usage limit, 2026-10-04)
-
-- `main` has been pushed by C-2; in its latest run server-gates and the web-2 image were green, the server image,
-  stack-smoke and `web2-e2e` were still running. Check `gh run list -L 5` and `<scratchpad>/reports/C-2.md`.
-- W-2 (web hardening, main tree) was still running: T-1 translation fixes, event dedup by `sent_at`, skipped UI
-  adoptions, G-07/under-construction enforcing. It commits at green checkpoints; report `reports/W-2.md`.
-- Then: finish phase 7 (acceptance list of spec section 13), write the phase 8 cutover runbook entry (server
-  `AB__SERVER__WEB_LINKS=v2`, `ashyq admin migrate-*` commands, `WEB_IMAGE` switch), phase 9 list is
-  `apps/server/docs/phase9-removals.md`. Phases 8-9 need the owner.
+W-2 done (through 1ccc7a1): T-1 translations, event dedup by server time, remaining UI, G-07 and stub gates enforcing,
+CSP/Zod + KaTeX font + hydration fixes, REVIEW-1 web findings; e2e on the production build 658/671 (`reports/W-2.md`).
+C-2 done: `main` pushed, CI green except `web2-e2e` (before the W-2 fixes). P-8 done (41ce779): `docs/STAGE-2-CUTOVER.md`,
+compose switch variables, release publishing of `ashyq-web-2`. REVIEW-1 (independent review) + SEC-1 (5c6940a): user
+content inert on the web origin. FIN-1 (wip): regen for 5c6940a, push, CI to green, `docs/web/ACCEPTANCE.md`.
 
 ## Server lane (sequential)
 

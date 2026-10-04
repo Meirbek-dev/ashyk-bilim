@@ -211,6 +211,13 @@ export function embedSrc(type: string | null, value: string | null): string | nu
   return src?.protocol === 'https:' && !src.username && !src.password && onHosts(src, EMBED_HOSTS) ? src.href : null
 }
 
+/** True for an address of the page's own site (absolute on its host, or a path): never framed, the server refuses it. */
+export function isOwnSite(value: string, origin: string): boolean {
+  const text = value.trim()
+  const url = parse(text) ?? (/^[./]/.test(text) ? parse(new URL(text, origin).href) : null)
+  return url !== null && url.hostname.replace(/\.$/, '') === new URL(origin).hostname
+}
+
 /** The iframe sandbox for an `embedSrc` address: no top navigation ever; own origin only for `OWN_ORIGIN_PLAYERS`. */
 export function embedSandbox(src: string): string {
   const url = parse(src)

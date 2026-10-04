@@ -5,6 +5,7 @@ import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/ui/button'
 
+import { linkHref } from '../../model/link'
 import { justify, stringAttr } from './align'
 import { AttrForm } from './attr-form'
 
@@ -39,9 +40,9 @@ export function ButtonView({ node, editor, selected, updateAttributes }: ReactNo
       </div>
       {editor.isEditable && (selected || !href) ? (
         <AttrForm
-          fields={[{ name: 'link', label: m.editor_field_link(), check: value => safeUrl(value) !== undefined }]}
+          fields={[{ name: 'link', label: m.editor_field_link(), check: value => linkHref(value) !== undefined }]}
           values={{ link }}
-          onApply={values => updateAttributes(values)}
+          onApply={({ link: next = '' }) => updateAttributes({ link: linkHref(next) ?? next })}
         />
       ) : null}
     </NodeViewWrapper>

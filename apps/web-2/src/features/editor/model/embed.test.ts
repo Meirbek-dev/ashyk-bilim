@@ -2,7 +2,7 @@ import * as fc from 'fast-check'
 import { describe, expect, test } from 'vite-plus/test'
 
 import type { EditorNode } from './document'
-import { embedSandbox, embedSrc, embedTypeForUrl, youTubeId } from './embed'
+import { embedSandbox, embedSrc, embedTypeForUrl, isOwnSite, youTubeId } from './embed'
 import { normalizeDocument } from './normalize'
 
 const url = fc.oneof(
@@ -128,4 +128,16 @@ describe('B-EDT-21 embeds frame known services only', () => {
     expect(embedTypeForUrl('just-some-text')).toBe('url')
     expect(embedSrc(null, 'just-some-text')).toBeNull()
   })
+})
+
+test('B-EDT-23 an embed of this site is refused up front: absolute on its host or a path; a provider id is not', () => {
+  const base = 'https://ashyq.kz/course/1/edit'
+  expect(
+    ['https://ashyq.kz/x', 'https://ASHYQ.kz./content/a.html', '/content/a.html', './x'].map(value =>
+      isOwnSite(value, base),
+    ),
+  ).toEqual([true, true, true, true])
+  expect(
+    ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'example.com'].map(value => isOwnSite(value, base)),
+  ).toEqual([false, false, false])
 })

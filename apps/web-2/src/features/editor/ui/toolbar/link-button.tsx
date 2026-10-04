@@ -2,12 +2,12 @@ import type { Editor } from '@tiptap/core'
 import { Link2 } from 'lucide-react'
 import { useState } from 'react'
 
-import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '#/shared/ui/dialog'
 
+import { linkHref } from '../../model/link'
 import { AttrForm } from '../nodes/attr-form'
 
 /** Link on the selected text: a dialog with the address; an existing link can be removed. */
@@ -28,10 +28,17 @@ export function LinkButton({ editor, active }: { editor: Editor; active: boolean
           <DialogTitle>{m.editor_link()}</DialogTitle>
         </DialogHeader>
         <AttrForm
-          fields={[{ name: 'href', label: m.editor_field_url(), check: value => safeUrl(value) !== undefined }]}
+          fields={[{ name: 'href', label: m.editor_field_url(), check: value => linkHref(value) !== undefined }]}
           values={{ href }}
           onApply={({ href: next = '' }) =>
-            close(() => editor.chain().focus().extendMarkRange('link').setLink({ href: next }).run())
+            close(() =>
+              editor
+                .chain()
+                .focus()
+                .extendMarkRange('link')
+                .setLink({ href: linkHref(next) ?? next })
+                .run(),
+            )
           }
         />
         {active ? (
